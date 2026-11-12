@@ -26,6 +26,7 @@ export default function DailyCarePhotoCapture() {
       form.append("file", file);
       form.append("person_id", personId);
       form.append("caregiver_id", caregiverId);
+      form.append("evidence_type", "care_photo");
       const result = await postFormData("/upload", form) as { evidence_id?: string };
       if (!result?.evidence_id) {
         throw new Error("The server did not confirm that the photo was saved.");
