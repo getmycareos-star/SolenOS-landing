@@ -37,12 +37,17 @@ for (const contract of [
   'Only the responsible caregiver can change this action.',
   'Another caregiver',
   'Sources: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)',
-  'Sources: {event.evidence_ids.length} saved item(s)',
   'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id}',
   'disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])}',
 ]) {
   assert.ok(lcr.includes(contract), `LCR approved-action contract missing: ${contract}`);
 }
+
+assert.match(
+  lcr,
+  /Sources:\\s*\\{\\s*event\\.evidence_ids\\.length\\s*\\}\\s*saved item\\(s\\)/,
+  "Registered-action history must show its saved source count",
+);
 
 assert.ok(
   lcr.includes('status === "completed"') && lcr.includes('explicit_completion_confirmation: status === "completed"'),
