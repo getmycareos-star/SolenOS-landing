@@ -292,7 +292,7 @@ const reviewCriterionLabel = (value: string) => ({
   'temporal context': 'When it happened',
   'evidence freshness': 'Whether it is still current',
   'record completeness': 'Whether details are missing',
-}[value] ?? value.replaceAll('_', ' '))
+}[value] ?? 'Not available')
 const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12, background: 'var(--surface)' }
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
@@ -769,7 +769,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               <p>This source and the linked source share an underlying origin. They must not be counted as independent corroboration.</p>
             )}
             {item.origin_group_key && <p>Shared source grouping is recorded.</p>}
-            <p>{item.rationale}</p>
+            <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
             <small>Reviewed by {item.reviewed_by_caregiver_id ? 'caregiver' : 'an unavailable identity'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
         </details>
@@ -877,7 +877,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Similar wording check:</strong> {sourceIntegrity.near_duplicate_comparison_status === 'complete' ? 'Finished' : sourceIntegrity.near_duplicate_comparison_status === 'not_run' ? 'Not checked' : 'Could not be completed'}</p>
             {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
               <p key={group.evidence_ids.join(':') + index}>
-                Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {group.interpretation}
+                Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {caregiverSafeAssistantText(group.interpretation) || 'The relationship between these sources is not fully known.'}
               </p>
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
