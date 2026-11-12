@@ -13,6 +13,7 @@ type Candidate = {
   review_decision?: string;
   page_number?: number | null;
   field_type?: string;
+  professional_confirmation_question_id?: string | null;
   event_date?: string | null;
   recorded_date?: string | null;
   extracted_at?: string;
@@ -315,9 +316,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
             const statusPresentation = pending
               ? { label: candidate.review_status === "corrected_pending_approval" ? "CORRECTION AWAITING APPROVAL" : "PENDING CAREGIVER REVIEW", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
-              : candidate.review_status === "accepted_by_caregiver"
-                ? { label: "ADDED TO CARE RECORD", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
-                : candidate.review_status === "rejected_by_caregiver"
+              : candidate.review_status === "accepted_by_caregiver" && candidate.professional_confirmation_question_id
+                ? { label: "SAVED AS UNCONFIRMED REPORT", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
+                : candidate.review_status === "accepted_by_caregiver"
+                  ? { label: "ADDED TO CARE RECORD", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
+                  : candidate.review_status === "rejected_by_caregiver"
                   ? { label: "NOT ADDED", border: "#999999", background: "#eeeeee", color: "#444444" }
                   : { label: "Status unavailable", border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
             const correction = corrections[key] || { subject: candidate.subject, observation: candidate.observation };
@@ -350,7 +353,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
                 </div>
               </>}
-              {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A source-linked, attributed assertion was saved to the LCR; it is not independently verified clinical fact.</p>}
+              {candidate.review_status === "accepted_by_caregiver" && candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>Saved as an unconfirmed medication report. The existing medication record was not changed. A prescribing clinician or pharmacist must confirm the current instruction.</p>}
+              {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A source-linked, attributed assertion was saved to the LCR; it is not independently verified clinical fact.</p>}
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>}
             </div>;
           }) : analysis.extraction_status === "partial" ? <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No statements are available for review because not every page could be read. Retry pages that failed processing, or upload a clearer copy for unreadable pages.</p> : null}
