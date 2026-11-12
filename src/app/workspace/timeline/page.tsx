@@ -444,10 +444,10 @@ export default function TimelinePage() {
         </Button>
       </header>
 
-      <section aria-label="Latest recorded event" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "var(--theme-panel-bg)", padding: 20, marginBottom: 20 }}>
+      <section aria-label="Latest recorded update" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "var(--theme-panel-bg)", padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
           <History size={19} aria-hidden />
-          <h2 style={{ fontSize: 18, margin: 0 }}>Latest recorded event</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Latest recorded update</h2>
         </div>
         {loading ? (
           <p aria-live="polite" style={{ margin: 0, color: "var(--solenos-muted)" }}>Loading saved care events…</p>
@@ -460,9 +460,9 @@ export default function TimelinePage() {
             <p style={{ margin: 0, lineHeight: 1.55 }}>{parseDescription(latestEvent.description) || "No event description was saved."}</p>
           </>
         ) : (
-          <p style={{ margin: 0, lineHeight: 1.55 }}>No saved care events were returned for this record. Add a real care note or observation to begin the history.</p>
+          <p style={{ margin: 0, lineHeight: 1.55 }}>No saved care-history entries were returned for this record. Add a real care note or observation to begin the history.</p>
         )}
-        <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This is the latest saved event, not a substitute for the reconciled current-care view in the LCR.</p>
+        <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This is the latest saved history entry, not a substitute for the reconciled current-care view in the LCR.</p>
       </section>
 
       <section aria-label="Timeline controls" style={{ marginBottom: 20 }}>
