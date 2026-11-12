@@ -23,6 +23,8 @@ jobs:
         run: npm ci
       - name: Type-check and production build
         run: npm run typecheck && npm run build
+      - name: Verify document intake, review and incomplete-page safeguards
+        run: npm run verify:document-scan-processing && npm run verify:document-review-history && npm run verify:companion-home
       - name: Run continuity and production-safety checks
         run: npm test
       - name: Verify caregiver-facing language boundary
