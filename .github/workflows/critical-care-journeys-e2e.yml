@@ -13,6 +13,7 @@ on:
       - "src/components/workflows/**"
       - "src/components/mvp-workspace/**"
       - "src/components/DocumentIntelligenceReview.tsx"
+      - "src/components/ClarificationWorkflowPanel.tsx"
       - ".github/workflows/critical-care-journeys-e2e.yml"
   workflow_dispatch:
 
