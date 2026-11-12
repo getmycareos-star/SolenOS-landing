@@ -317,7 +317,7 @@ try {
   await page.getByRole("heading", { name: "Your care journey, remembered." }).waitFor({ timeout: 15_000 });
   const dailyCareNote = "CI-only Daily Care capture: caregiver observed a later-than-usual bedtime and interrupted sleep.";
   await page.getByRole("button", { name: "Share something", exact: true }).click();
-  await page.getByRole("group", { name: "Choose what you want to share" }).getByRole("button", { name: "Something happened", exact: true }).click();
+  await page.getByRole("group", { name: "Choose what you want to share" }).getByRole("button", { name: /Something happened/ }).click();
   await page.getByLabel("Tell us what happened").fill(dailyCareNote);
   await page.getByRole("button", { name: "Save to care record", exact: true }).click();
   await page.getByText("Saved. " + dailyCareNote, { exact: true }).waitFor({ timeout: 20_000 });
