@@ -679,11 +679,21 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         <section style={{ ...panel, marginTop: 0 }} aria-labelledby="professional-export-heading">
           <h4 id="professional-export-heading" style={{ margin: "0 0 8px", fontSize: 15 }}>Review and export care summary</h4>
           <p style={{ fontSize: 12, lineHeight: 1.55 }}>This summary is prepared from saved care records. Review each statement and its source status before approving the PDF. It is not a clinical assessment or an independently verified medication list.</p>
-          {draft.generation?.sections?.map((item, index) => (
+          {draft.generation?.sections?.length ? draft.generation.sections.map((item, index) => (
             <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
               <strong style={{ fontSize: 12 }}>{item.section}</strong>
               <p style={{ fontSize: 13, lineHeight: 1.5, margin: "5px 0" }}>{item.text}</p>
               <small style={{ color: "#667267" }}>Information: {readableStatus(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)}</small>
+            </article>
+          )) : draft.sections.map((group, groupIndex) => (
+            <article key={group.title + groupIndex} style={{ borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
+              <strong style={{ fontSize: 12 }}>{group.title}</strong>
+              {group.items.map((item, itemIndex) => (
+                <div key={item.source_table + item.source_id + itemIndex} style={{ marginTop: 7 }}>
+                  <p style={{ fontSize: 13, lineHeight: 1.5, margin: "4px 0" }}>{item.text}</p>
+                  <small style={{ color: "#667267" }}>Information: {readableStatus(item.epistemic_status || "not recorded")} · Record: {readableStatus(item.record_status || "not recorded")} · Occurred: {formatDate(item.event_at)} · Recorded: {formatDate(item.recorded_at)} · Source: {item.source_table}/{item.source_id}</small>
+                </div>
+              ))}
             </article>
           ))}
           <div style={{ margin: "10px 0" }}>
@@ -694,7 +704,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </div>
           {draft.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableStatus(item.source)}: {readableStatus(item.status)}{item.reason ? " (" + readableStatus(item.reason) + ")" : ""}</p>)}
           <label htmlFor="professional-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Caregiver note (optional)</label>
-          <textarea id="professional-caregiver-note" value={caregiverNote} onChange={event => setProfessionalReviewConfirmed(false) || setCaregiverNote(event.target.value)} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled as a caregiver report." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
+          <textarea id="professional-caregiver-note" value={caregiverNote} onChange={event => { setProfessionalReviewConfirmed(false); setCaregiverNote(event.target.value); }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled as a caregiver report." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
           <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status !== "current"} onClick={() => void saveDraftRevision()}>Save changes to summary</button>
           {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>The saved care information has changed or could not be checked. Prepare a fresh summary before approval.</p>}
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
