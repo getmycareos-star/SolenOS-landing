@@ -78,10 +78,8 @@ export function HumanValidationLoop({
       });
       setStep("done");
       onComplete();
-    } catch (err) {
-      setFeedbackError(
-        caregiverSafeErrorMessage(err instanceof Error ? err.message : null),
-      );
+    } catch {
+      setFeedbackError(caregiverSafeErrorMessage());
     }
 
   }
