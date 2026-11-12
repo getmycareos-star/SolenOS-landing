@@ -29,8 +29,7 @@ assert.match(companion, /Extracted document text.*not yet an LCR assertion/, "do
 assert.match(companion, /Prior Companion message.*conversation context only/, "prior conversation references must be distinguished from care evidence");
 assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
 assert.doesNotMatch(companion, /Add to care story/);
-assert.match(companion, /const shouldIdentifyCareUpdates = !home/);
-assert.match(companion, /if \(home \|\| !getAnonymousAccessToken\(\)\) return/, "opening the conversational Companion must not load LCR update proposals");
+assert.doesNotMatch(companion, /shouldIdentifyCareUpdates|pendingCareUpdates|loadPendingCareUpdates/, "conversation-only Companion must not load a caregiver proposal queue");
 assert.match(companion, /const home = true/, "the Companion must have a fixed conversation-only mode");
 assert.doesNotMatch(companion, /care_update_candidates|pendingCareUpdates|reviewCareUpdate|companion-add-menu|companion-add-wrap|setPendingDocumentIntake|cameraMode/, "Companion must not own LCR updates, document uploads or camera capture");
 assert.match(companion, /Conversation only\. To add a care update, use Daily Care; to save a document, use Documents\./);
