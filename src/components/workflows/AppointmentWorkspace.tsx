@@ -38,7 +38,7 @@ type PreparationBrief = {
     policy_version: string
     freshness_status: string
     source_time: string | null
-    source_time_kind: string
+    source_time_kind?: string
     assessed_at: string | null
     age_days: number | null
     rationale: string
