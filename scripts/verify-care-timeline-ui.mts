@@ -16,7 +16,7 @@ assert.match(source, /aria-expanded/);
 assert.match(source, /Search the care history/);
 assert.match(source, /setAppliedQuery\(nextQuery\)/,
   "the caregiver can submit a query against the complete server-side history");
-assert.match(source, /query=\\$\{encodeURIComponent\(searchTerm\.trim\(\)\)\}/,
+assert.ok(source.includes("query=${encodeURIComponent(searchTerm.trim())}"),
   "search terms are sent to the persisted history retrieval endpoint");
 assert.match(source, /Showing server-matched records/,
   "the interface distinguishes server-wide search from the currently loaded page");
