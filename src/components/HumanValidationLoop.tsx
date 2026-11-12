@@ -2,6 +2,7 @@
 
 import { apiUrl } from "@/lib/api-url";
 import { ensureAnonymousSession } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { useState } from "react";
 
 
@@ -34,8 +35,7 @@ async function submitFeedback(payload: {
     }),
   });
   if (!response.ok) {
-    const data = (await response.json().catch(() => ({}))) as { detail?: string; error?: string };
-    throw new Error(data.detail ?? data.error ?? "Feedback was not saved.");
+    throw new Error("Feedback was not saved. Please try again.");
   }
 }
 
@@ -80,7 +80,7 @@ export function HumanValidationLoop({
       onComplete();
     } catch (err) {
       setFeedbackError(
-        err instanceof Error ? err.message : "Feedback was not saved. Check your connection and try again.",
+        caregiverSafeErrorMessage(err instanceof Error ? err.message : null),
       );
     }
 
