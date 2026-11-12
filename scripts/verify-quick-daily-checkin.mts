@@ -186,6 +186,8 @@ assert.match(detailedCapture, /Review and confirm current/,
   "caregivers have an explicit review action before a medicine becomes a current choice");
 assert.match(detailedCapture, /\/review/,
   "the review action uses the dedicated medication review endpoint");
+assert.match(detailedCapture, /Review overdue · caregiver report/,
+  "overdue medication reports remain visible and are labeled for review");
 assert.match(detailedCapture, /pendingMedicationRecords/,
   "pending medication reports are shown separately from reviewed current medications");
 assert.match(detailedCapture, /not independent clinical verification/,
