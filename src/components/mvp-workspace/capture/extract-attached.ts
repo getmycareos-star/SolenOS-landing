@@ -74,7 +74,7 @@ export async function extractAttachedDocument(
   // through document OCR; downstream care interpretation receives the evidence ID.
   if (entryMethod === "snap") {
     window.dispatchEvent(new Event("careRecordUpdated"));
-    return { ...base, evidenceId, status: "ready" };
+    return { ...base, evidenceId, status: "saved" };
   }
 
   // The original is now durable. Extract only document evidence from the
@@ -142,6 +142,9 @@ export async function extractAttachedDocument(
 export async function retryAttachedDocument(
   document: AttachedDocument,
 ): Promise<AttachedDocument> {
+  if (document.entryMethod === "snap" && document.evidenceId) {
+    return { ...document, status: "saved", errorNote: undefined };
+  }
   if (!document.evidenceId) {
     return document.sourceFile
       ? extractAttachedDocument(document.sourceFile, document.entryMethod ?? "upload", document.uploadRetryKey ?? crypto.randomUUID(), document.captureTimestamp ?? new Date().toISOString())
