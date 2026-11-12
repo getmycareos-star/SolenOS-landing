@@ -355,14 +355,14 @@ export default function DetailedAppointmentWorkspace() {
                     ? <p role="status">We couldn’t check how recent this information is. Its current status is unknown.</p>
                     : <p>We couldn’t find a review of how recent this information is. This does not mean it is current.</p>}
               </section>
-              {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="Evidence source lineage">
+              {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="How these sources are connected">
                 <strong>How these sources are connected</strong>
-                {lcrBrief.evidence_lineage.scope_truncated && <p role="status">Lineage retrieval reached a safety bound. Unreturned source relationships are unknown, not absent; independent corroboration is not established.</p>}
+                {lcrBrief.evidence_lineage.scope_truncated && <p role="status">Only some links between these sources could be checked. The rest are unknown.</p>}
                 {lcrBrief.evidence_lineage.groups.length ? lcrBrief.evidence_lineage.groups.map(group => <div key={group.lineage_id} className="appointment-coverage-item">
                   <b>{group.source_independence_status === 'shared_origin' ? 'Same original source' : group.source_independence_status === 'independent' ? 'Reported separately' : group.source_independence_status === 'not_assessed' ? 'Not checked' : 'Not known'}</b>
                   
                   <small>{caregiverSafeAssistantText(group.interpretation_limit) || 'The relationship between these sources is not fully known.'}</small>
-                </div>) : <p>No explicit shared-source group was returned for the retrieved evidence. This does not establish that the sources are independent.</p>}
+                </div>) : <p>No shared original source was found among the items checked. This does not establish that the sources are independent.</p>}
                 <p className="appointment-brief-limitations">{caregiverSafeAssistantText(lcrBrief.evidence_lineage.interpretation_limit) || 'A link between records does not prove that reports are true or independent.'}</p>
               </section>}
               <p className="appointment-brief-limitations">{lcrBrief.limitations.map(caregiverSafeAssistantText).filter(Boolean).join(' ')}</p>
