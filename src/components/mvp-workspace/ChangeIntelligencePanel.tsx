@@ -15,10 +15,6 @@ import {
   transitionChangeConfirmation,
 } from "@/api/change-intelligence";
 
-function readable(value?: string | null): string {
-  return caregiverStatusLabel(value) ?? "Care information";
-}
-
 function caregiverChangeLabel(change: PersistedChange): string {
   // A database "emergence" with unknown/partial historical observation is only
   // first appearance in available records, not proof that the event began now.
@@ -26,28 +22,6 @@ function caregiverChangeLabel(change: PersistedChange): string {
     return "First observed";
   }
   return caregiverStatusLabel(change.change_type) ?? "Care change";
-}
-
-function formatLocalTimeDistribution(value: unknown): string | null {
-  if (!value || typeof value !== "object") return null;
-  const distribution = value as Record<string, unknown>;
-  const hours = distribution.hour_of_day_counts;
-  const weekdays = distribution.day_of_week_counts;
-  if (!hours || typeof hours !== "object" || !weekdays || typeof weekdays !== "object") return null;
-  const hourText = Object.entries(hours as Record<string, unknown>)
-    .map(([hour, count]) => `${hour}:00 (${String(count)} recorded)`)
-    .join(", ");
-  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const dayText = Object.entries(weekdays as Record<string, unknown>)
-    .map(([day, count]) => `${dayNames[Number(day)] ?? `Day ${day}`} (${String(count)} recorded)`)
-    .join(", ");
-  const zones = Array.isArray(distribution.timezone_ids)
-    ? distribution.timezone_ids.filter((zone): zone is string => typeof zone === "string").join(", ")
-    : "";
-  if (!hourText && !dayText) return null;
-  return [hourText ? `Local hours: ${hourText}` : "", dayText ? `Local weekdays: ${dayText}` : "", zones ? `Time zone(s): ${zones}` : ""]
-    .filter(Boolean)
-    .join("; ");
 }
 
 function formatWindow(start: string | null, end: string | null): string {
