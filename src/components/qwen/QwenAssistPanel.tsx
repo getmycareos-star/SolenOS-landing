@@ -60,6 +60,12 @@ type QwenBackgroundJobResult = {
   persistence: "read_only_assistance";
 };
 
+type QwenLcrProposal = {
+  id: string;
+  status: string;
+  proposed_change: { asserted_value?: string; workflow?: string };
+};
+
 type Props = {
   defaultWorkflow?: QwenWorkflow;
   contextText?: string;
@@ -88,6 +94,9 @@ export default function QwenAssistPanel({
   const [reply, setReply] = useState<QwenBackgroundJobResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [proposal, setProposal] = useState<QwenLcrProposal | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
 
   async function askQwen() {
     const requestText = question.trim();
@@ -98,6 +107,8 @@ export default function QwenAssistPanel({
     setLoading(true);
     setError(null);
     setReply(null);
+    setProposal(null);
+    setReviewMessage(null);
     try {
       await ensureAnonymousSession();
       const boundedContext = contextText.trim().slice(0, 3_000);
@@ -213,6 +224,73 @@ export default function QwenAssistPanel({
       {reply && (
         <div style={{ marginTop: "12px", border: "1px solid var(--border)", borderRadius: "9px", padding: "12px", background: "var(--bg)" }}>
           <p style={{ fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{reply.reply}</p>
+          <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {!proposal && (
+              <button
+                type="button"
+                disabled={reviewing}
+                onClick={async () => {
+                  setReviewing(true);
+                  setReviewMessage(null);
+                  try {
+                    const result = await postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/proposal", {}) as { proposal?: QwenLcrProposal };
+                    if (!result?.proposal?.id || result.proposal.status !== "pending_authorization") throw new Error("Not reviewable");
+                    setProposal(result.proposal);
+                  } catch {
+                    setReviewMessage("This suggestion cannot be added to the care record because its original saved sources could not be verified.");
+                  } finally {
+                    setReviewing(false);
+                  }
+                }}
+                style={{ border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 12px", minHeight: "40px", background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontSize: "12px", fontWeight: 650, cursor: reviewing ? "wait" : "pointer" }}
+              >
+                {reviewing ? "Preparing review…" : "Review for care record"}
+              </button>
+            )}
+            {proposal?.status === "pending_authorization" && (
+              <>
+                <button
+                  type="button"
+                  disabled={reviewing}
+                  onClick={async () => {
+                    setReviewing(true);
+                    setReviewMessage(null);
+                    try {
+                      const result = await postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "accept" }) as { status?: string; written_to_lcr?: boolean };
+                      if (result.status !== "accepted" || result.written_to_lcr !== true) throw new Error("Approval not confirmed");
+                      setProposal({ ...proposal, status: "accepted" });
+                      setReviewMessage("Approved. The summary was added to the Living Care Record as an AI-assisted interpretation.");
+                    } catch {
+                      setReviewMessage("We couldn’t save the approved summary. Please check the care record before trying again.");
+                    } finally {
+                      setReviewing(false);
+                    }
+                  }}
+                  style={{ border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 12px", minHeight: "40px", background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontSize: "12px", fontWeight: 650, cursor: reviewing ? "wait" : "pointer" }}
+                >Approve and add to care record</button>
+                <button
+                  type="button"
+                  disabled={reviewing}
+                  onClick={async () => {
+                    setReviewing(true);
+                    setReviewMessage(null);
+                    try {
+                      const result = await postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "reject" }) as { status?: string; written_to_lcr?: boolean };
+                      if (result.status !== "rejected" || result.written_to_lcr !== false) throw new Error("Rejection not confirmed");
+                      setProposal({ ...proposal, status: "rejected" });
+                      setReviewMessage("Declined. Nothing was added to the Living Care Record.");
+                    } catch {
+                      setReviewMessage("We couldn’t record your decision. Please try again.");
+                    } finally {
+                      setReviewing(false);
+                    }
+                  }}
+                  style={{ border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 12px", minHeight: "40px", background: "transparent", color: "var(--text-primary)", fontSize: "12px", fontWeight: 600, cursor: reviewing ? "wait" : "pointer" }}
+                >Decline</button>
+              </>
+            )}
+          </div>
+          {reviewMessage && <p role="status" style={{ fontSize: "12px", lineHeight: 1.5, margin: "8px 0 0", color: "var(--text-secondary)" }}>{reviewMessage}</p>}
           <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "10px" }}>
             Suggestion · Please review it. This does not change your care record.
           </p>
