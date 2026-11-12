@@ -214,8 +214,9 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
     const parsed: unknown = JSON.parse(text);
     if (parsed && typeof parsed === "object") return null;
     if (typeof parsed === "string") return parsed.trim() || null;
-    // JSON numbers, booleans, and null are serialized values, not caregiver-facing prose.
-    if (typeof parsed !== "string") return null;
+    // Booleans and null are serialized values, not caregiver-facing prose.
+    // Keep numeric-only notes readable because they may be real care measurements.
+    if (typeof parsed === "boolean" || parsed === null) return null;
   } catch {
     // Ordinary caregiver text is not required to be valid JSON.
   }
