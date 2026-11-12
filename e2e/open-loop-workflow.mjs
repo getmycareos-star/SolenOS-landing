@@ -292,7 +292,8 @@ try {
   await reviewCard.waitFor({ timeout: 15_000 });
   await reviewCard.getByLabel("I reviewed this text against the original scan.").check();
   await page.getByRole("button", { name: "Save files", exact: true }).click();
-  await page.getByText(/saved|processing/i).first().waitFor({ timeout: 15_000 });
+  // The persisted document appearing in the library is the durable success signal;
+  // do not match hidden helper copy that happens to contain "saved" or "processing".
   const savedDocument = page.getByRole("button").filter({ hasText: documentName }).last();
   await savedDocument.waitFor({ timeout: 15_000 });
   await savedDocument.click();
