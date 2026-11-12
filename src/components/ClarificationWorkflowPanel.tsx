@@ -11,7 +11,6 @@ type Claim = {
   field: string;
   asserted_value: string;
   assertion_status?: string;
-  assertion_kind?: string;
 };
 type Evidence = { id: string; person_id: string; type: string; source_text: string };
 type Question = {
@@ -44,15 +43,6 @@ type AnswerEvent = {
   answer_version: number;
   answered_by_caregiver_id: string;
   created_at: string;
-};
-type ReviewEvent = {
-  id: string;
-  question_id: string;
-  person_id: string;
-  answer_version: number;
-  decision: "accepted" | "rejected" | "needs_clarification" | string;
-  resulting_claim_id?: string | null;
-  care_continuity_execution?: { stages?: Record<string, string> } | null;
 };
 
 const panel: CSSProperties = { border: "1px solid var(--border)", borderRadius: 10, padding: 14, marginTop: 12, background: "var(--surface)" };
@@ -134,10 +124,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [answer, setAnswer] = useState("");
   const [answerProvenance, setAnswerProvenance] = useState("");
   const [history, setHistory] = useState<AnswerEvent[]>([]);
-  const [reviewEvents, setReviewEvents] = useState<ReviewEvent[]>([]);
-  const [reviewRationale, setReviewRationale] = useState("I reviewed this caregiver answer and accept it as a source-attributed report, not as independent verification.");
-  const [reviewAfterDays, setReviewAfterDays] = useState("30");
-  const [reviewSaving, setReviewSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -145,11 +131,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [notice, setNotice] = useState("");
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
-  const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
-  const latestAnswer = history[history.length - 1];
-  const latestReview = latestAnswer
-    ? reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version)
-    : undefined;
+  const selectedClaim = claims.find((item) => item.id === selectedClaimId);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -219,24 +201,15 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     }
     setHistoryError("");
     try {
-      const [rows, reviews] = await Promise.all([
-        getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/answer-history`),
-        getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/review-history`),
-      ]);
+      const rows = await getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/answer-history`);
       if (!Array.isArray(rows) || rows.some((row) =>
         row?.question_id !== selectedQuestionId || row?.person_id !== scopePersonId)) {
         throw new Error("Invalid or cross-record answer history");
       }
-      if (!Array.isArray(reviews) || reviews.some((row) =>
-        row?.question_id !== selectedQuestionId || row?.person_id !== scopePersonId)) {
-        throw new Error("Invalid or cross-record review history");
-      }
       setHistory(rows as AnswerEvent[]);
-      setReviewEvents(reviews as ReviewEvent[]);
     } catch {
       setHistory([]);
-      setReviewEvents([]);
-      setHistoryError("Earlier answers or their review history could not be loaded. Please try again.");
+      setHistoryError("Earlier answers could not be loaded. Please try again.");
     }
   }, [scopePersonId, selectedQuestionId]);
 
@@ -339,59 +312,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     }
   }
 
-  async function reviewAnswer(decision: "accepted" | "rejected" | "needs_clarification") {
-    if (!selectedQuestion || !scopePersonId || !history.length) return;
-    if (reviewRationale.trim().length < 3) {
-      setError("Please explain why this answer is being reviewed.");
-      return;
-    }
-    const latestAnswer = history[history.length - 1];
-    if (!latestAnswer) return;
-    if (decision === "accepted" && !latestAnswer.evidence_ids?.length) {
-      setError("This answer has no saved supporting evidence and cannot be added to the care record.");
-      return;
-    }
-    const interval = Number(reviewAfterDays);
-    if (decision === "accepted" && selectedClaim?.assertion_kind === "current_state" &&
-        (!Number.isInteger(interval) || interval < 1 || interval > 3650)) {
-      setError("Choose a review interval between 1 and 3,650 days for this current care detail.");
-      return;
-    }
-    setReviewSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const result = await postJSON(
-        `/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}/reviews`,
-        {
-          decision,
-          rationale: reviewRationale.trim(),
-          ...(decision === "accepted" && selectedClaim?.assertion_kind === "current_state"
-            ? { review_after_days: interval }
-            : {}),
-        },
-      ) as ReviewEvent;
-      if (!result?.id || result.question_id !== selectedQuestion.id || result.person_id !== scopePersonId) {
-        throw new Error("Review response did not match the selected question.");
-      }
-      setNotice(
-        decision === "accepted"
-          ? result.care_continuity_execution?.stages?.reconciliation === "committed" || result.resulting_claim_id
-            ? "Answer added to the care record as an unverified caregiver report. The original report remains unchanged."
-            : "The answer was reviewed, but its care-record update could not be confirmed."
-          : decision === "rejected"
-            ? "This answer was not accepted into the care record. Its review history was saved."
-            : "More information is needed. The answer was not added to the care record.",
-      );
-      await loadAll();
-      await loadHistory();
-    } catch {
-      setError("The answer review could not be confirmed as saved. The original answer remains unchanged; retry after refreshing.");
-    } finally {
-      setReviewSaving(false);
-    }
-  }
-
   return <section style={panel} aria-label="Care details that need checking">
     <h3 style={{ fontSize: 16, marginTop: 0 }}>Care details that need checking</h3>
     <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
@@ -455,36 +375,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
             <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
             <button type="button" style={button} onClick={() => void updateQuestion("unresolved")} disabled={saving}>I don't know the answer yet</button>
           </>}
-          {selectedQuestion.status === "answered" && latestAnswer && (
-            latestReview ? (
-              <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                Answer review recorded: {latestReview.decision.replaceAll("_", " ")}.
-                {latestReview.resulting_claim_id ? " The answer remains classified as a caregiver report, not an independently verified fact." : ""}
-              </p>
-            ) : (
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
-                <strong style={{ fontSize: 13 }}>Review this answer</strong>
-                <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                  Accepting adds the answer as a caregiver report. It does not make the information independently verified.
-                </p>
-                <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review reason
-                  <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} />
-                </label>
-                {selectedClaim?.assertion_kind === "current_state" && (
-                  <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review again after (days)
-                    <input type="number" min={1} max={3650} value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} style={{ ...field, marginTop: 4 }} />
-                  </label>
-                )}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  <button type="button" style={button} onClick={() => void reviewAnswer("accepted")} disabled={reviewSaving}>
-                    {reviewSaving ? "Saving…" : "Accept as caregiver report"}
-                  </button>
-                  <button type="button" style={button} onClick={() => void reviewAnswer("needs_clarification")} disabled={reviewSaving}>Need more information</button>
-                  <button type="button" style={button} onClick={() => void reviewAnswer("rejected")} disabled={reviewSaving}>Do not accept</button>
-                </div>
-              </div>
-            )
-          )}
           {selectedQuestion.status !== "open" && selectedQuestion.status !== "unresolved" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen this question</button>}
           <div style={{ marginTop: 12 }}>
             <strong style={{ fontSize: 12 }}>Earlier answers</strong>
