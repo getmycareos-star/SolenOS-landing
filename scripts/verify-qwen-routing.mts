@@ -114,11 +114,13 @@ assert.equal((companion.match(/aria-label="Send a message to Companion"/g) ?? []
 assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1, "Companion must render exactly one message textarea.");
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
-  'placeholder="What’s happening today? A few words are enough…"',
+  'placeholder="Ask about the saved care history, a recent change or something that is unclear…"',
   "aria-label=\"Send a message to Companion\"",
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
+assert(companion.includes("Companion conversations are not added to the care record."), "Companion must explain that conversation is not care capture.");
+assert(companion.includes('href="/workspace/daily-care"') && companion.includes('href="/workspace/documents"'), "caregivers must be directed to the supported Daily Care and Documents capture workflows.");
 
 assert(!companion.includes("care_update_candidates"), "Companion must not generate or review LCR proposals.");
 assert(!companion.includes("/companion/care-updates"), "Companion must not load or manage care-update proposal queues.");
