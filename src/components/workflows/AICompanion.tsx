@@ -111,7 +111,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
   const pendingTurnText = useRef<string | null>(null)
-  const autoDraftSent = useRef(false)
   const personId = getPersonId()
 
   useEffect(() => {
@@ -196,16 +195,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     window.history.replaceState({}, '', nextUrl)
   }, [initialPrompt])
 
-  useEffect(() => {
-    if (autoDraftSent.current) return
-    const draft = new URLSearchParams(window.location.search).get('draft')?.trim()
-    if (!draft) return
-    autoDraftSent.current = true
-    setInput(draft)
-    void sendMessage(draft)
-    // One-time handoff from another workflow; not a reactive chat effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const handleInput = (value: string) => {
     setInput(value)
