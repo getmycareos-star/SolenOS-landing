@@ -9,7 +9,9 @@ function createDocId() {
 
 type ScanProcessing = { rotationDegrees: number; cropInsetsPercent: { top: number; right: number; bottom: number; left: number } };
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing): Promise<string> {
+type UploadReceipt = { evidenceId: string; processingJobId?: string; processingStatus?: string };
+
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing): Promise<UploadReceipt> {
   const session = await ensureAnonymousSession();
   const form = new FormData();
   form.append("file", file);
@@ -33,11 +35,17 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
   const result = (await postFormData("/upload", form)) as {
     evidence_id?: string;
     persisted?: boolean;
+    document_processing_job_id?: string | null;
+    processing_status?: string;
   };
   if (!result.persisted || !result.evidence_id) {
     throw new Error("The original file was not confirmed as saved.");
   }
-  return result.evidence_id;
+  return {
+    evidenceId: result.evidence_id,
+    processingJobId: result.document_processing_job_id ?? undefined,
+    processingStatus: result.processing_status,
+  };
 }
 
 /**
@@ -64,9 +72,9 @@ export async function extractAttachedDocument(
     sourceFile: file,
   };
 
-  let evidenceId: string;
+  let uploadReceipt: UploadReceipt;
   try {
-    evidenceId = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing);
+    uploadReceipt = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing);
   } catch (error) {
     return {
       ...base,
@@ -82,7 +90,16 @@ export async function extractAttachedDocument(
   // The upload endpoint durably queues document extraction and understanding.
   // Do not make the caregiver wait for OCR or Qwen before using the saved source.
   window.dispatchEvent(new Event("careRecordUpdated"));
-  return { ...base, evidenceId, status: "saved" };
+  const processingQueued = entryMethod === "snap" || (
+    !!uploadReceipt.processingJobId &&
+    ["queued", "processing", "completed"].includes(uploadReceipt.processingStatus || "")
+  );
+  return {
+    ...base,
+    evidenceId: uploadReceipt.evidenceId,
+    status: "saved",
+    errorNote: processingQueued ? undefined : "The original is saved, but document processing did not start. Retry processing without uploading another copy.",
+  };
 }
 
 export async function retryAttachedDocument(
@@ -102,43 +119,23 @@ export async function retryAttachedDocument(
   }
 
   try {
-    const extraction = (await postJSON(
-      "/documents/" + encodeURIComponent(document.evidenceId) + "/extract",
+    const queued = await postJSON(
+      "/documents/" + encodeURIComponent(document.evidenceId) + "/queue",
       {},
-    )) as { analysis_id?: string; extraction_method?: string };
-    if (!extraction.analysis_id) {
-      throw new Error("The saved original did not return an extraction record.");
-    }
-    const persisted = (await getJSON(
-      "/documents/analyses/" + encodeURIComponent(extraction.analysis_id),
-    )) as {
-      extracted_text?: string;
-      extracted_char_count?: number;
-      extraction_method?: string;
-    };
-    const intelligence = (await postJSON(
-      "/documents/" + encodeURIComponent(document.evidenceId) + "/intelligence",
-      {},
-    )) as { intelligence_status?: string };
-    if (!["available", "partial"].includes(intelligence.intelligence_status || "")) {
-      throw new Error("Document understanding did not complete. Retry from Documents.");
+    ) as { job_id?: string; status?: string };
+    if (!queued.job_id || !["queued", "processing"].includes(queued.status || "")) {
+      throw new Error("The server did not confirm that document processing restarted.");
     }
     window.dispatchEvent(new Event("careRecordUpdated"));
-    return {
-      ...document,
-      extractedText: (persisted.extracted_text || "").trim(),
-      extractedCharCount: persisted.extracted_char_count,
-      extractionSource: persisted.extraction_method || extraction.extraction_method,
-      status: "ready",
-    };
+    return { ...document, status: "saved", errorNote: undefined };
   } catch (error) {
     return {
       ...document,
-      status: "failed",
+      status: "saved",
       errorNote: sanitizeCaregiverErrorMessage(
         error instanceof Error
           ? error.message
-          : "The original is saved, but extraction failed. Retry without uploading another copy.",
+          : "The original is saved, but background processing could not restart.",
       ),
     };
   }
