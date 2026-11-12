@@ -669,7 +669,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     setError('')
     setNotice('')
     try {
-      await postJSON(`/care-continuity/evidence/${encodeURIComponent(selected.id)}/reviews`, {
+      const saved = await postJSON(`/care-continuity/evidence/${encodeURIComponent(selected.id)}/reviews`, {
         review_type: reviewType,
         outcome,
         rationale: rationale.trim(),
@@ -681,9 +681,13 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           { criterion: 'evidence freshness', result: freshnessResult, rationale: 'Check whether the information still applies.' },
           { criterion: 'record completeness', result: completenessResult, rationale: 'Check whether important details are missing.' },
         ],
-      })
+      }) as { care_continuity_execution?: { stages?: Record<string, string> } | null }
       setRationale('')
-      setNotice('Review saved. The original source is unchanged, and this review does not confirm a medical fact.')
+      setNotice(
+        saved?.care_continuity_execution?.stages?.reconciliation === 'committed'
+          ? 'Review saved and the care record was reassessed. The original source is unchanged, and this review does not confirm a medical fact.'
+          : 'Review saved. The original source is unchanged, but the care-record reassessment could not be confirmed. Do not treat this as a completed update.',
+      )
       await loadReviews()
     } catch {
       setError('The review was not confirmed as saved. Check the connection and retry; the source evidence remains unchanged.')
