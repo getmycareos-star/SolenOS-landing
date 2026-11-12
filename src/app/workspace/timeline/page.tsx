@@ -210,6 +210,8 @@ export default function TimelinePage() {
   const [error, setError] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const [historyCoverage, setHistoryCoverage] = useState<{ hasMore: boolean; total: number }>({ hasMore: false, total: 0 });
+  const [historyOffset, setHistoryOffset] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const loadEvents = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -240,6 +242,7 @@ export default function TimelinePage() {
         hasMore: Boolean(result.page?.has_more),
         total: typeof result.page?.total_matching === "number" ? result.page.total_matching : validEvents.length,
       });
+      setHistoryOffset(result.records.length);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The care timeline could not be loaded.");
@@ -248,6 +251,48 @@ export default function TimelinePage() {
       setRefreshing(false);
     }
   }, []);
+
+  const loadMoreEvents = useCallback(async () => {
+    if (!historyCoverage.hasMore || loadingMore) return;
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || !session.access_token) {
+        throw new Error("A valid SolenOS care session is required to load older history.");
+      }
+      const offset = historyOffset;
+      const result = await getJSON(`/daily-care/intelligence/history?limit=200&offset=${offset}`) as {
+        records?: unknown;
+        page?: { has_more?: boolean; total_matching?: number };
+      };
+      if (!Array.isArray(result?.records)) {
+        throw new Error("Older care history could not be read. The entries already loaded remain available.");
+      }
+      const olderEvents = result.records
+        .map((item) => mapHistoryRecord(item, session.person!.id))
+        .filter((item): item is CareEvent => item !== null);
+      setEvents((current) => {
+        const unique = new Map(current.map((item) => [item.id, item]));
+        for (const item of olderEvents) unique.set(item.id, item);
+        return [...unique.values()].sort((a, b) => {
+          const aTime = safeDate(a.occurred_at)?.getTime() ?? safeDate(a.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+          const bTime = safeDate(b.occurred_at)?.getTime() ?? safeDate(b.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+          if (aTime !== bTime) return bTime - aTime;
+          return (safeDate(b.recorded_at)?.getTime() ?? 0) - (safeDate(a.recorded_at)?.getTime() ?? 0);
+        });
+      });
+      setHistoryOffset(offset + result.records.length);
+      setHistoryCoverage({
+        hasMore: Boolean(result.page?.has_more),
+        total: typeof result.page?.total_matching === "number" ? result.page.total_matching : historyCoverage.total,
+      });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Older care history could not be loaded.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [historyCoverage, historyOffset, loadingMore]);
 
   useEffect(() => {
     void loadEvents();
@@ -422,9 +467,14 @@ export default function TimelinePage() {
       )}
 
       {historyCoverage.hasMore && (
-        <p role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 12 }}>
-          Showing the latest 200 of {historyCoverage.total} matching care-history records. Search or filter narrows this loaded set; older records are not included in this view yet.
-        </p>
+        <div style={{ margin: "16px 0", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <Button variant="secondary" disabled={loadingMore} onClick={() => void loadMoreEvents()}>
+            {loadingMore ? "Loading older records…" : "Load older care records"}
+          </Button>
+          <span role="status" style={{ color: "var(--solenos-muted)", fontSize: 12 }}>
+            Showing {events.length} of {historyCoverage.total} matching care-history records.
+          </span>
+        </div>
       )}
 
       <footer style={{ marginTop: 28, paddingTop: 14, borderTop: "1px solid var(--solenos-hairline)", color: "var(--solenos-muted)", fontSize: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
