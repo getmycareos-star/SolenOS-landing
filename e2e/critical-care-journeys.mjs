@@ -528,13 +528,22 @@ await record("frontend network failure is surfaced rather than rendered as empty
 await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
   const daily = await createBrowserPage(session, "/workspace/daily-care");
   const saveFreeTextUpdate = async (text, afterSaved) => {
-    await daily.page.getByRole("button", { name: "Share something", exact: true }).click();
-    await daily.page.getByRole("button", { name: /Something happened/ }).click();
-    await daily.page.locator("#daily-capture-original-words").fill(text);
+    console.log(`Daily Care Scenario 01: opening capture for: ${text}`);
+    const shareButton = daily.page.getByRole("button", { name: "Share something", exact: true });
+    await shareButton.waitFor({ state: "visible", timeout: 15_000 });
+    await shareButton.click();
+    const happenedButton = daily.page.getByRole("button", { name: /Something happened/ });
+    await happenedButton.waitFor({ state: "visible", timeout: 15_000 });
+    await happenedButton.click();
+    const originalWords = daily.page.locator("#daily-capture-original-words");
+    await originalWords.waitFor({ state: "visible", timeout: 15_000 });
+    await originalWords.fill(text);
     await daily.page.getByRole("button", { name: "Save to care record", exact: true }).click();
     await daily.page.getByText(/^Saved\./).last().waitFor({ timeout: 20_000 });
     if (afterSaved) await afterSaved();
     await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
+    await originalWords.waitFor({ state: "detached", timeout: 15_000 });
+    console.log(`Daily Care Scenario 01: saved source report: ${text}`);
   };
   const scenarioReports = [
     "Mum slept poorly last night and seemed more unsettled this morning.",
