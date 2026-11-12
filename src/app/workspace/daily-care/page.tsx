@@ -334,7 +334,7 @@ export default function DailyCarePage() {
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 5).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
                     <strong>{item.title || item.event_type || "Care update"}</strong>
-                    {(item.description || item.text) && <p>{item.description || item.text}</p>}
+                    {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     <span> · {displayHistorySource(item)}</span>
                     {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
@@ -356,7 +356,7 @@ export default function DailyCarePage() {
                 {careItems.filter(isOpenMatter).slice(0, 8).map((item, index) => (
                   <li key={item.id || `open-matter-${index}`}>
                     <strong>{item.title || item.kind || "Open matter"}</strong>
-                    {item.description && <p>{item.description}</p>}
+                    {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
                     {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
