@@ -2,90 +2,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getJSON, getAnonymousAccessToken, getPersonId } from '@/api/client'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
+import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
-import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
-const AppointmentWorkspace = dynamic(() => import('@/components/workflows/AppointmentWorkspace'), { ssr: false })
 
 const CASUAL_GREETING = /^(?:hi|hello|hey|hiya|howdy|how are you(?: doing| today)?|how'?s it going|what'?s up|good morning|good afternoon|good evening|good night|thanks|thank you(?: so much)?|bye|goodbye|see you)[.!?,;:]*$/i
-
-function formatHandoffDetail(value: unknown): string {
-  if (typeof value === 'string') return value.replaceAll('_', ' ')
-  if (value === null || value === undefined) return 'Not recorded'
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  try { return JSON.stringify(value) ?? String(value) } catch { return String(value) }
-}
-
-interface HandoffDraftItem {
-  source_type: string
-  source_table: string
-  source_id: string
-  event_at?: string | null
-  recorded_at: string | null
-  due_at?: string | null
-  details?: Record<string, unknown>
-  epistemic_status: string
-  record_status?: string
-  text: string
-  stale_warning?: boolean
-  evidence_ids?: string[]
-  evidence_sources?: Array<{
-    evidence_id: string
-    type: string
-    evidence_kind?: string | null
-    epistemic_status: string
-    source_type?: string | null
-    original_author?: string | null
-    reported_by_label?: string | null
-    occurred_at?: string | null
-    original_source_reference?: string | null
-    parent_evidence_id?: string | null
-  }>
-  evidence_reference_status?: string
-}
-interface HandoffDraft {
-  draft_id: string
-  purpose: string
-  generation_status?: string
-  validation_status?: string
-  review_status?: string
-  revision_number?: number
-  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> }
-  claim_provenance?: {
-    coverage?: string
-    claims?: Array<{
-      claim_id: string
-      text: string
-      support_status: string
-      source_references: Array<{ label?: string; occurred_at?: string | null; recorded_at?: string | null; source_state_label?: string | null }>
-    }>
-  }
-  caregiver_notes?: Array<{ text: string; attribution: string }>
-  audience?: 'family' | 'professional'
-  template_sections?: Array<{ key: string; title: string; required_fields: string[]; source_tables: string[]; coverage_status: string; coverage_note: string }>
-  prepared_at: string
-  window: { days: number; from: string; to: string }
-  read_only: boolean
-  requires_caregiver_review: boolean
-  creates_handoff: boolean
-  updates_lcr: boolean
-  source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>
-  sections: Array<{ title: string; items: HandoffDraftItem[] }>
-  source_references: Array<{ source_type: string; source_table: string; source_id: string; source_fingerprint?: string; source_revision?: string | null; source_revision_status?: string; event_at?: string | null; recorded_at: string | null; due_at?: string | null; details?: Record<string, unknown>; epistemic_status: string; record_status?: string; stale_warning: boolean }>
-  evidence_lineage?: {
-    status: string
-    evidence_ids_considered: string[]
-    groups: Array<{ lineage_id: string; evidence_ids: string[]; origin_group_keys: string[]; source_independence_status: string; interpretation_limit: string; basis?: string }>
-    interpretation_limit: string
-    scope_truncated?: boolean
-    lineage_nodes_examined?: number
-    relationship_records_examined?: number
-  }
-  limitations: Array<{ source: string; status: string; reason?: string }>
-  warning: string
-}
 
 interface ClaimSourceReference {
   record_type: string
@@ -175,22 +96,6 @@ interface Message {
   timestamp: Date
 }
 
-const HANDOFF_TEMPLATE_FALLBACK = {
-  family: [
-    'What matters most right now', 'How the person is doing', 'How to care for them',
-    'Health and medication information', 'What needs to happen next',
-    'Safety and when to seek help', 'Family coordination', 'Handoff acceptance',
-  ],
-  professional: [
-    'Executive summary and current situation', 'Relevant history and baseline',
-    'Evidence and provenance register', 'Medication reconciliation',
-    'Current clinical and functional assessment', 'Active problems, risks, and uncertainty',
-    'Treatment and care plan', 'Action register and accountability',
-    'Person-centred and family context', 'Transition-specific information',
-    'Contingency planning', 'Document and record integrity', 'Handoff receipt and acceptance',
-  ],
-} as const
-
 const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'I need to talk it through', description: 'One thing at a time. No need to organise it first.', prompt: "I'm overwhelmed. Help me work through one thing at a time." },
   { icon: Clock3, title: 'Something has changed', description: 'Sort what is known from what is still unclear.', prompt: 'Something has changed in care. Help me work out what we know and what is unclear.' },
@@ -204,53 +109,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
-  const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
-  const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
-  const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
-  const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null)
-  const [handoffDraftLoading, setHandoffDraftLoading] = useState(false)
-  const [handoffDraftError, setHandoffDraftError] = useState<string | null>(null)
-  const handoffPrepareRequestId = useRef<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
   const pendingTurnText = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
-
-  const prepareHandoffDraft = async () => {
-    if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
-    setHandoffDraftLoading(true)
-    setHandoffDraftError(null)
-    setHandoffDraft(null)
-    try {
-      await ensureAnonymousSession()
-      const purpose = handoffPurpose === 'today' ? 'family_transition' : handoffPurpose === 'appointment' ? 'professional_appointment' : 'period_summary'
-      const windowDays = handoffPurpose === 'today' ? 7 : handoffPurpose === 'appointment' ? 30 : 90
-      const requestId = handoffPrepareRequestId.current ?? (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'handoff-draft-' + Date.now())
-      handoffPrepareRequestId.current = requestId
-      const draft = await postJSON('/handoff-drafts/prepare', {
-        purpose,
-        audience: handoffAudience,
-        window_days: windowDays,
-      }, { 'X-Request-ID': requestId }) as HandoffDraft
-      if (!draft || !Array.isArray(draft.sections) || !draft.source_statuses) {
-        throw new Error('The care record returned an incomplete handoff draft.')
-      }
-      setHandoffDraft(draft)
-      handoffPrepareRequestId.current = null
-    } catch (error) {
-      setHandoffDraftError('The handoff could not be prepared from the saved care record. Check your connection and try again. No handoff was shared.')
-    } finally {
-      setHandoffDraftLoading(false)
-    }
-  }
-
-  const resetHandoffDraft = () => {
-    handoffPrepareRequestId.current = null
-    setHandoffDraft(null)
-    setHandoffDraftError(null)
-  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -378,212 +242,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
 
-      {!home && (
-      <section className="companion-purpose">
-        <div className="companion-purpose-copy">
-          <span className="companion-kicker">A space to think things through</span>
-          <h3>Care can be complicated.<br className="companion-desktop-break" /> You don’t have to organise it all at once.</h3>
-          <p>Talk through what’s happening, organise what you know, and prepare the next conversation or handoff.</p>
-        </div>
-        <div className="companion-boundary"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Your care record stays in your hands</strong><span>Suggestions here do not become Living Care Record facts automatically.</span></div></div>
-      </section>
-
-      )}
-      {!home && <AppointmentWorkspace />}
-
-      {!home && (
-      <section className="companion-handoff" aria-labelledby="companion-handoff-title">
-        <div className="companion-handoff-heading">
-          <div className="companion-handoff-icon" aria-hidden="true"><ClipboardList size={21} /></div>
-          <div className="companion-handoff-copy">
-            <span className="companion-kicker">CARE HANDOFF</span>
-            <h3 id="companion-handoff-title">Help someone understand the care situation</h3>
-            <p>Prepare a clear handoff for the person who will be supporting care next.</p>
-          </div>
-          {handoffStep === 'closed' ? (
-            <button className="companion-handoff-primary" type="button" onClick={() => { setHandoffStep('audience'); setHandoffAudience(null); setHandoffPurpose(null); resetHandoffDraft() }}>
-              <Plus size={17} aria-hidden="true" /> Create care handoff
-            </button>
-          ) : (
-            <button className="companion-handoff-close" type="button" aria-label="Close care handoff setup" onClick={() => { setHandoffStep('closed'); setHandoffAudience(null); setHandoffPurpose(null); resetHandoffDraft() }}>Close</button>
-          )}
-        </div>
-
-        {handoffStep === 'audience' && (
-          <div className="companion-handoff-step">
-            <h4>Who is this handoff for?</h4>
-            <p>Choose the person who needs to understand the care situation.</p>
-            <div className="companion-handoff-options">
-              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('family'); setHandoffPurpose(null); resetHandoffDraft(); setHandoffStep('purpose') }}>
-                <span className="companion-handoff-option-icon"><Users size={20} aria-hidden="true" /></span>
-                <span><strong>Family caregiver</strong><small>Help a family member or another trusted caregiver take over care.</small></span>
-                <span className="companion-handoff-arrow" aria-hidden="true">→</span>
-              </button>
-              <button className="companion-handoff-option" type="button" onClick={() => { setHandoffAudience('professional'); setHandoffPurpose(null); resetHandoffDraft(); setHandoffStep('purpose') }}>
-                <span className="companion-handoff-option-icon"><Stethoscope size={20} aria-hidden="true" /></span>
-                <span><strong>Professional</strong><small>Prepare information for a doctor, nurse, or care professional.</small></span>
-                <span className="companion-handoff-arrow" aria-hidden="true">→</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {handoffStep === 'purpose' && (
-          <div className="companion-handoff-step">
-            <div className="companion-handoff-step-top">
-              <div><span className="companion-handoff-recipient">{handoffAudience === 'family' ? 'FOR A FAMILY CAREGIVER' : 'FOR A PROFESSIONAL'}</span><h4>What do you need?</h4><p>Describe the handoff you want to prepare.</p></div>
-              <button className="companion-handoff-back" type="button" onClick={() => { setHandoffStep('audience'); setHandoffPurpose(null); resetHandoffDraft() }}>Change recipient</button>
-            </div>
-            {handoffAudience === 'professional' && (
-              <p className="companion-handoff-selection" role="note">Professional handoffs can be prepared for your private review only. Sharing with a professional is not available until their identity and role can be verified.</p>
-            )}
-            <div className="companion-handoff-purpose-options">
-              <button className={'companion-handoff-purpose' + (handoffPurpose === 'today' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'today'} onClick={() => { setHandoffPurpose('today'); handoffPrepareRequestId.current = null; }}>
-                <span className="companion-handoff-purpose-icon"><Clock3 size={19} aria-hidden="true" /></span>
-                <strong>Taking over today</strong>
-                <small>What the next caregiver needs to know for the day or shift.</small>
-              </button>
-              {handoffAudience === 'professional' && (
-              <button className={'companion-handoff-purpose' + (handoffPurpose === 'appointment' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'appointment'} onClick={() => { setHandoffPurpose('appointment'); handoffPrepareRequestId.current = null; }}>
-                <span className="companion-handoff-purpose-icon"><Stethoscope size={19} aria-hidden="true" /></span>
-                <strong>Doctor’s appointment</strong>
-                <small>Prepare relevant history, recent changes and questions for a visit.</small>
-              </button>
-              )}
-              <button className={'companion-handoff-purpose' + (handoffPurpose === 'overview' ? ' is-selected' : '')} type="button" aria-pressed={handoffPurpose === 'overview'} onClick={() => { setHandoffPurpose('overview'); handoffPrepareRequestId.current = null; }}>
-                <span className="companion-handoff-purpose-icon"><FileText size={19} aria-hidden="true" /></span>
-                <strong>Full care overview</strong>
-                <small>Give someone a broader understanding of the care situation.</small>
-              </button>
-            </div>
-            {handoffPurpose && !handoffDraft && (
-              <div className="companion-handoff-prepare">
-                <p className="companion-handoff-selection" role="status">Selected: {handoffPurpose === 'today' ? 'Taking over today' : handoffPurpose === 'appointment' ? 'Doctor’s appointment' : 'Full care overview'}. SolenOS will prepare a reviewable draft from saved, authorised care records only.</p>
-                <button className="companion-handoff-primary" type="button" onClick={() => void prepareHandoffDraft()} disabled={handoffDraftLoading}>
-                  {handoffDraftLoading ? 'Preparing from saved records…' : 'Prepare handoff draft'}
-                </button>
-                {handoffDraftError && <p className="companion-handoff-error" role="alert">{handoffDraftError}</p>}
-              </div>
-            )}
-            {handoffDraft && (
-              <div className="companion-handoff-draft" aria-label="Care handoff draft review">
-                <div className="companion-handoff-draft-heading">
-                  <div>
-                    <span className="companion-handoff-recipient">{handoffAudience === 'family' ? 'FAMILY CARE HANDOFF' : 'PROFESSIONAL CARE HANDOFF'}</span>
-                    <h4>{handoffAudience === 'family' ? 'SolenOS Family Care Handoff' : 'SolenOS Professional Care Handoff'}</h4>
-                    <p>Prepared {new Date(handoffDraft.prepared_at).toLocaleString()} · {handoffDraft.window.days}-day source window</p>
-                  </div>
-                  <button className="companion-handoff-back" type="button" onClick={resetHandoffDraft}>Discard draft</button>
-                </div>
-                <p className="companion-handoff-draft-warning">{handoffDraft.warning}</p>
-                <p className="companion-handoff-draft-warning"><strong>Caregiver review required.</strong> Qwen may organise only exact quotations from retrieved records. Check each source status, event time, recording time, and uncertainty before sharing. Missing information is not a negative finding.</p>
-                <section className="companion-handoff-source-section" aria-label="Qwen handoff draft generation">
-                  <h5>Generated handoff document</h5>
-                  <p>Generation: {handoffDraft.generation_status ?? handoffDraft.generation?.status ?? "not available"} · Validation: {handoffDraft.validation_status ?? "not assessed"} · Model: {handoffDraft.generation?.model ?? "not reported"}</p>
-                  {handoffDraft.generation?.sections?.length ? handoffDraft.generation.sections.map((item, index) => (
-                    <article className="companion-handoff-source-item" key={item.source_ref + "-" + index}>
-                      <strong>{item.section}</strong>
-                      <p>{item.text}</p>
-                      {(() => {
-                        const claim = handoffDraft.claim_provenance?.claims?.[index]
-                        const source = claim?.source_references?.[0]
-                        return (
-                          <small>
-                            {claim?.support_status === "matched_saved_wording" ? "Copied from a saved source" : claim?.support_status === "matched_historical_only" ? "Earlier source · check current details" : "Source could not be verified · do not share"}
-                            {source?.label ? " · " + source.label : ""}
-                            {source?.occurred_at ? " · Happened " + new Date(source.occurred_at).toLocaleString() : ""}
-                            {source?.recorded_at ? " · Recorded " + new Date(source.recorded_at).toLocaleString() : ""}
-                          </small>
-                        )
-                      })()}
-                    </article>
-                  )) : <p>Qwen drafting is unavailable or no eligible source quotations were returned. The structured source preparation remains available for review; this draft cannot be shared.</p>}
-                </section>
-                <div className="companion-handoff-draft-boundary">
-                  <ShieldCheck size={16} aria-hidden="true" />
-                  <span>Saved draft · {handoffDraft.source_references.length} source references · not shared · Living Care Record unchanged</span>
-                </div>
-                {handoffDraft.evidence_lineage && (
-                  <section className="companion-handoff-source-section" aria-label="How the sources are connected">
-                    <h5>How the sources are connected</h5>
-                    <p className="companion-handoff-section-note">These links show where information came from. They do not prove that a report is true or that two reports are separate.</p>
-                    {handoffDraft.evidence_lineage.scope_truncated && <p className="companion-handoff-section-note">Only some source links could be checked. Whether the reports are separate is unknown.</p>}
-                    {handoffDraft.evidence_lineage.groups.length === 0 && (
-                      <p className="companion-handoff-section-note">No review was found showing whether these sources came from the same original. This does not mean they are separate.</p>
-                    )}
-                    {handoffDraft.evidence_lineage.groups.map(group => (
-                      <article className="companion-handoff-template-section" key={group.lineage_id}>
-                        <div className="companion-handoff-coverage-row">
-                          <strong>{group.source_independence_status === "shared_origin" ? "Same original source" : group.source_independence_status === "independent" ? "Reported separately" : group.source_independence_status === "not_assessed" ? "Not checked" : "Not known"}</strong>
-                          <span>{group.evidence_ids.length} saved items</span>
-                        </div>
-                      </article>
-                    ))}
-                  </section>
-                )}
-                {handoffDraft.sections.length === 0 && <p className="companion-handoff-empty-source">No readable records were returned for this time window. This does not establish that no care information exists.</p>}
-                {handoffDraft.sections.map(section => (
-                  <section className="companion-handoff-source-section" key={section.title}>
-                    <h5>{section.title}</h5>
-                    {section.items.map(item => (
-                      <article className="companion-handoff-source-item" key={item.source_table + ':' + item.source_id}>
-                        <p>{item.text}</p>
-                        <div className="companion-handoff-source-meta">
-                          <span>Event/effective time: {item.event_at ? new Date(item.event_at).toLocaleString() : 'Not recorded'}</span>
-                          <span>Record entered/updated: {item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Not recorded'}</span>
-                          {item.due_at && <span>Due: {new Date(item.due_at).toLocaleString()}</span>}
-                          <span>Evidence status: {item.epistemic_status.replaceAll('_', ' ')}</span>
-                          {item.record_status && item.record_status !== 'not_recorded' && <span>Record status: {item.record_status.replaceAll('_', ' ')}</span>}
-                          {item.details && Object.entries(item.details).map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')}: {formatHandoffDetail(value)}</span>)}
-                          <span>Source: {item.source_type.replaceAll('_', ' ')}</span>
-                          {item.stale_warning && <strong>Older information — re-check before relying on it</strong>}
-                        </div>
-                      </article>
-                    ))}
-                  </section>
-                ))}
-                <section className="companion-handoff-source-section">
-                  <h5>{handoffAudience === 'family' ? 'Family handoff checklist' : 'Professional handoff checklist'}</h5>
-                  <p className="companion-handoff-section-note">Required sections are shown even when information is missing. Coverage is not verification; review each item before use.</p>
-                  {(handoffDraft.template_sections ?? HANDOFF_TEMPLATE_FALLBACK[handoffAudience === 'family' ? 'family' : 'professional'].map((title, index) => ({ key: 'fallback-' + index, title, required_fields: [], source_tables: [], coverage_status: 'not_assessed', coverage_note: 'The deployed backend has not returned field-level coverage for this template. Verify this section manually; no information has been inferred.' }))).map(section => (
-                    <article className="companion-handoff-template-section" key={section.key}>
-                      <div className="companion-handoff-coverage-row">
-                        <span><strong>{section.title}</strong><small>{section.required_fields.join(' · ')}</small></span>
-                        <span className={'companion-handoff-status status-' + section.coverage_status}>{section.coverage_status.replaceAll('_', ' ')}</span>
-                      </div>
-                      <small className="companion-handoff-section-note">{section.coverage_note}</small>
-                    </article>
-                  ))}
-                </section>
-                <section className="companion-handoff-source-section">
-                  <h5>Information coverage and gaps</h5>
-                  <p className="companion-handoff-section-note">These statuses describe source availability, not the person's clinical status.</p>
-                  {Object.entries(handoffDraft.source_statuses).map(([source, info]) => (
-                    <div className="companion-handoff-coverage-row" key={source}>
-                      <span><strong>{info.label ?? source.replaceAll('_', ' ')}</strong><small>{info.reason ? info.reason.replaceAll('_', ' ') : info.count + ' saved records returned'}</small></span>
-                      <span className={'companion-handoff-status status-' + info.status}>{info.status.replaceAll('_', ' ')}</span>
-                    </div>
-                  ))}
-                </section>
-                <p className="companion-handoff-draft-warning">Before sharing, review every item, confirm current medications and instructions against an authoritative source, resolve discrepancies where possible, and explicitly identify unknown or conflicting information. This draft has not been accepted by a recipient.</p>
-              </div>
-            )}
-          </div>
-        )}
-        <CareHandoffSharing
-          draft={handoffDraft}
-          audience={handoffAudience}
-          purpose={handoffPurpose}
-          onResumeDraft={(savedDraft) => {
-            setHandoffDraft(savedDraft as HandoffDraft)
-            setHandoffAudience(savedDraft.audience ?? (savedDraft.purpose === "professional_appointment" ? "professional" : "family"))
-            setHandoffPurpose(["family_transition", "return_to_care"].includes(savedDraft.purpose) ? "today" : savedDraft.purpose === "professional_appointment" ? "appointment" : "overview")
-            setHandoffStep("purpose")
-          }}
-        />
-      </section>
-
-      )}
       {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
