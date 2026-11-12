@@ -1,6 +1,31 @@
 import { chromium } from "playwright";
 import { readFile } from "node:fs/promises";
 
+function createMinimalPdf(text) {
+  const escaped = text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  const stream = "BT /F1 12 Tf 20 100 Td (" + escaped + ") Tj ET";
+  const objects = [
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+    "5 0 obj\n<< /Length " + Buffer.byteLength(stream, "utf8") + " >>\nstream\n" + stream + "\nendstream\nendobj\n",
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const object of objects) {
+    offsets.push(Buffer.byteLength(pdf, "utf8"));
+    pdf += object;
+  }
+  const xrefOffset = Buffer.byteLength(pdf, "utf8");
+  pdf += "xref\n0 6\n0000000000 65535 f \n";
+  for (let index = 1; index <= 5; index += 1) {
+    pdf += String(offsets[index]).padStart(10, "0") + " 00000 n \n";
+  }
+  pdf += "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" + xrefOffset + "\n%%EOF\n";
+  return Buffer.from(pdf, "utf8");
+}
+
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const browser = await chromium.launch({ headless: true });
@@ -273,25 +298,20 @@ try {
   await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
   await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
 
-  // Exercise the complete Documents UI path: choose a real synthetic file,
-  // review it, upload it to FastAPI/PostgreSQL, reload the library, retrieve
-  // the original bytes, and verify the downloaded file is byte-for-byte equal.
-  await page.goto(new URL("/workspace/companion", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Add document or image" }).waitFor({ timeout: 15_000 });
-  const documentName = "CI-only-care-record-document.txt";
-  const documentText = "SolenOS integration fixture. Caregiver reports that breakfast was untouched on the synthetic test date. This is not a real care record.";
-  await page.getByRole("button", { name: "Add document or image" }).click();
-  await page.getByRole("menu", { name: "Document and image intake" }).getByRole("menuitem", { name: /Upload document/ }).click();
-  await page.locator('input[type="file"][accept*=".pdf"]').setInputFiles({
+  // Exercise the original-first Documents workflow: select one synthetic file,
+  // save the original to FastAPI/PostgreSQL, retrieve it, and compare exact bytes.
+  await page.goto(new URL("/workspace/documents?intake=1", frontend).toString(), { waitUntil: "domcontentloaded" });
+  const documentName = "CI-only-care-record-document.pdf";
+  const documentText = "SolenOS synthetic test fixture: breakfast was untouched on the test date. This is not a real care record.";
+  const documentBytes = createMinimalPdf(documentText);
+  await page.locator('input[type="file"][accept*="application/pdf"]').setInputFiles({
     name: documentName,
-    mimeType: "text/plain",
-    buffer: Buffer.from(documentText, "utf8"),
+    mimeType: "application/pdf",
+    buffer: documentBytes,
   });
-  await page.waitForURL((url) => url.pathname === "/workspace/documents" && url.searchParams.get("intake") === "1", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents" }).waitFor({ timeout: 15_000 });
-  const reviewCard = page.locator("article").filter({ hasText: documentName });
-  await reviewCard.getByLabel("I reviewed this text against the original scan.").check();
-  await page.getByRole("button", { name: "Save reviewed documents", exact: true }).click();
+  await page.getByText(documentName, { exact: true }).waitFor({ timeout: 10_000 });
+  await page.getByRole("button", { name: "Save files", exact: true }).click();
   await page.getByRole("status").filter({ hasText: /Saved 1 original file/ }).waitFor({ timeout: 30_000 });
   const savedDocument = page.getByRole("button").filter({ hasText: documentName }).last();
   await savedDocument.waitFor({ timeout: 15_000 });
@@ -305,8 +325,8 @@ try {
   }
   const downloadedPath = await downloaded.path();
   if (!downloadedPath) throw new Error("The uploaded original document could not be downloaded.");
-  const downloadedText = await readFile(downloadedPath, "utf8");
-  if (downloadedText !== documentText) {
+  const downloadedBytes = await readFile(downloadedPath);
+  if (!downloadedBytes.equals(documentBytes)) {
     throw new Error("The downloaded original document does not match the uploaded bytes.");
   }
   console.log("PASS: real Documents UI upload, PostgreSQL-backed retrieval, and original-file download round trip.");
