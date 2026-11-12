@@ -473,6 +473,10 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
                 Answer review recorded: {latestReview.decision.replaceAll("_", " ")}.
                 {latestReview.resulting_claim_id ? " The answer remains classified as a caregiver report, not an independently verified fact." : ""}
               </p>
+            ) : !selectedQuestion.claim_id ? (
+              <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                This question is not linked to a specific care detail. Your answer and its source are saved, but the answer remains separate from the care record.
+              </p>
             ) : (
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
                 <strong style={{ fontSize: 13 }}>Review this answer</strong>
