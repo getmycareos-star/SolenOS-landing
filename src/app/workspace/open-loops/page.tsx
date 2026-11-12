@@ -57,6 +57,17 @@ function dateLabel(value: string | null): string {
   return Number.isNaN(date.getTime()) ? "Deadline unavailable" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function latestResponseUpdate(loop: OpenLoop): { text: string; callbackPromised: boolean } | null {
+  const latest = [...(loop.response_evidence ?? [])].reverse().find(
+    (item) => typeof item.text === "string" && item.text.trim().length > 0,
+  );
+  if (!latest || typeof latest.text !== "string") return null;
+  return {
+    text: caregiverSafeAssistantText(latest.text) || "A response was recorded.",
+    callbackPromised: latest.response_outcome === "callback_promised",
+  };
+}
+
 function readableLoopType(value: string): string {
   return LOOP_TYPES.find(([key]) => key === value)?.[1] ?? "Care follow-up";
 }
@@ -396,6 +407,17 @@ export default function OpenLoopsPage() {
                 <strong>{readablePriority(loop.priority)}</strong>
               </div>
               <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p>
+              {(() => {
+                const latest = latestResponseUpdate(loop);
+                if (!latest) return null;
+                return (
+                  <section role="note" aria-label="Latest reported response" style={{ margin: "10px 0", padding: 12, borderRadius: 10, background: "var(--surface-muted, #f6f7f4)" }}>
+                    <strong style={{ fontSize: 13 }}>Latest update</strong>
+                    <p style={{ margin: "5px 0 0", whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: 14 }}>{latest.text}</p>
+                    {latest.callbackPromised && <p style={{ margin: "6px 0 0", fontSize: 13 }}>You recorded that a callback was promised. The appointment is not confirmed.</p>}
+                  </section>
+                );
+              })()}
               <p style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
                 <Clock3 size={15} aria-hidden /> {dateLabel(loop.deadline_at)}
                 {loop.overdue && <strong style={{ display: "inline-flex", gap: 5, alignItems: "center" }}><AlertCircle size={15} aria-hidden /> Overdue</strong>}
