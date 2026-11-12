@@ -246,7 +246,7 @@ type SituationAssessment = {
     has_more: boolean;
     notice: string;
   };
-  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
+  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; subject_type?: string | null; subject_id?: string | null; field?: string | null; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
   baseline_assessment?: {
     status: string;
     items: Array<{
@@ -851,6 +851,14 @@ export function LCRCurrentUnderstanding() {
   const canWaitItems = selectDeferredItems(openLoopItems);
   const watchChanges = selectWatchChanges(changes);
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
+  const isMedicationConflict = (item: (typeof watchUncertainties)[number]) => {
+    const subjectType = item.subject_type?.trim().toLowerCase();
+    const field = item.field?.trim().toLowerCase();
+    return subjectType === "medication" || subjectType === "medications" || Boolean(field?.includes("medication"));
+  };
+  const medicationConflicts = watchUncertainties.filter((item) =>
+    (item.source === "conflicts" || item.source === "reconciliations") && isMedicationConflict(item)
+  );
   const watchPriorityCandidates = assessment?.priorities ?? [];
   const watchMissingInformation = assessment?.missing_information ?? [];
   const watchOpenLoops = openLoopItems.filter((item) =>
@@ -1037,6 +1045,14 @@ export function LCRCurrentUnderstanding() {
         {assessment && !assessment.open_loops && (
           <p role="status">Some follow-up details are not available yet. No priority has been assumed.</p>
         )}
+        {medicationConflicts.map((item) => (
+          <div key={"medication-conflict:" + item.id} className="lcr-current-fact" role="status">
+            <h4>Medication instruction needs confirmation</h4>
+            <p>Different reports about a medication do not match. The record does not establish the current instruction. Please contact the prescribing clinician or pharmacist promptly to confirm it. SolenOS has not changed the medication record.</p>
+            <small>When the report was recorded: {formatWhen(item.recorded_at)}</small>
+            <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+          </div>
+        ))}
         {assessment?.open_loops && (
           <>
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-immediate-heading">
@@ -1242,7 +1258,7 @@ export function LCRCurrentUnderstanding() {
                       <small>Where this came from: {caregiverLabel(item.source)}</small>
                     </li>
                   ))}
-                  {watchUncertainties.map((item) => {
+                  {watchUncertainties.filter((item) => !isMedicationConflict(item)).map((item) => {
                     const source = projection?.items.find((candidate) =>
                       candidate.id === item.id && candidate.source_collection === item.source
                     );
