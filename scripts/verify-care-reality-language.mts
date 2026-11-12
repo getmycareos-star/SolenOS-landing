@@ -53,6 +53,37 @@ for (const line of failDocs) {
 }
 console.log("✓ documentation / notes-app patterns rejected");
 
+const technicalFail = [
+  "The evidence provenance is incomplete.",
+  "Reconciliation is pending for this assertion.",
+  "OCR extraction failed because the schema is invalid.",
+  "The API returned a JSON error.",
+  "The model inference result is uncertain.",
+  "The worker could not complete the transaction.",
+  "Her behaviour changed. Please organise the next review.",
+];
+for (const line of technicalFail) {
+  assert.ok(
+    containsInternalLanguage(line),
+    `must reject technical or non-American caregiver language: ${line}`,
+  );
+}
+
+const plainAmericanEnglishPass = [
+  "You told us she ate less than usual yesterday.",
+  "We do not know what caused the change yet.",
+  "We could not read the second page of the document.",
+  "This may be useful to share with her care team.",
+  "You confirmed that this information is correct.",
+];
+for (const line of plainAmericanEnglishPass) {
+  assert.ok(
+    !containsInternalLanguage(line),
+    `plain American caregiver language must pass: ${line}`,
+  );
+}
+console.log("✓ technical jargon and non-American spelling rejected; plain American English accepted");
+
 assert.ok(!/Lower attention/i.test(ATTENTION_LABELS_BY_RISK.low));
 assert.ok(/Can wait|Needs attention now/i.test(ATTENTION_LABELS_BY_RISK.high));
 assert.ok(
