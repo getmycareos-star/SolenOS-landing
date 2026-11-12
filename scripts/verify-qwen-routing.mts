@@ -135,15 +135,17 @@ requireText("src/app/workspace/documents/page.tsx", [
   "Snap a photo",
   "Scan pages",
   "navigator.mediaDevices.getUserMedia",
-  'const hasPreparedScanAdjustments = page.file.type.startsWith("image/") && page.prepared;',
-  'const captureMethod = intakeMode === "scan" || hasPreparedScanAdjustments',
-  'form.append("capture_method", captureMethod)',
+  'form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload")',
 ]);
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Reviewed original uploads must persist through the backend.");
-assert(documentPage.includes("You can review extracted statements later."), "Caregivers must be able to save originals before reviewing extracted content.");
-assert(documentPage.includes("Extracted statements remain review-only until you accept them into the Living Care Record."), "Extracted statements must remain review-only until caregiver acceptance.");
+assert(documentPage.includes("Original file is ready. SolenOS will extract and process it after the upload is saved."), "Original-first upload must preserve the source before extraction.");
+assert(!documentPage.includes("/api/extract") && !documentPage.includes("extractText("), "Document intake must not duplicate server extraction in the browser.");
+assert(!documentPage.includes('form.append("extracted_text"'), "Browser-extracted text must not be sent as source evidence.");
+assert(!documentPage.includes("Extracted text — review and correct before saving"), "Caregivers must not be forced to review extracted text before saving the original.");
+assert(documentPage.includes("SolenOS will not add extracted statements to the Living Care Record without the required evidence review."), "Extracted statements must remain evidence-gated before entering the Living Care Record.");
+assert(documentPage.includes(".eml") && documentPage.includes(".msg"), "Supported email files must be selectable in Documents.");
 assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Entry saved to the Living Care Record",
@@ -209,5 +211,14 @@ console.log("PASS: Companion has a Send button and uses user-facing retry langua
 console.log("PASS: documents and Community use product language rather than internal model labels.");
 console.log("PASS: Community uses searchable stories, simple filters, and no separate model/workflow panel.");
 console.log("PASS: LCR context interpretation only runs after a persisted event receipt and rejects responses without the read-only contract.");
+
+const documentReview = read("src/components/DocumentIntelligenceReview.tsx");
+assert(documentReview.includes("candidate.candidate_index"), "Document review must preserve stable candidate indices across batches.");
+assert(documentReview.includes("has_more_candidates"), "Document review must expose remaining statements instead of silently dropping overflow.");
+assert(documentReview.includes("Show next group of"), "Document review must allow the next bounded group after the current group is decided.");
+assert(documentReview.includes("retryable_page_numbers"), "Only transient page failures may offer automatic retry.");
+assert(documentReview.includes("extraction_unprocessed_page_numbers"), "OCR extraction state must remain separate from Qwen page-window progress.");
+assert(documentReview.includes("blocked_page_numbers"), "Pages blocked by resource limits must not be offered for automatic retry.");
+console.log("PASS: document candidate batches and retryable page states are preserved.");
 
 console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");
