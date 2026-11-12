@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Shield, UserPlus, Users, X, Check, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getAnonymousAccessToken, getPersonId, getJSON, postJSON, deleteJSON } from "@/api/client";
@@ -38,6 +38,7 @@ type Transfer = {
   created_at: string | null;
 };
 
+type PrimaryTransfer = { id: string; from_caregiver_id: string; to_caregiver_id: string; reason?: string | null; status: string; created_at: string | null };
 type InvitationResult = {
   invitation_id: string;
   email: string;
@@ -51,6 +52,9 @@ export function CaregiverAccessPanel() {
   const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
   const [openLoops, setOpenLoops] = useState<OpenLoop[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [primaryTransfers, setPrimaryTransfers] = useState<PrimaryTransfer[]>([]);
+  const [selectedPrimaryRecipient, setSelectedPrimaryRecipient] = useState(\"\");
+  const [primaryReason, setPrimaryReason] = useState(\"\");
   const [email, setEmail] = useState("");
   const [selectedResponsibility, setSelectedResponsibility] = useState("");
   const [selectedRecipient, setSelectedRecipient] = useState("");
@@ -73,10 +77,13 @@ export function CaregiverAccessPanel() {
     setError("");
     try {
       const transferPromise = getJSON("/caregiver-access/responsibility-transfers") as Promise<Transfer[]>;
+      const primaryTransferPromise = getJSON("/caregiver-access/primary-transfers") as Promise<PrimaryTransfer[]>;
       const memberPromise = getJSON("/caregiver-access/members") as Promise<Member[]>;
-      const [transferResult, memberResult] = await Promise.allSettled([transferPromise, memberPromise]);
+      const [transferResult, primaryTransferResult, memberResult] = await Promise.allSettled([transferPromise, primaryTransferPromise, memberPromise]);
       if (transferResult.status === "fulfilled") setTransfers(transferResult.value ?? []);
       else setTransfers([]);
+      if (primaryTransferResult.status === "fulfilled") setPrimaryTransfers(primaryTransferResult.value ?? []);
+      else setPrimaryTransfers([]);
       if (memberResult.status === "fulfilled") {
         setAllowed(true);
         setMembers(memberResult.value ?? []);
@@ -102,7 +109,7 @@ export function CaregiverAccessPanel() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const invite = async (event: React.FormEvent<HTMLFormElement>) => {
+  const invite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusy(true);
     setError("");
@@ -142,6 +149,45 @@ export function CaregiverAccessPanel() {
       await load();
     } catch {
       setError("We couldn't create this transfer. The existing assignment has not been changed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createPrimaryTransfer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPrimaryRecipient) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/caregiver-access/primary-transfers", {
+        to_caregiver_id: selectedPrimaryRecipient,
+        reason: primaryReason.trim() || undefined,
+      });
+      setSelectedPrimaryRecipient("");
+      setPrimaryReason("");
+      setNotice("Primary caregiver transfer requested. Your access and responsibilities have not changed until the receiving caregiver accepts.");
+      await load();
+    } catch {
+      setError("We couldn't request this change. The current primary caregiver remains in place.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const respondToPrimaryTransfer = async (transfer: PrimaryTransfer, decision: "accept" | "reject") => {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/caregiver-access/primary-transfers/" + encodeURIComponent(transfer.id) + "/" + decision, {});
+      setNotice(decision === "accept"
+        ? "You are now the primary caregiver. The previous caregiver's access and history have been retained."
+        : "Primary caregiver transfer declined. The current primary caregiver remains in place.");
+      await load();
+    } catch {
+      setError("We couldn't record your response. No change in primary caregiver authority should be assumed.");
     } finally {
       setBusy(false);
     }
@@ -220,6 +266,21 @@ export function CaregiverAccessPanel() {
           </div>
 
           <div style={{ display: "grid", gap: "0.7rem", marginTop: "1.2rem" }}>
+            <h3 className="mobile-settings-label"><Shield size={15} aria-hidden /> Change primary caregiver</h3>
+            <p className="mobile-settings-hint">This changes who administers caregiver access. It does not automatically transfer individual responsibilities; those are handled separately below.</p>
+            <form onSubmit={(event) => void createPrimaryTransfer(event)} style={{ display: "grid", gap: "0.65rem" }}>
+              <label className="mobile-settings-label" htmlFor="primary-transfer-recipient">New primary caregiver</label>
+              <select id="primary-transfer-recipient" className="mobile-settings-input" required value={selectedPrimaryRecipient} onChange={(event) => setSelectedPrimaryRecipient(event.target.value)}>
+                <option value="">Choose a caregiver</option>
+                {members.filter((member) => member.status === "active" && !member.can_manage_members).map((member) => <option key={member.caregiver_id} value={member.caregiver_id}>{member.name}</option>)}
+              </select>
+              <label className="mobile-settings-label" htmlFor="primary-transfer-reason">Reason (optional)</label>
+              <input id="primary-transfer-reason" className="mobile-settings-input" maxLength={1000} value={primaryReason} onChange={(event) => setPrimaryReason(event.target.value)} />
+              <Button type="submit" variant="primary" disabled={busy || !selectedPrimaryRecipient} loading={busy}>Request primary caregiver change</Button>
+            </form>
+          </div>
+
+          <div style={{ display: "grid", gap: "0.7rem", marginTop: "1.2rem" }}>
             <h3 className="mobile-settings-label"><ArrowRightLeft size={15} aria-hidden /> Transfer a responsibility</h3>
             <p className="mobile-settings-hint">The current assignment stays in place until the receiving caregiver accepts. Each responsibility transfers separately.</p>
             <form onSubmit={(event) => void createTransfer(event)} style={{ display: "grid", gap: "0.65rem" }}>
@@ -246,6 +307,24 @@ export function CaregiverAccessPanel() {
         </>
       ) : (
         <p className="mobile-settings-hint">Caregiver access is managed by the person authorised to administer this care record. You can still review and respond to responsibilities handed to you.</p>
+      )}
+
+      {primaryTransfers.length > 0 && (
+        <div style={{ display: "grid", gap: "0.7rem", marginTop: "1rem" }}>
+          <h3 className="mobile-settings-label">Primary caregiver handovers</h3>
+          {primaryTransfers.map((transfer) => (
+            <div key={transfer.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
+              <strong>Change primary caregiver · {transfer.status}</strong>
+              {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
+              {transfer.status === "pending" && !allowed && (
+                <div className="mobile-settings-buttons">
+                  <Button type="button" variant="primary" disabled={busy} onClick={() => void respondToPrimaryTransfer(transfer, "accept")}><Check size={15} aria-hidden /> Accept</Button>
+                  <Button type="button" variant="secondary" disabled={busy} onClick={() => void respondToPrimaryTransfer(transfer, "reject")}>Decline</Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       {transfers.length > 0 && (
