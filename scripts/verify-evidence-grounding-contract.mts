@@ -165,6 +165,9 @@ assert(clarificationPanel.includes('item.necessity === "necessary"'), "only ques
 assert(clarificationPanel.includes("Other incomplete information — no answer needed"), "non-material and unassessed uncertainty must remain visible without becoming a task");
 assert(clarificationPanel.includes("You do not need to answer it right now."), "non-necessary questions must not expose an answer form");
 assert(clarificationPanel.includes("prefillQuestion && <details open"), "manual clarification is available only when an existing care action specifically requires it");
+assert(clarificationPanel.includes("Additional note (optional)"), "routine answer review must not require a free-text rationale");
+assert(!clarificationPanel.includes("Review again after (days)"), "caregivers must not choose arbitrary freshness intervals for accepted current-state details");
+assert(!clarificationPanel.includes("reviewAfterDays"), "the interface must defer freshness to existing evidence policies and reconciliation events");
 assert(!clarificationPanel.includes("Ask another question"), "the LCR must not ask caregivers to invent clarification tasks");
 assert(clarificationPanel.includes("Earlier answers"), "earlier clarification answers must remain visible");
 assert(clarificationPanel.includes("Earlier answers or their review history could not be loaded. Please try again."), "failed answer-history reads must show a clear retry message");
