@@ -32,6 +32,7 @@ async function createSession(label) {
       name: `Dark mode QA ${label}`,
       caregiver_name: "Dark mode rendered verification",
     }),
+    signal: AbortSignal.timeout(15000),
   });
   const raw = await response.text();
   const payload = raw ? JSON.parse(raw) : null;
@@ -73,6 +74,8 @@ try {
         });
 
         const page = await context.newPage();
+        page.setDefaultTimeout(5000);
+        page.setDefaultNavigationTimeout(15000);
         const apiFailures = [];
         page.on("response", (response) => {
           const url = new URL(response.url());
@@ -88,19 +91,19 @@ try {
           const response = await route.fetch({
             url: destination.toString(),
             headers,
-            timeout: 210000,
+            timeout: 12000,
           });
           await route.fulfill({ response });
         });
 
         const url = new URL(routePath, target.url).toString();
         try {
-          await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
-          await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {});
+          await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+          await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
           await page.waitForFunction(
             () => document.documentElement.dataset.solenosTheme === "dark",
             null,
-            { timeout: 15000 },
+            { timeout: 8000 },
           );
 
           if (routePath === "/workspace/settings") {
