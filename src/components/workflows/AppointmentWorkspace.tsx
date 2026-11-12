@@ -197,9 +197,9 @@ export default function AppointmentWorkspace() {
     try {
       const result = await postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number; written_to_lcr?: boolean }
       setOutcomeProposals(result.items || [])
-      // Candidates stay in proposal storage until explicit caregiver acceptance creates an LCR assertion.
+      // Candidates stay in proposal storage until explicit caregiver acceptance creates an care record detail.
       if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
-      setMessage((result.count || 0) + ' outcome candidate(s) prepared from the saved appointment revision. No LCR assertion is created until you accept a candidate after review.')
+      setMessage((result.count || 0) + ' outcome candidate(s) prepared from the saved appointment revision. No care record detail is created until you accept a candidate after review.')
     } catch (cause) {
       setError('Appointment information could not be prepared for review. Please try again.')
     } finally {
@@ -237,12 +237,12 @@ export default function AppointmentWorkspace() {
       setMessage(decision === 'accept'
         ? (result.written_to_lcr
             ? result.reconciliation?.stages?.reconciliation === 'committed'
-              ? 'Accepted as a caregiver-reviewed LCR assertion, and the care record was reassessed. It is not clinically verified.'
-              : 'Accepted as a caregiver-reviewed LCR assertion. The original report remains attributed to the caregiver; reassessment status was not returned.'
-            : 'No LCR assertion was created.')
+              ? 'Accepted as a caregiver-reviewed care record detail, and the care record was reassessed. It is not clinically verified.'
+              : 'Accepted as a caregiver-reviewed care record detail. The original report remains attributed to the caregiver; reassessment status was not returned.'
+            : 'No care record detail was created.')
         : decision === 'correct'
-          ? 'Correction saved as a separate pending candidate. Review and accept it separately before it becomes an LCR assertion.'
-          : 'Candidate rejected. No LCR assertion was created; the rejection remains in review history.')
+          ? 'Correction saved as a separate pending candidate. Review and accept it separately before it becomes an care record detail.'
+          : 'Candidate rejected. No care record detail was created; the rejection remains in review history.')
     } catch (cause) {
       setError('Your review could not be saved. Please try again.')
     } finally {
@@ -353,7 +353,7 @@ export default function AppointmentWorkspace() {
               <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{item.title}</strong>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul> : <p className="guided-muted">No recent care events were returned for this brief.</p>}</section>
               <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>Care information</strong><p>{item.value || 'No detail recorded'}</p><small>{caregiverInformationLabel(item.epistemic_status) || 'Information status not available'}</small></li>)}</ul> : <p className="guided-muted">No care facts were returned for this brief.</p>}{brief.source_coverage.medications_and_allergies === "unavailable" && <p className="guided-muted">A dedicated medication/allergy source is unavailable. Only medication information explicitly present in the recorded care information above is shown.</p>}</section>
             </div>
-            <section className="guided-assertions"><h5>Recorded observations and caregiver reports</h5>{brief.assertions?.length ? <ul>{brief.assertions.slice(0, 10).map(item => <li key={item.source_id}><strong>Care detail</strong><p>{item.asserted_value}</p><small>{caregiverSafeAssistantText(item.source_label) || 'Saved care record'} · Information: {caregiverInformationLabel(item.epistemic_state || "reported") || "Caregiver report"} · Review: {caregiverStatusLabel(item.assertion_status) || "Review status not available"} · {item.observed_at ? new Date(item.observed_at).toLocaleString() : item.event_time_text || "Event time not recorded"}</small>{item.source_text && item.source_text !== item.asserted_value && <p>{caregiverSafeAssistantText(item.source_text.slice(0, 280)) || 'The original wording is available in the saved source.'}</p>}<small>{caregiverSafeAssistantText(item.interpretation_limit) || 'The available information may not tell the whole story.'}{item.evidence_ids.length ? ` · ${item.evidence_ids.length} linked evidence source(s)` : " · No evidence attachment linked"}</small></li>)}</ul> : <p className="guided-muted">{brief.assertions ? "No source-attributed care observations were returned for this brief." : "Reports linked to their original source are not included in this preparation response."}</p>}</section>
+            <section className="guided-assertions"><h5>Recorded observations and caregiver reports</h5>{brief.assertions?.length ? <ul>{brief.assertions.slice(0, 10).map(item => <li key={item.source_id}><strong>Care detail</strong><p>{item.asserted_value}</p><small>{caregiverSafeAssistantText(item.source_label) || 'Saved care record'} · Information: {caregiverInformationLabel(item.epistemic_state || "reported") || "Caregiver report"} · Review: {caregiverStatusLabel(item.assertion_status) || "Review status not available"} · {item.observed_at ? new Date(item.observed_at).toLocaleString() : item.event_time_text || "Event time not recorded"}</small>{item.source_text && item.source_text !== item.asserted_value && <p>{caregiverSafeAssistantText(item.source_text.slice(0, 280)) || 'The original wording is available in the saved source.'}</p>}<small>{caregiverSafeAssistantText(item.interpretation_limit) || 'The available information may not tell the whole story.'}{item.evidence_ids.length ? ` · ${item.evidence_ids.length} linked saved source(s)` : " · No evidence attachment linked"}</small></li>)}</ul> : <p className="guided-muted">{brief.assertions ? "No source-attributed care observations were returned for this brief." : "Reports linked to their original source are not included in this preparation response."}</p>}</section>
             <section className="guided-questions"><h5>Questions to raise with the healthcare professional</h5>{brief.source_coverage.open_questions === "failed" ? <p className="guided-muted">Unresolved questions could not be loaded from the care record.</p> : brief.open_questions?.length ? <ul>{brief.open_questions.slice(0, 8).map(item => <li key={item.source_id}><strong>{item.question}</strong><small>{item.intended_answerer_label || item.intended_answerer_role || "Answerer not recorded"} · {caregiverStatusLabel(item.priority) || "Priority not available"} · {caregiverStatusLabel(item.status) || "Status not available"}</small>{item.necessity_rationale && <p>{caregiverSafeAssistantText(item.necessity_rationale) || 'More information may be needed.'}</p>}</li>)}</ul> : <p className="guided-muted">{brief.open_questions ? "No unresolved questions were returned. This does not establish that none exist." : "Unresolved questions are not included in this preparation response."}</p>}</section>
             <section className="guided-conflicts"><h5>Unresolved concerns and conflicting information</h5>{brief.source_coverage.contradictions === "failed" ? <p className="guided-muted">Conflicting information could not be loaded from the care record.</p> : brief.contradictions?.length ? <ul>{brief.contradictions.slice(0, 8).map(item => <li key={item.source_id}><strong>Care detail · {caregiverStatusLabel(item.resolution_status) || "Review needed"}</strong><p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>{item.unresolved_remainder && <p>{item.unresolved_remainder}</p>}<small>{item.source_assertion_ids.length} linked assertion(s) · {item.evidence_ids.length} evidence source(s)</small></li>)}</ul> : <p className="guided-muted">{brief.contradictions ? "No unresolved conflicts were returned for this brief." : "Conflict information is not included in this preparation response."}</p>}</section>
             <section className="guided-appointments"><h5>Appointments in the care record</h5>{brief.appointments.length ? <ul>{brief.appointments.slice(0, 5).map(item => <li key={item.source_id}><strong>{item.title}</strong><span>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {caregiverStatusLabel(item.status) || "Status not available"}</span></li>)}</ul> : <p className="guided-muted">No appointment was returned. This does not establish that no appointment exists.</p>}</section>
@@ -369,7 +369,7 @@ export default function AppointmentWorkspace() {
               {brief.freshness_assessments.length ? <ul>{brief.freshness_assessments.slice(0, 8).map(item => <li key={item.assessment_id}>
                 <strong>How recent: {caregiverStatusLabel(item.freshness_status) || 'Not checked'}</strong>
                 <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
-                <small>Source time: {item.source_time ? new Date(item.source_time).toLocaleString() : 'Not recorded'} · Checked {item.assessed_at ? new Date(item.assessed_at).toLocaleString() : 'time not recorded'}</small>
+                <small>Date on the information: {item.source_time ? new Date(item.source_time).toLocaleString() : 'Not recorded'} · Checked {item.assessed_at ? new Date(item.assessed_at).toLocaleString() : 'time not recorded'}</small>
                 <small>{caregiverSafeAssistantText(item.interpretation_limit) || 'The available dates may not tell the whole story.'}</small>
               </li>)}</ul> : brief.source_coverage.evidence_freshness_assessments !== 'unavailable' && <p className="guided-muted">We couldn’t check how recent the linked information is. This does not mean it is current.</p>}
               <p className="guided-footnote">{caregiverSafeAssistantText(brief.freshness_assessment_scope.interpretation_limit) || "The available dates may not tell the whole story."}</p>
@@ -404,16 +404,16 @@ export default function AppointmentWorkspace() {
             <p className="guided-footnote">This is a review draft, not a clinical conclusion. The Living Care Record has not been changed.</p>
             <div className="guided-actions">
               <button className="guided-primary" type="button" onClick={() => void prepareOutcomeReview()} disabled={!record || proposalBusy}>
-                {proposalBusy ? 'Preparing…' : 'Prepare LCR review'}
+                {proposalBusy ? 'Preparing…' : 'Review care information'}
               </button>
             </div>
             {outcomeProposals.length > 0 && <div className="guided-proposals">
               <h5>Caregiver review required</h5>
               <p className="guided-muted">Each candidate is tied to the saved appointment revision. Accepting records a caregiver-reviewed assertion, not a clinically verified fact.</p>
               {outcomeProposals.filter(item => item.proposed_change.source_record_version === record?.version_number).map(item => <article key={item.id} className="guided-proposal">
-                <strong>{item.proposed_change.label || "Care detail"}</strong>
-                <p>{item.proposed_change.asserted_value}</p>
-                {item.proposed_change.asserted_value !== item.proposed_change.source_quote && <p><small>Original saved wording: {item.proposed_change.source_quote}</small></p>}
+                <strong>{caregiverSafeAssistantText(item.proposed_change.label) || "Care detail"}</strong>
+                <p>{caregiverSafeAssistantText(item.proposed_change.asserted_value) || "The saved wording is available for review."}</p>
+                {item.proposed_change.asserted_value !== item.proposed_change.source_quote && <p><small>Original saved wording: {caregiverSafeAssistantText(item.proposed_change.source_quote) || "The original wording is available in the saved record."}</small></p>}
                 <small>Appointment record revision {item.proposed_change.source_record_version} · {caregiverStatusLabel(item.status) || 'Status not available'} · caregiver reported · not independently verified</small>
                 {item.status === 'pending_authorization' && <>
                   <label className="guided-capture-label">Correction, if needed
