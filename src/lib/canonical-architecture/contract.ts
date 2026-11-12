@@ -1,5 +1,5 @@
 /**
- * SolenOS Canonical Contracts — Cognitive Load Reduction Engine (final).
+ * SolenOS Canonical Contracts — Living Care Record (authoritative product identity).
  */
 
 /** Product identity: the Living Care Record is the system of record. */
@@ -103,7 +103,8 @@ export const CANONICAL_DETERMINISTIC_VALIDATION_CHECKS = [
 ] as const;
 
 /** Cognitive Load Reduction Engine — unified contract. */
-export const CANONICAL_COGNITIVE_LOAD_IDENTITY = CANONICAL_SYSTEM_IDENTITY;
+export const CANONICAL_COGNITIVE_LOAD_IDENTITY =
+  "an internal capability for presenting evidence-grounded care information clearly under uncertainty";
 
 export const CANONICAL_COGNITIVE_LOAD_TRUTH = CANONICAL_ONE_LINE_TRUTH;
 
