@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
+import { caregiverInformationLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -348,12 +349,12 @@ export default function DailyCarePage() {
               <ul className="daily-care-record-list">
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 5).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
-                    <strong>{item.title || item.event_type || "Care update"}</strong>
+                    <strong>{item.title || "Care update"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     <span> · {displayHistorySource(item)}</span>
-                    {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
-                    {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
+                    {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
+                    {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
                   </li>
                 ))}
               </ul>
@@ -511,7 +512,7 @@ export default function DailyCarePage() {
                     id={historyRecordId(item) ? `daily-care-event-${historyRecordId(item)}` : undefined}
                     key={historyRecordId(item) || `history-item-${index}`}
                   >
-                    <strong>{item.title || item.event_type || item.source_type || "Care record entry"}</strong>
+                    <strong>{item.title || "Care record entry"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
