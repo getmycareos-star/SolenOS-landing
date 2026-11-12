@@ -55,6 +55,15 @@ interface HandoffDraft {
   review_status?: string
   revision_number?: number
   generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> }
+  claim_provenance?: {
+    coverage?: string
+    claims?: Array<{
+      claim_id: string
+      text: string
+      support_status: string
+      source_references: Array<{ label?: string; occurred_at?: string | null; recorded_at?: string | null; source_state_label?: string | null }>
+    }>
+  }
   caregiver_notes?: Array<{ text: string; attribution: string }>
   audience?: 'family' | 'professional'
   template_sections?: Array<{ key: string; title: string; required_fields: string[]; source_tables: string[]; coverage_status: string; coverage_note: string }>
@@ -709,7 +718,18 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     <article className="companion-handoff-source-item" key={item.source_ref + "-" + index}>
                       <strong>{item.section}</strong>
                       <p>{item.text}</p>
-                      <small>{item.epistemic_status ?? "not recorded"} · {item.record_status ?? "not recorded"} · Source {item.source_ref}</small>
+                      {(() => {
+                        const claim = handoffDraft.claim_provenance?.claims?.[index]
+                        const source = claim?.source_references?.[0]
+                        return (
+                          <small>
+                            {claim?.support_status === "matched_saved_wording" ? "Copied from a saved source" : claim?.support_status === "matched_historical_only" ? "Earlier source · check current details" : "Source could not be verified · do not share"}
+                            {source?.label ? " · " + source.label : ""}
+                            {source?.occurred_at ? " · Happened " + new Date(source.occurred_at).toLocaleString() : ""}
+                            {source?.recorded_at ? " · Recorded " + new Date(source.recorded_at).toLocaleString() : ""}
+                          </small>
+                        )
+                      })()}
                     </article>
                   )) : <p>Qwen drafting is unavailable or no eligible source quotations were returned. The structured source preparation remains available for review; this draft cannot be shared.</p>}
                 </section>
@@ -749,7 +769,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           <span>Evidence status: {item.epistemic_status.replaceAll('_', ' ')}</span>
                           {item.record_status && item.record_status !== 'not_recorded' && <span>Record status: {item.record_status.replaceAll('_', ' ')}</span>}
                           {item.details && Object.entries(item.details).map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')}: {formatHandoffDetail(value)}</span>)}
-                          <span>Source: {item.source_table} · {item.source_id}</span>
+                          <span>Source: {item.source_type.replaceAll('_', ' ')}</span>
                           {item.stale_warning && <strong>Older information — re-check before relying on it</strong>}
                         </div>
                       </article>
