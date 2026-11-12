@@ -160,6 +160,9 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
+  const openQuestions = questions.filter((item) => item.status === "open" || item.status === "unresolved");
+  const necessaryQuestions = openQuestions.filter((item) => item.necessity === "necessary");
+  const otherOpenQuestions = openQuestions.filter((item) => item.necessity !== "necessary");
   const latestAnswer = history[history.length - 1];
   const latestReview = latestAnswer
     ? reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version)
@@ -414,10 +417,10 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
-      {questions.length === 0 && <p>Nothing needs checking right now. If a care detail becomes unclear, you can add a question here.</p>}
-      {questions.length > 0 && <>
+      {necessaryQuestions.length === 0 && <p>No care details need your attention right now. SolenOS will keep other incomplete information in the record without asking you to manage it.</p>}
+      {openQuestions.length > 0 && <>
         <div style={{ display: "grid", gap: 10 }}>
-          {questions.filter((item) => item.status === "open" || item.status === "unresolved").map((item) => (
+          {necessaryQuestions.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -434,6 +437,19 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
               <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
           ))}
+          {otherOpenQuestions.length > 0 && (
+            <details>
+              <summary style={{ cursor: "pointer", fontSize: 13 }}>Other incomplete information — no answer needed</summary>
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {otherOpenQuestions.map((item) => (
+                  <button key={item.id} type="button" onClick={() => setSelectedQuestionId(item.id)} style={{ ...button, textAlign: "left" }}>
+                    <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)" }}>Kept as uncertain · no answer requested</span>
+                    <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
           {questions.some((item) => item.status !== "open" && item.status !== "unresolved") && (
             <details>
               <summary style={{ cursor: "pointer", fontSize: 13 }}>View answered and closed questions</summary>
@@ -451,14 +467,16 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
           <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status, Boolean(selectedQuestion.claim_id))} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
           <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
-          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>
+          {selectedQuestion.necessity === "necessary" && selectedQuestion.necessity_rationale && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Why SolenOS is asking: {selectedQuestion.necessity_rationale}</p>}
+          {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && selectedQuestion.necessity !== "necessary" && <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>SolenOS is keeping this information as uncertain. You do not need to answer it right now.</p>}
+          {selectedQuestion.necessity === "necessary" && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>}
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
             <strong style={{ fontSize: 12 }}>Last answer</strong>
             <p>{selectedQuestion.answer}</p>
             <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {selectedQuestion.answer_provenance || "Not recorded"}</p>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
-          {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
+          {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && selectedQuestion.necessity === "necessary" && <>
             <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Your answer
               <textarea style={{ ...field, minHeight: 70, marginTop: 4 }} value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Write what you know. It is okay if you are not sure." />
             </label>
@@ -518,8 +536,8 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           </div>
         </div>}
       </>}
-      <details open={Boolean(prefillQuestion)} style={{ marginTop: 14 }}>
-        <summary style={{ cursor: "pointer", fontSize: 13 }}>Ask another question</summary>
+      {prefillQuestion && <details open style={{ marginTop: 14 }}>
+        <summary style={{ cursor: "pointer", fontSize: 13 }}>Clarify this care action</summary>
         {claims.length === 0 ? <p style={{ fontSize: 12 }}>A care detail must be saved before a question can be linked to it.</p> : <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 8, minWidth: 0 }}>
           <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Which care detail is unclear?
             <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
@@ -556,7 +574,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           </label>
           <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>{saving ? "Saving…" : "Save question"}</button>
         </fieldset>}
-      </details>
+      </details>}
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
