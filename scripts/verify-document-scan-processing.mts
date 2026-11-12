@@ -46,6 +46,9 @@ assert.match(intelligenceReviewSource, /Processing in the background\. You can l
 assert.match(intelligenceReviewSource, /!active && <button/, "manual extraction must not race an active background job");
 assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.evidence_id === analysis\.source_evidence_id/, "partial-page resume must not race an active background job");
 assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load\(\); \}, 3000\)/, "document review status must refresh while background processing is active");
+assert.match(intelligenceReviewSource, /postJSON\("\/documents\/" \+ encodeURIComponent\(evidenceId\) \+ "\/queue"/, "manual retry must use the durable server processing queue");
+assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURIComponent(document.id) + "/extract"'), "the review screen must not perform blocking extraction");
+assert.match(intelligenceReviewSource, /Retry background processing/, "failed or incomplete documents must expose a clear retry action");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
