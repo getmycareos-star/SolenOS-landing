@@ -49,6 +49,26 @@ type Analysis = {
   document_name: string;
   document_type?: string;
   page_count?: number;
+  extraction_status?: string;
+  ocr_quality_by_page?: Array<{
+    page_number: number;
+    mean_token_confidence: number | null;
+    low_confidence_token_count: number;
+    token_count: number;
+    method: string;
+    is_probability: false;
+    handwriting_warning: string;
+  }>;
+  model_provenance?: {
+    provider?: string | null;
+    model_tag?: string | null;
+    processing_version?: string;
+    prompt_version?: string;
+    extraction_source?: string;
+    source_evidence_id?: string;
+    source_text_sha256?: string;
+    model_authority?: string;
+  } | null;
   observations: Candidate[];
   intelligence_status?: string;
   processed_page_count?: number | null;
@@ -245,6 +265,10 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 : analysis.intelligence_status === "available" ? "Page extraction completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "Document understanding is processing in the background" : "Document understanding not yet completed"}
               {analysis.unprocessed_page_numbers?.length ? ` · not processed: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
+            {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on this extraction.</p>}
+            {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
+              OCR engine confidence (0–100 heuristic, not a probability): {analysis.ocr_quality_by_page.map((page) => `Page ${page.page_number}: ${page.mean_token_confidence === null ? "unavailable" : page.mean_token_confidence + "/100"}; ${page.low_confidence_token_count} low-confidence word(s) of ${page.token_count}`).join(" · ")}. Handwriting may still be misread, even when engine confidence is high.
+            </p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
             </div>}
@@ -252,6 +276,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary>
             {analysis.extractionMethod && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Extraction provenance: {analysis.extractionMethod.replaceAll("_", " ")}</p>}
+            {analysis.model_provenance && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Understanding source: saved server extraction · model: {analysis.model_provenance.model_tag || "not available"} · review only</p>}
             {analysis.extractionMethod?.includes("tesseract") && <p style={{ fontSize: 12 }}>OCR can misread names, dates and numbers. Compare each candidate quotation with the original document before accepting it.</p>}
             {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving and verifying the saved extraction…</p>
               : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry source text</button></div>
