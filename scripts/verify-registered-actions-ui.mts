@@ -45,7 +45,7 @@ for (const contract of [
 
 assert.match(
   lcr,
-  /Sources:\\s*\\{\\s*event\\.evidence_ids\\.length\\s*\\}\\s*saved item\\(s\\)/,
+  /Sources:\s*\{\s*event\.evidence_ids\.length\s*\}\s*saved item\(s\)/,
   "Registered-action history must show its saved source count",
 );
 
