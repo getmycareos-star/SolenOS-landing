@@ -93,6 +93,9 @@ assert(companion.includes("exact_wording_duplicate_count"), "Companion must disc
 assert(companion.includes("matched_historical_only"), "Corrected or replaced source wording must remain visible as history, not current support");
 assert(companion.includes("correction_rationale"), "Corrected source details must retain the reason for the correction");
 assert(companion.includes("matched_validated_aggregate"), "Companion must display deterministically validated incident counts");
+assert(companion.includes("handoffDraft.claim_provenance?.claims?.[index]"), "Handoff sections must display their own verified source details");
+assert(!companion.includes("Source {item.source_ref}"), "Handoff UI must not expose internal source references");
+assert(companion.includes("Copied from a saved source"), "Handoff source wording must be explained in caregiver language");
 assert(companion.includes("aggregate_count_mismatch") && companion.includes("aggregate_not_validated"), "Companion must distinguish a wrong count from an unconfirmed count");
 assert(companion.includes("observations?.map"), "Companion must show structured observations linked to supporting notes");
 assert(companion.includes("When it happened") && companion.includes("When it was added"), "Claim sources must show occurrence and recording times");
