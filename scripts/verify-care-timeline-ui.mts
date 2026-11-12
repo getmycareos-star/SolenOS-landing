@@ -7,7 +7,7 @@ const source = fs.readFileSync(pagePath, "utf8");
 
 assert.match(source, /ensureAnonymousSession/);
 assert.match(source, /getJSON/);
-assert.match(source, /daily-care\\/intelligence\\/history/);
+assert.ok(source.includes("daily-care/intelligence/history"));
 assert.match(source, /occurred_at/);
 assert.match(source, /recorded_at/);
 assert.match(source, /time_provenance/);
@@ -30,7 +30,7 @@ assert.match(source, /original_text: event\.description/,
   "the original source content is preserved in the correction receipt");
 assert.match(source, /original entry remains unchanged/,
   "the caregiver is told corrections do not overwrite the original record");
-assert.match(source, /daily-care\\/intelligence\\/history\\?limit=200&offset=/,
+assert.ok(source.includes("daily-care/intelligence/history?limit=200&offset="),
   "timeline pagination reads the authenticated persisted history endpoint");
 assert.match(source, /Timeline could not be loaded/);
 assert.match(source, /No saved care-history entries were returned/);
