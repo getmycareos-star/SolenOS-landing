@@ -41,9 +41,9 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
 }
 
 /**
- * Snap, Scan, Upload and Share all follow the same order:
- * persist original -> server extraction/OCR -> Qwen candidate review.
- * Extraction failure never deletes or discards the already-saved original.
+ * Snap, Scan, Upload and Share preserve the original first. Document uploads
+ * are then processed by the durable server worker; caregivers can continue
+ * while OCR and document understanding run. No client text becomes source truth.
  */
 export async function extractAttachedDocument(
   file: File,
