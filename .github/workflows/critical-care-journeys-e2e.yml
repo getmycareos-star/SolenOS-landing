@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "e2e/critical-care-journeys.mjs"
+      - "e2e/web-push-delivery.mjs"
       - "e2e/netlify-dark-mode-audit.mjs"
       - "src/api/client.ts"
       - "src/app/workspace/**"
@@ -89,6 +90,28 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ./backend-service/backend
 
+      - name: Generate ephemeral VAPID keys for real browser push verification
+        run: |
+          python - <<'PY'
+          import base64
+          import os
+          import uuid
+          from cryptography.hazmat.primitives.asymmetric import ec
+          from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, PublicFormat
+
+          private = ec.generate_private_key(ec.SECP256R1())
+          public = private.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+          pem = private.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode("ascii")
+          public_key = base64.urlsafe_b64encode(public).rstrip(b"=").decode("ascii")
+          delimiter = "VAPID_" + uuid.uuid4().hex
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write("VAPID_PUBLIC_KEY=" + public_key + "\\n")
+              env.write("VAPID_SUBJECT=mailto:ci@solenosai.net\\n")
+              env.write("VAPID_PRIVATE_KEY<<" + delimiter + "\\n")
+              env.write(pem + "\\n")
+              env.write(delimiter + "\\n")
+          PY
+
       - name: Apply all PostgreSQL migrations
         working-directory: backend-service/backend
         run: python -m alembic upgrade head
@@ -109,7 +132,7 @@ jobs:
       - name: Start FastAPI on the isolated PostgreSQL database
         working-directory: backend-service/backend
         run: |
-          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_MODEL="$OLLAMA_MODEL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" OLLAMA_NUM_CTX="$OLLAMA_NUM_CTX" OLLAMA_NUM_PREDICT="$OLLAMA_NUM_PREDICT" OLLAMA_NUM_THREADS="$OLLAMA_NUM_THREADS" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
+          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_MODEL="$OLLAMA_MODEL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" OLLAMA_NUM_CTX="$OLLAMA_NUM_CTX" OLLAMA_NUM_PREDICT="$OLLAMA_NUM_PREDICT" OLLAMA_NUM_THREADS="$OLLAMA_NUM_THREADS" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
             sleep 1
@@ -134,6 +157,13 @@ jobs:
           BACKEND_URL: http://127.0.0.1:8000
           SOLENOS_REQUIRE_LIVE_QWEN: "1"
         run: node e2e/critical-care-journeys.mjs
+
+      - name: Verify real browser Web Push delivery through Chromium and PostgreSQL
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+          BACKEND_SERVICE_DIR: ${{ github.workspace }}/backend-service/backend
+        run: node e2e/web-push-delivery.mjs
 
       - name: Audit rendered dark mode on the Netlify preview and current deployment
         if: always()
