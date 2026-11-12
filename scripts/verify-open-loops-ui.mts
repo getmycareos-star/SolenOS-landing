@@ -34,8 +34,9 @@ for (const action of ["responses", "actions", "outcomes", "corroborate-outcome",
 }
 
 assert.ok(
-  page.includes("Verification means a caregiver reviewed two persisted sources and explicitly assessed their origins as independent. This records a corroboration assessment; it does not automatically establish semantic entailment, truth, or causation."),
-  "verified outcomes must disclose the limits of semantic grounding and causation",
+  page.includes("Choose two separate saved items from different people or documents. This review does not prove that the reports are true or that one caused the other.")
+    && page.includes("This records source independence review, not semantic entailment or proof of causation."),
+  "verified outcomes must disclose that source independence review does not prove truth or causation",
 );
 
 console.log("OPEN_LOOPS_UI_CONTRACT=PASS");
