@@ -39,7 +39,7 @@ public class MainActivity extends BridgeActivity {
                 .build()
         );
 
-        NotificationManager manager = getSystemService(NotificationManager.class);
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (manager != null) {
             manager.createNotificationChannel(channel);
         }
