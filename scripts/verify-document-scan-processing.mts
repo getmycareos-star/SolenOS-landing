@@ -11,7 +11,7 @@ assert.match(source, /form\.append\("file", page\.file\)/, "the original uploade
 assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
 assert.match(source, /if \(!reviewPages\.length\)/, "saving must not require caregivers to review every page first");
 assert.match(source, /scan_review_status", page\.reviewed \? "caregiver_reviewed" : "not_reviewed"/, "review status must accurately distinguish reviewed from unreviewed originals");
-assert.match(source, /Save files<\\/button>/, "caregivers must be able to save originals before reviewing extracted text");
+assert.match(source, /Save files<\/button>/, "caregivers must be able to save originals before reviewing extracted text");
 assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop stage");
 assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
 assert.match(source, /function createMultiPagePdf\(/, "multi-page PDF generation must be implemented");
