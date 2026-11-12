@@ -240,7 +240,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       </div>
       {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
       {items.some((item) => item.open_questions?.length) && <div role="note" style={{ padding: 10, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 5 }}>
-        <strong style={{ fontSize: 12 }}>Document extraction notes</strong>
+        <strong style={{ fontSize: 12 }}>Document progress</strong>
         {items.flatMap((item) => item.open_questions || []).map((question, index) => <p key={index} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
       </div>}
       {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: 13 }}>Saved documents</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => {
@@ -256,7 +256,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           {!active && <button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>{job?.status === "failed" ? "Retry extraction" : "Extract and understand"}</button>}
         </div>;
       })}</div>}
-      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
+      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a document or scan. SolenOS will prepare the readable parts for you to review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
@@ -275,10 +275,10 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           </div>
           <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary>
-            {analysis.extractionMethod && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Extraction provenance: {analysis.extractionMethod.replaceAll("_", " ")}</p>}
-            {analysis.model_provenance && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Understanding source: saved server extraction · model: {analysis.model_provenance.model_tag || "not available"} · review only</p>}
-            {analysis.extractionMethod?.includes("tesseract") && <p style={{ fontSize: 12 }}>OCR can misread names, dates and numbers. Compare each candidate quotation with the original document before accepting it.</p>}
-            {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving and verifying the saved extraction…</p>
+            {analysis.extractionMethod && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>How the text was read: {analysis.extractionMethod === "tesseract_ocr" || analysis.extractionMethod?.includes("tesseract") ? "Text read from the document image" : "Text read from the saved document"}</p>}
+            {analysis.model_provenance && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>The document text is ready for your review.</p>}
+            {analysis.extractionMethod?.includes("tesseract") && <p style={{ fontSize: 12 }}>Names, dates, and numbers may not have been read correctly. Check each suggested detail against the original document.</p>}
+            {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Opening the text read from your document…</p>
               : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry source text</button></div>
               : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the persisted text from the server.</p>
                 : analysis.extractedText ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre>
@@ -295,7 +295,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 ? { label: "ACCEPTED INTO LCR", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
                 : candidate.review_status === "rejected_by_caregiver"
                   ? { label: "REJECTED — NOT ADDED", border: "#999999", background: "#eeeeee", color: "#444444" }
-                  : { label: candidate.review_status.replaceAll("_", " ").toUpperCase(), border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
+                  : { label: "Status unavailable", border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
             const correction = corrections[key] || { subject: candidate.subject, observation: candidate.observation };
             return <div key={key} style={{ display: "grid", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 14 }}>{candidate.subject}</strong><span aria-label={statusPresentation.label} style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.02em", padding: "4px 8px", borderRadius: 999, border: "1px solid " + statusPresentation.border, background: statusPresentation.background, color: statusPresentation.color }}>{statusPresentation.label}</span></div>
@@ -331,7 +331,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             </div>;
           })}
           <details onToggle={(event) => { if (event.currentTarget.open) void loadReviewHistory(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
-            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Caregiver review history{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " immutable event(s)" : ""}</summary>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Past review changes{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " update(s)" : ""}</summary>
             {historyLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving saved review events…</p>
               : historyErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{historyErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadReviewHistory(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry history</button></div>
                 : analysis.reviewEvents === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the append-only caregiver decision history.</p>
