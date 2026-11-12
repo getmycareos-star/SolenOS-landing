@@ -89,6 +89,7 @@ assert.doesNotMatch(historyDrawer, /JSON\.stringify\(item\.context/);
 assert.match(historyDrawer, /Malformed serialized data is not shown as caregiver text/);
 assert.match(historyDrawer, /Earlier care details are saved/);
 assert.match(documentsPage, /caregiverSafeAssistantText\(selected\.extractedText\)/);
+assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedText\)/);
 assert.equal(lcr.includes("caregiverSafeAssistantText(source.description)"), true);
 assert.match(lcr, /caregiverSafeAssistantText\(source\.source_passage\)/);
 
