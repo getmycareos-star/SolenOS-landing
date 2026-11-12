@@ -263,7 +263,7 @@ try {
               title: document.title,
               bodyTextLength: bodyText.length,
               bodyTextPreview: bodyText.slice(0, 240),
-              isNotFound: /\\b404\\b|page not found|not found/i.test(bodyText),
+              isNotFound: /\b404\b|page not found|not found/i.test(bodyText),
               hasWorkspaceMain: Boolean(document.querySelector("main,[role='main']")),
               hasWorkspaceNav: Boolean(document.querySelector("nav[aria-label='Primary navigation']")),
               handoffsHeading: document.querySelector("#care-handoffs-title")?.textContent?.trim() ?? null,
@@ -325,7 +325,7 @@ try {
             await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
           }
           process.stdout.write(
-            `${failures.includes(result) ? "FAIL" : "PASS"} ${target.label} ${routePath} ${viewport.label}: ${rendered.issues.length} contrast, ${routeIssues.length} route/API issues\n`,
+            `${failures.includes(result) ? "FAIL" : "PASS"} ${target.label} ${routePath} ${viewport.label}: ${routeLoaded ? "route loaded" : "route not loaded"}, ${themeApplied ? "dark theme applied" : "dark theme missing"}, ${rendered.issues.length} contrast, ${routeIssues.length} route/API issues\n`,
           );
         } catch (error) {
           const result = {
@@ -359,5 +359,9 @@ fs.writeFileSync(
   JSON.stringify({ results, failures }, null, 2),
 );
 
-process.stdout.write(`DARK_MODE_AUDIT total=${results.length} failed=${failures.length}\n`);
+const routeLoadFailures = results.filter((result) => result.routeLoaded === false).length;
+const themeFailures = results.filter((result) => result.themeApplied === false).length;
+process.stdout.write(
+  `DARK_MODE_AUDIT total=${results.length} failed=${failures.length} route_load_failures=${routeLoadFailures} theme_failures=${themeFailures}\n`,
+);
 if (failures.length) process.exitCode = 1;
