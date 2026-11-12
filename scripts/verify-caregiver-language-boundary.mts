@@ -42,6 +42,13 @@ const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
 const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
+const careHistory = read("../src/components/CareContinuityIntegrityPanel.tsx");
+const claimAssessment = read("../src/components/ClaimAssessmentPanel.tsx");
+const conflictReview = read("../src/components/ConflictResolutionPanel.tsx");
+const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
+const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
+const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
+const appointmentPage = read("../src/app/workspace/appointments/page.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -60,5 +67,23 @@ assert.doesNotMatch(dailyCareIntelligence, /source\.source_id<\/code>|review_sta
 assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(result\.answer\)/);
 assert.match(dailyCareIntelligence, /caregiverSafeErrorMessage/);
 assert.match(handoff, /function readableStatus\(value: string\): string \{\s+return caregiverStatusLabel\(value\) \?\? "Not available";/);
+assert.ok(!careHistory.includes("Care continuity integrity"));
+assert.ok(!careHistory.includes("independent clinical verification"));
+assert.ok(!claimAssessment.includes("review version"));
+assert.ok(!claimAssessment.includes("Version {item.claim_version}"));
+assert.ok(!conflictReview.includes("persisted conflicts"));
+assert.ok(!conflictReview.includes("Conflict resolution persistence"));
+assert.ok(!conflictReview.includes("Resolution transition"));
+assert.ok(!evidenceReview.includes("Source-text integrity could not be checked"));
+assert.ok(!evidenceReview.includes("{item.near_duplicate_interpretation_limit}"));
+assert.ok(!evidenceReview.includes("{item.observation_method}"));
+assert.ok(!appointment.includes("Appointment record revision"));
+assert.ok(!appointment.includes("Each candidate is tied"));
+assert.ok(!appointment.includes("caregiver-reviewed detail"));
+assert.ok(!detailedAppointment.includes("database schema"));
+assert.ok(!detailedAppointment.includes("source_time_kind"));
+assert.ok(!detailedAppointment.includes("Evidence IDs:"));
+assert.ok(!detailedAppointment.includes("Assessment {item.assessment_id"));
+assert.doesNotMatch(appointmentPage, /Appointment workspace/);
 
 console.log("Caregiver language boundary checks passed.");
