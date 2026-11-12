@@ -6,6 +6,8 @@ assert.match(source, /async function createProcessedImage\(/, "image processing 
 assert.match(source, /rotatedContext\.rotate\(radians\)[\s\S]*?cropContext\.drawImage\(rotated, left, top, width, height, 0, 0, width, height\)/, "rotation must happen before crop so crop coordinates match the rotated preview");
 assert.match(source, /rotatedContext\.drawImage\(image, -image\.width \/ 2, -image\.height \/ 2\)/, "rotation must apply to source image pixels");
 assert(!source.includes("extractText("), "the Documents screen must not upload a file for separate preflight extraction");
+assert(!source.includes("review and correct its extracted text first"), "caregivers must not be asked to manually review client-only OCR before saving");
+assert(!source.includes("page.reviewed") && !source.includes("page.text"), "the upload draft must not carry discarded client-side text or review flags");
 assert(!source.includes('apiUrl("/api/extract")'), "the Documents screen must not send the same original through a preflight extractor before saving");
 assert(!source.includes('Extracted text — review and correct before saving'), "caregivers must not correct client-side text that the upload API does not persist");
 assert.match(source, /SolenOS will read this saved original in the background/, "the caregiver must be told that server extraction starts after the original is saved");
