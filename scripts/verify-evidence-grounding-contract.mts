@@ -149,9 +149,6 @@ assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflic
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
 const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
-assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
-assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
-assert(clarificationPanel.includes("Who may know the answer?") && clarificationPanel.includes("No saved source linked yet"), "caregivers must see plain-language question context without internal record identifiers");
 assert(clarificationPanel.includes("evidenceSummary(item)") && !clarificationPanel.includes("source_text.slice"), "saved source details must be shown as plain text, never raw JSON");
 assert(clarificationPanel.includes("questionHasLinkedSource(item)") && clarificationPanel.includes("source_record_refs"), "clarification source labels must recognize linked claims and persisted source records, not only attachments");
 assert(clarificationPanel.includes('window.addEventListener("careRecordUpdated"'), "clarification questions must refresh after a saved care update");
@@ -166,7 +163,7 @@ assert(clarificationPanel.includes("selectedEvidence.map"), "the question detail
 assert(clarificationPanel.includes('item.necessity === "necessary"'), "only questions explicitly assessed as necessary may interrupt caregivers");
 assert(clarificationPanel.includes("Other incomplete information — no answer needed"), "non-material and unassessed uncertainty must remain visible without becoming a task");
 assert(clarificationPanel.includes("You do not need to answer it right now."), "non-necessary questions must not expose an answer form");
-assert(clarificationPanel.includes("prefillQuestion && <details open"), "manual clarification is available only when an existing care action specifically requires it");
+assert(!clarificationPanel.includes("prefillQuestion") && !clarificationPanel.includes("Save question") && !clarificationPanel.includes("createQuestion"), "clarification must be system-initiated; caregivers only answer necessary questions");
 assert(clarificationPanel.includes("Additional note (optional)"), "routine answer review must not require a free-text rationale");
 assert(!clarificationPanel.includes("Review again after (days)"), "caregivers must not choose arbitrary freshness intervals for accepted current-state details");
 assert(!clarificationPanel.includes("reviewAfterDays"), "the interface must defer freshness to existing evidence policies and reconciliation events");
@@ -175,7 +172,7 @@ assert(clarificationPanel.includes("Earlier answers"), "earlier clarification an
 assert(clarificationPanel.includes("Earlier answers or their review history could not be loaded. Please try again."), "failed answer-history reads must show a clear retry message");
 assert(lcr.includes('const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel")'), "LCR must code-split import the clarification workflow");
 assert(lcr.includes("<ClarificationWorkflowPanel personId={personId}"), "clarification workflow must be mounted in the actual LCR");
-console.log("PASS: claim-linked clarification and immutable attributed answer history are connected to the LCR.");
+console.log("PASS: system-initiated necessary clarification and immutable attributed answer history are connected to the LCR.");
 
 for (const field of ["reported_at", "collection_method", "origin_device_ref", "transfer_source", "transfer_reference"]) {
   assert(panel.includes(field), `evidence review UI must expose acquisition provenance field ${field}`);
