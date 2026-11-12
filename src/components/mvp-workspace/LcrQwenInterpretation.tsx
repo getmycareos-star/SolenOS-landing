@@ -5,6 +5,22 @@ import { postJSON } from "@/api/client";
 
 type AssistResult = {
   reply?: string;
+  claim_provenance?: {
+    claims?: Array<{
+      claim_id: string;
+      text: string;
+      support_status: string;
+      aggregate?: { count?: number; window_label?: string } | null;
+      source_references: Array<{
+        label?: string;
+        occurred_at?: string | null;
+        recorded_at?: string | null;
+        entered_by?: string | null;
+        reported_by?: string | null;
+        source_excerpt?: string | null;
+      }>;
+    }>;
+  };
   ai_generated?: boolean;
   review_required?: boolean;
   written_to_lcr?: boolean;
@@ -55,6 +71,13 @@ export function LcrQwenInterpretation({
           result.review_required !== true ||
           result.written_to_lcr !== false ||
           result.persistence !== "read_only_assistance" ||
+          !result.claim_provenance ||
+          !Array.isArray(result.claim_provenance.claims) ||
+          result.claim_provenance.claims.some((claim) =>
+            typeof claim?.text !== "string" ||
+            typeof claim?.support_status !== "string" ||
+            !Array.isArray(claim?.source_references)
+          ) ||
           typeof result.reply !== "string" ||
           !result.reply.trim()
         ) {
@@ -91,6 +114,32 @@ export function LcrQwenInterpretation({
           <p className="panel-muted">
             AI-generated interpretation for caregiver review. The Living Care Record remains authoritative; this response did not change it.
           </p>
+          {state.result.claim_provenance?.claims && state.result.claim_provenance.claims.length > 0 && (
+            <section aria-label="What each statement is based on" className="lcr-qwen-claim-sources">
+              <strong>What each statement is based on</strong>
+              {state.result.claim_provenance.claims.map((claim) => (
+                <article key={claim.claim_id}>
+                  <p><strong>{claim.text}</strong></p>
+                  {claim.support_status === "matched_validated_aggregate" && (
+                    <p>Counted from {claim.aggregate?.count ?? claim.source_references.length} distinct saved care updates{claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.</p>
+                  )}
+                  {claim.support_status === "matched_saved_wording" && <p>This wording appears in a saved record.</p>}
+                  {claim.support_status === "matched_historical_only" && <p>This wording appears only in an earlier or corrected record. It is not treated as current information.</p>}
+                  {claim.support_status === "not_matched_to_saved_wording" && <p>We could not match this statement to the wording in a saved record. Check it before relying on it.</p>}
+                  {claim.source_references.map((source, index) => (
+                    <div key={(source.label || "source") + index}>
+                      <strong>{source.label || "Saved care information"}</strong>
+                      {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
+                      {source.recorded_at && <p>When it was recorded: {new Date(source.recorded_at).toLocaleString()}</p>}
+                      {source.reported_by && <p>Reported by: {source.reported_by}</p>}
+                      {source.entered_by && <p>Recorded by: {source.entered_by}</p>}
+                      {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                    </div>
+                  ))}
+                </article>
+              ))}
+            </section>
+          )}
           {(state.result.source_event_ids?.length || state.result.source_evidence_ids?.length) ? (
             <p className="panel-muted">
               Context supplied: {state.result.source_event_ids?.length ?? 0} saved care updates and {state.result.source_evidence_ids?.length ?? 0} source records.
