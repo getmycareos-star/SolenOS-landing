@@ -454,7 +454,7 @@ export default function DocumentsPage() {
         form.append("person_id", session.person.id);
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
-        form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "share" ? "share" : "upload");
+        form.append("capture_method", intakeMode === "scan" ? "scan" : "upload");
         form.append("capture_timestamp", new Date(page.file.lastModified || Date.now()).toISOString());
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(pageIndex + 1));
         form.append("extracted_text", page.uncertain ? "[UNCERTAIN EXTRACTION — verify against original scan before relying on this text.]\n" + page.text.trim() : page.text.trim());
