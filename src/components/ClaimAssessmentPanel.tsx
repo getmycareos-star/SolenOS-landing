@@ -42,6 +42,7 @@ type AssessmentImpact = {
   missing_evidence_ids: string[];
   unassessed_claim_evidence_ids: string[];
   changed_prerequisite_claim_ids: string[];
+  changed_observation_ids?: string[];
   unresolved_conflicts?: Array<{ conflict_id: string; field: string; description: string; resolution_status: string; created_at?: string | null }>;
   interpretation_limit: string;
 };
@@ -104,6 +105,8 @@ function simpleReviewStatus(value: string): string {
     contradicts: "Does not match",
     neutral: "No clear link",
     review_required: "Needs another review",
+    source_observation_added_or_corrected_after_assessment: "A source detail was added or corrected after this review",
+    prerequisite_claim_source_or_assessment_changed: "A related care detail or its supporting information changed after this review",
     current: "Current",
     outdated: "May be out of date",
     unchanged: "No change found",
@@ -481,7 +484,8 @@ export default function ClaimAssessmentPanel() {
             : <p style={{ fontSize: 12 }}>No reason to repeat this review was found in the information checked. This does not prove that the review is complete or correct.</p>}
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Sources that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Sources not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
-          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that changed: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
+          {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Source details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
+          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
           {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {item.field}</strong><div>{item.description}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
           <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>{assessmentImpact.interpretation_limit}</p>
         </>}
