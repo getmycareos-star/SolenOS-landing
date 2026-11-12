@@ -112,11 +112,8 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
         const file = new File([blob], `scan_page_${pages.length + 1}_${Date.now()}.jpg`, {
           type: "image/jpeg",
         });
-        setPages((prev) => {
-          const next = [...prev, { file, rotationDegrees: 0, cropInsetsPercent: { top: 0, right: 0, bottom: 0, left: 0 } }];
-          setSelectedPage(next.length - 1);
-          return next;
-        });
+        setPages((prev) => [...prev, { file, rotationDegrees: 0, cropInsetsPercent: { top: 0, right: 0, bottom: 0, left: 0 } }]);
+        setSelectedPage(pages.length);
       },
       "image/jpeg",
       0.92,
