@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
@@ -554,12 +555,12 @@ function caregiverLabel(value?: string | null): string {
 }
 
 export function LCRCurrentUnderstanding() {
+  const router = useRouter();
   const [personId, setPersonId] = useState("");
   const [currentCaregiverId, setCurrentCaregiverId] = useState("");
   const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
   const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
   const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
-  const [clarificationPrefill, setClarificationPrefill] = useState<{ question: string; evidenceIds: string[] } | null>(null);
   const [actionApprovalLoadingId, setActionApprovalLoadingId] = useState<string | null>(null);
   const [actionApprovalError, setActionApprovalError] = useState<string | null>(null);
   const [suggestionDispositionReasons, setSuggestionDispositionReasons] = useState<Record<string, string>>({});
@@ -1129,13 +1130,11 @@ export function LCRCurrentUnderstanding() {
                                   </button>
                                 )}
                                 <button type="button" className="lcr-text-action" onClick={() => {
-                                  setClarificationPrefill({
-                                    question: item.request_text?.trim() || item.description || item.title,
-                                    evidenceIds: item.evidence_ids,
-                                  });
-                                  document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                  const detail = item.request_text?.trim() || item.description || item.title;
+                                  const prompt = `Help me understand this care follow-up: ${detail}. Use the relevant saved care information, explain what is known and what remains uncertain, and do not change the care record.`;
+                                  router.push(`/workspace/companion?prompt=${encodeURIComponent(prompt)}`);
                                 }}>
-                                  Request clarification
+                                  Discuss with SolenOS
                                 </button>
                                 <button type="button" className="lcr-text-action" onClick={() => {
                                   setReviewingSuggestionId(null);
@@ -1696,7 +1695,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} /></div>
       <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
