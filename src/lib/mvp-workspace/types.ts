@@ -31,6 +31,8 @@ export type AttachedDocument = {
   evidenceId?: string;
   /** Stable key reused if the initial upload response is interrupted. */
   uploadRetryKey?: string;
+  /** Stable ISO timestamp for the capture/upload event, reused on retry. */
+  captureTimestamp?: string;
   name: string;
   mimeType: string;
   /** Extracted text when OCR/Tika succeeded; empty if pending/failed. */
