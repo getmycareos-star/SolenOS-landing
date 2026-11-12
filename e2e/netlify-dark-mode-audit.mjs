@@ -265,6 +265,7 @@ try {
               bodyTextPreview: bodyText.slice(0, 240),
               isNotFound: /\\b404\\b|page not found|not found/i.test(bodyText),
               hasWorkspaceMain: Boolean(document.querySelector("main,[role='main']")),
+              hasWorkspaceNav: Boolean(document.querySelector("nav[aria-label='Primary navigation']")),
               handoffsHeading: document.querySelector("#care-handoffs-title")?.textContent?.trim() ?? null,
               issues,
             };
@@ -278,6 +279,8 @@ try {
             navigationStatus < 400 &&
             !navigationIssue &&
             rendered.bodyTextLength > 0 &&
+            rendered.hasWorkspaceMain &&
+            rendered.hasWorkspaceNav &&
             !rendered.isNotFound
           );
           const routeIssues = [
@@ -286,6 +289,8 @@ try {
               : []),
             ...(navigationIssue ? [navigationIssue] : []),
             ...(rendered.bodyTextLength === 0 ? [{ kind: "empty_body" }] : []),
+            ...(!rendered.hasWorkspaceMain ? [{ kind: "missing_workspace_main" }] : []),
+            ...(!rendered.hasWorkspaceNav ? [{ kind: "missing_workspace_navigation" }] : []),
             ...(rendered.isNotFound ? [{ kind: "not_found_content" }] : []),
             ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Care Handoffs"
               ? [{ kind: "missing_handoffs_heading", actual: rendered.handoffsHeading }]
@@ -306,6 +311,7 @@ try {
             bodyTextLength: rendered.bodyTextLength,
             bodyTextPreview: rendered.bodyTextPreview,
             hasWorkspaceMain: rendered.hasWorkspaceMain,
+            hasWorkspaceNav: rendered.hasWorkspaceNav,
             consoleErrors,
             pageErrors,
             contrastIssues: rendered.issues,
