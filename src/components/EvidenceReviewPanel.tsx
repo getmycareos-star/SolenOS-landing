@@ -570,7 +570,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setSourceIntegrity(result as SourceIntegrity)
     } catch {
       setSourceIntegrity(null)
-      setSourceIntegrityError('Source-text integrity could not be checked. This is not evidence of a match; retry when connected.')
+      setSourceIntegrityError('We couldn’t compare the saved wording with its original copy. This does not mean they match. Try again when connected.')
     } finally {
       setSourceIntegrityLoading(false)
     }
@@ -691,7 +691,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       )
       await loadReviews()
     } catch {
-      setError('The review was not confirmed as saved. Check the connection and retry; the source evidence remains unchanged.')
+      setError('The review was not confirmed as saved. Check the connection and retry; the original information remains unchanged.')
     } finally {
       setSaving(false)
     }
@@ -766,7 +766,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <div>This source is linked to another saved source.</div>
             <div>Were these reports separate? {reviewStatusLabel(item.source_independence_status)}</div>
             {item.source_independence_status === 'shared_origin' && (
-              <p>This source and the linked source share an underlying origin. They must not be counted as independent corroboration.</p>
+              <p>This source and the linked source came from the same original. They should not be counted as separate reports.</p>
             )}
             {item.origin_group_key && <p>Shared source grouping is recorded.</p>}
             <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
@@ -788,7 +788,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             {item.negated !== null && item.negated !== undefined && <div>Does the source say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
             {item.hedge_marker && <div>Uncertain wording: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>What is unclear: {item.ambiguity_note}</div>}
-            {item.observer_label && <div>Observer: {item.observer_label}{item.observation_method ? ` · ${item.observation_method}` : ''}</div>}
+            {item.observer_label && <div>Observer: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
             <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
         </details>
@@ -882,7 +882,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
             <p><strong>How recent it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How complete it is:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
-            <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference || 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
+            <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference ? 'An original reference is saved' : 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
@@ -940,7 +940,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <strong>{labels[review.review_type] || 'Saved review'}: {reviewStatusLabel(review.outcome)}</strong>
         <div>{new Date(review.created_at).toLocaleString()}</div>
         <p>{review.rationale}</p>
-        <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {criterion.rationale}</li>)}</ul>
+        <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {caregiverSafeAssistantText(criterion.rationale) || 'No further explanation is available.'}</li>)}</ul>
 
       </article>)}
     </> : null}
