@@ -13,6 +13,9 @@ assert(!source.includes('Extracted text — review and correct before saving'), 
 assert.match(source, /SolenOS will read this saved original in the background/, "the caregiver must be told that server extraction starts after the original is saved");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
 assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
+assert.match(source, /page\.file\.type\.startsWith\("image\/"\) && page\.prepared/, "adjusted image uploads must be marked as scans so PostgreSQL-backed OCR applies the saved crop and rotation");
+assert(!source.includes("Extracting readable text"), "the upload screen must not claim pre-upload OCR is running");
+assert(!source.includes('aria-label="Review extracted text before saving"'), "the intake list must not be labeled as an OCR review step");
 assert.match(source, /if \(!reviewPages\.length\)/, "saving must not require caregivers to review every page first");
 assert.match(source, /scan_review_status", "not_reviewed"/, "the upload must not claim the caregiver reviewed text that has not yet been extracted by the server");
 assert.match(source, /Save files<\/button>/, "caregivers must be able to save originals before reviewing extracted text");
