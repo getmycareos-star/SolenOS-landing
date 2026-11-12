@@ -142,26 +142,26 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
 
 
 
+  const queueProcessing = async (evidenceId: string) => {
+    const result = await postJSON("/documents/" + encodeURIComponent(evidenceId) + "/queue", {}) as {
+      job_id?: string;
+      status?: string;
+    };
+    if (!result.job_id || !["queued", "processing"].includes(result.status || "")) {
+      throw new Error("The server did not confirm that document processing was queued.");
+    }
+    await load();
+    window.dispatchEvent(new Event("careRecordUpdated"));
+  };
+
   const extractAndAnalyze = async (document: LibraryDocument) => {
     const key = "extract:" + document.id;
     setBusy(key);
     setError(null);
     try {
-      await postJSON("/documents/" + encodeURIComponent(document.id) + "/extract", {});
-      let interpretationFailed = false;
-      try {
-        await postJSON("/documents/" + encodeURIComponent(document.id) + "/intelligence", {});
-      } catch {
-        interpretationFailed = true;
-      }
-      await load();
-      // The original evidence and review candidates are now available in this document panel.
-      window.dispatchEvent(new Event("careRecordUpdated"));
-      if (interpretationFailed) {
-        setError("The original and server extraction are saved, but document understanding did not finish. Retry it from the review list.");
-      }
+      await queueProcessing(document.id);
     } catch {
-      setError("Server extraction could not be completed for this saved document. The original remains preserved.");
+      setError("Background processing could not be queued. The original file is still saved; retry without uploading it again.");
     } finally {
       setBusy(null);
     }
@@ -172,11 +172,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     setBusy(key);
     setError(null);
     try {
-      await postJSON("/documents/" + encodeURIComponent(analysis.source_evidence_id) + "/intelligence", {});
-      await load();
-      window.dispatchEvent(new Event("careRecordUpdated"));
+      await queueProcessing(analysis.source_evidence_id);
     } catch {
-      setError("Document understanding could not run. The original and saved extraction are unchanged; retry when the analysis service is available.");
+      setError("Background document understanding could not be resumed. The original and saved extraction are unchanged.");
     } finally {
       setBusy(null);
     }
@@ -261,7 +259,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 : analysis.extractedText ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre>
                   : <p style={{ fontSize: 12 }}>No readable server-extracted text is stored for this document.</p>}
           </details>
-          {analysis.intelligence_status !== "available" && (analysis.intelligence_status !== "partial" || !!analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and server-extracted text remain saved; no LCR facts were created.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>{analysis.intelligence_status === "partial" ? "Resume remaining pages" : "Run / retry document understanding"}</button></div>}
+          {analysis.intelligence_status !== "available" && (analysis.intelligence_status !== "partial" || !!analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and server-extracted text remain saved; no LCR facts were created.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>{analysis.intelligence_status === "partial" ? "Resume remaining pages" : "Retry background processing"}</button></div>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
           {analysis.observations.map((candidate, index) => {
             const key = analysis.analysis_id + ":" + index;
