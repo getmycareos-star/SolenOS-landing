@@ -84,6 +84,7 @@ assert.doesNotMatch(qwenPanel, /Context used:/);
 
 const themeOverrides = fs.readFileSync(path.join(root, "src/app/accessibility-overrides.css"), "utf8");
 const dailyCarePage = fs.readFileSync(path.join(root, "src/app/workspace/daily-care/page.tsx"), "utf8");
+const lcrCurrent = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
 const appLayout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
 assert.ok(appLayout.includes('import "./accessibility-overrides.css";'));
 const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
@@ -161,6 +162,10 @@ assert.ok(naturalDailyUpdate.includes('getJSON("/care-continuity/medications")')
 assert.ok(naturalDailyUpdate.includes("existing reviewed medication record lists"), "the caregiver must be shown what the existing reviewed record says without treating it as a new dose");
 assert.ok(naturalDailyUpdate.includes('getJSON("/documents/intelligence")'), "uncertain medication reports must search existing saved-document extractions");
 assert.ok(naturalDailyUpdate.includes("This extraction is not confirmation of a new dose"), "document extraction must not be presented as a confirmed medication change");
+assert.match(lcrCurrent, /const medicationConflicts = watchUncertainties\.filter/);
+assert.match(lcrCurrent, /Medication instruction needs confirmation/);
+assert.match(lcrCurrent, /prescribing clinician or pharmacist promptly to confirm it/);
+assert.match(lcrCurrent, /SolenOS has not changed the medication record/);
 assert.ok(dailyCarePage.includes('getJSON("/notifications?limit=100&offset=0")'), "Daily Care must check the existing notification feed for delivery failures");
 assert.ok(dailyCarePage.includes("Notification delivery needs attention"), "failed notification delivery must remain visible in Daily Care");
 assert.ok(dailyCarePage.includes('["failed", "expired"]'), "failed or expired push delivery must never be presented as successful delivery");
