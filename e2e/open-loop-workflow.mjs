@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
