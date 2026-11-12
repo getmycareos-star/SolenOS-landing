@@ -12,7 +12,7 @@ const required: Array<[string, RegExp]> = [
   ["history is visibly rendered", /Previous updates[\s\S]*?historyById\[loop\.id\]/],
   ["backend reassessment is requested", /postJSON\("\/open-loops\/reassess"/],
   ["source evidence is fetched from the active person's care record", /getJSON\(\`\/evidence\/\$\{encodeURIComponent\(activeSession\.person\.id\)\}\`\)/],
-  ["professional response requires an existing selected source", /action === "response" && loop\.loop_type === "professional_input"[\s\S]*?const selected = sources\.find/],
+  ["professional response requires an existing selected source", /action === "response" && loop\.loop_type === "professional_input"[\s\S]*?const sourceChoice = window\.prompt[\s\S]*?const selected = Number\.isInteger\(sourceIndex\)[\s\S]*?selectedSourceId = String\(selected\.id\)/]
   ["outcome corroboration requires two distinct persisted source IDs", /if \(action === "verify"\)[\s\S]*?secondSourceId[\s\S]*?second\.id === selectedSourceId[\s\S]*?evidence_id: String\(second\.id\)/],
   ["independent source relationship is persisted before corroboration", /relationship_type: "corroborates"[\s\S]*?source_independence_status: "independent"[\s\S]*?scope_type: "evidence_pair"[\s\S]*?await postJSON\(relationshipPath, relationshipBody\)/],
   ["outcome verification calls the explicit corroboration endpoint", /action === "verify" \? "corroborate-outcome"/],
