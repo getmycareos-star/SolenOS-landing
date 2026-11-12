@@ -49,7 +49,7 @@ assert.match(workspaceSource, /server extraction and document understanding are 
 assert.match(workspaceSource, /d\.status === "saved" && d\.evidenceId/, "saved evidence must remain eligible for care-entry submission");
 assert.match(workspaceSource, /evidence_id: d\.evidenceId/, "care-entry submission must reference the persisted evidence ID");
 assert.match(intelligenceReviewSource, /analysis\.intelligence_status !== "partial" \|\| !!analysis\.unprocessed_page_numbers\?\.length/, "partially processed documents with remaining pages must offer resume");
-assert.match(intelligenceReviewSource, /Resume remaining pages/, "caregivers must be able to resume unfinished document understanding");
+assert.match(intelligenceReviewSource, /Continue reading/, "caregivers must be able to resume unfinished document understanding");
 assert.match(intelligenceReviewSource, /processing_jobs\?/, "the review panel must read durable background job state");
 assert.match(intelligenceReviewSource, /Processing in the background\. You can leave this page\./, "caregivers must know the original is processing without staying in the app");
 assert.match(intelligenceReviewSource, /Processing in the background\. You can leave this page\./, "active processing must be visible without offering a duplicate retry");
