@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
-import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
 
 type CareEvent = {
   id: string;
@@ -268,6 +268,11 @@ export default function TimelinePage() {
   const [historyCoverage, setHistoryCoverage] = useState<{ hasMore: boolean; total: number }>({ hasMore: false, total: 0 });
   const [historyOffset, setHistoryOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [correctionTargetId, setCorrectionTargetId] = useState<string | null>(null);
+  const [correctionText, setCorrectionText] = useState("");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [correctionSaving, setCorrectionSaving] = useState(false);
+  const [correctionMessage, setCorrectionMessage] = useState("");
 
   const loadEvents = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -353,6 +358,43 @@ export default function TimelinePage() {
   useEffect(() => {
     void loadEvents();
   }, [loadEvents]);
+
+  const submitCorrection = useCallback(async (event: CareEvent) => {
+    if (!correctionText.trim() || correctionSaving) return;
+    setCorrectionSaving(true);
+    setCorrectionMessage("");
+    try {
+      const session = await ensureAnonymousSession();
+      const caregiverId = getCaregiverId();
+      if (!session.person?.id || !session.access_token || !caregiverId) {
+        throw new Error("A verified care session is required to save a correction.");
+      }
+      const result = await postJSON("/corrections", {
+        person_id: session.person.id,
+        caregiver_id: caregiverId,
+        target_type: "care_event",
+        target_id: event.id,
+        original_text: event.description || event.title,
+        corrected_text: correctionText.trim(),
+        reason: correctionReason.trim() || undefined,
+      }) as { id?: string; care_continuity_execution?: { stages?: Record<string, string> } };
+      if (!result?.id) {
+        throw new Error("The server did not confirm that the correction was saved.");
+      }
+      const reconciliation = result.care_continuity_execution?.stages?.reconciliation;
+      setCorrectionMessage(reconciliation === "committed"
+        ? "Correction saved. The original entry remains unchanged, and the care record was reassessed."
+        : "Correction saved as a separate record. The original entry remains unchanged; care-record reassessment is still pending.");
+      setCorrectionTargetId(null);
+      setCorrectionText("");
+      setCorrectionReason("");
+      await loadEvents(true);
+    } catch (cause) {
+      setCorrectionMessage(cause instanceof Error ? cause.message : "The correction could not be saved. The original entry is unchanged.");
+    } finally {
+      setCorrectionSaving(false);
+    }
+  }, [correctionText, correctionReason, correctionSaving, loadEvents]);
 
   const visibleEvents = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -510,7 +552,55 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
                           </dl>
                           {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Recorded significance:</strong> {event.significance_verdict}</p>}
-                          <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This entry shows persisted event fields. Missing metadata is displayed as missing, not inferred. Corrections and original-document viewing are only offered where the backend provides a verified workflow.</p>
+                          {event.source_type === "care_event" && (
+                            <div style={{ marginTop: 16, borderTop: "1px solid var(--solenos-hairline)", paddingTop: 14 }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCorrectionTargetId(correctionTargetId === event.id ? null : event.id);
+                                  setCorrectionText("");
+                                  setCorrectionReason("");
+                                  setCorrectionMessage("");
+                                }}
+                                style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: "9px 12px", background: "var(--theme-panel-bg)", color: "inherit", font: "inherit", cursor: "pointer" }}
+                              >
+                                {correctionTargetId === event.id ? "Close correction" : "Suggest a correction"}
+                              </button>
+                              {correctionTargetId === event.id && (
+                                <form onSubmit={(submitEvent) => { submitEvent.preventDefault(); void submitCorrection(event); }} style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                                  <p style={{ margin: 0, color: "var(--solenos-muted)", fontSize: 13 }}>
+                                    This adds a separate correction record. It does not erase or silently rewrite the original entry.
+                                  </p>
+                                  <label style={{ display: "grid", gap: 5, fontSize: 13, fontWeight: 650 }}>
+                                    What should be corrected?
+                                    <textarea
+                                      value={correctionText}
+                                      onChange={(inputEvent) => setCorrectionText(inputEvent.target.value)}
+                                      rows={4}
+                                      maxLength={4000}
+                                      required
+                                      placeholder="Describe the accurate information."
+                                      style={{ width: "100%", border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, background: "var(--theme-panel-bg)", color: "inherit", font: "inherit", resize: "vertical" }}
+                                    />
+                                  </label>
+                                  <label style={{ display: "grid", gap: 5, fontSize: 13, fontWeight: 650 }}>
+                                    Reason (optional)
+                                    <input
+                                      value={correctionReason}
+                                      onChange={(inputEvent) => setCorrectionReason(inputEvent.target.value)}
+                                      maxLength={1000}
+                                      placeholder="Why is this correction needed?"
+                                      style={{ width: "100%", border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, background: "var(--theme-panel-bg)", color: "inherit", font: "inherit" }}
+                                    />
+                                  </label>
+                                  <button type="submit" disabled={correctionSaving || !correctionText.trim()} style={{ justifySelf: "start", border: 0, borderRadius: 8, padding: "10px 14px", background: "var(--theme-selected-bg)", color: "var(--theme-panel-fg)", font: "inherit", fontWeight: 700, cursor: correctionSaving ? "wait" : "pointer" }}>
+                                    {correctionSaving ? "Saving correction…" : "Save correction"}
+                                  </button>
+                                </form>
+                              )}
+                            </div>
+                          )}
+                          <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This entry shows persisted source details. Missing metadata is displayed as missing, not inferred.</p>
                         </div>
                       )}
                     </article>
@@ -520,6 +610,12 @@ export default function TimelinePage() {
             </div>
           ))}
         </section>
+      )}
+
+      {correctionMessage && (
+        <p role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 13 }}>
+          {correctionMessage}
+        </p>
       )}
 
       {historyCoverage.hasMore && (
