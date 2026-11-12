@@ -418,7 +418,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
       {necessaryQuestions.length === 0 && <p>No care details need your attention right now. SolenOS will keep other incomplete information in the record without asking you to manage it.</p>}
-      {openQuestions.length > 0 && <>
+      {questions.length > 0 && <>
         <div style={{ display: "grid", gap: 10 }}>
           {necessaryQuestions.map((item) => (
             <button
