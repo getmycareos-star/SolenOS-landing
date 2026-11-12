@@ -1882,19 +1882,43 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         </section>
         )}
         
-        {/* Notes section */}
+        {/* Keep free-text capture first: no category or clinical assessment is required. */}
         {(mode === "all" || mode === "something" || mode === "note") && (
         <section>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Notes</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>
+            {mode === "something" ? "What happened?" : mode === "note" ? "Note" : "Notes"}
+          </h2>
           
-          <div style={{ 
-            background: 'var(--surface)', 
-            border: '1px solid var(--border)', 
-            borderRadius: '8px', 
-            padding: '16px' 
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            padding: '16px'
           }}>
+            <label htmlFor="daily-capture-original-words" style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+              {mode === "something" ? "Tell us what happened" : mode === "note" ? "Your note" : "Additional notes"}
+            </label>
+            <textarea
+              id="daily-capture-original-words"
+              value={form.notes}
+              onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
+              placeholder={mode === "something"
+                ? "Share what you noticed in your own words. A few words are enough."
+                : mode === "note" ? "Write your note in your own words." : "Add any additional notes, if useful."}
+              rows={4}
+              maxLength={4000}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg)',
+                fontSize: '14px',
+                resize: 'vertical'
+              }}
+            />
             {(mode === "something" || mode === "note") && (
-              <div style={{ marginBottom: 14 }}>
+              <div style={{ marginTop: 14 }}>
                 <label htmlFor="daily-capture-event-time" style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
                   When did this happen? <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>Optional</span>
                 </label>
@@ -1907,24 +1931,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                 />
               </div>
             )}
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>
-              {mode === "something" ? "Tell us what happened" : mode === "note" ? "Your note" : "Additional Notes"}
-            </label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Add any additional notes about the day"
-              rows={4}
-              style={{ 
-                width: '100%', 
-                padding: '10px 12px', 
-                borderRadius: '6px', 
-                border: '1px solid var(--border)', 
-                background: 'var(--bg)', 
-                fontSize: '14px', 
-                resize: 'vertical' 
-              }}
-            />
+            {mode === "something" && (
+              <p style={{ margin: "10px 0 0", color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.5 }}>
+                Your original words are saved. You do not need to choose a category or explain the cause.
+              </p>
+            )}
           </div>
         </section>
         )}
