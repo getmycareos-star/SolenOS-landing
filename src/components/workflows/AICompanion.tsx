@@ -1,17 +1,13 @@
 
 'use client'
 
-import { useState, useRef, useEffect, type ChangeEvent } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
-import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getJSON, getAnonymousAccessToken, getPersonId } from '@/api/client'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
+import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 const AppointmentWorkspace = dynamic(() => import('@/components/workflows/AppointmentWorkspace'), { ssr: false })
-import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
-
-const CASUAL_GREETING = /^(?:hi|hello|hey|hiya|howdy|how are you(?: doing| today)?|how'?s it going|what'?s up|good morning|good afternoon|good evening|good night|thanks|thank you(?: so much)?|bye|goodbye|see you)[.!?,;:]*$/i
 
 function formatHandoffDetail(value: unknown): string {
   if (typeof value === 'string') return value.replaceAll('_', ' ')
@@ -87,18 +83,6 @@ interface HandoffDraft {
   }
   limitations: Array<{ source: string; status: string; reason?: string }>
   warning: string
-}
-
-interface CareUpdateProposal {
-  id: string
-  status: string
-  proposal_type: string
-  proposed_change: { asserted_value?: string; source_quote?: string; event_time_text?: string | null; information_status?: string }
-  source_message_id: string
-  source_conversation_id: string
-  candidate_index: number
-  proposal_version: number
-  created_at?: string | null
 }
 
 interface ClaimSourceReference {
@@ -186,7 +170,6 @@ interface Message {
   ai_generated?: boolean
   written_to_lcr?: boolean
   persistence?: string
-  care_update_candidates?: CareUpdateProposal[]
   timestamp: Date
 }
 
@@ -213,30 +196,12 @@ const STARTER_PROMPTS = [
 ]
 
 export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
-  const router = useRouter()
-  const [addMenuOpen, setAddMenuOpen] = useState(false)
-  const uploadInputRef = useRef<HTMLInputElement>(null)
-  const captureInputRef = useRef<HTMLInputElement>(null)
-  const cameraVideoRef = useRef<HTMLVideoElement>(null)
-  const cameraStreamRef = useRef<MediaStream | null>(null)
-  const [cameraMode, setCameraMode] = useState<'scan' | null>(null)
-  const [cameraError, setCameraError] = useState<string | null>(null)
-  const [capturedPages, setCapturedPages] = useState<File[]>([])
-  const [cameraStarting, setCameraStarting] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
-  const [candidateCorrections, setCandidateCorrections] = useState<Record<string, string>>({})
-  const [candidateCorrectionContexts, setCandidateCorrectionContexts] = useState<Record<string, string>>({})
-  const [candidateErrors, setCandidateErrors] = useState<Record<string, string>>({})
-  const [candidateBusy, setCandidateBusy] = useState<Record<string, boolean>>({})
-  const [pendingCareUpdates, setPendingCareUpdates] = useState<CareUpdateProposal[]>([])
-  const [pendingCareUpdatesError, setPendingCareUpdatesError] = useState<string | null>(null)
-  const [pendingCareUpdatesRefreshing, setPendingCareUpdatesRefreshing] = useState(false)
-  const [careReviewReceipt, setCareReviewReceipt] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
   const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
@@ -250,116 +215,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const pendingTurnText = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
-
-  const openDocumentIntake = (mode: DocumentIntakeMode) => {
-    // Invoke native pickers before scheduling React state updates. Mobile browsers
-    // require the picker call to remain directly inside the trusted user gesture.
-    if (mode === 'upload') {
-      uploadInputRef.current?.click()
-      setAddMenuOpen(false)
-      return
-    }
-    if (mode === 'capture') {
-      captureInputRef.current?.click()
-      setAddMenuOpen(false)
-      return
-    }
-    setAddMenuOpen(false)
-    setCapturedPages([])
-    setCameraError(null)
-    setCameraMode('scan')
-  }
-
-  useEffect(() => {
-    if (!cameraMode) return
-    let cancelled = false
-    setCameraStarting(true)
-    setCameraError(null)
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError('Camera access is not available in this browser. Try Upload document instead.')
-      setCameraStarting(false)
-      return
-    }
-    void navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-      .then(stream => {
-        if (cancelled) {
-          stream.getTracks().forEach(track => track.stop())
-          return
-        }
-        cameraStreamRef.current = stream
-        if (cameraVideoRef.current) {
-          cameraVideoRef.current.srcObject = stream
-          void cameraVideoRef.current.play().catch(() => setCameraError('The camera could not start. Check browser camera permission and try again.'))
-        }
-        setCameraStarting(false)
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCameraStarting(false)
-          setCameraError('SolenOS could not access the camera. Allow camera permission in your browser settings, then try again.')
-        }
-      })
-    return () => {
-      cancelled = true
-      cameraStreamRef.current?.getTracks().forEach(track => track.stop())
-      cameraStreamRef.current = null
-    }
-  }, [cameraMode])
-
-  const closeCameraIntake = () => {
-    cameraStreamRef.current?.getTracks().forEach(track => track.stop())
-    cameraStreamRef.current = null
-    setCameraMode(null)
-    setCapturedPages([])
-    setCameraError(null)
-  }
-
-  const captureCameraPage = () => {
-    const video = cameraVideoRef.current
-    if (!video || !video.videoWidth || !video.videoHeight) {
-      setCameraError('The camera is not ready yet. Wait a moment and try again.')
-      return
-    }
-    const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    const context = canvas.getContext('2d')
-    if (!context) {
-      setCameraError('This device could not capture the camera image. Try again or use Upload document.')
-      return
-    }
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    canvas.toBlob(blob => {
-      if (!blob) {
-        setCameraError('The photo could not be created. Please try again.')
-        return
-      }
-      const page = new File([blob], `solenos-scan-${Date.now()}-${capturedPages.length + 1}.jpg`, { type: 'image/jpeg', lastModified: Date.now() })
-      setCapturedPages(current => [...current, page])
-      setCameraError(null)
-      // Scan mode keeps the camera open until the caregiver reviews all captured pages.
-    }, 'image/jpeg', 0.92)
-  }
-
-  const finishCameraIntake = (files: File[], mode: 'scan') => {
-    if (!files.length) {
-      setCameraError('Capture at least one page before continuing.')
-      return
-    }
-    setPendingDocumentIntake(files, mode)
-    cameraStreamRef.current?.getTracks().forEach(track => track.stop())
-    cameraStreamRef.current = null
-    setCameraMode(null)
-    router.push('/workspace/documents?intake=1')
-  }
-
-  const completeDocumentIntake = (event: ChangeEvent<HTMLInputElement>, mode: DocumentIntakeMode) => {
-    const files = Array.from(event.currentTarget.files ?? [])
-    event.currentTarget.value = ''
-    if (!files.length) return
-    setPendingDocumentIntake(files, mode)
-    router.push('/workspace/documents?intake=1')
-  }
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -395,43 +250,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setHandoffDraftError(null)
   }
 
-  const refreshPendingCareUpdates = async (conversationId?: string | null): Promise<CareUpdateProposal[]> => {
-    setPendingCareUpdatesRefreshing(true)
-    try {
-      const suffix = conversationId ? '?session_id=' + encodeURIComponent(conversationId) : ''
-      const result = await getJSON('/companion/care-updates' + suffix) as any
-      if (!Array.isArray(result?.items)) throw new Error('Incomplete care-update response')
-      const items = result.items as CareUpdateProposal[]
-      setPendingCareUpdates(items)
-      setPendingCareUpdatesError(null)
-      return items
-    } catch {
-      setPendingCareUpdatesError('Pending care updates could not be loaded. Your conversation is still saved. Check your connection and refresh again.')
-      return []
-    } finally {
-      setPendingCareUpdatesRefreshing(false)
-    }
-  }
-
-  useEffect(() => {
-    // Reopen pending reviews only when this browser already has a scoped session.
-    // Do not bootstrap a new care record merely by opening Companion.
-    if (!getAnonymousAccessToken()) return
-    let active = true
-    void refreshPendingCareUpdates().then(items => {
-      if (!active) return
-      setPendingCareUpdates(items)
-    })
-    return () => { active = false }
-  }, [])
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    const shouldIdentifyCareUpdates = !CASUAL_GREETING.test(submittedText)
     if (!submittedText || loading) return
     setRequestError(null)
     setLoading(true)
@@ -481,28 +305,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
-        care_update_candidates: shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) ? response.care_update_candidates : [],
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-      if (shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) && response.care_update_candidates.length > 0) {
-        setPendingCareUpdates(previous => {
-          const merged = new Map(previous.map(item => [item.id, item]))
-          for (const item of response.care_update_candidates as CareUpdateProposal[]) merged.set(item.id, item)
-          return Array.from(merged.values())
-        })
-      }
-      // Candidate inference runs after the conversation response. Refresh without
-      // holding the chat request open; the panel remains manually refreshable.
-      const refreshAfterResponse = async (attempt = 0) => {
-        const items = await refreshPendingCareUpdates(response.session_id)
-        if (items.length > 0) window.dispatchEvent(new Event("careRecordUpdated"))
-        if (!items.length && attempt < 3) {
-          window.setTimeout(() => void refreshAfterResponse(attempt + 1), 2500)
-        }
-      }
-      if (shouldIdentifyCareUpdates) window.setTimeout(() => void refreshAfterResponse(), 1200)
-
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
       setInput(submittedText)
@@ -512,49 +317,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     }
   }
 
-
-  const reviewCareUpdate = async (proposal: CareUpdateProposal, decision: 'accept' | 'correct' | 'reject') => {
-    const correctedText = (candidateCorrections[proposal.id] ?? '').trim()
-    if (decision === 'correct' && !correctedText) {
-      setCandidateErrors(prev => ({ ...prev, [proposal.id]: 'Enter the corrected wording first.' }))
-      return
-    }
-    setCandidateBusy(prev => ({ ...prev, [proposal.id]: true }))
-    setCandidateErrors(prev => ({ ...prev, [proposal.id]: '' }))
-    try {
-      const result = await postJSON('/companion/care-updates/' + encodeURIComponent(proposal.id) + '/review', {
-        decision,
-        corrected_text: decision === 'correct' ? correctedText : undefined,
-        correction_context: decision === 'correct' ? (candidateCorrectionContexts[proposal.id] ?? '').trim() || undefined : undefined,
-      }) as any
-      if (decision === 'accept') {
-        const reconciliation = result?.care_continuity_execution?.stages?.reconciliation
-        setCareReviewReceipt(
-          reconciliation === 'committed'
-            ? 'The accepted update and its care-record reassessment were saved.'
-            : 'The update was reviewed, but the care-record reassessment could not be confirmed. Refresh the care record before relying on it.',
-        )
-      }
-      setPendingCareUpdates(previous => previous.flatMap(item => {
-        if (item.id !== proposal.id) return [item]
-        return result?.corrected_proposal ? [result.corrected_proposal as CareUpdateProposal] : []
-      }))
-      setMessages(previous => previous.map(message => {
-        if (!message.care_update_candidates?.some(item => item.id === proposal.id)) return message
-        const updated = message.care_update_candidates.map(item =>
-          item.id === proposal.id ? { ...item, status: result?.proposal?.status ?? (decision === 'correct' ? 'corrected' : decision === 'accept' ? 'accepted' : 'rejected') } : item
-        )
-        if (result?.corrected_proposal) updated.push(result.corrected_proposal as CareUpdateProposal)
-        return { ...message, care_update_candidates: updated }
-      }))
-      window.dispatchEvent(new Event("careRecordUpdated"))
-      setCandidateCorrections(prev => ({ ...prev, [proposal.id]: '' }))
-    } catch {
-      setCandidateErrors(prev => ({ ...prev, [proposal.id]: 'The review could not be saved. The proposal remains unchanged. Retry when connected.' }))
-    } finally {
-      setCandidateBusy(prev => ({ ...prev, [proposal.id]: false }))
-    }
-  }
 
   useEffect(() => {
     const prompt = initialPrompt?.trim()
@@ -823,30 +585,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
       <div className="companion-workspace">
         <main className="companion-conversation" aria-label="Conversation">
-              {pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
-              {careReviewReceipt && <p role="status" className="companion-care-update-source">{careReviewReceipt}</p>}
-              {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
-                <div className="companion-pending-care-heading">
-                  <h3>Care updates awaiting your review</h3>
-                  <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates" disabled={pendingCareUpdatesRefreshing}>{pendingCareUpdatesRefreshing ? 'Refreshing…' : 'Refresh'}</button>
-                </div>
-                {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
-                  <div className="companion-care-update-heading"><strong>Proposed care-record update</strong><span>Awaiting review</span></div>
-                  <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
-                  <p className="companion-care-update-source">Qwen extracted this candidate from the original Companion message. It is not an accepted LCR assertion. Review it to accept, correct or reject it.</p>
-                  {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
-                  <div className="companion-care-update-actions">
-                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
-                    <label><span className="sr-only">Correct proposed wording</span>
-                      <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Corrected statement" maxLength={4000} />
-                      <input value={candidateCorrectionContexts[candidate.id] ?? ''} onChange={event => setCandidateCorrectionContexts(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Additional source context (if needed)" maxLength={4000} />
-                    </label>
-                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
-                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
-                  </div>
-                  {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
-                </div>)}
-              </section>}
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
@@ -874,27 +612,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
-                    {!isUser && msg.care_update_candidates?.map(candidate => {
-                      const value = candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''
-                      const pending = candidate.status === 'pending_authorization'
-                      return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
-                        <div className="companion-care-update-heading"><strong>Proposed care-record update</strong><span>{pending ? 'Awaiting review' : candidate.status.replace(/_/g, ' ')}</span></div>
-                        <p>{value}</p>
-                        <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Original proposal'}</p>
-                        {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
-                        {pending ? <div className="companion-care-update-actions">
-                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
-                          <label>
-                            <span className="sr-only">Correct proposed wording</span>
-                            <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Corrected statement" maxLength={4000} />
-                            <input value={candidateCorrectionContexts[candidate.id] ?? ''} onChange={event => setCandidateCorrectionContexts(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Additional source context (if needed)" maxLength={4000} />
-                          </label>
-                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
-                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
-                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Caregiver-reviewed report in the Living Care Record; not independently clinically verified.' : candidate.status === 'rejected' ? 'Rejected. No LCR assertion was created; the source-linked review decision remains in proposal history.' : candidate.status === 'corrected' ? 'The original proposal is retained. The corrected candidate is separate and still requires acceptance before an LCR assertion is created.' : 'Candidate awaiting caregiver review; no LCR assertion has been created.'}</p>}
-                        {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
-                      </section>
-                    })}
                     {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Selected saved sources">
                       <strong>Selected saved sources</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
@@ -977,48 +694,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </div>
 
       <div className="companion-composer-wrap">
-        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'upload')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
-        <input ref={captureInputRef} type="file" accept="image/*" capture="environment" tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'capture')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
         <form className="companion-composer" aria-label="Send a message to Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
-            <div className="companion-add-wrap">
-              <button type="button" className="companion-add-button" aria-label={addMenuOpen ? "Close attachment actions" : "Add document or image"} aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}>{addMenuOpen ? <X size={19} /> : <Plus size={19} />}</button>
-              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
-                <button type="button" role="menuitem" onClick={() => openDocumentIntake("upload")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file from this device</small></span></button>
-                <button type="button" role="menuitem" onClick={() => openDocumentIntake("capture")}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open the camera now</small></span></button>
-                <button type="button" role="menuitem" onClick={() => openDocumentIntake("scan")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Photograph pages, then review them</small></span></button>
-              </div>}
-            </div>
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
 
-      {cameraMode && (
-        <div role="dialog" aria-modal="true" aria-label={cameraMode === 'scan' ? 'Scan a document' : 'Take a photo'} onClick={event => { if (event.target === event.currentTarget) closeCameraIntake() }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(10,18,13,.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
-          <section style={{ width: 'min(760px,100%)', maxHeight: '94dvh', overflow: 'auto', display: 'grid', gap: 12, padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--text)' }}>
-            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div><h3 style={{ margin: 0, fontSize: 18 }}>{cameraMode === 'scan' ? 'Scan document' : 'Take a photo'}</h3><p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{cameraMode === 'scan' ? 'Position each page in the frame. Capture all pages before reviewing.' : 'Position the care document in the frame and take a photo.'}</p></div>
-              <button type="button" onClick={closeCameraIntake} aria-label="Close camera" style={{ minWidth: 42, minHeight: 42, border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface)', color: 'var(--text)' }}>✕</button>
-            </header>
-            <div style={{ position: 'relative', background: '#111', borderRadius: 12, overflow: 'hidden', minHeight: 220 }}>
-              <video ref={cameraVideoRef} autoPlay playsInline muted style={{ display: 'block', width: '100%', maxHeight: '58dvh', objectFit: 'contain' }} />
-              {cameraStarting && <p style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', margin: 0, color: '#fff' }}>Opening camera…</p>}
-            </div>
-            {cameraError && <p role="alert" style={{ margin: 0, padding: 10, borderRadius: 8, background: 'rgba(180,50,50,.1)', color: 'var(--text)' }}>{cameraError}</p>}
-            {cameraMode === 'scan' && capturedPages.length > 0 && <p role="status" style={{ margin: 0, fontSize: 13 }}>{capturedPages.length} page{capturedPages.length === 1 ? '' : 's'} captured. Capture another page or continue to review.</p>}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' }}>
-              <button type="button" onClick={captureCameraPage} disabled={cameraStarting || !!cameraError} style={{ minHeight: 46, flex: '1 1 160px', border: 0, borderRadius: 10, background: '#b9d5b5', color: '#17251c', fontWeight: 750 }}>{cameraMode === 'scan' ? 'Capture page' : 'Take photo'}</button>
-              {cameraMode === 'scan' && <button type="button" onClick={() => finishCameraIntake(capturedPages, 'scan')} disabled={!capturedPages.length} style={{ minHeight: 46, flex: '1 1 160px', border: '1px solid #8eae8a', borderRadius: 10, background: 'var(--surface)', color: 'var(--text)', fontWeight: 700 }}>Review {capturedPages.length || ''} page{capturedPages.length === 1 ? '' : 's'}</button>}
-              {cameraMode === 'scan' && capturedPages.length > 0 && <button type="button" onClick={() => setCapturedPages([])} style={{ minHeight: 42, border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface)', color: 'var(--text)', padding: '8px 12px' }}>Clear pages</button>}
-            </div>
-          </section>
-        </div>
-      )}
 
 
       <style jsx>{`

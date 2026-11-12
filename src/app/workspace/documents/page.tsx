@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  Upload,
   Download,
   FileImage,
   FileText,
   LoaderCircle,
   RefreshCw,
+  ScanLine,
   Search,
   ShieldCheck,
   X,
@@ -16,8 +18,8 @@ import {
 
 import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
-import { consumePendingDocumentIntake, type DocumentIntakeMode } from "@/lib/companion-document-intake";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
+import { ScanDocumentCapture, type ScanPageFile } from "@/components/mvp-workspace/capture/ScanDocumentCapture";
 import { LivingArchiveMark } from "@/components/brand";
 
 type EvidenceRecord = {
@@ -44,6 +46,7 @@ type DocumentItem = {
 };
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
+type DocumentIntakeMode = "upload" | "scan";
 type CropInsets = { top: number; right: number; bottom: number; left: number };
 type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
@@ -266,9 +269,11 @@ async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
 
 export default function DocumentsPage() {
   const [intakeMode, setIntakeMode] = useState<DocumentIntakeMode | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [preparingScan, setPreparingScan] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
   const [scanPreparing, setScanPreparing] = useState(false);
   const [scanSaving, setScanSaving] = useState(false);
@@ -329,9 +334,14 @@ export default function DocumentsPage() {
     );
   }, [documents, query]);
 
-  const handleFiles = async (fileList: FileList | File[] | null) => {
+  const handleFiles = async (fileList: FileList | File[] | null, mode: DocumentIntakeMode) => {
     const files = Array.from(fileList || []);
     if (!files.length) return;
+    if (reviewPages.length > 0 && intakeMode && intakeMode !== mode) {
+      setUploadMessage({ kind: "error", text: "Save or discard the current review batch before switching between uploads and scanned pages." });
+      return;
+    }
+    setIntakeMode(mode);
     setUploadMessage(null);
     const invalid = files.find((file) => file.size <= 0 || file.size > MAX_FILE_BYTES);
     if (invalid) {
@@ -344,32 +354,47 @@ export default function DocumentsPage() {
       for (const file of files) {
         const isScannedImage = file.type.startsWith("image/");
         const extracted = isScannedImage
-          ? { text: "", note: "Set page rotation/crop if needed, then apply the image adjustments before extracting text." }
+          ? { text: "", note: "Review the original page, adjust rotation/crop if needed, then apply the image adjustments before extracting text." }
           : await extractText(file);
         pages.push({ ingestionKey: crypto.randomUUID(), captureTimestamp: new Date().toISOString(), file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
       }
       setReviewPages((current) => [...current, ...pages]);
       setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
+    } catch {
+      setUploadMessage({ kind: "error", text: "SolenOS could not prepare one or more files. The originals have not been uploaded. Try again or choose another file." });
     } finally {
       setPreparingScan(false);
     }
   };
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("intake") !== "1") return;
-    params.delete("intake");
-    const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
-    window.history.replaceState({}, "", next);
 
-    const pending = consumePendingDocumentIntake();
-    if (!pending?.files.length) {
-      setUploadMessage({ kind: "error", text: "The selected file or photo was not available after opening Documents. Return to Companion and try again." });
+  const openDocumentScanner = () => {
+    if (reviewPages.length > 0 && intakeMode !== "scan") {
+      setUploadMessage({ kind: "error", text: "Save or discard the current upload batch before starting a document scan." });
       return;
     }
-    setIntakeMode(pending.mode);
-    void handleFiles(pending.files);
-  }, []);
+    setScanOpen(true);
+  };
+
+  const handleScanPages = (files: ScanPageFile[]) => {
+    const timestamp = new Date().toISOString();
+    const pages: ReviewPage[] = files.map((file) => ({
+      ingestionKey: crypto.randomUUID(),
+      captureTimestamp: timestamp,
+      file,
+      text: "",
+      note: "Scan captured. Apply crop and straighten adjustments, then extract and review the text before saving.",
+      reviewed: false,
+      uncertain: false,
+      rotation: file.scanRotationDegrees ?? 0,
+      crop: file.scanCropInsetsPercent ?? { top: 0, right: 0, bottom: 0, left: 0 },
+      prepared: false,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setIntakeMode("scan");
+    setReviewPages((current) => [...current, ...pages]);
+    setUploadMessage({ kind: "success", text: `${pages.length} scanned page(s) added. Review each page before saving the original files.` });
+  };
 
   const prepareImagePage = async (index: number) => {
     const page = reviewPages[index];
@@ -533,7 +558,14 @@ export default function DocumentsPage() {
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
 
+      <section aria-label="Add care documents" style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
+        <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.csv,.json,.xml,.eml,.msg" style={{ display: "none" }} onChange={(event) => { const files = event.currentTarget.files; event.currentTarget.value = ""; void handleFiles(files, "upload"); }} />
+        <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Upload size={17} />Upload files</button>
+        <button type="button" onClick={openDocumentScanner} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
+      </section>
+
       <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
+      <ScanDocumentCapture open={scanOpen} onClose={() => setScanOpen(false)} onCapturePages={handleScanPages} />
 
       <section aria-label="Document library" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>

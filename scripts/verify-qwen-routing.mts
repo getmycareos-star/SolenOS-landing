@@ -120,8 +120,9 @@ assert(!companion.includes("connected backend"), "Technical service details must
 
 const documentPage = read("src/app/workspace/documents/page.tsx");
 assert(!documentPage.includes("QwenAssistPanel"), "The saved-document library must not mount a separate AI workflow panel.");
-assert(!documentPage.includes('capture="environment"'), "Camera intake is launched from Companion, not the saved-document library.");
-assert(!documentPage.includes('type="file"'), "The saved-document library must not expose a second upload launcher.");
+assert(documentPage.includes('type="file"'), "Documents must own the original-file upload launcher.");
+assert(documentPage.includes("ScanDocumentCapture") && documentPage.includes("openDocumentScanner"), "Documents must own the multi-page camera scanner.");
+assert(!documentPage.includes("consumePendingDocumentIntake"), "Document intake must not depend on Companion's in-memory file handoff.");
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Reviewed original uploads must persist through the backend.");
