@@ -12,6 +12,7 @@ const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
 const clarificationPanel = fs.readFileSync("src/components/ClarificationWorkflowPanel.tsx", "utf8");
+const settings = fs.readFileSync("src/app/workspace/settings/page.tsx", "utf8");
 
 assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR home must redirect to the Companion");
 assert.doesNotMatch(legacyRoute, /SOLENOS · LIVING CARE RECORD|Record timeline|Add to record|CognitiveWorkspace/, "old LCR interface must not be rendered as a separate home");
@@ -50,6 +51,7 @@ assert.doesNotMatch(currentUnderstanding, /Request clarification|Ask another que
 assert.doesNotMatch(clarificationPanel, /Ask another question|Save question|postJSON\("\/uncertainty\/questions"/, "clarification questions are system-generated, not caregiver-authored");
 assert.match(clarificationPanel, /item\.necessity === "necessary"/, "only explicitly necessary questions are exposed to caregivers");
 assert.match(clarificationPanel, /Nothing needs your attention right now/, "no unnecessary question is presented as a caregiver task");
+assert.match(settings, /Review in care record/, "active proactive messages link back to the Living Care Record");
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
 assert.doesNotMatch(integrityPanel, /No contradiction records returned|current engine inputs/i, "backend query terminology is not used in caregiver-facing empty states");
