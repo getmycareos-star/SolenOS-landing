@@ -417,7 +417,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setFreshnessAssessments(history.items)
       setFreshnessHistoryError('')
     } catch (cause) {
-      setFreshnessPolicyError(cause instanceof Error ? cause.message : 'The review could not be confirmed as saved.')
+      setFreshnessPolicyError('The review could not be confirmed as saved.')
     } finally {
       setFreshnessPolicySaving(false)
     }
@@ -488,7 +488,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setRecordHistoryAsOf(localValue)
       setRecordSnapshotNotice('A copy of the care record was saved. Choose “Show earlier record” to see what was saved.')
     } catch (error) {
-      setRecordHistoryError(error instanceof Error ? error.message : 'The care record copy could not be saved. Try again.')
+      setRecordHistoryError('The care record copy could not be saved. Try again.')
     } finally {
       setRecordSnapshotSaving(false)
     }
