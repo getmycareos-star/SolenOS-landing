@@ -42,7 +42,7 @@ assert(!captureSource.includes('"/documents/" + encodeURIComponent(evidenceId) +
 assert(!captureSource.includes('"/documents/" + encodeURIComponent(evidenceId) + "/intelligence"'), "initial capture must not block on synchronous Qwen interpretation");
 assert(captureSource.includes("durably queues document extraction and understanding"), "the server must own background processing after the original is saved");
 assert(!capture.includes('apiUrl("/api/extract"'), "capture must not depend on the legacy extract-before-upload endpoint");
-assert(capture.includes('getJSON(') && capture.includes('/documents/analyses/'), "the retry path must retrieve persisted server extraction, not client-only OCR text");
+assert(source.includes('/documents/analyses/') && source.includes("loadExtractedText"), "the Documents review panel must retrieve persisted server extraction, not client-only OCR text");
 const retryStart = capture.indexOf("export async function retryAttachedDocument");
 const retryEnd = capture.indexOf("export function dataUrlToFile", retryStart);
 const retrySource = capture.slice(retryStart, retryEnd);
