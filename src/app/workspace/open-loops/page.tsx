@@ -201,6 +201,11 @@ export default function OpenLoopsPage() {
           action === "reopen" ? window.prompt("Why does this item need attention again?") :
           window.prompt("Why are you stopping this follow-up? This does not mean the issue was resolved.");
         if (!text?.trim()) return;
+        const responseOutcome = action === "response"
+          ? (window.confirm("Did they say someone would call back, with the appointment still unconfirmed?")
+              ? "callback_promised"
+              : "response_received")
+          : null;
         const verificationRule = action === "verify"
           ? window.prompt("What would need to be true for you to consider this outcome checked?")
           : null;
@@ -307,6 +312,7 @@ export default function OpenLoopsPage() {
           text: text.trim(),
           evidence,
           ...(verificationRule?.trim() ? { verification_rule: verificationRule.trim() } : {}),
+          ...(responseOutcome ? { response_outcome: responseOutcome } : {}),
           idempotency_key: idempotencyKey,
         };
         const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "corroborate-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
