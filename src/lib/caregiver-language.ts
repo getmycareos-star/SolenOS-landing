@@ -87,9 +87,30 @@ export function caregiverInformationLabel(value?: string | null): string | null 
   return INFORMATION_LABELS[value.trim().toLowerCase()] ?? null;
 }
 
+const ROLE_LABELS: Readonly<Record<string, string>> = {
+  caregiver: "Caregiver",
+  family_caregiver: "Family caregiver",
+  family_member: "Family member",
+  care_professional: "Healthcare professional",
+  professional: "Healthcare professional",
+  healthcare_professional: "Healthcare professional",
+  clinician: "Healthcare professional",
+  care_recipient: "Person receiving care",
+  person_receiving_care: "Person receiving care",
+  self: "You",
+  other: "Someone else",
+  unknown: "Not recorded",
+  not_recorded: "Not recorded",
+};
+
+export function caregiverRoleLabel(value?: string | null): string | null {
+  if (!value) return null;
+  return ROLE_LABELS[value.trim().toLowerCase()] ?? null;
+}
+
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
   /database schema/i,
-  /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr)\b/i,
+  /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint)\b/i,
   /\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\b/i,
   /\b(?:epistemic|serialization|normalization|embedding|vector index)\b/i,
   /schema (?:is )?unavailable/i,
