@@ -110,6 +110,8 @@ assert.match(detailedCapture, /occurred_at: new Date\(occurredAt\)\.toISOString\
   "explicit caregiver event time is sent to the backend separately from recording time");
 assert.match(detailedCapture, /capture_kind: captureKind/,
   "the selected capture interaction is preserved in the source event");
+assert.match(detailedCapture, /\['committed', 'completed'\]\.includes\(careContinuityExecution\.stages\.reconciliation/,
+  "the caregiver save receipt recognizes the backend's completed reconciliation status");
 assert.match(photoCapture, /careRecordUpdated/,
   "a saved photograph refreshes the care record");
 
