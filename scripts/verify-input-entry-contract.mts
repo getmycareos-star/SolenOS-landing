@@ -161,15 +161,14 @@ assert(!workspace.includes("/workspace/companion?draft="), "LCR must not redirec
 console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
 console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");
 const companionSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "AICompanion.tsx"), "utf8");
-assert(companionSource.includes("response.care_update_candidates"), "Companion review UI must consume backend-validated proposals");
-assert(companionSource.includes("reviewCareUpdate(candidate, 'accept')"), "Companion must expose explicit acceptance");
-assert(companionSource.includes("reviewCareUpdate(candidate, 'correct')"), "Companion must expose explicit correction");
-assert(companionSource.includes("reviewCareUpdate(candidate, 'reject')"), "Companion must expose explicit rejection");
-assert(!companionSource.includes("CARE_REVIEW_SIGNAL"), "Care-update identification must not rely on frontend keyword matching");
-assert(!companionSource.includes("automatic background review"), "Frontend must not create a parallel care-review workflow");
+assert(companionSource.includes("postJSON('/conversation/message'"), "Companion must use the conversation endpoint");
+assert(companionSource.includes("client_turn_id"), "Companion turns must be idempotent");
+assert(!companionSource.includes("care_update_candidates"), "Companion must not create or review LCR proposals");
+assert(!companionSource.includes("reviewCareUpdate"), "Companion must not expose care-record review actions");
+assert(!companionSource.includes("/companion/care-updates"), "Companion must not run a parallel care-review workflow");
+assert(!companionSource.includes("ScanDocumentCapture"), "Document scanning belongs in Documents");
+assert(!companionSource.includes("SnapCameraCapture"), "Camera capture belongs in Documents");
 
-assert(companionSource.includes("!CASUAL_GREETING.test(submittedText)"), "Companion greetings must not create care-review jobs");
-assert(companionSource.includes("refreshPendingCareUpdates") && companionSource.includes("/companion/care-updates"), "Companion must refresh persisted caregiver-review proposals through the existing review API");
 // Provenance status is displayed only when returned by the backend; no write is inferred.
 const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
 assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
