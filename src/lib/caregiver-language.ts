@@ -210,8 +210,14 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim();
   if (!text || isTechnicalDiagnosticText(text)) return null;
-  if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
-    try { JSON.parse(text); return null; } catch { /* ordinary text can begin with a bracket */ }
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (parsed && typeof parsed === "object") return null;
+    if (typeof parsed === "string") return parsed.trim() || null;
+    // JSON numbers, booleans, and null are serialized values, not caregiver-facing prose.
+    if (typeof parsed !== "string") return null;
+  } catch {
+    // Ordinary caregiver text is not required to be valid JSON.
   }
   return text;
 }
