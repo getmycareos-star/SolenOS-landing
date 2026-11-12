@@ -9,6 +9,7 @@ type Claim = {
   asserted_value: string;
   field: string;
   source_label: string;
+  epistemic_state: string;
   assertion_status: string;
   evidence_ids: string[];
 };
@@ -392,6 +393,7 @@ export default function ClaimAssessmentPanel() {
       {selectedClaim && <div style={{ fontSize: 12, padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
         <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
         <div><strong>Who reported it:</strong> {selectedClaim.source_label || "Not recorded"}</div>
+        <div><strong>Information status:</strong> {simpleReviewStatus(selectedClaim.epistemic_state || "reported")}</div>
         <div><strong>Review status:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
         <div><strong>Sources attached:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
       </div>}
