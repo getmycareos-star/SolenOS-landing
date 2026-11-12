@@ -2,21 +2,19 @@ import { readFileSync } from "node:fs";
 import { strict as assert } from "node:assert";
 
 const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
-assert.match(source, /async function createProcessedImage\(/, "image processing must be implemented");
-assert.match(source, /rotatedContext\.rotate\(radians\)[\s\S]*?cropContext\.drawImage\(rotated, left, top, width, height, 0, 0, width, height\)/, "rotation must happen before crop so crop coordinates match the rotated preview");
-assert.match(source, /rotatedContext\.drawImage\(image, -image\.width \/ 2, -image\.height \/ 2\)/, "rotation must apply to source image pixels");
-assert.match(source, /await extractText\(processed\)/, "OCR must run on the adjusted scan");
-assert.match(source, /setTimeout\(\(\) => controller\.abort\(\), 120_000\)/, "browser OCR must not be cancelled by the old 40-second client deadline");
+assert.doesNotMatch(source, /createProcessedImage|createMultiPagePdf|combineImagePagesIntoPdf/, "the upload flow must not create a second derivative evidence file from the same scan pages");
+assert.doesNotMatch(source, /extractText\(/, "the browser must not duplicate server-side OCR");
+assert.doesNotMatch(source, /api\/extract/, "document files must enter the shared evidence upload lifecycle before extraction");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
 assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
 assert.match(source, /if \(!reviewPages\.length\)/, "saving must not require caregivers to review every page first");
-assert.match(source, /scan_review_status", page\.reviewed \? "caregiver_reviewed" : "not_reviewed"/, "review status must accurately distinguish reviewed from unreviewed originals");
+assert.match(source, /scan_review_status", "not_reviewed"/, "upload must not claim the caregiver reviewed untrusted client-side OCR");
 assert.match(source, /Save files<\/button>/, "caregivers must be able to save originals before reviewing extracted text");
 assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop stage");
 assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
-assert.match(source, /function createMultiPagePdf\(/, "multi-page PDF generation must be implemented");
-assert.match(source, /Combine reviewed image pages into one PDF/, "caregivers must be able to create a multi-page PDF");
-assert.match(source, /Original uploaded page files remain separate and unchanged\./, "PDF creation must preserve individual original scans");
+assert.match(source, /for \(const file of files\)/, "each selected file must enter the upload lifecycle independently");
+assert.match(source, /ingestionKey: crypto\.randomUUID\(\)/, "each file must receive its own stable retry key");
+assert.match(source, /form\.append\("capture_page_number", String\(scanPageNumber\)\)/, "scanned pages must retain their page order and provenance");
 
 const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 const attachmentTypes = readFileSync("src/lib/mvp-workspace/types.ts", "utf8");
@@ -51,6 +49,10 @@ assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load
 assert.match(intelligenceReviewSource, /postJSON\("\/documents\/" \+ encodeURIComponent\(evidenceId\) \+ "\/queue"/, "manual retry must use the durable server processing queue");
 assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURIComponent(document.id) + "/extract"'), "the review screen must not perform blocking extraction");
 assert.match(intelligenceReviewSource, /Retry background processing/, "failed or incomplete documents must expose a clear retry action");
+assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial"/, "partial server extraction must be visible separately from Qwen processing status");
+assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "page-level OCR confidence must be exposed to caregivers");
+assert.match(intelligenceReviewSource, /not a probability/, "OCR confidence must not be presented as a correctness probability");
+assert.match(intelligenceReviewSource, /Handwriting may still be misread/, "handwriting uncertainty must remain explicit even when engine confidence is high");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
@@ -67,6 +69,11 @@ assert.match(addRecordSource, /rotationDegrees: \(file as ScanPageFile\)\.scanRo
 
 const saveFunction = source.slice(source.indexOf("const saveReviewedPages"), source.indexOf("const openOriginal"));
 assert.match(saveFunction, /document_processing_job_id/, "the save response must confirm durable background processing was queued");
+assert.doesNotMatch(saveFunction, /extracted_text/, "client-supplied OCR must never be submitted as source evidence");
+assert.doesNotMatch(source, /Extracted text — review and correct before saving/, "caregivers must not be forced to review client-side OCR before upload");
+assert.match(saveFunction, /scan_text_prepared", "false"/, "upload must leave OCR preparation to the server");
+assert.match(saveFunction, /scan_crop_json/, "crop metadata must accompany the original bytes");
+assert.match(saveFunction, /scan_rotation_degrees/, "rotation metadata must accompany the original bytes");
 assert(!saveFunction.includes("/extract"), "the caregiver page must not own document extraction after upload");
 assert(!saveFunction.includes("/intelligence"), "the caregiver page must not own document understanding after upload");
 assert.match(saveFunction, /You can leave this page/, "the caregiver can leave after the original and background job are saved");
@@ -74,7 +81,7 @@ assert.match(saveFunction, /You can leave this page/, "the caregiver can leave a
 assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\)/, "scan retry must preserve capture time");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
-console.log("✓ crop and straighten are applied to pixels before OCR");
+console.log("✓ original uploads enter the shared server-side extraction lifecycle without browser OCR or duplicate derivative uploads");
 console.log("✓ caregiver can move crop area and adjust margins");
-console.log("✓ multi-page PDF assembly preserves individual originals");
-console.log("✓ original scan bytes, reviewed text, and scan processing metadata are required");
+console.log("✓ multi-page scans remain separate, independently identified original evidence files");
+console.log("✓ original scan bytes and scan metadata are preserved without false client OCR review");

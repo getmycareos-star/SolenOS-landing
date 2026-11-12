@@ -18,6 +18,11 @@ assert(source.includes("historyErrors") && source.includes("Do not interpret a m
 assert(source.includes("immutable event(s)") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
 assert(source.includes("corrected_pending_approval"), "corrections must remain pending until explicitly accepted");
 assert(source.includes("EXACT SOURCE QUOTATION"), "each candidate must show its exact source quotation");
+assert(source.includes("Partial document understanding"), "partial model processing must not be mislabeled as extraction");
+assert(source.includes("Document understanding completed"), "the completed state must describe document understanding, not only page extraction");
+assert(!source.includes("Page extraction completed"), "page extraction and document understanding must remain distinct states");
+assert(source.includes("View source page") && source.includes("onOpenOriginal"), "each page-attributed candidate must link back to its original evidence");
+assert(documentsPage.includes("previewPage") && documentsPage.includes('"#page="'), "PDF source links must open the cited page in the original document preview");
 assert(source.includes("No LCR facts were created"), "empty interpretation must not imply a care fact");
 assert(
   source.includes("server extraction and OCR prepare readable source text"),
