@@ -23,7 +23,6 @@ for (const contract of [
   'Approve and register',
   'Keep as suggestion',
   'Defer consideration',
-  'Request clarification',
   'Agreed actions',
   'View change history',
   'Confirm completed',
@@ -57,9 +56,10 @@ assert.ok(
   "Suggestion deferral must reuse the persisted Open Loop workflow",
 );
 assert.ok(
-  lcr.includes('prefillQuestion={clarificationPrefill?.question}') &&
-    clarification.includes('postJSON("/uncertainty/questions"'),
-  "Request clarification must prefill and reuse the persisted clarification workflow",
+  !lcr.includes("Request clarification") &&
+    !lcr.includes("prefillQuestion") &&
+    !clarification.includes('postJSON("/uncertainty/questions"'),
+  "Caregivers must not create clarification tasks; SolenOS decides when an evidence-backed gap needs input",
 );
 assert.ok(
   lcr.includes('if (!saved?.id || saved.person_id !== session.person.id || saved.suggestion_id !== suggestionId.slice(0, 160))'),
@@ -71,4 +71,4 @@ assert.ok(
   "Action state must be cleared on session failure",
 );
 
-console.log("PASS: LCR suggestions remain separate; approval, lifecycle, reminder and clarification flows are backend-connected.");
+console.log("PASS: LCR suggestions remain separate; approval, lifecycle and reminder flows are backend-connected; clarification is system-initiated.");
