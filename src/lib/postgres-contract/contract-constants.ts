@@ -1,13 +1,13 @@
 /**
- * PostgreSQL Implementation Contract — evidence ledger for cognitive decompression ONLY.
- * NOT caregiver memory, longitudinal tracking, or personalization.
+ * PostgreSQL integration contract for the interaction/telemetry subsystem.
+ * This module does not define the complete application database contract; the backend care-domain schema is authoritative for the Living Care Record.
  */
 
 export const POSTGRES_CONTRACT_IDENTITY =
-  "a constrained evidence and interaction ledger for cognitive decompression, document grounding, and safety validation";
+  "the frontend interaction and telemetry persistence boundary; not the application-wide Living Care Record schema";
 
 export const POSTGRES_CONTRACT_ONE_LINE_TRUTH =
-  "PostgreSQL stores interaction evidence, document extraction, grounding retrieval, and policy facts — never caregiver memory, longitudinal profiles, or behavioral analytics.";
+  "This contract governs interaction telemetry only. The backend PostgreSQL care-domain schema is authoritative for durable, identity-scoped Living Care Records and longitudinal care history.";
 
 export const POSTGRES_CONTRACT_MODULES = [
   "identity_layer",
@@ -58,9 +58,9 @@ export const POSTGRES_FORBIDDEN_USES = [
 ] as const;
 
 export const POSTGRES_INVARIANTS = [
-  "Persistence does NOT expand product capability — it validates relief and grounds reasoning.",
-  "Pre-reasoning loads evidence only; never raw DB structure or inferred caregiver history.",
-  "Interaction context is limited recent ledger rows — NOT longitudinal profiling.",
+  "Interaction telemetry is not the source of truth for care facts or longitudinal care history.",
+  "The backend care-domain schema owns durable Living Care Record state and its provenance.",
+  "Telemetry must not be used to infer or profile caregiver behavior.",
   "users table holds identity only — no demographics or behavioral expansion.",
   "RLS isolates user-scoped rows when Supabase auth.uid() is available; app uses backend service key.",
 ] as const;
