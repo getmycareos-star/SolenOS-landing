@@ -32,7 +32,9 @@ const SCALE_LABELS: Record<string, string> = {
   wellbeing_stress: 'Stress and wellbeing',
 };
 
-export default function StructuredDailyCapture() {
+type DailyCaptureMode = "all" | "something" | "medicine" | "measurement" | "note";
+
+export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyCaptureMode }) {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [savedEntrySummary, setSavedEntrySummary] = useState('');
@@ -664,8 +666,20 @@ export default function StructuredDailyCapture() {
     e.preventDefault();
     
     if (!personId || !caregiverId) {
-      const error = new Error('A signed-in caregiver and care record are required to save daily capture.');
+      const error = new Error('A secure care session is required to save this entry.');
       setSaveError(error);
+      return;
+    }
+    if ((mode === "something" || mode === "note") && !form.notes.trim()) {
+      setSaveError(new Error(mode === "something" ? "Tell us what happened before saving." : "Add a note before saving."));
+      return;
+    }
+    if (mode === "medicine" && form.medications.length === 0) {
+      setSaveError(new Error("Add a medicine event before saving."));
+      return;
+    }
+    if (mode === "measurement" && form.vitals.length === 0) {
+      setSaveError(new Error("Add a measurement before saving."));
       return;
     }
 
@@ -676,6 +690,7 @@ export default function StructuredDailyCapture() {
       vitals: form.vitals,
       scales: form.scales,
       notes: form.notes,
+      capture_kind: mode,
     };
     const fingerprint = JSON.stringify(submission);
     if (!captureSubmissionRef.current || captureSubmissionRef.current.fingerprint !== fingerprint) {
@@ -905,9 +920,11 @@ export default function StructuredDailyCapture() {
   return (
     <div className="structured-daily-capture">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>Daily care update</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>
+          {mode === "medicine" ? "Medicine" : mode === "measurement" ? "Measurement" : mode === "something" ? "Something happened" : mode === "note" ? "Note" : "Daily care update"}
+        </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5', maxWidth: '500px' }}>
-          Keep track of medicines, measurements, and daily ratings in one place.
+          {mode === "medicine" ? "Record what happened with a medicine." : mode === "measurement" ? "Record a measurement that was actually taken." : mode === "something" ? "Tell us what happened in your own words. You do not need to organize it." : mode === "note" ? "Add a note in your own words. You can leave other details unknown." : "Add only the care information you want to record."}
         </p>
       </div>
       
@@ -1072,6 +1089,7 @@ export default function StructuredDailyCapture() {
       )}
       
       {/* Medications section */}
+      {(mode === "all" || mode === "medicine") && (
       <section>
         <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medicines</h2>
         
@@ -1346,8 +1364,10 @@ export default function StructuredDailyCapture() {
           </div>
         )}
       </section>
+      )}
       
       {/* Vitals section */}
+      {(mode === "all" || mode === "measurement") && (
       <section>
         <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Vitals</h2>
         
@@ -1518,8 +1538,10 @@ export default function StructuredDailyCapture() {
             </div>
           )}
         </section>
+      )}
         
         {/* Scales section */}
+        {mode === "all" && (
         <section>
           <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Daily ratings</h2>
           
@@ -1645,8 +1667,10 @@ export default function StructuredDailyCapture() {
             </div>
           )}
         </section>
+        )}
         
         {/* Notes section */}
+        {(mode === "all" || mode === "something" || mode === "note") && (
         <section>
           <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Notes</h2>
           
@@ -1674,13 +1698,19 @@ export default function StructuredDailyCapture() {
             />
           </div>
         </section>
+        )}
         
         {/* Submit button */}
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={submittingMutation}
+            disabled={
+              submittingMutation ||
+              (mode === "medicine" && form.medications.length === 0) ||
+              (mode === "measurement" && form.vitals.length === 0) ||
+              ((mode === "something" || mode === "note") && !form.notes.trim())
+            }
             style={{ 
               fontSize: '16px', 
               fontWeight: '600', 
@@ -1691,7 +1721,7 @@ export default function StructuredDailyCapture() {
               cursor: submittingMutation ? 'default' : 'pointer' 
             }}
           >
-            {submittingMutation ? 'Saving…' : 'Save daily care update'}
+            {submittingMutation ? 'Saving…' : 'Save to care record'}
           </button>
         </div>
       <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
