@@ -278,6 +278,7 @@ function NotificationsCard() {
               {(item.status ?? "active") === "active"
                 ? <span className="mobile-settings-hint">Needs attention</span>
                 : <span className="mobile-settings-hint">{item.status === "superseded" ? "Replaced by newer information" : item.status === "resolved" ? "No longer needs attention" : "Cancelled"}</span>}
+              {item.resolved_at && <span className="mobile-settings-hint">Updated {new Date(item.resolved_at).toLocaleString()}</span>}
               {item.status !== undefined && item.status !== "active" && <span className="mobile-settings-hint">{item.resolution_reason === "source_superseded" ? "A newer care record update replaced this message." : item.resolution_reason === "question_resolved" ? "The care question has since been resolved." : item.resolution_reason === "necessity_or_evidence_no_longer_valid" ? "The supporting information changed; no response is currently needed." : "The care record has changed since this message was created."}</span>}
               {item.is_read && <span className="mobile-settings-hint">Read</span>}
             </span>
