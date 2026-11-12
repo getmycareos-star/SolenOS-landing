@@ -225,7 +225,7 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
       {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary') && (
         <section style={{ borderTop: '1px solid var(--border)', paddingTop: 9, marginTop: 9 }}>
           <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Summary source check</h4>
-          {result.claim_provenance.claims.filter((claim) => claim.claim_type === 'summary').map((claim) => (
+          {result.claim_provenance?.claims?.filter((claim) => claim.claim_type === 'summary').map((claim) => (
             <article key={claim.claim_id} style={{ marginBottom: 8 }}>
               <p style={{ fontSize: 12, margin: '0 0 4px' }}>{claim.text}</p>
               {claim.support_status === 'matched_exact_source_wording' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears in a saved source.</p>}
