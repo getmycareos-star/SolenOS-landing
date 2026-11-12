@@ -747,7 +747,10 @@ export function LCRCurrentUnderstanding() {
             if (savedBelongsToPerson) {
               setAssessment(saved.assessment);
               setSourceFreshness(saved.source_freshness ?? null);
-              setAssessmentError(savedNeedsReassessment ? null : null);
+              if (savedNeedsReassessment) {
+                // Hydration remains read-only; the caregiver can request a refresh explicitly.
+              }
+              setAssessmentError(null);
             } else {
               setAssessment(null);
               setSourceFreshness(null);
