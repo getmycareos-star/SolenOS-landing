@@ -70,23 +70,23 @@ assert.match(sharingComponent, /revisionHistory\.map/,
   "caregivers must be able to inspect persisted revision history");
 assert.match(sharingComponent, /setEditedSections/,
   "caregivers must be able to edit or remove source-grounded sections");
-assert.match(sharingComponent, /If a statement is outdated or needs correcting, explain that in the caregiver note below/,
+assert.match(sharingComponent, /If something is old or needs correcting, explain that in the caregiver note below/,
   "caregivers must be able to flag outdated or incorrect information without rewriting sourced evidence");
-assert.match(sharingComponent, /Sourced wording stays tied to the saved care record/,
+assert.match(sharingComponent, /Each statement stays connected to the saved care information/,
   "the UI must explain why sourced wording is not freely rewritten");
 assert.doesNotMatch(sharingComponent, /item\.source_ref} ·/,
   "the caregiver review must not expose raw source identifiers");
 assert.doesNotMatch(sharingComponent, /Qwen quotations/,
   "the caregiver interface must not expose internal model terminology");
-assert.match(sharingComponent, /Source: record /,
+assert.match(sharingComponent, /Saved source: /,
   "the shared summary must use readable source labels instead of internal IDs");
 assert.match(sharingComponent, /caregiver_authored_unverified|caregiverNote/,
   "caregiver-added context must remain explicitly attributed and unverified");
-assert.match(sharingComponent, /Share reviewed family handoff/,
+assert.match(sharingComponent, /Share reviewed handoff/,
   "family sharing requires caregiver review");
-assert.match(sharingComponent, /Professional sharing is unavailable until SolenOS can verify professional identity/,
+assert.match(sharingComponent, /Professional identity and role cannot yet be verified/,
   "professional sharing must fail closed until recipient identity and role are verified");
-assert.match(sharingComponent, /Accept and record receipt/,
+assert.match(sharingComponent, /Accept and mark as received/,
   "receiving caregivers must explicitly accept and acknowledge");
 assert.match(sharingComponent, /activeSnapshot\.source_coverage/,
   "recipients must see source coverage for the approved sharing scope");
@@ -118,7 +118,7 @@ assert.doesNotMatch(sharingComponent, /item\.original_source_reference \? " · d
   "recipient review must not expose internal document paths or references");
 assert.match(sharingComponent, /saved\.review_status \? readableStatus/,
   "saved draft review states must use caregiver-readable labels");
-assert.match(sharingComponent, /Source: record /,
+assert.match(sharingComponent, /Saved source: /,
   "shared summaries must label sources without exposing database identifiers");
 assert.doesNotMatch(sharingComponent, /Qwen/,
   "the caregiver-facing handoff component must not expose model names");
@@ -135,7 +135,7 @@ const appointmentWorkspace = await readFile(new URL("../src/components/workflows
 const detailedAppointmentWorkspace = await readFile(new URL("../src/components/workflows/DetailedAppointmentWorkspace.tsx", import.meta.url), "utf8");
 assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-brief?window_days=90"), "appointment preparation must request a bounded source-linked LCR brief");
 assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
-assert.ok(appointmentWorkspace.includes("No recent care events were returned") && appointmentWorkspace.includes("This does not establish that no appointment exists"), "appointment preparation must distinguish empty results from confirmed absence");
+assert.ok(appointmentWorkspace.includes("No recent care updates are available for this summary.") && appointmentWorkspace.includes("This does not mean that no appointment exists."), "appointment preparation must distinguish empty results from confirmed absence");
 assert.ok(appointmentWorkspace.includes("getJSON('/appointment-workspaces')"), "appointment workspace must hydrate durable backend records");
 assert.ok(appointmentWorkspace.includes("postJSON('/appointment-workspaces'"), "appointment workspace must create a durable backend record");
 assert.ok(appointmentWorkspace.includes("patchJSON('/appointment-workspaces/'"), "appointment workspace must persist edits through the versioned backend API");
