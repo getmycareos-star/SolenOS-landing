@@ -117,6 +117,7 @@ interface ClaimSourceReference {
     occurred_at?: string | null
     recorded_at?: string | null
     reported_by?: string | null
+    entered_by?: string | null
     record_status?: string | null
     source_independence_status?: string | null
     exact_wording_duplicate_count?: number
@@ -918,6 +919,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
                                       <p>{item.label}</p>
                                       {item.reported_by && <p>Reported by: {item.reported_by}</p>}
+                                      {item.entered_by && <p>Added by: {item.entered_by}</p>}
                                       {item.source_independence_status === 'shared_origin' && <p>This note shares its original with another saved record. It is not a separate report.</p>}
                                       {item.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
                                       {item.source_independence_status === 'not_assessed' && <p>Whether this note is separate from other reports has not been checked.</p>}
@@ -925,6 +927,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
                                       {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
+                                      {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
+                                        <p>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
+                                        {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
+                                        {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
+                                        {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
+                                      </div>)}
                                     </div>)}
                                   </div>}
                                 </div>
