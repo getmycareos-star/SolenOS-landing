@@ -22,6 +22,7 @@ assert.match(home, /conversation|Companion/);
 assert.match(home, /<Companion home initialPrompt=\{prompt\} \/>/, "record-edit prompt is passed into the existing Companion composer");
 const companion = read("src/components/workflows/AICompanion.tsx");
 const documents = read("src/app/workspace/documents/page.tsx");
+const documentReview = read("src/components/DocumentIntelligenceReview.tsx");
 assert.match(companion, /companion-shell.*is-home/);
 assert.match(companion, /SOURCE_REFERENCE_LABELS/, "Companion provenance must use explicit source-reference labels");
 assert.match(companion, /document_extractions/, "persisted document extraction references must be presented");
@@ -46,6 +47,8 @@ assert.match(documents, /saveReviewedPages/, "the library retains original-file 
 assert.match(documents, /saveReviewedPages/, "the library retains original-file persistence");
 assert.match(documents, /Save your files/);
 assert.match(documents, /server processing continues even if you leave/, "saving confirms that processing continues after the original upload is complete");
+assert.match(documentReview, /analysis\.extraction_status === "available" \? analysis\.observations\.map/, "document candidates must remain hidden until every page has completed extraction");
+assert.match(documentReview, /No statements are available for review because not every page could be read/, "caregivers must be told why incomplete documents cannot be reviewed");
 assert.match(documents, /saveReviewedPages/);
 assert.match(documents, /getJSON\("\/evidence\//, "saved document records remain readable");
 assert.match(documents, /getBlob\("\/upload\//, "saved original files remain retrievable");
