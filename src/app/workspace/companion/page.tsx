@@ -15,7 +15,7 @@ function WorkspaceHomeInner() {
   const prompt = searchParams.get("prompt");
   return (
     <div className="mobile-screen feature-page companion-route solenos-companion-home">
-      <Companion home initialPrompt={prompt} />
+      <Companion initialPrompt={prompt} />
       <style jsx global>{`
         .solenos-companion-home {
           display: flex;
