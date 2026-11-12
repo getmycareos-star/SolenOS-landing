@@ -12,7 +12,6 @@ import {
   RefreshCw,
   Search,
   ScanLine,
-  ShieldCheck,
   Upload,
   X,
 } from "lucide-react";
@@ -118,11 +117,6 @@ export default function DocumentsPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [capturedPages, setCapturedPages] = useState<File[]>([]);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
-  const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
-  const [scanPreparing, setScanPreparing] = useState(false);
-  const [scanSaving, setScanSaving] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -378,7 +372,7 @@ export default function DocumentsPage() {
         <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.csv,.json,.xml,.eml,.msg" style={{ display: "none" }} onChange={(event) => { const files = event.currentTarget.files; event.currentTarget.value = ""; setIntakeMode("upload"); void handleFiles(files); }} />
         <input ref={snapInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(event) => { const files = event.currentTarget.files; event.currentTarget.value = ""; setIntakeMode("capture"); void handleFiles(files); }} />
         <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Upload size={17} />Upload files</button>
-        <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Camera size={17} />Snap a photo</button>
+        <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Camera size={17} />Snap a photo</button>
         <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading || preparingScan} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
       </section>
 
