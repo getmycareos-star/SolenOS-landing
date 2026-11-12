@@ -171,7 +171,7 @@ export function ChangeIntelligencePanel() {
                 <p className="panel-muted">
                   Supporting saved information: {change.evidence_ids.length}.
                 </p>
-                <p className="panel-muted">The comparison may be incomplete if earlier care information was not available.</p>            </p>
+                <p className="panel-muted">The comparison may be incomplete if earlier care information was not available.</p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
                   {expandedChangeId === change.id ? "Hide source evidence" : "Review source evidence"} <span aria-hidden="true">→</span>
                 </button>
