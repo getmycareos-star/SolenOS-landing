@@ -57,10 +57,6 @@ function dateLabel(value: string | null): string {
   return Number.isNaN(date.getTime()) ? "Deadline unavailable" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function safeMessage(_error: unknown): string {
-  return "We could not complete that update. Please try again.";
-}
-
 function readableLoopType(value: string): string {
   return LOOP_TYPES.find(([key]) => key === value)?.[1] ?? "Care follow-up";
 }
@@ -229,7 +225,7 @@ export default function OpenLoopsPage() {
               : action === "reconcile"
                 ? "reconcile conflicting accounts"
                 : "record professional input";
-            throw new Error("No source evidence is saved in this care record yet. Add the relevant source record before you " + requiredAction + ".");
+            throw new Error("No saved information is available for this review yet. Add the relevant note or document before you " + requiredAction + ".");
           }
           const choices = sources.slice(0, 20).map((item, index) =>
             `${index + 1}. ${caregiverStatusLabel(String(item.type)) || "Saved care item"} — ${caregiverSafeAssistantText(String(item.source_text ?? ""))?.slice(0, 110) || "Source details not available"}`,
