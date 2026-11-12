@@ -58,6 +58,10 @@ assert.match(sharingComponent, /draft_id: draft\.draft_id/,
   "the existing sharing workflow must attach the approved persisted draft identity");
 assert.match(sharingComponent, /Information to share/,
   "caregivers must explicitly select the information categories included in the handoff");
+assert.match(sharingComponent, /setSelectedScope\(\[\]\)/,
+  "handoff information categories must start unselected and require caregiver choice");
+assert.match(sharingComponent, /selectedScope\.length === 0/,
+  "sharing must remain blocked until at least one information category is selected");
 assert.match(sharingComponent, /scope: \[\.\.\.selectedScope\]\.sort\(\)/,
   "the approved scope must be passed unchanged to the existing share API");
 assert.match(sharingComponent, /sourceFreshness\?\.status !== "current"/,
