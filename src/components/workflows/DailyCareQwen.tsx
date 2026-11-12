@@ -201,7 +201,7 @@ export default function DailyCareQwen() {
                 const final = ["accepted_by_caregiver", "rejected_by_caregiver"].includes(proposal.review_status);
                 return (
                   <article className="daily-care-qwen__proposal" key={`${result.proposal_analysis_id}:${index}`}>
-                    <h4>{proposal.title}</h4>
+                    <h4>{caregiverSafeAssistantText(proposal.title) || "Suggested care update"}</h4>
                     <p><strong>Suggested update:</strong> {caregiverSafeAssistantText(proposal.proposed_value) || "A possible update is ready for review."}</p>
                     <p><strong>Why it may matter:</strong> {caregiverSafeAssistantText(proposal.reason) || "No explanation is available."}</p>
                     <p><strong>What is still unclear:</strong> {caregiverSafeAssistantText(proposal.uncertainty) || "This suggestion may need checking."}</p>
@@ -232,7 +232,7 @@ export default function DailyCareQwen() {
               })}
             </div>
           ) : null}
-          <p className="daily-care-qwen__disclaimer">{result.notice || "No care fact was changed by generating this response."}</p>
+          <p className="daily-care-qwen__disclaimer">{caregiverSafeAssistantText(result.notice) || "Generating this response did not change the care record."}</p>
         </div>
       ) : null}
 
