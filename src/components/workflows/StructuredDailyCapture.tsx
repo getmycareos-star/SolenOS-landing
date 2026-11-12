@@ -460,6 +460,35 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     }
   };
   
+  const handleCreateMedicationRecord = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setMedicationRecordError(null);
+    setMedicationRecordMessage(null);
+    if (!personId || !caregiverId) { setMedicationRecordError("Open the care record before adding a medication."); return; }
+    const name = medicationRecordName.trim();
+    if (!name) { setMedicationRecordError("Enter the medicine name."); return; }
+    setMedicationRecordSaving(true);
+    try {
+      const result = await postJSON("/care-continuity/medications", { name, dose: medicationRecordDose.trim() || undefined, note: medicationRecordNote.trim() || undefined, review_after_days: 30 }) as { medication_id?: string; record_status?: string };
+      if (!result?.medication_id || result.record_status !== "awaiting_caregiver_review") throw new Error("The care record did not confirm that the medication report was saved for review.");
+      setMedicationRecordName(""); setMedicationRecordDose(""); setMedicationRecordNote("");
+      setMedicationRecordMessage("Added as a caregiver report. Review it below before it appears as a current medication.");
+      window.dispatchEvent(new Event("careRecordUpdated"));
+    } catch (error) { setMedicationRecordError(error instanceof Error ? error.message : "We couldn’t save this medication report. Try again."); }
+    finally { setMedicationRecordSaving(false); }
+  };
+
+  const handleReviewMedicationRecord = async (medicationId: string) => {
+    setMedicationRecordReviewing(medicationId); setMedicationRecordError(null); setMedicationRecordMessage(null);
+    try {
+      const path = "/care-continuity/medications/" + encodeURIComponent(medicationId) + "/review";
+      const result = await postJSON(path, {}) as { record_status?: string };
+      if (result?.record_status !== "caregiver_reviewed_current_report") throw new Error("The care record did not confirm the medication review.");
+      setMedicationRecordMessage("Reviewed. This caregiver-reported medication is now available as a current choice.");
+      window.dispatchEvent(new Event("careRecordUpdated"));
+    } catch (error) { setMedicationRecordError(error instanceof Error ? error.message : "We couldn’t save the medication review. Try again."); }
+    finally { setMedicationRecordReviewing(null); }
+  };
   // Add a vital to the current daily-capture draft. It is persisted when the
   // caregiver saves the complete daily capture below.
   const handleVitalSubmit = (e: React.FormEvent) => {
