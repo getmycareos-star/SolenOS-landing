@@ -70,73 +70,10 @@ export async function extractAttachedDocument(
     };
   }
 
-  // Snap photos are preserved as care-photo evidence. They are not forced
-  // through document OCR; downstream care interpretation receives the evidence ID.
-  if (entryMethod === "snap") {
-    window.dispatchEvent(new Event("careRecordUpdated"));
-    return { ...base, evidenceId, status: "saved" };
-  }
-
-  // The original is now durable. Extract only document evidence from the
-  // immutable server-side upload; never trust client-provided OCR text.
-  try {
-    const extraction = (await postJSON(
-      "/documents/" + encodeURIComponent(evidenceId) + "/extract",
-      {},
-    )) as { analysis_id?: string; extraction_method?: string };
-
-    if (!extraction.analysis_id) {
-      throw new Error("The server saved the original but did not return an extraction record.");
-    }
-
-    const persisted = (await getJSON(
-      "/documents/analyses/" + encodeURIComponent(extraction.analysis_id),
-    )) as {
-      extracted_text?: string;
-      extracted_char_count?: number;
-      extraction_method?: string;
-    };
-
-    let intelligenceStatus = "unavailable";
-    try {
-      const intelligence = (await postJSON(
-        "/documents/" + encodeURIComponent(evidenceId) + "/intelligence",
-        {},
-      )) as { intelligence_status?: string };
-      intelligenceStatus = intelligence.intelligence_status || "unavailable";
-      if (!["available", "partial"].includes(intelligenceStatus)) {
-        throw new Error("Document understanding did not complete.");
-      }
-    } catch {
-      throw new Error(
-        "The original and extracted text are saved, but document understanding did not complete. Retry from Documents.",
-      );
-    }
-
-    window.dispatchEvent(new Event("careRecordUpdated"));
-    return {
-      ...base,
-      evidenceId,
-      name: file.name,
-      mimeType: file.type || base.mimeType,
-      extractedText: (persisted.extracted_text || "").trim(),
-      extractedCharCount: persisted.extracted_char_count,
-      extractionSource: persisted.extraction_method || extraction.extraction_method,
-      status: "ready",
-    };
-  } catch (error) {
-    window.dispatchEvent(new Event("careRecordUpdated"));
-    return {
-      ...base,
-      evidenceId,
-      status: "failed",
-      errorNote: sanitizeCaregiverErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "The original is saved, but text extraction failed. Retry extraction from Documents.",
-      ),
-    };
-  }
+  // The upload endpoint durably queues document extraction and understanding.
+  // Do not make the caregiver wait for OCR or Qwen before using the saved source.
+  window.dispatchEvent(new Event("careRecordUpdated"));
+  return { ...base, evidenceId, status: "saved" };
 }
 
 export async function retryAttachedDocument(
