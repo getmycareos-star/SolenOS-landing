@@ -137,6 +137,7 @@ export type ChangeAssertionEvidence = {
   asserted_value: string;
   source_label: string;
   source_text: string | null;
+  epistemic_state: string;
   assertion_status: string;
   observed_at: string | null;
   recorded_at: string;
