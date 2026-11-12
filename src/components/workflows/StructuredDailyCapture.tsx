@@ -789,8 +789,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       captureKind: mode,
       occurredAt: eventOccurredAt || (
         mode === "medicine" && form.medications.length === 1
-          ? form.medications[0].administered_at
-          : mode === "measurement" && form.vitals.length === 1
+          ? (form.medications[0].status === "given"
+            ? form.medications[0].administered_at
+            : eventOccurredAt || null)
+          : mode === "measurement" && form.vitals.length > 0
             ? form.vitals[0].measured_at
             : null
       ),
@@ -831,7 +833,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             color: med.status === 'given' ? 'var(--success)' :
                    ['not_given', 'refused', 'missed', 'uncertain'].includes(med.status) ? 'var(--warning)' : 'var(--text-secondary)' 
           }}>
-            {med.status.charAt(0).toUpperCase() + med.status.slice(1)}
+            {({
+              given: "Given",
+              not_given: "Not given",
+              uncertain: "Not sure",
+              other: "Something else",
+              refused: "Refused",
+              missed: "Missed",
+            } as Record<string, string>)[med.status] || med.status.replace(/_/g, " ")}
           </span>
         </div>
         
@@ -1315,24 +1324,45 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                 />
               </div>
               
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Administered At</label>
-                <input
-                  type="datetime-local"
-                  value={medicationForm.administered_at || ''}
-                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null })); }}
-                  style={{ 
-                    width: '100%', 
-                    padding: '10px 12px', 
-                    borderRadius: '6px', 
-                    border: '1px solid var(--border)', 
-                    background: 'var(--bg)', 
-                    fontSize: '14px' 
-                  }}
-                />
-              </div>
+              {medicationForm.status === "given" && (
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Administered at</label>
+                  <input
+                    type="datetime-local"
+                    value={medicationForm.administered_at || ''}
+                    onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, administered_at: e.target.value || null })); }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg)',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              )}
+              {medicationForm.status !== "given" && medicationForm.status !== "" && (
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="medication-event-time" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>When did this happen? (optional)</label>
+                  <input
+                    id="medication-event-time"
+                    type="datetime-local"
+                    value={eventOccurredAt}
+                    onChange={(e) => setEventOccurredAt(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg)',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              )}
             </div>
-            
+
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
               <textarea
