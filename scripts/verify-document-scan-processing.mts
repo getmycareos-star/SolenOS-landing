@@ -36,13 +36,13 @@ assert.match(addRecordSource, /Photo saved — not interpreted/, "caregivers mus
 assert.match(addRecordSource, /Saved — processing in background/, "caregivers must see that saved documents are processing without blocking capture");
 assert.match(addRecordSource, /d\.status === "saved" && d\.evidenceId/, "saved document evidence must be eligible for care-entry submission");
 assert.match(workspaceSource, /server extraction and document understanding are processing in the background/, "the care entry must not claim document interpretation completed");
-assert.match(workspaceSource, /d\.status === "saved" && d\.entryMethod === "snap" && d\.evidenceId/, "saved Snap evidence must remain eligible for care-entry submission");
+assert.match(workspaceSource, /d\.status === "saved" && d\.evidenceId/, "saved evidence must remain eligible for care-entry submission");
 assert.match(workspaceSource, /evidence_id: d\.evidenceId/, "care-entry submission must reference the persisted evidence ID");
 assert.match(intelligenceReviewSource, /analysis\.intelligence_status !== "partial" \|\| !!analysis\.unprocessed_page_numbers\?\.length/, "partially processed documents with remaining pages must offer resume");
 assert.match(intelligenceReviewSource, /Resume remaining pages/, "caregivers must be able to resume unfinished document understanding");
 assert.match(intelligenceReviewSource, /processing_jobs\?/, "the review panel must read durable background job state");
 assert.match(intelligenceReviewSource, /Processing in the background\. You can leave this page\./, "caregivers must know the original is processing without staying in the app");
-assert.match(intelligenceReviewSource, /Document understanding is processing in the background/, "active Qwen processing must be visible without offering a duplicate retry");
+assert.match(intelligenceReviewSource, /Processing in the background\. You can leave this page\./, "active processing must be visible without offering a duplicate retry");
 assert.match(intelligenceReviewSource, /!active && <button/, "manual extraction must not race an active background job");
 assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.evidence_id === analysis\.source_evidence_id/, "partial-page resume must not race an active background job");
 assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load\(\); \}, 3000\)/, "document review status must refresh while background processing is active");
@@ -50,13 +50,13 @@ assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
 assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
 const scanCaptureSource = readFileSync("src/components/mvp-workspace/capture/ScanDocumentCapture.tsx", "utf8");
-const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
+const scanAttachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 assert.match(scanCaptureSource, /Rotate 90°/, "each captured scan page must support rotation correction");
 assert.match(scanCaptureSource, /cropInsetsPercent/, "each captured scan page must support crop adjustment");
 assert.match(scanCaptureSource, /scanRotationDegrees: page\.rotationDegrees/, "scan adjustments must travel with each original page");
-assert.match(attachmentSource, /scan_rotation_degrees/, "scan rotation must be persisted as OCR metadata");
-assert.match(attachmentSource, /scan_crop_json/, "scan crop must be persisted as OCR metadata");
-assert.match(attachmentSource, /scan_review_status", "not_reviewed"/, "crop adjustments must not falsely attest caregiver review");
+assert.match(scanAttachmentSource, /scan_rotation_degrees/, "scan rotation must be persisted as OCR metadata");
+assert.match(scanAttachmentSource, /scan_crop_json/, "scan crop must be persisted as OCR metadata");
+assert.match(scanAttachmentSource, /scan_review_status", "not_reviewed"/, "crop adjustments must not falsely attest caregiver review");
 
 const saveFunction = source.slice(source.indexOf("const saveReviewedPages"), source.indexOf("const openOriginal"));
 assert.match(saveFunction, /document_processing_job_id/, "the save response must confirm durable background processing was queued");
