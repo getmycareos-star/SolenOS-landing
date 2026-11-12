@@ -1289,7 +1289,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               Note (optional)
               <textarea value={medicationRecordNote} onChange={(event) => setMedicationRecordNote(event.target.value)} maxLength={2000} rows={2} placeholder="Where this information came from, if useful" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
             </label>
-            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 12 }}>We’ll ask you to review this report in 30 days. You can review it now before it becomes a current medication choice.</p>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 12 }}>This report will be marked as due for review after 30 days. You can review it now before it becomes a current medication choice.</p>
             {medicationRecordError && <p role="alert" style={{ margin: 0, color: "var(--error)" }}>{medicationRecordError}</p>}
             {medicationRecordMessage && <p role="status" style={{ margin: 0, color: "var(--text-secondary)" }}>{medicationRecordMessage}</p>}
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
