@@ -67,6 +67,22 @@ assert.match(detailedCapture, /type DailyCaptureMode = "all" \| "something" \| "
   "structured capture exposes one selected interaction mode");
 assert.match(detailedCapture, /mode === "measurement"/,
   "measurement capture can be shown without the other structured sections");
+assert.match(detailedCapture, /vital_type: 'blood_pressure'/,
+  "blood pressure is captured as one paired measurement interaction");
+assert.match(detailedCapture, /vital_type: 'bp_systolic'/,
+  "blood pressure preserves the systolic value in the existing event contract");
+assert.match(detailedCapture, /vital_type: 'bp_diastolic'/,
+  "blood pressure preserves the diastolic value in the existing event contract");
+assert.match(detailedCapture, /Enter both the top and bottom blood pressure numbers/,
+  "blood pressure cannot be saved with only one number");
+assert.match(detailedCapture, /optionalPulseValue/,
+  "blood pressure supports an optional pulse reading");
+assert.match(detailedCapture, /blood_glucose/,
+  "measurement capture supports blood glucose");
+assert.match(detailedCapture, /measurement_name/,
+  "measurement capture supports a named custom measurement");
+assert.doesNotMatch(detailedCapture, /'Normal'|'Out of range'/,
+  "caregiver-entered measurements are not automatically labelled clinically normal or abnormal");
 assert.match(detailedCapture, /mode === "medicine"/,
   "medicine capture can be shown without the other structured sections");
 assert.match(detailedCapture, /mode === "something" \|\| mode === "note"/,
@@ -109,6 +125,14 @@ assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
   "capture opens within the Daily Care screen");
 assert.match(dailyCarePage, /Open matters/,
   "unresolved questions and conflicts have a distinct current-care section");
+assert.match(dailyCarePage, /Since you last opened Daily Care/,
+  "returning caregivers get a summary of newly recorded information");
+assert.match(dailyCarePage, /visitBaselineRef/,
+  "the last-visit baseline is retained for the whole page visit");
+assert.match(dailyCarePage, /solenos:daily-care:last-opened:/,
+  "the last-visit marker is scoped to the current person and caregiver");
+assert.match(dailyCarePage, /classifyHistoryRecord/,
+  "new care records are grouped by their persisted event content");
 assert.match(dailyCarePage, /displayHistoryTime/,
   "history distinguishes event time from recording time");
 assert.match(dailyCarePage, /displayHistoryText/,
