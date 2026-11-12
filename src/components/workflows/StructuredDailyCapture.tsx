@@ -135,6 +135,50 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     note: null,
   });
   
+  // Reuse medicines already present in this person's persisted care history.
+  // These are historical caregiver reports, not a verified active prescription list.
+  const [previouslyRecordedMedications, setPreviouslyRecordedMedications] = useState<Array<{ name: string; dose: string | null }>>([]);
+  useEffect(() => {
+    let active = true;
+    void getJSON("/daily-care/intelligence/history?limit=200&offset=0")
+      .then((response: unknown) => {
+        const records = (response as { records?: unknown })?.records;
+        if (!Array.isArray(records)) return;
+        const collected = new Map<string, { name: string; dose: string | null }>();
+        for (const record of records) {
+          const row = record as { source_type?: string; text?: string; description?: string };
+          if (row.source_type !== "care_event") continue;
+          const raw = row.text || row.description;
+          if (!raw) continue;
+          try {
+            const parsed = JSON.parse(raw) as { original_capture?: Record<string, unknown>; medications?: unknown };
+            const detail = parsed.original_capture || parsed;
+            const medicines = detail.medications;
+            if (!Array.isArray(medicines)) continue;
+            for (const medicine of medicines) {
+              const item = medicine as { medication_name?: unknown; dose?: unknown };
+              if (typeof item.medication_name !== "string" || !item.medication_name.trim()) continue;
+              const name = item.medication_name.trim();
+              const key = name.toLocaleLowerCase();
+              if (!collected.has(key)) {
+                collected.set(key, {
+                  name,
+                  dose: typeof item.dose === "string" && item.dose.trim() ? item.dose.trim() : null,
+                });
+              }
+            }
+          } catch {
+            // Unreadable historical entries remain in the history; they are not selectable medication records.
+          }
+        }
+        if (active) setPreviouslyRecordedMedications([...collected.values()]);
+      })
+      .catch(() => {
+        // The capture remains usable for a genuinely new medicine when history is unavailable.
+      });
+    return () => { active = false; };
+  }, []);
+
   // Image upload state for medications
   const [medicationImagePreview, setMedicationImagePreview] = useState<string | null>(null);
   useEffect(() => {
@@ -1106,6 +1150,40 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {medicationError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-warning-bg)', border: '1px solid var(--theme-warning-border)', color: 'var(--theme-warning-fg)' }}>{medicationError}</p>}
             {medicationFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-success-bg)', border: '1px solid var(--theme-success-border)', color: 'var(--theme-panel-fg)' }}>{medicationFeedback}</p>}
+            {previouslyRecordedMedications.length > 0 && (
+              <div>
+                <label htmlFor="capture-previous-medication" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>
+                  Use a previously recorded medicine
+                </label>
+                <select
+                  id="capture-previous-medication"
+                  value=""
+                  onChange={(event) => {
+                    const selected = previouslyRecordedMedications.find((item) => item.name === event.target.value);
+                    if (selected) {
+                      setMedicationError(null);
+                      setMedicationFeedback(null);
+                      setMedicationForm((current) => ({
+                        ...current,
+                        medication_name: selected.name,
+                        dose: selected.dose ?? current.dose,
+                      }));
+                    }
+                  }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '14px' }}
+                >
+                  <option value="">Choose from care history</option>
+                  {previouslyRecordedMedications.map((item) => (
+                    <option key={item.name.toLocaleLowerCase()} value={item.name}>
+                      {item.name}{item.dose ? ` · ${item.dose}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                  These medicines appeared in earlier caregiver entries. Check that the medicine is still current.
+                </p>
+              </div>
+            )}
             <div>
               <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medicine name</label>
               <input
@@ -1142,10 +1220,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     fontSize: '14px' 
                   }}
                 >
-                  <option value="">Choose status</option>
+                  <option value="">Choose what happened</option>
                   <option value="given">Given</option>
-                  <option value="refused">Refused</option>
-                  <option value="missed">Missed</option>
+                  <option value="not_given">Not given</option>
+                  <option value="uncertain">Not sure</option>
+                  <option value="other">Something else</option>
                 </select>
               </div>
               
