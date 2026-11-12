@@ -382,7 +382,7 @@ export default function TimelinePage() {
       const result = await postJSON("/corrections", {
         person_id: session.person.id,
         caregiver_id: caregiverId,
-        target_type: "care_event",
+        target_type: event.source_type === "care_assertion" ? "care_assertion" : "care_event",
         target_id: event.id,
         original_text: parseDescription(event.description) || event.title,
         corrected_text: correctionText.trim(),
@@ -576,7 +576,7 @@ export default function TimelinePage() {
                               <>
                                 <dt style={{ color: "var(--solenos-muted)" }}>Corrects</dt>
                                 <dd style={{ margin: 0, overflowWrap: "anywhere" }}>
-                                  {event.target_type === "care_event" ? (
+                                  {event.target_type === "care_event" || event.target_type === "care_assertion" ? (
                                     <a href={`#timeline-event-${event.target_id}`}>Original care event</a>
                                   ) : (
                                     event.target_type || "Original record"
@@ -591,7 +591,7 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
                           </dl>
                           {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Recorded significance:</strong> {event.significance_verdict}</p>}
-                          {event.source_type === "care_event" && (
+                          {(event.source_type === "care_event" || event.source_type === "care_assertion") && (
                             <div style={{ marginTop: 16, borderTop: "1px solid var(--solenos-hairline)", paddingTop: 14 }}>
                               <button
                                 type="button"
