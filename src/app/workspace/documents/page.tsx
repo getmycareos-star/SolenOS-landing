@@ -364,6 +364,11 @@ export default function DocumentsPage() {
     }
   };
 
+  const discardReviewPages = () => {
+    reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
+    setReviewPages([]);
+  };
+
   const saveReviewedPages = async () => {
     if (!reviewPages.length) {
       setUploadMessage({ kind: "error", text: "Choose a file or scan page before saving." });
@@ -546,7 +551,7 @@ export default function DocumentsPage() {
             </div>}
             <button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button>
           </article>)}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard review</button></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={discardReviewPages} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard files</button></div>
         </section>}
         {uploading && <div style={{ margin: "12px 0 0" }}><LivingArchiveMark size="sm" label="Saving the original document…" /><p style={{ margin: "6px 0 0", fontSize: 13 }}>Keep this page open only until the original upload is confirmed. After that, server processing continues even if you leave.</p></div>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
