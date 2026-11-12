@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 type Candidate = {
+  candidate_index?: number;
   subject: string;
   observation: string;
   source_quote: string;
@@ -78,6 +79,8 @@ type Analysis = {
   unreadable_page_numbers?: number[];
   open_questions?: string[];
   review_required: boolean;
+  has_more_candidates?: boolean;
+  remaining_candidate_count?: number;
   extractedText?: string;
   extractionMethod?: string;
   reviewEvents?: ReviewEvent[];
@@ -200,18 +203,18 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     }
   };
 
-  const decide = async (analysis: Analysis, index: number, decision: "accept" | "reject" | "correct") => {
-    const key = analysis.analysis_id + ":" + index;
+  const decide = async (analysis: Analysis, candidate: Candidate, candidateIndex: number, decision: "accept" | "reject" | "correct") => {
+    const key = analysis.analysis_id + ":" + candidateIndex;
     setBusy(key);
     setError(null);
     try {
       const correction = corrections[key];
       const reviewResult = await postJSON("/documents/intelligence/" + encodeURIComponent(analysis.analysis_id) + "/review", {
-        candidate_index: index,
+        candidate_index: candidateIndex,
         decision,
         ...(decision === "correct" ? {
-          corrected_subject: correction?.subject ?? analysis.observations[index].subject,
-          corrected_observation: correction?.observation ?? analysis.observations[index].observation,
+          corrected_subject: correction?.subject ?? candidate.subject,
+          corrected_observation: correction?.observation ?? candidate.observation,
         } : {}),
       }) as { written_to_lcr?: boolean; source_record_ref?: { record_id?: string } | null };
       if (decision === "accept") {
@@ -223,6 +226,20 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       await load();
     } catch {
       setError("The review decision was not saved. Check the connection and retry; the original document remains unchanged.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const showNextCandidateGroup = async (analysis: Analysis) => {
+    const key = analysis.analysis_id + ":next-group";
+    setBusy(key);
+    setError(null);
+    try {
+      await postJSON("/documents/" + encodeURIComponent(analysis.source_evidence_id) + "/intelligence", {});
+      await load();
+    } catch {
+      setError("The next group of document statements could not be loaded. Your saved decisions are unchanged.");
     } finally {
       setBusy(null);
     }
@@ -258,10 +275,12 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       })}</div>}
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
+          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} statement(s) in this group</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
-                ? `Partial extraction · processed ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
+                ? analysis.has_more_candidates && !(analysis.unprocessed_page_numbers?.length)
+                  ? `More statements are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
+                  : `Partial extraction · processed ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
                 : analysis.intelligence_status === "available" ? "Page extraction completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "Document understanding is processing in the background" : "Document understanding not yet completed"}
               {analysis.unprocessed_page_numbers?.length ? ` · not processed: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
@@ -287,7 +306,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           {analysis.intelligence_status !== "available" && (analysis.intelligence_status !== "partial" || !!analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <div style={{ display: "grid", gap: 7 }}><p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding has not completed. The original file and server-extracted text remain saved; no LCR facts were created.</p><button type="button" disabled={busy !== null} onClick={() => void analyze(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>{analysis.intelligence_status === "partial" ? "Resume remaining pages" : "Retry background processing"}</button></div>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Document understanding found no care statements. No LCR facts were created.</p>}
           {analysis.observations.map((candidate, index) => {
-            const key = analysis.analysis_id + ":" + index;
+            const candidateIndex = typeof candidate.candidate_index === "number" ? candidate.candidate_index : index;
+            const key = analysis.analysis_id + ":" + candidateIndex;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
             const statusPresentation = pending
               ? { label: candidate.review_status === "corrected_pending_approval" ? "CORRECTION AWAITING APPROVAL" : "PENDING CAREGIVER REVIEW", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
@@ -321,15 +341,16 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected subject<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected interpretation<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept into LCR</button>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Save correction for approval</button>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Accept into LCR</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Save correction for approval</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
                 </div>
               </>}
               {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A source-linked, attributed assertion was saved to the LCR; it is not independently verified clinical fact.</p>}
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>}
             </div>;
           })}
+          {analysis.has_more_candidates && !(analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && analysis.observations.length > 0 && analysis.observations.every((candidate) => ["accepted_by_caregiver", "rejected_by_caregiver"].includes(candidate.review_status)) && <button type="button" disabled={busy !== null} onClick={() => void showNextCandidateGroup(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Show next group of {Math.min(60, analysis.remaining_candidate_count ?? 0)} statements</button>}
           <details onToggle={(event) => { if (event.currentTarget.open) void loadReviewHistory(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Caregiver review history{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " immutable event(s)" : ""}</summary>
             {historyLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving saved review events…</p>
