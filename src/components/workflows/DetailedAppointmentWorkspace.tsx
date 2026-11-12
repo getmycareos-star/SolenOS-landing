@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 
 type Stage = 'prepare' | 'during' | 'after'
 type EvidenceSource = {
@@ -154,9 +155,9 @@ export default function DetailedAppointmentWorkspace() {
         setFollowUps(Array.isArray(p.followUps) && p.followUps.length ? p.followUps.map((item: unknown) => { const saved = item as Partial<FollowUp>; return { ...emptyFollowUp(), ...saved, id: saved.id || newFollowUpId() } }) : [emptyFollowUp()])
         const validStatuses = ['Awaiting documentation', 'Follow-up pending', 'Ready for review', 'Closed with documented outstanding items'] as const
         setReviewStatus(validStatuses.includes(p.reviewStatus as typeof validStatuses[number]) ? p.reviewStatus as typeof validStatuses[number] : 'Awaiting documentation')
-        setSaveMessage('Loaded saved appointment workspace · version ' + record.version_number)
+        setSaveMessage('Your saved appointment information is ready.')
       } catch (error) {
-        if (!cancelled) setSaveError(error instanceof Error ? error.message : 'Could not load saved appointment workspace.')
+        if (!cancelled) setSaveError('Could not load saved appointment information. Please try again.')
       } finally {
         if (!cancelled) setLoadingRecord(false)
       }
@@ -278,13 +279,13 @@ export default function DetailedAppointmentWorkspace() {
         setFollowUps(synced)
       }
       if (followUpSyncError) {
-        setSaveError('Appointment notes were saved, but a follow-up action did not sync: ' + followUpSyncError + '. Save again to retry.')
-        setSaveMessage('Appointment workspace saved · follow-up sync incomplete.')
+        setSaveError('Your appointment notes were saved, but a follow-up could not be updated. Please try again.')
+        setSaveMessage('Your appointment information was saved, but a follow-up could not be updated. Please try again.')
       } else {
-        setSaveMessage('Appointment workspace and follow-up actions saved · version ' + savedVersion + '. Caregiver-reported completion is not independent verification.')
+        setSaveMessage('Your appointment information and follow-up actions were saved. A caregiver-reported completion has not been independently confirmed.')
       }
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Save failed. Your unsaved edits remain on this screen.')
+      setSaveError('Your changes could not be saved. Check whether they appear before trying again.')
     } finally {
       setSavingRecord(false)
     }
@@ -300,7 +301,7 @@ export default function DetailedAppointmentWorkspace() {
           <p>Organise concerns before the visit, capture what was actually discussed, and keep follow-up work visible.</p>
         </div>
         <button type="button" className="appointment-primary" onClick={() => setOpen(value => !value)} aria-expanded={open}>
-          {open ? 'Close appointment workspace' : 'Open appointment workspace'}
+          {open ? 'Close appointment details' : 'Open appointment details'}
         </button>
       </div>
 
@@ -329,42 +330,42 @@ export default function DetailedAppointmentWorkspace() {
             {lcrBrief && <>
               <div className="appointment-brief-grid">
                 <div><strong>Recorded facts ({lcrBrief.facts.length})</strong>
-                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>{item.fact_type} · {item.epistemic_status} · Source {item.source_id}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
+                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>Care information · {caregiverInformationLabel(item.epistemic_status) || 'Information status unavailable'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved source'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
                 </div>
                 <div><strong>Recent care events ({lcrBrief.events.length})</strong>
-                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {item.status} · Source {item.source_id}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
+                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
                 </div>
                 <div><strong>Appointment history ({lcrBrief.appointments.length})</strong>
-                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {item.status} · Source {item.source_id}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No appointment records were returned.</p>}
+                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No appointment records were returned.</p>}
                 </div>
               </div>
-              <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{source.replaceAll('_', ' ')}</b><small>{status.replaceAll('_', ' ')}</small></span>)}</div></div>
+              <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>Care information source</b><small>{caregiverStatusLabel(String(status)) || 'Status not available'}</small></span>)}</div></div>
               <section className="appointment-source-coverage" aria-label="Evidence freshness assessments">
-                <strong>Evidence freshness assessments ({lcrBrief.freshness_assessments?.length ?? 0})</strong>
-                <p>These are results of explicit domain policies, not proof that a source is true or clinically current. This view shows only the latest result per policy and linked evidence.</p>
-                {lcrBrief.freshness_assessment_scope && <small>{lcrBrief.freshness_assessment_scope.interpretation_limit}</small>}
+                <strong>How recent this information is</strong>
+                <p>These checks can help show whether information may need another look. They do not prove that a report is true or still applies today.</p>
+                {lcrBrief.freshness_assessment_scope && <small>{caregiverSafeAssistantText(lcrBrief.freshness_assessment_scope.interpretation_limit) || 'The available dates may not tell the whole story.'}</small>}
                 {(lcrBrief.freshness_assessments?.length ?? 0) > 0
                   ? <ul>{lcrBrief.freshness_assessments?.map(item => <li key={item.assessment_id}>
-                    <span>{item.freshness_status.replaceAll('_', ' ')} · {item.domain_key} · policy {item.policy_version}</span>
-                    <small>Evidence {item.evidence_id} · source time {item.source_time ? new Date(item.source_time).toLocaleString() : 'unknown'} ({(item.source_time_kind || 'time kind unknown').replaceAll('_', ' ')}) · age {item.age_days == null ? 'unknown' : item.age_days + ' days'}</small>
-                    <small>{item.rationale}</small>
-                    <small>Assessment {item.assessment_id}</small>
+                    <span>{caregiverStatusLabel(item.freshness_status) || 'Not checked'}</span>
+                    <small>Information date: {item.source_time ? new Date(item.source_time).toLocaleString() : 'Not recorded'} · {item.age_days == null ? 'Age not known' : 'Recorded ' + item.age_days + ' days ago'}</small>
+                    <small>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</small>
+                    
                   </li>)}</ul>
                   : lcrBrief.freshness_assessment_scope?.status === 'unavailable_schema'
-                    ? <p role="status">Freshness assessment storage is unavailable in this database schema. Currentness is unknown.</p>
-                    : <p>No freshness assessment was returned for evidence linked to this preparation snapshot. This is not proof that evidence is current.</p>}
+                    ? <p role="status">We couldn’t check how recent this information is. Its current status is unknown.</p>
+                    : <p>We couldn’t find a review of how recent this information is. This does not mean it is current.</p>}
               </section>
               {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="Evidence source lineage">
-                <strong>Evidence source lineage · {lcrBrief.evidence_lineage.status.replaceAll('_', ' ')}</strong>
+                <strong>How these sources are connected</strong>
                 {lcrBrief.evidence_lineage.scope_truncated && <p role="status">Lineage retrieval reached a safety bound. Unreturned source relationships are unknown, not absent; independent corroboration is not established.</p>}
                 {lcrBrief.evidence_lineage.groups.length ? lcrBrief.evidence_lineage.groups.map(group => <div key={group.lineage_id} className="appointment-coverage-item">
-                  <b>{group.source_independence_status.replaceAll('_', ' ')}</b>
-                  <small>Evidence IDs: {group.evidence_ids.join(', ')}{group.origin_group_keys.length ? ' · Origin: ' + group.origin_group_keys.join(', ') : ''}</small>
-                  <small>{group.interpretation_limit}</small>
+                  <b>{group.source_independence_status === 'shared_origin' ? 'Same original source' : group.source_independence_status === 'independent' ? 'Reported separately' : group.source_independence_status === 'not_assessed' ? 'Not checked' : 'Not known'}</b>
+                  
+                  <small>{caregiverSafeAssistantText(group.interpretation_limit) || 'The relationship between these sources is not fully known.'}</small>
                 </div>) : <p>No explicit shared-source group was returned for the retrieved evidence. This does not establish that the sources are independent.</p>}
-                <p className="appointment-brief-limitations">{lcrBrief.evidence_lineage.interpretation_limit}</p>
+                <p className="appointment-brief-limitations">{caregiverSafeAssistantText(lcrBrief.evidence_lineage.interpretation_limit) || 'A link between records does not prove that reports are true or independent.'}</p>
               </section>}
-              <p className="appointment-brief-limitations">{lcrBrief.limitations.join(' ')}</p>
+              <p className="appointment-brief-limitations">{lcrBrief.limitations.map(caregiverSafeAssistantText).filter(Boolean).join(' ')}</p>
             </>}
           </section>
           <div className="appointment-fields appointment-fields-two">
@@ -427,11 +428,11 @@ export default function DetailedAppointmentWorkspace() {
 
         <div className="appointment-save-controls">
           <div className="appointment-save-status" role="status" aria-live="polite">
-            {loadingRecord ? 'Loading saved appointment workspace…' : saveMessage}
+            {loadingRecord ? 'Loading saved appointment information…' : saveMessage}
             {saveError && <span className="appointment-error">{saveError}</span>}
           </div>
           <button type="button" className="appointment-primary" onClick={() => void saveWorkspace()} disabled={savingRecord || loadingRecord}>
-            {savingRecord ? 'Saving…' : recordId ? 'Save appointment changes' : 'Save appointment workspace'}
+            {savingRecord ? 'Saving…' : recordId ? 'Save appointment changes' : 'Save appointment information'}
           </button>
         </div>
       </>}
