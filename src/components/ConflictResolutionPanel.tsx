@@ -222,7 +222,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
             <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
             {item.resolution_scope && <p>Reviewed: {caregiverSafeAssistantText(item.resolution_scope) || "Not recorded"}</p>}
             {item.unresolved_remainder && <p>Still needs checking: {caregiverSafeAssistantText(item.unresolved_remainder) || "Not recorded"}</p>}
-            <p>Supporting information: {item.evidence_ids?.length ? item.evidence_ids.length + " saved item(s)" : "None recorded"} · {item.created_at}</p>
+            <p>Supporting information: {item.evidence_ids?.length ? item.evidence_ids.length + " saved item(s)" : "None recorded"} · {new Date(item.created_at).toLocaleString()}</p>
           </li>)}
         </ol>
       </div>
