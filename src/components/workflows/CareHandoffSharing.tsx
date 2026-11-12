@@ -641,7 +641,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       {draft && audience === "professional" && (
         <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
           <strong>Professional handoff — private review only</strong>
-          <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>SolenOS cannot yet verify professional identity and role authorization for handoff recipients. This professional draft cannot be shared from this screen. A family caregiver will not be treated as a healthcare professional.</p>
+          <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>SolenOS cannot yet confirm that a recipient is a healthcare professional. This draft cannot be shared with professionals from this screen.</p>
         </div>
       )}
 
@@ -706,7 +706,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <details key={item.revision_number} style={{ margin: "6px 0" }}>
                 <summary style={{ cursor: "pointer", fontSize: 11 }}>Updated {formatDate(item.created_at)} · {readableStatus(item.change_type)}</summary>
                 {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{readableSection(section.section)}:</strong> {caregiverSafeAssistantText(section.text) ?? "Some details are not available in this version."} <small>(Source {index + 1})</small></p>)}
-                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note: {note.text}</p>)}
+                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note: {caregiverSafeAssistantText(note.text) ?? "No further note was recorded."}</p>)}
                 <p style={{ fontSize: 10, color: "#667267" }}>Saved items in this version: {item.source_snapshot?.source_records?.length ?? "Not recorded"}</p>
               </details>
             ))}</details>}
@@ -799,7 +799,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             {outbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong>{item.recipients?.map(recipient => recipient.name || "Caregiver").join(", ") || "Caregiver handoff"}</strong>
-                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {readableStatus(item.status)}{item.is_expired ? " · expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
+                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {readableStatus(item.status)}{item.is_expired ? " · Expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
                 <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
                 {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: 11, color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status ? readableStatus(recipient.status) : "Receipt status unavailable"}</p>)}
                 {item.status !== "revoked" && !item.is_expired && <button type="button" style={quietButton} disabled={busy} onClick={() => void revoke(item)}>Revoke access</button>}
