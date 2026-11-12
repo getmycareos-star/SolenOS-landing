@@ -258,7 +258,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       })}</div>}
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a document or scan. SolenOS will prepare the readable parts for you to review.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
+          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · Care document · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
                 ? `Partial extraction · processed ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
@@ -274,13 +274,13 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             </div>}
           </div>
           <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
-            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Persisted server-extracted text</summary>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Text read from your document</summary>
             {analysis.extractionMethod && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>How the text was read: {analysis.extractionMethod === "tesseract_ocr" || analysis.extractionMethod?.includes("tesseract") ? "Text read from the document image" : "Text read from the saved document"}</p>}
             {analysis.model_provenance && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>The document text is ready for your review.</p>}
             {analysis.extractionMethod?.includes("tesseract") && <p style={{ fontSize: 12 }}>Names, dates, and numbers may not have been read correctly. Check each suggested detail against the original document.</p>}
             {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Opening the text read from your document…</p>
               : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry source text</button></div>
-              : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the persisted text from the server.</p>
+              : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to read the text saved from your document.</p>
                 : analysis.extractedText ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{analysis.extractedText}</pre>
                   : <p style={{ fontSize: 12 }}>No readable server-extracted text is stored for this document.</p>}
           </details>
