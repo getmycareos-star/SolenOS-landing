@@ -19,6 +19,21 @@ type AssistResult = {
         entered_by?: string | null;
         reported_by?: string | null;
         source_excerpt?: string | null;
+        related_evidence?: Array<{
+          label?: string;
+          reported_by?: string | null;
+          entered_by?: string | null;
+          recorded_at?: string | null;
+          source_excerpt?: string | null;
+          observations?: Array<{
+            label?: string;
+            attribute?: string;
+            value?: string | null;
+            occurred_at?: string | null;
+            reported_by?: string | null;
+            source_excerpt?: string | null;
+          }>;
+        }>;
       }>;
     }>;
   };
@@ -137,6 +152,23 @@ export function LcrQwenInterpretation({
                       {source.reported_by && <p>Reported by: {source.reported_by}</p>}
                       {source.entered_by && <p>Recorded by: {source.entered_by}</p>}
                       {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                      {source.related_evidence?.map((evidence, evidenceIndex) => (
+                        <div key={"related-" + evidenceIndex}>
+                          <strong>{evidence.label || "Supporting note or document"}</strong>
+                          {evidence.reported_by && <p>Reported by: {evidence.reported_by}</p>}
+                          {evidence.entered_by && <p>Added by: {evidence.entered_by}</p>}
+                          {evidence.recorded_at && <p>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
+                          {evidence.source_excerpt && <blockquote>{evidence.source_excerpt}</blockquote>}
+                          {evidence.observations?.map((observation, observationIndex) => (
+                            <div key={"observation-" + observationIndex}>
+                              <p>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
+                              {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
+                              {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
+                              {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </article>
