@@ -195,11 +195,10 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
         const currentQuestion = loadedQuestions.find((row) => row.id === current);
-        if (currentQuestion && (currentQuestion.status === "open" || currentQuestion.status === "unresolved")) return current;
-        return loadedQuestions.find((row) => row.status === "open" || row.status === "unresolved")?.id
-          ?? currentQuestion?.id
-          ?? loadedQuestions[0]?.id
-          ?? "";
+        if (currentQuestion) return current;
+        return loadedQuestions.find((row) =>
+          row.necessity === "necessary" && (row.status === "open" || row.status === "unresolved")
+        )?.id ?? "";
       });
     } catch {
       setScopePersonId("");
