@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 
 interface ClaimSourceReference {
@@ -72,6 +72,17 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   companion_messages: 'Prior Companion message',
 }
 
+interface CareUpdateCandidate {
+  id: string
+  status: string
+  proposal_type: string
+  proposed_change: { asserted_value?: string; source_quote?: string; event_time_text?: string | null; information_status?: string }
+  source_message_id: string
+  source_conversation_id: string
+  candidate_index: number
+  proposal_version: number
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -91,6 +102,7 @@ interface Message {
   ai_generated?: boolean
   written_to_lcr?: boolean
   persistence?: string
+  care_update_candidates?: CareUpdateCandidate[]
   timestamp: Date
 }
 
@@ -107,6 +119,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [reviewingCandidateId, setReviewingCandidateId] = useState<string | null>(null)
+  const [correctionDrafts, setCorrectionDrafts] = useState<Record<string, { corrected: string; context: string }>>({})
+  const [reviewError, setReviewError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -117,6 +132,41 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
+
+  const refreshPendingCareUpdates = async (conversationId?: string | null) => {
+    const query = conversationId ? `?session_id=${encodeURIComponent(conversationId)}` : ""
+    const result = await getJSON(`/companion/care-updates${query}`) as { items?: CareUpdateCandidate[] }
+    return Array.isArray(result?.items) ? result.items : []
+  }
+
+  const reviewCareUpdate = async (candidate: CareUpdateCandidate, decision: "accept" | "correct" | "reject") => {
+    if (reviewingCandidateId) return
+    const draft = correctionDrafts[candidate.id] || { corrected: "", context: "" }
+    if (decision === "correct" && (!draft.corrected.trim() || !draft.context.trim())) {
+      setReviewError("Add the corrected statement and explain what needs correcting.")
+      return
+    }
+    setReviewError(null)
+    setReviewingCandidateId(candidate.id)
+    try {
+      await postJSON(`/companion/care-updates/${encodeURIComponent(candidate.id)}/review`, {
+        decision,
+        corrected_text: decision === "correct" ? draft.corrected.trim() : undefined,
+        correction_context: decision === "correct" ? draft.context.trim() : undefined,
+      })
+      const remaining = await refreshPendingCareUpdates(candidate.source_conversation_id)
+      setMessages(previous => previous.map(message => ({
+        ...message,
+        care_update_candidates: message.care_update_candidates?.filter(item => item.id !== candidate.id)
+          .concat(remaining.filter(item => item.source_message_id === candidate.source_message_id && !message.care_update_candidates?.some(existing => existing.id === item.id))) || message.care_update_candidates,
+      })))
+      setCorrectionDrafts(previous => { const next = { ...previous }; delete next[candidate.id]; return next })
+    } catch {
+      setReviewError("That care update could not be saved. Your care record was not changed. Refresh and try again.")
+    } finally {
+      setReviewingCandidateId(null)
+    }
+  }
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
@@ -169,9 +219,22 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
+        care_update_candidates: Array.isArray(response.care_update_candidates) ? response.care_update_candidates : [],
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
+      if (response.session_id) {
+        try {
+          const pending = await refreshPendingCareUpdates(response.session_id)
+          if (pending.length) {
+            setMessages(previous => previous.map(message => message === assistantMsg
+              ? { ...message, care_update_candidates: pending.filter(item => item.source_message_id === response.source_message_id || !response.source_message_id) }
+              : message))
+          }
+        } catch {
+          // Candidate identification is optional; the saved conversation remains available.
+        }
+      }
 
 
     } catch {
@@ -342,6 +405,30 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     </section>}
                     {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">Freshness assessment storage is unavailable in this schema. A review of how current these records are is not available. Their currentness is unknown.</p>}
                     {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No freshness assessments were returned. No review of how current these records are was returned. This does not mean they are current.</p>}
+                    {(msg.care_update_candidates?.length ?? 0) > 0 && <section className="companion-care-review" aria-label="Care updates to review">
+                      <strong>Possible care updates</strong>
+                      <p>These are suggestions from your message, not confirmed care facts. Nothing is added to the care record unless you accept it.</p>
+                      {msg.care_update_candidates?.map(candidate => {
+                        const draft = correctionDrafts[candidate.id] || { corrected: "", context: "" }
+                        return <article className="companion-care-review-item" key={candidate.id}>
+                          <blockquote>{candidate.proposed_change?.asserted_value || candidate.proposed_change?.source_quote || "Care update needs review"}</blockquote>
+                          {candidate.proposed_change?.event_time_text && <small>Time mentioned: {candidate.proposed_change.event_time_text}</small>}
+                          <div className="companion-care-review-actions">
+                            <button type="button" onClick={() => void reviewCareUpdate(candidate, "accept")} disabled={!!reviewingCandidateId}>Accept</button>
+                            <button type="button" onClick={() => void reviewCareUpdate(candidate, "reject")} disabled={!!reviewingCandidateId}>Not correct</button>
+                          </div>
+                          <label>Correct this statement
+                            <textarea value={draft.corrected} onChange={event => setCorrectionDrafts(previous => ({ ...previous, [candidate.id]: { ...draft, corrected: event.target.value } }))} rows={2} />
+                          </label>
+                          <label>What needs correcting?
+                            <textarea value={draft.context} onChange={event => setCorrectionDrafts(previous => ({ ...previous, [candidate.id]: { ...draft, context: event.target.value } }))} rows={2} />
+                          </label>
+                          <button type="button" onClick={() => void reviewCareUpdate(candidate, "correct")} disabled={!!reviewingCandidateId}>Save correction for a separate review</button>
+                          {reviewingCandidateId === candidate.id && <small>Saving…</small>}
+                        </article>
+                      })}
+                      {reviewError && <p role="alert">{reviewError}</p>}
+                    </section>}
                   </div>
                 </article>
               })}
