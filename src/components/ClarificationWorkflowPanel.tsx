@@ -506,6 +506,7 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
               <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="For example, I measured it this morning." />
             </label>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
+            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>An answer will not be treated as confirmed until it has been reviewed.</p>
             <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
             <button type="button" style={button} onClick={() => void updateQuestion("unresolved")} disabled={saving}>I don't know the answer yet</button>
           </>}
