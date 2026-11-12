@@ -16,6 +16,9 @@ type CareReminder = {
   note: string | null;
   due_at: string;
   status: ReminderStatus;
+  snoozed_at: string | null;
+  snoozed_by_caregiver_id: string | null;
+  snooze_count: number;
   completed_at: string | null;
   completed_by_caregiver_id: string | null;
   completion_note: string | null;
@@ -122,6 +125,24 @@ export default function CareRemindersPage() {
       setNotice("Reminder marked complete.");
     } catch (reason) {
       setError("We couldn’t update this reminder. Please try again.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function snoozeReminder(reminder: CareReminder) {
+    setBusyId(reminder.id);
+    setError("");
+    setNotice("");
+    try {
+      const snoozeUntil = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/snooze`, {
+        snooze_until: snoozeUntil,
+      });
+      await refresh(personId);
+      setNotice("Reminder moved one hour later. It remains open and will not be marked complete.");
+    } catch {
+      setError("We couldn’t snooze this reminder. Please try again.");
     } finally {
       setBusyId("");
     }
@@ -246,6 +267,9 @@ export default function CareRemindersPage() {
                     <div className="care-reminder-actions">
                       <Button variant="primary" disabled={busyId === reminder.id} onClick={() => void completeReminder(reminder)}>
                         <Check size={16} aria-hidden /> Mark complete
+                      </Button>
+                      <Button variant="secondary" disabled={busyId === reminder.id} onClick={() => void snoozeReminder(reminder)}>
+                        <Clock3 size={16} aria-hidden /> Snooze 1 hour
                       </Button>
                       <Button variant="secondary" disabled={busyId === reminder.id} onClick={() => void cancelReminder(reminder)}>
                         <X size={16} aria-hidden /> Cancel
