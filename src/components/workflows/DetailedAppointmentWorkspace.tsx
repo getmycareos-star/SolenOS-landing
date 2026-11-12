@@ -410,8 +410,8 @@ export default function DetailedAppointmentWorkspace() {
           <h4>After the appointment</h4>
           <p className="appointment-stage-intro">A visit can be finished while clinical follow-up remains open. Mark work done only when completion is supported.</p>
           <div className="appointment-fields appointment-fields-two">
-            <label>Medication changes or differences<textarea value={medicationReconciliation} onChange={event => setMedicationReconciliation(event.target.value)} rows={4} placeholder="Record the exact clinician instruction, source, effective date, verification status, and unresolved discrepancy. Never infer start/stop/change." /></label>
-            <label>Pending tests, results, or referrals<textarea value={pendingResults} onChange={event => setPendingResults(event.target.value)} rows={4} placeholder="What was ordered/referred, expected timing if stated, who will obtain/review results, and documented escalation route." /></label>
+            <label>Medication changes or differences<textarea value={medicationReconciliation} onChange={event => setMedicationReconciliation(event.target.value)} rows={4} placeholder="Write exactly what the healthcare professional said, when it should take effect, and what is still unclear. Do not guess whether a medicine should be started, stopped, or changed." /></label>
+            <label>Pending tests, results, or referrals<textarea value={pendingResults} onChange={event => setPendingResults(event.target.value)} rows={4} placeholder="What was ordered, when results are expected if stated, and who will follow up." /></label>
             <label>What the family needs to know<textarea value={familySummary} onChange={event => setFamilySummary(event.target.value)} rows={4} placeholder="What changes in everyday care, what remains the same, what to monitor, when to contact whom, and what remains uncertain." /></label>
           </div>
           <div className="appointment-followups-heading"><h5>Follow-up actions</h5><button type="button" className="appointment-secondary" onClick={addFollowUp}><ListChecks size={15} /> Add action</button></div>
@@ -422,7 +422,7 @@ export default function DetailedAppointmentWorkspace() {
             <label>Status<select value={item.status} onChange={event => updateFollowUp(index, 'status', event.target.value)}><option>Open</option><option>In progress</option><option>Done</option><option>Needs clarification</option></select></label>
           </div>)}
           <label className="appointment-review-status">Closure status<select value={reviewStatus} onChange={event => setReviewStatus(event.target.value as typeof reviewStatus)}><option>Awaiting documentation</option><option>Follow-up pending</option><option>Ready for review</option><option>Closed with documented outstanding items</option></select></label>
-          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Appointment notes remain separate from details accepted into your care record. Follow-up actions are saved to the shared care follow-up record; marking one done records a caregiver report and does not verify or close it without source evidence.</p>
+          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Appointment notes remain separate from details accepted into your care record. Follow-up actions are saved for the family to track; marking one done records what a caregiver reported and does not confirm completion.</p>
         </div>}
 
         <div className="appointment-save-controls">
