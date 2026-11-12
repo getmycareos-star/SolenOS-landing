@@ -1268,7 +1268,16 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   id="capture-medication-status"
                   value={medicationForm.status}
                   required
-                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, status: e.target.value })); }}
+                  onChange={(e) => {
+                    setMedicationError(null);
+                    setMedicationFeedback(null);
+                    setMedicationForm(prev => ({
+                      ...prev,
+                      status: e.target.value,
+                      administered_at: e.target.value === "given" ? prev.administered_at : null,
+                    }));
+                    if (e.target.value === "given") setEventOccurredAt("");
+                  }}
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
