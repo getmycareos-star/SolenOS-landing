@@ -123,7 +123,15 @@ assert.match(settingsPage, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
   "care updates must load from the authenticated notification feed");
 assert.match(settingsPage, /patchJSON\("\/notifications\//,
   "caregiver acknowledgment must be persisted through the backend");
-assert.match(settingsPage, /No care updates right now/,
+assert.match(settingsPage, /No notifications yet\. When a saved care reminder is due, it will appear here\./,
+  "the empty inbox must explain when saved reminders will appear");
+assert.match(settingsPage, /window\.setInterval\(refreshWhenVisible, 30_000\)/,
+  "the notification inbox must refresh periodically while visible");
+assert.match(settingsPage, /document\.visibilityState === "visible"/,
+  "background tabs must not poll for notifications");
+assert.match(settingsPage, /Quiet-hours times aren't available from the server right now/,
+  "missing quiet-hours capability must not be described as a future deployment");
+assert.match(settingsPage, /No notifications yet/,
   "the inbox must explain a genuine empty state");
 assert.match(settingsPage, /Replaced by newer information/,
   "superseded notifications must be distinguished from active attention");
