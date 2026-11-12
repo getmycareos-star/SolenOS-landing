@@ -39,11 +39,14 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
 const companion = read("../src/components/workflows/AICompanion.tsx");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
+const documentsPage = read("../src/app/workspace/documents/page.tsx");
 const settings = read("../src/app/workspace/settings/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
 const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
+const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
+const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
 const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
 const continuity = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const conflictReview = read("../src/components/ConflictResolutionPanel.tsx");
