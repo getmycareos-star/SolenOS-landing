@@ -305,7 +305,7 @@ export default function DetailedAppointmentWorkspace() {
       </div>
 
       {open && <>
-        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from Living Care Record facts. Caregiver reports, caregiver-recorded clinician statements, and AI suggestions remain distinct; saving does not verify clinical statements or silently change the LCR.</span></div>
+        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from Living Care Record facts. Caregiver reports, caregiver-recorded clinician statements, and AI suggestions remain distinct; saving does not confirm clinical statements or silently change your care record.</span></div>
         <nav className="appointment-stages" aria-label="Appointment stages">
           {([
             ['prepare', '1. Before the visit'],
@@ -422,7 +422,7 @@ export default function DetailedAppointmentWorkspace() {
             <label>Status<select value={item.status} onChange={event => updateFollowUp(index, 'status', event.target.value)}><option>Open</option><option>In progress</option><option>Done</option><option>Needs clarification</option></select></label>
           </div>)}
           <label className="appointment-review-status">Closure status<select value={reviewStatus} onChange={event => setReviewStatus(event.target.value as typeof reviewStatus)}><option>Awaiting documentation</option><option>Follow-up pending</option><option>Ready for review</option><option>Closed with documented outstanding items</option></select></label>
-          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Appointment notes remain separate from accepted LCR facts. Follow-up actions are saved to the shared care follow-up record; marking one done records a caregiver report and does not verify or close it without source evidence.</p>
+          <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Appointment notes remain separate from details accepted into your care record. Follow-up actions are saved to the shared care follow-up record; marking one done records a caregiver report and does not verify or close it without source evidence.</p>
         </div>}
 
         <div className="appointment-save-controls">
