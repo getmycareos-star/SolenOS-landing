@@ -274,6 +274,7 @@ function NotificationsCard() {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span className="mobile-settings-label">{item.title}</span>
               <span className="mobile-settings-hint">{item.body}</span>
+              {(item.status ?? "active") === "active" && <Link href="/workspace" className="mobile-settings-hint">Review in care record</Link>}
               <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {item.category}</span>
               {(item.status ?? "active") === "active"
                 ? <span className="mobile-settings-hint">Needs attention</span>

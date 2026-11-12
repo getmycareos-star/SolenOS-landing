@@ -149,10 +149,8 @@ assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflic
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
 const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
-assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
-assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
-assert(clarificationPanel.includes("Who may know the answer?") && clarificationPanel.includes("No saved source linked yet"), "caregivers must see plain-language question context without internal record identifiers");
-assert(clarificationPanel.includes("evidenceSummary(item)") && !clarificationPanel.includes("source_text.slice"), "saved source details must be shown as plain text, never raw JSON");
+assert(!clarificationPanel.includes("Ask another question") && !clarificationPanel.includes("Save question") && !clarificationPanel.includes("createQuestion"), "caregivers must not create or manage clarification tasks manually");
+assert(clarificationPanel.includes('item.necessity === "necessary"') && clarificationPanel.includes("Nothing needs your attention right now"), "only system-generated necessary questions may become caregiver work");
 assert(clarificationPanel.includes("questionHasLinkedSource(item)") && clarificationPanel.includes("source_record_refs"), "clarification source labels must recognize linked claims and persisted source records, not only attachments");
 assert(clarificationPanel.includes('window.addEventListener("careRecordUpdated"'), "clarification questions must refresh after a saved care update");
 assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");

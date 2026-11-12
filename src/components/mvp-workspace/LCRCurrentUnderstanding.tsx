@@ -559,7 +559,6 @@ export function LCRCurrentUnderstanding() {
   const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
   const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
   const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
-  const [clarificationPrefill, setClarificationPrefill] = useState<{ question: string; evidenceIds: string[] } | null>(null);
   const [actionApprovalLoadingId, setActionApprovalLoadingId] = useState<string | null>(null);
   const [actionApprovalError, setActionApprovalError] = useState<string | null>(null);
   const [suggestionDispositionReasons, setSuggestionDispositionReasons] = useState<Record<string, string>>({});
@@ -1129,15 +1128,6 @@ export function LCRCurrentUnderstanding() {
                                   </button>
                                 )}
                                 <button type="button" className="lcr-text-action" onClick={() => {
-                                  setClarificationPrefill({
-                                    question: item.request_text?.trim() || item.description || item.title,
-                                    evidenceIds: item.evidence_ids,
-                                  });
-                                  document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }}>
-                                  Request clarification
-                                </button>
-                                <button type="button" className="lcr-text-action" onClick={() => {
                                   setReviewingSuggestionId(null);
                                   setActionApprovalError(null);
                                   setCreateReminderForSuggestion(false);
@@ -1696,7 +1686,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{projection.notice}</p>
         </>
       ) : null}
-      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} /></div>
       <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
