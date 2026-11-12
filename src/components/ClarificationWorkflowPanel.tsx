@@ -158,7 +158,15 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [historyError, setHistoryError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
+  const isCaregiverNecessaryQuestion = (item: Question) =>
+    item.necessity === "necessary" && Boolean(item.necessity_rationale?.trim());
+  const caregiverOpenQuestions = questions.filter((item) =>
+    (item.status === "open" || item.status === "unresolved") && isCaregiverNecessaryQuestion(item)
+  );
+  const selectedQuestion = questions.find((item) =>
+    item.id === selectedQuestionId &&
+    (!(item.status === "open" || item.status === "unresolved") || isCaregiverNecessaryQuestion(item))
+  );
   const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
   const latestAnswer = history[history.length - 1];
   const latestReview = latestAnswer
@@ -191,11 +199,18 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setEvidence(loadedEvidence);
       setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
+        const necessaryOpen = loadedQuestions.filter((row) =>
+          (row.status === "open" || row.status === "unresolved") &&
+          row.necessity === "necessary" &&
+          Boolean(row.necessity_rationale?.trim())
+        );
         const currentQuestion = loadedQuestions.find((row) => row.id === current);
-        if (currentQuestion && (currentQuestion.status === "open" || currentQuestion.status === "unresolved")) return current;
-        return loadedQuestions.find((row) => row.status === "open" || row.status === "unresolved")?.id
-          ?? currentQuestion?.id
-          ?? loadedQuestions[0]?.id
+        if (currentQuestion && (
+          (currentQuestion.status !== "open" && currentQuestion.status !== "unresolved") ||
+          (currentQuestion.necessity === "necessary" && Boolean(currentQuestion.necessity_rationale?.trim()))
+        )) return current;
+        return necessaryOpen[0]?.id
+          ?? loadedQuestions.find((row) => row.status !== "open" && row.status !== "unresolved")?.id
           ?? "";
       });
     } catch {
@@ -414,10 +429,10 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
-      {questions.length === 0 && <p>Nothing needs checking right now. If a care detail becomes unclear, you can add a question here.</p>}
+      {caregiverOpenQuestions.length === 0 && <p>Nothing needs your input right now. SolenOS will ask when a care detail genuinely needs confirmation. You can talk through other questions with SolenOS Companion.</p>}
       {questions.length > 0 && <>
         <div style={{ display: "grid", gap: 10 }}>
-          {questions.filter((item) => item.status === "open" || item.status === "unresolved").map((item) => (
+          {caregiverOpenQuestions.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -518,45 +533,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           </div>
         </div>}
       </>}
-      <details open={Boolean(prefillQuestion)} style={{ marginTop: 14 }}>
-        <summary style={{ cursor: "pointer", fontSize: 13 }}>Ask another question</summary>
-        {claims.length === 0 ? <p style={{ fontSize: 12 }}>A care detail must be saved before a question can be linked to it.</p> : <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 8, minWidth: 0 }}>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Which care detail is unclear?
-            <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
-              {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field.replaceAll("_", " ")} · {careInformationLabel(claim.epistemic_state || "reported")}: {claim.asserted_value.slice(0, 100)}</option>)}
-            </select>
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>What would you like to ask?
-            <textarea style={{ ...field, minHeight: 65 }} value={questionText} onChange={(event) => setQuestionText(event.target.value)} placeholder="Write one clear question." />
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Who may know the answer?
-            <select style={field} value={intendedAnswererRole} onChange={(event) => setIntendedAnswererRole(event.target.value)}>
-              <option value="">Not sure</option>
-              {["person_receiving_care", "reporting_caregiver", "other_caregiver", "professional", "not_known"].map((value) =>
-                <option key={value} value={value}>{answererLabel(value)}</option>)}
-            </select>
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Name or role, if known
-            <input style={field} value={intendedAnswererLabel} onChange={(event) => setIntendedAnswererLabel(event.target.value)} disabled={!intendedAnswererRole || intendedAnswererRole === "not_known"} />
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Why does this need an answer?
-            <select style={field} value={necessity} onChange={(event) => setNecessity(event.target.value)}>
-              <option value="not_assessed">No decision yet</option>
-              <option value="necessary">Important to confirm</option>
-              <option value="optional">Helpful, but can wait</option>
-            </select>
-          </label>
-          {necessity !== "not_assessed" && <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Why?
-            <textarea style={{ ...field, minHeight: 55 }} value={necessityRationale} onChange={(event) => setNecessityRationale(event.target.value)} />
-          </label>}
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Related saved information
-            <select multiple style={{ ...field, minHeight: 86 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-              {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {evidenceSummary(item)}</option>)}
-            </select>
-          </label>
-          <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>{saving ? "Saving…" : "Save question"}</button>
-        </fieldset>}
-      </details>
+
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
