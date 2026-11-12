@@ -83,6 +83,11 @@ assert(!saveFunction.includes("/intelligence"), "the caregiver page must not own
 assert.match(saveFunction, /You can leave this page/, "the caregiver can leave after the original and background job are saved");
 
 assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\)/, "scan retry must preserve capture time");
+assert.match(source, /deleteJSON\("\/upload\/" \+ encodeURIComponent\(selected\.id\)\)/, "document deletion must call the authenticated backend lifecycle endpoint");
+assert.match(source, /The document and its uncommitted extracted information were deleted/, "the caregiver must receive a success message only after backend deletion confirms");
+assert.match(source, /Link versions/, "caregivers must be able to explicitly link a corrected copy to its predecessor");
+assert.match(source, /version-comparison/, "the document view must retrieve source-grounded differences for corrected versions");
+assert.match(source, /These differences have not been clinically verified/, "version differences must not be presented as clinical truth");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
 console.log("✓ crop and straighten are applied to pixels before OCR");
