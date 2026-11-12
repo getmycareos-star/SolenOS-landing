@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
+import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 interface ClaimSourceReference {
   record_type: string
@@ -140,6 +141,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         client_turn_id: clientTurnId,
       }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
+      const caregiverReply = caregiverSafeAssistantText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
       setInput('')
       pendingTurnId.current = null
@@ -151,7 +153,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
       const assistantMsg: Message = {
         role: 'assistant',
-        text: response.reply,
+        text: caregiverReply,
         guard_verdict: response.guard_verdict,
         safety_note: response.safety_note,
         confidence: response.confidence,
