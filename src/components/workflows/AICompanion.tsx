@@ -63,12 +63,12 @@ interface ClaimProvenance {
 }
 
 const SOURCE_REFERENCE_LABELS: Record<string, string> = {
-  document_extractions: 'Extracted document text',
+  document_extractions: 'Text read from a document',
   care_evidence: 'Original uploaded source',
   events: 'Recorded care event',
   care_events: 'Recorded care event',
-  assertions: 'Care record assertion',
-  care_assertions: 'Care record assertion',
+  assertions: 'Caregiver report',
+  care_assertions: 'Caregiver report',
   conversation_messages: 'Prior Companion message',
   companion_messages: 'Prior Companion message',
 }
@@ -268,7 +268,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
                         <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
                           <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
-                          {reference.record_type === 'document_extractions' && <p>Extracted document text is context only, not yet an LCR assertion. Review and accept a candidate in Documents before it becomes a caregiver-reviewed LCR assertion.</p>}
+                          {reference.record_type === 'document_extractions' && <p>Text read from a document is only a suggestion. Review it in Documents before it is added to your care record.</p>}
                           {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Prior Companion message — conversation context only. It is not care evidence.</p>}
                         </div>
                       ))}
