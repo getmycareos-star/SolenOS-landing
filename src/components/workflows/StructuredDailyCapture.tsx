@@ -122,6 +122,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     measured_at: string;
     unit: string | null;
     note: string | null;
+    measurement_name: string | null;
   }>({
     vital_type: 'blood_pressure',
     value: Number.NaN,
