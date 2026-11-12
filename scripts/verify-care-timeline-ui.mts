@@ -33,9 +33,9 @@ assert.match(source, /original entry remains unchanged/,
 assert.match(source, /daily-care\\/intelligence\\/history\\?limit=200&offset=/,
   "timeline pagination reads the authenticated persisted history endpoint");
 assert.match(source, /Timeline could not be loaded/);
-assert.match(source, /No saved care events were returned/);
+assert.match(source, /No saved care-history entries were returned/);
 assert.match(source, /never inserts example care history/);
-assert.match(source, /latest saved event, not a substitute for the reconciled current-care view/);
+assert.match(source, /latest saved history entry, not a substitute for the reconciled current-care view/);
 assert.doesNotMatch(source, /runtime\.timeline\.entries/);
 assert.doesNotMatch(source, /localStorage\.getItem\(.*timeline/i);
 
