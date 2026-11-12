@@ -564,16 +564,17 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         note: string | null;
       }>;
       notes: string;
+      captureKind: DailyCaptureMode;
       occurredAt: string | null;
       captureIdempotencyKey: string;
     }
   >({
-    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes, occurredAt, captureIdempotencyKey }) =>
+    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes, captureKind, occurredAt, captureIdempotencyKey }) =>
       postJSON('/daily/log', {
         person_id: personId,
         caregiver_id: caregiverId,
         capture_idempotency_key: captureIdempotencyKey,
-        capture_kind: mode,
+        capture_kind: captureKind,
         ...(occurredAt ? { occurred_at: new Date(occurredAt).toISOString() } : {}),
         medications: medications.map(med => ({
           ...med,
@@ -740,7 +741,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       vitals: form.vitals,
       scales: form.scales,
       notes: form.notes,
-      capture_kind: mode,
+      captureKind: mode,
       occurredAt: eventOccurredAt || (
         mode === "medicine" && form.medications.length === 1
           ? form.medications[0].administered_at
