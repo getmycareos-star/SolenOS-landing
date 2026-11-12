@@ -780,7 +780,7 @@ export function LCRCurrentUnderstanding() {
     } catch (cause) {
       setConfirmationError((previous) => ({
         ...previous,
-        [change.id]: cause instanceof Error ? cause.message : "Confirmation could not be saved.",
+        [change.id]: "Confirmation could not be saved.",
       }));
     } finally {
       setConfirmationLoadingId(null);
@@ -817,7 +817,7 @@ export function LCRCurrentUnderstanding() {
           evidence: [],
           assertions: [],
           confirmation_history: [],
-          error: cause instanceof Error ? cause.message : "Supporting evidence could not be loaded.",
+          error: "Supporting evidence could not be loaded.",
         },
       }));
     } finally {
@@ -837,7 +837,7 @@ export function LCRCurrentUnderstanding() {
       setAssessment(result.assessment);
       setSourceFreshness(result.source_freshness ?? null);
     } catch (cause) {
-      setAssessmentError(cause instanceof Error ? cause.message : "The care summary could not be updated.");
+      setAssessmentError("The care summary could not be updated.");
     } finally {
       setAssessmentLoading(false);
     }
@@ -916,7 +916,7 @@ export function LCRCurrentUnderstanding() {
       setCreateReminderForSuggestion(false);
       setReminderDueInput("");
     } catch (cause) {
-      setActionApprovalError(cause instanceof Error ? cause.message : "The action could not be registered.");
+      setActionApprovalError("The action could not be registered.");
     } finally {
       setActionApprovalLoadingId(null);
     }
@@ -951,7 +951,7 @@ export function LCRCurrentUnderstanding() {
       setReviewingSuggestionId(null);
       await load(true);
     } catch (cause) {
-      setActionApprovalError(cause instanceof Error ? cause.message : "The suggestion could not be deferred.");
+      setActionApprovalError("The suggestion could not be deferred.");
     } finally {
       setActionApprovalLoadingId(null);
     }
@@ -986,7 +986,7 @@ export function LCRCurrentUnderstanding() {
     } catch (cause) {
       setActionTransitionErrors((current) => ({
         ...current,
-        [action.id]: cause instanceof Error ? cause.message : "The action status could not be updated.",
+        [action.id]: "The action status could not be updated.",
       }));
     } finally {
       setActionTransitionLoadingId(null);
@@ -1004,7 +1004,7 @@ export function LCRCurrentUnderstanding() {
     } catch (cause) {
       setActionHistoryErrors((current) => ({
         ...current,
-        [action.id]: cause instanceof Error ? cause.message : "Action history could not be loaded.",
+        [action.id]: "Action history could not be loaded.",
       }));
     }
   };
