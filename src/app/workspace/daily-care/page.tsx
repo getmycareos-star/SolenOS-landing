@@ -75,10 +75,10 @@ function displayHistorySource(item: CareItem): string {
     return "Recorded by caregiver";
   }
   if (item.source_type === "system" || item.source_type === "system_generated") {
-    return "System-generated update";
+    return "SolenOS update";
   }
   if (item.source_type === "professional" || item.source_type === "verified_professional") {
-    return "Professional contribution";
+    return "Shared by a care professional";
   }
   return "Source not recorded";
 }
