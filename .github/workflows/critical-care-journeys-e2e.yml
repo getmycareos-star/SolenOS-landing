@@ -133,6 +133,7 @@ jobs:
         run: |
           VAPID_PRIVATE_KEY="$(printf '%s' "$VAPID_PRIVATE_KEY_B64" | base64 --decode)"
           nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_MODEL="$OLLAMA_MODEL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" OLLAMA_NUM_CTX="$OLLAMA_NUM_CTX" OLLAMA_NUM_PREDICT="$OLLAMA_NUM_PREDICT" OLLAMA_NUM_THREADS="$OLLAMA_NUM_THREADS" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
+          echo $! >/tmp/solenos-critical-backend.pid
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
             sleep 1
