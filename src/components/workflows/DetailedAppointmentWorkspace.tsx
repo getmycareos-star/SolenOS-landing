@@ -118,7 +118,7 @@ export default function DetailedAppointmentWorkspace() {
         } catch (error) {
           if (!cancelled) {
             setLcrBrief(null)
-            setBriefError(error instanceof Error ? error.message : 'LCR preparation sources are unavailable.')
+            setBriefError('Saved care information could not be loaded. Please try again.')
           }
         }
         const response = await getJSON('/appointment-workspaces') as { items?: Array<{ id: string }> }
@@ -182,7 +182,7 @@ export default function DetailedAppointmentWorkspace() {
       },
     }
     const saveStatus = ({ 'Awaiting documentation': 'preparation', 'Follow-up pending': 'follow_up_pending', 'Ready for review': 'ready_for_review', 'Closed with documented outstanding items': 'closed_with_outstanding_items' } as const)[reviewStatus]
-    const saveReason = recordId ? 'Caregiver saved appointment workspace' : 'Initial caregiver appointment workspace save'
+    const saveReason = recordId ? 'Caregiver saved appointment details' : 'Initial caregiver appointment workspace save'
     const saveSignature = JSON.stringify({ recordId, expectedVersion: recordVersion, status: saveStatus, payload, changeReason: saveReason })
     const requestKey = saveRetry?.signature === saveSignature ? saveRetry.key : newAppointmentSaveKey()
     setSaveRetry({ signature: saveSignature, key: requestKey })
@@ -257,7 +257,7 @@ export default function DetailedAppointmentWorkspace() {
             synced[index] = { ...synced[index], reported_done_at: new Date().toISOString() }
           }
         } catch (error) {
-          followUpSyncError = error instanceof Error ? error.message : 'A follow-up action could not be synced.'
+          followUpSyncError = 'A follow-up action could not be updated.'
           break
         }
       }
@@ -322,25 +322,25 @@ export default function DetailedAppointmentWorkspace() {
             <div className="appointment-lcr-brief-heading">
               <div>
                 <h5 id="appointment-lcr-brief-title">Relevant information from the Living Care Record</h5>
-                <p>{lcrBrief ? 'Read-only source snapshot · ' + new Date(lcrBrief.snapshot_at).toLocaleString() : 'This section requires the authenticated appointment preparation API.'}</p>
+                <p>{lcrBrief ? 'Saved care information · ' + new Date(lcrBrief.snapshot_at).toLocaleString() : 'This section is not available right now.'}</p>
               </div>
               <span className="appointment-source-pill">{lcrBrief ? 'Source-linked' : 'Not loaded'}</span>
             </div>
-            {briefError && <p className="appointment-brief-warning" role="status">LCR sources could not be loaded: {briefError}. This is not evidence that no care history exists.</p>}
+            {briefError && <p className="appointment-brief-warning" role="status">Saved care information could not be loaded. Please try again. This is not evidence that no care history exists.</p>}
             {lcrBrief && <>
               <div className="appointment-brief-grid">
                 <div><strong>Recorded facts ({lcrBrief.facts.length})</strong>
                   {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{item.value || 'No value recorded'}</span><small>Care information · {caregiverInformationLabel(item.epistemic_status) || 'Information status unavailable'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved source'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No care facts were returned from this source. This does not mean the information does not exist elsewhere.</p>}
                 </div>
                 <div><strong>Recent care events ({lcrBrief.events.length})</strong>
-                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
+                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.occurred_at || 'Time not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.description && <p>{item.description}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {caregiverInformationLabel(source.epistemic_status) || 'Saved source'} · Author: {source.original_author || 'not recorded'} · Reported by: {source.reported_by_label || 'not recorded'}</small>)}</li>)}</ul> : <p>No events were returned for the selected time window.</p>}
                 </div>
                 <div><strong>Appointment history ({lcrBrief.appointments.length})</strong>
                   {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{item.title}</span><small>{item.scheduled_at || 'Date not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>Evidence {source.evidence_id} · {source.epistemic_status} · Author: {source.original_author || 'not recorded'} · Reporter: {source.reported_by_label || 'not recorded'} · {source.original_source_reference || 'original source reference not recorded'}</small>)}</li>)}</ul> : <p>No appointment records were returned.</p>}
                 </div>
               </div>
               <div className="appointment-source-coverage"><strong>Source availability</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>Care information source</b><small>{caregiverStatusLabel(String(status)) || 'Status not available'}</small></span>)}</div></div>
-              <section className="appointment-source-coverage" aria-label="Evidence freshness assessments">
+              <section className="appointment-source-coverage" aria-label="How recent this information is">
                 <strong>How recent this information is</strong>
                 <p>These checks can help show whether information may need another look. They do not prove that a report is true or still applies today.</p>
                 {lcrBrief.freshness_assessment_scope && <small>{caregiverSafeAssistantText(lcrBrief.freshness_assessment_scope.interpretation_limit) || 'The available dates may not tell the whole story.'}</small>}
