@@ -131,11 +131,11 @@ function NotificationsCard() {
         <Button variant="secondary" onClick={() => void loadPreferences()} disabled={loading || saving}>Try again</Button>
       </div>}
       <label className="mobile-settings-row">
-        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Suppress non-emergency reminders. Emergency handling is not disabled by this preference.</span></span>
+        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Quiet-hours delivery is not active yet. SolenOS does not currently send reminder alerts.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("quiet_hours_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
       <label className="mobile-settings-row">
-        <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">Allow care-related reminder notifications.</span></span>
+        <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">This preference is saved, but reminder alerts are not currently sent.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={reminders} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("reminders_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
       <div className="mobile-settings-actions">
