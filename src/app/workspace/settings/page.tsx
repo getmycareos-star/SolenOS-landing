@@ -38,6 +38,21 @@ type CareNotification = {
   is_read: boolean;
 };
 
+function notificationCategoryLabel(category: string): string {
+  switch (category) {
+    case "care_change":
+      return "Care change";
+    case "care_attention":
+      return "Needs your input";
+    case "reminder_due":
+      return "Reminder";
+    case "open_loop_due":
+      return "Time-sensitive follow-up";
+    default:
+      return "Care update";
+  }
+}
+
 /** Notification controls persist to the authenticated care-record backend. */
 function NotificationsCard() {
   const { show, render } = useToast();
@@ -280,7 +295,8 @@ function NotificationsCard() {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span className="mobile-settings-label">{item.title}</span>
               <span className="mobile-settings-hint">{item.body}</span>
-              <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {item.category}</span>
+              <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {notificationCategoryLabel(item.category)}</span>
+              {item.category === "open_loop_due" && <Link href="/workspace/open-loops" className="mobile-settings-hint">Review follow-ups</Link>}
               {(item.status ?? "active") === "active"
                 ? <span className="mobile-settings-hint">Needs attention</span>
                 : <span className="mobile-settings-hint">{item.status === "superseded" ? "Replaced by newer information" : item.status === "resolved" ? "No longer needs attention" : "Cancelled"}</span>}
