@@ -482,7 +482,7 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Background extraction and document understanding are queued or already running for ${backgroundProcessingQueued}; ${backgroundQueueUnavailable} file(s) need a manual retry from the review list. You can leave this page. Extracted statements remain review-only until you accept them into the Living Care Record.`,
+        text: `Saved ${saved} original file(s). Background extraction and document understanding are queued, running or already complete for ${backgroundProcessingQueued}; ${backgroundQueueUnavailable} file(s) need a manual retry from the review list. You can leave this page. Extracted statements remain review-only until you accept them into the Living Care Record.`,
       });
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
