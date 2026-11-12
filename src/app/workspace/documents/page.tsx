@@ -499,7 +499,11 @@ export default function DocumentsPage() {
         form.append("person_id", session.person.id);
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
-        form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload");
+        const hasPreparedScanAdjustments = page.file.type.startsWith("image/") && page.prepared;
+        const captureMethod = intakeMode === "scan" || hasPreparedScanAdjustments
+          ? "scan"
+          : intakeMode === "capture" ? "snap" : "upload";
+        form.append("capture_method", captureMethod);
         form.append("capture_timestamp", page.captureTimestamp);
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(scanPageNumber));
         form.append("scan_review_status", "not_reviewed");
@@ -595,8 +599,8 @@ export default function DocumentsPage() {
           </button>
         </div>
 
-        {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Extracting readable text…</p>}
-        {reviewPages.length > 0 && <section aria-label="Review extracted text before saving" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
+        {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Preparing files…</p>}
+        {reviewPages.length > 0 && <section aria-label="Files ready to save" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save pages now or adjust crop and rotation first. You can review extracted statements later." : "Save the selected file now. SolenOS will read it in the background and prepare statements for review."} Original files are preserved.</p>
           <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine scan pages into one PDF</button>
