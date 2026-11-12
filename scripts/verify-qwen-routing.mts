@@ -64,6 +64,12 @@ assert(!assist.includes("Railway-hosted local model"), "Internal runtime details
 assert(!assist.includes("Check Qwen"), "Internal model status controls must not be shown.");
 assert(!assist.includes("reply.model"), "Provider/model names must not be shown to caregivers.");
 
+requireText("src/app/workspace/page.tsx", [
+  'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
+  'defaultWorkflow="living_care_record"',
+  'title="Ask about your care record"',
+  "Suggestions use information you are authorized to see and always need your review.",
+]);
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
   "isLcrOrientationOnly(text)",
   "/api/lcr/orientation",
