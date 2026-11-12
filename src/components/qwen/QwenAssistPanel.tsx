@@ -28,6 +28,22 @@ type QwenClaimSource = {
   reported_by?: string | null;
   source_excerpt?: string | null;
   source_state_label?: string | null;
+  related_evidence?: Array<{
+    label?: string;
+    reported_by?: string | null;
+    entered_by?: string | null;
+    recorded_at?: string | null;
+    source_excerpt?: string | null;
+    observations?: Array<{
+      label?: string;
+      attribute?: string;
+      value?: string | null;
+      occurred_at?: string | null;
+      recorded_at?: string | null;
+      reported_by?: string | null;
+      source_excerpt?: string | null;
+    }>;
+  }>;
 };
 type QwenClaimProvenance = {
   coverage?: string;
@@ -324,6 +340,23 @@ export default function QwenAssistPanel({
                       {source.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Recorded by: {source.entered_by}</p>}
                       {source.source_state_label && <p style={{ fontSize: "11px", color: "var(--theme-warning-fg)", margin: "3px 0 0" }}>{source.source_state_label}</p>}
                       {source.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{source.source_excerpt}</blockquote>}
+                      {source.related_evidence?.map((evidence, evidenceIndex) => (
+                        <div key={"linked-evidence-" + evidenceIndex} style={{ marginTop: "6px", padding: "7px", background: "var(--theme-panel-bg)", borderRadius: "6px" }}>
+                          <p style={{ fontSize: "11px", fontWeight: 600, margin: 0 }}>Supporting {evidence.label || "note or document"}</p>
+                          {evidence.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Reported by: {evidence.reported_by}</p>}
+                          {evidence.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Added by: {evidence.entered_by}</p>}
+                          {evidence.recorded_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
+                          {evidence.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{evidence.source_excerpt}</blockquote>}
+                          {evidence.observations?.map((observation, observationIndex) => (
+                            <div key={"observation-" + observationIndex} style={{ marginTop: "5px" }}>
+                              <p style={{ fontSize: "11px", margin: 0 }}>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
+                              {observation.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "2px 0 0" }}>Reported by: {observation.reported_by}</p>}
+                              {observation.occurred_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "2px 0 0" }}>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
+                              {observation.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "4px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{observation.source_excerpt}</blockquote>}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </section>
