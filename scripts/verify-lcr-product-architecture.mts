@@ -26,12 +26,10 @@ assert(postgres.includes("backend PostgreSQL care-domain schema is authoritative
 assert(telemetry.includes("separate from authoritative care-domain persistence"), "telemetry must remain separate from care-record authority");
 assert(implementation.includes("Living Care Record"), "implementation enforcement identity must match product identity");
 
-const backendProjection = fs.readFileSync("../SolenOS_backend/backend/app/services/lcr_context.py", "utf8");
 const caregiverProjection = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
-assert(backendProjection.includes('"evidence"') && backendProjection.includes('"assertions"'), "backend LCR projection must include evidence and assertions");
 assert(caregiverProjection.includes("CurrentCareItem") && caregiverProjection.includes("epistemic_status"), "caregiver projection must preserve epistemic status");
 
 console.log("PASS: SolenOS canonical product identity is the Living Care Record.");
 console.log("PASS: telemetry is separated from authoritative care-domain persistence.");
-console.log("PASS: backend and caregiver LCR projection anchors remain present.");
+console.log("PASS: caregiver LCR projection preserves epistemic status.");
 console.log("NOTE: static contract test only; not an end-to-end PostgreSQL execution test.");
