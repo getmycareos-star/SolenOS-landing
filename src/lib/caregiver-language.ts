@@ -65,6 +65,22 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   partial: "Partly complete",
   independent: "Reported separately",
   shared_origin: "From the same original source",
+  current: "Up to date",
+  stale: "May be out of date",
+  unknown: "Not checked",
+  not_current: "May be out of date",
+  pending_review: "Needs your review",
+  corrected_pending_approval: "Correction ready for review",
+  accepted_by_caregiver: "Added to care record",
+  rejected_by_caregiver: "Not added",
+  generated: "Prepared",
+  validated: "Ready to review",
+  exact_quote_reference_validation_passed: "Source wording checked",
+  shared: "Shared",
+  revoked: "Access removed",
+  acknowledged: "Received",
+  received: "Received",
+  draft: "Draft",
 };
 
 const INFORMATION_LABELS: Readonly<Record<string, string>> = {
