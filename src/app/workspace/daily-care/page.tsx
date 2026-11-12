@@ -184,7 +184,9 @@ function displayHistoryText(item: CareItem): string {
       for (const value of capture.vitals) {
         if (!value || typeof value !== "object") continue;
         const vital = value as Record<string, unknown>;
-        const type = typeof vital.vital_type === "string" ? vital.vital_type.replace(/_/g, " ") : "Measurement";
+        const type = typeof vital.measurement_name === "string" && vital.measurement_name.trim()
+          ? vital.measurement_name.trim()
+          : typeof vital.vital_type === "string" ? vital.vital_type.replace(/_/g, " ") : "Measurement";
         const reading = vital.value;
         const unit = typeof vital.unit === "string" ? vital.unit : "";
         if (typeof reading === "number" || typeof reading === "string") {
