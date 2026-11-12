@@ -153,7 +153,7 @@ function NotificationsCard() {
       setPushStatus("Push is enabled on this browser. Delivery is reported when the push provider accepts it; device display still depends on browser and operating-system settings.");
       show("Push notifications enabled on this browser.", "success");
     } catch (reason) {
-      const message = reason instanceof Error ? reason.message : "We couldn't enable push notifications.";
+      const message = "We couldn't enable push notifications. In-app notifications are still available.";
       setPushStatus(message);
       show("Push notifications weren't enabled.", "error");
     } finally {
@@ -867,7 +867,7 @@ export default function WorkspaceSettingsPage() {
         <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>01</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
         <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
         <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>An account is optional. Anonymous care access remains available.</p></div></div><AccountCard /></div>
-        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>04</span><div><h2>Identity &amp; device security</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
+        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>04</span><div><h2>Devices and account access</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
         <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>05</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
         <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>06</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
       </div>
