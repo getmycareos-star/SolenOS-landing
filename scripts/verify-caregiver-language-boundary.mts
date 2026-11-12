@@ -52,10 +52,7 @@ const continuity = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const conflictReview = read("../src/components/ConflictResolutionPanel.tsx");
 const careHistory = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const claimAssessment = read("../src/components/ClaimAssessmentPanel.tsx");
-const conflictReview = read("../src/components/ConflictResolutionPanel.tsx");
 const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
-const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
-const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
 const appointmentPage = read("../src/app/workspace/appointments/page.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
