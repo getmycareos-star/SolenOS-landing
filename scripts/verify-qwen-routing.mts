@@ -65,11 +65,13 @@ assert(!assist.includes("Check Qwen"), "Internal model status controls must not 
 assert(!assist.includes("reply.model"), "Provider/model names must not be shown to caregivers.");
 
 requireText("src/app/workspace/page.tsx", [
-  'import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";',
-  'defaultWorkflow="living_care_record"',
-  'title="Ask about your care record"',
-  "Suggestions use information you are authorized to see and always need your review.",
+  'import Link from "next/link";',
+  'href="/workspace/companion"',
+  "Ask SolenOS",
+  "Talk through the saved care history, recent changes, appointments or information that is still unclear.",
 ]);
+assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
+  "The caregiver home must route questions through the conversational Companion, not a separate care-management assistant panel.");
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
   "isLcrOrientationOnly(text)",
   "/api/lcr/orientation",
