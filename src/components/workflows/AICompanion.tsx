@@ -96,7 +96,7 @@ interface ClaimSourceReference {
   record_type: string
   record_id: string
   label: string
-  matched_passage: string
+  matched_passage?: string
   source_excerpt?: string
   occurred_at?: string | null
   recorded_at?: string | null
@@ -120,6 +120,15 @@ interface ClaimSourceReference {
     record_status?: string | null
     source_independence_status?: string | null
     exact_wording_duplicate_count?: number
+    observations?: Array<{
+      label?: string
+      attribute?: string
+      value?: string | null
+      occurred_at?: string | null
+      recorded_at?: string | null
+      reported_by?: string | null
+      source_excerpt?: string | null
+    }>
   }>
 }
 
@@ -130,6 +139,8 @@ interface ClaimProvenance {
     claim_id: string
     text: string
     support_status: string
+    validation_basis?: string
+    aggregate?: { topic?: string; window_label?: string; count?: number; candidate_count?: number } | null
     source_references: ClaimSourceReference[]
   }>
 }
@@ -879,9 +890,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
-                          {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only') ? (
+                          {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
-                              <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : 'This wording appears in a saved record.'}</p>
+                              <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'This count was checked against distinct, dated care updates.' : 'This wording appears in a saved record.'}</p>
+                              {claim.support_status === 'matched_validated_aggregate' && <p>Counted {claim.aggregate?.count ?? claim.source_references.length} distinct care updates{claim.aggregate?.window_label ? ' during ' + claim.aggregate.window_label : ''}. Repeated records were not counted twice.</p>}
                               {claim.source_references.map((source, sourceIndex) => (
                                 <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
                                   <strong>{source.label}</strong>
