@@ -42,6 +42,9 @@ assert(!captureSource.includes('"/documents/" + encodeURIComponent(evidenceId) +
 assert(!captureSource.includes('"/documents/" + encodeURIComponent(evidenceId) + "/intelligence"'), "initial capture must not block on synchronous Qwen interpretation");
 assert(captureSource.includes("durably queues document extraction and understanding"), "the server must own background processing after the original is saved");
 assert(!capture.includes('apiUrl("/api/extract"'), "capture must not depend on the legacy extract-before-upload endpoint");
+assert(!documentsPage.includes('apiUrl("/api/extract"'), "the Documents screen must not send the same original to a preflight extractor and then upload it again");
+assert(!documentsPage.includes("Extracted text — review and correct before saving"), "the Documents screen must not ask caregivers to edit text that the upload endpoint discards");
+assert(!documentsPage.includes('form.append("extracted_text"'), "only server extraction from the persisted original may become reviewable source text");
 assert(source.includes('/documents/analyses/') && source.includes("loadExtractedText"), "the Documents review panel must retrieve persisted server extraction, not client-only OCR text");
 const retryStart = capture.indexOf("export async function retryAttachedDocument");
 const retryEnd = capture.indexOf("export function dataUrlToFile", retryStart);
