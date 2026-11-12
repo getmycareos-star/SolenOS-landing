@@ -740,7 +740,7 @@ export function LCRCurrentUnderstanding() {
                 throw refreshError;
               }
             }
-            if (current.status === "available" && current.assessment?.person_id === scopedPersonId) {
+            if (current.assessment?.person_id === scopedPersonId) {
               setAssessment(current.assessment);
               setSourceFreshness(current.source_freshness ?? null);
               setAssessmentError(null);
