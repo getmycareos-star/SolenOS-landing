@@ -213,10 +213,10 @@ const companionPanel = fs.readFileSync(path.join(process.cwd(), "src/components/
 assert(companionPanel.includes("source_freshness_assessment_ids"), "Companion must expose freshness assessment provenance");
 assert(companionPanel.includes("source_record_refs"), "Companion must carry typed source record references");
 assert(companionPanel.includes("claim.source_references.map") && companionPanel.includes("source.source_excerpt") && companionPanel.includes("source.label"), "Companion must display source labels and exact supporting excerpts beside matched claims");
-assert(companionPanel.includes("freshness assessments"), "Companion must distinguish freshness assessments from evidence truth");
+assert(companionPanel.includes("how recent these care details are"), "Companion must explain date-review limits in caregiver language");
 const appointmentWorkspace = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert(appointmentWorkspace.includes("Evidence freshness assessments"), "Appointment preparation must show freshness assessments");
-assert(appointmentWorkspace.includes("This is not proof that evidence is current"), "Appointment preparation must not treat absent freshness assessment as currentness");
-assert(appointmentWorkspace.includes("Freshness assessment storage is unavailable in this database schema"), "Appointment preparation must distinguish unavailable freshness schema from an empty result");
-assert(companionPanel.includes("Freshness assessment storage is unavailable in this schema"), "Companion must expose freshness schema unavailability explicitly");
+assert(appointmentWorkspace.includes("How recent this information is"), "Appointment preparation must explain how recent information may be");
+assert(appointmentWorkspace.includes("This does not mean it is current"), "Appointment preparation must not treat absent review as currentness");
+assert(appointmentWorkspace.includes("We couldn’t check how recent this information is right now"), "Appointment preparation must explain when a date check is unavailable");
+assert(companionPanel.includes("We couldn’t check how recent these care details are"), "Companion must explain unavailable date checks without exposing storage details");
 
