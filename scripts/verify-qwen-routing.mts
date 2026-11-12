@@ -138,6 +138,7 @@ requireText("src/app/workspace/documents/page.tsx", [
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Original uploads must persist through the backend.");
+assert(documentPage.includes(".eml") && documentPage.includes(".msg"), "Caregivers must be able to select supported email document formats.");
 assert(documentPage.includes("Original file is ready. SolenOS will extract and process it after the upload is saved."), "Original-first upload must preserve the source before extraction.");
 assert(!documentPage.includes("/api/extract") && !documentPage.includes("extractText("), "Document intake must not duplicate server extraction in the browser.");
 assert(!documentPage.includes('form.append("extracted_text"'), "Browser-extracted text must not be sent as source evidence.");
