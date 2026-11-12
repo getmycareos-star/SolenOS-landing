@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { strict as assert } from "node:assert";
 
 const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
+const dailyCare = readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
 assert(!source.includes("extractText("), "the Documents screen must not upload a file for separate preflight extraction");
 assert(!source.includes("review and correct its extracted text first"), "caregivers must not be asked to manually review client-only OCR before saving");
 assert(!source.includes("page.reviewed") && !source.includes("page.text"), "the upload draft must not carry discarded client-side text or review flags");
@@ -88,6 +89,11 @@ assert.match(source, /The document and its uncommitted extracted information wer
 assert.match(source, /Link versions/, "caregivers must be able to explicitly link a corrected copy to its predecessor");
 assert.match(source, /version-comparison/, "the document view must retrieve source-grounded differences for corrected versions");
 assert.match(source, /These differences have not been clinically verified/, "version differences must not be presented as clinical truth");
+assert.match(dailyCare, /\/documents\/status\?limit=10/, "Daily Care must retrieve persisted document processing status");
+assert.match(dailyCare, /Recent documents/, "Daily Care must surface recent document activity");
+assert.match(dailyCare, /You do not need to stay on this screen/, "background processing must not require the caregiver to supervise it");
+assert.match(dailyCare, /could not be read/, "unreadable pages must be reported without treating missing text as empty content");
+assert.match(dailyCare, /Follow-up added to your existing follow-ups/, "accepted document recommendations must be surfaced through the existing follow-up record");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
 console.log("✓ crop and straighten are applied to pixels before OCR");
