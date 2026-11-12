@@ -376,6 +376,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       if (!result?.id || result.question_id !== selectedQuestion.id || result.person_id !== scopePersonId) {
         throw new Error("Review response did not match the selected question.");
       }
+      setReviewRationale("");
       setNotice(
         decision === "accepted"
           ? result.care_continuity_execution?.stages?.reconciliation === "committed" || result.resulting_claim_id
