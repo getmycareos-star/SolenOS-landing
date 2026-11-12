@@ -23,6 +23,15 @@ const StructuredDailyCapture = dynamic(
 
 type CaptureMode = "something" | "medicine" | "measurement" | "photo" | "checkin" | "note";
 
+type DailyCareFollowUp = {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: string;
+  deadline_at?: string | null;
+  priority?: string | null;
+};
+
 type CareItem = {
   id?: string;
   source_id?: string;
@@ -256,6 +265,8 @@ export default function DailyCarePage() {
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
   const [historyItems, setHistoryItems] = useState<CareItem[]>([]);
+  const [followUps, setFollowUps] = useState<DailyCareFollowUp[]>([]);
+  const [followUpsError, setFollowUpsError] = useState("");
   const [sinceLastOpenItems, setSinceLastOpenItems] = useState<CareItem[] | null>(null);
   const [lastOpenedAt, setLastOpenedAt] = useState<string | null>(null);
   const [historyMayBeTruncated, setHistoryMayBeTruncated] = useState(false);
@@ -276,9 +287,10 @@ export default function DailyCarePage() {
         // they can record an update. The capture interface is useful as soon
         // as the anonymous session is ready; context can finish loading below.
         if (active) setReady(true);
-        const [careResult, historyResult] = await Promise.allSettled([
+        const [careResult, historyResult, followUpsResult] = await Promise.allSettled([
           getJSON("/care-continuity/current-care?limit_per_source=20"),
           getJSON("/daily-care/intelligence/history?limit=200&offset=0"),
+          getJSON("/open-loops?limit=100&offset=0"),
         ]);
         if (!active) return;
 
@@ -287,6 +299,19 @@ export default function DailyCarePage() {
           setCareItems(Array.isArray(payload?.items) ? payload.items as CareItem[] : []);
         } else {
           setContextError("Current care information could not be loaded. Try refreshing the record.");
+        }
+
+        if (followUpsResult.status === "fulfilled") {
+          const payload = followUpsResult.value as { items?: unknown };
+          if (Array.isArray(payload?.items)) {
+            const items = payload.items as DailyCareFollowUp[];
+            setFollowUps(items.filter((item) => !["closed", "cancelled"].includes(item.status)));
+            setFollowUpsError("");
+          } else {
+            setFollowUpsError("The saved follow-up list could not be read. Check it before assuming nothing is outstanding.");
+          }
+        } else {
+          setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
         }
 
         if (historyResult.status === "fulfilled") {
@@ -420,6 +445,28 @@ export default function DailyCarePage() {
               <p>No current care updates are available to show. This does not mean nothing happened.</p>
             )}
             {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
+          </section>
+
+          <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
+            <h2 id="daily-care-follow-ups-title">Existing follow-ups</h2>
+            <p className="daily-care-muted">Open follow-ups stay in their existing record. Daily Care does not create a second copy.</p>
+            {followUpsError ? (
+              <p role="alert">{followUpsError}</p>
+            ) : followUps.length ? (
+              <ul className="daily-care-record-list">
+                {followUps.slice(0, 6).map((item) => (
+                  <li key={item.id}>
+                    <strong>{caregiverSafeAssistantText(item.title) || "Care follow-up"}</strong>
+                    {item.description && <p>{caregiverSafeAssistantText(item.description)}</p>}
+                    <span>{caregiverStatusLabel(item.status) || "Unresolved"}</span>
+                    {item.deadline_at && <span> · Due {displayCareTime(item.deadline_at)}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No unresolved follow-ups are currently recorded. This does not confirm that no action is outstanding.</p>
+            )}
+            <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>View follow-ups</Button>
           </section>
 
           <section aria-labelledby="daily-care-open-matters-title" className="daily-care-context-panel">
