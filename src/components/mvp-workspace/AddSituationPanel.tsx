@@ -56,7 +56,7 @@ export function AddSituationPanel({
   const [scanOpen, setScanOpen] = useState(false);
   const [lastEntryMethod, setLastEntryMethod] = useState<InputEntryMethod | null>(null);
 
-  const hasReadyDocs = documents.some((d) => d.status === "ready" && (d.extractedText.trim() || d.evidenceId));
+  const hasReadyDocs = documents.some((d) => (d.status === "ready" && (d.extractedText.trim() || d.evidenceId)) || (d.status === "saved" && d.entryMethod === "snap" && d.evidenceId));
   const canSubmit = (value.trim().length > 0 || hasReadyDocs) && !loading && !extracting;
   const displayError = error ? sanitizeCaregiverErrorMessage(error) : null;
   const busy = loading || extracting;
@@ -286,6 +286,7 @@ export function AddSituationPanel({
               {doc.status === "failed" &&
                 ` · ${sanitizeCaregiverErrorMessage(doc.errorNote ?? "Could not read this document.")}`}
               {doc.status === "ready" && " · Attached"}
+              {doc.status === "saved" && doc.entryMethod === "snap" && " · Photo saved — not interpreted"}
               {doc.status === "failed" && (
                 <button
                   type="button"
