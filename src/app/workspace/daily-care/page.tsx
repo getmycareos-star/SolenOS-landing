@@ -332,18 +332,20 @@ export default function DailyCarePage() {
               push_delivery?: { status?: string; message?: string } | null;
             }>;
           };
-          const issues = Array.isArray(payload?.items)
-            ? payload.items.filter((item) =>
-                item.status === "active"
-                && ["failed", "expired"].includes(item.push_delivery?.status || "")
-              )
-            : [];
-          setDeliveryIssues(issues.map((item) => ({
-            id: item.id || `delivery-issue-${issues.indexOf(item)}`,
-            title: caregiverSafeAssistantText(item.title) || "Care notification",
-            message: caregiverSafeAssistantText(item.push_delivery?.message) || "This notification could not be sent to this device. It remains in your SolenOS inbox.",
-          })));
-          setDeliveryStatusError("");
+          if (Array.isArray(payload?.items)) {
+            const issues = payload.items.filter((item) =>
+              item.status === "active"
+              && ["failed", "expired"].includes(item.push_delivery?.status || "")
+            );
+            setDeliveryIssues(issues.map((item) => ({
+              id: item.id || `delivery-issue-${issues.indexOf(item)}`,
+              title: caregiverSafeAssistantText(item.title) || "Care notification",
+              message: caregiverSafeAssistantText(item.push_delivery?.message) || "This notification could not be sent to this device. It remains in your SolenOS inbox.",
+            })));
+            setDeliveryStatusError("");
+          } else {
+            setDeliveryStatusError("Notification delivery status could not be read just now.");
+          }
         } else {
           setDeliveryStatusError("Notification delivery status could not be checked just now.");
         }
