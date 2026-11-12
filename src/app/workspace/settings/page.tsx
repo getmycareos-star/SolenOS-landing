@@ -31,7 +31,10 @@ type CareNotification = {
   body: string;
   category: string;
   priority: string;
+  status?: "active" | "resolved" | "superseded" | "cancelled" | string;
   created_at: string | null;
+  resolved_at?: string | null;
+  resolution_reason?: string | null;
   is_read: boolean;
 };
 
@@ -265,13 +268,17 @@ function NotificationsCard() {
         <h3 className="mobile-settings-label">Recent notifications · {unreadCount} unread</h3>
         {inboxLoading && <p className="mobile-settings-hint" role="status">Loading notifications…</p>}
         {inboxError && <p className="mobile-settings-hint" role="alert">{inboxError}</p>}
-        {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No notifications have been recorded for this care record.</p>}
+        {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No care updates right now. SolenOS will add one when saved information changes meaningfully or a necessary detail needs your input.</p>}
         {notifications.map((item) => (
           <article key={item.id} className="mobile-settings-row" aria-label={item.title}>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span className="mobile-settings-label">{item.title}</span>
               <span className="mobile-settings-hint">{item.body}</span>
               <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {item.category}</span>
+              {(item.status ?? "active") === "active"
+                ? <span className="mobile-settings-hint">Needs attention</span>
+                : <span className="mobile-settings-hint">{item.status === "superseded" ? "Replaced by newer information" : item.status === "resolved" ? "No longer needs attention" : "Cancelled"}</span>}
+              {item.status !== undefined && item.status !== "active" && <span className="mobile-settings-hint">{item.resolution_reason === "source_superseded" ? "A newer care record update replaced this message." : item.resolution_reason === "question_resolved" ? "The care question has since been resolved." : item.resolution_reason === "necessity_or_evidence_no_longer_valid" ? "The supporting information changed; no response is currently needed." : "The care record has changed since this message was created."}</span>}
               {item.is_read && <span className="mobile-settings-hint">Read</span>}
             </span>
             {!item.is_read && <Button variant="secondary" disabled={busyNotificationId === item.id} loading={busyNotificationId === item.id} onClick={() => void markNotificationRead(item)}><Check size={14} aria-hidden /> Mark read</Button>}
