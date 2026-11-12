@@ -45,6 +45,7 @@ const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
 const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
+const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
 const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
 const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
 const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
@@ -70,6 +71,8 @@ assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(result\.answer\
 assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(proposal\.title\)/);
 assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(result\.notice\)/);
 assert.match(dailyCareIntelligence, /caregiverSafeErrorMessage/);
+assert.match(claimReview, /caregiverStatusLabel/);
+assert.doesNotMatch(claimReview, /review version \\{assessmentImpact\\.assessment_version/);
 assert.match(handoff, /function readableStatus\(value: string\): string \{\s+return caregiverStatusLabel\(value\) \?\? "Not available";/);
 assert.match(appointment, /caregiverSafeAssistantText\(item\.title\)/);
 assert.match(detailedAppointment, /caregiverSafeAssistantText\(source\.original_author\)/);
