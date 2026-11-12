@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
-import { caregiverInformationLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -60,7 +60,9 @@ function displayCareTime(value?: string | null): string {
 function isOpenMatter(item: CareItem): boolean {
   return new Set([
     "Conflict",
+    "Information that needs checking",
     "Reconciliation review",
+    "reconciliation_review",
     "Needs clarification",
     "Information missing",
     "Open question",
@@ -70,7 +72,12 @@ function isOpenMatter(item: CareItem): boolean {
 }
 
 function displayHistorySource(item: CareItem): string {
-  if (item.source_label && item.source_label !== "Source label not recorded") return item.source_label;
+  if (item.source_label && item.source_label !== "Source label not recorded") {
+    const normalized = item.source_label.trim().toLowerCase();
+    if (normalized === "system-generated update") return "SolenOS update";
+    if (normalized === "professional contribution") return "Shared by a care professional";
+    return caregiverSafeAssistantText(item.source_label) || "Saved care record";
+  }
   if (item.source_type === "caregiver_report" || item.source_type === "care_event" || item.created_by_caregiver_id) {
     return "Recorded by caregiver";
   }
@@ -126,15 +133,15 @@ function displayHistoryText(item: CareItem): string {
     return [
       item.original_text ? `Earlier entry: ${item.original_text}` : "",
       item.corrected_text ? `Correction: ${item.corrected_text}` : "",
-      item.reason ? `Reason: ${item.reason}` : "",
+      item.reason ? `Reason: ${caregiverSafeAssistantText(item.reason) || "A reason was recorded."}` : "",
     ].filter(Boolean).join(" · ");
   }
 
   const raw = item.text || item.description || "";
-  if (!raw) return item.reason || "";
+  if (!raw) return caregiverSafeAssistantText(item.reason) || "";
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return raw;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return caregiverSafeAssistantText(raw) || "Saved care information";
     const capture = (parsed.original_capture && typeof parsed.original_capture === "object"
       ? parsed.original_capture
       : parsed) as Record<string, unknown>;
@@ -155,11 +162,11 @@ function displayHistoryText(item: CareItem): string {
     }
 
     const note = typeof quick?.note === "string" && quick.note.trim()
-      ? quick.note.trim()
+      ? caregiverSafeAssistantText(quick.note.trim()) || ""
       : typeof capture.notes === "string" && capture.notes.trim()
-        ? capture.notes.trim()
+        ? caregiverSafeAssistantText(capture.notes.trim()) || ""
         : typeof capture.original_notes === "string" && capture.original_notes.trim()
-          ? capture.original_notes.trim()
+          ? caregiverSafeAssistantText(capture.original_notes.trim()) || ""
           : "";
     if (note) parts.push(note);
 
@@ -168,7 +175,7 @@ function displayHistoryText(item: CareItem): string {
         if (!value || typeof value !== "object") continue;
         const medicine = value as Record<string, unknown>;
         const name = typeof medicine.medication_name === "string" ? medicine.medication_name : "Medicine";
-        const status = typeof medicine.status === "string" ? medicine.status : "status not recorded";
+        const status = typeof medicine.status === "string" ? medicine.status : "not_recorded";
         const statusLabels: Record<string, string> = {
           given: "reported given",
           not_given: "reported not given",
@@ -181,7 +188,7 @@ function displayHistoryText(item: CareItem): string {
         const scheduledFor = typeof medicine.scheduled_for === "string"
           ? ` (scheduled for ${displayCareTime(medicine.scheduled_for)})`
           : "";
-        parts.push(`${name}: ${statusLabels[status] || status}${scheduledFor}`);
+        parts.push(`${caregiverSafeAssistantText(name) || "Medicine"}: ${statusLabels[status] || caregiverStatusLabel(status) || "Status not recorded"}${scheduledFor}`);
       }
     }
 
@@ -191,18 +198,18 @@ function displayHistoryText(item: CareItem): string {
         const vital = value as Record<string, unknown>;
         const type = typeof vital.measurement_name === "string" && vital.measurement_name.trim()
           ? vital.measurement_name.trim()
-          : typeof vital.vital_type === "string" ? vital.vital_type.replace(/_/g, " ") : "Measurement";
+          : typeof vital.vital_type === "string" ? ({ blood_pressure: "Blood pressure", heart_rate: "Heart rate", temperature: "Temperature", oxygen_saturation: "Oxygen level", weight: "Weight", blood_glucose: "Blood sugar", respiratory_rate: "Breathing rate" } as Record<string, string>)[vital.vital_type] || "Measurement" : "Measurement";
         const reading = vital.value;
         const unit = typeof vital.unit === "string" ? vital.unit : "";
         if (typeof reading === "number" || typeof reading === "string") {
-          parts.push(`${type}: ${reading}${unit ? ` ${unit}` : ""}`);
+          parts.push(`${caregiverSafeAssistantText(type) || "Measurement"}: ${reading}${unit ? ` ${unit}` : ""}`);
         }
       }
     }
 
-    return parts.length ? parts.join(" · ") : raw;
+    return parts.length ? parts.join(" · ") : "Saved care information";
   } catch {
-    return raw;
+    return caregiverSafeAssistantText(raw) || "Saved care information";
   }
 }
 
@@ -349,7 +356,7 @@ export default function DailyCarePage() {
               <ul className="daily-care-record-list">
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 5).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
-                    <strong>{item.title || "Care update"}</strong>
+                    <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     <span> · {displayHistorySource(item)}</span>
