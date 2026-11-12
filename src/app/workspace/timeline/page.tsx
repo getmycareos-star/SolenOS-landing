@@ -22,9 +22,10 @@ type CareEvent = {
   person_id: string;
   event_type: string;
   status: string;
-  occurred_at: string;
+  occurred_at?: string | null;
   occurred_at_timezone?: string | null;
-  recorded_at: string;
+  recorded_at?: string | null;
+  uploaded_at?: string | null;
   updated_at?: string | null;
   title: string;
   description?: string | null;
@@ -32,6 +33,11 @@ type CareEvent = {
   time_provenance?: string | null;
   tags?: string[] | null;
   created_by_caregiver_id?: string | null;
+  source_type?: string | null;
+  source_label?: string | null;
+  original_text?: string | null;
+  corrected_text?: string | null;
+  reason?: string | null;
   significance_verdict?: string | null;
   attention_candidate?: boolean | null;
   follow_up_candidate?: boolean | null;
@@ -48,6 +54,73 @@ const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "documents", label: "Documents" },
   { id: "open", label: "Follow-ups & open items" },
 ];
+
+function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const sourceType = typeof row.source_type === "string" ? row.source_type : "care_record";
+  const idValue = typeof row.source_id === "string" ? row.source_id : typeof row.id === "string" ? row.id : "";
+  if (!idValue) return null;
+
+  const originalText = typeof row.original_text === "string" ? row.original_text : undefined;
+  const correctedText = typeof row.corrected_text === "string" ? row.corrected_text : undefined;
+  const reason = typeof row.reason === "string" ? row.reason : undefined;
+  const description = sourceType === "correction"
+    ? [
+        originalText ? `Earlier entry: ${originalText}` : "",
+        correctedText ? `Correction: ${correctedText}` : "",
+        reason ? `Reason: ${reason}` : "",
+      ].filter(Boolean).join("\n")
+    : typeof row.text === "string" ? row.text
+      : typeof row.description === "string" ? row.description
+        : typeof row.source_text === "string" ? row.source_text : "";
+
+  const eventType = typeof row.event_type === "string"
+    ? row.event_type
+    : sourceType === "evidence" ? "evidence_upload"
+      : sourceType === "appointment" ? "appointment"
+        : sourceType;
+  const title = typeof row.title === "string" && row.title.trim()
+    ? row.title
+    : sourceType === "correction" ? "Care record correction"
+      : sourceType === "evidence" ? `Evidence: ${String(row.evidence_type || "uploaded file")}`
+        : sourceType === "appointment" ? "Appointment"
+          : sourceType.replace(/_/g, " ");
+
+  return {
+    id: idValue,
+    person_id: typeof row.person_id === "string" ? row.person_id : personId,
+    event_type: eventType,
+    status: typeof row.status === "string" ? row.status : typeof row.epistemic_status === "string" ? row.epistemic_status : "Not specified",
+    occurred_at: typeof row.occurred_at === "string" ? row.occurred_at
+      : typeof row.event_time === "string" ? row.event_time
+        : typeof row.observed_at === "string" ? row.observed_at
+          : typeof row.scheduled_at === "string" ? row.scheduled_at
+            : typeof row.uploaded_at === "string" ? row.uploaded_at
+              : typeof row.recorded_at === "string" ? row.recorded_at : null,
+    recorded_at: typeof row.recorded_at === "string" ? row.recorded_at
+      : typeof row.uploaded_at === "string" ? row.uploaded_at
+        : typeof row.created_at === "string" ? row.created_at : null,
+    uploaded_at: typeof row.uploaded_at === "string" ? row.uploaded_at : null,
+    updated_at: typeof row.updated_at === "string" ? row.updated_at : null,
+    title,
+    description,
+    evidence_ids: Array.isArray(row.evidence_ids) ? row.evidence_ids.filter((item): item is string => typeof item === "string") : [],
+    time_provenance: typeof row.time_provenance === "string" ? row.time_provenance : null,
+    tags: Array.isArray(row.tags) ? row.tags.filter((item): item is string => typeof item === "string") : [],
+    created_by_caregiver_id: typeof row.created_by_caregiver_id === "string" ? row.created_by_caregiver_id : null,
+    source_type: sourceType,
+    source_label: typeof row.source_label === "string" ? row.source_label : null,
+    original_text: originalText,
+    corrected_text: correctedText,
+    reason,
+    significance_verdict: typeof row.significance_verdict === "string" ? row.significance_verdict : null,
+    attention_candidate: row.attention_candidate === true,
+    follow_up_candidate: row.follow_up_candidate === true,
+    confidence: typeof row.confidence === "number" ? row.confidence : null,
+    situation_id: typeof row.situation_id === "string" ? row.situation_id : null,
+  };
+}
 
 function safeDate(value?: string | null): Date | null {
   if (!value) return null;
@@ -136,6 +209,7 @@ export default function TimelinePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
+  const [historyCoverage, setHistoryCoverage] = useState<{ hasMore: boolean; total: number }>({ hasMore: false, total: 0 });
 
   const loadEvents = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -146,20 +220,26 @@ export default function TimelinePage() {
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this record.");
       }
-      const result = await getJSON(`/events/${encodeURIComponent(session.person.id)}`);
-      if (!Array.isArray(result)) {
-        throw new Error("The care timeline response was not in the expected format. No events have been assumed.");
+      const result = await getJSON("/daily-care/intelligence/history?limit=200&offset=0") as {
+        records?: unknown;
+        page?: { has_more?: boolean; total_matching?: number };
+      };
+      if (!Array.isArray(result?.records)) {
+        throw new Error("The care history response was not in the expected format. No events have been assumed.");
       }
-      const validEvents = result.filter((item): item is CareEvent =>
-        Boolean(item && typeof item.id === "string" && typeof item.title === "string" &&
-          typeof item.event_type === "string" && typeof item.person_id === "string")
-      );
+      const validEvents = result.records
+        .map((item) => mapHistoryRecord(item, session.person!.id))
+        .filter((item): item is CareEvent => item !== null);
       setEvents(validEvents.sort((a, b) => {
-        const aTime = safeDate(a.occurred_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
-        const bTime = safeDate(b.occurred_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+        const aTime = safeDate(a.occurred_at)?.getTime() ?? safeDate(a.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+        const bTime = safeDate(b.occurred_at)?.getTime() ?? safeDate(b.recorded_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
         if (aTime !== bTime) return bTime - aTime;
         return (safeDate(b.recorded_at)?.getTime() ?? 0) - (safeDate(a.recorded_at)?.getTime() ?? 0);
       }));
+      setHistoryCoverage({
+        hasMore: Boolean(result.page?.has_more),
+        total: typeof result.page?.total_matching === "number" ? result.page.total_matching : validEvents.length,
+      });
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The care timeline could not be loaded.");
@@ -183,6 +263,11 @@ export default function TimelinePage() {
         event.event_type,
         event.description ?? "",
         event.status,
+        event.source_type ?? "",
+        event.source_label ?? "",
+        event.original_text ?? "",
+        event.corrected_text ?? "",
+        event.reason ?? "",
         ...(event.tags ?? []),
         ...(event.evidence_ids ?? []),
       ].join(" ").toLowerCase();
@@ -316,7 +401,8 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>Recorded in SolenOS</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Record status</dt><dd style={{ margin: 0 }}>{event.status || "Not specified"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Time provenance</dt><dd style={{ margin: 0 }}>{event.time_provenance || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Source caregiver ID</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.created_by_caregiver_id || "Not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Contributor</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_label || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Source type</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type || event.event_type}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Situation link</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id || "No linked situation ID"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Evidence references</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? event.evidence_ids.join(", ") : "No evidence references attached to this event"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Tags</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.join(", ") : "No tags recorded"}</dd>
@@ -333,6 +419,12 @@ export default function TimelinePage() {
             </div>
           ))}
         </section>
+      )}
+
+      {historyCoverage.hasMore && (
+        <p role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 12 }}>
+          Showing the latest 200 of {historyCoverage.total} matching care-history records. Search or filter narrows this loaded set; older records are not included in this view yet.
+        </p>
       )}
 
       <footer style={{ marginTop: 28, paddingTop: 14, borderTop: "1px solid var(--solenos-hairline)", color: "var(--solenos-muted)", fontSize: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
