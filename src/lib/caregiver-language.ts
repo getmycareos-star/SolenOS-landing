@@ -89,9 +89,9 @@ export function caregiverInformationLabel(value?: string | null): string | null 
 
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
   /database schema/i,
-  /\\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr)\\b/i,
-  /\\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\\b/i,
-  /\\b(?:epistemic|serialization|normalization|embedding|vector index)\\b/i,
+  /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr)\b/i,
+  /\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\b/i,
+  /\b(?:epistemic|serialization|normalization|embedding|vector index)\b/i,
   /schema (?:is )?unavailable/i,
   /sql(?:ite|alchemy)?\b/i,
   /\b(?:postgres(?:ql)?|mysql)\b/i,
