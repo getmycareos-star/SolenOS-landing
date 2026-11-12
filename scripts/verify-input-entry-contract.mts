@@ -127,8 +127,10 @@ const companion = fs.readFileSync(
   path.join(root, "src", "components", "workflows", "AICompanion.tsx"),
   "utf8",
 );
-assert(companion.includes("autoDraftSent"));
-assert(companion.includes("sendMessage(draft)"));
+assert(!companion.includes("autoDraftSent"));
+assert(!companion.includes("sendMessage(draft)"));
+assert(!companion.includes("new URLSearchParams(window.location.search).get('draft')"),
+  "Companion must not silently submit a handoff or external draft as a chat message");
 assert(companion.includes("postJSON('/conversation/message'"));
 assert(companion.includes("ensureAnonymousSession()"));
 assert(companion.includes("person_id: session.person.id"));
