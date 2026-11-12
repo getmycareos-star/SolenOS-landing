@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays } from "lucide-react";
-import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { ensureAnonymousSession, getCaregiverId, getJSON, getPersonId } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
@@ -40,6 +40,7 @@ type CareItem = {
   source_type?: string | null;
   event_type?: string | null;
   created_by_caregiver_id?: string | null;
+  created_at?: string | null;
 };
 
 function displayCareTime(value?: string | null): string {
@@ -77,6 +78,27 @@ function displayHistoryTime(item: CareItem): string {
   if (item.scheduled_at) return `Scheduled for: ${displayCareTime(item.scheduled_at)}`;
   if (recordedTime) return `Recorded: ${displayCareTime(recordedTime)}`;
   return "Time not recorded";
+}
+
+function classifyHistoryRecord(item: CareItem): "observations" | "medicines" | "measurements" | "checkIns" | "handoffs" | "updates" {
+  const eventType = (item.event_type || "").toLowerCase();
+  if (eventType.includes("handoff")) return "handoffs";
+  if (eventType.includes("checkin") || eventType.includes("check_in")) return "checkIns";
+  const raw = item.text || item.description || "";
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const detail = (parsed.original_capture && typeof parsed.original_capture === "object"
+      ? parsed.original_capture
+      : parsed) as Record<string, unknown>;
+    if (detail.quick_check_in) return "checkIns";
+    if (Array.isArray(detail.medications) && detail.medications.length) return "medicines";
+    if (Array.isArray(detail.vitals) && detail.vitals.length) return "measurements";
+    if (typeof detail.capture_kind === "string" && ["something", "note"].includes(detail.capture_kind)) return "observations";
+  } catch {
+    // Older entries may not have a structured capture payload.
+  }
+  if (eventType.includes("observation") || item.source_type === "caregiver_report") return "observations";
+  return "updates";
 }
 
 function displayHistoryText(item: CareItem): string {
@@ -167,6 +189,9 @@ export default function DailyCarePage() {
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
   const [historyItems, setHistoryItems] = useState<CareItem[]>([]);
+  const [sinceLastOpenItems, setSinceLastOpenItems] = useState<CareItem[] | null>(null);
+  const [lastOpenedAt, setLastOpenedAt] = useState<string | null>(null);
+  const [historyMayBeTruncated, setHistoryMayBeTruncated] = useState(false);
   const [contextLoading, setContextLoading] = useState(true);
   const [contextError, setContextError] = useState("");
 
@@ -178,7 +203,7 @@ export default function DailyCarePage() {
       .then(async () => {
         const [careResult, historyResult] = await Promise.allSettled([
           getJSON("/care-continuity/current-care?limit_per_source=20"),
-          getJSON("/daily-care/intelligence/history?limit=8&offset=0"),
+          getJSON("/daily-care/intelligence/history?limit=200&offset=0"),
         ]);
         if (!active) return;
 
@@ -190,8 +215,46 @@ export default function DailyCarePage() {
         }
 
         if (historyResult.status === "fulfilled") {
-          const payload = historyResult.value as { records?: unknown };
-          setHistoryItems(Array.isArray(payload?.records) ? payload.records as CareItem[] : []);
+          const payload = historyResult.value as {
+            records?: unknown;
+            page?: { has_more?: boolean };
+          };
+          const records = Array.isArray(payload?.records) ? payload.records as CareItem[] : [];
+          setHistoryItems(records);
+          setHistoryMayBeTruncated(Boolean(payload.page?.has_more));
+
+          const personId = getPersonId();
+          const caregiverId = getCaregiverId();
+          if (personId && caregiverId) {
+            const visitKey = `solenos:daily-care:last-opened:${personId}:${caregiverId}`;
+            let previousVisit: string | null = null;
+            try {
+              previousVisit = window.localStorage.getItem(visitKey);
+            } catch {
+              previousVisit = null;
+            }
+            setLastOpenedAt(previousVisit);
+            if (previousVisit) {
+              const previousTime = new Date(previousVisit).getTime();
+              const newlyRecorded = records.filter((item) => {
+                const recorded = item.recorded_at || item.uploaded_at || item.created_at;
+                if (!recorded) return false;
+                const recordedTime = new Date(recorded).getTime();
+                return Number.isFinite(recordedTime) && recordedTime > previousTime;
+              });
+              setSinceLastOpenItems(newlyRecorded);
+            } else {
+              setSinceLastOpenItems(null);
+            }
+            try {
+              window.localStorage.setItem(visitKey, new Date().toISOString());
+            } catch {
+              // History remains available if this browser blocks local storage.
+            }
+          } else {
+            setSinceLastOpenItems(null);
+            setLastOpenedAt(null);
+          }
         } else {
           setContextError((current) => current || "Recent care history could not be loaded. Try refreshing the record.");
         }
@@ -282,6 +345,39 @@ export default function DailyCarePage() {
             ) : (
               <p>No open matters are currently recorded in this view. This does not confirm that none exist.</p>
             )}
+          </section>
+
+          <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
+            <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
+            <p className="daily-care-muted">
+              This summary uses records added since your previous visit on this device. It does not describe unrecorded care.
+            </p>
+            {sinceLastOpenItems === null ? (
+              <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
+            ) : sinceLastOpenItems.length > 0 ? (
+              <>
+                <p><strong>{sinceLastOpenItems.length}</strong> new care record{sinceLastOpenItems.length === 1 ? "" : "s"} added since {lastOpenedAt ? displayCareTime(lastOpenedAt) : "your previous visit"}.</p>
+                <ul className="daily-care-record-list">
+                  {([
+                    ["observations", "Observation records"],
+                    ["medicines", "Medication event records"],
+                    ["measurements", "Measurement records"],
+                    ["checkIns", "Quick check-ins"],
+                    ["handoffs", "Care handoffs"],
+                    ["updates", "Other care updates"],
+                  ] as const).filter(([key]) => sinceLastOpenItems.some((item) => classifyHistoryRecord(item) === key))
+                    .map(([key, label]) => (
+                      <li key={key}>
+                        {sinceLastOpenItems.filter((item) => classifyHistoryRecord(item) === key).length} {label.toLowerCase()}
+                      </li>
+                    ))}
+                </ul>
+                <p className="daily-care-muted">Each count links to an actual saved record in Recent care history below.</p>
+              </>
+            ) : (
+              <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
+            )}
+            {historyMayBeTruncated && <p className="daily-care-muted">The summary is based on the latest 200 history records. Open full history to check older entries.</p>}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
