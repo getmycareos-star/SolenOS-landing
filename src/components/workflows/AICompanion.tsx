@@ -1,15 +1,13 @@
 
 'use client'
 
-import { useState, useRef, useEffect, type ChangeEvent } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
-import { ArrowUp, Camera, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList, X } from 'lucide-react'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
 import { ensureAnonymousSession, postJSON, getJSON, getAnonymousAccessToken, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 const AppointmentWorkspace = dynamic(() => import('@/components/workflows/AppointmentWorkspace'), { ssr: false })
-import { setPendingDocumentIntake, type DocumentIntakeMode } from '@/lib/companion-document-intake'
 
 const CASUAL_GREETING = /^(?:hi|hello|hey|hiya|howdy|how are you(?: doing| today)?|how'?s it going|what'?s up|good morning|good afternoon|good evening|good night|thanks|thank you(?: so much)?|bye|goodbye|see you)[.!?,;:]*$/i
 
@@ -213,16 +211,6 @@ const STARTER_PROMPTS = [
 ]
 
 export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
-  const router = useRouter()
-  const [addMenuOpen, setAddMenuOpen] = useState(false)
-  const uploadInputRef = useRef<HTMLInputElement>(null)
-  const captureInputRef = useRef<HTMLInputElement>(null)
-  const cameraVideoRef = useRef<HTMLVideoElement>(null)
-  const cameraStreamRef = useRef<MediaStream | null>(null)
-  const [cameraMode, setCameraMode] = useState<'scan' | null>(null)
-  const [cameraError, setCameraError] = useState<string | null>(null)
-  const [capturedPages, setCapturedPages] = useState<File[]>([])
-  const [cameraStarting, setCameraStarting] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -250,116 +238,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const pendingTurnText = useRef<string | null>(null)
   const autoDraftSent = useRef(false)
   const personId = getPersonId()
-
-  const openDocumentIntake = (mode: DocumentIntakeMode) => {
-    // Invoke native pickers before scheduling React state updates. Mobile browsers
-    // require the picker call to remain directly inside the trusted user gesture.
-    if (mode === 'upload') {
-      uploadInputRef.current?.click()
-      setAddMenuOpen(false)
-      return
-    }
-    if (mode === 'capture') {
-      captureInputRef.current?.click()
-      setAddMenuOpen(false)
-      return
-    }
-    setAddMenuOpen(false)
-    setCapturedPages([])
-    setCameraError(null)
-    setCameraMode('scan')
-  }
-
-  useEffect(() => {
-    if (!cameraMode) return
-    let cancelled = false
-    setCameraStarting(true)
-    setCameraError(null)
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError('Camera access is not available in this browser. Try Upload document instead.')
-      setCameraStarting(false)
-      return
-    }
-    void navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-      .then(stream => {
-        if (cancelled) {
-          stream.getTracks().forEach(track => track.stop())
-          return
-        }
-        cameraStreamRef.current = stream
-        if (cameraVideoRef.current) {
-          cameraVideoRef.current.srcObject = stream
-          void cameraVideoRef.current.play().catch(() => setCameraError('The camera could not start. Check browser camera permission and try again.'))
-        }
-        setCameraStarting(false)
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCameraStarting(false)
-          setCameraError('SolenOS could not access the camera. Allow camera permission in your browser settings, then try again.')
-        }
-      })
-    return () => {
-      cancelled = true
-      cameraStreamRef.current?.getTracks().forEach(track => track.stop())
-      cameraStreamRef.current = null
-    }
-  }, [cameraMode])
-
-  const closeCameraIntake = () => {
-    cameraStreamRef.current?.getTracks().forEach(track => track.stop())
-    cameraStreamRef.current = null
-    setCameraMode(null)
-    setCapturedPages([])
-    setCameraError(null)
-  }
-
-  const captureCameraPage = () => {
-    const video = cameraVideoRef.current
-    if (!video || !video.videoWidth || !video.videoHeight) {
-      setCameraError('The camera is not ready yet. Wait a moment and try again.')
-      return
-    }
-    const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    const context = canvas.getContext('2d')
-    if (!context) {
-      setCameraError('This device could not capture the camera image. Try again or use Upload document.')
-      return
-    }
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    canvas.toBlob(blob => {
-      if (!blob) {
-        setCameraError('The photo could not be created. Please try again.')
-        return
-      }
-      const page = new File([blob], `solenos-scan-${Date.now()}-${capturedPages.length + 1}.jpg`, { type: 'image/jpeg', lastModified: Date.now() })
-      setCapturedPages(current => [...current, page])
-      setCameraError(null)
-      // Scan mode keeps the camera open until the caregiver reviews all captured pages.
-    }, 'image/jpeg', 0.92)
-  }
-
-  const finishCameraIntake = (files: File[], mode: 'scan') => {
-    if (!files.length) {
-      setCameraError('Capture at least one page before continuing.')
-      return
-    }
-    setPendingDocumentIntake(files, mode)
-    cameraStreamRef.current?.getTracks().forEach(track => track.stop())
-    cameraStreamRef.current = null
-    setCameraMode(null)
-    router.push('/workspace/documents?intake=1')
-  }
-
-  const completeDocumentIntake = (event: ChangeEvent<HTMLInputElement>, mode: DocumentIntakeMode) => {
-    const files = Array.from(event.currentTarget.files ?? [])
-    event.currentTarget.value = ''
-    if (!files.length) return
-    setPendingDocumentIntake(files, mode)
-    router.push('/workspace/documents?intake=1')
-  }
 
   const prepareHandoffDraft = async () => {
     if (!handoffAudience || !handoffPurpose || handoffDraftLoading) return
@@ -977,48 +855,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </div>
 
       <div className="companion-composer-wrap">
-        <input ref={uploadInputRef} type="file" accept=".pdf,.doc,.docx,.rtf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.eml,.msg,.jpg,.jpeg,.png,.webp,.gif" multiple tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'upload')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
-        <input ref={captureInputRef} type="file" accept="image/*" capture="environment" tabIndex={-1} aria-hidden="true" onChange={event => completeDocumentIntake(event, 'capture')} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
         <form className="companion-composer" aria-label="Send a message to Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
-            <div className="companion-add-wrap">
-              <button type="button" className="companion-add-button" aria-label={addMenuOpen ? "Close attachment actions" : "Add document or image"} aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}>{addMenuOpen ? <X size={19} /> : <Plus size={19} />}</button>
-              {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
-                <button type="button" role="menuitem" onClick={() => openDocumentIntake("upload")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file from this device</small></span></button>
-                <button type="button" role="menuitem" onClick={() => openDocumentIntake("capture")}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open the camera now</small></span></button>
-                <button type="button" role="menuitem" onClick={() => openDocumentIntake("scan")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Photograph pages, then review them</small></span></button>
-              </div>}
-            </div>
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
 
-      {cameraMode && (
-        <div role="dialog" aria-modal="true" aria-label={cameraMode === 'scan' ? 'Scan a document' : 'Take a photo'} onClick={event => { if (event.target === event.currentTarget) closeCameraIntake() }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(10,18,13,.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
-          <section style={{ width: 'min(760px,100%)', maxHeight: '94dvh', overflow: 'auto', display: 'grid', gap: 12, padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--text)' }}>
-            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div><h3 style={{ margin: 0, fontSize: 18 }}>{cameraMode === 'scan' ? 'Scan document' : 'Take a photo'}</h3><p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{cameraMode === 'scan' ? 'Position each page in the frame. Capture all pages before reviewing.' : 'Position the care document in the frame and take a photo.'}</p></div>
-              <button type="button" onClick={closeCameraIntake} aria-label="Close camera" style={{ minWidth: 42, minHeight: 42, border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface)', color: 'var(--text)' }}>✕</button>
-            </header>
-            <div style={{ position: 'relative', background: '#111', borderRadius: 12, overflow: 'hidden', minHeight: 220 }}>
-              <video ref={cameraVideoRef} autoPlay playsInline muted style={{ display: 'block', width: '100%', maxHeight: '58dvh', objectFit: 'contain' }} />
-              {cameraStarting && <p style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', margin: 0, color: '#fff' }}>Opening camera…</p>}
-            </div>
-            {cameraError && <p role="alert" style={{ margin: 0, padding: 10, borderRadius: 8, background: 'rgba(180,50,50,.1)', color: 'var(--text)' }}>{cameraError}</p>}
-            {cameraMode === 'scan' && capturedPages.length > 0 && <p role="status" style={{ margin: 0, fontSize: 13 }}>{capturedPages.length} page{capturedPages.length === 1 ? '' : 's'} captured. Capture another page or continue to review.</p>}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' }}>
-              <button type="button" onClick={captureCameraPage} disabled={cameraStarting || !!cameraError} style={{ minHeight: 46, flex: '1 1 160px', border: 0, borderRadius: 10, background: '#b9d5b5', color: '#17251c', fontWeight: 750 }}>{cameraMode === 'scan' ? 'Capture page' : 'Take photo'}</button>
-              {cameraMode === 'scan' && <button type="button" onClick={() => finishCameraIntake(capturedPages, 'scan')} disabled={!capturedPages.length} style={{ minHeight: 46, flex: '1 1 160px', border: '1px solid #8eae8a', borderRadius: 10, background: 'var(--surface)', color: 'var(--text)', fontWeight: 700 }}>Review {capturedPages.length || ''} page{capturedPages.length === 1 ? '' : 's'}</button>}
-              {cameraMode === 'scan' && capturedPages.length > 0 && <button type="button" onClick={() => setCapturedPages([])} style={{ minHeight: 42, border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface)', color: 'var(--text)', padding: '8px 12px' }}>Clear pages</button>}
-            </div>
-          </section>
-        </div>
-      )}
 
 
       <style jsx>{`
