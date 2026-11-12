@@ -23,6 +23,12 @@ const StructuredDailyCapture = dynamic(
 
 type CaptureMode = "something" | "medicine" | "measurement" | "photo" | "checkin" | "note";
 
+type DailyCareDeliveryIssue = {
+  id: string;
+  title: string;
+  message: string;
+};
+
 type DailyCareFollowUp = {
   id: string;
   title: string;
@@ -267,6 +273,8 @@ export default function DailyCarePage() {
   const [historyItems, setHistoryItems] = useState<CareItem[]>([]);
   const [followUps, setFollowUps] = useState<DailyCareFollowUp[]>([]);
   const [followUpsError, setFollowUpsError] = useState("");
+  const [deliveryIssues, setDeliveryIssues] = useState<DailyCareDeliveryIssue[]>([]);
+  const [deliveryStatusError, setDeliveryStatusError] = useState("");
   const [sinceLastOpenItems, setSinceLastOpenItems] = useState<CareItem[] | null>(null);
   const [lastOpenedAt, setLastOpenedAt] = useState<string | null>(null);
   const [historyMayBeTruncated, setHistoryMayBeTruncated] = useState(false);
@@ -287,10 +295,11 @@ export default function DailyCarePage() {
         // they can record an update. The capture interface is useful as soon
         // as the anonymous session is ready; context can finish loading below.
         if (active) setReady(true);
-        const [careResult, historyResult, followUpsResult] = await Promise.allSettled([
+        const [careResult, historyResult, followUpsResult, notificationsResult] = await Promise.allSettled([
           getJSON("/care-continuity/current-care?limit_per_source=20"),
           getJSON("/daily-care/intelligence/history?limit=200&offset=0"),
           getJSON("/open-loops?limit=100&offset=0"),
+          getJSON("/notifications?limit=100&offset=0"),
         ]);
         if (!active) return;
 
@@ -312,6 +321,31 @@ export default function DailyCarePage() {
           }
         } else {
           setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
+        }
+
+        if (notificationsResult.status === "fulfilled") {
+          const payload = notificationsResult.value as {
+            items?: Array<{
+              id?: string;
+              title?: string;
+              status?: string;
+              push_delivery?: { status?: string; message?: string } | null;
+            }>;
+          };
+          const issues = Array.isArray(payload?.items)
+            ? payload.items.filter((item) =>
+                item.status === "active"
+                && ["failed", "expired"].includes(item.push_delivery?.status || "")
+              )
+            : [];
+          setDeliveryIssues(issues.map((item) => ({
+            id: item.id || `delivery-issue-${issues.indexOf(item)}`,
+            title: caregiverSafeAssistantText(item.title) || "Care notification",
+            message: caregiverSafeAssistantText(item.push_delivery?.message) || "This notification could not be sent to this device. It remains in your SolenOS inbox.",
+          })));
+          setDeliveryStatusError("");
+        } else {
+          setDeliveryStatusError("Notification delivery status could not be checked just now.");
         }
 
         if (historyResult.status === "fulfilled") {
@@ -466,6 +500,15 @@ export default function DailyCarePage() {
             ) : (
               <p>No unresolved follow-ups are currently recorded. This does not confirm that no action is outstanding.</p>
             )}
+            {deliveryIssues.length > 0 && (
+              <div role="status" className="daily-care-medication-confirmation">
+                <strong>Notification delivery needs attention</strong>
+                {deliveryIssues.slice(0, 3).map((issue) => (
+                  <p key={issue.id}>{issue.title}: {issue.message}</p>
+                ))}
+              </div>
+            )}
+            {deliveryStatusError && <p role="status">{deliveryStatusError}</p>}
             <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>View follow-ups</Button>
           </section>
 
