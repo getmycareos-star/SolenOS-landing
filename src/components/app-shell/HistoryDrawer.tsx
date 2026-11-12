@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
@@ -268,44 +269,45 @@ function categoryLabel(category: HistoryCategory, eventType?: string): string {
 
 function parseDescription(description?: string | null): string {
   if (!description?.trim()) return "";
+  const fallback = "Saved care information";
   try {
     const parsed: unknown = JSON.parse(description);
-    if (typeof parsed === "string") return parsed;
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      const record = parsed as Record<string, unknown>;
-      const quick = record.quick_check_in;
-      if (quick && typeof quick === "object" && !Array.isArray(quick)) {
-        const checkIn = quick as Record<string, unknown>;
-        const labels: Record<string, string> = {
-          same_as_usual: "Same as usual",
-          change: "Something changed",
-          concern: "A concern was reported",
-          care_completed: "Care was completed",
-          uncertain: "The caregiver was unsure",
-        };
-        const areas = Array.isArray(checkIn.selected_areas)
-          ? checkIn.selected_areas.filter((area): area is string => typeof area === "string")
-              .map((area) => area.replaceAll("_", " "))
-          : [];
-        const lines = [
-          typeof record.notes === "string" ? record.notes : "",
-          "Update: " + (labels[String(checkIn.kind)] || "Caregiver check-in"),
-          areas.length ? "Areas selected: " + areas.join(", ") : "No individual care areas were assessed.",
-        ];
-        return lines.filter(Boolean).join("\n");
-      }
-      return Object.entries(record)
-        .filter(([, value]) => value !== null && value !== undefined && value !== "")
-        .map(([key, value]) => {
-          const label = key.replaceAll("_", " ");
-          return label + ": " + (typeof value === "string" ? value : JSON.stringify(value));
-        })
-        .join("\n");
+    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || fallback;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
+
+    const record = parsed as Record<string, unknown>;
+    const capture = record.original_capture && typeof record.original_capture === "object" && !Array.isArray(record.original_capture)
+      ? record.original_capture as Record<string, unknown>
+      : record;
+    const quick = capture.quick_check_in && typeof capture.quick_check_in === "object" && !Array.isArray(capture.quick_check_in)
+      ? capture.quick_check_in as Record<string, unknown>
+      : null;
+    const labels: Record<string, string> = {
+      same_as_usual: "About the same as usual",
+      change: "Something changed",
+      concern: "A concern was reported",
+      care_completed: "Care was reported as completed",
+      uncertain: "The caregiver was unsure",
+    };
+    const lines: string[] = [];
+    if (quick) {
+      lines.push(labels[String(quick.kind)] || "Caregiver check-in recorded");
+      const areas = Array.isArray(quick.selected_areas)
+        ? quick.selected_areas.filter((area): area is string => typeof area === "string")
+            .map((area) => area.replaceAll("_", " "))
+        : [];
+      if (areas.length) lines.push("Areas mentioned: " + areas.join(", "));
     }
+    for (const key of ["notes", "original_notes", "text", "description", "observation", "summary"]) {
+      const value = capture[key];
+      const safe = typeof value === "string" ? caregiverSafeAssistantText(value) : null;
+      if (safe && !lines.includes(safe)) lines.push(safe);
+    }
+    return lines.length ? lines.join("\\n") : fallback;
   } catch {
-    // Preserve original plain text.
+    // Malformed serialized data is not shown as caregiver text.
+    return /^[\\s]*[\\[{]/.test(description) ? fallback : caregiverSafeAssistantText(description) || fallback;
   }
-  return description;
 }
 
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
@@ -461,8 +463,7 @@ function parseSnapshot(value: CareStateRevision["before_state"]): Record<string,
 
 function snapshotText(value: CareStateRevision["before_state"]): string {
   const snapshot = parseSnapshot(value);
-  const text = JSON.stringify(snapshot, null, 2);
-  return text === "{}" ? "No snapshot was recorded." : text.slice(0, 6000);
+  return Object.keys(snapshot).length ? "Earlier care details are saved." : "No earlier care details were recorded.";
 }
 
 const REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE = new Set([
@@ -524,9 +525,13 @@ function mapDecision(item: CareDecision): HistoryRecord {
   const decidedAt = item.decided_at || createdAt;
   const title = asText(item.title) || asText(item.decision_text).slice(0, 120) || "Care decision";
   const context = typeof item.context === "string"
-    ? item.context
+    ? caregiverSafeAssistantText(item.context) || ""
     : item.context && typeof item.context === "object"
-      ? JSON.stringify(item.context, null, 2)
+      ? ["summary", "notes", "reason", "details", "description"]
+          .map((key) => asText((item.context as Record<string, unknown>)[key]))
+          .map((value) => caregiverSafeAssistantText(value))
+          .filter((value): value is string => Boolean(value))
+          .join("\\n") || "Additional care context is saved."
       : "";
   return {
     id: "decision:" + item.id,
