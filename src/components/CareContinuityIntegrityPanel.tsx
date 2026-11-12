@@ -147,7 +147,7 @@ export default function CareContinuityIntegrityPanel({
         updated_by_caregiver_id: getCaregiverId() || undefined,
         review_after_days: assertion.review_after_days ?? undefined,
       })
-      setNotice('Marked as caregiver-reviewed. This is not independent clinical verification.')
+      setNotice('Marked as checked by a caregiver. This does not mean a healthcare professional has confirmed it.')
       await load()
     } catch (reason) {
       setError('We couldn’t update this review. Please try again.')
@@ -157,7 +157,7 @@ export default function CareContinuityIntegrityPanel({
   if (!personId) return <section style={cardStyle}><h2>Care continuity</h2><p>Select an authorized care record to view continuity details.</p></section>
 
   return (
-    <section aria-label="Care continuity integrity" style={{ marginTop: 28 }}>
+    <section aria-label="Care record details" style={{ marginTop: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ fontSize: 19, margin: 0 }}>Record details</h2>
@@ -190,7 +190,7 @@ export default function CareContinuityIntegrityPanel({
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
                 ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as checked by a caregiver</button>
-                : <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No review schedule is saved, so this report cannot be marked as current here.</p>
+                : <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No review date has been set for this report.</p>
             )}
           </article>
         })}
