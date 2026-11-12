@@ -26,7 +26,6 @@ type FreshnessAssessment = {
   policy_version: string
   freshness_status: string
   source_time?: string | null
-  source_time_kind?: string | null
   assessed_at: string
   age_days?: number | null
   rationale: string
