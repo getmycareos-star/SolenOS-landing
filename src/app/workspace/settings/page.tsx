@@ -73,7 +73,8 @@ function NotificationsCard() {
     void ensureAnonymousSession()
       .then(() => getJSON("/notifications/push/public-key"))
       .then((result) => {
-        if (active) setPushAvailable(Boolean((result as { public_key?: string }).public_key));
+        const capability = result as { available?: boolean; public_key?: string | null };
+        if (active) setPushAvailable(Boolean(capability.available && capability.public_key));
       })
       .catch(() => {
         if (active) setPushAvailable(false);
@@ -113,9 +114,14 @@ function NotificationsCard() {
       if (permission !== "granted") {
         throw new Error("Notification permission was not granted. You can enable it in your browser settings.");
       }
-      const keyResult = await getJSON("/notifications/push/public-key") as { public_key: string };
-      const padding = "=".repeat((4 - keyResult.public_key.length % 4) % 4);
-      const base64 = (keyResult.public_key + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const keyResult = await getJSON("/notifications/push/public-key") as { available?: boolean; public_key?: string | null };
+      if (!keyResult.available || !keyResult.public_key) {
+        setPushAvailable(false);
+        throw new Error("Browser push is not configured on this server yet. In-app notifications remain available.");
+      }
+      const publicKey = keyResult.public_key;
+      const padding = "=".repeat((4 - publicKey.length % 4) % 4);
+      const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
       const raw = window.atob(base64);
       const applicationServerKey = new Uint8Array(raw.length);
       for (let index = 0; index < raw.length; index += 1) applicationServerKey[index] = raw.charCodeAt(index);
