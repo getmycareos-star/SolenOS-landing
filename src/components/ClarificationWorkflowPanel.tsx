@@ -15,7 +15,7 @@ type Claim = {
   assertion_status?: string;
   assertion_kind?: string;
 };
-type Evidence = { id: string; person_id: string; type: string; source_text: string };
+type Evidence = { id: string; person_id: string; type: string; source_text: string; uploaded_at?: string | null; occurred_at?: string | null; source_type?: string | null };
 type Question = {
   id: string;
   person_id: string;
@@ -162,6 +162,9 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const openQuestions = questions.filter((item) => item.status === "open" || item.status === "unresolved");
   const necessaryQuestions = openQuestions.filter((item) => item.necessity === "necessary");
   const otherOpenQuestions = openQuestions.filter((item) => item.necessity !== "necessary");
+  const selectedEvidence = selectedQuestion?.evidence_ids?.length
+    ? evidence.filter((item) => selectedQuestion.evidence_ids?.includes(item.id))
+    : [];
   const latestAnswer = history[history.length - 1];
   const latestReview = latestAnswer
     ? reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version)
@@ -454,6 +457,22 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status, Boolean(selectedQuestion.claim_id))} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
           <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
           {selectedQuestion.necessity === "necessary" && selectedQuestion.necessity_rationale && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Why SolenOS is asking: {selectedQuestion.necessity_rationale}</p>}
+          {selectedQuestion.necessity === "necessary" && (
+            <div style={{ margin: "10px 0", padding: 10, borderRadius: 7, background: "var(--bg)" }}>
+              <strong style={{ fontSize: 12 }}>What SolenOS checked</strong>
+              {selectedEvidence.length > 0 ? (
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 12 }}>
+                  {selectedEvidence.map((item) => (
+                    <li key={item.id} style={{ marginBottom: 5 }}>
+                      {item.type.replaceAll("_", " ")} · {displayDate(item.occurred_at || item.uploaded_at)} · {evidenceSummary(item)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ margin: "6px 0 0", fontSize: 12 }}>No linked supporting source is available to show for this question yet.</p>
+              )}
+            </div>
+          )}
           {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && selectedQuestion.necessity !== "necessary" && <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>SolenOS is keeping this information as uncertain. You do not need to answer it right now.</p>}
           {selectedQuestion.necessity === "necessary" && <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>}
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
