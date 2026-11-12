@@ -19,7 +19,7 @@ function WorkspaceHomeInner() {
   if (prompt) {
     return (
       <div className="mobile-screen feature-page companion-route solenos-companion-home">
-        <Companion home initialPrompt={prompt} />
+        <Companion initialPrompt={prompt} />
       </div>
     );
   }
