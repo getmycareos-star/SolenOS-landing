@@ -607,6 +607,30 @@ export function LCRCurrentUnderstanding() {
     }
   }, []);
 
+  const refreshSituationAssessment = async () => {
+    const scopedPersonId = personId;
+    if (!scopedPersonId) return;
+    setAssessmentLoading(true);
+    setAssessmentError(null);
+    try {
+      const current = await postJSON(
+        "/care-continuity/situation-understanding/reassess",
+        {},
+      ) as SituationAssessmentResponse;
+      if (current.assessment?.person_id === scopedPersonId) {
+        setAssessment(current.assessment);
+        setSourceFreshness(current.source_freshness ?? null);
+        setAssessmentError(null);
+      } else {
+        throw new Error("The refreshed care summary did not match the active care record.");
+      }
+    } catch {
+      setAssessmentError("The latest care summary could not be refreshed. The last saved view is shown and may be out of date.");
+    } finally {
+      setAssessmentLoading(false);
+    }
+  };
+
   const load = useCallback(async (manual = false) => {
     const timingId = ++workspaceLoadSequence;
     const timingStart = `solenos-workspace-start-${timingId}`;
@@ -717,12 +741,13 @@ export function LCRCurrentUnderstanding() {
         (async () => {
           try {
             const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
+            const savedNeedsReassessment = saved.source_freshness?.reassessment_recommended === true;
             const savedBelongsToPerson =
               saved.status === "available" && saved.assessment?.person_id === scopedPersonId;
             if (savedBelongsToPerson) {
               setAssessment(saved.assessment);
               setSourceFreshness(saved.source_freshness ?? null);
-              setAssessmentError(null);
+              setAssessmentError(savedNeedsReassessment ? null : null);
             } else {
               setAssessment(null);
               setSourceFreshness(null);
@@ -1036,7 +1061,12 @@ export function LCRCurrentUnderstanding() {
           </div>
         </div>
         {sourceFreshness?.reassessment_recommended && (
-          <p role="status">Some information may have changed since this picture was last reviewed. Refresh to check for updates.</p>
+          <div role="status">
+            <p>Some information may have changed since this picture was last reviewed. Refresh to check for updates.</p>
+            <button type="button" onClick={() => void refreshSituationAssessment()} disabled={assessmentLoading}>
+              {assessmentLoading ? "Refreshing…" : "Refresh care summary"}
+            </button>
+          </div>
         )}
         {assessmentError && (
           <p role="status">We couldn’t check which items may need attention. Try refreshing. The information shown may be incomplete.</p>
