@@ -50,7 +50,9 @@ export function CaregiverHandoverInbox() {
     setError("");
     try {
       await postJSON("/caregiver-access/" + (kind === "primary" ? "primary-transfers/" : "responsibility-transfers/") + encodeURIComponent(id) + "/" + decision, {});
-      await load();
+      // Refresh the inherited care summary so the new responsibility owner and
+      // primary-caregiver permissions are reflected immediately.
+      window.location.reload();
     } catch {
       setError("We couldn't record your response. The existing caregiver assignment has not been changed.");
     } finally {
