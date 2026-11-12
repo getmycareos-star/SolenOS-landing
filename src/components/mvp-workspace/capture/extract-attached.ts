@@ -7,7 +7,9 @@ function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string): Promise<string> {
+type ScanProcessing = { rotationDegrees: number; cropInsetsPercent: { top: number; right: number; bottom: number; left: number } };
+
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing): Promise<string> {
   const session = await ensureAnonymousSession();
   const form = new FormData();
   form.append("file", file);
@@ -19,6 +21,12 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
   form.append("capture_timestamp", captureTimestamp);
   const scanPageNumber = entryMethod === "scan" ? /scan_page_(\d+)/i.exec(file.name)?.[1] : undefined;
   if (scanPageNumber) form.append("capture_page_number", scanPageNumber);
+  if (entryMethod === "scan" && scanProcessing) {
+    form.append("scan_review_status", "not_reviewed");
+    form.append("scan_rotation_degrees", String(scanProcessing.rotationDegrees));
+    form.append("scan_crop_json", JSON.stringify(scanProcessing.cropInsetsPercent));
+    form.append("scan_text_prepared", "false");
+  }
   // The server must extract from the immutable uploaded bytes. Client OCR/text is
   // deliberately not treated as authoritative source material.
   form.append("extracted_text", "");
@@ -42,6 +50,7 @@ export async function extractAttachedDocument(
   entryMethod: InputEntryMethod,
   uploadRetryKey = crypto.randomUUID(),
   captureTimestamp = new Date().toISOString(),
+  scanProcessing?: ScanProcessing,
 ): Promise<AttachedDocument> {
   const base: AttachedDocument = {
     uploadRetryKey,
@@ -57,7 +66,7 @@ export async function extractAttachedDocument(
 
   let evidenceId: string;
   try {
-    evidenceId = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp);
+    evidenceId = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing);
   } catch (error) {
     return {
       ...base,
