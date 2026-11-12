@@ -322,7 +322,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Add to your care record</button>
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Save correction for review</button>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Reject</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, index, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Do not add</button>
                 </div>
               </>}
               {candidate.review_status === "accepted_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A caregiver-reviewed detail was saved to your care record. It has not been independently confirmed by a healthcare professional.</p>}
@@ -338,7 +338,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                     : <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
                       {analysis.reviewEvents.map((event) => {
                         const after = event.after || {};
-                        const subject = typeof after.subject === "string" ? after.subject : "Candidate";
+                        const subject = typeof after.subject === "string" ? after.subject : "Suggested detail";
                         const observation = typeof after.observation === "string" ? after.observation : "";
                         return <li key={event.id} style={{ fontSize: 12, lineHeight: 1.5 }}>
                           <strong>Suggested detail {event.candidate_index + 1} · {event.decision === "accept" ? "Added" : event.decision === "correct" ? "Correction saved" : event.decision === "reject" ? "Not added" : "Review saved"}</strong>
