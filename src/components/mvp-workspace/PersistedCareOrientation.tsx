@@ -2,58 +2,39 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ensureAnonymousSession, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON } from "@/api/client";
 
-type PersistedEvent = {
+type CurrentCareItem = {
   id: string;
-  event_type?: string;
-  title?: string;
-  description?: string | null;
-  occurred_at?: string | null;
-  evidence_ids?: string[];
-};
-type PersistedObservation = {
-  id: string;
-  raw_text?: string;
-  human_fact?: string;
-  captured_at?: string;
-};
-type CareSnapshot = {
-  ok?: boolean;
-  care_recipient_display_name?: string;
-  total_events?: number;
-  events?: PersistedEvent[];
-  has_context_root?: boolean;
-  what_i_understood?: string | { summary?: string; text?: string } | null;
-  ui_situations?: Array<{ id?: string; title?: string; context_summary?: string; status?: string; updated_at?: string }>;
-  active_care_situation?: {
-    observations?: PersistedObservation[];
-    summary?: string;
-    current_situation?: string;
-  } | null;
-};
-type SituationTrajectoryEntry = {
-  source: string;
-  record_id: string;
+  kind: string;
   title: string;
+  description?: string;
+  status: string;
   epistemic_status: string;
-  event_time?: string | null;
+  source_collection: string;
+  source_type: string;
+  source_label: string;
+  occurred_at?: string | null;
+  reported_at?: string | null;
   recorded_at?: string | null;
-  temporal_basis: string;
-  interpretation_limit: string;
+  evidence_ids: string[];
+  evidence_link_validation?: string;
 };
-type SituationAssessment = {
-  status?: string;
-  assessment_id?: string;
-  assessment?: {
-    situation_trajectory?: { entries?: SituationTrajectoryEntry[]; count?: number; has_more?: boolean; causal_inference?: string };
-    observation_coverage?: { items?: Array<{ id: string; subject_type: string; window_start: string; window_end: string; coverage_status: string; rationale: string }>; count?: number; has_more?: boolean; status?: string; absence_rule?: string };
-    baseline_assessment?: { status?: string; count?: number; limitation?: string };
-    open_loops?: { items?: Array<{ id: string; title: string; loop_type: string; recorded_status: string; description?: string; owner?: string | null; due_at?: string | null }>; count?: number; has_more?: boolean };
-    confidence_assessment?: { overall?: string; limitations?: string[] };
-    coverage?: { is_complete?: boolean; records_examined?: number };
-  } | null;
+
+type CurrentCareProjection = {
+  person_id: string;
+  projection_type: string;
+  read_only: boolean;
+  history_coverage: string;
+  schema_status: string;
+  missing_required_sources: string[];
+  missing_optional_sources: string[];
+  items: CurrentCareItem[];
+  item_count: number;
+  has_more: boolean;
+  notice: string;
 };
+
 type LoadState = "loading" | "ready" | "unavailable";
 
 function formatDate(value?: string | null): string {
@@ -63,14 +44,33 @@ function formatDate(value?: string | null): string {
   return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-function eventTitle(event: PersistedEvent): string {
-  return event.title?.trim() || event.description?.trim() || event.event_type?.trim() || "Care update details unavailable";
+function readableStatus(value?: string | null): string {
+  if (!value?.trim()) return "Status not recorded";
+  const labels: Record<string, string> = {
+    reported: "Reported",
+    observed: "Observed",
+    confirmed: "Confirmed",
+    inferred: "Possible interpretation",
+    uncertain: "Still unclear",
+    unverified: "Not confirmed",
+    disputed: "Reports do not match",
+    needs_clarification: "Needs clarification",
+    awaiting_confirmation: "Needs review",
+    active: "Current",
+    open: "Open",
+    completed: "Completed",
+    resolved: "Resolved",
+    superseded: "Replaced by a newer record",
+    withdrawn: "Withdrawn",
+    not_specified: "Not specified",
+    status_unknown: "Status not recorded",
+  };
+  return labels[value] || value.replaceAll("_", " ");
 }
 
 export function PersistedCareOrientation() {
   const [state, setState] = useState<LoadState>("loading");
-  const [snapshot, setSnapshot] = useState<CareSnapshot | null>(null);
-  const [situationAssessment, setSituationAssessment] = useState<SituationAssessment | null>(null);
+  const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -78,35 +78,23 @@ export function PersistedCareOrientation() {
     setError("");
     try {
       const session = await ensureAnonymousSession();
-      const storedCareSessionId = window.localStorage.getItem("solenos_care_session_id");
-      const params = new URLSearchParams({ caregiver_id: session.caregiver.id, offer_return_invite: "0" });
-      if (storedCareSessionId) params.set("care_session_id", storedCareSessionId);
-      const response = await fetch(`/api/situation?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        throw new Error(`Your saved care information isn't available right now.`);
+      if (!session.access_token || !session.person?.id) {
+        throw new Error("A secure care record session is required.");
       }
-      const data = (await response.json()) as CareSnapshot;
-      // A successful response with no entries is a normal first-visit state,
-      // not a failed load. Render the empty-record guidance instead of an error.
-      if (!data || typeof data !== "object" || data.ok === false) {
-        throw new Error("Your saved care information isn't available right now.");
+      const data = await getJSON("/care-continuity/current-care?limit_per_source=12");
+      if (
+        !data ||
+        data.read_only !== true ||
+        data.projection_type !== "bounded_evidence_derived_current_care" ||
+        data.person_id !== session.person.id ||
+        !Array.isArray(data.items)
+      ) {
+        throw new Error("The current care record could not be verified for this session.");
       }
-      setSnapshot(data);
-      // Use the shared API client for base URL, authorization, timeout and retry behaviour.
-      // Reassess on entry; the backend deduplicates semantically unchanged snapshots.
-      try {
-        const assessmentData = await postJSON("care-continuity/situation-understanding/reassess", {});
-        setSituationAssessment(assessmentData as SituationAssessment);
-      } catch {
-        setSituationAssessment(null);
-      }
+      setProjection(data as CurrentCareProjection);
       setState("ready");
     } catch {
-      setSnapshot(null);
-      setSituationAssessment(null);
+      setProjection(null);
       setError("Your care information isn't available right now. Check your connection and try again.");
       setState("unavailable");
     }
@@ -119,120 +107,63 @@ export function PersistedCareOrientation() {
   if (state === "loading") {
     return (
       <section className="persisted-care-orientation" aria-busy="true" aria-label="Saved care information">
-                <h2>Loading your care information…</h2>
+        <h2>Loading your care information…</h2>
       </section>
     );
   }
 
-  if (state === "unavailable" || !snapshot) {
+  if (state === "unavailable" || !projection) {
     return (
       <section className="persisted-care-orientation" aria-label="Saved care information">
         <div className="persisted-care-orientation-header">
-          <div>
-                        <h2>We couldn't load your care information</h2>
-          </div>
+          <div><h2>We couldn't load your care information</h2></div>
         </div>
         <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
+        <button type="button" onClick={() => void load()}>Try again</button>
       </section>
     );
   }
 
-  const events = snapshot.events ?? [];
-  const situations = snapshot.ui_situations ?? [];
-  const observations = snapshot.active_care_situation?.observations ?? [];
-  const latestEvent = events.length > 0 ? events[events.length - 1] : null;
-  const latestObservation = observations.length > 0 ? observations[observations.length - 1] : null;
-  const understanding = typeof snapshot.what_i_understood === "string"
-    ? snapshot.what_i_understood
-    : snapshot.what_i_understood?.summary || snapshot.what_i_understood?.text || "";
-  const hasServerEntries = (snapshot.total_events ?? 0) > 0 || events.length > 0 || situations.length > 0 || observations.length > 0 || Boolean(understanding.trim()) || Boolean(snapshot.active_care_situation?.summary || snapshot.active_care_situation?.current_situation);
+  const items = projection.items;
+  const hasRequiredSourceGaps = projection.missing_required_sources.length > 0;
+  const hasOptionalSourceGaps = projection.missing_optional_sources.length > 0;
 
   return (
     <section className="persisted-care-orientation" aria-label="Saved care information">
       <div className="persisted-care-orientation-header">
-        <div>
-                    <h2>{snapshot.care_recipient_display_name?.trim() ? `Care record for ${snapshot.care_recipient_display_name.trim()}` : "Saved care record"}</h2>
-        </div>
+        <div><h2>Your Living Care Record</h2></div>
       </div>
 
-      {hasServerEntries ? (
+      {items.length > 0 ? (
         <>
-          <p>{snapshot.total_events ?? (events.length || situations.length)} saved care update{(snapshot.total_events ?? (events.length || situations.length)) === 1 ? "" : "s"} in your record.</p>
-          {understanding.trim() && <div className="persisted-care-orientation-latest"><strong>Current understanding</strong><p>{understanding}</p></div>}
-          {situations.map((situation, index) => (
-            <div className="persisted-care-orientation-latest" key={situation.id || `situation-${index}`}>
-              <strong>{situation.title?.trim() || "Care update"}</strong>
-              {situation.context_summary && <p>{situation.context_summary}</p>}
-              {situation.status && <p>{situation.status.replace(/_/g, " ")}</p>}
-              {situation.updated_at && <p>{formatDate(situation.updated_at)}</p>}
-            </div>
+          <p>{projection.item_count} care record item{projection.item_count === 1 ? "" : "s"} shown.</p>
+          {items.map((item) => (
+            <article className="persisted-care-orientation-latest" key={item.source_collection + ":" + item.id}>
+              <strong>{item.title?.trim() || "Care record item"}</strong>
+              {item.description?.trim() && <p>{item.description}</p>}
+              <p>{readableStatus(item.epistemic_status)} · {readableStatus(item.status)}</p>
+              <p>{item.source_label || "Source not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
+              {item.evidence_ids.length > 0 && (
+                <small>Linked source information is available for review.</small>
+              )}
+            </article>
           ))}
-          {latestEvent ? (
-            <div className="persisted-care-orientation-latest">
-              <strong>Latest care update</strong>
-              <p>{eventTitle(latestEvent)}</p>
-              <p>{formatDate(latestEvent.occurred_at)}</p>
-            </div>
-          ) : (snapshot.total_events ?? 0) > 0 ? (
-            <p role="status">Some saved updates are unavailable to display right now. Try refreshing your record.</p>
-          ) : null}
-          {latestObservation ? (
-            <div className="persisted-care-orientation-latest">
-              <strong>Latest supporting information</strong>
-              <p>{latestObservation.human_fact?.trim() || latestObservation.raw_text?.trim() || "Supporting information is saved, but its details are not available to display right now."}</p>
-              <p>{formatDate(latestObservation.captured_at)}</p>
-            </div>
-          ) : null}
+          {projection.has_more && <p>More care record items are available in the full record.</p>}
         </>
       ) : (
         <div>
           <p>Your Living Care Record does not have any care information available yet.</p>
-          <p>Share what you know through AI Companion. Information reviewed and approved there will appear in your care record.</p>
-          <Link href="/workspace/companion">Open AI Companion</Link>
+          <p>When you share an update or document, it can be reviewed and added to this record.</p>
+          <Link href="/workspace">Add a care update</Link>
         </div>
       )}
 
-      {hasServerEntries && situationAssessment?.assessment ? (
-        <div className="persisted-care-orientation-latest" aria-label="Evidence-grounded situation understanding">
-          <strong>Situation understanding</strong>
-          <p>
-            {situationAssessment.assessment.coverage?.records_examined ?? 0} persisted record(s) examined.
-            {" "}{situationAssessment.assessment.confidence_assessment?.overall === "not_calibrated" || !situationAssessment.assessment.confidence_assessment?.overall
-              ? "There is not enough information for a reliable assessment."
-              : `Assessment status: ${situationAssessment.assessment.confidence_assessment.overall.replace(/_/g, " ")}.`}
-          </p>
-          {(situationAssessment.assessment.open_loops?.count ?? 0) > 0 && <p>Unresolved matters recorded: {situationAssessment.assessment.open_loops?.count}.</p>}
-          {(situationAssessment.assessment.open_loops?.items ?? []).slice(0, 5).map((loop) => (
-            <div key={loop.id} className="persisted-care-orientation-latest">
-              <strong>{loop.title || loop.loop_type.replace(/_/g, " ")}</strong>
-              <p>{loop.description || "No further description was recorded."}</p>
-              <small>Status: {loop.recorded_status.replace(/_/g, " ")}</small>
-              {loop.owner && <small>Owner: {loop.owner}</small>}
-              {loop.due_at && <small>Due: {formatDate(loop.due_at)}</small>}
-            </div>
-          ))}
-          {situationAssessment.assessment.open_loops?.has_more && <p>Additional unresolved items are available in the full LCR view.</p>}
-          {(situationAssessment.assessment.observation_coverage?.count ?? 0) > 0 ? (
-            <p>Observation coverage has {situationAssessment.assessment.observation_coverage?.count} recorded interval(s). {situationAssessment.assessment.observation_coverage?.status ? `Coverage status: ${situationAssessment.assessment.observation_coverage.status.replace(/_/g, " ")}.` : ""}</p>
-          ) : (
-            <p>No observation coverage has been recorded yet. This does not indicate whether an event occurred.</p>
-          )}
-          {(situationAssessment.assessment.baseline_assessment?.count ?? 0) > 0 && <p>A personal baseline is based on {situationAssessment.assessment.baseline_assessment?.count} recorded item(s).</p>}
-          {situationAssessment.assessment.baseline_assessment?.limitation && <small>{situationAssessment.assessment.baseline_assessment.limitation}</small>}
-          {(situationAssessment.assessment.situation_trajectory?.entries ?? []).slice(-5).reverse().map((entry) => (
-            <div key={entry.source + ":" + entry.record_id} className="persisted-care-orientation-latest">
-              <strong>{entry.title || "Recorded care event"}</strong>
-              <p>{entry.epistemic_status.replace(/_/g, " ")}</p>
-              <p>{formatDate(entry.event_time || entry.recorded_at)}</p>
-              <small>{entry.temporal_basis.replace(/_/g, " ")}. Sequence does not establish causation.</small>
-            </div>
-          ))}
-          {situationAssessment.assessment.situation_trajectory?.has_more && <p>Showing the five most recent entries in the bounded situation trajectory.</p>}
-          {situationAssessment.assessment.confidence_assessment?.limitations?.length ? (
-            <p>Assessment limitations: {situationAssessment.assessment.confidence_assessment.limitations.join(" ")}</p>
-          ) : null}
-        </div>
-      ) : null}
+      {(hasRequiredSourceGaps || hasOptionalSourceGaps || projection.schema_status !== "complete") && (
+        <p role="note">
+          Some parts of the record may not be available in this view. Missing information does not mean that nothing happened.
+        </p>
+      )}
+      <p role="note">{projection.notice}</p>
 
       <div className="persisted-care-orientation-links">
         <Link href="/workspace/timeline">Review timeline</Link>
