@@ -67,7 +67,7 @@ type ProcessingJob = { evidence_id: string; job_id: string; status: "queued" | "
 type ListResponse = { items?: Analysis[]; processing_jobs?: ProcessingJob[] };
 type LibraryDocument = { id: string; title: string };
 
-export default function DocumentIntelligenceReview({ refreshToken = 0, documents = [] }: { refreshToken?: number; documents?: LibraryDocument[] }) {
+export default function DocumentIntelligenceReview({ refreshToken = 0, documents = [], onOpenOriginal }: { refreshToken?: number; documents?: LibraryDocument[]; onOpenOriginal?: (evidenceId: string, pageNumber?: number) => void }) {
   const [items, setItems] = useState<Analysis[]>([]);
   const [processingJobs, setProcessingJobs] = useState<ProcessingJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,8 +241,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} candidate statement(s)</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
-                ? `Partial extraction · processed ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
-                : analysis.intelligence_status === "available" ? "Page extraction completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "Document understanding is processing in the background" : "Document understanding not yet completed"}
+                ? `Partial document understanding · processed ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
+                : analysis.intelligence_status === "available" ? "Document understanding completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "Document understanding is processing in the background" : "Document understanding not yet completed"}
               {analysis.unprocessed_page_numbers?.length ? ` · not processed: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
@@ -292,6 +292,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 {candidate.warnings.map((warning, warningIndex) => <p key={warningIndex} style={{ margin: 0, fontSize: 12 }}>{warning}</p>)}
               </div>}
               <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>EXACT SOURCE QUOTATION</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{candidate.source_quote}</p></div>
+              {typeof candidate.page_number === "number" && <button type="button" onClick={() => onOpenOriginal?.(analysis.source_evidence_id, candidate.page_number)} disabled={!onOpenOriginal} style={{ justifySelf: "start", minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>View source page {candidate.page_number}</button>}
               {pending && <>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected subject<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected interpretation<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>

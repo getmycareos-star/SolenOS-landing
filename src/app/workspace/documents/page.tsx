@@ -282,6 +282,7 @@ export default function DocumentsPage() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewPage, setPreviewPage] = useState<number | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
@@ -492,8 +493,9 @@ export default function DocumentsPage() {
     } finally { setUploading(false); }
   };
 
-  const openOriginal = async (doc: DocumentItem) => {
+  const openOriginal = async (doc: DocumentItem, pageNumber?: number) => {
     setSelectedId(doc.id);
+    setPreviewPage(typeof pageNumber === "number" && pageNumber > 0 ? pageNumber : null);
     setPreviewError(null);
     setPreviewLoading(true);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -511,6 +513,7 @@ export default function DocumentsPage() {
 
   const closePreview = () => {
     setSelectedId(null);
+    setPreviewPage(null);
     setPreviewError(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
@@ -533,7 +536,7 @@ export default function DocumentsPage() {
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
 
-      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
+      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} onOpenOriginal={(evidenceId, pageNumber) => { const source = documents.find((doc) => doc.id === evidenceId); if (source) void openOriginal(source, pageNumber); }} />
 
       <section aria-label="Document library" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -663,7 +666,7 @@ export default function DocumentsPage() {
             </div>
           </header>
           <div style={{ padding: 14, overflow: "auto", minHeight: 180 }}>
-            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Retrieving original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: 13, color: "var(--text-secondary)" }}>The original file was retrieved successfully. Download it to open it in a compatible app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: 15 }}>Text saved with this document</h3><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 14, lineHeight: 1.6 }}>{selected.extractedText}</pre></>}</div> : <p>Original file preview is not available yet.</p>}
+            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Retrieving original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewPage ? previewUrl + "#page=" + previewPage : previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: 13, color: "var(--text-secondary)" }}>The original file was retrieved successfully. Download it to open it in a compatible app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: 15 }}>Text saved with this document</h3><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 14, lineHeight: 1.6 }}>{selected.extractedText}</pre></>}</div> : <p>Original file preview is not available yet.</p>}
             {selected.sha256 && <p style={{ marginTop: 14, fontSize: 11, overflowWrap: "anywhere", color: "var(--text-secondary)" }}>Original file SHA-256: {selected.sha256}</p>}
           </div>
         </section>
