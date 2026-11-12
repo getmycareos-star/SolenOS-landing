@@ -6,6 +6,7 @@ const page = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const landingStartLink = fs.readFileSync("src/components/public/LandingStartLink.tsx", "utf8");
 const shell = fs.readFileSync("src/components/app-shell/AppShell.tsx", "utf8");
 const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
+const appointmentsPage = fs.readFileSync("src/app/workspace/appointments/page.tsx", "utf8");
 const appointment = fs.readFileSync("src/components/workflows/AppointmentWorkspace.tsx", "utf8");
 
 const loadStart = workspace.indexOf("const load = useCallback(async (manual = false) => {");
@@ -28,8 +29,9 @@ assert.match(workspace, /advancedPanelsOpen \? <EvidenceReviewPanel/, "evidence 
 assert.match(workspace, /solenos\.workspace\.first-care-ready/, "first validated care readiness must be measurable");
 assert.match(workspace, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable");
 
-assert.match(companion, /const AppointmentWorkspace = dynamic\(/, "appointment workflow must be split from the initial Companion bundle");
-assert.match(companion, /<AppointmentWorkspace \/>/, "the split appointment workflow must remain reachable from Companion");
+assert.doesNotMatch(companion, /AppointmentWorkspace|appointment-workspaces/, "AI Companion must not own or load the appointment workflow");
+assert.match(appointmentsPage, /import AppointmentWorkspace/, "the appointment workflow must be owned by its dedicated route");
+assert.match(appointmentsPage, /<AppointmentWorkspace \/>/, "the dedicated appointment route must keep the persisted workflow reachable");
 assert.match(appointment, /appointment-workspaces/, "appointment workflow must remain connected to its persisted backend resource");
 
 assert.match(shell, /prefetch=\{false\}/, "secondary routes must not prefetch on initial workspace load");
