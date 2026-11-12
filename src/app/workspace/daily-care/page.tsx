@@ -209,6 +209,51 @@ export default function DailyCarePage() {
           margin: 0 auto 1.25rem;
           gap: .65rem;
         }
+        .daily-care-context-panel {
+          width: 100%;
+          max-width: 48rem;
+          margin: 0 auto 1rem;
+          padding: clamp(.9rem, 3vw, 1.25rem);
+          border: 1px solid var(--theme-panel-border);
+          border-radius: 16px;
+          background: var(--theme-panel-bg);
+          color: var(--theme-panel-fg);
+        }
+        .daily-care-context-panel h2 {
+          margin: 0 0 .35rem;
+          font-size: 1.2rem;
+          line-height: 1.35;
+        }
+        .daily-care-muted {
+          color: var(--theme-panel-muted);
+          line-height: 1.55;
+          margin: 0 0 .8rem;
+        }
+        .daily-care-record-list {
+          list-style: none;
+          margin: .5rem 0 0;
+          padding: 0;
+        }
+        .daily-care-record-list li {
+          padding: .85rem 0;
+          border-top: 1px solid var(--theme-panel-border);
+          overflow-wrap: anywhere;
+        }
+        .daily-care-record-list li:first-child { border-top: 0; }
+        .daily-care-record-list strong { display: block; margin-bottom: .2rem; }
+        .daily-care-record-list p { margin: .25rem 0; white-space: pre-wrap; }
+        .daily-care-record-list span {
+          color: var(--theme-panel-muted);
+          font-size: .85rem;
+        }
+        .daily-care-history-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: .75rem;
+          flex-wrap: wrap;
+        }
+        .daily-care-capture-state { margin-top: 1rem; }
         .daily-care-page-head > div { min-width: 0; flex: 1 1 auto; }
         .daily-care-page-head h1 {
           font-size: clamp(1.65rem, 6vw, 2.25rem);
