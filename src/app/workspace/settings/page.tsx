@@ -131,11 +131,11 @@ function NotificationsCard() {
         <Button variant="secondary" onClick={() => void loadPreferences()} disabled={loading || saving}>Try again</Button>
       </div>}
       <label className="mobile-settings-row">
-        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Quiet-hours delivery is not active yet. SolenOS does not currently send reminder alerts.</span></span>
+        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Quiet-hours scheduling is not active. Turning this on pauses due reminder notifications; it does not schedule them for later.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("quiet_hours_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
       <label className="mobile-settings-row">
-        <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">This preference is saved, but reminder alerts are not currently sent.</span></span>
+        <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">When enabled, due reminders appear in your in-app notifications. SolenOS does not send push or email alerts.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={reminders} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("reminders_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
       <div className="mobile-settings-actions">
