@@ -33,7 +33,7 @@ assert.match(component, /evidence_ids/, "linked evidence references must remain 
 assert.match(component, /We couldn’t load this care information\. Check your connection and try again/, "failed LCR reads must use caregiver-readable recovery guidance");
 assert.match(component, /<summary>Where this information came from<\/summary>/, "source and assessment details remain collapsed behind a caregiver-readable disclosure");
 assert.doesNotMatch(component, /LONGITUDINAL RECORD|No current-care items were returned|Record coverage is incomplete/, "caregiver-facing LCR copy must not expose internal terminology");
-assert.match(timeline, /\/events\//, "chronological timeline continues to read care events independently");
+assert.match(timeline, /\/daily-care\/intelligence\/history\?limit=200/, "chronological timeline reads the persisted care-history endpoint independently");
 assert.doesNotMatch(component, /sample|demo|placeholder|fake care/i, "LCR projection must not fabricate sample care information");
 
 console.log("✓ legacy LCR screen redirects to the AI Companion rather than rendering as the main workspace");
