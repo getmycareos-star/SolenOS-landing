@@ -102,7 +102,7 @@ assert(
 
 recordConsentAcceptance({
   user_id: "cg_policy_ok",
-  accepted_terms_version: "2026-07-15",
+  accepted_terms_version: "2026-11-11",
   medical_disclaimer_acknowledged: true,
   privacy_model_acknowledged: true,
   multi_caregiver_acknowledged: true,
@@ -163,7 +163,7 @@ console.log("✓ pipeline captures without consent and soft-prompts");
 
 recordConsentAcceptance({
   user_id: "cg_policy_ingest",
-  accepted_terms_version: "2026-07-15",
+  accepted_terms_version: "2026-11-11",
   medical_disclaimer_acknowledged: true,
   privacy_model_acknowledged: true,
   multi_caregiver_acknowledged: true,
