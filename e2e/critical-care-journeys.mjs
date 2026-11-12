@@ -414,6 +414,7 @@ await record("11 returning caregiver history", async () => {
   assert.equal(login.payload.caregiver_id, identity.caregiverId);
   // Recovery rotates the active session token; subsequent browser checks must use it.
   session = { ...session, access_token: login.payload.access_token, expires_at: login.payload.expires_at };
+  identity.token = login.payload.access_token;
   const returningHistory = await request(`/api/v1/events/${identity.personId}`, { token: login.payload.access_token });
   assert.equal(returningHistory.status, 200, JSON.stringify(returningHistory.payload));
   assert.ok(
@@ -461,6 +462,7 @@ await record("12 account recovery preserves care record", async () => {
   // Recovery rotates the active session token. Browser checks must use the
   // recovered credential, not the pre-recovery bearer token.
   session = { ...session, access_token: login.payload.access_token, expires_at: login.payload.expires_at };
+  identity.token = login.payload.access_token;
   const persisted = await request(`/api/v1/evidence/${identity.personId}`, { token: login.payload.access_token });
   assert.equal(persisted.status, 200);
   assert.ok(persisted.payload.some((row) => row.id === evidenceId));
@@ -527,7 +529,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
   const daily = await createBrowserPage(session, "/workspace/daily-care");
   const saveFreeTextUpdate = async (text) => {
     await daily.page.getByRole("button", { name: "Share something", exact: true }).click();
-    await daily.page.getByRole("button", { name: "Something happened", exact: true }).click();
+    await daily.page.getByRole("button", { name: /Something happened/ }).click();
     await daily.page.locator("#daily-capture-original-words").fill(text);
     await daily.page.getByRole("button", { name: "Save to care record", exact: true }).click();
     await daily.page.getByText(/^Saved\./).last().waitFor({ timeout: 20_000 });
