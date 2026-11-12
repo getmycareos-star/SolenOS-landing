@@ -580,10 +580,10 @@ await record("browser renders caregiver surfaces and submits Companion through t
     "natural-language observations and missing optional details must not manufacture follow-up tasks",
   );
 
-  await daily.page.getByRole("heading", { name: "Needs confirmation", exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
   await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
   await daily.page.reload({ waitUntil: "domcontentloaded" });
-  await daily.page.getByRole("heading", { name: "Needs confirmation", exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
   await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
   await verifyMobile(daily.page);
   await daily.context.close();
