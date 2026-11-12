@@ -391,13 +391,13 @@ export default function TimelinePage() {
       setCorrectionTargetId(null);
       setCorrectionText("");
       setCorrectionReason("");
-      await loadEvents(true);
+      await loadEvents(true, appliedQuery);
     } catch (cause) {
       setCorrectionMessage(cause instanceof Error ? cause.message : "The correction could not be saved. The original entry is unchanged.");
     } finally {
       setCorrectionSaving(false);
     }
-  }, [correctionText, correctionReason, correctionSaving, loadEvents]);
+  }, [correctionText, correctionReason, correctionSaving, loadEvents, appliedQuery]);
 
   const visibleEvents = useMemo(() => {
     const needle = appliedQuery.trim().toLowerCase();
@@ -442,7 +442,7 @@ export default function TimelinePage() {
           <h1 style={{ marginBottom: 8 }}>Care Timeline</h1>
           <p style={{ marginTop: 0, maxWidth: 620 }}>A chronological, source-linked history of recorded care events. Historical reports remain distinct from the current care understanding.</p>
         </div>
-        <Button variant="icon" aria-label="Refresh timeline" disabled={loading || refreshing} onClick={() => void loadEvents(true)}>
+        <Button variant="icon" aria-label="Refresh timeline" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
           <RefreshCw size={18} aria-hidden />
         </Button>
       </header>
@@ -509,7 +509,7 @@ export default function TimelinePage() {
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: 16, margin: "0 0 6px" }}>Timeline could not be loaded</h2>
               <p style={{ margin: "0 0 12px", overflowWrap: "anywhere" }}>{error}</p>
-              <Button variant="primary" onClick={() => void loadEvents(true)} disabled={refreshing}>Try again</Button>
+              <Button variant="primary" onClick={() => void loadEvents(true, appliedQuery)} disabled={refreshing}>Try again</Button>
             </div>
           </div>
         </section>
