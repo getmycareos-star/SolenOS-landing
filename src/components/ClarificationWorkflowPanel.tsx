@@ -146,6 +146,10 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
+  const latestAnswer = history[history.length - 1];
+  const latestReview = latestAnswer
+    ? reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version)
+    : undefined;
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -451,38 +455,36 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
             <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
             <button type="button" style={button} onClick={() => void updateQuestion("unresolved")} disabled={saving}>I don't know the answer yet</button>
           </>}
-          {selectedQuestion.status === "answered" && history.length > 0 && (() => {
-            const latestAnswer = history[history.length - 1];
-            if (!latestAnswer) return null;
-            const latestReview = reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version);
-            if (latestReview) {
-              return <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+          {selectedQuestion.status === "answered" && latestAnswer && (
+            latestReview ? (
+              <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                 Answer review recorded: {latestReview.decision.replaceAll("_", " ")}.
                 {latestReview.resulting_claim_id ? " The answer remains classified as a caregiver report, not an independently verified fact." : ""}
-              </p>;
-            }
-            return <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
-              <strong style={{ fontSize: 13 }}>Review this answer</strong>
-              <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                Accepting adds the answer as a caregiver report. It does not make the information independently verified.
               </p>
-              <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review reason
-                <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} />
-              </label>
-              {selectedClaim?.assertion_kind === "current_state" && (
-                <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review again after (days)
-                  <input type="number" min={1} max={3650} value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} style={{ ...field, marginTop: 4 }} />
+            ) : (
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
+                <strong style={{ fontSize: 13 }}>Review this answer</strong>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                  Accepting adds the answer as a caregiver report. It does not make the information independently verified.
+                </p>
+                <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review reason
+                  <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} />
                 </label>
-              )}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <button type="button" style={button} onClick={() => void reviewAnswer("accepted")} disabled={reviewSaving}>
-                  {reviewSaving ? "Saving…" : "Accept as caregiver report"}
-                </button>
-                <button type="button" style={button} onClick={() => void reviewAnswer("needs_clarification")} disabled={reviewSaving}>Need more information</button>
-                <button type="button" style={button} onClick={() => void reviewAnswer("rejected")} disabled={reviewSaving}>Do not accept</button>
+                {selectedClaim?.assertion_kind === "current_state" && (
+                  <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review again after (days)
+                    <input type="number" min={1} max={3650} value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} style={{ ...field, marginTop: 4 }} />
+                  </label>
+                )}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <button type="button" style={button} onClick={() => void reviewAnswer("accepted")} disabled={reviewSaving}>
+                    {reviewSaving ? "Saving…" : "Accept as caregiver report"}
+                  </button>
+                  <button type="button" style={button} onClick={() => void reviewAnswer("needs_clarification")} disabled={reviewSaving}>Need more information</button>
+                  <button type="button" style={button} onClick={() => void reviewAnswer("rejected")} disabled={reviewSaving}>Do not accept</button>
+                </div>
               </div>
-            </div>;
-          })()}
+            )
+          )}
           {selectedQuestion.status !== "open" && selectedQuestion.status !== "unresolved" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen this question</button>}
           <div style={{ marginTop: 12 }}>
             <strong style={{ fontSize: 12 }}>Earlier answers</strong>
