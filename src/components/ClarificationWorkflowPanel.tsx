@@ -2,19 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
-import { careInformationLabel } from "@/lib/care-epistemics/information-status";
 
-type Claim = {
-  id: string;
-  person_id: string;
-  subject_type: string;
-  subject_id: string;
-  field: string;
-  asserted_value: string;
-  epistemic_state?: string;
-  assertion_status?: string;
-  assertion_kind?: string;
-};
 type Evidence = { id: string; person_id: string; type: string; source_text: string; uploaded_at?: string | null; occurred_at?: string | null; source_type?: string | null };
 type Question = {
   id: string;
@@ -131,20 +119,11 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
   }
 }
 
-export default function ClarificationWorkflowPanel({ personId, prefillQuestion, prefillEvidenceIds }: { personId?: string; prefillQuestion?: string; prefillEvidenceIds?: string[] }) {
+export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
   const [scopePersonId, setScopePersonId] = useState("");
-  const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [selectedClaimId, setSelectedClaimId] = useState("");
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
-  const [questionText, setQuestionText] = useState("");
-  const [priority, setPriority] = useState("informational");
-  const [intendedAnswererRole, setIntendedAnswererRole] = useState("");
-  const [intendedAnswererLabel, setIntendedAnswererLabel] = useState("");
-  const [necessity, setNecessity] = useState("not_assessed");
-  const [necessityRationale, setNecessityRationale] = useState("");
-  const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [answer, setAnswer] = useState("");
   const [answerProvenance, setAnswerProvenance] = useState("");
   const [history, setHistory] = useState<AnswerEvent[]>([]);
@@ -158,7 +137,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [notice, setNotice] = useState("");
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
-  const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
   const openQuestions = questions.filter((item) => item.status === "open" || item.status === "unresolved");
   const necessaryQuestions = openQuestions.filter((item) => item.necessity === "necessary");
   const otherOpenQuestions = openQuestions.filter((item) => item.necessity !== "necessary");
@@ -179,22 +157,17 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const [claimRows, questionRows, evidenceRows] = await Promise.all([
-        getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
+      const [questionRows, evidenceRows] = await Promise.all([
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
         getJSON("/care-continuity/evidence?limit=100"),
       ]);
-      assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
-      const loadedClaims = claimRows as Claim[];
       const loadedQuestions = questionRows as Question[];
       const loadedEvidence = evidenceRows as Evidence[];
       setScopePersonId(sessionPersonId);
-      setClaims(loadedClaims);
       setQuestions(loadedQuestions);
       setEvidence(loadedEvidence);
-      setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
         const currentQuestion = loadedQuestions.find((row) => row.id === current);
         if (currentQuestion) return current;
@@ -204,10 +177,8 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       });
     } catch {
       setScopePersonId("");
-      setClaims([]);
       setQuestions([]);
       setEvidence([]);
-      setSelectedClaimId("");
       setSelectedQuestionId("");
       setError("Care questions could not be loaded. Your saved information has not been changed. Please try again.");
     } finally {
@@ -221,13 +192,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
     return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
   }, [loadAll]);
-
-  useEffect(() => {
-    if (prefillQuestion) setQuestionText(prefillQuestion);
-    if (prefillEvidenceIds?.length) {
-      setEvidenceIds(prefillEvidenceIds);
-    }
-  }, [prefillQuestion, prefillEvidenceIds]);
 
   const loadHistory = useCallback(async () => {
     if (!selectedQuestionId || !scopePersonId) {
@@ -259,67 +223,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   }, [scopePersonId, selectedQuestionId]);
 
   useEffect(() => { void loadHistory(); }, [loadHistory]);
-
-  async function createQuestion() {
-    if (!scopePersonId || !selectedClaim || questionText.trim().length < 5) {
-      setError("Choose a care detail and write a clear question.");
-      return;
-    }
-    if (necessity !== "not_assessed" && necessityRationale.trim().length < 3) {
-      setError("Please explain why this question needs an answer, or leave that choice undecided.");
-      return;
-    }
-    if (intendedAnswererLabel.trim() && (!intendedAnswererRole || intendedAnswererRole === "not_known")) {
-      setError("Choose who may know the answer before adding a name.");
-      return;
-    }
-    if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
-      setError("One of the selected saved items is unavailable. Please choose again.");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const created = await postJSON("/uncertainty/questions", {
-        person_id: scopePersonId,
-        question: questionText.trim(),
-        subject_type: selectedClaim.subject_type,
-        subject_id: selectedClaim.subject_id,
-        claim_id: selectedClaim.id,
-        intended_answerer_role: intendedAnswererRole || null,
-        intended_answerer_label: intendedAnswererLabel.trim() || null,
-        necessity,
-        necessity_rationale: necessityRationale.trim() || null,
-        status: "open",
-        priority,
-        evidence_ids: evidenceIds,
-        context: [{
-          kind: "claim_clarification",
-          claim_id: selectedClaim.id,
-          claim_field: selectedClaim.field,
-          claim_text: selectedClaim.asserted_value,
-          purpose: "Resolve a declared evidence gap; the question itself does not establish the claim.",
-        }],
-      });
-      if (!created || created.person_id !== scopePersonId || typeof created.id !== "string") {
-        throw new Error("Question create response not confirmed");
-      }
-      setQuestionText("");
-      setNotice("Your question has been saved.");
-      await loadAll();
-      setSelectedQuestionId(created.id);
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "";
-      if (message.toLowerCase().includes("equivalent open clarification question already exists")) {
-        setError("This question is already open. Choose it above to review or answer it.");
-      } else {
-        setError("Your question could not be saved. Please try again.");
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function updateQuestion(status: "answered" | "open" | "unresolved") {
     if (!selectedQuestion || !scopePersonId) return;
@@ -537,45 +440,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           </div>
         </div>}
       </>}
-      {prefillQuestion && <details open style={{ marginTop: 14 }}>
-        <summary style={{ cursor: "pointer", fontSize: 13 }}>Clarify this care action</summary>
-        {claims.length === 0 ? <p style={{ fontSize: 12 }}>A care detail must be saved before a question can be linked to it.</p> : <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 8, minWidth: 0 }}>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Which care detail is unclear?
-            <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
-              {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field.replaceAll("_", " ")} · {careInformationLabel(claim.epistemic_state || "reported")}: {claim.asserted_value.slice(0, 100)}</option>)}
-            </select>
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>What would you like to ask?
-            <textarea style={{ ...field, minHeight: 65 }} value={questionText} onChange={(event) => setQuestionText(event.target.value)} placeholder="Write one clear question." />
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Who may know the answer?
-            <select style={field} value={intendedAnswererRole} onChange={(event) => setIntendedAnswererRole(event.target.value)}>
-              <option value="">Not sure</option>
-              {["person_receiving_care", "reporting_caregiver", "other_caregiver", "professional", "not_known"].map((value) =>
-                <option key={value} value={value}>{answererLabel(value)}</option>)}
-            </select>
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Name or role, if known
-            <input style={field} value={intendedAnswererLabel} onChange={(event) => setIntendedAnswererLabel(event.target.value)} disabled={!intendedAnswererRole || intendedAnswererRole === "not_known"} />
-          </label>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Why does this need an answer?
-            <select style={field} value={necessity} onChange={(event) => setNecessity(event.target.value)}>
-              <option value="not_assessed">No decision yet</option>
-              <option value="necessary">Important to confirm</option>
-              <option value="optional">Helpful, but can wait</option>
-            </select>
-          </label>
-          {necessity !== "not_assessed" && <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Why?
-            <textarea style={{ ...field, minHeight: 55 }} value={necessityRationale} onChange={(event) => setNecessityRationale(event.target.value)} />
-          </label>}
-          <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Related saved information
-            <select multiple style={{ ...field, minHeight: 86 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-              {evidence.map((item) => <option key={item.id} value={item.id}>{item.type.replaceAll("_", " ")} · {evidenceSummary(item)}</option>)}
-            </select>
-          </label>
-          <button type="button" style={button} onClick={() => void createQuestion()} disabled={saving || !selectedClaim}>{saving ? "Saving…" : "Save question"}</button>
-        </fieldset>}
-      </details>}
+}
     </>}
     {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
   </section>;
