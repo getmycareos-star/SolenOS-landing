@@ -23,7 +23,7 @@ for (const contract of [
   'Approve and register',
   'Keep as suggestion',
   'Defer consideration',
-  'Request clarification',
+  'Discuss with SolenOS',
   'Agreed actions',
   'View change history',
   'Confirm completed',
