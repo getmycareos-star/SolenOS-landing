@@ -131,8 +131,8 @@ function classifyHistoryRecord(item: CareItem): "observations" | "medicines" | "
 function displayHistoryText(item: CareItem): string {
   if (item.source_type === "correction" && (item.original_text || item.corrected_text)) {
     return [
-      item.original_text ? `Earlier entry: ${item.original_text}` : "",
-      item.corrected_text ? `Correction: ${item.corrected_text}` : "",
+      item.original_text ? `Earlier entry: ${caregiverSafeAssistantText(item.original_text) || "An earlier entry was saved."}` : "",
+      item.corrected_text ? `Correction: ${caregiverSafeAssistantText(item.corrected_text) || "A correction was saved."}` : "",
       item.reason ? `Reason: ${caregiverSafeAssistantText(item.reason) || "A reason was recorded."}` : "",
     ].filter(Boolean).join(" · ");
   }
