@@ -39,12 +39,15 @@ assert.doesNotMatch(documentReview, /model: \{analysis\.model_provenance\.model_
 assert.doesNotMatch(settings, /setError\(detail \|\|/);
 assert.match(settings, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(lcr, /Loading care-integrity tools|Loading evidence review|Loading clarification workflow/);
-assert.doesNotMatch(lcr, /cause instanceof Error \\? cause\\.message/);
-assert.doesNotMatch(appointment, /Freshness assessment storage|source_time_kind|cause instanceof Error \\? cause\\.message/);
-assert.doesNotMatch(appointment, /replaceAll\\(['"]_['"],/);
+assert.ok(!lcr.includes("cause instanceof Error ? cause.message"));
+assert.ok(!appointment.includes("Freshness assessment storage"));
+assert.ok(!appointment.includes("source_time_kind"));
+assert.ok(!appointment.includes("cause instanceof Error ? cause.message"));
+assert.ok(!appointment.includes("replaceAll('_',"));
+assert.ok(!appointment.includes('replaceAll("_",'));
 assert.match(appointment, /caregiverStatusLabel/);
-assert.doesNotMatch(continuity, /value\\.replace\\(\\/_\\/g/);
-assert.doesNotMatch(deviceAccess, /e instanceof Error \\? e\\.message/);
+assert.ok(!continuity.includes('value.replace(/_/g'));
+assert.ok(!deviceAccess.includes("e instanceof Error ? e.message"));
 assert.doesNotMatch(deviceAccess, /Identity &amp; device security/);
 
 console.log("Caregiver language boundary checks passed.");
