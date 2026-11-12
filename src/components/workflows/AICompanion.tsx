@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles, Users, Stethoscope, ClipboardList } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getJSON, getAnonymousAccessToken, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, postJSON, getAnonymousAccessToken, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { CareHandoffSharing } from '@/components/workflows/CareHandoffSharing'
 const AppointmentWorkspace = dynamic(() => import('@/components/workflows/AppointmentWorkspace'), { ssr: false })
@@ -85,18 +85,6 @@ interface HandoffDraft {
   }
   limitations: Array<{ source: string; status: string; reason?: string }>
   warning: string
-}
-
-interface CareUpdateProposal {
-  id: string
-  status: string
-  proposal_type: string
-  proposed_change: { asserted_value?: string; source_quote?: string; event_time_text?: string | null; information_status?: string }
-  source_message_id: string
-  source_conversation_id: string
-  candidate_index: number
-  proposal_version: number
-  created_at?: string | null
 }
 
 interface ClaimSourceReference {
@@ -184,7 +172,6 @@ interface Message {
   ai_generated?: boolean
   written_to_lcr?: boolean
   persistence?: string
-  care_update_candidates?: CareUpdateProposal[]
   timestamp: Date
 }
 
@@ -217,14 +204,6 @@ export default function Companion({ home = true, initialPrompt = null }: { home?
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
-  const [candidateCorrections, setCandidateCorrections] = useState<Record<string, string>>({})
-  const [candidateCorrectionContexts, setCandidateCorrectionContexts] = useState<Record<string, string>>({})
-  const [candidateErrors, setCandidateErrors] = useState<Record<string, string>>({})
-  const [candidateBusy, setCandidateBusy] = useState<Record<string, boolean>>({})
-  const [pendingCareUpdates, setPendingCareUpdates] = useState<CareUpdateProposal[]>([])
-  const [pendingCareUpdatesError, setPendingCareUpdatesError] = useState<string | null>(null)
-  const [pendingCareUpdatesRefreshing, setPendingCareUpdatesRefreshing] = useState(false)
-  const [careReviewReceipt, setCareReviewReceipt] = useState<string | null>(null)
   const [handoffStep, setHandoffStep] = useState<'closed' | 'audience' | 'purpose'>('closed')
   const [handoffAudience, setHandoffAudience] = useState<'family' | 'professional' | null>(null)
   const [handoffPurpose, setHandoffPurpose] = useState<'today' | 'appointment' | 'overview' | null>(null)
@@ -273,43 +252,12 @@ export default function Companion({ home = true, initialPrompt = null }: { home?
     setHandoffDraftError(null)
   }
 
-  const refreshPendingCareUpdates = async (conversationId?: string | null): Promise<CareUpdateProposal[]> => {
-    setPendingCareUpdatesRefreshing(true)
-    try {
-      const suffix = conversationId ? '?session_id=' + encodeURIComponent(conversationId) : ''
-      const result = await getJSON('/companion/care-updates' + suffix) as any
-      if (!Array.isArray(result?.items)) throw new Error('Incomplete care-update response')
-      const items = result.items as CareUpdateProposal[]
-      setPendingCareUpdates(items)
-      setPendingCareUpdatesError(null)
-      return items
-    } catch {
-      setPendingCareUpdatesError('Pending care updates could not be loaded. Your conversation is still saved. Check your connection and refresh again.')
-      return []
-    } finally {
-      setPendingCareUpdatesRefreshing(false)
-    }
-  }
-
-  useEffect(() => {
-    // Reopen pending reviews only when this browser already has a scoped session.
-    // Do not bootstrap a new care record merely by opening Companion.
-    if (home || !getAnonymousAccessToken()) return
-    let active = true
-    void refreshPendingCareUpdates().then(items => {
-      if (!active) return
-      setPendingCareUpdates(items)
-    })
-    return () => { active = false }
-  }, [home])
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    const shouldIdentifyCareUpdates = !home && !CASUAL_GREETING.test(submittedText)
     if (!submittedText || loading) return
     setRequestError(null)
     setLoading(true)
@@ -359,27 +307,10 @@ export default function Companion({ home = true, initialPrompt = null }: { home?
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
-        care_update_candidates: [], // Companion is conversational; care updates belong in Daily Care.
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-      if (!home && shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) && response.care_update_candidates.length > 0) {
-        setPendingCareUpdates(previous => {
-          const merged = new Map(previous.map(item => [item.id, item]))
-          for (const item of response.care_update_candidates as CareUpdateProposal[]) merged.set(item.id, item)
-          return Array.from(merged.values())
-        })
-      }
-      // Candidate inference runs after the conversation response. Refresh without
-      // holding the chat request open; the panel remains manually refreshable.
-      const refreshAfterResponse = async (attempt = 0) => {
-        const items = await refreshPendingCareUpdates(response.session_id)
-        if (items.length > 0) window.dispatchEvent(new Event("careRecordUpdated"))
-        if (!items.length && attempt < 3) {
-          window.setTimeout(() => void refreshAfterResponse(attempt + 1), 2500)
-        }
-      }
-      if (!home && shouldIdentifyCareUpdates) window.setTimeout(() => void refreshAfterResponse(), 1200)
+
 
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
@@ -390,49 +321,6 @@ export default function Companion({ home = true, initialPrompt = null }: { home?
     }
   }
 
-
-  const reviewCareUpdate = async (proposal: CareUpdateProposal, decision: 'accept' | 'correct' | 'reject') => {
-    const correctedText = (candidateCorrections[proposal.id] ?? '').trim()
-    if (decision === 'correct' && !correctedText) {
-      setCandidateErrors(prev => ({ ...prev, [proposal.id]: 'Enter the corrected wording first.' }))
-      return
-    }
-    setCandidateBusy(prev => ({ ...prev, [proposal.id]: true }))
-    setCandidateErrors(prev => ({ ...prev, [proposal.id]: '' }))
-    try {
-      const result = await postJSON('/companion/care-updates/' + encodeURIComponent(proposal.id) + '/review', {
-        decision,
-        corrected_text: decision === 'correct' ? correctedText : undefined,
-        correction_context: decision === 'correct' ? (candidateCorrectionContexts[proposal.id] ?? '').trim() || undefined : undefined,
-      }) as any
-      if (decision === 'accept') {
-        const reconciliation = result?.care_continuity_execution?.stages?.reconciliation
-        setCareReviewReceipt(
-          reconciliation === 'committed'
-            ? 'The accepted update and its care-record reassessment were saved.'
-            : 'The update was reviewed, but the care-record reassessment could not be confirmed. Refresh the care record before relying on it.',
-        )
-      }
-      setPendingCareUpdates(previous => previous.flatMap(item => {
-        if (item.id !== proposal.id) return [item]
-        return result?.corrected_proposal ? [result.corrected_proposal as CareUpdateProposal] : []
-      }))
-      setMessages(previous => previous.map(message => {
-        if (!message.care_update_candidates?.some(item => item.id === proposal.id)) return message
-        const updated = message.care_update_candidates.map(item =>
-          item.id === proposal.id ? { ...item, status: result?.proposal?.status ?? (decision === 'correct' ? 'corrected' : decision === 'accept' ? 'accepted' : 'rejected') } : item
-        )
-        if (result?.corrected_proposal) updated.push(result.corrected_proposal as CareUpdateProposal)
-        return { ...message, care_update_candidates: updated }
-      }))
-      window.dispatchEvent(new Event("careRecordUpdated"))
-      setCandidateCorrections(prev => ({ ...prev, [proposal.id]: '' }))
-    } catch {
-      setCandidateErrors(prev => ({ ...prev, [proposal.id]: 'The review could not be saved. The proposal remains unchanged. Retry when connected.' }))
-    } finally {
-      setCandidateBusy(prev => ({ ...prev, [proposal.id]: false }))
-    }
-  }
 
   useEffect(() => {
     const prompt = initialPrompt?.trim()
@@ -701,30 +589,6 @@ export default function Companion({ home = true, initialPrompt = null }: { home?
 
       <div className="companion-workspace">
         <main className="companion-conversation" aria-label="Conversation">
-              {!home && pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
-              {!home && careReviewReceipt && <p role="status" className="companion-care-update-source">{careReviewReceipt}</p>}
-              {!home && pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
-                <div className="companion-pending-care-heading">
-                  <h3>Care updates awaiting your review</h3>
-                  <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates" disabled={pendingCareUpdatesRefreshing}>{pendingCareUpdatesRefreshing ? 'Refreshing…' : 'Refresh'}</button>
-                </div>
-                {pendingCareUpdates.map(candidate => <div className="companion-care-update" key={'pending-' + candidate.id}>
-                  <div className="companion-care-update-heading"><strong>Proposed care-record update</strong><span>Awaiting review</span></div>
-                  <p>{candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''}</p>
-                  <p className="companion-care-update-source">Qwen extracted this candidate from the original Companion message. It is not an accepted LCR assertion. Review it to accept, correct or reject it.</p>
-                  {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
-                  <div className="companion-care-update-actions">
-                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
-                    <label><span className="sr-only">Correct proposed wording</span>
-                      <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Corrected statement" maxLength={4000} />
-                      <input value={candidateCorrectionContexts[candidate.id] ?? ''} onChange={event => setCandidateCorrectionContexts(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Additional source context (if needed)" maxLength={4000} />
-                    </label>
-                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
-                    <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
-                  </div>
-                  {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
-                </div>)}
-              </section>}
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
@@ -752,27 +616,6 @@ export default function Companion({ home = true, initialPrompt = null }: { home?
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
-                    {!home && !isUser && msg.care_update_candidates?.map(candidate => {
-                      const value = candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''
-                      const pending = candidate.status === 'pending_authorization'
-                      return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
-                        <div className="companion-care-update-heading"><strong>Proposed care-record update</strong><span>{pending ? 'Awaiting review' : candidate.status.replace(/_/g, ' ')}</span></div>
-                        <p>{value}</p>
-                        <p className="companion-care-update-source">Source: Original Companion message · {candidate.proposal_version > 1 ? 'Caregiver correction' : 'Original proposal'}</p>
-                        {candidate.proposed_change?.event_time_text && <p className="companion-care-update-source">Event-time wording in source: {candidate.proposed_change.event_time_text}</p>}
-                        {pending ? <div className="companion-care-update-actions">
-                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'accept')} disabled={!!candidateBusy[candidate.id]}>Accept</button>
-                          <label>
-                            <span className="sr-only">Correct proposed wording</span>
-                            <input value={candidateCorrections[candidate.id] ?? ''} onChange={event => setCandidateCorrections(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Corrected statement" maxLength={4000} />
-                            <input value={candidateCorrectionContexts[candidate.id] ?? ''} onChange={event => setCandidateCorrectionContexts(prev => ({ ...prev, [candidate.id]: event.target.value }))} placeholder="Additional source context (if needed)" maxLength={4000} />
-                          </label>
-                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'correct')} disabled={!!candidateBusy[candidate.id]}>Correct</button>
-                          <button type="button" onClick={() => void reviewCareUpdate(candidate, 'reject')} disabled={!!candidateBusy[candidate.id]}>Reject</button>
-                        </div> : <p className="companion-care-update-source">{candidate.status === 'accepted' ? 'Caregiver-reviewed report in the Living Care Record; not independently clinically verified.' : candidate.status === 'rejected' ? 'Rejected. No LCR assertion was created; the source-linked review decision remains in proposal history.' : candidate.status === 'corrected' ? 'The original proposal is retained. The corrected candidate is separate and still requires acceptance before an LCR assertion is created.' : 'Candidate awaiting caregiver review; no LCR assertion has been created.'}</p>}
-                        {candidateErrors[candidate.id] && <p role="alert" className="companion-care-update-error">{candidateErrors[candidate.id]}</p>}
-                      </section>
-                    })}
                     {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Selected saved sources">
                       <strong>Selected saved sources</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
