@@ -15,6 +15,22 @@ assert.match(source, /Move crop area/, "crop rectangle must be movable by pointe
 assert.match(source, /function createMultiPagePdf\(/, "multi-page PDF generation must be implemented");
 assert.match(source, /Combine reviewed image pages into one PDF/, "caregivers must be able to create a multi-page PDF");
 assert.match(source, /Original uploaded page files remain separate and unchanged\./, "PDF creation must preserve individual original scans");
+
+const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
+const attachmentTypes = readFileSync("src/lib/mvp-workspace/types.ts", "utf8");
+const addRecordSource = readFileSync("src/components/mvp-workspace/AddSituationPanel.tsx", "utf8");
+const workspaceSource = readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
+assert.match(attachmentTypes, /status: "pending" \| "saved" \| "ready" \| "failed"/, "saved evidence must not be represented as completed interpretation");
+assert.match(attachmentSource, /entryMethod === "snap"[\s\S]*?status: "saved"/, "Snap must be marked saved, not document-ready");
+assert.match(attachmentSource, /document\.entryMethod === "snap" && document\.evidenceId[\s\S]*?status: "saved"/, "retry must not send a saved care photo through document OCR");
+assert.match(addRecordSource, /Photo saved — not interpreted/, "caregivers must see that a Snap photo is saved but not interpreted");
+assert.match(workspaceSource, /d\.status === "saved" && d\.entryMethod === "snap" && d\.evidenceId/, "saved Snap evidence must remain eligible for care-entry submission");
+assert.match(workspaceSource, /evidence_id: d\.evidenceId/, "care-entry submission must reference the persisted evidence ID");
+assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
+assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
+assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\)/, "scan retry must preserve capture time");
+assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
+
 console.log("✓ crop and straighten are applied to pixels before OCR");
 console.log("✓ caregiver can move crop area and adjust margins");
 console.log("✓ multi-page PDF assembly preserves individual originals");
