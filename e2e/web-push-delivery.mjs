@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { chromium } from "playwright";
 
 const frontend = process.env.FRONTEND_URL;
@@ -201,6 +202,52 @@ try {
   assert.equal(completed.status, "completed");
   assert.ok(completed.completed_at);
 
+  const backendPidFile = "/tmp/solenos-critical-backend.pid";
+  assert.ok(fs.existsSync(backendPidFile), "CI backend PID file is missing; restart persistence cannot be tested");
+  const backendPid = Number(fs.readFileSync(backendPidFile, "utf8").trim());
+  assert.ok(Number.isInteger(backendPid) && backendPid > 0, "CI backend PID is invalid");
+  process.kill(backendPid, "SIGTERM");
+
+  let stopped = false;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      await fetch(new URL("/health", backend), { signal: AbortSignal.timeout(500) });
+    } catch {
+      stopped = true;
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.ok(stopped, "The backend did not stop before restart");
+
+  const privateKeyForRestart = Buffer.from(process.env.VAPID_PRIVATE_KEY_B64 ?? "", "base64").toString("utf8");
+  const restarted = spawn(
+    "uvicorn",
+    ["app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+    {
+      cwd: backendService,
+      env: { ...process.env, VAPID_PRIVATE_KEY: privateKeyForRestart },
+      detached: true,
+      stdio: "ignore",
+    },
+  );
+  restarted.unref();
+
+  let restartedHealthy = false;
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    try {
+      const health = await fetch(new URL("/health", backend), { signal: AbortSignal.timeout(1_000) });
+      if (health.ok) {
+        restartedHealthy = true;
+        break;
+      }
+    } catch {
+      // The process is still starting.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  assert.ok(restartedHealthy, "The backend did not become healthy after restart");
+
   const { response: reloadResponse, payload: reloaded } = await jsonRequest(
     new URL(`/api/v1/reminders/${encodeURIComponent(session.person.id)}`, backend),
     { headers: authHeaders },
@@ -209,7 +256,7 @@ try {
   const persisted = reloaded.find((item) => item.id === reminder.id);
   assert.equal(persisted?.status, "completed", "Completed reminder did not persist after reloading from the API");
   assert.equal(persisted?.snooze_count, 1, "Snooze history did not persist after reloading from the API");
-  console.log("PASS: real Chromium subscription registered; PostgreSQL delivery accepted; service worker received and displayed the generic notification.");
+  console.log("PASS: saved reminder became due; PostgreSQL notification was created; real Chromium Web Push displayed the generic alert; snooze and completion persisted across a backend process restart.");
 } finally {
   await context.close();
   await browser.close();
