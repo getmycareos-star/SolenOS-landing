@@ -1200,7 +1200,7 @@ export function LCRCurrentUnderstanding() {
                       <p className="lcr-entry-status">Source: {caregiverLabel(item.source)} · Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)}</p>
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                       <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
-                      {item.interpretation_limit && <small>{item.interpretation_limit}</small>}
+                      {item.interpretation_limit && <small>{caregiverSafeAssistantText(item.interpretation_limit) || "The available information may not tell the whole story."}</small>}
                     </li>
                   ))}
                   {watchPriorityCandidates.map((item) => {
@@ -1606,11 +1606,11 @@ export function LCRCurrentUnderstanding() {
                           {item.derived_observations.map((observation) => (
                             <li key={observation.id}>
                               <strong>{caregiverLabel(observation.attribute || observation.observation_kind)}</strong>
-                              {observation.subject_label && <small>Subject: {observation.subject_label}</small>}
+                              {observation.subject_label && <small>About: {caregiverSafeAssistantText(observation.subject_label) || "Person receiving care"}</small>}
                               {observation.observer_label && <small>Reported by: {caregiverSafeAssistantText(observation.observer_label) || "Not recorded"}</small>}
                               {observation.observation_method && <small>Observation method: {caregiverLabel(observation.observation_method)}</small>}
                               {observation.context != null && <p>Context: {typeof observation.context === "string" ? caregiverSafeAssistantText(observation.context) || "Additional details are saved." : "Additional details are saved."}</p>}
-                              {observation.value_text && <p>{observation.value_text}</p>}
+                              {observation.value_text && <p>{caregiverSafeAssistantText(observation.value_text) || "A recorded detail is available in the original note."}</p>}
                               <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
                               {observation.source_passage && (
                                 <details>
