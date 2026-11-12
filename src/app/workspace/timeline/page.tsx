@@ -35,6 +35,8 @@ type CareEvent = {
   created_by_caregiver_id?: string | null;
   source_type?: string | null;
   source_label?: string | null;
+  target_type?: string | null;
+  target_id?: string | null;
   original_text?: string | null;
   corrected_text?: string | null;
   reason?: string | null;
@@ -111,6 +113,8 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
     created_by_caregiver_id: typeof row.created_by_caregiver_id === "string" ? row.created_by_caregiver_id : null,
     source_type: sourceType,
     source_label: typeof row.source_label === "string" ? row.source_label : null,
+    target_type: typeof row.target_type === "string" ? row.target_type : null,
+    target_id: typeof row.target_id === "string" ? row.target_id : null,
     original_text: originalText,
     corrected_text: correctedText,
     reason,
@@ -545,7 +549,7 @@ export default function TimelinePage() {
                   const category = eventCategory(event);
                   const description = parseDescription(event.description);
                   return (
-                    <article key={event.id} style={{ position: "relative", border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "var(--theme-panel-bg)", overflow: "hidden" }}>
+                    <article id={`timeline-event-${event.id}`} key={event.id} style={{ position: "relative", border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "var(--theme-panel-bg)", overflow: "hidden" }}>
                       <span aria-hidden="true" style={{ position: "absolute", width: 10, height: 10, borderRadius: "50%", background: "#64866b", left: -24, top: 22, boxShadow: "0 0 0 4px var(--paper)" }} />
                       <button type="button" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)} style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", padding: 16, display: "block", color: "inherit", cursor: "pointer", font: "inherit" }}>
                         <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -568,6 +572,19 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>Time provenance</dt><dd style={{ margin: 0 }}>{event.time_provenance || "Not recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Contributor</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_label || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Source type</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type || event.event_type}</dd>
+                            {event.source_type === "correction" && event.target_id && (
+                              <>
+                                <dt style={{ color: "var(--solenos-muted)" }}>Corrects</dt>
+                                <dd style={{ margin: 0, overflowWrap: "anywhere" }}>
+                                  {event.target_type === "care_event" ? (
+                                    <a href={`#timeline-event-${event.target_id}`}>Original care event</a>
+                                  ) : (
+                                    event.target_type || "Original record"
+                                  )}
+                                  {" · "}{event.target_id}
+                                </dd>
+                              </>
+                            )}
                             <dt style={{ color: "var(--solenos-muted)" }}>Situation link</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id || "No linked situation ID"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Evidence references</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? event.evidence_ids.join(", ") : "No evidence references attached to this event"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Tags</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.join(", ") : "No tags recorded"}</dd>
