@@ -124,7 +124,7 @@ assert(!documentPage.includes("QwenAssistPanel"), "The saved-document library mu
 assert(documentPage.includes('capture="environment"'), "Snap a photo must open the device camera from Documents.");
 assert(documentPage.includes('type="file"'), "Documents must own the upload and snap file inputs.");
 assert(documentPage.includes("Scan pages"), "Documents must expose multi-page scan capture.");
-assert(documentPage.includes("navigator.mediaDevices?.getUserMedia"), "Multi-page scan must use the camera directly in Documents.");
+assert(documentPage.includes("ScanDocumentCapture"), "Documents must reuse the existing multi-page scan capture component.");
 assert(!companion.includes("companion-add-menu") && !companion.includes("setPendingDocumentIntake"),
   "AI Companion must not own document upload, camera capture or scanning.");
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
