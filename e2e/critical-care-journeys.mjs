@@ -535,14 +535,56 @@ await record("browser renders caregiver surfaces and submits Companion through t
     await daily.page.getByText(/^Saved\./).last().waitFor({ timeout: 20_000 });
     await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
   };
-  const firstCareUpdate = "Browser UI confirms restless sleep and several overnight awakenings.";
-  const secondCareUpdate = "Browser UI records that breakfast intake was lower than usual.";
-  await saveFreeTextUpdate(firstCareUpdate);
-  await saveFreeTextUpdate(secondCareUpdate);
+  const scenarioReports = [
+    "Mum slept poorly last night and seemed more unsettled this morning.",
+    "Mum barely touched her lunch today. She drank some water, though.",
+    "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
+    "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
+  ];
+  const openLoopsBefore = await request("/api/v1/open-loops?limit=100&status=open", { token: identity.token });
+  assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
+  const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
+  for (const report of scenarioReports) await saveFreeTextUpdate(report);
+
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
   assert.equal(dailyHistory.status, 200);
-  assert.ok(JSON.stringify(dailyHistory.payload).includes(firstCareUpdate));
-  assert.ok(JSON.stringify(dailyHistory.payload).includes(secondCareUpdate));
+  const scenarioEvents = dailyHistory.payload.filter((row) =>
+    scenarioReports.some((report) => JSON.stringify(row).includes(report))
+  );
+  assert.equal(scenarioEvents.length, 4, "all four original caregiver reports must remain independently retrievable");
+  assert.equal(new Set(scenarioEvents.map((row) => row.id)).size, 4, "each report must have its own persisted event");
+  assert.ok(scenarioEvents.every((row) => Array.isArray(row.evidence_ids) && row.evidence_ids.length === 1));
+
+  const dailyEvidence = await request(`/api/v1/evidence/${identity.personId}`, { token: identity.token });
+  assert.equal(dailyEvidence.status, 200);
+  for (const reportEvent of scenarioEvents) {
+    const source = dailyEvidence.payload.find((item) => item.id === reportEvent.evidence_ids[0]);
+    assert.ok(source, "each natural-language update must have a retrievable source evidence record");
+    assert.ok(JSON.stringify(source).includes(scenarioReports.find((report) => JSON.stringify(reportEvent).includes(report))));
+  }
+
+  const dailyLcr = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+  assert.equal(dailyLcr.status, 200, JSON.stringify(dailyLcr.payload));
+  for (const reportEvent of scenarioEvents) {
+    const lcrRow = dailyLcr.payload.items.find((item) => item.id === reportEvent.id);
+    assert.ok(lcrRow, "each saved report must be available through the existing LCR projection");
+    assert.deepEqual(lcrRow.evidence_ids, reportEvent.evidence_ids);
+    assert.equal(lcrRow.source_type, "caregiver_report");
+  }
+
+  const openLoopsAfter = await request("/api/v1/open-loops?limit=100&status=open", { token: identity.token });
+  assert.equal(openLoopsAfter.status, 200, JSON.stringify(openLoopsAfter.payload));
+  assert.deepEqual(
+    (openLoopsAfter.payload.items || []).map((item) => item.id).sort(),
+    openLoopIdsBefore,
+    "natural-language observations and missing optional details must not manufacture follow-up tasks",
+  );
+
+  await daily.page.getByRole("heading", { name: "Needs confirmation", exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
+  await daily.page.reload({ waitUntil: "domcontentloaded" });
+  await daily.page.getByRole("heading", { name: "Needs confirmation", exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
   await verifyMobile(daily.page);
   await daily.context.close();
 
