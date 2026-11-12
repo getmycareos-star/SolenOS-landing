@@ -53,6 +53,20 @@ function NotificationsCard() {
   const [busyNotificationId, setBusyNotificationId] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState("");
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.getRegistration("/").then(async (registration) => {
+        const subscription = await registration?.pushManager.getSubscription();
+        if (active) setPushEnabled(Boolean(subscription));
+      }).catch(() => {
+        if (active) setPushEnabled(false);
+      });
+    }
+    return () => { active = false; };
+  }, []);
 
   const loadInbox = useCallback(async () => {
     setInboxLoading(true);
@@ -100,12 +114,35 @@ function NotificationsCard() {
           applicationServerKey,
         });
       await postJSON("/notifications/push/subscriptions", subscription.toJSON());
+      setPushEnabled(true);
       setPushStatus("Push is enabled on this browser. Delivery is reported when the push provider accepts it; device display still depends on browser and operating-system settings.");
       show("Push notifications enabled on this browser.", "success");
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : "We couldn't enable push notifications.";
       setPushStatus(message);
       show("Push notifications weren't enabled.", "error");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const disablePushNotifications = async () => {
+    setPushBusy(true);
+    setPushStatus("");
+    try {
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        await ensureAnonymousSession();
+        await deleteJSON("/notifications/push/subscriptions", { endpoint: subscription.endpoint });
+        await subscription.unsubscribe();
+      }
+      setPushEnabled(false);
+      setPushStatus("Push notifications are disabled on this browser.");
+      show("Push notifications disabled.", "success");
+    } catch {
+      setPushStatus("We couldn't disable push notifications. The existing subscription has been left unchanged.");
+      show("Push notifications weren't disabled.", "error");
     } finally {
       setPushBusy(false);
     }
@@ -208,7 +245,7 @@ function NotificationsCard() {
       </label>
       <div className="mobile-settings-actions">
         <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
-        <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>
+        {pushEnabled ? <Button variant="secondary" onClick={disablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Updating…" : "Disable push alerts"}</Button> : <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>}
         <Button variant="secondary" onClick={() => void loadInbox()} disabled={inboxLoading}>Refresh notifications</Button>
       </div>
       {pushStatus && <p className="mobile-settings-hint" role="status">{pushStatus}</p>}
