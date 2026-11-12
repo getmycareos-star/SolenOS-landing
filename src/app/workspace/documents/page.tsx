@@ -47,7 +47,6 @@ type UploadMessage = { kind: "success" | "error"; text: string } | null;
 type CropInsets = { top: number; right: number; bottom: number; left: number };
 type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; rotation: number; crop: CropInsets; previewUrl: string | null };
 
-type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
@@ -108,127 +107,10 @@ function isPdf(mimeType: string): boolean {
   return mimeType === "application/pdf";
 }
 
-async function createProcessedImage(file: File, rotationDegrees: number, crop: CropInsets): Promise<File> {
-  const sourceUrl = URL.createObjectURL(file);
-  try {
-    const image = new Image();
-    image.src = sourceUrl;
-    await image.decode();
-
-    // Crop coordinates are defined against the rotated page preview, so rotate first.
-    const radians = rotationDegrees * Math.PI / 180;
-    const sin = Math.abs(Math.sin(radians));
-    const cos = Math.abs(Math.cos(radians));
-    const rotatedWidth = Math.max(1, Math.ceil(image.width * cos + image.height * sin));
-    const rotatedHeight = Math.max(1, Math.ceil(image.width * sin + image.height * cos));
-    const rotated = document.createElement("canvas");
-    rotated.width = rotatedWidth;
-    rotated.height = rotatedHeight;
-    const rotatedContext = rotated.getContext("2d");
-    if (!rotatedContext) throw new Error("Image rotation is unavailable.");
-    rotatedContext.fillStyle = "#fff";
-    rotatedContext.fillRect(0, 0, rotatedWidth, rotatedHeight);
-    rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
-    rotatedContext.rotate(radians);
-    rotatedContext.drawImage(image, -image.width / 2, -image.height / 2);
-
-    const left = Math.round(rotatedWidth * crop.left / 100);
-    const top = Math.round(rotatedHeight * crop.top / 100);
-    const width = Math.max(1, Math.round(rotatedWidth * (100 - crop.left - crop.right) / 100));
-    const height = Math.max(1, Math.round(rotatedHeight * (100 - crop.top - crop.bottom) / 100));
-    const cropped = document.createElement("canvas");
-    cropped.width = width;
-    cropped.height = height;
-    const cropContext = cropped.getContext("2d");
-    if (!cropContext) throw new Error("Canvas crop is unavailable.");
-    cropContext.drawImage(rotated, left, top, width, height, 0, 0, width, height);
-
-    const scale = Math.min(1, 2200 / Math.max(width, height));
-    const output = document.createElement("canvas");
-    output.width = Math.max(1, Math.round(width * scale));
-    output.height = Math.max(1, Math.round(height * scale));
-    const outputContext = output.getContext("2d");
-    if (!outputContext) throw new Error("Processed image output is unavailable.");
-    outputContext.fillStyle = "#fff";
-    outputContext.fillRect(0, 0, output.width, output.height);
-    outputContext.drawImage(cropped, 0, 0, output.width, output.height);
-
-    const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.86));
-    const baseName = file.name.replace(/\.[^.]+$/, "");
-    return new File([blob], `${baseName || "scan"}-processed.jpg`, { type: "image/jpeg", lastModified: Date.now() });
-  } finally {
-    URL.revokeObjectURL(sourceUrl);
-  }
-}
-
-function joinBytes(parts: Uint8Array[]): Uint8Array {
-  const total = parts.reduce((sum, part) => sum + part.length, 0);
-  const output = new Uint8Array(total);
-  let offset = 0;
-  for (const part of parts) {
-    output.set(part, offset);
-    offset += part.length;
-  }
-  return output;
-}
-
-async function createMultiPagePdf(pages: ReviewPage[]): Promise<File> {
-  if (pages.length < 2) throw new Error("Select at least two image pages to create a multi-page PDF.");
-  const encoder = new TextEncoder();
-  const imagePages: { bytes: Uint8Array; width: number; height: number }[] = [];
-  for (const page of pages) {
-    const processed = await createProcessedImage(page.file, page.rotation, page.crop);
-    const bitmap = await createImageBitmap(processed);
-    imagePages.push({ bytes: new Uint8Array(await processed.arrayBuffer()), width: bitmap.width, height: bitmap.height });
-    bitmap.close();
-  }
-
-  const objects: Uint8Array[] = [];
-  const offsets: number[] = [0];
-  let byteOffset = 0;
-  const pushObject = (id: number, chunks: Uint8Array[]) => {
-    const objectBytes = joinBytes([encoder.encode(`${id} 0 obj\n`), ...chunks, encoder.encode("\nendobj\n")]);
-    offsets[id] = byteOffset;
-    objects.push(objectBytes);
-    byteOffset += objectBytes.length;
-  };
-  const maxObjectId = 2 + imagePages.length * 3;
-  pushObject(1, [encoder.encode("<< /Type /Catalog /Pages 2 0 R >>")]);
-  const pageIds = imagePages.map((_, index) => 3 + index * 3);
-  pushObject(2, [encoder.encode(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${imagePages.length} >>`)]);
-
-  imagePages.forEach((page, index) => {
-    const pageId = 3 + index * 3;
-    const contentId = pageId + 1;
-    const imageId = pageId + 2;
-    const content = encoder.encode(`q\n${page.width} 0 0 ${page.height} 0 0 cm\n/Im0 Do\nQ\n`);
-    pushObject(pageId, [encoder.encode(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Resources << /XObject << /Im0 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`)]);
-    pushObject(contentId, [encoder.encode(`<< /Length ${content.length} >>\nstream\n`), content, encoder.encode("endstream")]);
-    pushObject(imageId, [
-      encoder.encode(`<< /Type /XObject /Subtype /Image /Width ${page.width} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.bytes.length} >>\nstream\n`),
-      page.bytes,
-      encoder.encode("\nendstream"),
-    ]);
-  });
-
-  const header = encoder.encode("%PDF-1.4\n%âãÏÓ\n");
-  const allObjects = joinBytes(objects);
-  const finalOffset = header.length + allObjects.length;
-  const xrefRows = ["0000000000 65535 f ", ...Array.from({ length: maxObjectId }, (_, index) => `${String(offsets[index + 1] + header.length).padStart(10, "0")} 00000 n `)];
-  const xref = encoder.encode(`xref\n0 ${maxObjectId + 1}\n${xrefRows.join("\n")}\ntrailer\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\nstartxref\n${finalOffset}\n%%EOF`);
-  return new File([joinBytes([header, allObjects, xref])], `SolenOS-scan-${new Date().toISOString().slice(0, 10)}.pdf`, { type: "application/pdf", lastModified: Date.now() });
-}
-
 export default function DocumentsPage() {
   const [intakeMode, setIntakeMode] = useState<DocumentIntakeMode | null>(null);
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
-  const [preparingScan, setPreparingScan] = useState(false);
-  const [scanDrafts, setScanDrafts] = useState<ScanDraft[]>([]);
-  const [scanPreparing, setScanPreparing] = useState(false);
-  const [scanSaving, setScanSaving] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -291,29 +173,24 @@ export default function DocumentsPage() {
     setUploadMessage(null);
     const invalid = files.find((file) => file.size <= 0 || file.size > MAX_FILE_BYTES);
     if (invalid) {
-      setUploadMessage({ kind: "error", text: invalid.size <= 0 ? `${invalid.name} is empty.` : `${invalid.name} is larger than 10 MiB. Choose a smaller file.` });
+      setUploadMessage({ kind: "error", text: invalid.size <= 0 ? invalid.name + " is empty." : invalid.name + " is larger than 10 MiB. Choose a smaller file." });
       return;
     }
-    setPreparingScan(true);
-    try {
-      const pages: ReviewPage[] = [];
-      for (const file of files) {
-        const isScannedImage = file.type.startsWith("image/");
-        const previewable = isScannedImage || file.type === "application/pdf";
-        pages.push({
-          ingestionKey: crypto.randomUUID(),
-          captureTimestamp: new Date().toISOString(),
-          file,
-          rotation: 0,
-          crop: { top: 0, right: 0, bottom: 0, left: 0 },
-          previewUrl: previewable ? URL.createObjectURL(file) : null,
-        });
-      }
-      setReviewPages((current) => [...current, ...pages]);
-      setUploadMessage({ kind: "success", text: files.length + " file(s) ready to save. SolenOS reads the saved originals in the background; no text review is required before upload." });
-    } finally {
-      setPreparingScan(false);
+    const pages: ReviewPage[] = [];
+    for (const file of files) {
+      const isScannedImage = file.type.startsWith("image/");
+      const previewable = isScannedImage || file.type === "application/pdf";
+      pages.push({
+        ingestionKey: crypto.randomUUID(),
+        captureTimestamp: new Date().toISOString(),
+        file,
+        rotation: 0,
+        crop: { top: 0, right: 0, bottom: 0, left: 0 },
+        previewUrl: previewable ? URL.createObjectURL(file) : null,
+      });
     }
+    setReviewPages((current) => [...current, ...pages]);
+    setUploadMessage({ kind: "success", text: files.length + " file(s) ready to save. SolenOS reads the saved originals in the background; no text review is required before upload." });
   };
 
   useEffect(() => {
@@ -331,38 +208,6 @@ export default function DocumentsPage() {
     setIntakeMode(pending.mode);
     void handleFiles(pending.files);
   }, []);
-
-  const combineImagePagesIntoPdf = async () => {
-    const imagePages = reviewPages.filter((page) => page.file.type.startsWith("image/"));
-    if (imagePages.length < 2) {
-      setUploadMessage({ kind: "error", text: "Add at least two image pages before creating a combined PDF." });
-      return;
-    }
-    setPreparingScan(true);
-    setUploadMessage(null);
-    try {
-      const pdfFile = await createMultiPagePdf(imagePages);
-      if (pdfFile.size > MAX_FILE_BYTES) throw new Error("The combined PDF exceeds the 10 MiB upload limit. Combine fewer pages or split this document into smaller PDFs.");
-      const existingPdf = reviewPages.some((page) => page.file.type === "application/pdf" && page.file.name === pdfFile.name);
-      if (existingPdf) {
-        setUploadMessage({ kind: "error", text: "A combined PDF with this name is already in the review list. Save or discard this batch before creating another." });
-        return;
-      }
-      setReviewPages((current) => [...current, {
-        ingestionKey: crypto.randomUUID(),
-        captureTimestamp: new Date().toISOString(),
-        file: pdfFile,
-        rotation: 0,
-        crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        previewUrl: URL.createObjectURL(pdfFile),
-      }]);
-      setUploadMessage({ kind: "success", text: "Created a " + imagePages.length + "-page PDF. The individual original scans will also be preserved when you save this batch." });
-    } catch (error) {
-      setUploadMessage({ kind: "error", text: error instanceof Error ? error.message : "Could not create the combined PDF. The individual original scans are still in the review list." });
-    } finally {
-      setPreparingScan(false);
-    }
-  };
 
   const discardReviewPages = () => {
     reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
@@ -483,11 +328,9 @@ export default function DocumentsPage() {
           </button>
         </div>
 
-        {preparingScan && <p role="status" style={{ margin: "12px 0 0", fontSize: 14 }}><LoaderCircle size={17} className="animate-spin" style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />Preparing files…</p>}
         {reviewPages.length > 0 && <section aria-label="Files ready to save" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save pages now or adjust their rotation and crop first. SolenOS reads the saved originals in the background." : "Save the selected files now. SolenOS reads the saved originals in the background."} Original files are preserved. You can review extracted statements later.</p>
-          <button type="button" onClick={() => void combineImagePagesIntoPdf()} disabled={preparingScan || uploading || reviewPages.filter((page) => page.file.type.startsWith("image/")).length < 2} style={{ minHeight: 42, marginBottom: 12, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Combine scan pages into one PDF</button>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>Adjust page edges or rotation only if needed. These settings guide server-side reading; the original file is preserved unchanged.</p>
           <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}><strong>About scanned text:</strong> The original page is preserved. Server OCR uses your saved crop and rotation settings when available. You can review statements later; no extracted statement becomes an LCR fact until you accept it.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
@@ -551,7 +394,7 @@ export default function DocumentsPage() {
             </div>}
             <button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button>
           </article>)}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || preparingScan || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={discardReviewPages} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard files</button></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={discardReviewPages} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard files</button></div>
         </section>}
         {uploading && <div style={{ margin: "12px 0 0" }}><LivingArchiveMark size="sm" label="Saving the original document…" /><p style={{ margin: "6px 0 0", fontSize: 13 }}>Keep this page open only until the original upload is confirmed. After that, server processing continues even if you leave.</p></div>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
