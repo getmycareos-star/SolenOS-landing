@@ -17,6 +17,7 @@ import {
 
 import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
@@ -152,7 +153,7 @@ function NotificationsCard() {
       setPushStatus("Push is enabled on this browser. Delivery is reported when the push provider accepts it; device display still depends on browser and operating-system settings.");
       show("Push notifications enabled on this browser.", "success");
     } catch (reason) {
-      const message = reason instanceof Error ? reason.message : "We couldn't enable push notifications.";
+      const message = "We couldn't enable push notifications. In-app notifications are still available.";
       setPushStatus(message);
       show("Push notifications weren't enabled.", "error");
     } finally {
@@ -495,7 +496,7 @@ function AccountCard() {
       if (mode === "create" && (e instanceof TypeError || /network|fetch|timed out|timeout/i.test(detail))) {
         setError("We couldn’t confirm whether account creation completed. Your care record remains intact. Try signing in with the same email and password before attempting registration again.");
       } else {
-        setError(detail || "We couldn’t complete that account action. Please check your details and try again.");
+        setError(caregiverSafeErrorMessage());
       }
     } finally {
       setBusy(false);
@@ -509,9 +510,9 @@ function AccountCard() {
     try {
       const result = await postJSON("/accounts/recovery-code", {}) as { recovery_code: string; message: string };
       setRecoveryCode(result.recovery_code);
-      setMessage(result.message);
+      setMessage("A new recovery code is ready. Store it somewhere safe.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn't generate a recovery code.");
+      setError(caregiverSafeErrorMessage());
     } finally {
       setRotatingRecoveryCode(false);
     }
@@ -534,7 +535,7 @@ function AccountCard() {
       show("Signed out securely.", "success");
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";
-      setError(detail || "We couldn’t complete sign-out. Your current session is still available; check your connection and try again.");
+      setError("We couldn’t complete sign-out. Your current session is still available. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -736,7 +737,6 @@ function ProductCard() {
   const { show, render } = useToast();
   const items: { label: string; value: string }[] = [
     { label: "App version", value: "0.1.0" },
-    { label: "Release channel", value: "Early access" },
   ];
 
   const contentLinks: { label: string; href: string }[] = [
@@ -867,7 +867,7 @@ export default function WorkspaceSettingsPage() {
         <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>01</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
         <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
         <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>An account is optional. Anonymous care access remains available.</p></div></div><AccountCard /></div>
-        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>04</span><div><h2>Identity &amp; device security</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
+        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>04</span><div><h2>Devices and account access</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
         <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>05</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
         <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>06</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
       </div>
