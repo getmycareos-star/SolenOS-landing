@@ -410,7 +410,7 @@ export default function DetailedAppointmentWorkspace() {
           <h4>Outcome and continuity</h4>
           <p className="appointment-stage-intro">A visit can be finished while clinical follow-up remains open. Mark work done only when completion is supported.</p>
           <div className="appointment-fields appointment-fields-two">
-            <label>Medication reconciliation / discrepancies<textarea value={medicationReconciliation} onChange={event => setMedicationReconciliation(event.target.value)} rows={4} placeholder="Record the exact clinician instruction, source, effective date, verification status, and unresolved discrepancy. Never infer start/stop/change." /></label>
+            <label>Medication changes or differences<textarea value={medicationReconciliation} onChange={event => setMedicationReconciliation(event.target.value)} rows={4} placeholder="Record the exact clinician instruction, source, effective date, verification status, and unresolved discrepancy. Never infer start/stop/change." /></label>
             <label>Pending tests, results, or referrals<textarea value={pendingResults} onChange={event => setPendingResults(event.target.value)} rows={4} placeholder="What was ordered/referred, expected timing if stated, who will obtain/review results, and documented escalation route." /></label>
             <label>What the family needs to know<textarea value={familySummary} onChange={event => setFamilySummary(event.target.value)} rows={4} placeholder="What changes in everyday care, what remains the same, what to monitor, when to contact whom, and what remains uncertain." /></label>
           </div>
