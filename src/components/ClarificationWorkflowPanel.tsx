@@ -10,6 +10,7 @@ type Claim = {
   subject_id: string;
   field: string;
   asserted_value: string;
+  epistemic_state?: string;
   assertion_status?: string;
   assertion_kind?: string;
 };
@@ -521,7 +522,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         {claims.length === 0 ? <p style={{ fontSize: 12 }}>A care detail must be saved before a question can be linked to it.</p> : <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 8, minWidth: 0 }}>
           <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Which care detail is unclear?
             <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
-              {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field.replaceAll("_", " ")}: {claim.asserted_value.slice(0, 100)}</option>)}
+              {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.field.replaceAll("_", " ")} · {(claim.epistemic_state || "reported").replaceAll("_", " ")}: {claim.asserted_value.slice(0, 100)}</option>)}
             </select>
           </label>
           <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>What would you like to ask?
