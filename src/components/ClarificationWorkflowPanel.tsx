@@ -129,6 +129,12 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
 
   const selectedQuestion = questions.find((item) => item.id === selectedQuestionId);
   const selectedClaim = claims.find((item) => item.id === selectedQuestion?.claim_id);
+  const actionableQuestions = questions.filter((item) =>
+    item.necessity === "necessary" && (item.status === "open" || item.status === "unresolved")
+  );
+  const otherOpenQuestions = questions.filter((item) =>
+    item.necessity !== "necessary" && (item.status === "open" || item.status === "unresolved")
+  );
   const latestAnswer = history[history.length - 1];
   const latestReview = latestAnswer
     ? reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version)
@@ -156,11 +162,10 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
       setQuestions(loadedQuestions);
       setSelectedQuestionId((current) => {
         const currentQuestion = loadedQuestions.find((row) => row.id === current);
-        if (currentQuestion && (currentQuestion.status === "open" || currentQuestion.status === "unresolved")) return current;
-        return loadedQuestions.find((row) => row.status === "open" || row.status === "unresolved")?.id
-          ?? currentQuestion?.id
-          ?? loadedQuestions[0]?.id
-          ?? "";
+        const isActionable = (row?: Question) =>
+          Boolean(row && row.necessity === "necessary" && (row.status === "open" || row.status === "unresolved"));
+        if (isActionable(currentQuestion)) return current;
+        return loadedQuestions.find((row) => isActionable(row))?.id ?? "";
       });
     } catch {
       setScopePersonId("");
@@ -308,10 +313,10 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
-      {questions.length === 0 && <p>No questions need your attention right now.</p>}
+      {actionableQuestions.length === 0 && <p>No questions need your attention right now.</p>}
       {questions.length > 0 && <>
         <div style={{ display: "grid", gap: 10 }}>
-          {questions.filter((item) => item.status === "open" || item.status === "unresolved").map((item) => (
+          {actionableQuestions.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -328,6 +333,19 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
               <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
           ))}
+          {otherOpenQuestions.length > 0 && (
+            <details>
+              <summary style={{ cursor: "pointer", fontSize: 13 }}>Other incomplete information — no action needed</summary>
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {otherOpenQuestions.map((item) => (
+                  <button key={item.id} type="button" onClick={() => setSelectedQuestionId(item.id)} style={{ ...button, textAlign: "left" }}>
+                    <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)" }}>Kept as uncertain · no answer requested</span>
+                    <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
           {questions.some((item) => item.status !== "open" && item.status !== "unresolved") && (
             <details>
               <summary style={{ cursor: "pointer", fontSize: 13 }}>View answered and closed questions</summary>
@@ -352,7 +370,12 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
             <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {selectedQuestion.answer_provenance || "Not recorded"}</p>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
-          {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
+                    {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && selectedQuestion.necessity !== "necessary" && (
+            <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+              SolenOS is keeping this information as uncertain. It does not need an answer from you right now.
+            </p>
+          )}
+{(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && selectedQuestion.necessity === "necessary" && <>
             <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Your answer
               <textarea style={{ ...field, minHeight: 70, marginTop: 4 }} value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Write what you know. It is okay if you are not sure." />
             </label>
