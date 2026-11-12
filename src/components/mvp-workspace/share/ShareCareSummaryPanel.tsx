@@ -736,7 +736,7 @@ function buildPlainTextSummary(
   }
 
   if (summary.freshness.isStale) {
-    lines.push("FRESHNESS NOTE");
+    lines.push("INFORMATION THAT MAY BE OUT OF DATE");
     lines.push("—".repeat(40));
     for (const s of summary.freshness.staleItems) {
       lines.push(`• ${s}`);
@@ -779,7 +779,7 @@ function buildPrintHtml(
   const freshnessHtml = summary.freshness.isStale
     ? `
     <section style="margin-top:1rem;padding:0.8rem;background:#f3f4f6;border-left:3px solid #6b7280;border-radius:4px;">
-      <h3 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 0.4rem;color:#374151;">Freshness note</h3>
+      <h3 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 0.4rem;color:#374151;">Information that may be out of date</h3>
       ${summary.freshness.staleItems.map((s) => `<p style="margin:0 0 0.3rem;line-height:1.5;color:#374151;">${escapeHtml(s)}</p>`).join("")}
     </section>`
     : "";
