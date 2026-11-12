@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
 
 type CareEvent = {
@@ -50,7 +51,7 @@ type CareEvent = {
 type FilterKey = "all" | "observations" | "decisions" | "documents" | "open";
 
 const FILTERS: { id: FilterKey; label: string }[] = [
-  { id: "all", label: "All events" },
+  { id: "all", label: "All updates" },
   { id: "observations", label: "Observations" },
   { id: "decisions", label: "Decisions" },
   { id: "documents", label: "Documents" },
@@ -82,12 +83,11 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
     : sourceType === "evidence" ? "evidence_upload"
       : sourceType === "appointment" ? "appointment"
         : sourceType;
-  const title = typeof row.title === "string" && row.title.trim()
-    ? row.title
-    : sourceType === "correction" ? "Care record correction"
-      : sourceType === "evidence" ? `Evidence: ${String(row.evidence_type || "uploaded file")}`
+  const title = caregiverSafeAssistantText(typeof row.title === "string" ? row.title : null)
+    || (sourceType === "correction" ? "Care record correction"
+      : sourceType === "evidence" ? "Document added"
         : sourceType === "appointment" ? "Appointment"
-          : sourceType.replace(/_/g, " ");
+          : "Care update");
 
   return {
     id: idValue,
@@ -172,7 +172,7 @@ function eventCategory(event: CareEvent): string {
   if (/correction|amend|supersed/.test(value)) return "Correction";
   if (/handoff|hand.?over|transfer/.test(value)) return "Handoff";
   if (/outcome|result|completed/.test(value)) return "Outcome";
-  return event.event_type.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) || "Care event";
+  return caregiverStatusLabel(event.event_type) || "Care update";
 }
 
 function matchesFilter(event: CareEvent, filter: FilterKey): boolean {
@@ -188,7 +188,7 @@ function parseDescription(description?: string | null): string {
   if (!description?.trim()) return "";
   try {
     const parsed: unknown = JSON.parse(description);
-    if (typeof parsed === "string") return parsed;
+    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || "Saved care information";
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const root = parsed as Record<string, unknown>;
       const capture = (root.original_capture && typeof root.original_capture === "object" && !Array.isArray(root.original_capture)
@@ -207,11 +207,11 @@ function parseDescription(description?: string | null): string {
         readable.push(labels[quick.kind] || "Quick check-in recorded");
       }
       const note = typeof quick?.note === "string" && quick.note.trim()
-        ? quick.note.trim()
+        ? caregiverSafeAssistantText(quick.note.trim()) || ""
         : typeof capture.notes === "string" && capture.notes.trim()
-          ? capture.notes.trim()
+          ? caregiverSafeAssistantText(capture.notes.trim()) || ""
           : typeof capture.original_notes === "string" && capture.original_notes.trim()
-            ? capture.original_notes.trim()
+            ? caregiverSafeAssistantText(capture.original_notes.trim()) || ""
             : "";
       if (note) readable.push(note);
 
@@ -220,20 +220,20 @@ function parseDescription(description?: string | null): string {
           if (!item || typeof item !== "object") continue;
           const medicine = item as Record<string, unknown>;
           const name = typeof medicine.medication_name === "string" ? medicine.medication_name : "Medicine";
-          const status = typeof medicine.status === "string" ? medicine.status : "status not recorded";
+          const status = typeof medicine.status === "string" ? medicine.status : "not_recorded";
           const labels: Record<string, string> = {
             given: "reported given",
             not_given: "reported not given",
-            uncertain: "administration uncertain",
+            uncertain: "not sure whether it was given",
             scheduled: "scheduled; not confirmed as given",
-            other: "other medicine event",
+            other: "other medicine update",
           };
           const time = typeof medicine.administered_at === "string"
             ? ` at ${formatDateTime(medicine.administered_at)}`
             : typeof medicine.scheduled_for === "string"
               ? ` (scheduled for ${formatDateTime(medicine.scheduled_for)}; not proof it was given)`
               : "";
-          readable.push(`${name}: ${labels[status] || status.replace(/_/g, " ")}${time}`);
+          readable.push(`${caregiverSafeAssistantText(name) || "Medicine"}: ${labels[status] || caregiverStatusLabel(status) || "Status not recorded"}${time}`);
         }
       }
       if (Array.isArray(capture.vitals)) {
@@ -242,22 +242,19 @@ function parseDescription(description?: string | null): string {
           const reading = item as Record<string, unknown>;
           const label = typeof reading.measurement_name === "string" && reading.measurement_name.trim()
             ? reading.measurement_name
-            : typeof reading.vital_type === "string" ? reading.vital_type.replace(/_/g, " ") : "Measurement";
+            : typeof reading.vital_type === "string" ? ({ blood_pressure: "Blood pressure", heart_rate: "Heart rate", temperature: "Temperature", oxygen_saturation: "Oxygen level", weight: "Weight", blood_glucose: "Blood sugar", respiratory_rate: "Breathing rate" } as Record<string, string>)[reading.vital_type] || "Measurement" : "Measurement";
           if (typeof reading.value === "number" || typeof reading.value === "string") {
-            readable.push(`${label}: ${reading.value}${typeof reading.unit === "string" && reading.unit ? ` ${reading.unit}` : ""}`);
+            readable.push(`${caregiverSafeAssistantText(label) || "Measurement"}: ${reading.value}${typeof reading.unit === "string" && reading.unit ? ` ${reading.unit}` : ""}`);
           }
         }
       }
       if (readable.length) return readable.join("\n");
-      return Object.entries(root)
-        .filter(([, value]) => value !== null && value !== undefined && value !== "")
-        .map(([key, value]) => `${key.replaceAll("_", " ")}: ${typeof value === "string" ? value : JSON.stringify(value)}`)
-        .join("\n");
+      return "Saved care information";
     }
   } catch {
     // Preserve plain-text descriptions as entered.
   }
-  return description;
+  return caregiverSafeAssistantText(description) || "Saved care information";
 }
 
 function groupLabel(event: CareEvent): string {
@@ -317,7 +314,7 @@ export default function TimelinePage() {
       setHistoryOffset(result.records.length);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The care timeline could not be loaded.");
+      setError("The care timeline could not be loaded. Check your connection and try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -402,7 +399,7 @@ export default function TimelinePage() {
       setCorrectionReason("");
       await loadEvents(true, appliedQuery);
     } catch (cause) {
-      setCorrectionMessage(cause instanceof Error ? cause.message : "The correction could not be saved. The original entry is unchanged.");
+      setCorrectionMessage("The correction could not be saved. The original entry is unchanged. Please try again.");
     } finally {
       setCorrectionSaving(false);
     }
@@ -449,7 +446,7 @@ export default function TimelinePage() {
         <div>
           <p style={{ margin: "0 0 6px", color: "var(--solenos-muted)", fontSize: 13, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>Living Care Record</p>
           <h1 style={{ marginBottom: 8 }}>Care Timeline</h1>
-          <p style={{ marginTop: 0, maxWidth: 620 }}>A chronological, source-linked history of recorded care events. Historical reports remain distinct from the current care understanding.</p>
+          <p style={{ marginTop: 0, maxWidth: 620 }}>A history of saved care updates. Older reports remain separate from the latest care summary.</p>
         </div>
         <Button variant="icon" aria-label="Refresh timeline" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
           <RefreshCw size={18} aria-hidden />
@@ -462,19 +459,19 @@ export default function TimelinePage() {
           <h2 style={{ fontSize: 18, margin: 0 }}>Latest recorded update</h2>
         </div>
         {loading ? (
-          <p aria-live="polite" style={{ margin: 0, color: "var(--solenos-muted)" }}>Loading saved care events…</p>
+          <p aria-live="polite" style={{ margin: 0, color: "var(--solenos-muted)" }}>Loading saved care updates…</p>
         ) : error ? (
-          <p style={{ margin: 0, color: "var(--solenos-muted)" }}>The latest event is unavailable until the timeline loads successfully.</p>
+          <p style={{ margin: 0, color: "var(--solenos-muted)" }}>The latest update is unavailable until the timeline loads.</p>
         ) : latestEvent ? (
           <>
-            <h3 style={{ margin: "0 0 6px", fontSize: 18 }}>{latestEvent.title}</h3>
+            <h3 style={{ margin: "0 0 6px", fontSize: 18 }}>{caregiverSafeAssistantText(latestEvent.title) || "Care update"}</h3>
             <p style={{ margin: "0 0 8px", color: "var(--solenos-muted)" }}>{formatDateTime(latestEvent.occurred_at)} · {eventCategory(latestEvent)}</p>
             <p style={{ margin: 0, lineHeight: 1.55 }}>{parseDescription(latestEvent.description) || "No event description was saved."}</p>
           </>
         ) : (
-          <p style={{ margin: 0, lineHeight: 1.55 }}>No saved care-history entries were returned for this record. Add a real care note or observation to begin the history.</p>
+          <p style={{ margin: 0, lineHeight: 1.55 }}>No saved care updates are available for this record yet. Add a care note or observation to begin the history.</p>
         )}
-        <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This is the latest saved history entry, not a substitute for the reconciled current-care view in the LCR.</p>
+        <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This is the latest saved update. For the current care summary, return to your Living Care Record.</p>
       </section>
 
       <section aria-label="Timeline controls" style={{ marginBottom: 20 }}>
@@ -494,7 +491,7 @@ export default function TimelinePage() {
           </div>
           {appliedQuery && (
             <p style={{ margin: "6px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>
-              Showing server-matched records for “{appliedQuery}”. Search includes records beyond the currently loaded page.
+              Showing results for “{appliedQuery}”. Search includes older records, not just the items currently shown.
               <button type="button" onClick={() => { setQuery(""); setAppliedQuery(""); void loadEvents(true, ""); }} style={{ marginLeft: 8, border: 0, background: "transparent", color: "inherit", textDecoration: "underline", cursor: "pointer" }}>Clear search</button>
             </p>
           )}
@@ -525,7 +522,7 @@ export default function TimelinePage() {
       )}
 
       {loading ? (
-        <p aria-live="polite">Loading chronological history…</p>
+        <p aria-live="polite">Loading care history…</p>
       ) : !error && visibleEvents.length === 0 ? (
         <section className="mobile-empty" style={{ padding: 28 }}>
           <div className="mobile-empty-icon" aria-hidden="true"><Activity size={36} /></div>
@@ -561,38 +558,38 @@ export default function TimelinePage() {
                           {event.attention_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>Attention flagged</span>}
                           <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--solenos-muted)" }}>{expanded ? "Hide details" : "Details"} <ChevronDown size={16} aria-hidden style={{ transform: expanded ? "rotate(180deg)" : undefined }} /></span>
                         </span>
-                        <strong style={{ display: "block", fontSize: 17, lineHeight: 1.4, marginBottom: 5 }}>{event.title}</strong>
+                        <strong style={{ display: "block", fontSize: 17, lineHeight: 1.4, marginBottom: 5 }}>{caregiverSafeAssistantText(event.title) || "Care update"}</strong>
                         {description && <span style={{ display: "-webkit-box", WebkitLineClamp: expanded ? "unset" : 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-wrap", lineHeight: 1.5, overflowWrap: "anywhere" }}>{description}</span>}
                       </button>
                       {expanded && (
                         <div id={`timeline-details-${event.id}`} style={{ borderTop: "1px solid var(--solenos-hairline)", padding: 16, background: "#fbfcfc" }}>
                           <h4 style={{ margin: "0 0 10px", fontSize: 14 }}>Record details</h4>
                           <dl style={{ display: "grid", gridTemplateColumns: "minmax(110px, 0.7fr) minmax(0, 1.3fr)", gap: "9px 12px", margin: 0, fontSize: 13 }}>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Event time</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Recorded in SolenOS</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Record status</dt><dd style={{ margin: 0 }}>{event.status || "Not specified"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Time provenance</dt><dd style={{ margin: 0 }}>{event.time_provenance || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Contributor</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_label || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Source type</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type || event.event_type}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>When it happened</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>When it was saved</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Review</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.status) || "Not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Time details</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Contributor</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Type of update</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type === "correction" ? "Correction" : event.source_type === "evidence" ? "Document" : event.source_type === "appointment" ? "Appointment" : event.source_type === "professional" ? "Healthcare professional" : event.created_by_caregiver_id ? "Caregiver" : "Care update"}</dd>
                             {event.source_type === "correction" && event.target_id && (
                               <>
-                                <dt style={{ color: "var(--solenos-muted)" }}>Corrects</dt>
+                                <dt style={{ color: "var(--solenos-muted)" }}>Related update</dt>
                                 <dd style={{ margin: 0, overflowWrap: "anywhere" }}>
                                   {event.target_type === "care_event" || event.target_type === "care_assertion" ? (
                                     <a href={`#timeline-event-${event.target_id}`}>Original care event</a>
                                   ) : (
-                                    event.target_type || "Original record"
+                                    "Original saved detail"
                                   )}
-                                  {" · "}{event.target_id}
+                                  
                                 </dd>
                               </>
                             )}
-                            <dt style={{ color: "var(--solenos-muted)" }}>Situation link</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id || "No linked situation ID"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Evidence references</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? event.evidence_ids.join(", ") : "No evidence references attached to this event"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Tags</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.join(", ") : "No tags recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Related care topic</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id ? "Linked" : "Not linked"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Supporting information</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? `${event.evidence_ids.length} saved item(s)` : "None attached"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Related labels</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.map(tag => caregiverStatusLabel(tag) || "Care update").join(", ") : "None recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
                           </dl>
-                          {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Recorded significance:</strong> {event.significance_verdict}</p>}
+                          {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Why this may matter:</strong> {caregiverSafeAssistantText(event.significance_verdict) || "No further explanation is available."}</p>}
                           {(event.source_type === "care_event" || (
                             event.source_type === "care_assertion" &&
                             !["superseded", "retracted"].includes(event.status.toLowerCase())
@@ -644,7 +641,7 @@ export default function TimelinePage() {
                               )}
                             </div>
                           )}
-                          <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This entry shows persisted source details. Missing metadata is displayed as missing, not inferred.</p>
+                          <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This update shows only the details saved at the time. Missing information is not guessed.</p>
                         </div>
                       )}
                     </article>
@@ -668,14 +665,14 @@ export default function TimelinePage() {
             {loadingMore ? "Loading older records…" : "Load older care records"}
           </Button>
           <span role="status" style={{ color: "var(--solenos-muted)", fontSize: 12 }}>
-            Showing {events.length} of {historyCoverage.total} matching care-history records.
+            Showing {events.length} of {historyCoverage.total} matching care updates.
           </span>
         </div>
       )}
 
       <footer style={{ marginTop: 28, paddingTop: 14, borderTop: "1px solid var(--solenos-hairline)", color: "var(--solenos-muted)", fontSize: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
         <ShieldCheck size={16} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
-        <span>History is ordered by event time, with recording time retained separately. This view does not turn AI interpretation into a care fact or claim that an event caused another event.{loadedAt ? ` Last loaded ${formatDateTime(loadedAt)}.` : ""}</span>
+        <span>Updates are shown by when they happened, while keeping the date they were saved. A suggested interpretation is not treated as confirmed, and timing alone does not prove cause.{loadedAt ? ` Last loaded ${formatDateTime(loadedAt)}.` : ""}</span>
       </footer>
     </main>
   );
