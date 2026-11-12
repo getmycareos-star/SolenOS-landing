@@ -174,6 +174,10 @@ assert.match(detailedCapture, /Choose a current medication from the care record/
   "current LCR medication records have a distinct selection label");
 assert.match(detailedCapture, /Previously reported medicines \(not confirmed current\)/,
   "historical medication entries remain visibly distinct from current medication records");
+assert.match(detailedCapture, /addEventListener\("careRecordUpdated"/,
+  "current medication choices refresh after the LCR changes");
+assert.match(detailedCapture, /removeEventListener\("careRecordUpdated"/,
+  "current medication refresh listener is cleaned up on unmount");
 assert.match(detailedCapture, /not independent clinical verification/,
   "the UI does not overstate caregiver review as clinical verification");
 
