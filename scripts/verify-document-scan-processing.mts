@@ -3,6 +3,7 @@ import { strict as assert } from "node:assert";
 
 const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 const dailyCare = readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
+const review = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
 assert(!source.includes("extractText("), "the Documents screen must not upload a file for separate preflight extraction");
 assert(!source.includes("review and correct its extracted text first"), "caregivers must not be asked to manually review client-only OCR before saving");
 assert(!source.includes("page.reviewed") && !source.includes("page.text"), "the upload draft must not carry discarded client-side text or review flags");
@@ -95,6 +96,8 @@ assert.match(dailyCare, /Recent documents/, "Daily Care must surface recent docu
 assert.match(dailyCare, /You do not need to stay on this screen/, "background processing must not require the caregiver to supervise it");
 assert.match(dailyCare, /could not be read/, "unreadable pages must be reported without treating missing text as empty content");
 assert.match(dailyCare, /Follow-up added to your existing follow-ups/, "accepted document recommendations must be surfaced through the existing follow-up record");
+assert.match(review, /SAVED AS UNCONFIRMED REPORT/, "medication candidates must not be presented as verified medication changes");
+assert.match(dailyCare, /Medication information was saved as an unconfirmed report/, "Daily Care must distinguish an unconfirmed medication report from a verified care-record change");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
 console.log("✓ crop and straighten are applied to pixels before OCR");
