@@ -23,12 +23,13 @@ for (const contract of [
   ["change source details are user-reviewable", /Review source evidence/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
   ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
-  ["uncalibrated confidence is not presented as a percentage", /confidence == null \? "not calibrated"/],
+  ["change assessment copy remains explicit", /This does not mean that no changes occurred/],
   ["failed loads are exposed as an error state", /role="alert"/],
   ["empty state does not claim no changes occurred", /This does not mean that no changes occurred/],
 ] as const) {
   assert(contract[1].test(panel), `Missing UI contract: ${contract[0]}`);
 }
+assert(!/\\bconfidence\\b/i.test(panel), "uncalibrated model confidence must not be displayed in caregiver-facing change intelligence");
 
 assert(!/recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\b/.test(panel), "observation coverage cannot be independently submitted from this panel");
 
