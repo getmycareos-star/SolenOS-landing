@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
-import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 
 type SaveReceipt = {
   id: string;
@@ -69,34 +69,88 @@ export default function NaturalLanguageDailyUpdate() {
         medicationContext: medicationNeedsConfirmation ? "Checking the existing medication record…" : null,
       });
       if (medicationNeedsConfirmation) {
-        void getJSON("/care-continuity/medications")
-          .then((value) => {
-            const projection = value as {
+        void Promise.allSettled([
+          getJSON("/care-continuity/medications"),
+          getJSON("/documents/intelligence"),
+        ]).then(([medicationResult, documentResult]) => {
+          const contextParts: string[] = [];
+          if (medicationResult.status === "fulfilled") {
+            const projection = medicationResult.value as {
               medications?: Array<{ name?: string; dose?: string }>;
               pending_review?: Array<{ name?: string; dose?: string }>;
             };
             const current = Array.isArray(projection?.medications) ? projection.medications : [];
             const pending = Array.isArray(projection?.pending_review) ? projection.pending_review : [];
             const currentText = current.slice(0, 3).map((item) =>
-              [item.name, item.dose].filter(Boolean).map(String).join(" — ")
+              [item.name, item.dose].filter(Boolean).map((value) => caregiverSafeAssistantText(value) || "").filter(Boolean).join(" — ")
             ).filter(Boolean);
             const pendingText = pending.slice(0, 3).map((item) =>
-              [item.name, item.dose].filter(Boolean).map(String).join(" — ")
+              [item.name, item.dose].filter(Boolean).map((value) => caregiverSafeAssistantText(value) || "").filter(Boolean).join(" — ")
             ).filter(Boolean);
-            const message = currentText.length
-              ? `The existing reviewed medication record lists: ${currentText.join("; ")}. It does not confirm a change reported today.`
-              : pendingText.length
-                ? `Medication information is already awaiting confirmation: ${pendingText.join("; ")}. It is not a confirmed current dose.`
-                : "No reviewed medication record is available to confirm the reported change.";
-            setReceipt((currentReceipt) => currentReceipt
-              ? { ...currentReceipt, medicationContext: message }
-              : currentReceipt);
-          })
-          .catch(() => {
-            setReceipt((currentReceipt) => currentReceipt
-              ? { ...currentReceipt, medicationContext: "Existing medication records could not be checked just now." }
-              : currentReceipt);
-          });
+            if (currentText.length) {
+              contextParts.push(`Existing reviewed medication record: ${currentText.join("; ")}. This does not confirm a change reported today.`);
+            } else if (pendingText.length) {
+              contextParts.push(`Medication information already awaiting review: ${pendingText.join("; ")}. It is not a confirmed current dose.`);
+            } else {
+              contextParts.push("No reviewed medication record is available to confirm the reported change.");
+            }
+          } else {
+            contextParts.push("Existing medication records could not be checked just now.");
+          }
+
+          if (documentResult.status === "fulfilled") {
+            const documents = documentResult.value as {
+              items?: Array<{
+                document_name?: string;
+                extraction_status?: string;
+                observations?: Array<{
+                  source_quote?: string;
+                  page_number?: number | null;
+                  field_type?: string;
+                  review_status?: string;
+                  canonical_candidate?: {
+                    medication_details?: { strength?: string | null; dosage_instructions?: string | null } | null;
+                  } | null;
+                }>;
+              }>;
+              processing_jobs?: unknown[];
+            };
+            const candidates = (Array.isArray(documents?.items) ? documents.items : [])
+              .flatMap((document) => (Array.isArray(document.observations) ? document.observations : [])
+                .filter((candidate) => candidate.review_status !== "rejected")
+                .filter((candidate) =>
+                  Boolean(candidate.canonical_candidate?.medication_details)
+                  || /\b(medication|medicine|dose|dosage|prescription|tablet|capsule)\b/i.test(candidate.source_quote || "")
+                  || /medication/i.test(candidate.field_type || "")
+                )
+                .map((candidate) => ({ document, candidate })))
+              .slice(0, 2);
+            if (candidates.length) {
+              for (const { document, candidate } of candidates) {
+                const details = candidate.canonical_candidate?.medication_details;
+                const detailText = [details?.strength, details?.dosage_instructions]
+                  .filter(Boolean)
+                  .map((value) => caregiverSafeAssistantText(value) || "")
+                  .filter(Boolean)
+                  .join("; ");
+                const name = caregiverSafeAssistantText(document.document_name) || "Saved document";
+                const quote = caregiverSafeAssistantText(candidate.source_quote) || "No readable medication excerpt was returned.";
+                const page = candidate.page_number ? `, page ${candidate.page_number}` : "";
+                contextParts.push(`${name}${page} contains an extracted medication detail: “${quote.slice(0, 220)}”${detailText ? ` Details: ${detailText}.` : "."} This extraction is not confirmation of a new dose.`);
+              }
+            } else if (Array.isArray(documents?.processing_jobs) && documents.processing_jobs.length) {
+              contextParts.push("Some saved documents are still being processed and cannot confirm a new dose yet.");
+            } else {
+              contextParts.push("No medication-specific details were returned from saved-document extraction. This does not rule out information in a document that has not been processed.");
+            }
+          } else {
+            contextParts.push("Saved document information could not be checked just now.");
+          }
+
+          setReceipt((currentReceipt) => currentReceipt
+            ? { ...currentReceipt, medicationContext: contextParts.join(" ") }
+            : currentReceipt);
+        });
       }
       setReport("");
       setRequestKey(null);
