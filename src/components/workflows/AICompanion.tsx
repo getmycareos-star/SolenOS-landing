@@ -416,14 +416,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   useEffect(() => {
     // Reopen pending reviews only when this browser already has a scoped session.
     // Do not bootstrap a new care record merely by opening Companion.
-    if (!getAnonymousAccessToken()) return
+    if (home || !getAnonymousAccessToken()) return
     let active = true
     void refreshPendingCareUpdates().then(items => {
       if (!active) return
       setPendingCareUpdates(items)
     })
     return () => { active = false }
-  }, [])
+  }, [home])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -431,7 +431,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    const shouldIdentifyCareUpdates = !CASUAL_GREETING.test(submittedText)
+    const shouldIdentifyCareUpdates = !home && !CASUAL_GREETING.test(submittedText)
     if (!submittedText || loading) return
     setRequestError(null)
     setLoading(true)
@@ -481,11 +481,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
-        care_update_candidates: shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) ? response.care_update_candidates : [],
+        care_update_candidates: [], // Companion is conversational; care updates belong in Daily Care.
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-      if (shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) && response.care_update_candidates.length > 0) {
+      if (!home && shouldIdentifyCareUpdates && Array.isArray(response.care_update_candidates) && response.care_update_candidates.length > 0) {
         setPendingCareUpdates(previous => {
           const merged = new Map(previous.map(item => [item.id, item]))
           for (const item of response.care_update_candidates as CareUpdateProposal[]) merged.set(item.id, item)
@@ -501,7 +501,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           window.setTimeout(() => void refreshAfterResponse(attempt + 1), 2500)
         }
       }
-      if (shouldIdentifyCareUpdates) window.setTimeout(() => void refreshAfterResponse(), 1200)
+      if (!home && shouldIdentifyCareUpdates) window.setTimeout(() => void refreshAfterResponse(), 1200)
 
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
@@ -823,9 +823,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
       <div className="companion-workspace">
         <main className="companion-conversation" aria-label="Conversation">
-              {pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
-              {careReviewReceipt && <p role="status" className="companion-care-update-source">{careReviewReceipt}</p>}
-              {pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
+              {!home && pendingCareUpdatesError && <p role="alert" className="companion-care-update-error">{pendingCareUpdatesError}</p>}
+              {!home && careReviewReceipt && <p role="status" className="companion-care-update-source">{careReviewReceipt}</p>}
+              {!home && pendingCareUpdates.length > 0 && <section className="companion-pending-care-updates" aria-label="Care updates awaiting review">
                 <div className="companion-pending-care-heading">
                   <h3>Care updates awaiting your review</h3>
                   <button type="button" onClick={() => void refreshPendingCareUpdates()} aria-label="Refresh pending care updates" disabled={pendingCareUpdatesRefreshing}>{pendingCareUpdatesRefreshing ? 'Refreshing…' : 'Refresh'}</button>
@@ -850,7 +850,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Tell me one small thing about today. A few words are enough. We can take it one step at a time.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about the care history, understand a change, or talk through a concern. I’ll help explain what the saved information does and does not show.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
@@ -861,7 +861,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   </button>
                 })}
               </div>
-              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
+              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> Conversation only. To add a care update, use Daily Care; to save a document, use Documents.</p>
             </div>
           ) : (
             <div className="companion-message-list">
@@ -874,7 +874,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
-                    {!isUser && msg.care_update_candidates?.map(candidate => {
+                    {!home && !isUser && msg.care_update_candidates?.map(candidate => {
                       const value = candidate.proposed_change?.asserted_value ?? candidate.proposed_change?.source_quote ?? ''
                       const pending = candidate.status === 'pending_authorization'
                       return <section className="companion-care-update" key={candidate.id} aria-label="Proposed care record update">
@@ -983,16 +983,16 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="What’s happening today? A few words are enough…" disabled={loading} rows={2} />
+          }} placeholder="Ask about the care history, a recent change, or something you’re unsure about…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
-            <div className="companion-add-wrap">
+            {!home && <div className="companion-add-wrap">
               <button type="button" className="companion-add-button" aria-label={addMenuOpen ? "Close attachment actions" : "Add document or image"} aria-haspopup="menu" aria-expanded={addMenuOpen} onClick={() => setAddMenuOpen(value => !value)}>{addMenuOpen ? <X size={19} /> : <Plus size={19} />}</button>
               {addMenuOpen && <div className="companion-add-menu" role="menu" aria-label="Document and image intake">
                 <button type="button" role="menuitem" onClick={() => openDocumentIntake("upload")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Upload document</strong><small>Choose a file from this device</small></span></button>
                 <button type="button" role="menuitem" onClick={() => openDocumentIntake("capture")}><span className="companion-add-icon"><Camera size={17} /></span><span><strong>Snap a photo</strong><small>Open the camera now</small></span></button>
                 <button type="button" role="menuitem" onClick={() => openDocumentIntake("scan")}><span className="companion-add-icon"><FileText size={17} /></span><span><strong>Scan document</strong><small>Photograph pages, then review them</small></span></button>
               </div>}
-            </div>
+            </div>}
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
