@@ -16,9 +16,9 @@ type CareReminder = {
   note: string | null;
   due_at: string;
   status: ReminderStatus;
-  snoozed_at: string | null;
-  snoozed_by_caregiver_id: string | null;
-  snooze_count: number;
+  snoozed_at?: string | null;
+  snoozed_by_caregiver_id?: string | null;
+  snooze_count?: number;
   completed_at: string | null;
   completed_by_caregiver_id: string | null;
   completion_note: string | null;
@@ -51,6 +51,7 @@ function reminderLabel(reminder: CareReminder): string {
 export default function CareRemindersPage() {
   const [personId, setPersonId] = useState("");
   const [reminders, setReminders] = useState<CareReminder[]>([]);
+  const [snoozeSupported, setSnoozeSupported] = useState(false);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [dueAt, setDueAt] = useState(() => localDateTimeValue(new Date(Date.now() + 24 * 60 * 60 * 1000)));
@@ -67,7 +68,9 @@ export default function CareRemindersPage() {
     setPersonId(id);
     const data = await getJSON(`/reminders/${encodeURIComponent(id)}`);
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
-    setReminders(data as CareReminder[]);
+    const items = data as CareReminder[];
+    setReminders(items);
+    setSnoozeSupported(items.length > 0 && items.every((item) => typeof item.snooze_count === "number"));
   }, []);
 
   useEffect(() => {
@@ -268,9 +271,9 @@ export default function CareRemindersPage() {
                       <Button variant="primary" disabled={busyId === reminder.id} onClick={() => void completeReminder(reminder)}>
                         <Check size={16} aria-hidden /> Mark complete
                       </Button>
-                      <Button variant="secondary" disabled={busyId === reminder.id} onClick={() => void snoozeReminder(reminder)}>
+                      {snoozeSupported && <Button variant="secondary" disabled={busyId === reminder.id} onClick={() => void snoozeReminder(reminder)}>
                         <Clock3 size={16} aria-hidden /> Snooze 1 hour
-                      </Button>
+                      </Button>}
                       <Button variant="secondary" disabled={busyId === reminder.id} onClick={() => void cancelReminder(reminder)}>
                         <X size={16} aria-hidden /> Cancel
                       </Button>
