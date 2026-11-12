@@ -323,7 +323,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   useEffect(() => { void load(); }, [load]);
 
   useEffect(() => {
-    setSelectedScope(draft ? requiredHandoffScopes(draft) : []);
+    setSelectedScope([]);
   }, [draft?.draft_id]);
 
   useEffect(() => {
