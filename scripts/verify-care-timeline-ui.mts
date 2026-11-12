@@ -36,8 +36,8 @@ assert.match(source, /postJSON\("\/corrections"/,
   "care-history corrections use the existing persisted correction endpoint");
 assert.match(source, /target_type: "care_event"/,
   "corrections target the original care event");
-assert.match(source, /original_text: event\.description/,
-  "the original source content is preserved in the correction receipt");
+assert.match(source, /original_text: parseDescription\(event\.description\)/,
+  "the correction receipt preserves a readable rendering linked to the untouched original event");
 assert.match(source, /original entry remains unchanged/,
   "the caregiver is told corrections do not overwrite the original record");
 assert.ok(source.includes("daily-care/intelligence/history?limit=200&offset="),
