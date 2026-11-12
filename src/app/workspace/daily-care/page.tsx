@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays } from "lucide-react";
-import { ensureAnonymousSession } from "@/api/client";
+import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
@@ -18,20 +18,68 @@ const StructuredDailyCapture = dynamic(
   },
 );
 
+type CareItem = {
+  id?: string;
+  title?: string;
+  description?: string | null;
+  text?: string | null;
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  status?: string | null;
+  source_label?: string | null;
+  source_type?: string | null;
+  event_type?: string | null;
+  created_by_caregiver_id?: string | null;
+};
+
+function displayCareTime(value?: string | null): string {
+  if (!value) return "Time not recorded";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Time not recorded"
+    : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
 export default function DailyCarePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const [careItems, setCareItems] = useState<CareItem[]>([]);
+  const [historyItems, setHistoryItems] = useState<CareItem[]>([]);
+  const [contextLoading, setContextLoading] = useState(true);
+  const [contextError, setContextError] = useState("");
 
   useEffect(() => {
     let active = true;
     void ensureAnonymousSession()
-      .then(() => {
-        if (active) setReady(true);
+      .then(async () => {
+        const [careResult, historyResult] = await Promise.allSettled([
+          getJSON("/care-continuity/current-care?limit_per_source=20"),
+          getJSON("/daily-care/intelligence/history?limit=8&offset=0"),
+        ]);
+        if (!active) return;
+
+        if (careResult.status === "fulfilled") {
+          const payload = careResult.value as { items?: unknown };
+          setCareItems(Array.isArray(payload?.items) ? payload.items as CareItem[] : []);
+        } else {
+          setContextError("Current care information could not be loaded. Try refreshing the record.");
+        }
+
+        if (historyResult.status === "fulfilled") {
+          const payload = historyResult.value as { records?: unknown };
+          setHistoryItems(Array.isArray(payload?.records) ? payload.records as CareItem[] : []);
+        } else {
+          setContextError((current) => current || "Recent care history could not be loaded. Try refreshing the record.");
+        }
+        setReady(true);
+        setContextLoading(false);
       })
       .catch(() => {
         if (!active) return;
         setError("We couldn’t open daily care. Check your connection and try again.");
+        setContextLoading(false);
       });
     return () => {
       active = false;
@@ -50,24 +98,93 @@ export default function DailyCarePage() {
         </Button>
         <div>
           <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
-          <h1>How has today been?</h1>
-          <p>Record observations about the day. You can leave anything you do not know blank.</p>
-          <Link href="/workspace/reminders" className="care-reminders-inline-link">Open care reminders</Link>
+          <h1>Your care journey, remembered.</h1>
+          <p>See what has been recorded. Add something only when it would help.</p>
         </div>
       </div>
+
       {error ? (
         <section className="daily-care-error" role="alert">
-          <h2>Daily care could not be opened</h2>
+          <h2>Daily Care could not be opened</h2>
           <p>{error}</p>
           <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
         </section>
       ) : ready ? (
         <>
-          <QuickDailyCheckIn />
-          <StructuredDailyCapture />
+          <section aria-labelledby="daily-care-current-title" className="daily-care-context-panel">
+            <h2 id="daily-care-current-title">Where things stand</h2>
+            <p className="daily-care-muted">The latest information currently available in the care record.</p>
+            {contextLoading ? (
+              <p>Loading care information…</p>
+            ) : careItems.length > 0 ? (
+              <ul className="daily-care-record-list">
+                {careItems.slice(0, 5).map((item, index) => (
+                  <li key={item.id || `care-item-${index}`}>
+                    <strong>{item.title || item.event_type || "Care update"}</strong>
+                    {(item.description || item.text) && <p>{item.description || item.text}</p>}
+                    <span>{displayCareTime(item.occurred_at || item.recorded_at)}</span>
+                    {item.source_label && <span> · {item.source_label}</span>}
+                    {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No care information is available to show yet. This does not mean nothing happened.</p>
+            )}
+            {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
+          </section>
+
+          <section aria-labelledby="daily-care-checkin-title" className="daily-care-context-panel">
+            <h2 id="daily-care-checkin-title">Anything different today?</h2>
+            <p className="daily-care-muted">Share something, check in, or leave things as they are.</p>
+            <QuickDailyCheckIn />
+          </section>
+
+          <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
+            <h2 id="daily-care-capture-title">Share something</h2>
+            <p className="daily-care-muted">An observation, medicine event, measurement, photograph or note. You can leave this empty.</p>
+            <Button
+              variant="primary"
+              aria-expanded={captureOpen}
+              onClick={() => setCaptureOpen((open) => !open)}
+            >
+              {captureOpen ? "Close capture" : "Share something"}
+            </Button>
+            {captureOpen && (
+              <div className="daily-care-capture-state">
+                <p className="daily-care-muted">Add only what you know. You do not need to complete every section.</p>
+                <StructuredDailyCapture />
+              </div>
+            )}
+          </section>
+
+          <section aria-labelledby="daily-care-history-title" className="daily-care-context-panel">
+            <div className="daily-care-history-heading">
+              <div>
+                <h2 id="daily-care-history-title">Recent care history</h2>
+                <p className="daily-care-muted">Recorded events, in time order. Missing days do not mean nothing happened.</p>
+              </div>
+              <Link href="/workspace/timeline" className="care-reminders-inline-link">View all history</Link>
+            </div>
+            {historyItems.length > 0 ? (
+              <ul className="daily-care-record-list">
+                {historyItems.slice(0, 8).map((item, index) => (
+                  <li key={item.id || `history-item-${index}`}>
+                    <strong>{item.title || item.event_type || item.source_type || "Care record entry"}</strong>
+                    {(item.description || item.text) && <p>{item.description || item.text}</p>}
+                    <span>{displayCareTime(item.occurred_at || item.recorded_at)}</span>
+                    {item.source_label && <span> · {item.source_label}</span>}
+                    {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No recent care entries are available. No record is not proof that no care took place.</p>
+            )}
+          </section>
         </>
       ) : (
-        <BrandLoading animate message="Preparing your private care record…" />
+        <BrandLoading animate message="Opening your care record…" />
       )}
 
       <style jsx global>{`
