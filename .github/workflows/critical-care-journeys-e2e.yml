@@ -6,7 +6,7 @@ on:
     paths:
       - "e2e/critical-care-journeys.mjs"
       - "e2e/web-push-delivery.mjs"
-      - "e2e/netlify-dark-mode-audit.mjs"
+      - "e2e/dark-mode-audit.mjs"
       - "src/api/client.ts"
       - "src/app/workspace/**"
       - "src/app/accessibility-overrides.css"
@@ -166,19 +166,18 @@ jobs:
           BACKEND_SERVICE_DIR: ${{ github.workspace }}/backend-service/backend
         run: node e2e/web-push-delivery.mjs
 
-      - name: Audit rendered dark mode on the Netlify preview and current deployment
+      - name: Audit rendered dark mode on the isolated browser build
         if: always()
         env:
           BACKEND_URL: http://127.0.0.1:8000
-          NETLIFY_PREVIEW_URL: https://main--solenosai.netlify.app
-          NETLIFY_DEPLOY_URL: https://solenosai.netlify.app
-        run: node e2e/netlify-dark-mode-audit.mjs
+          FRONTEND_URL: http://127.0.0.1:3000
+        run: node e2e/dark-mode-audit.mjs
 
       - name: Upload rendered dark-mode screenshots and contrast report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: netlify-dark-mode-rendered-audit
+          name: dark-mode-rendered-audit
           path: artifacts/dark-mode/
           if-no-files-found: warn
 
