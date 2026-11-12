@@ -358,7 +358,7 @@ export default function TimelinePage() {
         total: typeof result.page?.total_matching === "number" ? result.page.total_matching : historyCoverage.total,
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Older care history could not be loaded.");
+      setError("Older care history could not be loaded. The entries already shown remain available.");
     } finally {
       setLoadingMore(false);
     }
