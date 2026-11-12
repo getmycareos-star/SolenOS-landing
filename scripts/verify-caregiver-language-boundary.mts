@@ -15,6 +15,8 @@ assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
 assert.equal(isTechnicalDiagnosticText("Database schema unavailable"), true);
 assert.equal(isTechnicalDiagnosticText("Freshness assessment storage is unavailable in this schema."), true);
+assert.equal(isTechnicalDiagnosticText("The provenance reconciliation API returned an assertion payload."), true);
+assert.equal(caregiverSafeAssistantText("The OCR extraction pipeline is unavailable."), null);
 assert.equal(caregiverSafeAssistantText("Database schema unavailable"), null);
 assert.equal(caregiverSafeAssistantText("Your message has been saved. We do not know what caused the change yet."), "Your message has been saved. We do not know what caused the change yet.");
 assert.match(caregiverSafeErrorMessage(), /check your connection/i);
@@ -29,6 +31,9 @@ const lcr = readFileSync(new URL("../src/components/mvp-workspace/LCRCurrentUnde
 const appointment = readFileSync(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
 const continuity = readFileSync(new URL("../src/components/CareContinuityIntegrityPanel.tsx", import.meta.url), "utf8");
 const deviceAccess = readFileSync(new URL("../src/components/mvp-workspace/IdentityDeviceRecoveryPanel.tsx", import.meta.url), "utf8");
+const detailedAppointment = readFileSync(new URL("../src/components/workflows/DetailedAppointmentWorkspace.tsx", import.meta.url), "utf8");
+const evidenceReview = readFileSync(new URL("../src/components/EvidenceReviewPanel.tsx", import.meta.url), "utf8");
+const appointmentPage = readFileSync(new URL("../src/app/workspace/appointments/page.tsx", import.meta.url), "utf8");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -49,5 +54,10 @@ assert.match(appointment, /caregiverStatusLabel/);
 assert.ok(!continuity.includes('value.replace(/_/g'));
 assert.ok(!deviceAccess.includes("e instanceof Error ? e.message"));
 assert.doesNotMatch(deviceAccess, /Identity &amp; device security/);
+assert.doesNotMatch(detailedAppointment, /database schema|source_time_kind|Evidence IDs:|Assessment \\{item\\.assessment_id/);
+assert.doesNotMatch(detailedAppointment, /error instanceof Error \\? error\\.message/);
+assert.doesNotMatch(evidenceReview, /value\\.replaceAll\\('_', ' '\\)/);
+assert.doesNotMatch(evidenceReview, /SHA-256|selected\\.origin_device_ref \\|\\|/);
+assert.doesNotMatch(appointmentPage, /Appointment workspace/);
 
 console.log("Caregiver language boundary checks passed.");
