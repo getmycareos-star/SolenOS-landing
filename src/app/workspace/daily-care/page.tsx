@@ -38,6 +38,21 @@ type DailyCareFollowUp = {
   priority?: string | null;
 };
 
+type DailyCareDocumentStatus = {
+  evidence_id: string;
+  document_name: string;
+  uploaded_at?: string | null;
+  processing_status: string;
+  page_count?: number | null;
+  processed_page_numbers?: number[];
+  unprocessed_page_numbers?: number[];
+  unreadable_page_numbers?: number[];
+  review_required?: boolean;
+  written_to_lcr?: boolean;
+  medication_conflict?: boolean;
+  accepted_follow_up_ids?: string[];
+};
+
 type CareItem = {
   id?: string;
   source_id?: string;
@@ -274,6 +289,8 @@ export default function DailyCarePage() {
   const [historyError, setHistoryError] = useState("");
   const [followUps, setFollowUps] = useState<DailyCareFollowUp[]>([]);
   const [followUpsError, setFollowUpsError] = useState("");
+  const [documents, setDocuments] = useState<DailyCareDocumentStatus[]>([]);
+  const [documentsError, setDocumentsError] = useState("");
   const [deliveryIssues, setDeliveryIssues] = useState<DailyCareDeliveryIssue[]>([]);
   const [deliveryStatusError, setDeliveryStatusError] = useState("");
   const [sinceLastOpenItems, setSinceLastOpenItems] = useState<CareItem[] | null>(null);
@@ -296,11 +313,12 @@ export default function DailyCarePage() {
         // they can record an update. The capture interface is useful as soon
         // as the anonymous session is ready; context can finish loading below.
         if (active) setReady(true);
-        const [careResult, historyResult, followUpsResult, notificationsResult] = await Promise.allSettled([
+        const [careResult, historyResult, followUpsResult, notificationsResult, documentsResult] = await Promise.allSettled([
           getJSON("/care-continuity/current-care?limit_per_source=20"),
           getJSON("/daily-care/intelligence/history?limit=200&offset=0"),
           getJSON("/open-loops?limit=100&offset=0"),
           getJSON("/notifications?limit=100&offset=0"),
+          getJSON("/documents/status?limit=10"),
         ]);
         if (!active) return;
 
@@ -322,6 +340,18 @@ export default function DailyCarePage() {
           }
         } else {
           setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
+        }
+
+        if (documentsResult.status === "fulfilled") {
+          const payload = documentsResult.value as { items?: unknown };
+          if (Array.isArray(payload?.items)) {
+            setDocuments(payload.items as DailyCareDocumentStatus[]);
+            setDocumentsError("");
+          } else {
+            setDocumentsError("Document processing status could not be read. Check the document library before assuming processing is complete.");
+          }
+        } else {
+          setDocumentsError("Document processing status could not be checked. Check the document library before assuming processing is complete.");
         }
 
         if (notificationsResult.status === "fulfilled") {
@@ -489,6 +519,49 @@ export default function DailyCarePage() {
               <p>No current care updates are available to show. This does not mean nothing happened.</p>
             )}
             {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
+          </section>
+
+          <section aria-labelledby="daily-care-documents-title" className="daily-care-context-panel">
+            <h2 id="daily-care-documents-title">Recent documents</h2>
+            <p className="daily-care-muted">SolenOS keeps the original files and reports what actually happened during processing.</p>
+            {documentsError ? (
+              <p role="alert">{documentsError}</p>
+            ) : documents.length ? (
+              <ul className="daily-care-record-list">
+                {documents.slice(0, 5).map((item) => {
+                  const statusText: Record<string, string> = {
+                    uploaded: "Uploaded. Processing has not started yet.",
+                    queued: "SolenOS is processing this document. You do not need to stay on this screen.",
+                    processing: "SolenOS is processing this document. You do not need to stay on this screen.",
+                    processed: "Readable pages have been processed. Review status is shown below.",
+                    partially_processed: "Some pages or processing steps remain incomplete.",
+                    retry_required: "A processing step failed. The original document is still stored.",
+                    review_required: "Processing finished, but some information needs review before it can be added to the care record.",
+                    failed: "Processing could not be completed. The original document is still stored.",
+                    cancelled: "Document processing was stopped.",
+                  };
+                  const unreadable = item.unreadable_page_numbers || [];
+                  const unprocessed = item.unprocessed_page_numbers || [];
+                  const processed = item.processed_page_numbers || [];
+                  return (
+                    <li key={item.evidence_id}>
+                      <strong>{caregiverSafeAssistantText(item.document_name) || "Uploaded document"}</strong>
+                      <p>{statusText[item.processing_status] || "Processing status is available in the document library."}</p>
+                      {typeof item.page_count === "number" && <span>{processed.length} of {item.page_count} pages processed</span>}
+                      {unreadable.length > 0 && <p>Page{unreadable.length === 1 ? "" : "s"} {unreadable.join(", ")} could not be read. SolenOS has not treated missing text as proof that those pages contain nothing important.</p>}
+                      {unprocessed.length > 0 && <p>Page{unprocessed.length === 1 ? "" : "s"} {unprocessed.join(", ")} still need processing.</p>}
+                      {item.medication_conflict && <p role="status">The document contains conflicting medication instructions. Confirm the current instruction with the prescribing professional or pharmacist before acting on it.</p>}
+                      {item.written_to_lcr && <span> · Reviewed information saved to the Living Care Record</span>}
+                      {(item.accepted_follow_up_ids || []).length > 0 && <span> · Follow-up added to your existing follow-ups</span>}
+                      {item.review_required && <p><Link href="/workspace/documents">Review the document</Link></p>}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p>No documents have been uploaded from this account yet.</p>
+            )}
+            <Button variant="secondary" onClick={() => router.push("/workspace/documents")}>Open documents</Button>
           </section>
 
           <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
