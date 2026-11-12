@@ -371,12 +371,12 @@ export default function DailyCarePage() {
               <ul className="daily-care-record-list">
                 {careItems.filter(isOpenMatter).slice(0, 8).map((item, index) => (
                   <li key={item.id || `open-matter-${index}`}>
-                    <strong>{item.title || item.kind || "Open matter"}</strong>
+                    <strong>{item.title || "Open care question"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
-                    {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
-                    {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
+                    {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
+                    {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
                   </li>
                 ))}
               </ul>
@@ -516,8 +516,8 @@ export default function DailyCarePage() {
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
-                    {item.epistemic_status && <span> · {item.epistemic_status.replace(/_/g, " ")}</span>}
-                    {item.status && <span> · {item.status.replace(/_/g, " ")}</span>}
+                    {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
+                    {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
                   </li>
                 ))}
               </ul>
