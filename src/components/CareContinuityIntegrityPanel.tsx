@@ -10,6 +10,7 @@ type Assertion = {
   source_label: string
   source_text?: string | null
   evidence_ids: string[]
+  epistemic_state: string
   assertion_status: string
   review_after_days?: number | null
   recorded_at: string
@@ -58,6 +59,13 @@ function simpleRecordLabel(value?: string | null): string {
     undetermined: "Not sure",
     unknown: "Not yet known",
     not_assessed: "Not checked",
+    reported: "Reported by caregiver",
+    observed: "Direct observation",
+    verified: "Verified through review",
+    inferred: "Interpretation, not verified",
+    uncertain: "Still uncertain",
+    conflicting: "Conflicting information",
+    missing: "Missing information",
     accepted: "Accepted",
     rejected: "Not accepted",
     superseded: "Replaced by newer information",
@@ -174,7 +182,7 @@ export default function CareContinuityIntegrityPanel({
               <span style={{ fontSize: 12 }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Reported by: {item.source_label} · {simpleRecordLabel(item.assertion_kind)} · Review: {simpleRecordLabel(item.assertion_status)} · {item.source_event_id ? 'linked care event' : 'caregiver report'}
+              Source: {item.source_label} · {simpleRecordLabel(item.assertion_kind)} · Information: {simpleRecordLabel(item.epistemic_state || 'reported')} · Review: {simpleRecordLabel(item.assertion_status)} · {item.source_event_id ? 'linked care event' : 'caregiver report'}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{fresh.explanation}</p>}
             {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{item.source_text}</blockquote>}
