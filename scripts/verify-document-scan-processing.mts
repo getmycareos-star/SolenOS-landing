@@ -61,7 +61,7 @@ assert.match(scanAttachmentSource, /scan_rotation_degrees/, "scan rotation must 
 assert.match(scanAttachmentSource, /scan_crop_json/, "scan crop must be persisted as OCR metadata");
 assert.match(scanAttachmentSource, /scan_review_status", "not_reviewed"/, "crop adjustments must not falsely attest caregiver review");
 assert.match(scanAttachmentSource, /form\.append\("file", file\)/, "scan adjustments must never replace the original uploaded file bytes");
-assert.match(addRecordSource, /scanRotationDegrees: \(file as ScanPageFile\)\.scanRotationDegrees/, "per-page scan adjustments must be passed through the care-entry capture flow");
+assert.match(addRecordSource, /rotationDegrees: \(file as ScanPageFile\)\.scanRotationDegrees/, "per-page scan adjustments must be passed through the care-entry capture flow");
 
 const saveFunction = source.slice(source.indexOf("const saveReviewedPages"), source.indexOf("const openOriginal"));
 assert.match(saveFunction, /document_processing_job_id/, "the save response must confirm durable background processing was queued");
