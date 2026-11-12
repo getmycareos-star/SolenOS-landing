@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
+import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Conflict = {
   id: string;
@@ -153,7 +154,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         unresolved_remainder: status === "partially_resolved" ? unresolvedRemainder.trim() || null : null,
         evidence_ids: evidenceIds,
       });
-      setNotice("Resolution transition saved with its rationale and evidence references. Only the stated scope is resolved; related details are not silently resolved.");
+      setNotice("Update the review status saved with its rationale and evidence references. Only the stated scope is resolved; related details are not silently resolved.");
       setRationale("");
       await loadRecords();
       await loadHistory();
@@ -175,53 +176,53 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
     {!loading && !error && conflicts.length > 0 && <>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Conflict
         <select style={field} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-          {conflicts.map((item) => <option key={item.id} value={item.id}>{item.field}: {item.description.slice(0, 100)} · {item.resolution_status}</option>)}
+          {conflicts.map((item) => <option key={item.id} value={item.id}>Care detail: {caregiverSafeAssistantText(item.description) || "Saved reports differ"} · {caregiverStatusLabel(item.resolution_status) || "Status not available"}</option>)}
         </select>
       </label>
       {selected && <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: 10, marginBottom: 10, fontSize: 12 }}>
-        <p><strong>Disputed detail:</strong> {selected.subject_type} / {selected.subject_id} / {selected.field}</p>
-        <p>{selected.description}</p>
-        <p><strong>Context:</strong> {selected.context_key || "Not recorded"}</p>
+        <p><strong>Care detail:</strong> {caregiverSafeAssistantText(selected.description) || "Saved reports differ"}</p>
+        <p>{caregiverSafeAssistantText(selected.description) || "Saved reports differ."}</p>
+         
         <p><strong>Effective interval:</strong> {selected.effective_from || "Start unknown"} — {selected.effective_to || "End unknown"}</p>
-        <p><strong>Current partial-resolution scope:</strong> {selected.resolution_scope || "None recorded"}</p>
-        <p><strong>Unresolved remainder:</strong> {selected.unresolved_remainder || "Not separately recorded"}</p>
-        <p><strong>Linked evidence:</strong> {selected.evidence_ids?.length ? selected.evidence_ids.join(", ") : "None recorded"}</p>
-        {selected.matching_candidate_ids?.length ? <p><strong>Related conflict candidates:</strong> {selected.matching_candidate_ids.join(", ")}</p> : null}
+        <p><strong>What has been reviewed:</strong> {caregiverSafeAssistantText(selected.resolution_scope) || "Nothing has been marked as resolved."}</p>
+        <p><strong>What still needs checking:</strong> {caregiverSafeAssistantText(selected.unresolved_remainder) || "Not recorded"}</p>
+        <p><strong>Supporting information:</strong> {selected.evidence_ids?.length ? selected.evidence_ids.length + " saved item(s)" : "None recorded"}</p>
+        {selected.matching_candidate_ids?.length ? <p><strong>Related reports:</strong> {selected.matching_candidate_ids.length}</p> : null}
       </div>}
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Resolution transition
         <select style={field} value={status} onChange={(event) => setStatus(event.target.value as (typeof statuses)[number])}>
-          {statuses.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+          {statuses.map((value) => <option key={value} value={value}>{caregiverStatusLabel(value) || "Not available"}</option>)}
         </select>
       </label>
-      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Resolution rationale
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Why is this status changing?
         <textarea style={{ ...field, minHeight: 72 }} value={rationale} onChange={(event) => setRationale(event.target.value)} />
       </label>
-      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Exact scope resolved (required for partial resolution)
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>What part has been resolved? (required for a partial review)
         <textarea style={{ ...field, minHeight: 60 }} value={scope} onChange={(event) => setScope(event.target.value)} />
       </label>
-      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>What remains unresolved (required for partial resolution)
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>What still needs checking? (required for a partial review)
         <textarea style={{ ...field, minHeight: 60 }} value={unresolvedRemainder} onChange={(event) => setUnresolvedRemainder(event.target.value)} />
       </label>
-      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Evidence supporting the resolution (multi-select)
+      <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Supporting information
         <select multiple style={{ ...field, minHeight: 100 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-          {evidence.map((item) => <option key={item.id} value={item.id}>{item.type} · {item.id} · {item.source_text.slice(0, 80)}</option>)}
+          {evidence.map((item) => <option key={item.id} value={item.id}>Saved source · {caregiverSafeAssistantText(item.source_text.slice(0, 80)) || "Source text not available"}</option>)}
         </select>
       </label>
       <button type="button" style={button} onClick={() => void submitResolution()} disabled={saving || loading}>
-        {saving ? "Saving resolution…" : "Save conflict transition"}
+        {saving ? "Saving resolution…" : "Save review"}
       </button>
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <div style={{ marginTop: 14 }}>
-        <strong style={{ fontSize: 13 }}>Append-only transition history</strong>
+        <strong style={{ fontSize: 13 }}>Previous review decisions</strong>
         {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError}</p>}
         {history.length === 0 && !historyError && <p style={{ fontSize: 12 }}>No resolution transitions have been recorded yet.</p>}
         <ol style={{ fontSize: 12, paddingLeft: 18 }}>
           {history.map((item) => <li key={item.id}>
-            <strong>{item.previous_status.replaceAll("_", " ")} → {item.new_status.replaceAll("_", " ")}</strong>
-            <p>{item.rationale}</p>
-            {item.resolution_scope && <p>Resolved scope: {item.resolution_scope}</p>}
-            {item.unresolved_remainder && <p>Still unresolved: {item.unresolved_remainder}</p>}
-            <p>Evidence: {item.evidence_ids?.length ? item.evidence_ids.join(", ") : "None recorded"} · {item.created_at}</p>
+            <strong>{caregiverStatusLabel(item.previous_status) || "Not recorded"} → {caregiverStatusLabel(item.new_status) || "Status not available"}</strong>
+            <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
+            {item.resolution_scope && <p>Reviewed: {caregiverSafeAssistantText(item.resolution_scope) || "Not recorded"}</p>}
+            {item.unresolved_remainder && <p>Still needs checking: {caregiverSafeAssistantText(item.unresolved_remainder) || "Not recorded"}</p>}
+            <p>Supporting information: {item.evidence_ids?.length ? item.evidence_ids.length + " saved item(s)" : "None recorded"} · {item.created_at}</p>
           </li>)}
         </ol>
       </div>
