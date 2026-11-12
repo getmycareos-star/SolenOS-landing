@@ -965,6 +965,15 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                 </article>
               </div>
             </section>
+            {situationResponse.care_continuity_execution?.stages && (
+              <section className="panel panel-response" aria-label="Care record processing status" role="status">
+                <p>
+                  Original entry: {situationResponse.care_continuity_execution.stages.source_preservation === "verified" ? "saved" : "not confirmed"}.
+                  {" "}Source evidence: {situationResponse.care_continuity_execution.stages.evidence === "verified" ? "linked" : situationResponse.care_continuity_execution.stages.evidence === "not_applicable" ? "not required" : "not confirmed"}.
+                  {" "}Care-record reconciliation: {situationResponse.care_continuity_execution.stages.reconciliation === "committed" ? "completed" : "not confirmed"}.
+                </p>
+              </section>
+            )}
             {situationResponse.analysis_status === "partial" && (
               <p className="workspace-status-warning" role="status">
                 {situationResponse.analysis_warning ||
