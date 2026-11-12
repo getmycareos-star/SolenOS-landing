@@ -13,11 +13,12 @@ import {
   Search,
   ScanLine,
   ShieldCheck,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
 
-import { ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getBlob, getJSON, postFormData } from "@/api/client";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
@@ -130,6 +131,7 @@ export default function DocumentsPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [documentIntelligenceRefresh, setDocumentIntelligenceRefresh] = useState(0);
 
@@ -378,6 +380,25 @@ export default function DocumentsPage() {
     link.remove();
   };
 
+  const deleteSelectedDocument = async () => {
+    if (!selected || deletingDocument) return;
+    if (!window.confirm("Delete this document and its uncommitted extraction data? This cannot be undone.")) return;
+    setDeletingDocument(true);
+    setPreviewError(null);
+    try {
+      const result = await deleteJSON("/upload/" + encodeURIComponent(selected.id)) as { deleted?: boolean };
+      if (!result.deleted) throw new Error("SolenOS did not confirm document deletion.");
+      closePreview();
+      await loadDocuments(true);
+      setDocumentIntelligenceRefresh((value) => value + 1);
+      setUploadMessage({ kind: "success", text: "The document and its uncommitted extracted information were deleted. Information already used in the Living Care Record must be resolved before its source can be deleted." });
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "SolenOS could not delete this document. No deletion was confirmed.");
+    } finally {
+      setDeletingDocument(false);
+    }
+  };
+
   return (
     <div className="mobile-screen" style={{ gap: 18, paddingBottom: 28 }}>
       <header className="mobile-page-head" style={{ marginBottom: 0 }}>
@@ -532,6 +553,7 @@ export default function DocumentsPage() {
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button type="button" onClick={downloadOriginal} disabled={!previewUrl} aria-label="Download original document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><Download size={16} /> Download</button>
+              <button type="button" onClick={() => void deleteSelectedDocument()} disabled={deletingDocument} aria-label="Delete document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--danger, #a22)" }}>{deletingDocument ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />} Delete</button>
               <button type="button" onClick={closePreview} aria-label="Close document preview" style={{ width: 42, minHeight: 42, display: "grid", placeItems: "center", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><X size={19} /></button>
             </div>
           </header>
