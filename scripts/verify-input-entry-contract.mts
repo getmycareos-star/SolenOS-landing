@@ -183,6 +183,16 @@ const sot = fs.readFileSync(
 assert(sot.includes("never change the reasoning engine") || sot.includes("never** change"));
 console.log("✓ SoT present");
 
+const documentPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "documents", "page.tsx"), "utf8");
+assert(documentPage.includes('form.append("file", page.file)'), "Document intake must upload the original file");
+assert(documentPage.includes('form.append("ingestion_key", page.ingestionKey)'), "Document retries must retain the original ingestion key");
+assert(!documentPage.includes("/api/extract") && !documentPage.includes("extractText("), "Document intake must not perform duplicate browser-side extraction");
+assert(!documentPage.includes('form.append("extracted_text"'), "Browser-extracted text must not be sent as authoritative document text");
+assert(!documentPage.includes("Extracted text — review and correct before saving"), "Caregivers must not be forced to review extracted text before preserving the original");
+assert(documentPage.includes("SolenOS will extract and process it after the upload is saved."), "Original-first intake must explain that server-side processing follows upload");
+assert(documentPage.includes(".eml,.msg"), "The document picker must accept EML and Outlook MSG files");
+console.log("✓ Documents are preserved first; extraction is server-side and caregiver text review is not a save prerequisite");
+
 console.log("\nAll input-entry-contract checks passed.");
 
 
