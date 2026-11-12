@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/brand";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
+import QwenAssistPanel from "@/components/qwen/QwenAssistPanel";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -26,6 +27,11 @@ function WorkspaceHomeInner() {
   return (
     <main className="mobile-screen feature-page solenos-lcr-home">
       <LCRCurrentUnderstanding />
+      <QwenAssistPanel
+        defaultWorkflow="living_care_record"
+        title="Ask about your care record"
+        description="Ask about saved care history, changes, conflicting reports, appointments, handoffs, follow-ups or medication observations. Suggestions use information you are authorized to see and always need your review."
+      />
     </main>
   );
 }
