@@ -33,11 +33,16 @@ assert(continuity.includes('addEventListener("careRecordUpdated"') && continuity
 
 console.log("✓ decision versions, pending corrections and source-quotation boundaries are explicit");
 
-assert(capture.includes('postFormData("/upload"') && capture.includes('postJSON('), "all capture methods must persist the original and use the server document lifecycle");
-assert(capture.indexOf('postFormData("/upload"') < capture.indexOf('"/documents/" + encodeURIComponent(evidenceId) + "/extract"'), "the original bytes must be persisted before extraction starts");
-assert(capture.includes('"/documents/" + encodeURIComponent(evidenceId) + "/intelligence"'), "saved source extraction must feed the Qwen document intelligence endpoint");
+assert(capture.includes('postFormData("/upload"'), "capture must persist the original bytes before returning to the caregiver");
+const captureStart = capture.indexOf("export async function extractAttachedDocument");
+const captureEnd = capture.indexOf("export async function retryAttachedDocument", captureStart);
+const captureSource = capture.slice(captureStart, captureEnd);
+assert(captureStart >= 0 && captureEnd > captureStart, "the initial capture function must remain independently verifiable");
+assert(!captureSource.includes('"/documents/" + encodeURIComponent(evidenceId) + "/extract"'), "initial capture must not block on synchronous extraction");
+assert(!captureSource.includes('"/documents/" + encodeURIComponent(evidenceId) + "/intelligence"'), "initial capture must not block on synchronous Qwen interpretation");
+assert(captureSource.includes("durably queues document extraction and understanding"), "the server must own background processing after the original is saved");
 assert(!capture.includes('apiUrl("/api/extract"'), "capture must not depend on the legacy extract-before-upload endpoint");
-assert(capture.includes('getJSON(') && capture.includes('/documents/analyses/'), "the capture UI must display the persisted server extraction, not client-only OCR text");
+assert(capture.includes('getJSON(') && capture.includes('/documents/analyses/'), "the retry path must retrieve persisted server extraction, not client-only OCR text");
 const retryStart = capture.indexOf("export async function retryAttachedDocument");
 const retryEnd = capture.indexOf("export function dataUrlToFile", retryStart);
 const retrySource = capture.slice(retryStart, retryEnd);
@@ -46,9 +51,10 @@ assert(retryStart >= 0 && retryEnd > retryStart && retrySource.includes("documen
 assert(addSituation.includes("retryAttachedDocument(doc)"), "the caregiver Retry action must reuse the persisted original");
 
 assert(capture.includes('status: "failed"') && capture.includes('evidenceId,'), "an extraction failure must retain the evidence ID so the saved original remains recoverable");
-assert(documentsPage.includes("const saveReviewedPages") && documentsPage.includes('postFormData("/upload"'), "the Documents scan/upload flow must persist each original page first");
-assert(documentsPage.indexOf('postFormData("/upload"') < documentsPage.indexOf('"/documents/" + encodeURIComponent(stored.evidence_id) + "/extract"'), "the Documents scan/upload flow must upload original bytes before server extraction");
-assert(documentsPage.includes('"/documents/" + encodeURIComponent(stored.evidence_id) + "/intelligence"'), "the Documents scan/upload flow must invoke document intelligence after extraction");
+const saveFunction = documentsPage.slice(documentsPage.indexOf("const saveReviewedPages"), documentsPage.indexOf("const openOriginal"));
+assert(saveFunction.includes('postFormData("/upload"'), "the Documents scan/upload flow must persist each original page first");
+assert(saveFunction.includes("document_processing_job_id"), "the Documents scan/upload flow must receive a durable background job receipt");
+assert(!saveFunction.includes('"/extract"') && !saveFunction.includes('"/intelligence"'), "the Documents screen must not block caregivers while server extraction and understanding run");
 
 
 console.log("✓ accepting a document observation refreshes the LCR and care-continuity panels");
