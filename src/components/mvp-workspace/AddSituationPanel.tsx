@@ -293,8 +293,9 @@ export function AddSituationPanel({
                 ` · ${sanitizeCaregiverErrorMessage(doc.errorNote ?? "Could not read this document.")}`}
               {doc.status === "ready" && " · Attached"}
               {doc.status === "saved" && doc.entryMethod === "snap" && " · Photo saved — not interpreted"}
-              {doc.status === "saved" && doc.entryMethod !== "snap" && " · Saved — processing in background"}
-              {doc.status === "failed" && (
+              {doc.status === "saved" && doc.entryMethod !== "snap" && (doc.errorNote ? " · Original saved — processing not started" : " · Saved — processing in background")}
+              {doc.status === "saved" && doc.errorNote && <span role="alert"> · {sanitizeCaregiverErrorMessage(doc.errorNote)}</span>}
+              {(doc.status === "failed" || (doc.status === "saved" && !!doc.errorNote)) && (
                 <button
                   type="button"
                   className="link-button"
