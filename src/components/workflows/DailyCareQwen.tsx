@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getPersonId, postJSON } from "@/api/client";
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type SourceRecord = {
   source_type: string;
@@ -75,10 +76,10 @@ export default function DailyCareQwen() {
       })) as AskResult;
       setResult(response);
       if (response.status !== "completed") {
-        setFeedback(response.answer || "Daily Care records remain available.");
+        setFeedback(caregiverSafeAssistantText(response.answer) || "I could not safely display that response. Your saved care information has not been changed.");
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Daily Care Qwen is unavailable. Your saved care records have not been changed.");
+      setError(caregiverSafeErrorMessage());
     } finally {
       setBusy(false);
     }
@@ -109,9 +110,9 @@ export default function DailyCareQwen() {
         proposals[index] = response.proposal;
         return { ...current, proposals };
       });
-      setFeedback(response.message);
+      setFeedback(caregiverSafeAssistantText(response.message) || "Your review choice was saved.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The review decision could not be saved. Please try again.");
+      setError(caregiverSafeErrorMessage());
     } finally {
       setReviewing(null);
     }
@@ -123,7 +124,7 @@ export default function DailyCareQwen() {
         <div>
           <p className="daily-care-qwen__eyebrow">DAILY CARE INTELLIGENCE</p>
           <h2 id="daily-care-qwen-title">Ask about the care history</h2>
-          <p>Qwen searches the available records for this care session and shows the source entries it used. Its answers are assistance, not established care facts.</p>
+          <p>SolenOS looks through the saved care history and shows the information behind its answer. Suggestions are not confirmed care facts.</p>
         </div>
       </div>
 
@@ -153,7 +154,7 @@ export default function DailyCareQwen() {
           placeholder="e.g. sleep, meals, appointments"
         />
         <button type="submit" disabled={busy || !question.trim()}>
-          {busy ? "Searching care history…" : "Ask Daily Care Qwen"}
+          {busy ? "Searching care history…" : "Ask about the care history"}
         </button>
       </form>
 
@@ -162,33 +163,30 @@ export default function DailyCareQwen() {
 
       {result ? (
         <div className="daily-care-qwen__result" aria-live="polite">
-          <h3>Qwen’s response</h3>
-          <p className="daily-care-qwen__answer">{result.answer}</p>
+          <h3>Care history response</h3>
+          <p className="daily-care-qwen__answer">{caregiverSafeAssistantText(result.answer) || "I could not safely display that response. Your saved care information has not been changed."}</p>
           {result.history_scope ? (
             <p className="daily-care-qwen__scope">
-              Retrieved {result.history_scope.matched_records ?? 0} matching records
-              {typeof result.history_scope.records_sent_to_model === "number"
-                ? `; sent ${result.history_scope.records_sent_to_model} relevant records to Qwen`
-                : ""}.
+              Found {result.history_scope.matched_records ?? 0} matching saved care updates.
               {result.history_scope.oldest_record_at
                 ? ` Available history begins ${readableDate(result.history_scope.oldest_record_at)}`
                 : ""}
               {result.history_scope.newest_record_at
                 ? ` and extends to ${readableDate(result.history_scope.newest_record_at)}.`
                 : "."}
-              Qwen’s response uses a bounded relevant evidence set; this count is not a claim that every record was sent to the model.
+              This answer uses the saved information most relevant to your question. It may not include every care entry.
             </p>
           ) : null}
 
           {result.source_records?.length ? (
             <div className="daily-care-qwen__sources">
-              <h3>Source records</h3>
+              <h3>Information used</h3>
               <ul>
                 {result.source_records.map((source) => (
                   <li key={`${source.source_type}:${source.source_id}`}>
-                    <strong>{source.title || source.source_type}</strong>
+                    <strong>{caregiverSafeAssistantText(source.title) || "Saved care information"}</strong>
                     <span>{readableDate(source.date)}</span>
-                    <code>{source.source_type} · {source.source_id}</code>
+                    
                   </li>
                 ))}
               </ul>
@@ -197,18 +195,18 @@ export default function DailyCareQwen() {
 
           {result.proposals?.length ? (
             <div className="daily-care-qwen__proposals">
-              <h3>Possible Living Care Record updates</h3>
+              <h3>Suggested care record updates</h3>
               <p>Review each proposal against its original entries. Nothing below is saved to the LCR until you explicitly accept it.</p>
               {result.proposals.map((proposal, index) => {
                 const final = ["accepted_by_caregiver", "rejected_by_caregiver"].includes(proposal.review_status);
                 return (
                   <article className="daily-care-qwen__proposal" key={`${result.proposal_analysis_id}:${index}`}>
                     <h4>{proposal.title}</h4>
-                    <p><strong>Proposed record:</strong> {proposal.proposed_value}</p>
-                    <p><strong>Why it may matter:</strong> {proposal.reason || "No reason supplied."}</p>
-                    <p><strong>Uncertainty:</strong> {proposal.uncertainty || "Not specified."}</p>
-                    <p><strong>Sources:</strong> {proposal.source_ids.join(", ")}</p>
-                    <p className="daily-care-qwen__status">Review status: {proposal.review_status.replaceAll("_", " ")}</p>
+                    <p><strong>Suggested update:</strong> {caregiverSafeAssistantText(proposal.proposed_value) || "A possible update is ready for review."}</p>
+                    <p><strong>Why it may matter:</strong> {caregiverSafeAssistantText(proposal.reason) || "No explanation is available."}</p>
+                    <p><strong>What is still unclear:</strong> {caregiverSafeAssistantText(proposal.uncertainty) || "This suggestion may need checking."}</p>
+                    
+                    <p className="daily-care-qwen__status">{caregiverStatusLabel(proposal.review_status) ?? "Review status unavailable"}</p>
                     {!final ? (
                       <>
                         <label htmlFor={`daily-care-qwen-correction-${index}`}>Correct the wording (optional)</label>
