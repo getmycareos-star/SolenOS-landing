@@ -495,7 +495,7 @@ function AccountCard() {
       if (mode === "create" && (e instanceof TypeError || /network|fetch|timed out|timeout/i.test(detail))) {
         setError("We couldn’t confirm whether account creation completed. Your care record remains intact. Try signing in with the same email and password before attempting registration again.");
       } else {
-        setError(detail || "We couldn’t complete that account action. Please check your details and try again.");
+        setError(caregiverSafeErrorMessage());
       }
     } finally {
       setBusy(false);
@@ -509,9 +509,9 @@ function AccountCard() {
     try {
       const result = await postJSON("/accounts/recovery-code", {}) as { recovery_code: string; message: string };
       setRecoveryCode(result.recovery_code);
-      setMessage(result.message);
+      setMessage("A new recovery code is ready. Store it somewhere safe.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn't generate a recovery code.");
+      setError(caregiverSafeErrorMessage());
     } finally {
       setRotatingRecoveryCode(false);
     }
@@ -534,7 +534,7 @@ function AccountCard() {
       show("Signed out securely.", "success");
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";
-      setError(detail || "We couldn’t complete sign-out. Your current session is still available; check your connection and try again.");
+      setError("We couldn’t complete sign-out. Your current session is still available. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
