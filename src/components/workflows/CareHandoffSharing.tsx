@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
+import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type HandoffDraftPurpose = "family_transition" | "return_to_care" | "professional_appointment" | "hospital_discharge" | "period_summary";
 
@@ -107,11 +108,11 @@ function handoffPurposeLabel(value: string): string {
   if (value === "professional_appointment") return "Doctor’s appointment";
   if (value === "period_summary") return "Full care overview";
   if (value === "hospital_discharge") return "Hospital discharge";
-  return value.replaceAll("_", " ");
+  return "Care handoff";
 }
 
 function readableStatus(value: string): string {
-  return value.replaceAll("_", " ").replace(/^./, character => character.toUpperCase());
+  return caregiverStatusLabel(value) ?? "Not available";
 }
 
 function readableScope(value: string): string {
@@ -119,7 +120,19 @@ function readableScope(value: string): string {
   if (value === "documents") return "Uploaded documents";
   if (value === "appointments") return "Appointments";
   if (value === "open_loops") return "Open care actions and questions";
-  return readableStatus(value);
+  return "Other care information";
+}
+
+function readableSection(value: string): string {
+  const labels: Record<string, string> = {
+    care_facts: "Saved care information", care_assertions: "Caregiver reports", care_events: "Care updates",
+    care_decisions: "Care decisions", decision_outcomes: "What happened next", care_transitions: "Care changes",
+    care_timeline_entries: "Care history", daily_care: "Daily Care", documents: "Documents",
+    appointments: "Appointments", actions: "Follow-up actions", care_action_outcomes: "Follow-up outcomes",
+    open_questions: "Questions that still need answers", information_gaps: "Information still needed",
+    uncertainty_assessments: "Information that needs checking", medications_and_allergies: "Medications and allergies",
+  };
+  return labels[value] ?? "Care information";
 }
 
 function scopeForSourceType(sourceType: string): string {
@@ -149,10 +162,10 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     audience === "family" ? "SolenOS Family Care Handoff — Living Care Record · Family Edition" : "SolenOS Professional Care Handoff — Living Care Record · Professional Edition",
     "Purpose: " + purpose,
     "Prepared at: " + formatDate(draft.prepared_at),
-    "Source window: " + draft.window.days + " days (" + draft.window.from + " to " + draft.window.to + ")",
+    "Period covered: " + draft.window.days + " days (" + draft.window.from + " to " + draft.window.to + ")",
     "",
-    "IMPORTANT: Caregiver-reported, unreviewed, rejected, and historical information retains its status. This is not a clinical judgment.",
-    draft.warning,
+    "Important: Information that has not been checked, was not accepted, or may be out of date is labelled. This summary is not a medical opinion.",
+    caregiverSafeAssistantText(draft.warning) ?? "Some information may be incomplete. Review the details before sharing.",
     "",
   ];
   let truncated = false;
@@ -174,14 +187,14 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     lines.push(sectionHeader);
     const itemText = [
       "- " + item.text,
-      "Information status: " + readableStatus(item.epistemic_status || "not_recorded"),
-      "Record status: " + readableStatus(item.record_status || "not_recorded"),
-      "Event time: " + formatDate(item.event_at),
-      "Recorded time: " + formatDate(item.recorded_at),
-      "Historical status: " + (item.stale_warning ? "historical or stale; re-check before relying on it" : "not flagged stale"),
-      "Source: record " + displayedSourceNumber,
+      "How it was reported: " + readableStatus(item.epistemic_status || "not_recorded"),
+      "Review: " + readableStatus(item.record_status || "not_recorded"),
+      "When it happened: " + formatDate(item.event_at),
+      "When it was saved: " + formatDate(item.recorded_at),
+      "Date note: " + (item.stale_warning ? "older information; check before relying on it" : "not flagged as old"),
+      "Saved source: " + displayedSourceNumber,
       ...(scopeForSourceType(sourceTypes.get(item.source_ref) ?? "care_fact") === "documents" ? [
-        "Original document reference: " + String(sourceDetails.get(item.source_ref)?.original_source_reference ?? "not recorded"),
+        "Original document reference: saved",
         "Page references: " + (Array.isArray(sourceDetails.get(item.source_ref)?.page_references) ? (sourceDetails.get(item.source_ref)?.page_references as unknown[]).map(value => String(value)).join(", ") : "not recorded"),
       ] : []),
     ].join("\n");
@@ -198,19 +211,19 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     if (lines.join("\n").length + line.length > 16500) truncated = true;
     else lines.push(line);
   }
-  lines.push("\n## Source coverage");
+  lines.push("\n## What information was available");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
-    const line = "- " + (value.label || readableStatus(name)) + ": " + readableStatus(value.status) + (value.reason ? " (" + value.reason + ")" : "") + "; " + value.count + " record(s)";
+    const line = "- " + (caregiverSafeAssistantText(value.label) || readableSection(name)) + ": " + readableStatus(value.status) + (caregiverSafeAssistantText(value.reason) ? " (" + caregiverSafeAssistantText(value.reason) + ")" : "") + "; " + value.count + " saved item(s)";
     if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
   for (const limitation of draft.limitations) {
     if (!includedSourceKeys.has(limitation.source)) continue;
-    const line = "- " + readableStatus(limitation.source) + ": " + readableStatus(limitation.status) + (limitation.reason ? " (" + limitation.reason + ")" : "");
+    const line = "- " + readableSection(limitation.source) + ": " + readableStatus(limitation.status) + (caregiverSafeAssistantText(limitation.reason) ? " (" + caregiverSafeAssistantText(limitation.reason) + ")" : "");
     if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
-  if (truncated) lines.push("\nPreview truncated. The persisted draft retains the complete validated source snapshot.");
+  if (truncated) lines.push("\nThis preview is shortened. The saved handoff keeps the full information selected for sharing.");
   return { text: lines.join("\n").slice(0, 18000) };
 }
 
@@ -357,7 +370,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         window_days: Number(prepareWindowDays),
       }, { "X-Request-ID": requestId }) as DraftPayload;
       if (!prepared?.draft_id || !Array.isArray(prepared.sections)) {
-        throw new Error("The server did not return a persisted handoff draft.");
+        throw new Error("The saved handoff could not be confirmed.");
       }
       setSavedDrafts(current => [
         prepared,
@@ -403,7 +416,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setNotice("Draft revision saved. It has not been approved or shared.");
       await load();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "The draft revision could not be saved.");
+      setError("Your handoff changes could not be saved. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -415,11 +428,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       return;
     }
     if (draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed") {
-      setError("This draft has no validated care summary. It cannot be shared.");
+      setError("This handoff does not have a complete care summary yet. It cannot be shared.");
       return;
     }
     if (!reviewConfirmed || !summaryText.trim() || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0) {
-      setError("Review the complete generated handoff and select at least one eligible linked caregiver before sharing.");
+      setError("Review the full handoff and select at least one eligible caregiver before sharing.");
       return;
     }
     setBusy(true);
@@ -469,7 +482,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       shareExpiry.current = null;
       await load();
     } catch (shareError) {
-      setError(shareError instanceof Error ? shareError.message : "The handoff could not be shared. No success is assumed.");
+      setError("The handoff could not be shared. Refresh the list to check its status before trying again.");
     } finally {
       setBusy(false);
     }
@@ -607,7 +620,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                   const full = await getJSON("/handoff-drafts/" + encodeURIComponent(saved.draft_id)) as DraftPayload;
                   onResumeDraft?.(full);
                 } catch (resumeError) {
-                  setError(resumeError instanceof Error ? resumeError.message : "Saved draft could not be retrieved.");
+                  setError("The saved handoff could not be opened. Please refresh and try again.");
                 } finally {
                   setBusy(false);
                 }
@@ -628,27 +641,27 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       {draft && audience === "professional" && (
         <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
           <strong>Professional handoff — private review only</strong>
-          <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>SolenOS cannot yet verify professional identity and role authorization for handoff recipients. This professional draft cannot be shared from this interface. No family caregiver will be treated as a verified clinician.</p>
+          <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>SolenOS cannot yet verify professional identity and role authorization for handoff recipients. This professional draft cannot be shared from this screen. A family caregiver will not be treated as a healthcare professional.</p>
         </div>
       )}
 
       {draft && audience === "family" && (
         <section style={panel} aria-labelledby="family-share-heading">
           <h4 id="family-share-heading" style={{ margin: "0 0 8px", fontSize: 15 }}>Review and share family handoff</h4>
-          <p style={{ marginTop: 0, fontSize: 12, lineHeight: 1.55 }}>Only linked, eligible caregiver sessions are listed. Sharing requires explicit review, expires automatically, can be revoked, and does not update the LCR.</p>
+          <p style={{ marginTop: 0, fontSize: 12, lineHeight: 1.55 }}>Only caregivers connected to this care record and allowed to receive it are listed. Sharing requires your review, expires automatically, can be stopped, and does not change the care record.</p>
           {consentRequired && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
             Incoming handoffs and recipient sharing are unavailable until the required privacy and multi-caregiver acknowledgements are saved for this care record. Review them in <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Settings → Privacy</Link>, then refresh this panel. Your care record remains available.
           </p>}
           {draft.evidence_lineage && <details style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="How information was sourced">
             <summary style={{ fontSize: 12, fontWeight: 650, cursor: "pointer" }}>How the information was sourced</summary>
             {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map((group, index) => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: 12 }}>
-              <b>Source group {index + 1}: {readableStatus(group.source_independence_status)}</b>
-              <p style={{ margin: "3px 0", color: "#667267" }}>{group.interpretation_limit}</p>
+              <b>How these reports are related: {readableStatus(group.source_independence_status)}</b>
+              <p style={{ margin: "3px 0", color: "#667267" }}>{caregiverSafeAssistantText(group.interpretation_limit) ?? "The relationship between these reports is not fully known."}</p>
             </div>) : <p style={{ fontSize: 12, marginBottom: 0 }}>The available records do not establish whether some information came from the same original source. Do not treat similar accounts as independent confirmation.</p>}
-            <p style={{ fontSize: 12, marginBottom: 0, color: "#667267" }}>{draft.evidence_lineage.interpretation_limit}</p>
+            <p style={{ fontSize: 12, marginBottom: 0, color: "#667267" }}>{caregiverSafeAssistantText(draft.evidence_lineage.interpretation_limit) ?? "A link between reports does not prove that they are true or independent."}</p>
           </details>}
           {directoryError && <p role="alert">The recipient list could not be verified. Refresh before sharing.</p>}
-          {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No linked caregiver is currently eligible to receive this handoff. SolenOS will not send it to an unlinked recipient.</p>}
+          {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No connected caregiver is currently allowed to receive this handoff. SolenOS will not send it to someone outside this care record.</p>}
           {eligibleRecipients.map(recipient => (
             <label key={recipient.caregiver_id} style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "10px 0", lineHeight: 1.4 }}>
               <input type="checkbox" checked={selectedRecipients.includes(recipient.caregiver_id)} disabled={busy} onChange={event => {
@@ -668,12 +681,12 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Complete summary to be shared</label>
           <div style={{ margin: "12px 0" }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Review sourced statements</strong>
-            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Sourced wording stays tied to the saved care record. Remove anything that should not be shared. If a statement is outdated or needs correcting, explain that in the caregiver note below; it will be clearly labelled as your report, not independently verified. Update the original care record separately when needed.</p>
+            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Each statement stays connected to the saved care information. Remove anything that should not be shared. If something is old or needs correcting, explain that in the caregiver note below. It will be labelled as your report, not independently confirmed. Update the original care record separately when needed.</p>
             {editedSections.map((item, index) => (
               <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
-                <strong style={{ display: "block", fontSize: 12 }}>{item.section}</strong>
-                <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Source {index + 1} · {readableStatus(item.epistemic_status ?? "not recorded")} · {readableStatus(item.record_status ?? "not recorded")} · occurred {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}</small>
-                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{item.text}</p>
+                <strong style={{ display: "block", fontSize: 12 }}>{readableSection(item.section)}</strong>
+                <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Saved information {index + 1} · {readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.text) ?? "Some details could not be shown in this preview."}</p>
                 <button type="button" style={quietButton} onClick={() => {
                   const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
                   setEditedSections(remaining);
@@ -687,20 +700,20 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             ))}
           </div>
           <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>This preview keeps each statement tied to its saved source, shows its information status, and separates when it happened from when it was recorded.</p>
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved revision: {revisionHistory.length ? Math.max(...revisionHistory.map(item => item.revision_number)) : draft.revision_number ?? 1} · Source freshness: {sourceFreshness ? readableStatus(sourceFreshness.status) : "Checking"} · {revisionHistory.length} revision record(s)</p>
-          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Revision history</summary>{revisionHistory.map(item => (
+          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Each detail stays connected to the information it came from. The summary shows when something happened and when it was saved.</p>
+          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Draft updated {revisionHistory.length || 1} time(s) · How recent the information is: {sourceFreshness ? readableStatus(sourceFreshness.status) : "Checking"}</p>
+          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Previous saved versions</summary>{revisionHistory.map(item => (
               <details key={item.revision_number} style={{ margin: "6px 0" }}>
-                <summary style={{ cursor: "pointer", fontSize: 11 }}>Revision {item.revision_number} · {readableStatus(item.change_type)} · {formatDate(item.created_at)}</summary>
-                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{section.section}:</strong> {section.text} <small>(Source {index + 1})</small></p>)}
+                <summary style={{ cursor: "pointer", fontSize: 11 }}>Updated {formatDate(item.created_at)} · {readableStatus(item.change_type)}</summary>
+                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{readableSection(section.section)}:</strong> {caregiverSafeAssistantText(section.text) ?? "Some details are not available in this version."} <small>(Source {index + 1})</small></p>)}
                 {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note: {note.text}</p>)}
-                <p style={{ fontSize: 10, color: "#667267" }}>Source records in this immutable snapshot: {item.source_snapshot?.source_records?.length ?? "not reported"}</p>
+                <p style={{ fontSize: 10, color: "#667267" }}>Saved items in this version: {item.source_snapshot?.source_records?.length ?? "Not recorded"}</p>
               </details>
             ))}</details>}
-          {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>This draft is {sourceFreshness.status}. Prepare a fresh draft before approval or sharing.</p>}
+          {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>Some information in this draft may be out of date ({readableStatus(sourceFreshness.status)}). Prepare a new draft before sharing.</p>}
           <div style={{ margin: "12px 0" }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Sharing scope</strong>
-            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Choose which source categories the recipient can receive. Unselected categories remain in the saved draft and are not attached to this handoff.</p>
+            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Choose which kinds of information the recipient can receive. Unselected information stays in the saved draft and is not shared.</p>
             {requiredHandoffScopes(draft, editedSections).map(scope => (
               <label key={scope} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, margin: "6px 0" }}>
                 <input type="checkbox" checked={selectedScope.includes(scope)} onChange={event => {
@@ -715,7 +728,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </div>
           <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Additional caregiver note (optional)</label>
           <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be labelled caregiver-authored and not independently verified." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
-          <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale" || editedSections.length === 0} onClick={() => void saveDraftRevision()}>Save draft revision</button>
+          <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale" || editedSections.length === 0} onClick={() => void saveDraftRevision()}>Save draft changes</button>
           <section aria-label="Confirm handoff details" style={{ border: "1px solid #cbd8cb", borderRadius: 10, padding: 12, margin: "14px 0", background: "#f7faf6" }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 7 }}>Confirm exactly what will be shared</strong>
             <p style={{ fontSize: 12, margin: "4px 0" }}><b>Purpose:</b> {purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor’s appointment" : "Full care overview"}</p>
@@ -729,7 +742,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <span>I reviewed the entire summary against the available care information and approve sharing this snapshot with the selected linked caregiver(s).</span>
           </label>
           <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
-            <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed snapshot…" : "Share reviewed family handoff"}
+            <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing reviewed handoff…" : "Share reviewed handoff"}
           </button>
         </section>
       )}
@@ -764,15 +777,15 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <p style={{ fontSize: 12, lineHeight: 1.5 }}>From {activeInbox.from_caregiver_name || "a linked caregiver"}. This is a caregiver-provided summary, not independent clinical verification.</p>
                 {Object.entries(activeSnapshot.sections ?? {}).map(([name, value]) => (
                   <div key={name} style={{ marginBottom: 10 }}>
-                    <strong style={{ fontSize: 12 }}>{name.replaceAll("_", " ")}</strong>
+                    <strong style={{ fontSize: 12 }}>{readableSection(name)}</strong>
                     <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", fontSize: 12, lineHeight: 1.5 }}>{String(value ?? "")}</pre>
                   </div>
                 ))}
                 
                 {activeSnapshot.purpose && <p style={{ fontSize: 12 }}>Purpose: {handoffPurposeLabel(activeSnapshot.purpose)} · Shared with: {activeSnapshot.audience === "family" ? "Family caregiver" : activeSnapshot.audience === "professional" ? "Healthcare professional" : "Not recorded"} · Source period: {activeSnapshot.window?.days ?? "unknown"} days</p>}
-                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Information included and availability</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{value.label || readableScope(key)}: {readableStatus(value.status)}{value.reason ? " — " + value.reason : ""} · {value.count} record(s)</p>)}</section>}
-                {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableScope(item.source)}: {readableStatus(item.status)}{item.reason ? " (" + item.reason + ")" : ""}</p>)}
-                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Source {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · occurred {formatDate(item.event_at)} · recorded {formatDate(item.recorded_at)}{item.stale_warning ? " · historical/stale" : ""}{item.original_source_reference ? " · document source" : ""}{Array.isArray(item.page_references) && item.page_references.length ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
+                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Information included and availability</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{caregiverSafeAssistantText(value.label) || readableSection(key)}: {readableStatus(value.status)}{caregiverSafeAssistantText(value.reason) ? " — " + caregiverSafeAssistantText(value.reason) : ""} · {value.count} saved item(s)</p>)}</section>}
+                {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableSection(item.source)}: {readableStatus(item.status)}{caregiverSafeAssistantText(item.reason) ? " (" + caregiverSafeAssistantText(item.reason) + ")" : ""}</p>)}
+                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Saved information {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}{item.stale_warning ? " · older information — check before relying on it" : ""}{item.original_source_reference ? " · document source" : ""}{Array.isArray(item.page_references) && item.page_references.length ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
                 <p style={{ fontSize: 11 }}>Record check: The shared records belong to this care recipient. This does not independently verify clinical accuracy.</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
