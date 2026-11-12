@@ -11,6 +11,7 @@ import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { ensureAnonymousSession } from "@/api/client";
 import { apiUrl } from "@/lib/api-url";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 function formatLastUpdated(iso: string | null): string {
   if (!iso) return "Not yet updated";
@@ -83,9 +84,7 @@ function WorkspacePageInner() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(
-          result && typeof result.detail === "string"
-            ? result.detail
-            : "The related-care link was not saved.",
+          "The related care topics could not be linked. Please try again.",
         );
       }
       const refreshed = await fetch(apiUrl("/api/situation"), {
@@ -102,12 +101,12 @@ function WorkspacePageInner() {
       }));
       setRelationshipFeedback(
         relationshipType === "related_to"
-          ? "Related concerns linked. Their separate care threads and evidence remain intact."
-          : "Relationship retracted. The prior link remains in audit history; both care threads remain separate.",
+          ? "Related care topics are linked. Each keeps its own history and supporting information."
+          : "The link was removed. Both care topics remain separate.",
       );
       setRelationshipTargets((previous) => ({ ...previous, [sourceSituationId]: "" }));
     } catch (error) {
-      setRelationshipFeedback(error instanceof Error ? error.message : "The related-care link was not saved.");
+      setRelationshipFeedback("The related care topics could not be linked. Please try again.");
     } finally {
       setLinkingSituationId(null);
     }
@@ -197,7 +196,7 @@ function WorkspacePageInner() {
             <div className="lcr-empty-state">
               <div className="lcr-empty-icon" aria-hidden="true"><FileText size={27} /></div>
               <h3>No care events are available in this timeline yet</h3>
-              <p>This timeline shows saved care situations. Other persisted care information may still appear in the current-care summary and source review.</p>
+              <p>This timeline shows saved care situations. Other saved care information may still appear in the current summary and source review.</p>
             </div>
           ) : (
             <div className="lcr-timeline">
@@ -206,44 +205,43 @@ function WorkspacePageInner() {
                   <span className="lcr-timeline-marker" aria-hidden="true"><FileText size={17} /></span>
                   <div className="lcr-timeline-content">
                     <div className="lcr-entry-heading">
-                      <h3>{situation.title}</h3>
+                      <h3>{caregiverSafeAssistantText(situation.title) || "Care update"}</h3>
                       <span>{formatLastUpdated(situation.updatedAt)}</span>
                     </div>
-                    {situation.contextSummary && <p>{situation.contextSummary}</p>}
+                    {situation.contextSummary && <p>{caregiverSafeAssistantText(situation.contextSummary) || "Additional care details are saved."}</p>}
                     {(situation.sourceStatements?.length ?? 0) > 0 && (
                       <div className="lcr-source-statements" aria-label="Statements preserved from original sources">
                         <p>Statements from original sources</p>
                         {situation.sourceStatements!.map((statement) => (
                           <div key={statement.id} className="lcr-source-statement">
                             <p>
-                              <strong>{statement.speaker_label || "Speaker not identified"}</strong>
+                              <strong>{caregiverSafeAssistantText(statement.speaker_label) || "Name not recorded"}</strong>
                               {statement.speaker_attribution_status === "explicit"
-                                ? " · label recorded in source; identity not independently verified"
-                                : " · no speaker label in source"}
+                                ? " · name shown in the original note; not independently confirmed"
+                                : " · no name was included in the original note"}
                             </p>
-                            <p>{statement.source_passage}</p>
+                            <p>{caregiverSafeAssistantText(statement.source_passage) || "The original wording is saved."}</p>
                             {statement.supersedes_observation_id && (
                               <small>
-                                Corrects exact observation {statement.supersedes_observation_id}
-                                {" · "}{statement.correction_rationale || "Correction reason not supplied"}
+                                Corrects an earlier saved detail{" · "}{caregiverSafeAssistantText(statement.correction_rationale) || "No reason was recorded"}
                               </small>
                             )}
                             {statement.superseded_by_observation_ids.length > 0 && (
                               <small>
-                                Original statement preserved · superseded by exact observation IDs: {statement.superseded_by_observation_ids.join(", ")}
+                                Original wording preserved · updated in {statement.superseded_by_observation_ids.length} later saved detail(s)
                               </small>
                             )}
                             <small>
-                              Source record: {statement.evidence_id}
+                              Saved source
                               {" · "}
                               {statement.occurred_at
-                                ? `Source event time: ${formatLastUpdated(statement.occurred_at)}`
+                                ? `Happened: ${formatLastUpdated(statement.occurred_at)}`
                                 : statement.observed_at
                                   ? `Observed: ${formatLastUpdated(statement.observed_at)}`
-                                  : statement.context || "Source event time not stated"}
-                              {" · "}Submitted by authenticated caregiver
+                                  : caregiverSafeAssistantText(statement.context) || "Time not stated"}
+                              {" · "}Shared by caregiver
                               {" · "}Recorded {statement.reported_at ? formatLastUpdated(statement.reported_at) : "time unavailable"}
-                              {" · "}{statement.epistemic_status}
+                              {" · "}{caregiverInformationLabel(statement.epistemic_status) || "Caregiver report"}
                             </small>
                           </div>
                         ))}
@@ -256,14 +254,14 @@ function WorkspacePageInner() {
                         </p>
                         {situation.conflicts!.map((conflict) => (
                           <div key={conflict.id} className="lcr-source-statement">
-                            <p><strong>{conflict.field}</strong></p>
-                            <p>{conflict.description}</p>
+                            <p><strong>Care detail</strong></p>
+                            <p>{caregiverSafeAssistantText(conflict.description) || "The saved reports differ."}</p>
                             <small>
-                              Resolution: {conflict.resolution_status}
+                              Review: {caregiverStatusLabel(conflict.resolution_status) || "Not recorded"}
                               {" · "}Winner selected: no
-                              {" · "}Source evidence IDs: {conflict.evidence_ids.length > 0
-                                ? conflict.evidence_ids.join(", ")
-                                : "not linked"}
+                              {" · "}Supporting information: {conflict.evidence_ids.length > 0
+                                ? conflict.evidence_ids.length + " saved item(s)"
+                                : "None linked"}
                             </small>
                           </div>
                         ))}
@@ -276,23 +274,23 @@ function WorkspacePageInner() {
                         </p>
                         {situation.informationGaps!.map((gap) => (
                           <div key={gap.id} className="lcr-source-statement">
-                            <p><strong>{gap.field}</strong></p>
-                            {gap.description && <p>{gap.description}</p>}
+                            <p><strong>Care detail</strong></p>
+                            {gap.description && <p>{caregiverSafeAssistantText(gap.description) || "More information may be needed."}</p>}
                             <small>
-                              {gap.gap_reason || "Reason not recorded"}
-                              {" · "}Priority: {gap.priority || "not assessed"}
-                              {" · "}Evidence IDs: {gap.evidence_ids.length > 0
-                                ? gap.evidence_ids.join(", ")
-                                : "none linked"}
+                              {caregiverSafeAssistantText(gap.gap_reason) || "Reason not recorded"}
+                              {" · "}Priority: {caregiverStatusLabel(gap.priority) || "Not assessed"}
+                              {" · "}Supporting information: {gap.evidence_ids.length > 0
+                                ? gap.evidence_ids.length + " saved item(s)"
+                                : "None linked"}
                             </small>
                           </div>
                         ))}
                       </div>
                     )}
                     {situation.openQuestions.length > 0 && (
-                      <p>Still to clarify: {situation.openQuestions.join(" · ")}</p>
+                      <p>Still to clarify: {situation.openQuestions.map(caregiverSafeAssistantText).filter(Boolean).join(" · ")}</p>
                     )}
-                    <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? situation.status}</span>
+                    <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? caregiverStatusLabel(situation.status) ?? "Status not available"}</span>
                     {situation.persistedThread && situation.status !== "resolved" && resumableSituations.length > 1 && (
                       <div className="lcr-related-situation-control">
                         <label htmlFor={`related-situation-${situation.id}`}>Link a related concern without merging it</label>
@@ -311,7 +309,7 @@ function WorkspacePageInner() {
                               !situation.relatedSituations?.some((related) => related.id === candidate.id)
                             )
                             .map((candidate) => (
-                              <option key={candidate.id} value={candidate.id}>{candidate.title}</option>
+                              <option key={candidate.id} value={candidate.id}>{caregiverSafeAssistantText(candidate.title) || "Care topic"}</option>
                             ))}
                         </select>
                         <button
@@ -329,7 +327,7 @@ function WorkspacePageInner() {
                         <p>Related concerns kept separate:</p>
                         {situation.relatedSituations.map((related) => (
                           <div key={related.relationship_id}>
-                            <span>{situations.find((candidate) => candidate.id === related.id)?.title ?? "Related care thread"}</span>
+                            <span>{caregiverSafeAssistantText(situations.find((candidate) => candidate.id === related.id)?.title) || "Related care topic"}</span>
                             <button
                               type="button"
                               className="lcr-text-action"
