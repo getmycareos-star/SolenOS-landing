@@ -466,6 +466,31 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
           <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status, Boolean(selectedQuestion.claim_id))} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
           <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
+          {(() => {
+            const linkedEvidence = evidence.filter((item) =>
+              (selectedQuestion.evidence_ids || []).includes(item.id)
+            ).slice(0, 3);
+            return linkedEvidence.length > 0 ? (
+              <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
+                <strong style={{ fontSize: 12 }}>Saved information behind this question</strong>
+                {linkedEvidence.map((item) => (
+                  <div key={item.id} style={{ marginTop: 7 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                      {item.type === "document" ? "Saved document" : "Saved care note"}
+                    </span>
+                    <p style={{ margin: "3px 0 0", fontSize: 12, overflowWrap: "anywhere" }}>
+                      {evidenceSummary(item)}
+                    </p>
+                  </div>
+                ))}
+                {(selectedQuestion.evidence_ids?.length || 0) > linkedEvidence.length && (
+                  <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--text-secondary)" }}>
+                    {selectedQuestion.evidence_ids!.length - linkedEvidence.length} additional source(s) linked
+                  </p>
+                )}
+              </div>
+            ) : null;
+          })()}
           <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
             <strong style={{ fontSize: 12 }}>Last answer</strong>
