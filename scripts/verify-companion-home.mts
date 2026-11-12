@@ -19,7 +19,7 @@ assert.match(home, /@\/components\/workflows\/AICompanion/);
 assert.match(home, /solenos-companion-home/);
 assert.match(home, /companion-conversation/);
 assert.match(home, /conversation|Companion/);
-assert.match(home, /<Companion home initialPrompt=\{prompt\} \/>/, "record-edit prompt is passed into the existing Companion composer");
+assert.match(home, /<Companion initialPrompt=\{prompt\} \/>/, "contextual prompt is passed into the existing conversation-only Companion");
 const companion = read("src/components/workflows/AICompanion.tsx");
 const documents = read("src/app/workspace/documents/page.tsx");
 assert.match(companion, /companion-shell.*is-home/);
@@ -142,4 +142,4 @@ assert.match(lcrHome, /href="\/workspace\/companion"/);
 assert.doesNotMatch(lcrHome, /QwenAssistPanel/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
-console.log("Companion home contract passed: caregiver-first home, document/photo/scan intake, typed LCR/document/conversation provenance, plain-language record details, caregiver update route, device-session actions, export flow, and browseable history.");
+console.log("Companion home contract passed: caregiver-first home, Documents-owned upload/photo/scan intake, typed LCR/document/conversation provenance, plain-language record details, device-session actions, export flow, and browseable history.");
