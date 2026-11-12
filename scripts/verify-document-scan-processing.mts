@@ -87,6 +87,7 @@ assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\
 assert.match(source, /deleteJSON\("\/upload\/" \+ encodeURIComponent\(selected\.id\)\)/, "document deletion must call the authenticated backend lifecycle endpoint");
 assert.match(source, /The document and its uncommitted extracted information were deleted/, "the caregiver must receive a success message only after backend deletion confirms");
 assert.match(source, /Link versions/, "caregivers must be able to explicitly link a corrected copy to its predecessor");
+assert.match(source, /selected\.possibleVersionOfEvidenceId && !selected\.evidence\.parent_evidence_id/, "corrected-version clarification must appear only when a possible predecessor is detected");
 assert.match(source, /version-comparison/, "the document view must retrieve source-grounded differences for corrected versions");
 assert.match(source, /These differences have not been clinically verified/, "version differences must not be presented as clinical truth");
 assert.match(dailyCare, /\/documents\/status\?limit=10/, "Daily Care must retrieve persisted document processing status");
