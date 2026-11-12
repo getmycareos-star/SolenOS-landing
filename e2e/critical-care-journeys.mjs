@@ -298,15 +298,15 @@ await record("07 change detection and supporting evidence", async () => {
   const deltaDurationMs = Math.round(performance.now() - deltaStartedAt);
   assert.equal(reconciled.status, 200, JSON.stringify(reconciled.payload));
   assert.ok(deltaDurationMs < 150_000, `Delta Engine exceeded the 150-second inference budget: ${deltaDurationMs}ms`);
-  assert.ok(reconciled.claim_provenance && Array.isArray(reconciled.claim_provenance.claims), "Delta Engine must return claim-specific source references");
-  for (const claim of reconciled.claim_provenance.claims) {
+  assert.ok(reconciled.payload?.claim_provenance && Array.isArray(reconciled.payload.claim_provenance.claims), "Delta Engine must return claim-specific source references");
+  for (const claim of reconciled.payload.claim_provenance.claims) {
     assert.ok(typeof claim.text === "string" && Array.isArray(claim.source_references), "each Delta claim must expose its own source references");
     if (["matched_source_and_state", "matched_competing_sources", "matched_exact_source_wording"].includes(claim.support_status)) {
       assert.ok(claim.source_references.length > 0, "a supported Delta claim must identify at least one source");
     }
   }
   for (const domain of ["medications", "conditions", "symptoms", "tests", "follow_ups", "clinical_gaps", "contradictions"]) {
-    for (const finding of reconciled[domain] || []) {
+    for (const finding of reconciled.payload[domain] || []) {
       assert.ok(Array.isArray(finding.source_record_refs), "each Delta finding must carry its own source links");
     }
   }
