@@ -195,6 +195,8 @@ const TECHNICAL_DIAGNOSTIC_PATTERNS = [
   /\b(?:http|status)\s*\d{3}\b/i,
   /\b(?:sha-?256|uuid|primary key|foreign key)\b/i,
   /\b(?:endpoint|payload|request id|response body)\b/i,
+  /\b(?:source|evidence|record|claim|assessment|person|caregiver)[ _-]?id\s*[:=]\s*[a-z0-9_-]+/i,
+  /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i,
   /\b(?:migration|column|table) (?:missing|does not exist|not found)/i,
   /\b(?:freshness assessment storage|persisted change assessment)\b/i,
 ];
