@@ -107,6 +107,18 @@ function evidenceSummary(item: Evidence): string {
   }
 }
 
+function questionHasLinkedSource(item: Question): boolean {
+  return Boolean(
+    item.claim_id ||
+    item.evidence_ids?.length ||
+    item.context?.some((entry) =>
+      (typeof entry.source_id === "string" && entry.source_id.length > 0) ||
+      (Array.isArray(entry.source_ids) && entry.source_ids.length > 0) ||
+      (Array.isArray(entry.source_record_refs) && entry.source_record_refs.length > 0)
+    )
+  );
+}
+
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
   if (!Array.isArray(rows) || rows.some((value: unknown) => {
     if (!value || typeof value !== "object") return true;
@@ -417,7 +429,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
             >
               <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status)} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}</span>
               <strong style={{ fontSize: 14, fontWeight: 600 }}>{item.question}</strong>
-              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{item.evidence_ids?.length ? "Linked to saved care information" : "No saved source linked yet"}</span>
+              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
           ))}
           {questions.some((item) => item.status !== "open" && item.status !== "unresolved") && (
