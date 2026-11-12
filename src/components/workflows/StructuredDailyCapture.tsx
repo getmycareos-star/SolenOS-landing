@@ -1145,13 +1145,15 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       )}
 
       {saved && qwenAnalysis && (
-        <section aria-label="Review suggested care details" style={{
+        <details aria-label="Optional AI suggestions" style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '8px', padding: '12px 16px', marginBottom: '24px'
         }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Review suggested details</h2>
-          <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            These suggestions are not yet part of your care record. Check or correct them before using them to compare care updates.
+          <summary style={{ cursor: 'pointer', fontSize: '14px', fontWeight: 700, padding: '4px 0' }}>
+            Optional suggestions — you can ignore these
+          </summary>
+          <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '8px 0' }}>
+            Your original entry is saved. These are computer-generated suggestions, not confirmed care facts. You do not need to review them to finish.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
@@ -1166,7 +1168,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <li key={index} style={{ fontSize: '12px', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
                     <strong>Suggested detail {index + 1}</strong>
                     <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
-                      {reviewStatus === 'pending_review' ? 'Awaiting caregiver review' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Corrected — awaiting explicit approval' : reviewStatus === 'accepted_by_caregiver' ? 'Accepted — added to the Living Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Rejected — not included in the Living Care Record' : 'Review status unavailable'}
+                      {reviewStatus === 'pending_review' ? 'Optional suggestion — not part of the care record' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Corrected — awaiting explicit approval' : reviewStatus === 'accepted_by_caregiver' ? 'Accepted — added to the Living Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Rejected — not included in the Living Care Record' : 'Review status unavailable'}
                     </p>
                     <div style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
                       <div><strong>Original suggestion:</strong> {candidate.subject ? `${candidate.subject}: ` : ''}{candidate.observation || 'No generated observation text.'}</div>
@@ -1225,7 +1227,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           {reviewFeedback && <p role="status" style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '10px' }}>
-              <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
+              <strong style={{ fontSize: '12px' }}>Possible questions (optional)</strong>
               <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
                 {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
                   <li key={index} style={{ fontSize: '12px', marginBottom: '4px' }}>{question}</li>
@@ -1233,7 +1235,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               </ul>
             </div>
           )}
-        </section>
+        </details>
       )}
 
       {/* Save error indicator */}

@@ -52,8 +52,8 @@ type State =
 
 /**
  * Adds a model-generated interpretation beside the authoritative LCR projection.
- * It is requested only after the backend confirms that a care event was saved.
- * Qwen output is read-only assistance; the structured LCR cards remain canonical.
+ * It is mounted only after the caregiver asks for context on a saved care event.
+ * AI output is read-only assistance; the structured LCR cards remain canonical.
  */
 export function LcrQwenInterpretation({
   rawInput,
@@ -128,7 +128,7 @@ export function LcrQwenInterpretation({
         <>
           <p>{state.result.reply}</p>
           <p className="panel-muted">
-            AI-generated interpretation for caregiver review. The Living Care Record remains authoritative; this response did not change it.
+            Optional AI interpretation. Check the source details before relying on it. The Living Care Record remains authoritative; this response did not change it.
           </p>
           {state.result.claim_provenance?.claims && state.result.claim_provenance.claims.length > 0 && (
             <section aria-label="What each statement is based on" className="lcr-qwen-claim-sources">

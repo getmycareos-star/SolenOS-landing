@@ -180,10 +180,10 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       )}
 
       {savedMessage && qwenAnalysis && (
-        <section aria-label="Qwen capture analysis" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
-          <strong style={{ fontSize: '12px' }}>Qwen analysis: {qwenAnalysis.status}</strong>
-          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            AI output is an unverified candidate, not an established Living Care Record fact.
+        <details aria-label="Optional AI suggestions" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+          <summary style={{ cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}>Optional suggestions — you can ignore these</summary>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            Your original entry is saved. AI output is unverified and is not an established Living Care Record fact. You do not need to review it to finish.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
@@ -203,7 +203,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           )}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '8px' }}>
-              <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
+              <strong style={{ fontSize: '12px' }}>Possible questions (optional)</strong>
               <ul style={{ paddingLeft: '18px', marginTop: '4px' }}>
                 {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
                   <li key={index} style={{ fontSize: '12px', marginBottom: '4px' }}>{question}</li>
@@ -211,7 +211,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
               </ul>
             </div>
           )}
-        </section>
+        </details>
       )}
 
     </div>

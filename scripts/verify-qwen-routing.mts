@@ -80,7 +80,7 @@ const capture = read("src/components/workflows/StructuredDailyCapture.tsx");
 requireText("src/components/workflows/StructuredDailyCapture.tsx", [
   "postJSON('/daily/log'",
   "qwen_extraction_status",
-  "Review suggested details",
+  "Optional suggestions — you can ignore these",
   "const [savedEntrySummary, setSavedEntrySummary] = useState('');",
   "setSavedEntrySummary(variables.notes.trim() || 'Entry recorded.');",
   "{savedEntrySummary || 'Entry recorded.'}",
@@ -89,6 +89,14 @@ assert(!read("src/components/workflows/StructuredDailyCapture.tsx").includes("{f
   "The saved receipt must not read from the draft after the draft has been reset.");
 assert(!capture.includes("QwenAssistPanel"), "Daily Capture must not expose a separate assistant workflow panel.");
 assert(!capture.includes("Qwen care analysis"), "Daily Capture must not expose the model name.");
+requireText("src/components/workflows/DailyCareQwen.tsx", [
+  "prepare_lcr_proposals: prepareLcrProposals",
+  "Prepare optional care-record suggestions",
+  "Nothing will be added unless you approve it.",
+  "review_available: boolean",
+]);
+assert(!read("src/components/workflows/DailyCareQwen.tsx").includes("prepare_lcr_proposals: true"),
+  "Daily Care must not create care-record proposals automatically after a history question.");
 
 requireText("src/components/workflows/Community.tsx", [
   "postJSON('/community/experience/summary'",
@@ -139,6 +147,10 @@ requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "persistedSourceEventId(response)",
   "<LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />",
 ]);
+const situationPanel = read("src/components/mvp-workspace/SituationResponsePanel.tsx");
+assert(situationPanel.includes("Ask SolenOS about this entry"), "record context interpretation must be caregiver-requested.");
+assert(situationPanel.includes("requestedSourceEventId === sourceEventId"), "record context interpretation must be scoped to the saved entry the caregiver requested.");
+assert.equal((situationPanel.match(/<LcrQwenInterpretation/g) ?? []).length, 2, "both situation receipt paths must use the same optional interpretation control.");
 requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
   "claim_provenance",
   "matched_validated_aggregate",
@@ -150,7 +162,7 @@ requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
   "result.review_required !== true",
   "result.written_to_lcr !== false",
   'result.persistence !== "read_only_assistance"',
-  "AI-generated interpretation for caregiver review.",
+  "Optional AI interpretation. Check the source details before relying on it.",
   "The Living Care Record remains authoritative; this response did not change it.",
 ]);
 const lcrInterpretation = read("src/components/mvp-workspace/LcrQwenInterpretation.tsx");

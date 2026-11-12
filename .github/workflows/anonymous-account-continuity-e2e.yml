@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: getmycareos-star/SolenOS_backend
-          ref: main
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 275 && 'fix/optional-ai-review-workload' || 'main' }}
           path: backend-service
 
       - name: Set up Node.js

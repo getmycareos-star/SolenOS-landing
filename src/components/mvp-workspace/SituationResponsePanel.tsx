@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { SituationResponse } from "@/lib/situation-entry";
 import { buildLivingCareRecordResponse } from "@/lib/living-care-record-ux";
 import { LivingCareRecordPanel } from "./LivingCareRecordPanel";
@@ -38,7 +39,7 @@ function persistedSourceEventId(response: SituationResponse): string | null {
  * Active Care Situation grows understanding across related observations.
  *
  * Product truth: buildLivingCareRecordResponse from ACS/composer — never response.final_output.
- * Qwen provides an additional review-only interpretation; it cannot replace or write the LCR.
+ * Optional AI context is requested by the caregiver; it cannot replace or write the LCR.
  * @see docs/17-canonical-architecture/product-truth-path.md
  */
 export function SituationResponsePanel({
@@ -49,6 +50,17 @@ export function SituationResponsePanel({
   onAddUpdate,
   careKey = null,
 }: Props) {
+  const [showContextInterpretation, setShowContextInterpretation] = useState(false);
+  const [requestedSourceEventId, setRequestedSourceEventId] = useState<string | null>(null);
+  const toggleContextInterpretation = (eventId: string) => {
+    if (requestedSourceEventId !== eventId) {
+      setRequestedSourceEventId(eventId);
+      setShowContextInterpretation(true);
+      return;
+    }
+    setShowContextInterpretation((current) => !current);
+  };
+
   if (!response.active_care_situation && !response.active_care_situation_turn) {
     const receipt = response as SituationResponse & {
       ok?: boolean;
@@ -83,7 +95,24 @@ export function SituationResponsePanel({
             {receipt.care_event_id && (
               <p className="panel-muted">Saved record reference: {receipt.care_event_id}</p>
             )}
-            <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
+            {sourceEventId && (
+              <div className="lcr-optional-context">
+                <button
+                  type="button"
+                  aria-expanded={showContextInterpretation && requestedSourceEventId === sourceEventId}
+                  onClick={() => toggleContextInterpretation(sourceEventId)}
+                >
+                  {showContextInterpretation && requestedSourceEventId === sourceEventId
+                    ? "Hide optional record context"
+                    : "Ask SolenOS about this entry"}
+                </button>
+                {requestedSourceEventId === sourceEventId && (
+                  <div hidden={!(showContextInterpretation && requestedSourceEventId === sourceEventId)}>
+                    <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
+                  </div>
+                )}
+              </div>
+            )}
             {onContinue && (
               <button type="button" onClick={onContinue}>
                 Continue
@@ -142,7 +171,24 @@ export function SituationResponsePanel({
           careKey={careKey}
           rawInputExcerpt={rawInput}
         />
-        <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
+        {sourceEventId && (
+          <div className="lcr-optional-context">
+            <button
+              type="button"
+              aria-expanded={showContextInterpretation && requestedSourceEventId === sourceEventId}
+              onClick={() => toggleContextInterpretation(sourceEventId)}
+            >
+              {showContextInterpretation && requestedSourceEventId === sourceEventId
+                ? "Hide optional record context"
+                : "Ask SolenOS about this entry"}
+            </button>
+            {requestedSourceEventId === sourceEventId && (
+              <div hidden={!(showContextInterpretation && requestedSourceEventId === sourceEventId)}>
+                <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
