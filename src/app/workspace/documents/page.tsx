@@ -45,7 +45,7 @@ type DocumentItem = {
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
 type CropInsets = { top: number; right: number; bottom: number; left: number };
-type ReviewPage = { file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
+type ReviewPage = { ingestionKey: string; file: File; text: string; note: string | null; reviewed: boolean; uncertain: boolean; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
 
 type ScanDraft = { key: string; file: File; extractedText: string; extractionNote: string | null; reviewed: boolean; uncertain: boolean; rotation: number; previewUrl: string | null };
 
@@ -346,7 +346,7 @@ export default function DocumentsPage() {
         const extracted = isScannedImage
           ? { text: "", note: "Set page rotation/crop if needed, then apply the image adjustments before extracting text." }
           : await extractText(file);
-        pages.push({ file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
+        pages.push({ ingestionKey: crypto.randomUUID(), file, text: extracted.text, note: extracted.note, reviewed: false, uncertain: false, rotation: 0, crop: { top: 0, right: 0, bottom: 0, left: 0 }, prepared: !isScannedImage, previewUrl: isScannedImage ? URL.createObjectURL(file) : null });
       }
       setReviewPages((current) => [...current, ...pages]);
       setUploadMessage({ kind: "success", text: `${files.length} page/file(s) prepared. Review extracted text before saving the originals.` });
@@ -413,6 +413,7 @@ export default function DocumentsPage() {
         return;
       }
       setReviewPages((current) => [...current, {
+        ingestionKey: crypto.randomUUID(),
         file: pdfFile,
         text: combinedText,
         note: "Combined multi-page PDF generated from the reviewed scan pages below. Original uploaded page files remain separate and unchanged.",
@@ -449,6 +450,7 @@ export default function DocumentsPage() {
         const page = reviewPages[pageIndex];
         const form = new FormData();
         form.append("file", page.file);
+        form.append("ingestion_key", page.ingestionKey);
         form.append("person_id", session.person.id);
         form.append("caregiver_id", session.caregiver.id);
         form.append("evidence_type", "document");
