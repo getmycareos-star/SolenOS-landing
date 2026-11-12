@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
+import { careInformationLabel } from "@/lib/care-epistemics/information-status";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care-integrity tools…</p> });
 const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <p role="status">Loading evidence review…</p> });
@@ -1516,7 +1517,7 @@ export function LCRCurrentUnderstanding() {
                           {changeEvidence[change.id].assertions.map((assertion) => (
                             <li key={assertion.id}>
                               <p>{caregiverLabel(assertion.field)}: {assertion.asserted_value}</p>
-                              <small>{caregiverLabel(assertion.subject_type)} · Information: {caregiverLabel(assertion.epistemic_state || "reported")} · Review: {caregiverLabel(assertion.assertion_status)} · {assertion.source_label}</small>
+                              <small>{caregiverLabel(assertion.subject_type)} · Information: {careInformationLabel(assertion.epistemic_state || "reported")} · Review: {caregiverLabel(assertion.assertion_status)} · {assertion.source_label}</small>
                               <small>Observed: {formatWhen(assertion.observed_at)} · Recorded: {formatWhen(assertion.recorded_at)}</small>
                               {assertion.source_text && <p>{assertion.source_text}</p>}
                             </li>
