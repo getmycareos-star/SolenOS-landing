@@ -133,6 +133,12 @@ assert.match(dailyCarePage, /solenos:daily-care:last-opened:/,
   "the last-visit marker is scoped to the current person and caregiver");
 assert.match(dailyCarePage, /classifyHistoryRecord/,
   "new care records are grouped by their persisted event content");
+assert.match(dailyCarePage, /source_id\?: string/,
+  "history records retain the backend source identifier");
+assert.match(dailyCarePage, /daily-care-event-/,
+  "summary categories link to their underlying saved timeline entries");
+assert.match(dailyCarePage, /historyRecordId/,
+  "history links use the actual persisted source ID");
 assert.match(dailyCarePage, /displayHistoryTime/,
   "history distinguishes event time from recording time");
 assert.match(dailyCarePage, /displayHistorySource/,
