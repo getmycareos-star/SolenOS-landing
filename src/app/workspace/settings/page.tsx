@@ -39,6 +39,9 @@ type CareNotification = {
 function NotificationsCard() {
   const { show, render } = useToast();
   const [quietHours, setQuietHours] = useState(false);
+  const [quietStart, setQuietStart] = useState("21:00");
+  const [quietEnd, setQuietEnd] = useState("08:00");
+  const [timezoneName, setTimezoneName] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
   const [reminders, setReminders] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,8 +94,12 @@ function NotificationsCard() {
       await ensureAnonymousSession();
       const prefs = await getJSON("/notifications/preferences") as {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
+        quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string;
       };
       setQuietHours(prefs.quiet_hours_enabled);
+      setQuietStart(prefs.quiet_hours_start || "21:00");
+      setQuietEnd(prefs.quiet_hours_end || "08:00");
+      setTimezoneName(prefs.timezone_name || (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"));
       setReminders(prefs.reminders_enabled);
     } catch {
       setError("We couldn't load your notification settings. Check your connection and try again.");
@@ -108,10 +115,17 @@ function NotificationsCard() {
     setError("");
     try {
       await ensureAnonymousSession();
-      const result = await putJSON("/notifications/preferences", { [key]: value }) as {
+      const payload = key === "quiet_hours_enabled"
+        ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: timezoneName }
+        : { reminders_enabled: value };
+      const result = await putJSON("/notifications/preferences", payload) as {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
+        quiet_hours_start: string; quiet_hours_end: string; timezone_name: string;
       };
       setQuietHours(result.quiet_hours_enabled);
+      setQuietStart(result.quiet_hours_start);
+      setQuietEnd(result.quiet_hours_end);
+      setTimezoneName(result.timezone_name);
       setReminders(result.reminders_enabled);
       show("Notification settings saved.", "success");
     } catch {
@@ -130,10 +144,23 @@ function NotificationsCard() {
         <p>{error}</p>
         <Button variant="secondary" onClick={() => void loadPreferences()} disabled={loading || saving}>Try again</Button>
       </div>}
-      <label className="mobile-settings-row">
-        <span><span className="mobile-settings-label">Quiet hours</span><span className="mobile-settings-hint">Quiet hours are not active yet. This setting does not change when in-app reminders appear.</span></span>
-        <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled /><span className="mobile-toggle-track" /></span>
-      </label>
+      <div className="mobile-settings-row" style={{ alignItems: "flex-start" }}>
+        <span style={{ flex: 1 }}>
+          <span className="mobile-settings-label">Quiet hours</span>
+          <span className="mobile-settings-hint">Due reminders wait until quiet hours end. Your reminder due time does not change.</span>
+          <span style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.6rem" }}>
+            <label className="mobile-settings-label">Starts
+              <input className="mobile-settings-input" type="time" value={quietStart} disabled={loading || saving} onChange={(event) => setQuietStart(event.target.value)} />
+            </label>
+            <label className="mobile-settings-label">Ends
+              <input className="mobile-settings-input" type="time" value={quietEnd} disabled={loading || saving} onChange={(event) => setQuietEnd(event.target.value)} />
+            </label>
+          </span>
+          <span className="mobile-settings-hint">Time zone: {timezoneName}</span>
+          <Button variant="secondary" disabled={loading || saving || quietStart === quietEnd} onClick={() => void persist("quiet_hours_enabled", quietHours)}>Save quiet-hours times</Button>
+        </span>
+        <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(event) => void persist("quiet_hours_enabled", event.target.checked)} /><span className="mobile-toggle-track" /></span>
+      </div>
       <label className="mobile-settings-row">
         <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">When enabled, due reminders appear in your in-app notifications. SolenOS does not send push or email alerts.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={reminders} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("reminders_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
