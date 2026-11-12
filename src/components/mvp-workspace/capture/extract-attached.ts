@@ -7,10 +7,11 @@ function createDocId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod): Promise<string> {
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string): Promise<string> {
   const session = await ensureAnonymousSession();
   const form = new FormData();
   form.append("file", file);
+  form.append("ingestion_key", uploadRetryKey);
   form.append("person_id", session.person.id);
   form.append("caregiver_id", session.caregiver.id);
   // Snap captures a care photo, not a scanned document. The backend document\n  // extraction endpoint intentionally accepts only evidence_type=document.\n  form.append("evidence_type", entryMethod === "snap" ? "care_photo" : "document");
@@ -39,8 +40,10 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
 export async function extractAttachedDocument(
   file: File,
   entryMethod: InputEntryMethod,
+  uploadRetryKey = crypto.randomUUID(),
 ): Promise<AttachedDocument> {
   const base: AttachedDocument = {
+    uploadRetryKey,
     id: createDocId(),
     name: file.name,
     mimeType: file.type || "application/octet-stream",
@@ -52,7 +55,7 @@ export async function extractAttachedDocument(
 
   let evidenceId: string;
   try {
-    evidenceId = await persistOriginalDocument(file, entryMethod);
+    evidenceId = await persistOriginalDocument(file, entryMethod, uploadRetryKey);
   } catch (error) {
     return {
       ...base,
@@ -139,7 +142,7 @@ export async function retryAttachedDocument(
 ): Promise<AttachedDocument> {
   if (!document.evidenceId) {
     return document.sourceFile
-      ? extractAttachedDocument(document.sourceFile, document.entryMethod ?? "upload")
+      ? extractAttachedDocument(document.sourceFile, document.entryMethod ?? "upload", document.uploadRetryKey ?? crypto.randomUUID())
       : {
           ...document,
           status: "failed",
