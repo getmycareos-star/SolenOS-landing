@@ -46,7 +46,7 @@ type DocumentItem = {
 
 type UploadMessage = { kind: "success" | "error"; text: string } | null;
 type CropInsets = { top: number; right: number; bottom: number; left: number };
-type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; prepared: boolean; previewUrl: string | null };
+type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; previewUrl: string | null };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
@@ -192,7 +192,6 @@ export default function DocumentsPage() {
         note: "Original file is ready. SolenOS will extract and process it after the upload is saved.",
         rotation: 0,
         crop: { top: 0, right: 0, bottom: 0, left: 0 },
-        prepared: true,
         previewUrl: isScannedImage ? URL.createObjectURL(file) : file.type === "application/pdf" ? URL.createObjectURL(file) : null,
       };
     });
@@ -284,19 +283,6 @@ export default function DocumentsPage() {
     void handleFiles(pages);
   };
 
-
-  const prepareImagePage = (index: number) => {
-    const page = reviewPages[index];
-    if (!page || !page.file.type.startsWith("image/")) return;
-    if (page.crop.left + page.crop.right >= 80 || page.crop.top + page.crop.bottom >= 80) {
-      setUploadMessage({ kind: "error", text: "The crop area is too small. Leave at least 20% of the page in each direction." });
-      return;
-    }
-    setUploadMessage(null);
-    setReviewPages((current) => current.map((item, i) => i === index
-      ? { ...item, prepared: true, note: "Page adjustments saved. SolenOS will apply the saved crop and rotation during server-side extraction after upload." }
-      : item));
-  };
 
   const saveReviewedPages = async () => {
     if (!reviewPages.length) {
@@ -451,7 +437,7 @@ export default function DocumentsPage() {
                     const dy = (event.clientY - drag.startY) / drag.height * 100;
                     const left = Math.max(0, Math.min(80 - drag.crop.right, drag.crop.left + dx));
                     const top = Math.max(0, Math.min(80 - drag.crop.bottom, drag.crop.top + dy));
-                    setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, prepared: false, note: "Crop area moved. Save the crop settings before uploading." } : item));
+                    setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, left, top }, note: "Crop change will be saved with the original when you upload." } : item));
                   }}
                   onPointerUp={() => { cropDrag.current = null; }}
                   onPointerCancel={() => { cropDrag.current = null; }}
@@ -466,22 +452,21 @@ export default function DocumentsPage() {
                       if (event.key === "ArrowRight") crop.left = Math.min(80 - crop.right, crop.left + step);
                       if (event.key === "ArrowUp") crop.top = Math.max(0, crop.top - step);
                       if (event.key === "ArrowDown") crop.top = Math.min(80 - crop.bottom, crop.top + step);
-                      return { ...item, crop, prepared: false, note: "Crop area moved. Save the crop settings before uploading." };
+                      return { ...item, crop, note: "Crop area moved. Save the crop settings before uploading." };
                     }));
                   }}
                   style={{ position: "absolute", left: `${page.crop.left}%`, top: `${page.crop.top}%`, width: `${100 - page.crop.left - page.crop.right}%`, height: `${100 - page.crop.top - page.crop.bottom}%`, border: "2px solid #fff", boxShadow: "0 0 0 1px #17251c", cursor: "move", touchAction: "none", boxSizing: "border-box", background: "transparent" }} />
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, prepared: false, note: "Page angle changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, prepared: false, note: "Page angle changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, prepared: false, note: "Page orientation changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
-                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, prepared: false, note: "Page orientation changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 0.5, note: "Rotation change will be saved with the original when you upload." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten left 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 0.5, note: "Page angle changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Straighten right 0.5°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation - 90, note: "Rotation change will be saved with the original when you upload." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate left 90°</button>
+                <button type="button" onClick={() => setReviewPages((current) => current.map((item, i) => i === index ? { ...item, rotation: item.rotation + 90, note: "Page orientation changed. Save the rotation settings before uploading." } : item))} style={{ minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Rotate right 90°</button>
               </div>
               <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>Straightening: {page.rotation.toFixed(1)}°. Crop margins are percentages of the rotated page.</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>
-                {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, prepared: false, note: "Crop changed. Save the crop settings before uploading." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
+                {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gap: 4, fontSize: 12, textTransform: "capitalize" }}>{edge} crop (%)<input type="number" min={0} max={35} step={1} value={page.crop[edge]} onChange={(event) => { const value = Math.max(0, Math.min(35, Number(event.target.value) || 0)); setReviewPages((current) => current.map((item, i) => i === index ? { ...item, crop: { ...item.crop, [edge]: value }, note: "Crop change will be saved with the original when you upload." } : item)); }} style={{ width: "100%", boxSizing: "border-box", minHeight: 38, border: "1px solid var(--border)", borderRadius: 7, padding: 8, background: "var(--surface)", color: "var(--text)" }} /></label>)}
               </div>
-              <button type="button" onClick={() => prepareImagePage(index)} disabled={uploading} style={{ justifySelf: "start", minHeight: 42, border: "1px solid #8eae8a", borderRadius: 8, padding: "8px 12px", background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Save crop / straighten settings</button>
             </div>}
             {page.note && <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{page.note}</p>}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
