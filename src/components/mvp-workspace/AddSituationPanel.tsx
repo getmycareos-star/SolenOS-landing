@@ -278,6 +278,8 @@ export function AddSituationPanel({
       )}
 
       {documents.length > 0 && (
+        <>
+        <p className="panel-muted">Removing a file here only removes it from this entry. The saved original remains in Documents.</p>
         <ul>
           {documents.map((doc) => (
             <li key={doc.id}>
@@ -303,11 +305,12 @@ export function AddSituationPanel({
                 disabled={loading}
                 onClick={() => onDocumentsChange(documents.filter((d) => d.id !== doc.id))}
               >
-                Remove
+                Remove from entry
               </button>
             </li>
           ))}
         </ul>
+        </>
       )}
 
       {hasContextRoot && (
