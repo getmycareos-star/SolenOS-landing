@@ -141,6 +141,7 @@ interface ClaimProvenance {
     support_status: string
     validation_basis?: string
     aggregate?: { topic?: string; window_label?: string; count?: number; candidate_count?: number } | null
+    aggregate_review?: { status?: string; count?: number | null; interpretation_limit?: string } | null
     source_references: ClaimSourceReference[]
   }>
 }
@@ -890,6 +891,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
+                          {claim.support_status === 'aggregate_count_mismatch' && <p role="note">The saved care updates do not support this number. The count check found {claim.aggregate_review?.count ?? 'an unconfirmed number'} distinct updates in the requested time window.</p>}
+                          {claim.support_status === 'aggregate_not_validated' && <p role="note">{claim.aggregate_review?.interpretation_limit || 'This total could not be confirmed from the saved care updates. Check the reports before relying on a number.'}</p>}
                           {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
                               <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'This count was checked against distinct, dated care updates.' : 'This wording appears in a saved record.'}</p>
