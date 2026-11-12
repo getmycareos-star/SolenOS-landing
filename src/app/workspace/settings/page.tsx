@@ -39,6 +39,7 @@ type CareNotification = {
 function NotificationsCard() {
   const { show, render } = useToast();
   const [quietHours, setQuietHours] = useState(false);
+  const [scheduleSupported, setScheduleSupported] = useState(false);
   const [quietStart, setQuietStart] = useState("21:00");
   const [quietEnd, setQuietEnd] = useState("08:00");
   const [timezoneName, setTimezoneName] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
@@ -54,6 +55,7 @@ function NotificationsCard() {
   const [pushStatus, setPushStatus] = useState("");
   const [pushBusy, setPushBusy] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushAvailable, setPushAvailable] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -65,6 +67,14 @@ function NotificationsCard() {
         if (active) setPushEnabled(false);
       });
     }
+    void ensureAnonymousSession()
+      .then(() => getJSON("/notifications/push/public-key"))
+      .then((result) => {
+        if (active) setPushAvailable(Boolean((result as { public_key?: string }).public_key));
+      })
+      .catch(() => {
+        if (active) setPushAvailable(false);
+      });
     return () => { active = false; };
   }, []);
 
@@ -175,6 +185,7 @@ function NotificationsCard() {
         quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
       };
       setQuietHours(prefs.quiet_hours_enabled);
+      setScheduleSupported(typeof prefs.quiet_hours_start === "string" && typeof prefs.quiet_hours_end === "string" && typeof prefs.timezone_name === "string");
       setQuietStart(prefs.quiet_hours_start || "21:00");
       setQuietEnd(prefs.quiet_hours_end || "08:00");
       setTimezoneName(prefs.configured ? (prefs.timezone_name || "UTC") : (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"));
@@ -201,6 +212,7 @@ function NotificationsCard() {
         quiet_hours_start: string; quiet_hours_end: string; timezone_name: string;
       };
       setQuietHours(result.quiet_hours_enabled);
+      setScheduleSupported(typeof result.quiet_hours_start === "string" && typeof result.quiet_hours_end === "string" && typeof result.timezone_name === "string");
       setQuietStart(result.quiet_hours_start);
       setQuietEnd(result.quiet_hours_end);
       setTimezoneName(result.timezone_name);
@@ -225,19 +237,19 @@ function NotificationsCard() {
       <div className="mobile-settings-row" style={{ alignItems: "flex-start" }}>
         <span style={{ flex: 1 }}>
           <span className="mobile-settings-label">Quiet hours</span>
-          <span className="mobile-settings-hint">Due reminders wait until quiet hours end. Your reminder due time does not change.</span>
+          <span className="mobile-settings-hint">{scheduleSupported ? "Due reminders wait until quiet hours end. Your reminder due time does not change." : "Quiet-hours scheduling will be available after the backend update is deployed."}</span>
           <span style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.6rem" }}>
             <label className="mobile-settings-label">Starts
-              <input className="mobile-settings-input" type="time" value={quietStart} disabled={loading || saving} onChange={(event) => setQuietStart(event.target.value)} />
+              <input className="mobile-settings-input" type="time" value={quietStart} disabled={loading || saving || !scheduleSupported} onChange={(event) => setQuietStart(event.target.value)} />
             </label>
             <label className="mobile-settings-label">Ends
-              <input className="mobile-settings-input" type="time" value={quietEnd} disabled={loading || saving} onChange={(event) => setQuietEnd(event.target.value)} />
+              <input className="mobile-settings-input" type="time" value={quietEnd} disabled={loading || saving || !scheduleSupported} onChange={(event) => setQuietEnd(event.target.value)} />
             </label>
           </span>
           <span className="mobile-settings-hint">Time zone: {timezoneName}</span>
-          <Button variant="secondary" disabled={loading || saving || quietStart === quietEnd} onClick={() => void persist("quiet_hours_enabled", quietHours)}>Save quiet-hours times</Button>
+          <Button variant="secondary" disabled={loading || saving || !scheduleSupported || quietStart === quietEnd} onClick={() => void persist("quiet_hours_enabled", quietHours)}>Save quiet-hours times</Button>
         </span>
-        <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error)} onChange={(event) => void persist("quiet_hours_enabled", event.target.checked)} /><span className="mobile-toggle-track" /></span>
+        <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error) || !scheduleSupported} onChange={(event) => void persist("quiet_hours_enabled", event.target.checked)} /><span className="mobile-toggle-track" /></span>
       </div>
       <label className="mobile-settings-row">
         <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">When enabled, due reminders appear in your in-app notifications. Browser push is optional; SolenOS does not send email alerts.</span></span>
@@ -245,7 +257,7 @@ function NotificationsCard() {
       </label>
       <div className="mobile-settings-actions">
         <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
-        {pushEnabled ? <Button variant="secondary" onClick={disablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Updating…" : "Disable push alerts"}</Button> : <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>}
+        {pushAvailable ? (pushEnabled ? <Button variant="secondary" onClick={disablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Updating…" : "Disable push alerts"}</Button> : <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>) : <span className="mobile-settings-hint">Browser push will be available after the backend update is deployed.</span>}
         <Button variant="secondary" onClick={() => void loadInbox()} disabled={inboxLoading}>Refresh notifications</Button>
       </div>
       {pushStatus && <p className="mobile-settings-hint" role="status">{pushStatus}</p>}
