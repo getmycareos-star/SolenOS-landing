@@ -129,6 +129,8 @@ assert.match(settingsPage, /Replaced by newer information/,
   "superseded notifications must be distinguished from active attention");
 assert.match(settingsPage, /No longer needs attention/,
   "resolved notifications must not continue to appear as active requests");
+assert.match(settingsPage, /item\.resolved_at/,
+  "the inbox must show when an update stopped requiring attention");
 assert.match(settingsPage, /\(item.status \?\? "active"\) === "active"/,
   "the caregiver inbox must distinguish active notifications from resolved ones");
 
