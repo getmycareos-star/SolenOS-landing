@@ -33,7 +33,8 @@ assert.match(addRecordSource, /Saved — processing in background/, "saved docum
 
 assert.match(attachmentSource, /document\.entryMethod === "snap" && document\.evidenceId[\s\S]*?status: "saved"/, "retry must not send a saved care photo through document OCR");
 assert.match(addRecordSource, /Photo saved — not interpreted/, "caregivers must see that a Snap photo is saved but not interpreted");
-assert.match(workspaceSource, /d\.status === "saved" && d\.entryMethod === "snap" && d\.evidenceId/, "saved Snap evidence must remain eligible for care-entry submission");
+assert.match(workspaceSource, /d\.status === "saved" && d\.evidenceId/, "saved evidence, including Snap photos, must remain eligible for care-entry submission");
+assert.match(workspaceSource, /d\.evidenceId && d\.entryMethod === "snap"/, "saved Snap photos must be represented as attached evidence without claiming image interpretation");
 assert.match(workspaceSource, /evidence_id: d\.evidenceId/, "care-entry submission must reference the persisted evidence ID");
 assert.match(intelligenceReviewSource, /analysis\.intelligence_status !== "partial" \|\| !!analysis\.unprocessed_page_numbers\?\.length/, "partially processed documents with remaining pages must offer resume");
 assert.match(intelligenceReviewSource, /Resume remaining pages/, "caregivers must be able to resume unfinished document understanding");
