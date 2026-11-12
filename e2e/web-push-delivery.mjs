@@ -147,7 +147,7 @@ try {
     0,
     `Due-reminder Web Push delivery helper failed. stdout=${delivered.stdout} stderr=${delivered.stderr}`,
   );
-  const delivery = JSON.parse(delivered.stdout.trim().split("\\n").at(-1));
+  const delivery = JSON.parse(delivered.stdout.trim().split("\n").at(-1));
   assert.equal(delivery.delivery_status, "accepted");
   assert.equal(delivery.provider_accepted, true);
   assert.equal(delivery.source_reminder_id, reminder.id);
@@ -179,7 +179,7 @@ try {
   assert.equal(received[0].body, "You have a care update. Open SolenOS to review it.");
   assert.equal(received[0].tag, `solenos-${delivery.notification_id}`);
   assert.ok(!received[0].body.includes("Private reminder details"));
-  assert.ok(!received[0].body.includes("Synthetic due reminder")); 
+  assert.ok(!received[0].body.includes("Synthetic due reminder"));
 
   const { response: snoozeResponse, payload: snoozed } = await jsonRequest(
     new URL(`/api/v1/reminders/${encodeURIComponent(reminder.id)}/snooze`, backend),
