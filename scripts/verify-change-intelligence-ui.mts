@@ -21,8 +21,6 @@ for (const contract of [
   ["panel lists persisted patterns", /listPersistedPatterns\(\)/],
   ["older change assessments can be loaded", /Load earlier changes/],
   ["older patterns can be loaded", /Load earlier patterns/],
-  ["change history is not silently limited to eight rows", !/changes\.slice\(0, 8\)/],
-  ["pattern history is not silently limited to eight rows", !/patterns\.slice\(0, 8\)/],
   ["panel requests backend reassessment", /reassessPersistedChangeIntelligence\(\)/],
   ["change source details are user-reviewable", /Review source evidence/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
@@ -34,6 +32,8 @@ for (const contract of [
   assert(matches, `Missing UI contract: ${contract[0]}`);
 }
 assert(!/\bconfidence\b/i.test(panel), "uncalibrated model confidence must not be displayed in caregiver-facing change intelligence");
+assert(!/changes\.slice\(0,\s*8\)/.test(panel), "change history must not be silently truncated to eight rows");
+assert(!/patterns\.slice\(0,\s*8\)/.test(panel), "pattern history must not be silently truncated to eight rows");
 
 assert(!/recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\b/.test(panel), "observation coverage cannot be independently submitted from this panel");
 
