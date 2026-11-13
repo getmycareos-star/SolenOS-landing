@@ -11,6 +11,9 @@ const loops = [
   { id: "overdue", source: "open_loop_records", priority: "high", priority_reasons: ["Persisted deadline has passed"], status: "open" },
   { id: "candidate-only", source: "events", priority: null, priority_reasons: [], status: "open" },
   { id: "high-without-reason", source: "open_loop_records", priority: "high", priority_reasons: [], status: "open" },
+  { id: "completed-critical", source: "open_loop_records", priority: "high", priority_reasons: ["Persisted deadline has passed"], status: "completed" },
+  { id: "deferred-critical", source: "open_loop_records", priority: "high", priority_reasons: ["Critical consequence of delay was explicitly recorded"], status: "deferred" },
+  { id: "active-with-defer-reason", source: "open_loop_records", priority: "normal", priority_reasons: [], status: "open", deferred_reason: "Someone suggested waiting" },
   { id: "deferred", source: "open_loop_records", priority: "normal", priority_reasons: [], status: "deferred", deferred_reason: "Waiting for the recorded appointment" },
   { id: "rejected-defer", source: "open_loop_records", priority: "low", priority_reasons: [], status: "open" },
 ];
