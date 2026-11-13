@@ -152,25 +152,28 @@ try {
 
   page.on("dialog", async (dialog) => {
     const message = dialog.message();
-    if (message.startsWith("Record the actual response received")) {
+    if (dialog.type() === "confirm") {
+      // Keep the ordinary response path distinct from the callback-promised path.
+      await dialog.dismiss();
+    } else if (message.startsWith("What response did you receive?")) {
       await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
-    } else if (message.startsWith("Select the FIRST existing source record")) {
-      await dialog.accept(sourceEvidenceId);
-    } else if (message.startsWith("Select a SECOND, independently originated source record")) {
-      await dialog.accept(independentEvidenceId);
-    } else if (message.startsWith("Record the action actually taken")) {
+    } else if (message.startsWith("Choose the first saved item by entering its number.")) {
+      await dialog.accept("1");
+    } else if (message.startsWith("Choose a different saved item from the list.")) {
+      await dialog.accept("1");
+    } else if (message.startsWith("What action was actually taken?")) {
       await dialog.accept("CI-only action: asked the care team to confirm the conflicting reports.");
-    } else if (message.startsWith("Record the outcome that was reported")) {
+    } else if (message.startsWith("What happened next?")) {
       await dialog.accept("CI-only reported outcome: the care team confirmed the reports refer to different dates.");
-    } else if (message.startsWith("Describe what the two independent source records jointly support")) {
+    } else if (message.startsWith("What do the two saved reports say together?")) {
       await dialog.accept("CI-only corroboration review: both separate records support the same reported appointment date.");
-    } else if (message.startsWith("What explicit criterion was used to verify the outcome")) {
+    } else if (message.startsWith("What would need to be true for you to consider this outcome checked?")) {
       await dialog.accept("Both source references were reviewed and the date discrepancy was explicitly reconciled.");
-    } else if (message.startsWith("Record the explicit reconciliation decision")) {
+    } else if (message.startsWith("How do you understand the different reports?")) {
       await dialog.accept("CI-only reconciliation: the reports concern different dates; neither report is discarded.");
-    } else if (message.startsWith("Describe the evidence supporting closure")) {
+    } else if (message.startsWith("What has happened that means this follow-up can be closed?")) {
       await dialog.accept("CI-only closure review after source-backed professional response.");
-    } else if (message.startsWith("Why is this closed or cancelled loop being reopened")) {
+    } else if (message.startsWith("Why does this item need attention again?")) {
       await dialog.accept("CI-only reopening check after the lifecycle round trip.");
     } else {
       await dialog.dismiss();
