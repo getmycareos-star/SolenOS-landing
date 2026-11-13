@@ -75,16 +75,26 @@ function requirePersonId(): string {
   return personId;
 }
 
-export async function listPersistedChanges(subjectType?: string): Promise<PersistedChange[]> {
+export async function listPersistedChanges(
+  subjectType?: string,
+  limit = 100,
+  offset = 0,
+): Promise<PersistedChange[]> {
   const personId = encodeURIComponent(requirePersonId());
-  const query = subjectType ? `?subject_type=${encodeURIComponent(subjectType)}` : "";
-  return await getJSON(`/change/changes/${personId}${query}`) as PersistedChange[];
+  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (subjectType) query.set("subject_type", subjectType);
+  return await getJSON(`/change/changes/${personId}?${query.toString()}`) as PersistedChange[];
 }
 
-export async function listPersistedPatterns(subjectType?: string): Promise<PersistedPattern[]> {
+export async function listPersistedPatterns(
+  subjectType?: string,
+  limit = 100,
+  offset = 0,
+): Promise<PersistedPattern[]> {
   const personId = encodeURIComponent(requirePersonId());
-  const query = subjectType ? `?subject_type=${encodeURIComponent(subjectType)}` : "";
-  return await getJSON(`/change/patterns/${personId}${query}`) as PersistedPattern[];
+  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (subjectType) query.set("subject_type", subjectType);
+  return await getJSON(`/change/patterns/${personId}?${query.toString()}`) as PersistedPattern[];
 }
 
 export async function assessObservationCoverage(
