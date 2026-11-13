@@ -603,8 +603,8 @@ await record("06 Companion context and Qwen output", async () => {
   const overloadSentences = overloadReply.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
   assert.ok(overloadReply.length > 0 && overloadReply.length <= 700, "Companion must keep an overwhelmed-caregiver response brief");
   assert.ok(overloadSentences.length <= 3, "Companion must not overwhelm the caregiver with a long response");
-  assert.ok((overloadReply.match(/\\?/g) || []).length <= 1, "Companion must ask at most one question when the caregiver is overwhelmed");
-  assert.doesNotMatch(overloadReply, /(?:^|\\n)\\s*(?:\\d+[.)]|[-*])\\s+/m, "Companion must not turn caregiver distress into a checklist");
+  assert.ok((overloadReply.match(/\?/g) || []).length <= 1, "Companion must ask at most one question when the caregiver is overwhelmed");
+  assert.doesNotMatch(overloadReply, /(?:^|\n)\s*(?:\d+[.)]|[-*])\s+/m, "Companion must not turn caregiver distress into a checklist");
 
   const invalid = await request("/api/v1/conversation/message", {
     token: identity.token, method: "POST",
