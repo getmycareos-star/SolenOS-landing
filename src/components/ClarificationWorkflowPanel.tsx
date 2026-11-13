@@ -132,6 +132,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [eligibleQuestionIds, setEligibleQuestionIds] = useState<string[]>([]);
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
   const [questionText, setQuestionText] = useState("");
@@ -156,9 +157,12 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
 
   const isCaregiverNecessaryQuestion = (item: Question) =>
     item.necessity === "necessary" && Boolean(item.necessity_rationale?.trim());
+  const eligibleQuestionIdSet = new Set(eligibleQuestionIds);
   const caregiverOpenQuestions = questions
     .filter((item) =>
-      (item.status === "open" || item.status === "unresolved") && isCaregiverNecessaryQuestion(item)
+      (item.status === "open" || item.status === "unresolved") &&
+      eligibleQuestionIdSet.has(item.id) &&
+      isCaregiverNecessaryQuestion(item)
     )
     .sort((a, b) => {
       const rank: Record<string, number> = {
@@ -199,32 +203,41 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const [claimRows, questionRows, evidenceRows] = await Promise.all([
+      const [claimRows, questionRows, recommendation, evidenceRows] = await Promise.all([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
+        getJSON(`/uncertainty/questions/recommended/${encodeURIComponent(sessionPersonId)}`),
         getJSON("/care-continuity/evidence?limit=100"),
       ]);
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
+      if (!recommendation || recommendation.person_id !== sessionPersonId ||
+          !Array.isArray(recommendation.eligible_question_ids) ||
+          recommendation.eligible_question_ids.some((id: unknown) => typeof id !== "string")) {
+        throw new Error("Invalid or cross-record recommended question response");
+      }
       const loadedClaims = claimRows as Claim[];
       const loadedQuestions = questionRows as Question[];
       const loadedEvidence = evidenceRows as Evidence[];
       setScopePersonId(sessionPersonId);
       setClaims(loadedClaims);
       setQuestions(loadedQuestions);
+      setEligibleQuestionIds(recommendation.eligible_question_ids as string[]);
       setEvidence(loadedEvidence);
       setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
+        const eligibleIds = new Set(recommendation.eligible_question_ids as string[]);
         const necessaryOpen = loadedQuestions.filter((row) =>
           (row.status === "open" || row.status === "unresolved") &&
+          eligibleIds.has(row.id) &&
           row.necessity === "necessary" &&
           Boolean(row.necessity_rationale?.trim())
         );
         const currentQuestion = loadedQuestions.find((row) => row.id === current);
         if (currentQuestion && (
           (currentQuestion.status !== "open" && currentQuestion.status !== "unresolved") ||
-          (currentQuestion.necessity === "necessary" && Boolean(currentQuestion.necessity_rationale?.trim()))
+          (eligibleIds.has(currentQuestion.id) && currentQuestion.necessity === "necessary" && Boolean(currentQuestion.necessity_rationale?.trim()))
         )) return current;
         return necessaryOpen[0]?.id
           ?? loadedQuestions.find((row) => row.status !== "open" && row.status !== "unresolved")?.id
@@ -234,6 +247,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setScopePersonId("");
       setClaims([]);
       setQuestions([]);
+      setEligibleQuestionIds([]);
       setEvidence([]);
       setSelectedClaimId("");
       setSelectedQuestionId("");
