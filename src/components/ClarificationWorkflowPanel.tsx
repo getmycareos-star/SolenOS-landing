@@ -61,9 +61,9 @@ const panel: CSSProperties = { border: "1px solid var(--border)", borderRadius: 
 const field: CSSProperties = { boxSizing: "border-box", width: "100%", padding: "9px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
 const button: CSSProperties = { border: "1px solid var(--border)", borderRadius: 7, padding: "8px 11px", background: "var(--surface)", color: "var(--text)", cursor: "pointer" };
 
-function questionStatusLabel(status: string, hasLinkedClaim = true): string {
+function questionStatusLabel(status: string, hasLinkedClaim = true, answererRole?: string | null): string {
   switch (status) {
-    case "open": return "Waiting for an answer";
+    case "open": return answererRole === "professional" ? "Waiting for care-team confirmation" : "Waiting for an answer";
     case "answered": return hasLinkedClaim ? "Answered — review needed" : "Answer saved";
     case "declined": return "No answer provided";
     case "closed": return "Closed";
@@ -480,7 +480,7 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
               }}
               style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
             >
-              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id))} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}</span>
+              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id), item.intended_answerer_role)} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}</span>
               <strong style={{ fontSize: 14, fontWeight: 600 }}>{item.question}</strong>
               <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
@@ -527,7 +527,7 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
           )}
         </div>
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
-          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status, Boolean(selectedQuestion.claim_id))} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
+          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status, Boolean(selectedQuestion.claim_id), selectedQuestion.intended_answerer_role)} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
           <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
           {(() => {
             const linkedEvidence = evidence.filter((item) =>
