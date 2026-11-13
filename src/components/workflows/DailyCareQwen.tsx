@@ -43,6 +43,7 @@ type AskResult = {
     lcr_context?: {
       schema_status?: string;
       retrieval_scan_complete?: boolean;
+      retrieval_projection_complete?: boolean;
       missing_required_sources?: string[];
       missing_optional_sources?: string[];
     };
@@ -187,6 +188,7 @@ export default function DailyCareQwen() {
               {result.history_scope.selection_truncated
                 || result.history_scope.prompt_context_truncated
                 || result.history_scope.lcr_context?.retrieval_scan_complete !== true
+                || result.history_scope.lcr_context?.retrieval_projection_complete !== true
                 || result.history_scope.lcr_context?.schema_status !== "complete"
                 ? `This is a partial view. ${result.history_scope.records_omitted_from_model ?? 0} matching entries were not included in the answer, or some care sources could not be checked. Narrow the question or date range to review a smaller part of the history.`
                 : "All matching entries found in the available care sources were included in this answer. Information that was never recorded is still unknown."}
