@@ -15,6 +15,8 @@ assert.match(
   /item\.necessity === "necessary" && Boolean\(item\.necessity_rationale\?\.trim\(\)\)/,
   "Only explicitly necessary questions with a rationale may enter the caregiver queue.",
 );
+assert.match(clarificationPanel, /\/uncertainty\/questions\/recommended\//, "The caregiver queue must consume the backend evidence-validated recommendation projection.");
+assert.match(clarificationPanel, /eligibleQuestionIdSet\.has\(item\.id\)/, "Only question IDs admitted by the backend projection may enter the caregiver queue.");
 assert.match(
   clarificationPanel,
   /visibleCaregiverQuestions\.map\(/,
