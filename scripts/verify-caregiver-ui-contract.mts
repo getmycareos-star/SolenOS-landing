@@ -2,8 +2,27 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { sanitizeCaregiverErrorMessage } from "../src/lib/mvp-input-architecture/first-input";
+import { adaptForCaregiverCapacity } from "../src/lib/care-reality-engine/capacity-adaptation";
 
 const root = process.cwd();
+
+// Explicit overload language must reduce demands without turning ordinary concern
+// into an overload classification.
+for (const phrase of [
+  "I'm exhausted",
+  "I can't cope with all of this",
+  "I'm so tired",
+  "This is too much to handle",
+  "I am at my limit",
+  "I can't do this anymore",
+]) {
+  const adaptation = adaptForCaregiverCapacity(phrase);
+  assert.equal(adaptation.overload_likely, true, phrase);
+  assert.equal(adaptation.max_asks, 1, phrase);
+  assert.equal(adaptation.shorten_response, true, phrase);
+  assert.equal(adaptation.single_priority_only, true, phrase);
+}
+assert.equal(adaptForCaregiverCapacity("Can you explain the appointment time?").overload_likely, false);
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 const orientation = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
