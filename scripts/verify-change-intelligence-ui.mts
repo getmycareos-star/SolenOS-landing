@@ -19,6 +19,10 @@ function assert(condition: unknown, message: string): asserts condition {
 for (const contract of [
   ["panel lists persisted changes", /listPersistedChanges\(\)/],
   ["panel lists persisted patterns", /listPersistedPatterns\(\)/],
+  ["older change assessments can be loaded", /Load earlier changes/],
+  ["older patterns can be loaded", /Load earlier patterns/],
+  ["change history is not silently limited to eight rows", !/changes\\.slice\\(0, 8\\)/],
+  ["pattern history is not silently limited to eight rows", !/patterns\\.slice\\(0, 8\\)/],
   ["panel requests backend reassessment", /reassessPersistedChangeIntelligence\(\)/],
   ["change source details are user-reviewable", /Review source evidence/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
@@ -39,6 +43,10 @@ assert(
 assert(
   /getJSON\(\`\/change\/changes\/\$\{personId\}/.test(api),
   "Change listings must be read from the authoritative backend API",
+);
+assert(
+  /new URLSearchParams\(\{ limit: String\(limit\), offset: String\(offset\) \}\)/.test(api),
+  "change and pattern history reads must support server-side pagination",
 );
 assert(
   /getJSON\(\`\/change\/patterns\/\$\{personId\}/.test(api),
