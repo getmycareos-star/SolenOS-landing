@@ -25,6 +25,8 @@ assert.match(clarificationPanel, /What did the person receiving care say or show
 assert.match(clarificationPanel, /What did you observe or report\?/, "Caregiver-report questions must distinguish personal observation from professional confirmation.");
 assert.match(clarificationPanel, /leave this open\. Do not guess\./, "Unknown answerers must not be converted into forced caregiver tasks.");
 assert.match(clarificationPanel, /What did the care professional confirm\?/, "Professional-directed questions must not be presented as questions the caregiver personally must answer.");
+assert.match(clarificationPanel, /Waiting to identify who can answer/, "Unknown answerer status must not imply the caregiver is responsible.");
+assert.match(clarificationPanel, /Waiting for another caregiver/, "Questions assigned to another caregiver must say so.");
 assert.match(clarificationPanel, /Waiting for care-team confirmation/, "Professional-directed questions must not appear to be awaiting the caregiver's own answer.");
 assert.match(clarificationPanel, /Best person to ask:/, "The interface must identify the intended answerer for a necessary question.");
 assert.match(
