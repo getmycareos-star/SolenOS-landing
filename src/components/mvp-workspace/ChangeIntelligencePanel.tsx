@@ -47,6 +47,12 @@ export function ChangeIntelligencePanel() {
   const [detailErrors, setDetailErrors] = useState<Record<string, string>>({});
   const [confirmationReasons, setConfirmationReasons] = useState<Record<string, string>>({});
   const [transitioningIds, setTransitioningIds] = useState<string[]>([]);
+  const [changeOffset, setChangeOffset] = useState(0);
+  const [patternOffset, setPatternOffset] = useState(0);
+  const [hasMoreChanges, setHasMoreChanges] = useState(false);
+  const [hasMorePatterns, setHasMorePatterns] = useState(false);
+  const [loadingMoreChanges, setLoadingMoreChanges] = useState(false);
+  const [loadingMorePatterns, setLoadingMorePatterns] = useState(false);
   async function changeStatus(changeId: string, status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive") {
     const reason = confirmationReasons[changeId]?.trim() ?? "";
     if (status !== "awaiting_confirmation" && !reason) {
@@ -112,6 +118,44 @@ export function ChangeIntelligencePanel() {
     }
   }
 
+  async function loadMoreChanges() {
+    if (loadingMoreChanges || !hasMoreChanges) return;
+    setLoadingMoreChanges(true);
+    try {
+      const nextOffset = changeOffset + 100;
+      const rows = await listPersistedChanges(undefined, 100, nextOffset);
+      setChanges((current) => {
+        const known = new Set(current.map((item) => item.id));
+        return [...current, ...rows.filter((item) => item.is_active && !known.has(item.id))];
+      });
+      setChangeOffset(nextOffset);
+      setHasMoreChanges(rows.length === 100);
+    } catch {
+      setWarning("Earlier change assessments could not be loaded. The saved care record has not been changed.");
+    } finally {
+      setLoadingMoreChanges(false);
+    }
+  }
+
+  async function loadMorePatterns() {
+    if (loadingMorePatterns || !hasMorePatterns) return;
+    setLoadingMorePatterns(true);
+    try {
+      const nextOffset = patternOffset + 100;
+      const rows = await listPersistedPatterns(undefined, 100, nextOffset);
+      setPatterns((current) => {
+        const known = new Set(current.map((item) => item.id));
+        return [...current, ...rows.filter((item) => item.is_active && !known.has(item.id))];
+      });
+      setPatternOffset(nextOffset);
+      setHasMorePatterns(rows.length === 100);
+    } catch {
+      setWarning("Earlier care patterns could not be loaded. The saved care record has not been changed.");
+    } finally {
+      setLoadingMorePatterns(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
     async function load() {
@@ -125,6 +169,10 @@ export function ChangeIntelligencePanel() {
         if (!active) return;
         setChanges(changeRows.filter((row) => row.is_active));
         setPatterns(patternRows.filter((row) => row.is_active));
+        setChangeOffset(0);
+        setPatternOffset(0);
+        setHasMoreChanges(changeRows.length === 100);
+        setHasMorePatterns(patternRows.length === 100);
       } catch (reason: unknown) {
         if (!active) return;
         setError(caregiverSafeErrorMessage());
@@ -158,7 +206,7 @@ export function ChangeIntelligencePanel() {
       ) : null}
       {changes.length > 0 ? (
         <div className="lcr-timeline">
-          {changes.slice(0, 8).map((change) => (
+          {changes.map((change) => (
             <article key={change.id} className="lcr-timeline-item">
               <span className="lcr-timeline-marker" aria-hidden="true">↔</span>
               <div className="lcr-timeline-content">
@@ -238,9 +286,14 @@ export function ChangeIntelligencePanel() {
           ))}
         </div>
       ) : null}
+      {hasMoreChanges ? (
+        <button type="button" className="lcr-text-action" disabled={loadingMoreChanges} onClick={() => void loadMoreChanges()}>
+          {loadingMoreChanges ? "Loading earlier changes…" : "Load earlier changes"}
+        </button>
+      ) : null}
       {patterns.length > 0 ? (
         <div className="lcr-timeline">
-          {patterns.slice(0, 8).map((pattern) => (
+          {patterns.map((pattern) => (
             <article key={pattern.id} className="lcr-timeline-item">
               <span className="lcr-timeline-marker" aria-hidden="true">↻</span>
               <div className="lcr-timeline-content">
@@ -293,6 +346,11 @@ export function ChangeIntelligencePanel() {
             </article>
           ))}
         </div>
+      ) : null}
+      {hasMorePatterns ? (
+        <button type="button" className="lcr-text-action" disabled={loadingMorePatterns} onClick={() => void loadMorePatterns()}>
+          {loadingMorePatterns ? "Loading earlier patterns…" : "Load earlier patterns"}
+        </button>
       ) : null}
     </section>
   );
