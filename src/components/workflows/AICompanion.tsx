@@ -351,7 +351,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="Ask about the saved care history, a recent change or something that is unclear…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
-            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
