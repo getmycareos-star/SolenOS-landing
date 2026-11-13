@@ -89,6 +89,7 @@ interface LcrContextCoverage {
   schema_status?: string
   history_coverage?: string
   retrieval_scan_complete?: boolean
+  retrieval_projection_complete?: boolean
   prompt_context_complete?: boolean
   prompt_context_chars?: number
   prompt_context_budget_chars?: number
@@ -296,6 +297,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 const hasUnselectedMatches = Object.values(coverage?.sources || {}).some(source => source.selection_truncated === true)
                 const coverageIsPartial = Boolean(coverage && (
                   coverage.retrieval_scan_complete !== true
+                  || coverage.retrieval_projection_complete !== true
                   || coverage.prompt_context_complete === false
                   || hasUnreturnedMatches
                   || hasUnselectedMatches
