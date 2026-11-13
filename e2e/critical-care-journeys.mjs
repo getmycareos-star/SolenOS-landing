@@ -622,6 +622,11 @@ await record("06 Companion context and Qwen output", async () => {
   assert.equal(documentAnswer.status, 200, JSON.stringify(documentAnswer.payload));
   assert.equal(documentAnswer.payload.written_to_lcr, false);
   assert.ok(
+    Array.isArray(documentAnswer.payload.source_document_analysis_ids)
+      && documentAnswer.payload.source_document_analysis_ids.length > 0,
+    "Companion must return the exact verified document extraction IDs supplied to its answer",
+  );
+  assert.ok(
     (documentAnswer.payload.source_evidence_ids || []).includes(documentId),
     "Companion must cite the exact uploaded document when answering a document question",
   );
