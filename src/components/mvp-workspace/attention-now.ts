@@ -13,6 +13,7 @@ export type AttentionChangeRecord = {
   superseded_by_change_id?: string | null;
   attention_candidate: boolean;
   follow_up_candidate: boolean;
+  confirmation_status?: string | null;
 };
 
 const explicitImmediateReasons = new Set([
@@ -38,6 +39,7 @@ export function selectDeferredItems<T extends AttentionLoopRecord>(items: T[]): 
 export function selectWatchChanges<T extends AttentionChangeRecord>(items: T[]): T[] {
   return items.filter((item) =>
     item.is_active !== false &&
+    item.confirmation_status?.toLowerCase() !== "rejected" &&
     !item.superseded_by_change_id &&
     (item.attention_candidate === true || item.follow_up_candidate === true)
   );
