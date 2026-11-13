@@ -526,7 +526,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
 await record("06 Companion context and Qwen output", async () => {
   const answer = await request("/api/v1/conversation/message", {
     token: identity.token, method: "POST",
-    body: { person_id: identity.personId, text: "What has the caregiver recorded about sleep and appetite?" },
+    body: { person_id: identity.personId, text: "What has the caregiver recorded about sleep, lunch and dinner?" },
   });
   assert.equal(answer.status, 200, JSON.stringify(answer.payload));
   assert.equal(answer.payload.written_to_lcr, false);
