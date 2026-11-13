@@ -284,7 +284,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   coverage.retrieval_scan_complete !== true
                   || coverage.prompt_context_complete === false
                   || hasUnreturnedMatches
-                  || coverage.history_coverage !== 'query_scanned_ranked_subset'
+                  || !['query_scanned_ranked_subset', 'complete_history_scan_ranked_subset'].includes(coverage.history_coverage || '')
                 ))
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
