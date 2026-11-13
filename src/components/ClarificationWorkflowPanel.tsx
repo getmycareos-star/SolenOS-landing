@@ -165,14 +165,9 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       isCaregiverNecessaryQuestion(item)
     )
     .sort((a, b) => {
-      const rank: Record<string, number> = {
-        critical: 0,
-        high: 1,
-        medium: 2,
-        low: 3,
-        informational: 4,
-      };
-      return (rank[a.priority] ?? 5) - (rank[b.priority] ?? 5);
+      const order = new Map(eligibleQuestionIds.map((id, index) => [id, index]));
+      return (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER);
     });
   // Critical items bypass the ordinary attention limit. Other questions are
   // kept available on demand rather than becoming a long visible task list.
