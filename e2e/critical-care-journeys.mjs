@@ -678,7 +678,8 @@ await record("browser renders caregiver surfaces and submits Companion through t
 
   const companion = await createBrowserPage(session, "/workspace/companion");
   await companion.page.locator("#companion-message-input").fill("What did the caregiver record about sleep and appetite?");
-  await companion.page.getByRole("button", { name: "Send" }).click();
+  // The composer documents Enter as its primary send action; exercise that exact UI path.
+  await companion.page.locator("#companion-message-input").press("Enter");
   await companion.page.waitForFunction(() => {
     const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
     return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
