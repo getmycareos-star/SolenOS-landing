@@ -836,6 +836,9 @@ export default function DailyCarePage() {
                   >
                     <strong>{item.title || "Care record entry"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
+                    {item.capture_processing?.message && (
+                      <p className="daily-care-muted">{item.capture_processing.message}</p>
+                    )}
                     <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
                     {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
