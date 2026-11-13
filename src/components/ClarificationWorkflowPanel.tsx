@@ -156,8 +156,29 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
 
   const isCaregiverNecessaryQuestion = (item: Question) =>
     item.necessity === "necessary" && Boolean(item.necessity_rationale?.trim());
-  const caregiverOpenQuestions = questions.filter((item) =>
-    (item.status === "open" || item.status === "unresolved") && isCaregiverNecessaryQuestion(item)
+  const caregiverOpenQuestions = questions
+    .filter((item) =>
+      (item.status === "open" || item.status === "unresolved") && isCaregiverNecessaryQuestion(item)
+    )
+    .sort((a, b) => {
+      const rank: Record<string, number> = {
+        critical: 0,
+        high: 1,
+        medium: 2,
+        low: 3,
+        informational: 4,
+      };
+      return (rank[a.priority] ?? 5) - (rank[b.priority] ?? 5);
+    });
+  // Critical items bypass the ordinary attention limit. Other questions are
+  // kept available on demand rather than becoming a long visible task list.
+  const visibleCaregiverQuestions = [
+    ...caregiverOpenQuestions.filter((item) => item.priority === "critical"),
+    ...caregiverOpenQuestions.filter((item) => item.priority !== "critical").slice(0, 2),
+  ];
+  const visibleQuestionIds = new Set(visibleCaregiverQuestions.map((item) => item.id));
+  const additionalCaregiverQuestions = caregiverOpenQuestions.filter(
+    (item) => !visibleQuestionIds.has(item.id),
   );
   const selectedQuestion = questions.find((item) =>
     item.id === selectedQuestionId &&
@@ -428,7 +449,7 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
       {caregiverOpenQuestions.length === 0 && <p>Nothing needs your input right now. SolenOS will ask when a care detail genuinely needs confirmation. You can talk through other questions with SolenOS Companion.</p>}
       {(caregiverOpenQuestions.length > 0 || questions.some((item) => item.status !== "open" && item.status !== "unresolved")) && <>
         <div style={{ display: "grid", gap: 10 }}>
-          {caregiverOpenQuestions.map((item) => (
+          {visibleCaregiverQuestions.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -445,6 +466,33 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
               <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
           ))}
+          {additionalCaregiverQuestions.length > 0 && (
+            <details>
+              <summary style={{ cursor: "pointer", fontSize: 13 }}>
+                See {additionalCaregiverQuestions.length} more care question{additionalCaregiverQuestions.length === 1 ? "" : "s"}
+              </summary>
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {additionalCaregiverQuestions.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedQuestionId(item.id);
+                      setAnswer("");
+                      setAnswerProvenance("");
+                      setError("");
+                    }}
+                    style={{ ...button, textAlign: "left", display: "grid", gap: 5 }}
+                  >
+                    <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                      {questionStatusLabel(item.status, Boolean(item.claim_id))} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}
+                    </span>
+                    <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
           {questions.some((item) => item.status !== "open" && item.status !== "unresolved") && (
             <details>
               <summary style={{ cursor: "pointer", fontSize: 13 }}>View answered and closed questions</summary>
