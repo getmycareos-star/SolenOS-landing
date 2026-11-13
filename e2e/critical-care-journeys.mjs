@@ -386,6 +386,30 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
       `Daily Care report ${index + 1} projected fewer than ${minimumSourceObservations[index]} independently supported observations: ${JSON.stringify(job.daily_capture)}`,
     );
   });
+  const morningAnalysis = await request(
+    `/api/v1/capture/analyses/${encodeURIComponent(completedCaptureJobs[0].daily_capture.analysis_id)}`,
+    { token: identity.token },
+  );
+  assert.equal(morningAnalysis.status, 200, JSON.stringify(morningAnalysis.payload));
+  assert.ok(
+    morningAnalysis.payload.candidates.observations.some((item) =>
+      item.extraction_origin === "deterministic_exact_clause_supplement"
+      && /unsettled/i.test(item.observation || "")
+    ),
+    "the persisted Daily Care review analysis must retain the independently extracted unsettled clause",
+  );
+  const eveningAnalysis = await request(
+    `/api/v1/capture/analyses/${encodeURIComponent(completedCaptureJobs[3].daily_capture.analysis_id)}`,
+    { token: identity.token },
+  );
+  assert.equal(eveningAnalysis.status, 200, JSON.stringify(eveningAnalysis.payload));
+  assert.ok(
+    eveningAnalysis.payload.candidates.observations.some((item) =>
+      item.extraction_origin === "deterministic_exact_clause_supplement"
+      && /now resting/i.test(item.observation || "")
+    ),
+    "the persisted Daily Care review analysis must retain the independently extracted resting clause",
+  );
 
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
   assert.equal(dailyHistory.status, 200);
