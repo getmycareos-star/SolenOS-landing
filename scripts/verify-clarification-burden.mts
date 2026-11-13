@@ -17,6 +17,7 @@ assert.match(
 );
 assert.match(clarificationPanel, /\/uncertainty\/questions\/recommended\//, "The caregiver queue must consume the backend evidence-validated recommendation projection.");
 assert.match(clarificationPanel, /eligibleQuestionOrder\.get\(a\.id\)/, "The caregiver queue must preserve the backend's priority ordering.");
+assert.match(clarificationPanel, /eligible_question_ids: \[\],/, "If the backend recommendation service is unavailable, caregiver questions must fail closed without breaking access to saved care information.");
 assert.match(clarificationPanel, /recommendation\.recommended_question_ids/, "The selected question must follow the backend priority order.");
 assert.match(clarificationPanel, /eligibleQuestionIdSet\.has\(item\.id\) && isCaregiverNecessaryQuestion\(item\)/, "The selected question detail must enforce the same server eligibility gate as the visible queue.");
 assert.match(clarificationPanel, /eligibleQuestionIdSet\.has\(item\.id\)/, "Only question IDs admitted by the backend projection may enter the caregiver queue.");
