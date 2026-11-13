@@ -199,12 +199,31 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const [claimRows, questionRows, recommendation, evidenceRows] = await Promise.all([
+      const [claimRows, questionRows, evidenceRows] = await Promise.all([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
-        getJSON(`/uncertainty/questions/recommended/${encodeURIComponent(sessionPersonId)}`),
         getJSON("/care-continuity/evidence?limit=100"),
       ]);
+      let recommendation: {
+        person_id: string;
+        eligible_question_ids: string[];
+        recommended_question_ids: string[];
+      };
+      try {
+        recommendation = await getJSON(
+          `/uncertainty/questions/recommended/${encodeURIComponent(sessionPersonId)}`
+        );
+      } catch {
+        // Older backend deployments may not yet expose the validated
+        // projection. Fail closed for questions without breaking access to
+        // the rest of the saved care record.
+        recommendation = {
+          person_id: sessionPersonId,
+          eligible_question_ids: [],
+          recommended_question_ids: [],
+        };
+        setNotice("Care questions are temporarily unavailable. Your saved information has not changed.");
+      }
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
