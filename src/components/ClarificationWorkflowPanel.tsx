@@ -193,6 +193,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const loadAll = useCallback(async () => {
     setLoading(true);
     setError("");
+    setNotice("");
     try {
       const session = await ensureAnonymousSession();
       const sessionPersonId = session.person?.id;
