@@ -7,6 +7,7 @@ const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 let isolateConflictUiRequests = false;
+let confirmCallbackPromise = false;
 
 try {
   // Exercise the real Next.js UI while forwarding its same-origin API calls to
@@ -153,8 +154,14 @@ try {
   page.on("dialog", async (dialog) => {
     const message = dialog.message();
     if (dialog.type() === "confirm") {
-      // Keep the ordinary response path distinct from the callback-promised path.
-      await dialog.dismiss();
+      // One explicit scenario confirms a promised callback; ordinary responses
+      // keep the default non-callback path.
+      if (confirmCallbackPromise) {
+        confirmCallbackPromise = false;
+        await dialog.accept();
+      } else {
+        await dialog.dismiss();
+      }
     } else if (message.startsWith("What response did you receive?")) {
       await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
     } else if (message.startsWith("Choose the first saved item by entering its number.")) {
@@ -432,7 +439,38 @@ try {
     throw new Error("Persisted conflict history did not preserve the partial-resolution boundary and reopening chain.");
   }
 
-  console.log("PASS: real frontend Open Loop lifecycle plus persisted conflict partial-resolution, unresolved remainder, reopening, and append-only history against the live API process.");
+  // A promised callback is still an unresolved commitment. It must remain
+  // visible in the default Open view after the response mutation refreshes data.
+  const callbackTitle = "CI E2E callback promise remains outstanding";
+  await page.getByLabel("Type").selectOption("follow_up");
+  await page.getByLabel("Short title").fill(callbackTitle);
+  await page.getByLabel("Context and what is known").fill(
+    "Synthetic test only. The specialist office has not confirmed an appointment."
+  );
+  await page.getByRole("button", { name: "Save follow-up" }).click();
+  const callbackLoop = page.locator("article").filter({
+    has: page.getByRole("heading", { name: callbackTitle }),
+  });
+  await callbackLoop.waitFor({ timeout: 15_000 });
+  confirmCallbackPromise = true;
+  await callbackLoop.getByRole("button", { name: "Record response" }).click();
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
+  await callbackLoop.getByText("You recorded that a callback was promised. The appointment is not confirmed.", { exact: true }).waitFor({ timeout: 10_000 });
+  await callbackLoop.getByText(/follow-up · waiting/i).waitFor({ timeout: 10_000 });
+  const callbackState = await fetch(new URL("/api/v1/open-loops?status=open&limit=100", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  if (!callbackState.ok) throw new Error(`Could not verify unresolved callback filter: HTTP ${callbackState.status}`);
+  const callbackRows = await callbackState.json();
+  const retainedCallback = (callbackRows.items ?? []).find((item) => item.title === callbackTitle);
+  if (!retainedCallback || retainedCallback.status !== "waiting" || retainedCallback.outcome_status !== "outcome_unknown") {
+    throw new Error("A promised callback disappeared from the unresolved Open view or was treated as completed.");
+  }
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: callbackTitle }).waitFor({ timeout: 15_000 });
+  await page.getByText("You recorded that a callback was promised. The appointment is not confirmed.", { exact: true }).waitFor({ timeout: 10_000 });
+
+  console.log("PASS: real frontend Open Loop lifecycle, callback promise remains visible and unconfirmed, and persisted conflict history against the live API process.");
 } finally {
   // The LCR pages may still have background refresh requests in flight after
   // the assertions complete. Drain route handlers before disposing the context
