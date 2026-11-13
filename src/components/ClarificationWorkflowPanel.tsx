@@ -186,7 +186,8 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   );
   const selectedQuestion = questions.find((item) =>
     item.id === selectedQuestionId &&
-    (!(item.status === "open" || item.status === "unresolved") || isCaregiverNecessaryQuestion(item))
+    (!(item.status === "open" || item.status === "unresolved") ||
+      (eligibleQuestionIdSet.has(item.id) && isCaregiverNecessaryQuestion(item)))
   );
   const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
   const latestAnswer = history[history.length - 1];
