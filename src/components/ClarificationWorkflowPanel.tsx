@@ -549,7 +549,10 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
               </div>
             ) : null;
           })()}
-          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Who may know: {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}</p>
+          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+            {selectedQuestion.intended_answerer_role === "professional" ? "Best person to ask: " : "Who may know: "}
+            {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}
+          </p>
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
             <strong style={{ fontSize: 12 }}>Last answer</strong>
             <p>{caregiverSafeAssistantText(selectedQuestion.answer) || "The saved answer is available for review."}</p>
@@ -557,11 +560,33 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
           {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
-            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Your answer
-              <textarea style={{ ...field, minHeight: 70, marginTop: 4 }} value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Write what you know. It is okay if you are not sure." />
+            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+              {selectedQuestion.intended_answerer_role === "professional"
+                ? "What did the care professional confirm?"
+                : selectedQuestion.intended_answerer_role === "other_caregiver"
+                  ? "What did the other caregiver share?"
+                  : "What have you found out?"}
+              <textarea
+                style={{ ...field, minHeight: 70, marginTop: 4 }}
+                value={answer}
+                onChange={(event) => setAnswer(event.target.value)}
+                placeholder={selectedQuestion.intended_answerer_role === "professional"
+                  ? "Add their answer if you have it. It is okay if you have not asked yet."
+                  : "Write what you know. It is okay if you are not sure."}
+              />
             </label>
-            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Who provided this answer, and how do they know?
-              <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={answerProvenance} onChange={(event) => setAnswerProvenance(event.target.value)} placeholder="For example, I measured it this morning." />
+            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+              {selectedQuestion.intended_answerer_role === "professional"
+                ? "Which professional provided this answer, and when?"
+                : "Who provided this answer, and how do they know?"}
+              <textarea
+                style={{ ...field, minHeight: 55, marginTop: 4 }}
+                value={answerProvenance}
+                onChange={(event) => setAnswerProvenance(event.target.value)}
+                placeholder={selectedQuestion.intended_answerer_role === "professional"
+                  ? "For example, the pharmacist confirmed this by phone today."
+                  : "For example, I measured it this morning."}
+              />
             </label>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>An answer will not be treated as confirmed until it has been reviewed.</p>
