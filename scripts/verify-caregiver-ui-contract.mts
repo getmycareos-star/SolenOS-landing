@@ -145,6 +145,11 @@ assert.match(settingsPage, /\(item.status \?\? "active"\) === "active"/,
   "the caregiver inbox must distinguish active notifications from resolved ones");
 
 assert.ok(dailyCarePage.includes("<NaturalLanguageDailyUpdate />"), "free-text updates must use the existing Daily Care capture path");
+assert.ok(dailyCapture.includes("qwen_job_id"), "structured Daily Care must retain the durable background job ID");
+assert.ok(dailyCapture.includes('getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`)'), "structured Daily Care must poll the durable extraction job after confirming the save");
+assert.ok(dailyCapture.includes("/capture/analyses/"), "structured Daily Care must load persisted review candidates after background extraction");
+assert.ok(dailyCapture.includes("Your care entry is saved. SolenOS is checking it against the rest of the care record in the background."), "the UI must distinguish a saved record from unfinished downstream reconciliation");
+assert.ok(dailyCapture.includes("if (!data?.qwen_job_id)"), "the UI must not launch duplicate client-side reconciliation when the durable worker owns it");
 assert.ok(naturalDailyUpdate.includes('postJSON("/daily-care/entries"'), "natural-language updates must use the existing persisted Daily Care endpoint");
 assert.ok(naturalDailyUpdate.includes("notes: report"), "the exact caregiver wording must be submitted as the source report");
 assert.ok(naturalDailyUpdate.includes("response?.success !== true"), "the UI must require a backend save receipt before showing success");
