@@ -897,22 +897,27 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       window.dispatchEvent(new Event('careRecordUpdated'));
       // Once Daily Capture is persisted, reconcile the saved observations against the longitudinal LCR.
       // Reconciliation failure is shown by the Delta panel and never rolls back a successfully saved capture.
-      const deltaContent = JSON.stringify({
-        medications: variables.medications,
-        vitals: variables.vitals,
-        scales: variables.scales,
-        notes: variables.notes,
-      }, null, 2);
-      const nextDeltaToken = deltaToken + 1;
-      setDeltaToken(nextDeltaToken);
-      setDeltaAutoInput({
-        personId,
-        content: deltaContent,
-        source: 'SolenOS Daily Capture',
-        eventDate: new Date().toISOString(),
-        token: nextDeltaToken,
-        sourceEventId: typeof data?.id === 'string' ? data.id : undefined,
-      });
+      // The durable Daily Care worker now owns extraction and Delta/LCR
+      // reconciliation for queued captures. Do not launch a second client-side
+      // reconciliation for the same event.
+      if (!data?.qwen_job_id) {
+        const deltaContent = JSON.stringify({
+          medications: variables.medications,
+          vitals: variables.vitals,
+          scales: variables.scales,
+          notes: variables.notes,
+        }, null, 2);
+        const nextDeltaToken = deltaToken + 1;
+        setDeltaToken(nextDeltaToken);
+        setDeltaAutoInput({
+          personId,
+          content: deltaContent,
+          source: 'SolenOS Daily Capture',
+          eventDate: new Date().toISOString(),
+          token: nextDeltaToken,
+          sourceEventId: typeof data?.id === 'string' ? data.id : undefined,
+        });
+      }
     },
     onError: async (error, variables, context) => {
       // On error, rollback to previous state
