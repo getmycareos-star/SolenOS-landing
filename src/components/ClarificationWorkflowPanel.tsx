@@ -214,7 +214,11 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
       if (!recommendation || recommendation.person_id !== sessionPersonId ||
           !Array.isArray(recommendation.eligible_question_ids) ||
-          recommendation.eligible_question_ids.some((id: unknown) => typeof id !== "string")) {
+          recommendation.eligible_question_ids.some((id: unknown) => typeof id !== "string") ||
+          !Array.isArray(recommendation.recommended_question_ids) ||
+          recommendation.recommended_question_ids.some((id: unknown) =>
+            typeof id !== "string" || !recommendation.eligible_question_ids.includes(id)
+          )) {
         throw new Error("Invalid or cross-record recommended question response");
       }
       const loadedClaims = claimRows as Claim[];
@@ -239,7 +243,12 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           (currentQuestion.status !== "open" && currentQuestion.status !== "unresolved") ||
           (eligibleIds.has(currentQuestion.id) && currentQuestion.necessity === "necessary" && Boolean(currentQuestion.necessity_rationale?.trim()))
         )) return current;
-        return necessaryOpen[0]?.id
+        const recommendedIds = recommendation.recommended_question_ids as string[];
+        const recommendedDefault = recommendedIds.find((id) =>
+          necessaryOpen.some((row) => row.id === id)
+        );
+        return recommendedDefault
+          ?? necessaryOpen[0]?.id
           ?? loadedQuestions.find((row) => row.status !== "open" && row.status !== "unresolved")?.id
           ?? "";
       });
