@@ -185,7 +185,7 @@ try {
     "Synthetic test only. The care team has not yet confirmed the appointment date."
   );
   await page.getByRole("button", { name: "Save follow-up" }).click();
-  await page.getByRole("alert").filter({ hasText: "The loop was not saved" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("alert").filter({ hasText: "The follow-up was not saved" }).waitFor({ timeout: 10_000 });
   await page.getByRole("button", { name: "Save follow-up" }).click();
   const handoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
