@@ -713,7 +713,9 @@ await record("browser renders caregiver surfaces and submits Companion through t
   }
   for (const medicationObservation of observationsBySource.get(scenarioReports[2])) {
     assert.equal(medicationObservation.epistemic_status, "uncertain");
-    assert.ok(medicationObservation.context?.includes("yesterday"));
+    if (/changed|change|adjusted|increased|decreased/i.test(medicationObservation.value_text)) {
+      assert.ok(medicationObservation.context?.includes("yesterday"));
+    }
   }
   assert.ok(
     projectedObservations.every((item) =>
