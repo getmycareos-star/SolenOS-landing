@@ -566,6 +566,27 @@ await record("06 Companion context and Qwen output", async () => {
     false,
     "the sleep/appetite question must not pull an unrelated medication report into its source set",
   );
+
+  const documentAnswer = await request("/api/v1/conversation/message", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      text: "What does the uploaded document say about walking?",
+      client_turn_id: unique("companion-document-source"),
+    },
+  });
+  assert.equal(documentAnswer.status, 200, JSON.stringify(documentAnswer.payload));
+  assert.equal(documentAnswer.payload.written_to_lcr, false);
+  assert.ok(
+    (documentAnswer.payload.source_evidence_ids || []).includes(documentId),
+    "Companion must cite the exact uploaded document when answering a document question",
+  );
+  assert.ok(
+    /walking frame|walked to the kitchen|walking to the kitchen/i.test(documentAnswer.payload.reply || ""),
+    "Companion must answer from the persisted document extraction rather than generic care advice",
+  );
+
   const invalid = await request("/api/v1/conversation/message", {
     token: identity.token, method: "POST",
     body: { person_id: identity.personId, text: "" },
