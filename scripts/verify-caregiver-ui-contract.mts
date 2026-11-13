@@ -156,6 +156,7 @@ assert.ok(naturalDailyUpdate.includes('getJSON(`/assistant/jobs/${jobId}`)'), "t
 assert.ok(naturalDailyUpdate.includes("processingStatus: status.status === \"processing\" ? \"processing\" : \"queued\""), "queued and processing states must remain visible without being shown as failures");
 assert.ok(naturalDailyUpdate.includes("SolenOS is organizing the details in the background"), "the caregiver must be told that the original report is saved while extraction continues");
 assert.ok(naturalDailyUpdate.includes("Your original report is still saved"), "an extraction failure must not imply that the original report was lost");
+assert.ok(dailyCarePage.includes("capture_processing?.message"), "background extraction failures must remain visible when a caregiver returns to Daily Care history");
 assert.ok(dailyCarePage.includes("Care today"), "Daily Care must present one chronological view of the current day");
 assert.ok(dailyCarePage.includes("dailyTimePeriod(item)"), "daily updates must be grouped by their recorded time of day");
 assert.ok(dailyCarePage.includes("Needs confirmation"), "unconfirmed medication changes must remain visible when the caregiver returns");
