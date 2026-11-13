@@ -61,7 +61,7 @@ export default function NaturalLanguageDailyUpdate() {
         // A temporary status-read failure must not turn a saved report into a failed save.
       }
       attempts += 1;
-      if (active && attempts < 60) timer = setTimeout(poll, 2000);
+      if (active && attempts < 60) timer = setTimeout(poll, 5000);
     };
 
     void poll();
