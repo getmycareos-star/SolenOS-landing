@@ -136,6 +136,15 @@ console.log("✓ phase contracts + exclusions");
   const cap = adaptForCaregiverCapacity("Everything is happening at once. Too much.");
   assert.equal(cap.overload_likely, true);
   assert.equal(cap.max_asks, 1);
+  const tired = adaptForCaregiverCapacity("I'm so tired. I can't manage all this.");
+  assert.equal(tired.overload_likely, true);
+  assert.equal(tired.max_asks, 1);
+  assert.equal(tired.shorten_response, true);
+  assert.equal(tired.single_priority_only, true);
+  const coping = adaptForCaregiverCapacity("I can't cope anymore.");
+  assert.equal(coping.overload_likely, true);
+  const neutral = adaptForCaregiverCapacity("What happened at the appointment?");
+  assert.equal(neutral.overload_likely, false);
   console.log("✓ Phase 9 capacity adaptation");
 }
 
