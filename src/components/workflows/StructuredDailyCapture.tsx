@@ -45,7 +45,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   const [saved, setSaved] = useState(false);
   const [savedEntrySummary, setSavedEntrySummary] = useState('');
   const [saveError, setSaveError] = useState<unknown | null>(null);
-  const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any; analysisId: string | null; recordedAt: string | null } | null>(null);
+  const [qwenAnalysis, setQwenAnalysis] = useState<{
+    status: string;
+    processingStatus: string;
+    jobId: string | null;
+    candidates: any;
+    analysisId: string | null;
+    recordedAt: string | null;
+  } | null>(null);
   const [changeIntelligenceStatus, setChangeIntelligenceStatus] = useState<string | null>(null);
   const [careContinuityExecution, setCareContinuityExecution] = useState<{
     stages?: Record<string, string>;
@@ -64,6 +71,101 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   const [medicationFeedback, setMedicationFeedback] = useState<string | null>(null);
   
   const [eventOccurredAt, setEventOccurredAt] = useState("");
+
+  // Daily Care writes are confirmed before extraction and longitudinal
+  // reconciliation. Poll the durable job and then load the caregiver-scoped
+  // persisted candidates; never keep the save request open for model work.
+  useEffect(() => {
+    const jobId = qwenAnalysis?.jobId;
+    if (!jobId || !["queued", "processing"].includes(qwenAnalysis?.processingStatus || "")) {
+      return;
+    }
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+    const poll = async () => {
+      try {
+        const job = await getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`) as {
+          status?: string;
+          daily_capture?: { analysis_id?: string | null };
+        };
+        if (!active) return;
+        if (job.status === "completed") {
+          const analysisId = job.daily_capture?.analysis_id || qwenAnalysis?.analysisId;
+          if (!analysisId) {
+            setQwenAnalysis(current => current?.jobId === jobId
+              ? { ...current, status: "unavailable", processingStatus: "failed" }
+              : current);
+            setChangeIntelligenceStatus("unavailable");
+            return;
+          }
+          const analysis = await getJSON(
+            `/capture/analyses/${encodeURIComponent(analysisId)}`
+          ) as {
+            extraction_status?: string;
+            candidates?: any;
+            execution_status?: Record<string, string>;
+          };
+          if (!active) return;
+          const execution = analysis.execution_status || {};
+          setQwenAnalysis(current => current?.jobId === jobId
+            ? {
+                ...current,
+                status: analysis.extraction_status || "unavailable",
+                processingStatus: "completed",
+                analysisId,
+                candidates: analysis.candidates ?? null,
+              }
+            : current);
+          setCareContinuityExecution({ stages: execution, workflow: "daily_care_entry" });
+          setChangeIntelligenceStatus(
+            execution.reconciliation === "completed"
+              && execution.projection === "verified"
+              && execution.longitudinal_retrieval === "verified"
+              ? "available"
+              : "unavailable"
+          );
+          setReviewDrafts({});
+          window.dispatchEvent(new Event("careRecordUpdated"));
+          return;
+        }
+        if (job.status === "failed" || job.status === "cancelled") {
+          setQwenAnalysis(current => current?.jobId === jobId
+            ? { ...current, status: "unavailable", processingStatus: job.status || "failed" }
+            : current);
+          setChangeIntelligenceStatus("unavailable");
+          return;
+        }
+        attempts += 1;
+        if (attempts >= 90) {
+          setQwenAnalysis(current => current?.jobId === jobId
+            ? { ...current, processingStatus: "unavailable" }
+            : current);
+          return;
+        }
+        const nextStatus = job.status === "processing" ? "processing" : "queued";
+        setQwenAnalysis(current => current?.jobId === jobId && current.processingStatus !== nextStatus
+          ? { ...current, processingStatus: nextStatus }
+          : current);
+        timer = setTimeout(() => { void poll(); }, 2000);
+      } catch {
+        attempts += 1;
+        if (!active) return;
+        if (attempts >= 90) {
+          setQwenAnalysis(current => current?.jobId === jobId
+            ? { ...current, processingStatus: "unavailable" }
+            : current);
+          return;
+        }
+        timer = setTimeout(() => { void poll(); }, 2000);
+      }
+    };
+    void poll();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [qwenAnalysis?.jobId, qwenAnalysis?.processingStatus, qwenAnalysis?.analysisId]);
 
   // Form state
   const [form, setForm] = useState({
@@ -722,7 +824,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     onSuccess: async (data, variables, context) => {
       captureSubmissionRef.current = null;
       setChangeIntelligenceStatus(
-        data?.change_intelligence_status === 'available' || data?.change_intelligence_status === 'unavailable'
+        data?.change_intelligence_status === 'available'
+          || data?.change_intelligence_status === 'unavailable'
+          || data?.change_intelligence_status === 'pending'
           ? data.change_intelligence_status
           : 'not_reported',
       );
@@ -733,6 +837,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       );
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
+        processingStatus: typeof data?.qwen_processing_status === 'string'
+          ? data.qwen_processing_status
+          : data?.qwen_job_id ? 'queued' : 'completed',
+        jobId: typeof data?.qwen_job_id === 'string' ? data.qwen_job_id : null,
         candidates: data?.qwen_candidates ?? null,
         analysisId: typeof data?.qwen_analysis_id === 'string' ? data.qwen_analysis_id : null,
         recordedAt: typeof data?.recorded_at === 'string' ? data.recorded_at : null,
@@ -1138,6 +1246,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           Your care entry was saved, but change and pattern assessments could not be refreshed. Do not submit the entry again; reopen change intelligence and retry reassessment.
         </p>
       )}
+      {saved && changeIntelligenceStatus === 'pending' && (
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+          Your care entry is saved. SolenOS is checking it against the rest of the care record in the background.
+        </p>
+      )}
       {saved && changeIntelligenceStatus === 'not_reported' && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
           The server did not report whether change and pattern assessments were refreshed.
@@ -1217,9 +1330,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             </ul>
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              {qwenAnalysis.status === 'pending_review'
-                ? 'No additional details stood out in this update. Your original entry is saved.'
-                : 'No additional observations are available. Your saved entry remains recorded.'}
+              {['queued', 'processing'].includes(qwenAnalysis.processingStatus)
+                ? 'Your entry is saved. SolenOS is organizing the details in the background.'
+                : qwenAnalysis.processingStatus === 'unavailable'
+                  ? 'Your original entry is saved, but SolenOS could not finish organizing its details. You can still use the saved report.'
+                  : qwenAnalysis.status === 'pending_review'
+                    ? 'No additional details stood out in this update. Your original entry is saved.'
+                    : 'No additional observations are available. Your saved entry remains recorded.'}
             </p>
           )}
           {reviewFeedback && <p role="status" style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
