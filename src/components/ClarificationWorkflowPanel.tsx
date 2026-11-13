@@ -158,7 +158,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const isCaregiverNecessaryQuestion = (item: Question) =>
     item.necessity === "necessary" && Boolean(item.necessity_rationale?.trim());
   const eligibleQuestionIdSet = new Set(eligibleQuestionIds);
-  const eligibleQuestionOrder = new Map(eligibleQuestionIds.map((id, index) => [id, index]));
+  const eligibleQuestionOrder = new Map<string, number>(eligibleQuestionIds.map((id, index) => [id, index] as const));
   const caregiverOpenQuestions = questions
     .filter((item) =>
       (item.status === "open" || item.status === "unresolved") &&
