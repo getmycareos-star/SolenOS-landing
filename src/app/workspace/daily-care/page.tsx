@@ -11,6 +11,7 @@ import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDailyUpdate";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
+import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 const StructuredDailyCapture = dynamic(
@@ -82,9 +83,11 @@ type CareItem = {
   created_by_caregiver_id?: string | null;
   created_at?: string | null;
   capture_processing?: {
+    analysis_id?: string | null;
     extraction_status?: string | null;
     job_status?: string | null;
     job_id?: string | null;
+    review_required?: boolean;
     message?: string | null;
   } | null;
 };
@@ -295,6 +298,7 @@ export default function DailyCarePage() {
   const [error, setError] = useState("");
   const [captureOpen, setCaptureOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
+  const [reviewAnalysisId, setReviewAnalysisId] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
   const [historyItems, setHistoryItems] = useState<CareItem[]>([]);
@@ -562,6 +566,16 @@ export default function DailyCarePage() {
                     <span> · {displayHistorySource(item)}</span>
                     {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
                     {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
+                    {item.capture_processing?.review_required && item.capture_processing.analysis_id && (
+                      <div style={{ marginTop: 8 }}>
+                        <Button
+                          variant="secondary"
+                          onClick={() => setReviewAnalysisId(item.capture_processing?.analysis_id || null)}
+                        >
+                          Review suggested details
+                        </Button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -850,6 +864,16 @@ export default function DailyCarePage() {
               <p>No recent care entries are available. No record is not proof that no care took place.</p>
             )}
           </section>
+          {reviewAnalysisId && (
+            <CaptureAnalysisReview
+              analysisId={reviewAnalysisId}
+              onClose={() => setReviewAnalysisId(null)}
+              onReviewed={() => {
+                setRefreshVersion((value) => value + 1);
+                window.dispatchEvent(new Event("careRecordUpdated"));
+              }}
+            />
+          )}
         </>
       ) : (
         <BrandLoading animate message="Opening your care record…" />
