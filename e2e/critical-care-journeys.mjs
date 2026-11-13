@@ -64,7 +64,19 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     const target = new URL(source.pathname + source.search, backend);
     const headers = { ...route.request().headers() };
     delete headers.origin;
-    const response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
+    let response;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
+        break;
+      } catch (error) {
+        const message = String(error?.message || error);
+        const transientConnectionFailure = /ECONNRESET|ECONNREFUSED|socket hang up/i.test(message);
+        if (!transientConnectionFailure || attempt === 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+      }
+    }
+    if (!response) throw new Error("Backend proxy did not return a response after transient retries");
     await route.fulfill({ response });
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
