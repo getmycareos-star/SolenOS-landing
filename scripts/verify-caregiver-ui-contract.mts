@@ -9,6 +9,7 @@ const orientation = fs.readFileSync(path.join(root, "src/components/mvp-workspac
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 const deltaPanel = fs.readFileSync(path.join(root, "src/components/CareDeltaPanel.tsx"), "utf8");
 const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
+const captureReview = fs.readFileSync(path.join(root, "src/components/workflows/CaptureAnalysisReview.tsx"), "utf8");
 const landingStyles = fs.readFileSync(path.join(root, "src/app/landing.css"), "utf8");
 const notifications = fs.readFileSync(path.join(root, "src/app/workspace/notifications/page.tsx"), "utf8");
 const assistPanel = fs.readFileSync(path.join(root, "src/components/qwen/QwenAssistPanel.tsx"), "utf8");
@@ -145,6 +146,11 @@ assert.match(settingsPage, /\(item.status \?\? "active"\) === "active"/,
   "the caregiver inbox must distinguish active notifications from resolved ones");
 
 assert.ok(dailyCarePage.includes("<NaturalLanguageDailyUpdate />"), "free-text updates must use the existing Daily Care capture path");
+assert.ok(dailyCarePage.includes("Review suggested details"), "returning caregivers must be able to reopen pending Daily Care suggestions");
+assert.ok(dailyCarePage.includes("<CaptureAnalysisReview"), "Daily Care history must render the persisted review flow");
+assert.ok(captureReview.includes('getJSON(`/capture/analyses/${encodeURIComponent(analysisId)}`)'), "review UI must load the caregiver-scoped persisted extraction");
+assert.ok(captureReview.includes('postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`)'), "review decisions must use the persisted source-bound review endpoint");
+assert.ok(captureReview.includes("Accept and add to care record"), "caregiver approval must be explicit before an extracted detail enters the LCR");
 assert.ok(dailyCapture.includes("qwen_job_id"), "structured Daily Care must retain the durable background job ID");
 assert.ok(dailyCapture.includes('getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`)'), "structured Daily Care must poll the durable extraction job after confirming the save");
 assert.ok(dailyCapture.includes("/capture/analyses/"), "structured Daily Care must load persisted review candidates after background extraction");
