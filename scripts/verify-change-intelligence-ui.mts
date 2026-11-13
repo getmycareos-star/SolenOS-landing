@@ -30,7 +30,8 @@ for (const contract of [
   ["failed loads are exposed as an error state", /role="alert"/],
   ["empty state does not claim no changes occurred", /This does not mean that no changes occurred/],
 ] as const) {
-  assert(contract[1].test(panel), `Missing UI contract: ${contract[0]}`);
+  const matches = contract[1] instanceof RegExp ? contract[1].test(panel) : contract[1];
+  assert(matches, `Missing UI contract: ${contract[0]}`);
 }
 assert(!/\bconfidence\b/i.test(panel), "uncalibrated model confidence must not be displayed in caregiver-facing change intelligence");
 
