@@ -659,7 +659,25 @@ await record("browser renders caregiver surfaces and submits Companion through t
   for (const expected of expectedObservations) {
     assert.ok(observationsByValue.has(expected), `LCR is missing the extracted caregiver observation: ${expected}`);
   }
-  assert.equal(projectedObservations.length, expectedObservations.length, "LCR must not duplicate or invent extracted observations");
+  assert.equal(
+    new Set(projectedObservations.map((item) => item.id)).size,
+    projectedObservations.length,
+    "LCR must not duplicate extracted observations",
+  );
+  const expectedObservationSet = new Set(expectedObservations);
+  const additionalObservations = projectedObservations.filter((item) => !expectedObservationSet.has(item.value_text));
+  assert.ok(
+    additionalObservations.every((item) =>
+      item.epistemic_status === "uncertain" && scenarioReports[2].includes(item.value_text)
+    ),
+    "any additional medication-related extraction must remain an exact, uncertain statement from the caregiver's tentative report",
+  );
+  assert.ok(
+    projectedObservations.every((item) =>
+      item.epistemic_status === "uncertain" || !/\\b\\d+(?:\\.\\d+)?\\s*(?:mg|mcg|ml)\\b/i.test(item.value_text)
+    ),
+    "an unconfirmed medication report must never create a confirmed dose",
+  );
   const uncertainObservation = observationsByValue.get("seemed more unsettled this morning");
   assert.equal(uncertainObservation.epistemic_status, "uncertain");
   assert.equal(uncertainObservation.hedge_marker, "seemed");
