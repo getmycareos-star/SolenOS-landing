@@ -17,8 +17,23 @@ assert.match(
 );
 assert.match(
   clarificationPanel,
-  /caregiverOpenQuestions\.map\(/,
-  "The caregiver-facing open-question list must use the necessity-filtered collection.",
+  /visibleCaregiverQuestions\.map\(/,
+  "The initial caregiver view must use the attention-limited, necessity-filtered collection.",
+);
+assert.match(
+  clarificationPanel,
+  /item\.priority === "critical"/,
+  "Critical questions must bypass the ordinary display limit.",
+);
+assert.match(
+  clarificationPanel,
+  /additionalCaregiverQuestions\.map\(/,
+  "Additional necessary questions must remain available on demand.",
+);
+assert.match(
+  clarificationPanel,
+  /slice\(0, 2\)/,
+  "The initial view must show no more than two ordinary questions.",
 );
 assert.match(
   clarificationPanel,
