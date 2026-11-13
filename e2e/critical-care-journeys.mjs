@@ -633,11 +633,50 @@ await record("browser renders caregiver surfaces and submits Companion through t
   assert.ok(unchangedMedication, "uncertain medication update must not remove the existing reviewed medication");
   assert.equal(unchangedMedication.name, existingMedication.name);
   assert.equal(unchangedMedication.dose, existingMedication.dose, "uncertain dose must not overwrite the existing reviewed dose");
+  const lcrRowsByEvent = new Map();
   for (const reportEvent of scenarioEvents) {
     const lcrRow = dailyLcr.payload.items.find((item) => item.id === reportEvent.id);
     assert.ok(lcrRow, "each saved report must be available through the existing LCR projection");
     assert.deepEqual(lcrRow.evidence_ids, reportEvent.evidence_ids);
     assert.equal(lcrRow.source_type, "caregiver_report");
+    lcrRowsByEvent.set(reportEvent.id, lcrRow);
+  }
+
+  // Verify transfer of extracted details, not only the four parent source events.
+  const projectedObservations = scenarioEvents.flatMap((event) =>
+    lcrRowsByEvent.get(event.id)?.derived_observations || []
+  );
+  const observationsByValue = new Map(projectedObservations.map((item) => [item.value_text, item]));
+  const expectedObservations = [
+    "slept poorly last night",
+    "seemed more unsettled this morning",
+    "barely touched her lunch today",
+    "drank some water",
+    "was calmer this evening",
+    "ate a little more at dinner",
+    "is now resting",
+  ];
+  for (const expected of expectedObservations) {
+    assert.ok(observationsByValue.has(expected), `LCR is missing the extracted caregiver observation: ${expected}`);
+  }
+  assert.equal(projectedObservations.length, expectedObservations.length, "LCR must not duplicate or invent extracted observations");
+  const uncertainObservation = observationsByValue.get("seemed more unsettled this morning");
+  assert.equal(uncertainObservation.epistemic_status, "uncertain");
+  assert.equal(uncertainObservation.hedge_marker, "seemed");
+  assert.equal(observationsByValue.get("drank some water").epistemic_status, "reported");
+  for (const [value, timeWording] of [
+    ["slept poorly last night", "last night"],
+    ["seemed more unsettled this morning", "this morning"],
+    ["barely touched her lunch today", "today"],
+    ["was calmer this evening", "this evening"],
+    ["ate a little more at dinner", "at dinner"],
+    ["is now resting", "now"],
+  ]) {
+    const observation = observationsByValue.get(value);
+    assert.ok(observation.context?.includes(timeWording), `LCR lost the source time wording for: ${value}`);
+    assert.ok(observation.source_passage, `LCR lost the source passage for: ${value}`);
+    assert.ok(Number.isInteger(observation.source_span_start));
+    assert.ok(Number.isInteger(observation.source_span_end));
   }
 
   const openLoopsAfter = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
