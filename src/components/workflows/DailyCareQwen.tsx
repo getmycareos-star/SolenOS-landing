@@ -34,8 +34,18 @@ type AskResult = {
     appointments?: number;
     matched_records?: number;
     records_sent_to_model?: number;
+    records_retrieved?: number;
+    records_omitted_from_model?: number;
+    selection_truncated?: boolean;
+    prompt_context_truncated?: boolean;
     oldest_record_at?: string | null;
     newest_record_at?: string | null;
+    lcr_context?: {
+      schema_status?: string;
+      retrieval_scan_complete?: boolean;
+      missing_required_sources?: string[];
+      missing_optional_sources?: string[];
+    };
   };
   review_required: boolean;
   written_to_lcr: boolean;
@@ -174,7 +184,12 @@ export default function DailyCareQwen() {
               {result.history_scope.newest_record_at
                 ? ` and extends to ${readableDate(result.history_scope.newest_record_at)}.`
                 : "."}
-              This answer uses the saved information most relevant to your question. It may not include every care entry.
+              {result.history_scope.selection_truncated
+                || result.history_scope.prompt_context_truncated
+                || result.history_scope.lcr_context?.retrieval_scan_complete !== true
+                || result.history_scope.lcr_context?.schema_status !== "complete"
+                ? `This is a partial view. ${result.history_scope.records_omitted_from_model ?? 0} matching entries were not included in the answer, or some care sources could not be checked. Narrow the question or date range to review a smaller part of the history.`
+                : "All matching entries found in the available care sources were included in this answer. Information that was never recorded is still unknown."}
             </p>
           ) : null}
 
