@@ -249,6 +249,269 @@ await record("05 Living Care Record projection and evidence", async () => {
 });
 
 // 6. Companion: must return model-generated output grounded in this care record.
+await record("Daily Care Scenario 01 saves immediately and projects all four reports into LCR", async () => {
+  const daily = await createBrowserPage(session, "/workspace/daily-care");
+  const saveFreeTextUpdate = async (text, afterSaved) => {
+    console.log(`Daily Care Scenario 01: opening capture for: ${text}`);
+    const shareButton = daily.page.getByRole("button", { name: "Share something", exact: true });
+    await shareButton.waitFor({ state: "visible", timeout: 15_000 });
+    await shareButton.click();
+    const happenedButton = daily.page.getByRole("button", { name: /Something happened/ });
+    await happenedButton.waitFor({ state: "visible", timeout: 15_000 });
+    await happenedButton.click();
+    const originalWords = daily.page.locator("#natural-daily-update-report");
+    await originalWords.waitFor({ state: "visible", timeout: 15_000 });
+    await originalWords.fill(text);
+    const saveStartedAt = Date.now();
+    const saveResponsePromise = daily.page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
+      && response.request().method() === "POST"
+    );
+    await daily.page.getByRole("button", { name: "Save update", exact: true }).click();
+    const saveResponse = await saveResponsePromise;
+    const savePayload = await saveResponse.json();
+    assert.equal(saveResponse.status(), 200, JSON.stringify(savePayload));
+    assert.equal(savePayload.success, true, JSON.stringify(savePayload));
+    assert.ok(Date.now() - saveStartedAt < 10_000,
+      "the caregiver save must return before background Qwen extraction completes");
+    assert.equal(savePayload.qwen_extraction_status, "queued");
+    assert.ok(typeof savePayload.qwen_job_id === "string" && savePayload.qwen_job_id);
+    await daily.page.getByRole("status").filter({ hasText: "Your update was saved to the care record." }).waitFor({ timeout: 10_000 });
+    if (afterSaved) await afterSaved();
+    await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
+    await originalWords.waitFor({ state: "detached", timeout: 15_000 });
+    console.log(`Daily Care Scenario 01: saved source report: ${text}`);
+    return { eventId: savePayload.id, jobId: savePayload.qwen_job_id };
+  };
+  const scenarioReports = [
+    "Mum slept poorly last night and seemed more unsettled this morning.",
+    "Mum barely touched her lunch today. She drank some water, though.",
+    "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
+    "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
+  ];
+
+  const seededMedication = await request("/api/v1/care-continuity/medications", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      name: "Metformin",
+      dose: "500 mg",
+      note: "Existing reviewed medication record for Daily Care Scenario 01.",
+      review_after_days: 30,
+    },
+  });
+  assert.equal(seededMedication.status, 201, JSON.stringify(seededMedication.payload));
+  const reviewedMedication = await request(
+    `/api/v1/care-continuity/medications/${seededMedication.payload.medication_id}/review`,
+    { token: identity.token, method: "POST", body: {} },
+  );
+  assert.equal(reviewedMedication.status, 200, JSON.stringify(reviewedMedication.payload));
+  const medicationBefore = await request("/api/v1/care-continuity/medications", { token: identity.token });
+  assert.equal(medicationBefore.status, 200, JSON.stringify(medicationBefore.payload));
+  const existingMedication = medicationBefore.payload.medications.find((item) =>
+    item.medication_id === seededMedication.payload.medication_id
+  );
+  assert.ok(existingMedication, "Scenario 01 must start with an established reviewed medication record");
+  assert.equal(existingMedication.dose, "500 mg");
+
+  const appointmentFollowUp = await request("/api/v1/open-loops", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      loop_type: "follow_up",
+      title: "Contact the clinic about the appointment",
+      description: "The clinic has not confirmed the appointment yet. Contact the clinic to confirm it.",
+      uncertainty: "unknown",
+      source_type: "caregiver_report",
+      owner_role: "Caregiver",
+      owner_label: "Daughter",
+      missing_information: ["Appointment confirmation"],
+    },
+  });
+  assert.equal(appointmentFollowUp.status, 201, JSON.stringify(appointmentFollowUp.payload));
+  const appointmentFollowUpId = appointmentFollowUp.payload.id;
+
+  const openLoopsBefore = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
+  assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
+  const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
+  assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
+  await daily.page.reload({ waitUntil: "domcontentloaded" });
+  await daily.page.getByRole("heading", { name: "Existing follow-ups", exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
+  const dailyCaptureJobs = [];
+  for (const [index, report] of scenarioReports.entries()) {
+    dailyCaptureJobs.push(await saveFreeTextUpdate(report, index === 2 ? async () => {
+      await daily.page.getByText(/The existing reviewed medication record lists: Metformin — 500 mg/i).waitFor({ timeout: 15_000 });
+    } : undefined));
+  }
+
+  const waitForDailyCaptureJob = async ({ jobId }) => {
+    const deadline = Date.now() + 180_000;
+    let latest = null;
+    while (Date.now() < deadline) {
+      const status = await request(`/api/v1/assistant/jobs/${jobId}`, { token: identity.token });
+      assert.equal(status.status, 200, JSON.stringify(status.payload));
+      latest = status.payload;
+      if (latest.status === "completed") {
+        assert.equal(latest.daily_capture?.projection_status, "verified", JSON.stringify(latest));
+        return latest;
+      }
+      assert.notEqual(latest.status, "failed", JSON.stringify(latest));
+      assert.notEqual(latest.status, "cancelled", JSON.stringify(latest));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+    assert.fail(`Daily Care extraction job ${jobId} did not finish within 180 seconds: ${JSON.stringify(latest)}`);
+  };
+  const completedCaptureJobs = await Promise.all(dailyCaptureJobs.map(waitForDailyCaptureJob));
+  assert.equal(completedCaptureJobs.length, 4);
+  assert.ok(completedCaptureJobs.every((job) => job.daily_capture?.projection_status === "verified"));
+
+  const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
+  assert.equal(dailyHistory.status, 200);
+  const scenarioEvents = dailyHistory.payload.filter((row) =>
+    scenarioReports.some((report) => JSON.stringify(row).includes(report))
+  );
+  assert.equal(scenarioEvents.length, 4, "all four original caregiver reports must remain independently retrievable");
+  assert.equal(new Set(scenarioEvents.map((row) => row.id)).size, 4, "each report must have its own persisted event");
+  assert.ok(scenarioEvents.every((row) => Array.isArray(row.evidence_ids) && row.evidence_ids.length === 1));
+
+  const dailyEvidence = await request(`/api/v1/evidence/${identity.personId}`, { token: identity.token });
+  assert.equal(dailyEvidence.status, 200);
+  for (const reportEvent of scenarioEvents) {
+    const source = dailyEvidence.payload.find((item) => item.id === reportEvent.evidence_ids[0]);
+    assert.ok(source, "each natural-language update must have a retrievable source evidence record");
+    assert.ok(JSON.stringify(source).includes(scenarioReports.find((report) => JSON.stringify(reportEvent).includes(report))));
+  }
+
+  const dailyLcr = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+  assert.equal(dailyLcr.status, 200, JSON.stringify(dailyLcr.payload));
+  const medicationAfter = await request("/api/v1/care-continuity/medications", { token: identity.token });
+  assert.equal(medicationAfter.status, 200, JSON.stringify(medicationAfter.payload));
+  const unchangedMedication = medicationAfter.payload.medications.find((item) =>
+    item.medication_id === seededMedication.payload.medication_id
+  );
+  assert.ok(unchangedMedication, "uncertain medication update must not remove the existing reviewed medication");
+  assert.equal(unchangedMedication.name, existingMedication.name);
+  assert.equal(unchangedMedication.dose, existingMedication.dose, "uncertain dose must not overwrite the existing reviewed dose");
+  const lcrRowsByEvent = new Map();
+  for (const reportEvent of scenarioEvents) {
+    const lcrRow = dailyLcr.payload.items.find((item) => item.id === reportEvent.id);
+    assert.ok(lcrRow, "each saved report must be available through the existing LCR projection");
+    assert.deepEqual(lcrRow.evidence_ids, reportEvent.evidence_ids);
+    assert.equal(lcrRow.source_type, "caregiver_report");
+    lcrRowsByEvent.set(reportEvent.id, lcrRow);
+  }
+
+  // Verify transfer of extracted details, not only the four parent source events.
+  const projectedObservations = scenarioEvents.flatMap((event) =>
+    lcrRowsByEvent.get(event.id)?.derived_observations || []
+  );
+  assert.equal(
+    new Set(projectedObservations.map((item) => item.id)).size,
+    projectedObservations.length,
+    "LCR must not duplicate extracted observations",
+  );
+  const observationsBySource = new Map(scenarioReports.map((report) => [report, []]));
+  for (const observation of projectedObservations) {
+    const sourceReport = scenarioReports.find((report) =>
+      typeof observation.source_passage === "string"
+      && report.includes(observation.source_passage)
+      && report.slice(observation.source_span_start, observation.source_span_end) === observation.source_passage
+    );
+    assert.ok(sourceReport, "every LCR observation must retain an exact, correctly positioned passage from its original caregiver report");
+    assert.ok(observation.value_text && sourceReport.includes(observation.value_text),
+      "an extracted observation must be a verbatim substring of its original report");
+    assert.equal(
+      sourceReport.slice(observation.source_span_start, observation.source_span_end),
+      observation.source_passage,
+      "LCR source positions must resolve to the original report",
+    );
+    observationsBySource.get(sourceReport).push(observation);
+    if (sourceReport === scenarioReports[0]) {
+      assert.match(observation.value_text, /sleep|unsettled/i, "the morning report must not gain unrelated extracted details");
+    } else if (sourceReport === scenarioReports[1]) {
+      assert.match(observation.value_text, /lunch|water/i, "the lunch report must not gain unrelated extracted details");
+    } else if (sourceReport === scenarioReports[2]) {
+      assert.equal(observation.epistemic_status, "uncertain",
+        "any extracted medication-change statement must remain tentative");
+    } else if (sourceReport === scenarioReports[3]) {
+      assert.match(observation.value_text, /calmer|dinner|rest/i, "the evening report must not gain unrelated extracted details");
+    }
+  }
+
+  const findObservation = (report, pattern) =>
+    observationsBySource.get(report).find((item) => pattern.test(item.value_text));
+  const sleepObservation = findObservation(scenarioReports[0], /sleep.*poor|slept.*poor/i);
+  const unsettledObservation = findObservation(scenarioReports[0], /unsettled/i);
+  const lunchObservation = findObservation(scenarioReports[1], /barely.*lunch|lunch.*barely/i);
+  const waterObservation = findObservation(scenarioReports[1], /drank.*water|water.*drank/i);
+  const calmerObservation = findObservation(scenarioReports[3], /calmer/i);
+  const dinnerObservation = findObservation(scenarioReports[3], /ate.*dinner|dinner.*ate/i);
+  const restingObservation = findObservation(scenarioReports[3], /resting/i);
+  for (const [label, observation] of [
+    ["poor sleep", sleepObservation],
+    ["unsettled morning", unsettledObservation],
+    ["limited lunch", lunchObservation],
+    ["water intake", waterObservation],
+    ["calmer evening", calmerObservation],
+    ["dinner", dinnerObservation],
+    ["resting", restingObservation],
+  ]) {
+    assert.ok(observation, `LCR is missing the source-grounded ${label} observation`);
+    assert.ok(observation.source_passage);
+    assert.ok(Number.isInteger(observation.source_span_start));
+    assert.ok(Number.isInteger(observation.source_span_end));
+  }
+  assert.equal(unsettledObservation.epistemic_status, "uncertain");
+  assert.equal(unsettledObservation.hedge_marker, "seemed");
+  assert.equal(waterObservation.epistemic_status, "reported");
+  for (const [label, observation, timeWording] of [
+    ["poor sleep", sleepObservation, "last night"],
+    ["unsettled morning", unsettledObservation, "this morning"],
+    ["limited lunch", lunchObservation, "today"],
+    ["calmer evening", calmerObservation, "this evening"],
+    ["dinner", dinnerObservation, "at dinner"],
+    ["resting", restingObservation, "now"],
+  ]) {
+    assert.ok(observation.context?.includes(timeWording), `LCR lost the source time wording for ${label}`);
+  }
+  for (const medicationObservation of observationsBySource.get(scenarioReports[2])) {
+    assert.equal(medicationObservation.epistemic_status, "uncertain");
+    if (/changed|change|adjusted|increased|decreased/i.test(medicationObservation.value_text)) {
+      assert.ok(medicationObservation.context?.includes("yesterday"));
+    }
+  }
+  assert.ok(
+    projectedObservations.every((item) =>
+      item.epistemic_status === "uncertain" || !/\\b\\d+(?:\\.\\d+)?\\s*(?:mg|mcg|ml)\\b/i.test(item.value_text)
+    ),
+    "an unconfirmed medication report must never create a confirmed dose",
+  );
+
+  const openLoopsAfter = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
+  assert.equal(openLoopsAfter.status, 200, JSON.stringify(openLoopsAfter.payload));
+  assert.deepEqual(
+    (openLoopsAfter.payload.items || []).map((item) => item.id).sort(),
+    openLoopIdsBefore,
+    "natural-language observations and missing optional details must not manufacture follow-up tasks or duplicate existing ones",
+  );
+  const retainedAppointmentFollowUp = openLoopsAfter.payload.items.find((item) => item.id === appointmentFollowUpId);
+  assert.ok(retainedAppointmentFollowUp, "the original clinic follow-up must remain retrievable");
+  assert.equal(retainedAppointmentFollowUp.status, "open");
+
+  await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
+  await daily.page.reload({ waitUntil: "domcontentloaded" });
+  await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
+  for (const report of scenarioReports) {
+    await daily.page.getByText(report, { exact: false }).first().waitFor({ timeout: 15_000 });
+  }
+  await verifyMobile(daily.page);
+  await daily.context.close();
+
+});
+
 await record("06 Companion context and Qwen output", async () => {
   const answer = await request("/api/v1/conversation/message", {
     token: identity.token, method: "POST",
@@ -526,265 +789,6 @@ await record("frontend network failure is surfaced rather than rendered as empty
 
 
 await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
-  const daily = await createBrowserPage(session, "/workspace/daily-care");
-  const saveFreeTextUpdate = async (text, afterSaved) => {
-    console.log(`Daily Care Scenario 01: opening capture for: ${text}`);
-    const shareButton = daily.page.getByRole("button", { name: "Share something", exact: true });
-    await shareButton.waitFor({ state: "visible", timeout: 15_000 });
-    await shareButton.click();
-    const happenedButton = daily.page.getByRole("button", { name: /Something happened/ });
-    await happenedButton.waitFor({ state: "visible", timeout: 15_000 });
-    await happenedButton.click();
-    const originalWords = daily.page.locator("#natural-daily-update-report");
-    await originalWords.waitFor({ state: "visible", timeout: 15_000 });
-    await originalWords.fill(text);
-    const saveStartedAt = Date.now();
-    const saveResponsePromise = daily.page.waitForResponse((response) =>
-      new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
-      && response.request().method() === "POST"
-    );
-    await daily.page.getByRole("button", { name: "Save update", exact: true }).click();
-    const saveResponse = await saveResponsePromise;
-    const savePayload = await saveResponse.json();
-    assert.equal(saveResponse.status(), 200, JSON.stringify(savePayload));
-    assert.equal(savePayload.success, true, JSON.stringify(savePayload));
-    assert.ok(Date.now() - saveStartedAt < 10_000,
-      "the caregiver save must return before background Qwen extraction completes");
-    assert.equal(savePayload.qwen_extraction_status, "queued");
-    assert.ok(typeof savePayload.qwen_job_id === "string" && savePayload.qwen_job_id);
-    await daily.page.getByRole("status").filter({ hasText: "Your update was saved to the care record." }).waitFor({ timeout: 10_000 });
-    if (afterSaved) await afterSaved();
-    await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
-    await originalWords.waitFor({ state: "detached", timeout: 15_000 });
-    console.log(`Daily Care Scenario 01: saved source report: ${text}`);
-    return { eventId: savePayload.id, jobId: savePayload.qwen_job_id };
-  };
-  const scenarioReports = [
-    "Mum slept poorly last night and seemed more unsettled this morning.",
-    "Mum barely touched her lunch today. She drank some water, though.",
-    "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
-    "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
-  ];
-
-  const seededMedication = await request("/api/v1/care-continuity/medications", {
-    token: identity.token,
-    method: "POST",
-    body: {
-      name: "Metformin",
-      dose: "500 mg",
-      note: "Existing reviewed medication record for Daily Care Scenario 01.",
-      review_after_days: 30,
-    },
-  });
-  assert.equal(seededMedication.status, 201, JSON.stringify(seededMedication.payload));
-  const reviewedMedication = await request(
-    `/api/v1/care-continuity/medications/${seededMedication.payload.medication_id}/review`,
-    { token: identity.token, method: "POST", body: {} },
-  );
-  assert.equal(reviewedMedication.status, 200, JSON.stringify(reviewedMedication.payload));
-  const medicationBefore = await request("/api/v1/care-continuity/medications", { token: identity.token });
-  assert.equal(medicationBefore.status, 200, JSON.stringify(medicationBefore.payload));
-  const existingMedication = medicationBefore.payload.medications.find((item) =>
-    item.medication_id === seededMedication.payload.medication_id
-  );
-  assert.ok(existingMedication, "Scenario 01 must start with an established reviewed medication record");
-  assert.equal(existingMedication.dose, "500 mg");
-
-  const appointmentFollowUp = await request("/api/v1/open-loops", {
-    token: identity.token,
-    method: "POST",
-    body: {
-      loop_type: "follow_up",
-      title: "Contact the clinic about the appointment",
-      description: "The clinic has not confirmed the appointment yet. Contact the clinic to confirm it.",
-      uncertainty: "unknown",
-      source_type: "caregiver_report",
-      owner_role: "Caregiver",
-      owner_label: "Daughter",
-      missing_information: ["Appointment confirmation"],
-    },
-  });
-  assert.equal(appointmentFollowUp.status, 201, JSON.stringify(appointmentFollowUp.payload));
-  const appointmentFollowUpId = appointmentFollowUp.payload.id;
-
-  const openLoopsBefore = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
-  assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
-  const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
-  assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
-  await daily.page.reload({ waitUntil: "domcontentloaded" });
-  await daily.page.getByRole("heading", { name: "Existing follow-ups", exact: true }).waitFor({ timeout: 15_000 });
-  await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
-  const dailyCaptureJobs = [];
-  for (const [index, report] of scenarioReports.entries()) {
-    dailyCaptureJobs.push(await saveFreeTextUpdate(report, index === 2 ? async () => {
-      await daily.page.getByText(/The existing reviewed medication record lists: Metformin — 500 mg/i).waitFor({ timeout: 15_000 });
-    } : undefined));
-  }
-
-  const waitForDailyCaptureJob = async ({ jobId }) => {
-    const deadline = Date.now() + 180_000;
-    let latest = null;
-    while (Date.now() < deadline) {
-      const status = await request(`/api/v1/assistant/jobs/${jobId}`, { token: identity.token });
-      assert.equal(status.status, 200, JSON.stringify(status.payload));
-      latest = status.payload;
-      if (latest.status === "completed") {
-        assert.equal(latest.daily_capture?.projection_status, "verified", JSON.stringify(latest));
-        return latest;
-      }
-      assert.notEqual(latest.status, "failed", JSON.stringify(latest));
-      assert.notEqual(latest.status, "cancelled", JSON.stringify(latest));
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
-    assert.fail(`Daily Care extraction job ${jobId} did not finish within 180 seconds: ${JSON.stringify(latest)}`);
-  };
-  const completedCaptureJobs = await Promise.all(dailyCaptureJobs.map(waitForDailyCaptureJob));
-  assert.equal(completedCaptureJobs.length, 4);
-  assert.ok(completedCaptureJobs.every((job) => job.daily_capture?.projection_status === "verified"));
-
-  const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
-  assert.equal(dailyHistory.status, 200);
-  const scenarioEvents = dailyHistory.payload.filter((row) =>
-    scenarioReports.some((report) => JSON.stringify(row).includes(report))
-  );
-  assert.equal(scenarioEvents.length, 4, "all four original caregiver reports must remain independently retrievable");
-  assert.equal(new Set(scenarioEvents.map((row) => row.id)).size, 4, "each report must have its own persisted event");
-  assert.ok(scenarioEvents.every((row) => Array.isArray(row.evidence_ids) && row.evidence_ids.length === 1));
-
-  const dailyEvidence = await request(`/api/v1/evidence/${identity.personId}`, { token: identity.token });
-  assert.equal(dailyEvidence.status, 200);
-  for (const reportEvent of scenarioEvents) {
-    const source = dailyEvidence.payload.find((item) => item.id === reportEvent.evidence_ids[0]);
-    assert.ok(source, "each natural-language update must have a retrievable source evidence record");
-    assert.ok(JSON.stringify(source).includes(scenarioReports.find((report) => JSON.stringify(reportEvent).includes(report))));
-  }
-
-  const dailyLcr = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
-  assert.equal(dailyLcr.status, 200, JSON.stringify(dailyLcr.payload));
-  const medicationAfter = await request("/api/v1/care-continuity/medications", { token: identity.token });
-  assert.equal(medicationAfter.status, 200, JSON.stringify(medicationAfter.payload));
-  const unchangedMedication = medicationAfter.payload.medications.find((item) =>
-    item.medication_id === seededMedication.payload.medication_id
-  );
-  assert.ok(unchangedMedication, "uncertain medication update must not remove the existing reviewed medication");
-  assert.equal(unchangedMedication.name, existingMedication.name);
-  assert.equal(unchangedMedication.dose, existingMedication.dose, "uncertain dose must not overwrite the existing reviewed dose");
-  const lcrRowsByEvent = new Map();
-  for (const reportEvent of scenarioEvents) {
-    const lcrRow = dailyLcr.payload.items.find((item) => item.id === reportEvent.id);
-    assert.ok(lcrRow, "each saved report must be available through the existing LCR projection");
-    assert.deepEqual(lcrRow.evidence_ids, reportEvent.evidence_ids);
-    assert.equal(lcrRow.source_type, "caregiver_report");
-    lcrRowsByEvent.set(reportEvent.id, lcrRow);
-  }
-
-  // Verify transfer of extracted details, not only the four parent source events.
-  const projectedObservations = scenarioEvents.flatMap((event) =>
-    lcrRowsByEvent.get(event.id)?.derived_observations || []
-  );
-  assert.equal(
-    new Set(projectedObservations.map((item) => item.id)).size,
-    projectedObservations.length,
-    "LCR must not duplicate extracted observations",
-  );
-  const observationsBySource = new Map(scenarioReports.map((report) => [report, []]));
-  for (const observation of projectedObservations) {
-    const sourceReport = scenarioReports.find((report) =>
-      typeof observation.source_passage === "string"
-      && report.includes(observation.source_passage)
-      && report.slice(observation.source_span_start, observation.source_span_end) === observation.source_passage
-    );
-    assert.ok(sourceReport, "every LCR observation must retain an exact, correctly positioned passage from its original caregiver report");
-    assert.ok(observation.value_text && sourceReport.includes(observation.value_text),
-      "an extracted observation must be a verbatim substring of its original report");
-    assert.equal(
-      sourceReport.slice(observation.source_span_start, observation.source_span_end),
-      observation.source_passage,
-      "LCR source positions must resolve to the original report",
-    );
-    observationsBySource.get(sourceReport).push(observation);
-    if (sourceReport === scenarioReports[0]) {
-      assert.match(observation.value_text, /sleep|unsettled/i, "the morning report must not gain unrelated extracted details");
-    } else if (sourceReport === scenarioReports[1]) {
-      assert.match(observation.value_text, /lunch|water/i, "the lunch report must not gain unrelated extracted details");
-    } else if (sourceReport === scenarioReports[2]) {
-      assert.equal(observation.epistemic_status, "uncertain",
-        "any extracted medication-change statement must remain tentative");
-    } else if (sourceReport === scenarioReports[3]) {
-      assert.match(observation.value_text, /calmer|dinner|rest/i, "the evening report must not gain unrelated extracted details");
-    }
-  }
-
-  const findObservation = (report, pattern) =>
-    observationsBySource.get(report).find((item) => pattern.test(item.value_text));
-  const sleepObservation = findObservation(scenarioReports[0], /sleep.*poor|slept.*poor/i);
-  const unsettledObservation = findObservation(scenarioReports[0], /unsettled/i);
-  const lunchObservation = findObservation(scenarioReports[1], /barely.*lunch|lunch.*barely/i);
-  const waterObservation = findObservation(scenarioReports[1], /drank.*water|water.*drank/i);
-  const calmerObservation = findObservation(scenarioReports[3], /calmer/i);
-  const dinnerObservation = findObservation(scenarioReports[3], /ate.*dinner|dinner.*ate/i);
-  const restingObservation = findObservation(scenarioReports[3], /resting/i);
-  for (const [label, observation] of [
-    ["poor sleep", sleepObservation],
-    ["unsettled morning", unsettledObservation],
-    ["limited lunch", lunchObservation],
-    ["water intake", waterObservation],
-    ["calmer evening", calmerObservation],
-    ["dinner", dinnerObservation],
-    ["resting", restingObservation],
-  ]) {
-    assert.ok(observation, `LCR is missing the source-grounded ${label} observation`);
-    assert.ok(observation.source_passage);
-    assert.ok(Number.isInteger(observation.source_span_start));
-    assert.ok(Number.isInteger(observation.source_span_end));
-  }
-  assert.equal(unsettledObservation.epistemic_status, "uncertain");
-  assert.equal(unsettledObservation.hedge_marker, "seemed");
-  assert.equal(waterObservation.epistemic_status, "reported");
-  for (const [label, observation, timeWording] of [
-    ["poor sleep", sleepObservation, "last night"],
-    ["unsettled morning", unsettledObservation, "this morning"],
-    ["limited lunch", lunchObservation, "today"],
-    ["calmer evening", calmerObservation, "this evening"],
-    ["dinner", dinnerObservation, "at dinner"],
-    ["resting", restingObservation, "now"],
-  ]) {
-    assert.ok(observation.context?.includes(timeWording), `LCR lost the source time wording for ${label}`);
-  }
-  for (const medicationObservation of observationsBySource.get(scenarioReports[2])) {
-    assert.equal(medicationObservation.epistemic_status, "uncertain");
-    if (/changed|change|adjusted|increased|decreased/i.test(medicationObservation.value_text)) {
-      assert.ok(medicationObservation.context?.includes("yesterday"));
-    }
-  }
-  assert.ok(
-    projectedObservations.every((item) =>
-      item.epistemic_status === "uncertain" || !/\\b\\d+(?:\\.\\d+)?\\s*(?:mg|mcg|ml)\\b/i.test(item.value_text)
-    ),
-    "an unconfirmed medication report must never create a confirmed dose",
-  );
-
-  const openLoopsAfter = await request("/api/v1/open-loops?limit=100&offset=0", { token: identity.token });
-  assert.equal(openLoopsAfter.status, 200, JSON.stringify(openLoopsAfter.payload));
-  assert.deepEqual(
-    (openLoopsAfter.payload.items || []).map((item) => item.id).sort(),
-    openLoopIdsBefore,
-    "natural-language observations and missing optional details must not manufacture follow-up tasks or duplicate existing ones",
-  );
-  const retainedAppointmentFollowUp = openLoopsAfter.payload.items.find((item) => item.id === appointmentFollowUpId);
-  assert.ok(retainedAppointmentFollowUp, "the original clinic follow-up must remain retrievable");
-  assert.equal(retainedAppointmentFollowUp.status, "open");
-
-  await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
-  await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
-  await daily.page.reload({ waitUntil: "domcontentloaded" });
-  await daily.page.getByText("Needs confirmation", { exact: true }).waitFor({ timeout: 15_000 });
-  await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
-  for (const report of scenarioReports) {
-    await daily.page.getByText(report, { exact: false }).first().waitFor({ timeout: 15_000 });
-  }
-  await verifyMobile(daily.page);
-  await daily.context.close();
 
   const surfaces = ["/workspace", "/workspace/companion", "/workspace/appointments", "/workspace/documents", "/workspace/settings", "/workspace/community"];
   for (const route of surfaces) {
@@ -815,6 +819,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await verifyMobile(companion.page);
   await companion.context.close();
 });
+
 
 
 await record("clarification questions are linked, answerable, skippable and durable", async () => {
