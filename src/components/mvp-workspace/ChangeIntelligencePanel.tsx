@@ -72,6 +72,10 @@ export function ChangeIntelligencePanel() {
       const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
       setChanges(changeRows.filter((row) => row.is_active));
       setPatterns(patternRows.filter((row) => row.is_active));
+      setChangeOffset(0);
+      setPatternOffset(0);
+      setHasMoreChanges(changeRows.length === 100);
+      setHasMorePatterns(patternRows.length === 100);
       const refreshedDetail = await getPersistedChangeDetail(changeId);
       setDetails((current) => ({ ...current, [changeId]: refreshedDetail }));
       setConfirmationReasons((current) => ({ ...current, [changeId]: "" }));
