@@ -90,6 +90,8 @@ interface LcrContextCoverage {
   history_coverage?: string
   retrieval_scan_complete?: boolean
   retrieval_projection_complete?: boolean
+  pages_fetched?: number
+  page_limit_reached?: boolean
   prompt_context_complete?: boolean
   prompt_context_chars?: number
   prompt_context_budget_chars?: number
@@ -299,6 +301,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   coverage.retrieval_scan_complete !== true
                   || coverage.retrieval_projection_complete !== true
                   || coverage.prompt_context_complete === false
+                  || coverage.page_limit_reached === true
                   || hasUnreturnedMatches
                   || hasUnselectedMatches
                   || !['query_scanned_ranked_subset', 'complete_history_scan_ranked_subset'].includes(coverage.history_coverage || '')
