@@ -653,8 +653,12 @@ await record("browser renders caregiver surfaces and submits Companion through t
   );
   const observationsBySource = new Map(scenarioReports.map((report) => [report, []]));
   for (const observation of projectedObservations) {
-    const sourceReport = scenarioReports.find((report) => report === observation.source_passage);
-    assert.ok(sourceReport, "every LCR observation must retain one exact original caregiver report");
+    const sourceReport = scenarioReports.find((report) =>
+      typeof observation.source_passage === "string"
+      && report.includes(observation.source_passage)
+      && report.slice(observation.source_span_start, observation.source_span_end) === observation.source_passage
+    );
+    assert.ok(sourceReport, "every LCR observation must retain an exact, correctly positioned passage from its original caregiver report");
     assert.ok(observation.value_text && sourceReport.includes(observation.value_text),
       "an extracted observation must be a verbatim substring of its original report");
     assert.equal(
