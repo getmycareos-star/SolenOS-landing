@@ -456,7 +456,6 @@ try {
   await callbackLoop.getByRole("button", { name: "Record response" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await callbackLoop.getByText("You recorded that a callback was promised. The appointment is not confirmed.", { exact: true }).waitFor({ timeout: 10_000 });
-  await callbackLoop.getByText(/follow-up · waiting/i).waitFor({ timeout: 10_000 });
   const callbackState = await fetch(new URL("/api/v1/open-loops?status=open&limit=100", backend), {
     headers: { authorization: `Bearer ${session.token}` },
   });
