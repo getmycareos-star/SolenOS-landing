@@ -213,7 +213,7 @@ try {
 
   await handoff.getByRole("button", { name: "Record response" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
-  await handoff.getByRole("button", { name: "View audit history" }).click();
+  await handoff.getByRole("button", { name: "View previous updates" }).click();
   await handoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
 
   await handoff.getByRole("button", { name: "Attempt closure" }).click();
