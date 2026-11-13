@@ -81,6 +81,11 @@ type CareItem = {
   event_type?: string | null;
   created_by_caregiver_id?: string | null;
   created_at?: string | null;
+  capture_processing?: {
+    extraction_status?: string | null;
+    job_status?: string | null;
+    message?: string | null;
+  } | null;
 };
 
 function historyRecordId(item: CareItem): string {
@@ -514,6 +519,9 @@ export default function DailyCarePage() {
                   <li key={item.id || `care-item-${index}`}>
                     <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
+                    {item.capture_processing?.message && (
+                      <p className="daily-care-muted">{item.capture_processing.message}</p>
+                    )}
                     <span>{displayHistoryTime(item)}</span>
                     <span> · {displayHistorySource(item)}</span>
                     {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
