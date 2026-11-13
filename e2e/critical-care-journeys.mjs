@@ -587,6 +587,25 @@ await record("06 Companion context and Qwen output", async () => {
     "Companion must answer from the persisted document extraction rather than generic care advice",
   );
 
+  const overwhelmedAnswer = await request("/api/v1/conversation/message", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      text: "I'm exhausted. I can't keep up with all these updates and I don't know what to do.",
+      client_turn_id: unique("companion-caregiver-overload"),
+    },
+  });
+  assert.equal(overwhelmedAnswer.status, 200, JSON.stringify(overwhelmedAnswer.payload));
+  assert.equal(overwhelmedAnswer.payload.written_to_lcr, false);
+  if (requireLiveQwen) assert.equal(overwhelmedAnswer.payload.ai_generated, true);
+  const overloadReply = String(overwhelmedAnswer.payload.reply || "").trim();
+  const overloadSentences = overloadReply.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+  assert.ok(overloadReply.length > 0 && overloadReply.length <= 700, "Companion must keep an overwhelmed-caregiver response brief");
+  assert.ok(overloadSentences.length <= 3, "Companion must not overwhelm the caregiver with a long response");
+  assert.ok((overloadReply.match(/\\?/g) || []).length <= 1, "Companion must ask at most one question when the caregiver is overwhelmed");
+  assert.doesNotMatch(overloadReply, /(?:^|\\n)\\s*(?:\\d+[.)]|[-*])\\s+/m, "Companion must not turn caregiver distress into a checklist");
+
   const invalid = await request("/api/v1/conversation/message", {
     token: identity.token, method: "POST",
     body: { person_id: identity.personId, text: "" },
