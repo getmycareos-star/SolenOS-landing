@@ -158,6 +158,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const isCaregiverNecessaryQuestion = (item: Question) =>
     item.necessity === "necessary" && Boolean(item.necessity_rationale?.trim());
   const eligibleQuestionIdSet = new Set(eligibleQuestionIds);
+  const eligibleQuestionOrder = new Map(eligibleQuestionIds.map((id, index) => [id, index]));
   const caregiverOpenQuestions = questions
     .filter((item) =>
       (item.status === "open" || item.status === "unresolved") &&
@@ -165,9 +166,8 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       isCaregiverNecessaryQuestion(item)
     )
     .sort((a, b) => {
-      const order = new Map(eligibleQuestionIds.map((id, index) => [id, index]));
-      return (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER);
+      return (eligibleQuestionOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (eligibleQuestionOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER);
     });
   // Critical items bypass the ordinary attention limit. Other questions are
   // kept available on demand rather than becoming a long visible task list.
