@@ -590,27 +590,45 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
                 ? "What did the care professional confirm?"
                 : selectedQuestion.intended_answerer_role === "other_caregiver"
                   ? "What did the other caregiver share?"
-                  : "What have you found out?"}
+                  : selectedQuestion.intended_answerer_role === "person_receiving_care"
+                    ? "What did the person receiving care say or show?"
+                    : selectedQuestion.intended_answerer_role === "reporting_caregiver"
+                      ? "What did you observe or report?"
+                      : "What have you found out?"}
               <textarea
                 style={{ ...field, minHeight: 70, marginTop: 4 }}
                 value={answer}
                 onChange={(event) => setAnswer(event.target.value)}
                 placeholder={selectedQuestion.intended_answerer_role === "professional"
                   ? "Add their answer if you have it. It is okay if you have not asked yet."
-                  : "Write what you know. It is okay if you are not sure."}
+                  : selectedQuestion.intended_answerer_role === "person_receiving_care"
+                    ? "Record their own words or response if they can share. Do not guess for them."
+                    : selectedQuestion.intended_answerer_role === "reporting_caregiver"
+                      ? "Record what you personally observed. It is okay if you are not sure."
+                      : selectedQuestion.intended_answerer_role === "not_known"
+                        ? "If you do not know who can answer, leave this open. Do not guess."
+                        : "Write what you know. It is okay if you are not sure."}
               />
             </label>
             <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
               {selectedQuestion.intended_answerer_role === "professional"
                 ? "Which professional provided this answer, and when?"
-                : "Who provided this answer, and how do they know?"}
+                : selectedQuestion.intended_answerer_role === "person_receiving_care"
+                  ? "When did the person say or show this?"
+                  : selectedQuestion.intended_answerer_role === "reporting_caregiver"
+                    ? "When did you observe this?"
+                    : "Who provided this answer, and how do they know?"}
               <textarea
                 style={{ ...field, minHeight: 55, marginTop: 4 }}
                 value={answerProvenance}
                 onChange={(event) => setAnswerProvenance(event.target.value)}
                 placeholder={selectedQuestion.intended_answerer_role === "professional"
                   ? "For example, the pharmacist confirmed this by phone today."
-                  : "For example, I measured it this morning."}
+                  : selectedQuestion.intended_answerer_role === "person_receiving_care"
+                    ? "For example, they said this during breakfast today."
+                    : selectedQuestion.intended_answerer_role === "reporting_caregiver"
+                      ? "For example, I noticed this during breakfast today."
+                      : "For example, the caregiver shared this today."}
               />
             </label>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
