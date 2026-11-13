@@ -538,12 +538,26 @@ await record("browser renders caregiver surfaces and submits Companion through t
     const originalWords = daily.page.locator("#natural-daily-update-report");
     await originalWords.waitFor({ state: "visible", timeout: 15_000 });
     await originalWords.fill(text);
+    const saveStartedAt = Date.now();
+    const saveResponsePromise = daily.page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
+      && response.request().method() === "POST"
+    );
     await daily.page.getByRole("button", { name: "Save update", exact: true }).click();
-    await daily.page.getByRole("status").filter({ hasText: "Your update was saved to the care record." }).waitFor({ timeout: 30_000 });
+    const saveResponse = await saveResponsePromise;
+    const savePayload = await saveResponse.json();
+    assert.equal(saveResponse.status(), 200, JSON.stringify(savePayload));
+    assert.equal(savePayload.success, true, JSON.stringify(savePayload));
+    assert.ok(Date.now() - saveStartedAt < 10_000,
+      "the caregiver save must return before background Qwen extraction completes");
+    assert.equal(savePayload.qwen_extraction_status, "queued");
+    assert.ok(typeof savePayload.qwen_job_id === "string" && savePayload.qwen_job_id);
+    await daily.page.getByRole("status").filter({ hasText: "Your update was saved to the care record." }).waitFor({ timeout: 10_000 });
     if (afterSaved) await afterSaved();
     await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
     await originalWords.waitFor({ state: "detached", timeout: 15_000 });
     console.log(`Daily Care Scenario 01: saved source report: ${text}`);
+    return { eventId: savePayload.id, jobId: savePayload.qwen_job_id };
   };
   const scenarioReports = [
     "Mum slept poorly last night and seemed more unsettled this morning.",
@@ -600,11 +614,33 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await daily.page.reload({ waitUntil: "domcontentloaded" });
   await daily.page.getByRole("heading", { name: "Existing follow-ups", exact: true }).waitFor({ timeout: 15_000 });
   await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
+  const dailyCaptureJobs = [];
   for (const [index, report] of scenarioReports.entries()) {
-    await saveFreeTextUpdate(report, index === 2 ? async () => {
+    dailyCaptureJobs.push(await saveFreeTextUpdate(report, index === 2 ? async () => {
       await daily.page.getByText(/The existing reviewed medication record lists: Metformin — 500 mg/i).waitFor({ timeout: 15_000 });
-    } : undefined);
+    } : undefined));
   }
+
+  const waitForDailyCaptureJob = async ({ jobId }) => {
+    const deadline = Date.now() + 180_000;
+    let latest = null;
+    while (Date.now() < deadline) {
+      const status = await request(`/api/v1/assistant/jobs/${jobId}`, { token: identity.token });
+      assert.equal(status.status, 200, JSON.stringify(status.payload));
+      latest = status.payload;
+      if (latest.status === "completed") {
+        assert.equal(latest.daily_capture?.projection_status, "verified", JSON.stringify(latest));
+        return latest;
+      }
+      assert.notEqual(latest.status, "failed", JSON.stringify(latest));
+      assert.notEqual(latest.status, "cancelled", JSON.stringify(latest));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+    assert.fail(`Daily Care extraction job ${jobId} did not finish within 180 seconds: ${JSON.stringify(latest)}`);
+  };
+  const completedCaptureJobs = await Promise.all(dailyCaptureJobs.map(waitForDailyCaptureJob));
+  assert.equal(completedCaptureJobs.length, 4);
+  assert.ok(completedCaptureJobs.every((job) => job.daily_capture?.projection_status === "verified"));
 
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
   assert.equal(dailyHistory.status, 200);
