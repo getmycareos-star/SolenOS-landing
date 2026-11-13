@@ -8,6 +8,8 @@ const requireLiveQwen = process.env.SOLENOS_REQUIRE_LIVE_QWEN === "1";
 const browser = await chromium.launch({ headless: true });
 const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
+let dailyScenarioEventIdsByReport = {};
+let dailyScenarioEvidenceIdsByReport = {};
 
 async function request(path, { token, method = "GET", body, form, extraHeaders = {} } = {}) {
   const headers = { ...extraHeaders, ...(token ? { authorization: `Bearer ${token}` } : {}) };
@@ -374,6 +376,15 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
   assert.equal(scenarioEvents.length, 4, "all four original caregiver reports must remain independently retrievable");
   assert.equal(new Set(scenarioEvents.map((row) => row.id)).size, 4, "each report must have its own persisted event");
   assert.ok(scenarioEvents.every((row) => Array.isArray(row.evidence_ids) && row.evidence_ids.length === 1));
+  dailyScenarioEventIdsByReport = Object.fromEntries(scenarioReports.map((report) => {
+    const event = scenarioEvents.find((row) => JSON.stringify(row).includes(report));
+    assert.ok(event, `missing persisted event for source report: ${report}`);
+    return [report, event.id];
+  }));
+  dailyScenarioEvidenceIdsByReport = Object.fromEntries(scenarioReports.map((report) => {
+    const event = scenarioEvents.find((row) => JSON.stringify(row).includes(report));
+    return [report, event.evidence_ids[0]];
+  }));
 
   const dailyEvidence = await request(`/api/v1/evidence/${identity.personId}`, { token: identity.token });
   assert.equal(dailyEvidence.status, 200);
@@ -534,6 +545,27 @@ await record("06 Companion context and Qwen output", async () => {
       "Companion response must explicitly identify whether a model generated it",
     );
   }
+  const companionEventIds = new Set(answer.payload.source_event_ids || []);
+  const companionEvidenceIds = new Set(answer.payload.source_evidence_ids || []);
+  for (const report of [
+    "Mum slept poorly last night and seemed more unsettled this morning.",
+    "Mum barely touched her lunch today. She drank some water, though.",
+    "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
+  ]) {
+    assert.ok(
+      companionEventIds.has(dailyScenarioEventIdsByReport[report]),
+      `Companion did not retrieve the Daily Care event relevant to sleep/appetite: ${report}`,
+    );
+    assert.ok(
+      companionEvidenceIds.has(dailyScenarioEvidenceIdsByReport[report]),
+      `Companion did not retrieve the source evidence for: ${report}`,
+    );
+  }
+  assert.equal(
+    companionEventIds.has(dailyScenarioEventIdsByReport["I think the doctor changed Mum's medication yesterday, but I can't remember the new dose."]),
+    false,
+    "the sleep/appetite question must not pull an unrelated medication report into its source set",
+  );
   const invalid = await request("/api/v1/conversation/message", {
     token: identity.token, method: "POST",
     body: { person_id: identity.personId, text: "" },
