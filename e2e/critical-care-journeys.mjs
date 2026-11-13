@@ -774,6 +774,8 @@ await record("browser renders caregiver surfaces and submits Companion through t
   }, undefined, { timeout: 210_000 });
   const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
   assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
+  await companion.page.getByRole("status", { name: "Care history coverage" }).waitFor({ timeout: 15_000 });
+  await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
   await verifyMobile(companion.page);
   await companion.context.close();
 });
