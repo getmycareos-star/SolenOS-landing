@@ -84,6 +84,7 @@ type CareItem = {
   capture_processing?: {
     extraction_status?: string | null;
     job_status?: string | null;
+    job_id?: string | null;
     message?: string | null;
   } | null;
 };
@@ -465,6 +466,41 @@ export default function DailyCarePage() {
     window.addEventListener("careRecordUpdated", refresh);
     return () => window.removeEventListener("careRecordUpdated", refresh);
   }, []);
+
+  useEffect(() => {
+    const pendingJobIds = Array.from(new Set(
+      historyItems
+        .filter((item) => ["queued", "processing"].includes(item.capture_processing?.job_status || ""))
+        .map((item) => item.capture_processing?.job_id)
+        .filter((value): value is string => Boolean(value))
+    )).slice(0, 10);
+    if (!pendingJobIds.length) return;
+
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const poll = async () => {
+      const results = await Promise.allSettled(
+        pendingJobIds.map((jobId) => getJSON(`/assistant/jobs/${jobId}`))
+      );
+      if (!active) return;
+      const finished = results.some((result) =>
+        result.status === "fulfilled"
+        && ["completed", "failed", "cancelled"].includes(
+          String((result.value as { status?: string })?.status || "")
+        )
+      );
+      if (finished) {
+        setRefreshVersion((value) => value + 1);
+        return;
+      }
+      timer = setTimeout(poll, 5000);
+    };
+    timer = setTimeout(poll, 3000);
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [historyItems]);
 
   const todayItems = historyItems
     .filter((item) => wasRecordedToday(item))
