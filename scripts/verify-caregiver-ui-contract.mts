@@ -149,7 +149,7 @@ assert.ok(dailyCarePage.includes("<NaturalLanguageDailyUpdate />"), "free-text u
 assert.ok(dailyCarePage.includes("Review suggested details"), "returning caregivers must be able to reopen pending Daily Care suggestions");
 assert.ok(dailyCarePage.includes("<CaptureAnalysisReview"), "Daily Care history must render the persisted review flow");
 assert.ok(captureReview.includes('getJSON(`/capture/analyses/${encodeURIComponent(analysisId)}`)'), "review UI must load the caregiver-scoped persisted extraction");
-assert.ok(captureReview.includes('postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`)'), "review decisions must use the persisted source-bound review endpoint");
+assert.ok(captureReview.includes('postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {'), "review decisions must use the persisted source-bound review endpoint");
 assert.ok(captureReview.includes("Accept and add to care record"), "caregiver approval must be explicit before an extracted detail enters the LCR");
 assert.ok(dailyCapture.includes("qwen_job_id"), "structured Daily Care must retain the durable background job ID");
 assert.ok(dailyCapture.includes('getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`)'), "structured Daily Care must poll the durable extraction job after confirming the save");
