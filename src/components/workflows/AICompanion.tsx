@@ -73,6 +73,24 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   companion_messages: 'Prior Companion message',
 }
 
+interface LcrContextCoverage {
+  schema_status?: string
+  history_coverage?: string
+  retrieval_scan_complete?: boolean
+  prompt_context_complete?: boolean
+  prompt_context_chars?: number
+  prompt_context_budget_chars?: number
+  missing_required_sources?: string[]
+  missing_optional_sources?: string[]
+  sources?: Record<string, {
+    status?: string
+    candidate_count?: number | null
+    returned_count?: number
+    candidate_scan_complete?: boolean
+    has_more?: boolean
+  }>
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -89,6 +107,7 @@ interface Message {
   freshness_source_status?: string
   source_record_refs?: Array<{ record_type: string; record_id: string }>
   claim_provenance?: ClaimProvenance
+  lcr_context_coverage?: LcrContextCoverage
   ai_generated?: boolean
   written_to_lcr?: boolean
   persistence?: string
@@ -167,6 +186,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         freshness_source_status: response.freshness_source_status,
         source_record_refs: response.source_record_refs,
         claim_provenance: response.claim_provenance,
+        lcr_context_coverage: response.lcr_context_coverage,
         ai_generated: response.ai_generated,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
@@ -258,11 +278,25 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
               {messages.map((msg, index) => {
                 const isUser = msg.role === 'user'
+                const coverage = msg.lcr_context_coverage
+                const hasUnreturnedMatches = Object.values(coverage?.sources || {}).some(source => source.has_more === true)
+                const coverageIsPartial = Boolean(coverage && (
+                  coverage.retrieval_scan_complete !== true
+                  || coverage.prompt_context_complete === false
+                  || hasUnreturnedMatches
+                  || coverage.history_coverage !== 'query_scanned_ranked_subset'
+                ))
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
+                    {!isUser && msg.ai_generated && coverage && <section className="companion-provenance" role="status" aria-label="Care history coverage">
+                      <strong>How much of the saved care history was checked</strong>
+                      <p>{coverageIsPartial
+                        ? 'This answer may not include all relevant saved care information. Some sources were unavailable, more matching records remain, or not all retrieved information fit into the answer.'
+                        : 'All matching records in the available care sources were searched for this question. This does not mean information missing from the record is known.'}</p>
+                    </section>}
                     {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Selected saved sources">
                       <strong>Selected saved sources</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
