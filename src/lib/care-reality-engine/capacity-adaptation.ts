@@ -32,8 +32,6 @@ export function adaptForCaregiverCapacity(rawInput: string): CapacityAdaptation 
     /\b(everything (is|at once)|too much(?: to handle)?|overwhelm|i don't know what to do|dont know what to do|can't keep up|cannot keep up|exhausted|i(?:'m| am) so tired|can't manage|cannot manage|can't cope|cannot cope|can't do this anymore|cannot do this anymore|at my limit|falling apart)\b/i.test(
       text,
     );
-      text,
-    );
 
   if (!overload) {
     return {
