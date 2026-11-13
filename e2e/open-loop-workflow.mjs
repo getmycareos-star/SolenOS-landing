@@ -202,18 +202,18 @@ try {
   }
 
   await handoff.getByRole("button", { name: "Record response" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await handoff.getByRole("button", { name: "View audit history" }).click();
   await handoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
 
   await handoff.getByRole("button", { name: "Attempt closure" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   // Closed records leave the default Open filter. Switch to All statuses to
   // verify the persisted terminal state and exercise the explicit reopen path.
   await page.getByLabel("Filter open loops").selectOption("all");
   await handoff.getByText(/professional input · closed/i).waitFor({ timeout: 10_000 });
   await handoff.getByRole("button", { name: "Reopen with reason" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await handoff.getByText(/professional input · open/i).waitFor({ timeout: 10_000 });
 
   const conflictTitle = "CI E2E conflicting reports";
@@ -229,15 +229,15 @@ try {
   await conflict.waitFor({ timeout: 15_000 });
 
   await conflict.getByRole("button", { name: "Record action" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "Record reconciliation" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "Record outcome" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "Verify outcome" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "Attempt closure" }).click();
-  await page.getByRole("status").filter({ hasText: "backend accepted the update" }).waitFor({ timeout: 10_000 });
+  await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await conflict.getByText(/contradiction · closed/i).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "View audit history" }).click();
   for (const eventName of ["action recorded", "contradiction reconciled", "outcome reported", "outcome corroborated", "closure verified"]) {
