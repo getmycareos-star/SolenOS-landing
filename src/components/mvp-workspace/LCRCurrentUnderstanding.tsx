@@ -1205,11 +1205,13 @@ export function LCRCurrentUnderstanding() {
 
             {assessment.coverage.records_examined > 0 && (
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
-              <h4 id="lcr-attention-wait-heading">Things that can wait</h4>
+              <h4 id="lcr-attention-wait-heading">Previously postponed</h4>
               {canWaitItems.length === 0 ? (
-                <p>No items have been marked as postponed. This does not mean unresolved items are safe to put off.</p>
+                <p>No care items are currently recorded as postponed. Unresolved items are not automatically safe to put off.</p>
               ) : (
-                <ul className="lcr-current-facts">
+                <>
+                  <p>These items were recorded as postponed. That does not confirm they are safe to wait now. Check the review date and current care information before relying on the postponement.</p>
+                  <ul className="lcr-current-facts">
                   {canWaitItems.map((item) => (
                     <li key={item.source + ":" + item.id} className="lcr-current-fact">
                       <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
@@ -1228,7 +1230,8 @@ export function LCRCurrentUnderstanding() {
                       <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
                     </li>
                   ))}
-                </ul>
+                  </ul>
+                </>
               )}
             </div>
             )}
