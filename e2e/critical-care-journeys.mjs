@@ -535,11 +535,11 @@ await record("browser renders caregiver surfaces and submits Companion through t
     const happenedButton = daily.page.getByRole("button", { name: /Something happened/ });
     await happenedButton.waitFor({ state: "visible", timeout: 15_000 });
     await happenedButton.click();
-    const originalWords = daily.page.locator("#daily-capture-original-words");
+    const originalWords = daily.page.locator("#natural-daily-update-report");
     await originalWords.waitFor({ state: "visible", timeout: 15_000 });
     await originalWords.fill(text);
-    await daily.page.getByRole("button", { name: "Save to care record", exact: true }).click();
-    await daily.page.getByText(/^Saved\./).last().waitFor({ timeout: 20_000 });
+    await daily.page.getByRole("button", { name: "Save update", exact: true }).click();
+    await daily.page.getByRole("status").filter({ hasText: "Your update was saved to the care record." }).waitFor({ timeout: 30_000 });
     if (afterSaved) await afterSaved();
     await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
     await originalWords.waitFor({ state: "detached", timeout: 15_000 });
