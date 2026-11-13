@@ -379,6 +379,13 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
   const completedCaptureJobs = await Promise.all(dailyCaptureJobs.map(waitForDailyCaptureJob));
   assert.equal(completedCaptureJobs.length, 4);
   assert.ok(completedCaptureJobs.every((job) => job.daily_capture?.projection_status === "verified"));
+  const minimumSourceObservations = [2, 2, 1, 3];
+  completedCaptureJobs.forEach((job, index) => {
+    assert.ok(
+      Number(job.daily_capture?.source_grounded_observations_projected || 0) >= minimumSourceObservations[index],
+      `Daily Care report ${index + 1} projected fewer than ${minimumSourceObservations[index]} independently supported observations: ${JSON.stringify(job.daily_capture)}`,
+    );
+  });
 
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
   assert.equal(dailyHistory.status, 200);
