@@ -439,7 +439,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
     );
     observationsBySource.get(sourceReport).push(observation);
     if (sourceReport === scenarioReports[0]) {
-      assert.match(observation.value_text, /sleep|unsettled/i, "the morning report must not gain unrelated extracted details");
+      assert.match(observation.value_text, /sleep|slept|unsettled/i, "the morning report must not gain unrelated extracted details");
     } else if (sourceReport === scenarioReports[1]) {
       assert.match(observation.value_text, /lunch|water/i, "the lunch report must not gain unrelated extracted details");
     } else if (sourceReport === scenarioReports[2]) {
