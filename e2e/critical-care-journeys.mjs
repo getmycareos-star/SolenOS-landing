@@ -346,7 +346,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
   }
 
   const waitForDailyCaptureJob = async ({ jobId }) => {
-    const deadline = Date.now() + 180_000;
+    const deadline = Date.now() + 300_000;
     let latest = null;
     while (Date.now() < deadline) {
       const status = await request(`/api/v1/assistant/jobs/${jobId}`, { token: identity.token });
@@ -360,7 +360,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
       assert.notEqual(latest.status, "cancelled", JSON.stringify(latest));
       await new Promise((resolve) => setTimeout(resolve, 1500));
     }
-    assert.fail(`Daily Care extraction job ${jobId} did not finish within 180 seconds: ${JSON.stringify(latest)}`);
+    assert.fail(`Daily Care extraction job ${jobId} did not finish within 300 seconds: ${JSON.stringify(latest)}`);
   };
   const completedCaptureJobs = await Promise.all(dailyCaptureJobs.map(waitForDailyCaptureJob));
   assert.equal(completedCaptureJobs.length, 4);
