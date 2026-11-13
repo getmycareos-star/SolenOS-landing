@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 
 type SaveReceipt = {
   id: string;
+  jobId: string | null;
+  processingStatus: "queued" | "processing" | "completed" | "failed" | "unavailable";
   extractionStatus: string;
   assessmentStatus: string;
   medicationNeedsConfirmation: boolean;
@@ -18,6 +20,56 @@ export default function NaturalLanguageDailyUpdate() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<SaveReceipt | null>(null);
+
+  useEffect(() => {
+    const jobId = receipt?.jobId;
+    if (!jobId) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        const status = await getJSON(`/assistant/jobs/${jobId}`) as {
+          status?: string;
+          daily_capture?: { assessment_status?: string; observation_count?: number };
+        };
+        if (!active) return;
+        if (status.status === "completed") {
+          setReceipt((current) => current?.jobId === jobId
+            ? {
+                ...current,
+                processingStatus: "completed",
+                extractionStatus: "available",
+                assessmentStatus: status.daily_capture?.assessment_status || "completed",
+              }
+            : current);
+          window.dispatchEvent(new Event("careRecordUpdated"));
+          return;
+        }
+        if (status.status === "failed" || status.status === "cancelled") {
+          setReceipt((current) => current?.jobId === jobId
+            ? { ...current, processingStatus: "failed", extractionStatus: "failed", assessmentStatus: "failed" }
+            : current);
+          window.dispatchEvent(new Event("careRecordUpdated"));
+          return;
+        }
+        setReceipt((current) => current?.jobId === jobId
+          ? { ...current, processingStatus: status.status === "processing" ? "processing" : "queued" }
+          : current);
+      } catch {
+        // A temporary status-read failure must not turn a saved report into a failed save.
+      }
+      attempts += 1;
+      if (active && attempts < 60) timer = setTimeout(poll, 2000);
+    };
+
+    void poll();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [receipt?.jobId]);
 
   function updateReport(value: string) {
     setReport(value);
@@ -50,6 +102,7 @@ export default function NaturalLanguageDailyUpdate() {
         success?: boolean;
         id?: string;
         qwen_extraction_status?: string;
+        qwen_job_id?: string | null;
         execution_status?: { assessment?: string };
       };
 
@@ -61,10 +114,15 @@ export default function NaturalLanguageDailyUpdate() {
       const possibleChange = /\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\b/i.test(report);
       const uncertainty = /\b(i think|maybe|might|may have|not sure|cannot remember|can't remember|don't remember|forgot)\b/i.test(report);
       const medicationNeedsConfirmation = medicationMentioned && possibleChange && uncertainty;
+      const extractionStatus = response.qwen_extraction_status || "unavailable";
       setReceipt({
         id: response.id,
-        extractionStatus: response.qwen_extraction_status || "not_reported",
-        assessmentStatus: response.execution_status?.assessment || "not_reported",
+        jobId: response.qwen_job_id || null,
+        processingStatus: response.qwen_job_id
+          ? "queued"
+          : extractionStatus === "available" ? "completed" : "unavailable",
+        extractionStatus,
+        assessmentStatus: response.execution_status?.assessment || "pending",
         medicationNeedsConfirmation,
         medicationContext: medicationNeedsConfirmation ? "Checking the existing medication record…" : null,
       });
@@ -186,14 +244,19 @@ export default function NaturalLanguageDailyUpdate() {
       {receipt && (
         <div role="status" style={{ color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
           <p style={{ margin: 0 }}>Your update was saved to the care record.</p>
-          {receipt.extractionStatus !== "available" && (
+          {(receipt.processingStatus === "queued" || receipt.processingStatus === "processing") && (
             <p style={{ margin: "6px 0 0" }}>
-              SolenOS could not finish understanding this update. Your original report is safe, and no extracted details have been treated as confirmed.
+              SolenOS is organizing the details in the background. You can keep using Daily Care.
             </p>
           )}
-          {receipt.extractionStatus === "available" && receipt.assessmentStatus === "failed" && (
+          {receipt.processingStatus === "completed" && (
             <p style={{ margin: "6px 0 0" }}>
-              SolenOS could not organize the observations yet. Your original report remains saved.
+              The source-grounded details are now available in the care record.
+            </p>
+          )}
+          {(receipt.processingStatus === "failed" || receipt.processingStatus === "unavailable") && (
+            <p style={{ margin: "6px 0 0" }}>
+              SolenOS could not organize the details yet. Your original report is still saved, and no extracted details have been treated as confirmed.
             </p>
           )}
           {receipt.medicationNeedsConfirmation && (
