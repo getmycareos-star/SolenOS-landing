@@ -88,6 +88,7 @@ interface LcrContextCoverage {
     returned_count?: number
     candidate_scan_complete?: boolean
     has_more?: boolean
+    selection_truncated?: boolean
   }>
 }
 
@@ -280,10 +281,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 const isUser = msg.role === 'user'
                 const coverage = msg.lcr_context_coverage
                 const hasUnreturnedMatches = Object.values(coverage?.sources || {}).some(source => source.has_more === true)
+                const hasUnselectedMatches = Object.values(coverage?.sources || {}).some(source => source.selection_truncated === true)
                 const coverageIsPartial = Boolean(coverage && (
                   coverage.retrieval_scan_complete !== true
                   || coverage.prompt_context_complete === false
                   || hasUnreturnedMatches
+                  || hasUnselectedMatches
                   || !['query_scanned_ranked_subset', 'complete_history_scan_ranked_subset'].includes(coverage.history_coverage || '')
                 ))
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
