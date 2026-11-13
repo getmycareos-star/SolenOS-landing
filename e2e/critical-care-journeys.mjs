@@ -631,6 +631,10 @@ await record("06 Companion context and Qwen output", async () => {
     "Companion must cite the exact uploaded document when answering a document question",
   );
   assert.ok(
+    (documentAnswer.payload.source_document_analysis_ids || []).length > 0,
+    "Companion must retain the persisted document-extraction reference in its source metadata",
+  );
+  assert.ok(
     /walking frame|walked to the kitchen|walking to the kitchen/i.test(documentAnswer.payload.reply || ""),
     "Companion must answer from the persisted document extraction rather than generic care advice",
   );
