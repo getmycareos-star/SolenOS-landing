@@ -63,7 +63,13 @@ const button: CSSProperties = { border: "1px solid var(--border)", borderRadius:
 
 function questionStatusLabel(status: string, hasLinkedClaim = true, answererRole?: string | null): string {
   switch (status) {
-    case "open": return answererRole === "professional" ? "Waiting for care-team confirmation" : "Waiting for an answer";
+    case "open":
+      if (answererRole === "professional") return "Waiting for care-team confirmation";
+      if (answererRole === "other_caregiver") return "Waiting for another caregiver";
+      if (answererRole === "person_receiving_care") return "Waiting for the person's response";
+      if (answererRole === "not_known") return "Waiting to identify who can answer";
+      if (answererRole === "reporting_caregiver") return "Waiting for your observation";
+      return "Waiting for an answer";
     case "answered": return hasLinkedClaim ? "Answered — review needed" : "Answer saved";
     case "declined": return "No answer provided";
     case "closed": return "Closed";
