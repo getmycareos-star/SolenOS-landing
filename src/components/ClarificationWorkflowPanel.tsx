@@ -67,7 +67,7 @@ function questionStatusLabel(status: string, hasLinkedClaim = true, answererRole
       if (answererRole === "professional") return "Waiting for care-team confirmation";
       if (answererRole === "other_caregiver") return "Waiting for another caregiver";
       if (answererRole === "person_receiving_care") return "Waiting for the person's response";
-      if (answererRole === "not_known") return "Waiting to identify who can answer";
+      if (!answererRole || answererRole === "not_known") return "Waiting to identify who can answer";
       if (answererRole === "reporting_caregiver") return "Waiting for your observation";
       return "Waiting for an answer";
     case "answered": return hasLinkedClaim ? "Answered — review needed" : "Answer saved";
@@ -86,7 +86,7 @@ function answererLabel(role?: string | null): string {
     professional: "Care professional",
     not_known: "Not known",
   };
-  return role ? labels[role] || "Not recorded" : "Not recorded";
+  return role ? labels[role] || "Not known" : "Not known";
 }
 
 function displayDate(value?: string | null): string {
@@ -600,7 +600,7 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
                     ? "What did the person receiving care say or show?"
                     : selectedQuestion.intended_answerer_role === "reporting_caregiver"
                       ? "What did you observe or report?"
-                      : "What have you found out?"}
+                      : "Who can confirm this detail?"}
               <textarea
                 style={{ ...field, minHeight: 70, marginTop: 4 }}
                 value={answer}
@@ -611,7 +611,7 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
                     ? "Record their own words or response if they can share. Do not guess for them."
                     : selectedQuestion.intended_answerer_role === "reporting_caregiver"
                       ? "Record what you personally observed. It is okay if you are not sure."
-                      : selectedQuestion.intended_answerer_role === "not_known"
+                      : !selectedQuestion.intended_answerer_role || selectedQuestion.intended_answerer_role === "not_known"
                         ? "If you do not know who can answer, leave this open. Do not guess."
                         : "Write what you know. It is okay if you are not sure."}
               />
@@ -623,7 +623,9 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
                   ? "When did the person say or show this?"
                   : selectedQuestion.intended_answerer_role === "reporting_caregiver"
                     ? "When did you observe this?"
-                    : "Who provided this answer, and how do they know?"}
+                    : selectedQuestion.intended_answerer_role === "not_known" || !selectedQuestion.intended_answerer_role
+                      ? "Who can confirm this detail?"
+                      : "Who provided this answer, and how do they know?"}
               <textarea
                 style={{ ...field, minHeight: 55, marginTop: 4 }}
                 value={answerProvenance}
@@ -634,6 +636,8 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
                     ? "For example, they said this during breakfast today."
                     : selectedQuestion.intended_answerer_role === "reporting_caregiver"
                       ? "For example, I noticed this during breakfast today."
+                      : selectedQuestion.intended_answerer_role === "not_known" || !selectedQuestion.intended_answerer_role
+                      ? "Leave this blank until someone can confirm it."
                       : "For example, the caregiver shared this today."}
               />
             </label>
