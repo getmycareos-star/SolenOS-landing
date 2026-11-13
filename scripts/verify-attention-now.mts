@@ -19,7 +19,7 @@ const loops = [
 ];
 
 assert.deepEqual(selectImmediatePriorities(loops).map((item) => item.id), ["critical", "overdue"]);
-assert.deepEqual(selectDeferredItems(loops).map((item) => item.id), ["deferred"]);
+assert.deepEqual(selectDeferredItems(loops).map((item) => item.id), ["deferred-critical", "deferred"]);
 
 const changes = [
   { id: "candidate", attention_candidate: true, follow_up_candidate: false, is_active: true },
