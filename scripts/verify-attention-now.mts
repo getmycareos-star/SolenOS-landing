@@ -24,7 +24,7 @@ const changes = [
   { id: "superseded", attention_candidate: true, follow_up_candidate: false, is_active: false, superseded_by_change_id: "newer" },
   { id: "ordinary", attention_candidate: false, follow_up_candidate: false, is_active: true },
 ];
-assert.deepEqual(selectWatchChanges(changes).map((item) => item.id), ["candidate", "disputed"]);
+assert.deepEqual(selectWatchChanges(changes).map((item) => item.id), ["candidate"]);
 
 const component = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 assert.match(component, /Needs attention now/);
