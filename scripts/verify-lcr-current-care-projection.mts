@@ -27,6 +27,13 @@ assert.match(component, /await load\(true\);\\s*await refreshSituationAssessment
 assert.match(loadBody, /solenos\.workspace\.first-care-ready/, "first-care readiness must be measurable locally");
 assert.match(loadBody, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable locally");
 
+const refreshStart = component.indexOf("const refreshSituationAssessment = useCallback(async () => {");
+const refreshEnd = component.indexOf("}, []);", refreshStart);
+assert.ok(refreshStart >= 0 && refreshEnd > refreshStart, "manual care reassessment must be a stable callback");
+const refreshBody = component.slice(refreshStart, refreshEnd);
+assert.match(refreshBody, /ensureAnonymousSession\\(\\)/, "reassessment must resolve the active server session instead of capturing stale component state");
+assert.match(component, /\\}, \\[load, refreshSituationAssessment\\]\\);/, "care-write listener must subscribe to the stable reassessment callback");
+
 assert.match(component, /schema_status !== "complete"/, "incomplete source coverage must be visible");
 assert.match(component, /missing_required_sources/, "required source gaps must not be hidden");
 assert.match(component, /epistemic_status/, "epistemic status must remain visible");
