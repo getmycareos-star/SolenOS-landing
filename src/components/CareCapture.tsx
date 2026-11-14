@@ -202,14 +202,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             </p>
           )}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
-            <div style={{ marginTop: '8px' }}>
-              <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
-              <ul style={{ paddingLeft: '18px', marginTop: '4px' }}>
-                {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
-                  <li key={index} style={{ fontSize: '12px', marginBottom: '4px' }}>{question}</li>
-                ))}
-              </ul>
-            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              We will only ask you to clarify something when the saved care record shows that your answer is needed.
+            </p>
           )}
         </section>
       )}
