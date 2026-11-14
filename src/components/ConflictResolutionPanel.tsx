@@ -108,17 +108,17 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
 
   useEffect(() => { void loadRecords(); }, [loadRecords]);
 
-  const loadHistory = useCallback(async () => {
-    if (!selectedId || !scopedPersonId) {
+  const loadHistoryFor = useCallback(async (conflictId: string, personScope: string) => {
+    if (!conflictId || !personScope) {
       setHistory([]);
       setHistoryError("");
       return;
     }
     setHistoryError("");
     try {
-      const rows = await getJSON(`/uncertainty/contradictions/${encodeURIComponent(selectedId)}/history`);
+      const rows = await getJSON(`/uncertainty/contradictions/${encodeURIComponent(conflictId)}/history`);
       if (!Array.isArray(rows) || rows.some((row) =>
-        row?.contradiction_id !== selectedId || row?.person_id !== scopedPersonId)) {
+        row?.contradiction_id !== conflictId || row?.person_id !== personScope)) {
         throw new Error("Invalid or cross-record conflict history");
       }
       setHistory(rows as ResolutionEvent[]);
@@ -126,9 +126,9 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       setHistory([]);
       setHistoryError("Resolution history is unavailable. A failed request is not an empty history.");
     }
-  }, [scopedPersonId, selectedId]);
+  }, []);
 
-  useEffect(() => { void loadHistory(); }, [loadHistory]);
+  useEffect(() => { void loadHistoryFor(selectedId, scopedPersonId); }, [loadHistoryFor, scopedPersonId, selectedId]);
 
   async function submitResolution() {
     if (!selected || rationale.trim().length < 3) {
@@ -157,7 +157,9 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       setNotice("Review status saved. Only the part described as reviewed is marked as resolved; related details remain unchanged.");
       setRationale("");
       await loadRecords();
-      await loadHistory();
+      // Refresh the history for the exact conflict just changed. Do not rely on
+      // React state from the preceding list refresh: that state update is async.
+      await loadHistoryFor(selected.id, scopedPersonId);
     } catch {
       setError("We couldn’t confirm that this review was saved. Check your connection and try again.");
     } finally {
