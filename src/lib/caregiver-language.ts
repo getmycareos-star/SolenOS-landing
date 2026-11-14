@@ -15,7 +15,6 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   outcome_attested: "Outcome checked by caregiver",
   outcome_corroborated: "Two sources reviewed together",
   closure_verified: "Closure reviewed",
-  cancelled: "Follow-up stopped",
   reopened: "Follow-up reopened",
   reassessed: "Follow-up reviewed",
   active: "Active",
