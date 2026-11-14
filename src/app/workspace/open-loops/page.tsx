@@ -16,8 +16,6 @@ import {
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
-type EvidenceRef = Record<string, unknown>;
-
 type OpenLoop = {
   id: string;
   loop_type: string;
@@ -31,52 +29,111 @@ type OpenLoop = {
   deadline_source: string | null;
   overdue: boolean;
   missing_information: string[];
-  evidence: EvidenceRef[];
-  response_evidence: EvidenceRef[];
-  outcome_evidence: EvidenceRef[];
+  evidence: Array<Record<string, unknown>>;
+  response_evidence: Array<Record<string, unknown>>;
+  outcome_evidence: Array<Record<string, unknown>>;
   source_type: string | null;
   source_id: string | null;
   created_at: string;
   updated_at: string;
 };
 
-type CareItem = {
-  id: string;
-  kind: string;
-  priority: number;
+type AttentionEvidenceRef = {
+  source: string;
+  record_id: string;
   title: string;
-  description: string;
-  status: string;
-  epistemic_status: string;
-  source_collection: string;
-  source_type: string;
-  source_label: string;
-  occurred_at: string | null;
-  reported_at: string | null;
-  recorded_at: string | null;
-  due_at: string | null;
+  occurred_at?: string | null;
+  recorded_at?: string | null;
   evidence_ids: string[];
-  claim_count: number;
 };
 
-type CareProjection = {
-  as_of: string | null;
-  projection_type: string;
-  read_only: boolean;
-  history_coverage: string;
+type AttentionDecision = {
+  id?: string;
+  source?: string;
+  record_id?: string;
+  title: string;
+  category: string;
+  reason?: string;
+  priority_basis?: string[];
+  evidence_ids?: string[];
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  due_at?: string | null;
+  review_at?: string | null;
+  records?: AttentionEvidenceRef[];
+};
+
+type CareAttentionAssessment = {
+  schema_version: string;
+  status: string;
+  needs_attention_now: AttentionDecision[];
+  important_to_address: AttentionDecision[];
+  can_wait_with_documented_basis: AttentionDecision[];
+  needs_clarification: AttentionDecision[];
+  counts: Record<string, number>;
+  source_coverage: Record<string, unknown>;
+  limitations: string[];
+};
+
+type AssessmentOpenLoop = {
+  id: string;
+  source: string;
+  title: string;
+  status: string;
+  loop_type: string;
+  description?: string;
+  owner?: string | null;
+  due_at?: string | null;
+  recorded_status: string;
+  status_confidence: string;
+  epistemic_status: string;
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  evidence_ids: string[];
+  priority?: string | null;
+  priority_reasons?: string[];
+  deferred_reason?: string | null;
+  review_at?: string | null;
+  deadline_source?: string | null;
+  consequence_of_delay?: string | null;
+  request_text?: string | null;
+  verification_rule?: string | null;
+  outcome_status?: string | null;
+};
+
+type SituationAssessment = {
+  person_id: string;
+  as_of?: string | null;
   schema_status: string;
-  missing_required_sources: string[];
-  missing_optional_sources: string[];
-  items: CareItem[];
-  item_count: number;
-  has_more: boolean;
-  source_coverage: Record<string, { status?: string; returned_count?: number; has_more?: boolean }>;
-  notice?: string;
+  history_coverage: string;
+  care_attention?: CareAttentionAssessment;
+  open_loops?: {
+    items: AssessmentOpenLoop[];
+    count: number;
+    has_more: boolean;
+    notice: string;
+  };
+  uncertainties_and_conflicts?: AttentionDecision[];
+  missing_information?: AttentionDecision[];
+  confidence_assessment?: { overall: string; limitations: string[] };
+  notice: string;
+};
+
+type SituationAssessmentResponse = {
+  person_id: string;
+  status: "available" | "not_assessed" | "created" | "unchanged";
+  assessment_id?: string;
+  assessment: SituationAssessment | null;
+  source_freshness?: {
+    status: string;
+    reassessment_recommended: boolean;
+    limitation?: string;
+  };
 };
 
 type LoadState = "loading" | "ready" | "partial" | "error";
 
-const openStatus = new Set([
+const OPEN_STATES = new Set([
   "open",
   "waiting",
   "deferred",
@@ -101,114 +158,89 @@ function statusLabel(value: string): string {
   return caregiverStatusLabel(value) || value.replaceAll("_", " ");
 }
 
-function priorityLabel(value: string): string {
-  if (value === "critical" || value === "high") return "Needs attention";
-  if (value === "low") return "Low priority";
-  return "Being monitored";
+function decisionKey(item: AttentionDecision): string {
+  return String(item.source || "unknown") + ":" + String(item.record_id || item.id || item.title);
 }
 
-function isClarificationItem(item: CareItem): boolean {
-  const kind = item.kind.toLowerCase();
-  return kind.includes("clarification")
-    || kind.includes("conflict")
-    || kind.includes("reconciliation")
-    || kind.includes("information missing");
+function findLinkedLoop(item: AttentionDecision, loops: OpenLoop[]): OpenLoop | undefined {
+  return loops.find((loop) => loop.id === item.record_id);
 }
 
-function sourceDate(item: CareItem): string | null {
-  return item.occurred_at || item.reported_at || item.recorded_at;
+function uniqueDecisions(items: AttentionDecision[]): AttentionDecision[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = decisionKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
-function CareItemCard({ item }: { item: CareItem }) {
-  const [expanded, setExpanded] = useState(false);
-  const prompt = [
-    "Help me understand this item in the person's Living Care Record.",
-    "Do not assume missing information or turn a report into a verified fact.",
-    "Item: " + item.title,
-    "Details: " + item.description,
-    "Source: " + item.source_label + " (" + item.source_collection + ")",
-    "Evidence references: " + (item.evidence_ids || []).join(", "),
-  ].join("\n");
-
-  return (
-    <article className="followup-card">
-      <div className="followup-card-heading">
-        <div>
-          <p className="followup-eyebrow">{safeText(item.kind, "Care record item")} · {safeText(item.source_label, "Source not recorded")}</p>
-          <h3>{safeText(item.title, "Care information needs review")}</h3>
-        </div>
-        <span className="followup-status">{safeText(item.epistemic_status, "Status not established").replaceAll("_", " ")}</span>
-      </div>
-      <p className="followup-description">{safeText(item.description, "No further details are available in this record.")}</p>
-      <div className="followup-meta">
-        <span><Clock3 size={14} /> {dateLabel(sourceDate(item))}</span>
-        <span><FileText size={14} /> {(item.evidence_ids || []).length} linked source(s)</span>
-      </div>
-      {expanded && (
-        <div className="followup-detail">
-          <p><strong>What SolenOS found</strong><br />{safeText(item.kind, "Care record item")} in {safeText(item.source_collection, "the available care history")}.</p>
-          <p><strong>What remains known</strong><br />{safeText(item.epistemic_status, "The status has not been established").replaceAll("_", " ")}. This describes the record, not an independent clinical conclusion.</p>
-          <p><strong>Source references</strong><br />{(item.evidence_ids || []).length ? item.evidence_ids.join(", ") : "No linked evidence references were returned."}</p>
-        </div>
-      )}
-      <div className="followup-card-actions">
-        <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>
-          {expanded ? "Show less" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </button>
-        <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent(prompt)}>
-          <MessageCircle size={15} /> Ask SolenOS
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-function OpenLoopCard({
+function AttentionCard({
+  item,
   loop,
   onUpdate,
   busy,
 }: {
-  loop: OpenLoop;
+  item: AttentionDecision;
+  loop?: OpenLoop;
   onUpdate: (loop: OpenLoop, text: string) => Promise<void>;
   busy: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [updateText, setUpdateText] = useState("");
   const [showUpdate, setShowUpdate] = useState(false);
-  const resolved = loop.status === "closed";
+  const reasonLines = [
+    ...(item.priority_basis || []),
+    ...(item.reason ? [item.reason] : []),
+  ].filter(Boolean);
+  const evidenceIds = [
+    ...(item.evidence_ids || []),
+    ...((item.records || []).flatMap((record) => record.evidence_ids || [])),
+  ];
+  const uniqueEvidenceIds = [...new Set(evidenceIds)];
+  const prompt = [
+    "Help me understand this item in the person's Living Care Record.",
+    "Use only saved evidence. Keep reports, inferences, missing information and verified outcomes distinct.",
+    "Do not invent a deadline, owner, outcome or urgency.",
+    "Item: " + item.title,
+    "Why it was surfaced: " + reasonLines.join("; "),
+    "Evidence references: " + uniqueEvidenceIds.join(", "),
+  ].join("\n");
 
   return (
     <article className="followup-card">
       <div className="followup-card-heading">
         <div>
-          <p className="followup-eyebrow">{safeText(loop.loop_type, "Care follow-up").replaceAll("_", " ")} · {statusLabel(loop.status)}</p>
-          <h3>{safeText(loop.title, "Care matter")}</h3>
+          <p className="followup-eyebrow">{safeText(item.category, "Care matter").replaceAll("_", " ")}</p>
+          <h3>{safeText(item.title, "Care information needs review")}</h3>
         </div>
-        <span className={"followup-status" + (loop.overdue ? " is-warning" : "")}>
-          {loop.overdue ? "Past recorded date" : priorityLabel(loop.priority)}
+        <span className={"followup-status" + (item.category === "needs_attention_now" ? " is-warning" : "")}>
+          {item.category === "needs_attention_now" ? "Needs attention now" : item.category === "important_to_address" ? "Important to address" : item.category === "can_wait_with_documented_basis" ? "Can wait" : "Needs clarification"}
         </span>
       </div>
-      <p className="followup-description">{safeText(loop.description, "No further details are available.")}</p>
-      {loop.priority_reasons?.length > 0 && (
-        <p className="followup-reason"><AlertCircle size={14} /> {loop.priority_reasons.map((reason) => safeText(reason)).filter(Boolean).join(" · ")}</p>
-      )}
-      {loop.missing_information?.length > 0 && (
-        <p className="followup-muted">Still unclear: {loop.missing_information.map((item) => safeText(item)).filter(Boolean).join(", ")}</p>
-      )}
+      {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.map((line) => safeText(line)).join(" · ")}</p>}
       <div className="followup-meta">
-        <span><Clock3 size={14} /> First recorded {dateLabel(loop.created_at)}</span>
-        <span><FileText size={14} /> {(loop.evidence || []).length + (loop.outcome_evidence || []).length} linked update(s)</span>
+        <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
+        <span><FileText size={14} /> {uniqueEvidenceIds.length} linked source(s)</span>
+        {item.due_at && <span>Recorded date: {dateLabel(item.due_at)}</span>}
       </div>
       {expanded && (
         <div className="followup-detail">
-          <p><strong>Why this is being tracked</strong><br />{loop.priority_reasons?.length ? loop.priority_reasons.map((reason) => safeText(reason)).filter(Boolean).join("; ") : "It remains open in the care record. No additional urgency has been established."}</p>
-          <p><strong>Latest record change</strong><br />{dateLabel(loop.updated_at)}</p>
-          <p><strong>Outcome status</strong><br />{statusLabel(loop.outcome_status)}</p>
-          <p><strong>Evidence</strong><br />{(loop.evidence || []).length + (loop.response_evidence || []).length + (loop.outcome_evidence || []).length} saved evidence or update entries. A caregiver-reported update is not independent verification.</p>
-          {loop.deadline_at && <p><strong>Recorded date</strong><br />{dateLabel(loop.deadline_at)} · Source: {safeText(loop.deadline_source, "Not recorded")}</p>}
+          <p><strong>What SolenOS identified</strong><br />{safeText(item.title, "A care matter in the saved record.")}</p>
+          <p><strong>Why it appeared here</strong><br />{reasonLines.length ? reasonLines.map((line) => safeText(line)).join("; ") : "The assessment did not return a separate explanation."}</p>
+          {item.records?.map((record) => (
+            <p key={record.source + ":" + record.record_id}>
+              <strong>{safeText(record.title, "Related care record")}</strong><br />
+              {safeText(record.source, "Source not recorded")} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}
+              {record.evidence_ids?.length ? " · " + record.evidence_ids.length + " linked evidence item(s)" : ""}
+            </p>
+          ))}
+          <p><strong>Evidence references</strong><br />{uniqueEvidenceIds.length ? uniqueEvidenceIds.join(", ") : "No linked evidence references were returned."}</p>
+          {item.review_at && <p><strong>Next recorded review</strong><br />{dateLabel(item.review_at)}</p>}
         </div>
       )}
-      {!resolved && !["cancelled"].includes(loop.status) && (
+      {loop && !["closed", "cancelled"].includes(loop.status) && (
         <div className="followup-update-area">
           {showUpdate ? (
             <form onSubmit={(event) => {
@@ -218,8 +250,8 @@ function OpenLoopCard({
                 setShowUpdate(false);
               });
             }}>
-              <label htmlFor={"followup-update-" + loop.id}>What has changed? SolenOS will save this as your report, not as a verified outcome.</label>
-              <textarea id={"followup-update-" + loop.id} rows={3} value={updateText} onChange={(event) => setUpdateText(event.target.value)} maxLength={12000} placeholder="Share an update in your own words…" />
+              <label htmlFor={"followup-update-" + loop.id}>Share what has changed. SolenOS will save this as your report, not as a verified outcome.</label>
+              <textarea id={"followup-update-" + loop.id} rows={3} value={updateText} onChange={(event) => setUpdateText(event.target.value)} maxLength={12000} placeholder="Tell SolenOS in your own words…" />
               <div className="followup-card-actions">
                 <button type="button" className="followup-text-button" onClick={() => setShowUpdate(false)}>Cancel</button>
                 <button type="submit" className="followup-primary-button" disabled={busy || !updateText.trim()}>{busy ? "Saving…" : "Share update"}</button>
@@ -232,16 +264,40 @@ function OpenLoopCard({
       )}
       <div className="followup-card-actions">
         <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>
-          {expanded ? "Hide details" : "See details"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          {expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </button>
+        <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent(prompt)}>
+          <MessageCircle size={15} /> Ask SolenOS
+        </Link>
       </div>
+    </article>
+  );
+}
+
+function LoopHistoryCard({ loop }: { loop: OpenLoop }) {
+  return (
+    <article className="followup-card">
+      <div className="followup-card-heading">
+        <div>
+          <p className="followup-eyebrow">{safeText(loop.loop_type, "Care follow-up").replaceAll("_", " ")} · {statusLabel(loop.status)}</p>
+          <h3>{safeText(loop.title, "Care matter")}</h3>
+        </div>
+        <span className="followup-status">{loop.status === "closed" ? "Closed" : "Stopped"}</span>
+      </div>
+      <p className="followup-description">{safeText(loop.description, "No further details are available.")}</p>
+      <div className="followup-meta">
+        <span><Clock3 size={14} /> First recorded {dateLabel(loop.created_at)}</span>
+        <span><FileText size={14} /> {(loop.evidence || []).length + (loop.outcome_evidence || []).length} linked update(s)</span>
+      </div>
+      <p className="followup-muted">Outcome status: {statusLabel(loop.outcome_status)}. A stopped item is not represented as resolved.</p>
     </article>
   );
 }
 
 export default function FollowUpsPage() {
   const [loops, setLoops] = useState<OpenLoop[]>([]);
-  const [projection, setProjection] = useState<CareProjection | null>(null);
+  const [assessment, setAssessment] = useState<SituationAssessment | null>(null);
+  const [sourceFreshness, setSourceFreshness] = useState<SituationAssessmentResponse["source_freshness"]>(undefined);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -253,28 +309,46 @@ export default function FollowUpsPage() {
     setError("");
     setNotice("");
     try {
-      await ensureAnonymousSession();
-      const [loopResult, careResult] = await Promise.allSettled([
+      const session = await ensureAnonymousSession();
+      const personId = session.person?.id;
+      if (!personId) throw new Error("The active care record could not be confirmed.");
+      const [loopResult, assessmentResult] = await Promise.allSettled([
         getJSON("/open-loops?limit=100"),
-        getJSON("/care-continuity/current-care?limit_per_source=20"),
+        getJSON("/care-continuity/situation-understanding"),
       ]);
       const nextLoops = loopResult.status === "fulfilled"
         && Array.isArray((loopResult.value as { items?: unknown }).items)
         ? (loopResult.value as { items: OpenLoop[] }).items
         : null;
-      const nextProjection = careResult.status === "fulfilled"
-        && Array.isArray((careResult.value as { items?: unknown }).items)
-        ? careResult.value as CareProjection
+      let nextAssessmentResponse = assessmentResult.status === "fulfilled"
+        ? assessmentResult.value as SituationAssessmentResponse
         : null;
+      let reassessmentWarning = "";
 
-      if (!nextLoops && !nextProjection) {
-        throw new Error("Neither follow-up records nor the current care projection could be loaded.");
+      if (nextAssessmentResponse && (
+        nextAssessmentResponse.status === "not_assessed"
+        || nextAssessmentResponse.source_freshness?.reassessment_recommended === true
+      )) {
+        try {
+          nextAssessmentResponse = await postJSON("/care-continuity/situation-understanding/reassess", {}) as SituationAssessmentResponse;
+        } catch {
+          reassessmentWarning = "New care information was found, but SolenOS could not finish refreshing its attention assessment. The previous assessment is retained where available.";
+        }
+      }
+
+      const nextAssessment = nextAssessmentResponse?.assessment
+        && nextAssessmentResponse.assessment.person_id === personId
+        ? nextAssessmentResponse.assessment
+        : null;
+      if (!nextLoops && !nextAssessment) {
+        throw new Error("Neither saved follow-ups nor the care assessment could be loaded.");
       }
       setLoops(nextLoops || []);
-      setProjection(nextProjection);
-      setLoadState(nextLoops && nextProjection ? "ready" : "partial");
-      if (!nextLoops || !nextProjection) {
-        setError("Some care information could not be loaded. The view is incomplete; unavailable information is not treated as empty or resolved.");
+      setAssessment(nextAssessment);
+      setSourceFreshness(nextAssessmentResponse?.source_freshness);
+      setLoadState(nextLoops && nextAssessment ? "ready" : "partial");
+      if (!nextLoops || !nextAssessment || reassessmentWarning) {
+        setError(reassessmentWarning || "Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
       }
     } catch {
       setLoadState("error");
@@ -284,29 +358,79 @@ export default function FollowUpsPage() {
     }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+    const refreshAfterCareWrite = () => { void refresh(); };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("careRecordUpdated", refreshAfterCareWrite);
+    window.addEventListener("focus", refreshAfterCareWrite);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("careRecordUpdated", refreshAfterCareWrite);
+      window.removeEventListener("focus", refreshAfterCareWrite);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refresh]);
 
   const categorized = useMemo(() => {
-    const careItems = projection?.items || [];
-    const clarificationItems = careItems.filter(isClarificationItem);
-    const attentionItems = careItems.filter((item) => !isClarificationItem(item)
-      && (item.kind.toLowerCase().includes("follow-up")
-        || item.kind.toLowerCase().includes("open question")
-        || item.kind.toLowerCase().includes("needing attention")));
-    const resolvedLoops = loops.filter((loop) => loop.status === "closed");
-    const stoppedLoops = loops.filter((loop) => loop.status === "cancelled");
-    const openLoops = loops.filter((loop) => openStatus.has(loop.status));
-    const urgentLoops = openLoops.filter((loop) => loop.overdue || ["critical", "high"].includes(loop.priority));
-    const monitoredLoops = openLoops.filter((loop) => !urgentLoops.includes(loop));
+    const careAttention = assessment?.care_attention;
+    const needsAttention = uniqueDecisions([
+      ...(careAttention?.needs_attention_now || []),
+      ...(careAttention?.important_to_address || []),
+    ]);
+    const needsClarification = uniqueDecisions(careAttention?.needs_clarification || []);
+    const canWait = uniqueDecisions(careAttention?.can_wait_with_documented_basis || []);
+    const classifiedKeys = new Set([
+      ...needsAttention,
+      ...needsClarification,
+      ...canWait,
+    ].map(decisionKey));
+    const openAssessmentItems = assessment?.open_loops?.items || [];
+    const unclassifiedOpenLoops = openAssessmentItems
+      .filter((item) => !classifiedKeys.has(item.source + ":" + item.id))
+      .map((item) => ({
+        source: item.source,
+        record_id: item.id,
+        title: item.title,
+        category: "being_monitored",
+        reason: item.priority_reasons?.join("; ") || "This item remains open in the saved care record.",
+        priority_basis: item.priority_reasons || [],
+        evidence_ids: item.evidence_ids || [],
+        occurred_at: item.occurred_at,
+        recorded_at: item.recorded_at,
+        due_at: item.due_at,
+        review_at: item.review_at,
+      } satisfies AttentionDecision));
+    const monitored = uniqueDecisions([...canWait, ...unclassifiedOpenLoops]);
+    const classifiedRecordKeys = new Set([
+      ...needsAttention,
+      ...needsClarification,
+      ...monitored,
+    ].map(decisionKey));
+    const directOpenLoops = loops.filter((loop) => OPEN_STATES.has(loop.status));
+    const additionalDirectLoops = directOpenLoops.filter((loop) =>
+      !classifiedRecordKeys.has("open_loop_records:" + loop.id)
+      && ![...needsAttention, ...needsClarification, ...monitored].some((item) => item.record_id === loop.id),
+    ).map((loop) => ({
+      source: "open_loop_records",
+      record_id: loop.id,
+      title: loop.title,
+      category: "being_monitored",
+      reason: "This item remains open in the saved care record.",
+      priority_basis: loop.priority_reasons || [],
+      evidence_ids: [],
+      recorded_at: loop.updated_at,
+    } satisfies AttentionDecision));
     return {
-      needsAttention: attentionItems,
-      clarification: clarificationItems,
-      urgentLoops,
-      monitoredLoops,
-      resolvedLoops,
-      stoppedLoops,
+      needsAttention,
+      monitored: uniqueDecisions([...monitored, ...additionalDirectLoops]),
+      needsClarification,
+      resolved: loops.filter((loop) => loop.status === "closed"),
+      stopped: loops.filter((loop) => loop.status === "cancelled"),
     };
-  }, [loops, projection]);
+  }, [assessment, loops]);
 
   async function shareUpdate(loop: OpenLoop, text: string) {
     setBusyId(loop.id);
@@ -327,12 +451,14 @@ export default function FollowUpsPage() {
     }
   }
 
-  const projectionIsBounded = Boolean(projection && (
-    projection.history_coverage !== "complete"
-    || projection.has_more
-    || projection.missing_required_sources?.length
-    || projection.missing_optional_sources?.length
+  const attentionAvailable = Boolean(assessment?.care_attention);
+  const assessmentIsBounded = Boolean(assessment && (
+    assessment.history_coverage !== "complete"
+    || assessment.schema_status !== "complete"
+    || assessment.open_loops?.has_more
+    || assessment.care_attention?.limitations?.length
   ));
+  const staleAssessment = sourceFreshness?.reassessment_recommended === true;
 
   return (
     <main className="mobile-screen followups-page">
@@ -342,7 +468,7 @@ export default function FollowUpsPage() {
         <div className="followups-title-row">
           <div>
             <h1>Follow-ups</h1>
-            <p>SolenOS keeps track of unresolved care matters so you do not have to manage them yourself.</p>
+            <p>SolenOS reviews the saved care history and keeps unresolved matters visible. You only need to step in when your knowledge or action is needed.</p>
           </div>
           <button type="button" className="followups-refresh" onClick={() => void refresh()} disabled={loading} aria-label="Refresh follow-ups">
             <RefreshCw size={17} className={loading ? "followups-spin" : ""} />
@@ -352,14 +478,17 @@ export default function FollowUpsPage() {
 
       {error && <p className="followups-alert" role="alert">{error}</p>}
       {notice && <p className="followups-notice" role="status">{notice}</p>}
-      {projectionIsBounded && (
+      {assessmentIsBounded && (
         <p className="followups-limitation" role="note">
-          This view covers the care information currently available to SolenOS. Some sources or older records may not be included, so an empty section does not prove that nothing remains unresolved.
+          SolenOS is reviewing a bounded view of the saved care history. Some older records or unavailable sources may not be included. An empty section does not prove that nothing remains unresolved.
         </p>
+      )}
+      {staleAssessment && (
+        <p className="followups-limitation" role="note">The latest care changes have not yet been fully reflected in this assessment.</p>
       )}
 
       {loadState === "loading" ? (
-        <section className="followups-empty" aria-live="polite">Reviewing the available care history…</section>
+        <section className="followups-empty" aria-live="polite">Reviewing the saved care history…</section>
       ) : loadState === "error" ? (
         <section className="followups-empty">
           <AlertCircle size={22} />
@@ -371,42 +500,47 @@ export default function FollowUpsPage() {
         <>
           <section className="followups-section">
             <div className="followups-section-heading">
-              <div><h2>Needs attention</h2><p>Matters in the saved history that may need a closer look.</p></div>
-              <span>{categorized.needsAttention.length + categorized.urgentLoops.length}</span>
+              <div><h2>Needs attention</h2><p>Matters with a recorded reason to address them now or soon.</p></div>
+              <span>{categorized.needsAttention.length}</span>
             </div>
-            {categorized.urgentLoops.map((loop) => <OpenLoopCard key={loop.id} loop={loop} onUpdate={shareUpdate} busy={busyId === loop.id} />)}
-            {categorized.needsAttention.map((item) => <CareItemCard key={item.source_collection + ":" + item.id} item={item} />)}
-            {categorized.urgentLoops.length + categorized.needsAttention.length === 0 && <p className="followups-empty-inline">No matters requiring immediate attention were identified in the available records.</p>}
+            {categorized.needsAttention.map((item) => (
+              <AttentionCard key={decisionKey(item)} item={item} loop={findLinkedLoop(item, loops)} onUpdate={shareUpdate} busy={busyId === item.record_id} />
+            ))}
+            {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{attentionAvailable ? "No matters were classified as needing attention in the latest assessment." : "SolenOS could not load its attention assessment. Open records remain visible below, but priority is not established."}</p>}
           </section>
 
           <section className="followups-section">
             <div className="followups-section-heading">
-              <div><h2>Being monitored</h2><p>Open matters that remain in the care record without a recorded urgent reason.</p></div>
-              <span>{categorized.monitoredLoops.length}</span>
+              <div><h2>Being monitored</h2><p>Open matters that can wait on the basis of the saved record, or have no stronger priority basis.</p></div>
+              <span>{categorized.monitored.length}</span>
             </div>
-            {categorized.monitoredLoops.map((loop) => <OpenLoopCard key={loop.id} loop={loop} onUpdate={shareUpdate} busy={busyId === loop.id} />)}
-            {categorized.monitoredLoops.length === 0 && <p className="followups-empty-inline">No open follow-ups are currently being monitored in this view.</p>}
+            {categorized.monitored.map((item) => (
+              <AttentionCard key={decisionKey(item)} item={item} loop={findLinkedLoop(item, loops)} onUpdate={shareUpdate} busy={busyId === item.record_id} />
+            ))}
+            {categorized.monitored.length === 0 && <p className="followups-empty-inline">No other open matters were returned by the available assessment.</p>}
           </section>
 
           <section className="followups-section">
             <div className="followups-section-heading">
-              <div><h2>Needs clarification</h2><p>Unclear, missing or conflicting information. SolenOS will not guess which account is correct.</p></div>
-              <span>{categorized.clarification.length}</span>
+              <div><h2>Needs clarification</h2><p>Missing, uncertain or conflicting information. SolenOS will not guess which account is correct.</p></div>
+              <span>{categorized.needsClarification.length}</span>
             </div>
-            {categorized.clarification.map((item) => <CareItemCard key={item.source_collection + ":" + item.id} item={item} />)}
-            {categorized.clarification.length === 0 && <p className="followups-empty-inline">No clarification items were returned by the available care-history sources.</p>}
+            {categorized.needsClarification.map((item) => (
+              <AttentionCard key={decisionKey(item)} item={item} loop={findLinkedLoop(item, loops)} onUpdate={shareUpdate} busy={busyId === item.record_id} />
+            ))}
+            {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">No clarification items were returned by the latest assessment.</p>}
           </section>
 
           <section className="followups-section">
             <div className="followups-section-heading">
-              <div><h2>Resolved</h2><p>Items closed in the care record after their required review.</p></div>
-              <span>{categorized.resolvedLoops.length}</span>
+              <div><h2>Resolved</h2><p>Items with a closed status in the saved follow-up record.</p></div>
+              <span>{categorized.resolved.length}</span>
             </div>
-            {categorized.resolvedLoops.map((loop) => <OpenLoopCard key={loop.id} loop={loop} onUpdate={shareUpdate} busy={busyId === loop.id} />)}
-            {categorized.stoppedLoops.length > 0 && (
-              <div className="followups-stopped-note"><strong>Stopped, not resolved</strong><p>{categorized.stoppedLoops.length} item(s) were stopped. They are not represented as verified outcomes.</p></div>
+            {categorized.resolved.map((loop) => <LoopHistoryCard key={loop.id} loop={loop} />)}
+            {categorized.stopped.length > 0 && (
+              <div className="followups-stopped-note"><strong>Stopped, not resolved</strong><p>{categorized.stopped.length} item(s) were stopped. They are not represented as verified outcomes.</p></div>
             )}
-            {categorized.resolvedLoops.length === 0 && <p className="followups-empty-inline">No verified closures are recorded here.</p>}
+            {categorized.resolved.length === 0 && <p className="followups-empty-inline">No closed follow-ups are recorded here.</p>}
           </section>
         </>
       )}
