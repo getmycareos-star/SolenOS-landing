@@ -1,21 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, RefreshCw, Plus, Clock3, AlertCircle, CheckCircle2 } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
-import { Button } from "@/components/ui/Button";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, AlertCircle, Clock3, FileText, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
-
-type LoopHistoryEvent = {
-  id: string;
-  event_type: string;
-  before_state: Record<string, unknown> | null;
-  after_state: Record<string, unknown>;
-  evidence: Array<Record<string, unknown>>;
-  actor: string;
-  created_at: string;
-};
 
 type OpenLoop = {
   id: string;
@@ -33,431 +22,293 @@ type OpenLoop = {
   evidence: Array<Record<string, unknown>>;
   response_evidence: Array<Record<string, unknown>>;
   outcome_evidence: Array<Record<string, unknown>>;
-  blocking_prerequisites: Array<{ id: string; title: string; status: string }>;
   created_at: string;
   updated_at: string;
 };
 
-const LOOP_TYPES = [
-  ["unresolved_concern", "Unresolved concern"],
-  ["pending_decision", "Pending decision"],
-  ["pending_action", "Pending action"],
-  ["follow_up", "Follow-up"],
-  ["unconfirmed_outcome", "Unconfirmed outcome"],
-  ["missing_information", "Missing information"],
-  ["awaiting_response", "Awaiting response"],
-  ["professional_input", "Professional input"],
-  ["contradiction", "Conflicting information"],
-  ["deferred_decision", "Deferred decision"],
-] as const;
+type AttentionDecision = {
+  id?: string;
+  source?: string;
+  record_id?: string;
+  title: string;
+  category: string;
+  reason?: string;
+  priority_basis?: string[];
+  evidence_ids?: string[];
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  due_at?: string | null;
+  review_at?: string | null;
+  records?: Array<{ source: string; record_id: string; title: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
+};
 
-function dateLabel(value: string | null): string {
-  if (!value) return "No deadline recorded";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Deadline unavailable" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
-
-function latestResponseUpdate(loop: OpenLoop): { text: string; callbackPromised: boolean } | null {
-  const latest = [...(loop.response_evidence ?? [])].reverse().find(
-    (item) => typeof item.text === "string" && item.text.trim().length > 0,
-  );
-  if (!latest || typeof latest.text !== "string") return null;
-  return {
-    text: caregiverSafeAssistantText(latest.text) || "A response was recorded.",
-    callbackPromised: latest.response_outcome === "callback_promised",
+type SituationAssessment = {
+  person_id: string;
+  schema_status: string;
+  history_coverage: string;
+  care_attention?: {
+    needs_attention_now: AttentionDecision[];
+    important_to_address: AttentionDecision[];
+    can_wait_with_documented_basis: AttentionDecision[];
+    needs_clarification: AttentionDecision[];
+    limitations: string[];
+    source_coverage?: Record<string, unknown>;
   };
+  open_loops?: { items: Array<Record<string, unknown>>; count: number; has_more: boolean; notice: string };
+  notice?: string;
+};
+
+type SituationAssessmentResponse = {
+  status: "available" | "not_assessed" | "created" | "unchanged";
+  assessment: SituationAssessment | null;
+  source_freshness?: { status: string; reassessment_recommended: boolean; limitation?: string };
+};
+
+type LoopHistoryEvent = {
+  id: string;
+  event_type: string;
+  evidence: Array<Record<string, unknown>>;
+  created_at: string;
+};
+
+function dateLabel(value?: string | null): string {
+  if (!value) return "Date not recorded";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function readableLoopType(value: string): string {
-  return LOOP_TYPES.find(([key]) => key === value)?.[1] ?? "Care follow-up";
+function statusLabel(value: string): string {
+  return caregiverStatusLabel(value) || value.replaceAll("_", " ");
 }
 
-function readablePriority(value: string): string {
-  return ({ critical: "Urgent", high: "High", normal: "Normal", low: "Low" } as Record<string, string>)[value] ?? "Not recorded";
+function decisionKey(item: AttentionDecision): string {
+  return String(item.source || "unknown") + ":" + String(item.record_id || item.id || item.title);
 }
 
-function readableLoopStatus(value: string): string {
-  return caregiverStatusLabel(value) ?? "Status not available";
+function uniqueEvidenceIds(item: AttentionDecision): string[] {
+  return [...new Set([
+    ...(item.evidence_ids || []),
+    ...((item.records || []).flatMap((record) => record.evidence_ids || [])),
+  ])];
 }
 
-export default function OpenLoopsPage() {
+function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
+  item: AttentionDecision;
+  loops: OpenLoop[];
+  onUpdate: (loop: OpenLoop, text: string) => Promise<void>;
+  onHistory: (loop: OpenLoop) => Promise<void>;
+  busy: boolean;
+  history?: LoopHistoryEvent[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [showUpdate, setShowUpdate] = useState(false);
+  const [updateText, setUpdateText] = useState("");
+  const loop = loops.find((candidate) => candidate.id === item.record_id);
+  const evidenceIds = uniqueEvidenceIds(item);
+  const reasonLines = [...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])].filter(Boolean);
+  const categoryLabel = item.category === "needs_attention_now" ? "Needs attention now"
+    : item.category === "important_to_address" ? "Important to address"
+    : item.category === "can_wait_with_documented_basis" ? "Being monitored"
+    : item.category === "needs_clarification" ? "Needs clarification" : "Care matter";
+
+  return <article className="followup-card">
+    <div className="followup-card-heading">
+      <div><p className="followup-eyebrow">{categoryLabel}</p><h3>{caregiverSafeAssistantText(item.title) || "Care matter"}</h3></div>
+      <span className="followup-status">{categoryLabel}</span>
+    </div>
+    {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join(" · ")}</p>}
+    <div className="followup-meta">
+      <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
+      <span><FileText size={14} /> {evidenceIds.length} evidence reference(s)</span>
+      {item.due_at && <span>Recorded due date: {dateLabel(item.due_at)}</span>}
+    </div>
+    {expanded && <div className="followup-detail">
+      <p><strong>Why SolenOS surfaced this</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "The assessment did not return a separate explanation."}</p>
+      {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverSafeAssistantText(record.source)} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
+      <p><strong>Evidence references</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No linked evidence references were returned."}</p>
+      {item.review_at && <p><strong>Next recorded review</strong><br />{dateLabel(item.review_at)}</p>}
+      {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved evidence item(s)" : ""}</li>)}</ol>}</section>}
+    </div>}
+    {loop && !["closed", "cancelled"].includes(loop.status) && <div className="followup-update-area">
+      {showUpdate ? <form onSubmit={(event) => { event.preventDefault(); if (updateText.trim()) void onUpdate(loop, updateText.trim()).then(() => { setUpdateText(""); setShowUpdate(false); }); }}>
+        <label htmlFor={"followup-update-" + loop.id}>Tell SolenOS what has changed. This will be saved as your report, not a verified outcome.</label>
+        <textarea id={"followup-update-" + loop.id} rows={3} value={updateText} onChange={(event) => setUpdateText(event.target.value)} maxLength={12000} placeholder="Share an update in your own words…" />
+        <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowUpdate(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !updateText.trim()}>{busy ? "Saving…" : "Share update"}</button></div>
+      </form> : <button type="button" className="followup-text-button" onClick={() => setShowUpdate(true)}>Share what changed</button>}
+    </div>}
+    <div className="followup-actions">
+      <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
+      {loop && <button type="button" className="followup-text-button" onClick={() => void onHistory(loop)}>View previous updates</button>}
+      <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care evidence: " + item.title + ". Explain what is known, what is uncertain and what remains unresolved.")}><MessageCircle size={15} /> Ask SolenOS</Link>
+    </div>
+  </article>;
+}
+
+export default function FollowUpsPage() {
   const [loops, setLoops] = useState<OpenLoop[]>([]);
+  const [assessment, setAssessment] = useState<SituationAssessment | null>(null);
   const [historyById, setHistoryById] = useState<Record<string, LoopHistoryEvent[]>>({});
-  const [loopType, setLoopType] = useState<string>("unresolved_concern");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [deadlineSource, setDeadlineSource] = useState("explicit_user");
-  const [filter, setFilter] = useState("open");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const pendingActionKeys = useRef<Record<string, { signature: string; key: string }>>({});
-  const pendingCreateKey = useRef<{ signature: string; key: string } | null>(null);
+  const [attentionWarning, setAttentionWarning] = useState("");
 
   const refresh = useCallback(async () => {
-    await ensureAnonymousSession();
-    const query = new URLSearchParams({ limit: "100" });
-    if (filter !== "all") query.set("status", filter);
-    const result = await getJSON(`/open-loops?${query.toString()}`);
-    if (!result || !Array.isArray((result as { items?: unknown }).items)) {
-      throw new Error("The Open Loops API returned an unexpected response.");
+    const session = await ensureAnonymousSession();
+    const personId = session.person?.id;
+    if (!personId) throw new Error("The active care record could not be confirmed.");
+    const [loopResult, assessmentResult] = await Promise.allSettled([
+      getJSON("/open-loops?limit=100"),
+      getJSON("/care-continuity/situation-understanding"),
+    ]);
+    const nextLoops = loopResult.status === "fulfilled" && Array.isArray((loopResult.value as { items?: unknown }).items)
+      ? (loopResult.value as { items: OpenLoop[] }).items : null;
+    let nextAssessmentResponse = assessmentResult.status === "fulfilled" ? assessmentResult.value as SituationAssessmentResponse : null;
+    let reassessmentFailed = false;
+    if (nextAssessmentResponse && (nextAssessmentResponse.status === "not_assessed" || nextAssessmentResponse.source_freshness?.reassessment_recommended === true)) {
+      try {
+        nextAssessmentResponse = await postJSON("/care-continuity/situation-understanding/reassess", {}) as SituationAssessmentResponse;
+      } catch {
+        reassessmentFailed = true;
+        setAttentionWarning("SolenOS could not finish refreshing its attention review. The last available saved view is retained and may be out of date.");
+      }
     }
-    setLoops((result as { items: OpenLoop[] }).items);
-  }, [filter]);
+    const nextAssessment = nextAssessmentResponse?.assessment && nextAssessmentResponse.assessment.person_id === personId
+      ? nextAssessmentResponse.assessment : null;
+    if (!nextLoops && !nextAssessment) throw new Error("Neither saved follow-ups nor the care assessment could be loaded.");
+    setLoops(nextLoops || []);
+    setAssessment(nextAssessment);
+    if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
+    else if (!reassessmentFailed) setAttentionWarning("");
+  }, []);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
-    void refresh()
-      .catch(() => {
-        if (active) setError("Open Loops could not be loaded from the care record. Check your connection and retry.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => { active = false; };
+    void refresh().catch(() => { if (active) setError("Follow-ups could not be loaded from the care record. Check your connection and try again."); })
+      .finally(() => { if (active) setLoading(false); });
+    const refreshAfterCareChange = () => { void refresh().catch(() => setAttentionWarning("SolenOS could not refresh its latest attention review. Saved follow-ups remain visible.")); };
+    const refreshWhenVisible = () => { if (document.visibilityState === "visible") refreshAfterCareChange(); };
+    window.addEventListener("careRecordUpdated", refreshAfterCareChange);
+    window.addEventListener("focus", refreshAfterCareChange);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      active = false;
+      window.removeEventListener("careRecordUpdated", refreshAfterCareChange);
+      window.removeEventListener("focus", refreshAfterCareChange);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, [refresh]);
 
-  const visibleLoops = useMemo(() => [...loops].sort((a, b) => {
-    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
-    const rank: Record<string, number> = { critical: 0, high: 1, normal: 2, low: 3 };
-    return (rank[a.priority] ?? 2) - (rank[b.priority] ?? 2);
-  }), [loops]);
+  const categorized = useMemo(() => {
+    const care = assessment?.care_attention;
+    const unique = (items: AttentionDecision[]) => {
+      const seen = new Set<string>();
+      return items.filter((item) => { const key = decisionKey(item); if (seen.has(key)) return false; seen.add(key); return true; });
+    };
+    return {
+      needsAttention: unique([...(care?.needs_attention_now || []), ...(care?.important_to_address || [])]),
+      monitored: unique(care?.can_wait_with_documented_basis || []),
+      needsClarification: unique(care?.needs_clarification || []),
+    };
+  }, [assessment]);
 
-  async function createLoop(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!title.trim() || !description.trim()) return;
-    setSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const createPayload = {
-        loop_type: loopType,
-        title: title.trim(),
-        description: description.trim(),
-        source_type: null,
-        source_id: null,
-        evidence: [],
-        uncertainty: "unknown",
-        ...(deadline ? { deadline_at: new Date(deadline).toISOString(), deadline_source: deadlineSource, deadline_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } : {}),
-      };
-      const signature = JSON.stringify(createPayload);
-      const pending = pendingCreateKey.current;
-      const idempotencyKey = pending?.signature === signature ? pending.key : "open-loop-" + crypto.randomUUID();
-      pendingCreateKey.current = { signature, key: idempotencyKey };
-      const saved = await postJSON("/open-loops", {
-        ...createPayload,
-        idempotency_key: idempotencyKey,
-      });
-      await refresh();
-      pendingCreateKey.current = null;
-      setTitle("");
-      setDescription("");
-      setDeadline("");
-      setNotice((saved as { recurrence_detected?: boolean }).recurrence_detected
-        ? "This looks like a repeat of an existing issue. It was added to that issue’s history."
-        : "Follow-up saved to your care record.");
-    } catch (reason) {
-      setError("The follow-up was not saved. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const assessmentIsBounded = Boolean(assessment && (
+    assessment.history_coverage !== "complete" || assessment.schema_status !== "complete"
+    || assessment.open_loops?.has_more || assessment.care_attention?.limitations?.length
+  ));
 
-  async function runAction(loop: OpenLoop, action: "reassess" | "response" | "action" | "outcome" | "verify" | "reconcile" | "close" | "cancel" | "dependency" | "defer" | "review" | "reopen" | "history") {
+  async function shareUpdate(loop: OpenLoop, text: string) {
     setBusyId(loop.id);
     setError("");
     setNotice("");
-    let pendingActionKeyToClear: string | null = null;
     try {
-      if (action === "reassess") {
-        await postJSON("/open-loops/reassess", {});
-      } else if (action === "history") {
-        const result = await getJSON(`/open-loops/${encodeURIComponent(loop.id)}/history?limit=100`);
-        if (!Array.isArray(result)) throw new Error("The audit history response was invalid.");
-        setHistoryById((current) => ({ ...current, [loop.id]: result as LoopHistoryEvent[] }));
-      } else if (action === "dependency") {
-        const prerequisites = loops.filter((item) => item.id !== loop.id && !["closed", "cancelled"].includes(item.status));
-        if (!prerequisites.length) throw new Error("No other open follow-ups are available.");
-        const choices = prerequisites.slice(0, 20).map((item, index) => `${index + 1}. ${caregiverSafeAssistantText(item.title) || "Care follow-up"} · ${readableLoopStatus(item.status)}`).join("\\n");
-        const choice = window.prompt("Which follow-up must happen first? Enter its number.\\n\\n" + choices);
-        const selected = Number(choice) - 1;
-        const prerequisite = Number.isInteger(selected) && selected >= 0 ? prerequisites.slice(0, 20)[selected] : null;
-        if (!prerequisite) return;
-        await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/dependencies`, {
-          prerequisite_id: prerequisite.id,
-          mandatory: true,
-        });
-      } else if (action === "defer" || action === "review") {
-        const reason = window.prompt(action === "defer"
-          ? "Why are you waiting before making this decision?"
-          : "Why does this item still need attention? It will not be marked resolved.");
-        if (!reason?.trim()) return;
-        await patchJSON(`/open-loops/${encodeURIComponent(loop.id)}`, {
-          status: action === "defer" ? "deferred" : "review_abandoned",
-          reason: reason.trim(),
-          ...(action === "defer" ? { deferred_reason: reason.trim() } : {}),
-        });
-      } else {
-        const text = action === "response" ? window.prompt("What response did you receive? Use the exact words if possible.") :
-          action === "action" ? window.prompt("What action was actually taken? Do not say it is complete unless you know.") :
-          action === "outcome" ? window.prompt("What happened next?") :
-          action === "verify" ? window.prompt("What do the two saved reports say together? Do not add anything they do not support.") :
-          action === "reconcile" ? window.prompt("How do you understand the different reports? If they still disagree, say so.") :
-          action === "close" ? window.prompt("What has happened that means this follow-up can be closed? Do not guess.") :
-          action === "reopen" ? window.prompt("Why does this item need attention again?") :
-          window.prompt("Why are you stopping this follow-up? This does not mean the issue was resolved.");
-        if (!text?.trim()) return;
-        const responseOutcome = action === "response"
-          ? (window.confirm("Did they say someone would call back, with the appointment still unconfirmed?")
-              ? "callback_promised"
-              : "response_received")
-          : null;
-        const verificationRule = action === "verify"
-          ? window.prompt("What would need to be true for you to consider this outcome checked?")
-          : null;
-        if (action === "verify" && !verificationRule?.trim()) return;
-        let evidence: Array<Record<string, unknown>> = [
-          { kind: "caregiver_recorded", text: text.trim(), recorded_at: new Date().toISOString() },
-        ];
-        let selectedSourceId: string | null = null;
-        let selectedRelatedSourceId: string | null = null;
-        if ((action === "response" && loop.loop_type === "professional_input") || action === "verify" || action === "reconcile") {
-          const activeSession = await ensureAnonymousSession();
-          const sourceRows = await getJSON(`/evidence/${encodeURIComponent(activeSession.person.id)}`);
-          if (!Array.isArray(sourceRows)) {
-            throw new Error("The saved care information could not be loaded. Please try again.");
-          }
-          const sources = (sourceRows as Array<Record<string, unknown>>).filter(
-            (item) => typeof item.id === "string" && typeof item.type === "string",
-          );
-          if (sources.length === 0) {
-            const requiredAction = action === "verify"
-              ? "verify an outcome"
-              : action === "reconcile"
-                ? "reconcile conflicting accounts"
-                : "record professional input";
-            throw new Error("No saved information is available for this review yet. Add the relevant note or document before you " + requiredAction + ".");
-          }
-          const choices = sources.slice(0, 20).map((item, index) =>
-            `${index + 1}. ${caregiverStatusLabel(String(item.type)) || "Saved care item"} — ${caregiverSafeAssistantText(String(item.source_text ?? ""))?.slice(0, 110) || "Source details not available"}`,
-          ).join("\\n");
-          const sourceRequirement = action === "verify"
-            ? "Choose two separate saved items from different people or documents. This review does not prove that the reports are true or that one caused the other."
-            : action === "reconcile"
-              ? "Choose saved information that helps explain the different reports. If they still disagree, leave them unresolved."
-              : "Choose the saved information that records the healthcare professional’s response.";
-          const sourceChoice = window.prompt(
-            "Choose the first saved item by entering its number. " + sourceRequirement + "\\n\\n" + choices,
-          );
-          if (!sourceChoice?.trim()) return;
-          const sourceIndex = Number(sourceChoice) - 1;
-          const selected = Number.isInteger(sourceIndex) && sourceIndex >= 0 ? sources.slice(0, 20)[sourceIndex] : null;
-          if (!selected) {
-            throw new Error("Choose a number from the list. Nothing was saved.");
-          }
-          selectedSourceId = String(selected.id);
-          if (action === "verify") {
-            // A persisted pair-level caregiver assessment is required before the backend can record corroboration.
-            // This records source independence review, not semantic entailment or proof of causation.
-            const secondChoices = sources.filter((item) => item.id !== selectedSourceId).slice(0, 20);
-            const secondList = secondChoices.map((item, index) => `${index + 1}. ${caregiverStatusLabel(String(item.type)) || "Saved care item"} — ${caregiverSafeAssistantText(String(item.source_text ?? ""))?.slice(0, 110) || "Source details not available"}`).join("\\n");
-            const secondChoice = window.prompt("Choose a different saved item from another person or document. Enter its number.\\n\\n" + secondList);
-            if (!secondChoice?.trim()) return;
-            const secondIndex = Number(secondChoice) - 1;
-            const second = Number.isInteger(secondIndex) && secondIndex >= 0 ? secondChoices[secondIndex] : null;
-            if (!second) {
-              throw new Error("Choose a different saved item from the list.");
-            }
-            selectedRelatedSourceId = String(second.id);
-            const relationshipPath = `/care-continuity/evidence/${encodeURIComponent(selectedSourceId)}/relationships`;
-            const relationshipBody = {
-              related_evidence_id: String(second.id),
-              relationship_type: "corroborates",
-              source_independence_status: "independent",
-              scope_type: "evidence_pair",
-              rationale: "Caregiver reviewed this pair and explicitly assessed the source origins as independent.",
-            };
-            try {
-              await postJSON(relationshipPath, relationshipBody);
-            } catch (relationshipError) {
-              const existing = await getJSON(relationshipPath);
-              const matches = Array.isArray(existing) && existing.some((row: Record<string, unknown>) =>
-                row.relationship_type === "corroborates" &&
-                row.source_independence_status === "independent" &&
-                ((row.source_evidence_id === selectedSourceId && row.related_evidence_id === String(second.id)) ||
-                 (row.source_evidence_id === String(second.id) && row.related_evidence_id === selectedSourceId)),
-              );
-              if (!matches) throw relationshipError;
-            }
-            evidence = [
-              { kind: "care_record_source", evidence_id: selectedSourceId, text: "First saved item chosen by caregiver for a second-source review." },
-              { kind: "care_record_source", evidence_id: String(second.id), text: "Second saved item chosen by caregiver for a second-source review." },
-            ];
-          } else {
-            evidence = [{
-              kind: action === "reconcile" ? "contradiction_reconciliation_source" : "care_record_source",
-              evidence_id: selectedSourceId,
-              text: action === "reconcile"
-                ? "Saved item chosen by caregiver to review different reports."
-                : "Saved item chosen by caregiver to review a professional response.",
-            }];
-          }
-        }
-        const signature = JSON.stringify({
-          action,
-          text: text.trim(),
-          verification_rule: verificationRule?.trim() || null,
-          source_evidence_id: selectedSourceId,
-          related_source_evidence_id: selectedRelatedSourceId,
-        });
-        const pendingKey = loop.id + ":" + action;
-        const pending = pendingActionKeys.current[pendingKey];
-        const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
-        pendingActionKeys.current[pendingKey] = { signature, key: idempotencyKey };
-        const payload = {
-          text: text.trim(),
-          evidence,
-          ...(verificationRule?.trim() ? { verification_rule: verificationRule.trim() } : {}),
-          ...(responseOutcome ? { response_outcome: responseOutcome } : {}),
-          idempotency_key: idempotencyKey,
-        };
-        const endpoint = action === "response" ? "responses" : action === "action" ? "actions" : action === "outcome" ? "outcomes" : action === "verify" ? "corroborate-outcome" : action === "reconcile" ? "reconcile" : action === "close" ? "close" : action === "reopen" ? "reopen" : "cancel";
-        await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/${endpoint}`, payload);
-        pendingActionKeyToClear = pendingKey;
-      }
+      await postJSON("/open-loops/" + encodeURIComponent(loop.id) + "/outcomes", {
+        text,
+        evidence: [],
+        idempotency_key: crypto.randomUUID(),
+      });
       await refresh();
-      // Keep the key if the mutation committed but refresh failed. A retry must
-      // replay the same backend event instead of appending duplicate evidence.
-      if (pendingActionKeyToClear) delete pendingActionKeys.current[pendingActionKeyToClear];
-      setNotice(action === "reassess" ? "SolenOS reviewed the follow-ups." : "Your update was saved. Check the status below.");
-    } catch (reason) {
-      setError("We could not confirm that change. Please try again.");
+      setNotice("Your update was saved as a caregiver report. SolenOS has not marked the matter resolved.");
+    } catch {
+      setError("The update could not be confirmed. Nothing has been marked resolved.");
     } finally {
       setBusyId("");
     }
   }
 
-  return (
-    <main className="mobile-screen" style={{ maxWidth: 880, margin: "0 auto", padding: "24px 16px 56px" }}>
-      <header style={{ marginBottom: 24 }}>
-        <Link href="/workspace" style={{ display: "inline-flex", gap: 8, alignItems: "center", marginBottom: 20 }}>
-          <ArrowLeft size={18} aria-hidden /> Back to Living Care Record
-        </Link>
-        <p style={{ fontSize: 12, letterSpacing: "0.12em", fontWeight: 700, opacity: 0.7 }}>FOLLOW-UPS</p>
-        <h1 style={{ fontSize: "clamp(28px, 6vw, 40px)", lineHeight: 1.15, margin: "8px 0" }}>Follow-ups and questions</h1>
-        <p style={{ maxWidth: 660, lineHeight: 1.6 }}>Keep unresolved concerns, decisions, actions and follow-ups visible. Acknowledging an item does not mean its outcome has been verified.</p>
-      </header>
+  async function loadHistory(loop: OpenLoop) {
+    setBusyId(loop.id);
+    try {
+      const result = await getJSON("/open-loops/" + encodeURIComponent(loop.id) + "/history?limit=100");
+      if (!Array.isArray(result)) throw new Error("History response was invalid.");
+      setHistoryById((current) => ({ ...current, [loop.id]: result as LoopHistoryEvent[] }));
+      setNotice("Previous updates loaded.");
+    } catch {
+      setError("Previous updates could not be loaded. The saved follow-up itself has not changed.");
+    } finally {
+      setBusyId("");
+    }
+  }
 
-      <form onSubmit={createLoop} style={{ border: "1px solid var(--border, #d6d9d3)", borderRadius: 16, padding: 18, marginBottom: 24, display: "grid", gap: 14 }}>
-        <h2 style={{ fontSize: 20, margin: 0, display: "flex", alignItems: "center", gap: 8 }}><Plus size={19} aria-hidden /> Track an unresolved item</h2>
-        <label htmlFor="open-loop-type" style={{ display: "grid", gap: 6 }}>Type</label>
-        <select id="open-loop-type" aria-label="Type" value={loopType} onChange={(event) => setLoopType(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }}>
-          {LOOP_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
-        <label style={{ display: "grid", gap: 6 }}>Short title
-          <input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={240} placeholder="What still needs attention?" style={{ minHeight: 44, padding: 10, borderRadius: 8 }} />
-        </label>
-        <label style={{ display: "grid", gap: 6 }}>Context and what is known
-          <textarea value={description} onChange={(event) => setDescription(event.target.value)} required maxLength={12000} rows={4} placeholder="Separate what was observed, what was reported, and what remains uncertain." style={{ padding: 10, borderRadius: 8 }} />
-        </label>
-        <label style={{ display: "grid", gap: 6 }}>Deadline (optional; leave blank if none is established)
-          <input type="datetime-local" value={deadline} onChange={(event) => setDeadline(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }} />
-        </label>
-        {deadline && <label style={{ display: "grid", gap: 6 }}>Why this deadline exists
-          <select value={deadlineSource} onChange={(event) => setDeadlineSource(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }}>
-            <option value="explicit_user">Explicitly entered by caregiver</option>
-            <option value="recorded_commitment">Recorded commitment</option>
-            <option value="system_policy">A written rule or care plan</option>
-          </select>
-        </label>}
-        <Button type="submit" variant="primary" disabled={saving || !title.trim() || !description.trim()}>{saving ? "Saving…" : "Save follow-up"}</Button>
-      </form>
+  const allAttention = [...categorized.needsAttention, ...categorized.monitored, ...categorized.needsClarification];
+  const linkedLoops = loops.filter((loop) => !["closed", "cancelled"].includes(loop.status));
+  const linkedKeys = new Set(allAttention.map((item) => String(item.record_id || item.id || "")));
+  const unclassifiedLoops = linkedLoops.filter((loop) => !linkedKeys.has(loop.id));
 
-      <section aria-labelledby="open-loop-list-heading">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h2 id="open-loop-list-heading" style={{ fontSize: 22, margin: 0 }}>Your tracked items</h2>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <select aria-label="Filter follow-ups" value={filter} onChange={(event) => setFilter(event.target.value)} style={{ minHeight: 40, padding: 8, borderRadius: 8 }}>
-              <option value="open">Open</option><option value="waiting">Waiting for a response</option><option value="deferred">Waiting before deciding</option><option value="blocked">Blocked by another step</option><option value="review_abandoned">Needs another look</option><option value="closed">Closed after review</option><option value="cancelled">Stopped</option><option value="all">All follow-ups</option>
-            </select>
-            <Button variant="secondary" onClick={() => { setLoading(true); void refresh().catch(() => setError("Could not refresh follow-ups. Please try again.")).finally(() => setLoading(false)); }} disabled={loading}>
-              <RefreshCw size={16} aria-hidden /> Refresh
-            </Button>
-          </div>
-        </div>
-
-        {error && <p role="alert" style={{ border: "1px solid #b91c1c", padding: 12, borderRadius: 10 }}>{error}</p>}
-        {notice && <p role="status" style={{ border: "1px solid #a3b18a", padding: 12, borderRadius: 10 }}>{notice}</p>}
-        {loading ? <p aria-live="polite">Loading saved follow-ups…</p> :
-          visibleLoops.length === 0 ? <div style={{ border: "1px dashed var(--border, #d6d9d3)", borderRadius: 14, padding: 24 }}>
-            <CheckCircle2 size={22} aria-hidden /><h3>No follow-ups in this view</h3><p>No sample records are shown. If you expected something here, refresh and check that the correct care record is open.</p>
-          </div> : <div style={{ display: "grid", gap: 14 }}>
-            {visibleLoops.map((loop) => <article key={loop.id} style={{ border: "1px solid var(--border, #d6d9d3)", borderRadius: 14, padding: 16 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "start" }}>
-                <div>
-                  <p style={{ margin: "0 0 6px", fontSize: 12, opacity: 0.75 }}>{readableLoopType(loop.loop_type)} · {readableLoopStatus(loop.status)}</p>
-                  <h3 style={{ margin: "0 0 8px", fontSize: 19 }}>{caregiverSafeAssistantText(loop.title) || "Care follow-up"}</h3>
-                </div>
-                <strong>{readablePriority(loop.priority)}</strong>
-              </div>
-              <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p>
-              {(() => {
-                const latest = latestResponseUpdate(loop);
-                if (!latest) return null;
-                return (
-                  <section role="note" aria-label="Latest reported response" style={{ margin: "10px 0", padding: 12, borderRadius: 10, background: "var(--surface-muted, #f6f7f4)" }}>
-                    <strong style={{ fontSize: 13 }}>Latest update</strong>
-                    <p style={{ margin: "5px 0 0", whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: 14 }}>{latest.text}</p>
-                    {latest.callbackPromised && <p style={{ margin: "6px 0 0", fontSize: 13 }}>You recorded that a callback was promised. The appointment is not confirmed.</p>}
-                  </section>
-                );
-              })()}
-              <p style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
-                <Clock3 size={15} aria-hidden /> {dateLabel(loop.deadline_at)}
-                {loop.overdue && <strong style={{ display: "inline-flex", gap: 5, alignItems: "center" }}><AlertCircle size={15} aria-hidden /> Overdue</strong>}
-              </p>
-              {loop.priority_reasons.length > 0 && <p style={{ fontSize: 13 }}>Why it needs attention: {loop.priority_reasons.map(caregiverSafeAssistantText).filter(Boolean).join("; ")}</p>}
-              {loop.blocking_prerequisites.length > 0 && <p style={{ fontSize: 13 }}>Waiting for: {loop.blocking_prerequisites.map((item) => caregiverSafeAssistantText(item.title) || "Another care item").join(", ")}</p>}
-              {loop.missing_information.length > 0 && <p style={{ fontSize: 13 }}>Still needed: {loop.missing_information.map(caregiverSafeAssistantText).filter(Boolean).join(", ")}</p>}
-              <p style={{ fontSize: 12, opacity: 0.75 }}>Outcome: {readableLoopStatus(loop.outcome_status)} · Updated {dateLabel(loop.updated_at)}</p>
-              {loop.outcome_status === "outcome_verified" && (
-                <p role="note" style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.85 }}>
-                  A caregiver compared two separate saved items. This does not prove that the reports are true or that one caused the other.
-                </p>
-              )}
-              {historyById[loop.id] && <section aria-label={`Previous updates for ${caregiverSafeAssistantText(loop.title) || "care follow-up"}`} style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "var(--surface-muted, #f6f7f4)" }}>
-                <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Previous updates</h4>
-                {historyById[loop.id].length === 0 ? <p style={{ margin: 0, fontSize: 13 }}>No previous updates are available.</p> :
-                  <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 8 }}>
-                    {historyById[loop.id].map((event) => <li key={event.id} style={{ fontSize: 13 }}>
-                      <strong>{caregiverStatusLabel(event.event_type) || "Care update"}</strong> · {dateLabel(event.created_at)}
-                      {event.evidence.length > 0 && <p style={{ margin: "4px 0 0" }}>Supporting information: {event.evidence.length} saved item(s)</p>}
-                    </li>)}
-                  </ol>}
-              </section>}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reassess")}>Review follow-ups</Button>
-                <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "history")}>View previous updates</Button>
-                {(loop.loop_type === "awaiting_response" || loop.loop_type === "professional_input" || loop.loop_type === "follow_up") && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "response")}>Record response</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "action")}>Record action</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "outcome")}>Record outcome</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "verify")}>Check outcome</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "dependency")}>Add what needs to happen first</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "defer")}>Wait before deciding</Button>}
-                {["open", "waiting"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "review")}>Needs another look</Button>}
-                {loop.loop_type === "contradiction" && !["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reconcile")}>Review different reports</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "close")}>Ask to close</Button>}
-                {!["closed", "cancelled"].includes(loop.status) && <Button variant="secondary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "cancel")}>Stop following up</Button>}
-                {["closed", "cancelled"].includes(loop.status) && <Button variant="primary" disabled={busyId === loop.id} onClick={() => void runAction(loop, "reopen")}>Reopen</Button>}
-              </div>
-            </article>)}
-          </div>}
+  return <main className="mobile-screen followups-page">
+    <header className="followups-header">
+      <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Living Care Record</Link>
+      <p className="followups-kicker">SOLENOS CARE CONTINUITY</p>
+      <div className="followups-title-row">
+        <div><h1>Follow-ups</h1><p>SolenOS manages unresolved matters by reviewing the saved care history and keeping important changes visible. You only need to step in when your knowledge or action is needed.</p></div>
+        <button type="button" className="followups-refresh" onClick={() => { setLoading(true); void refresh().catch(() => setError("Follow-ups could not be refreshed. Try again.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
+      </div>
+    </header>
+    {error && <p className="followups-alert" role="alert">{error}</p>}
+    {notice && <p className="followups-notice" role="status">{notice}</p>}
+    {attentionWarning && <p className="followups-limitation" role="note">{attentionWarning}</p>}
+    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is incomplete or outside the current review. An empty section does not prove that nothing remains unresolved.</p>}
+    {loading ? <section className="followups-empty" aria-live="polite">Reviewing the saved care history…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Care history is unavailable</h2><p>SolenOS cannot safely determine what remains unresolved until the saved care information can be loaded.</p></section> : <>
+      <section className="followups-section">
+        <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Matters with a recorded reason to address them now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
+        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
+        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "No matters were classified as needing attention in the latest assessment." : "SolenOS could not load its attention assessment. Saved open matters remain visible below."}</p>}
       </section>
-    </main>
-  );
+      <section className="followups-section">
+        <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Matters that can wait on the basis of the saved information, or have no stronger priority basis.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
+        {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {unclassifiedLoops.map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Saved follow-up · {statusLabel(loop.status)}</p><h3>{caregiverSafeAssistantText(loop.title) || "Care matter"}</h3><p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span><Clock3 size={14} /> First recorded {dateLabel(loop.created_at)}</span></p><button type="button" className="followup-text-button" onClick={() => void loadHistory(loop)}>View previous updates</button></article>)}
+        {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">No other open matters were returned by the available assessment.</p>}
+      </section>
+      <section className="followups-section">
+        <div className="followups-section-heading"><div><h2>Needs clarification</h2><p>Missing, uncertain or conflicting information. SolenOS will not guess which account is correct.</p></div><span>{categorized.needsClarification.length}</span></div>
+        {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">No clarification items were returned by the latest assessment.</p>}
+      </section>
+      <section className="followups-section">
+        <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items closed in the saved follow-up record.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
+        {loops.filter((loop) => loop.status === "closed").map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Closed · {statusLabel(loop.outcome_status)}</p><h3>{caregiverSafeAssistantText(loop.title) || "Care matter"}</h3><p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p></article>)}
+        {loops.some((loop) => loop.status === "cancelled") && <p className="followups-empty-inline">{loops.filter((loop) => loop.status === "cancelled").length} stopped item(s) are not represented as verified outcomes.</p>}
+        {loops.filter((loop) => loop.status === "closed").length === 0 && <p className="followups-empty-inline">No closed follow-ups are recorded here.</p>}
+      </section>
+    </>}
+    <style jsx>{`
+      .followups-page{max-width:900px;margin:0 auto;padding:24px 18px 64px;color:var(--text,#1f2a22)}
+      .followups-header{margin-bottom:24px}.followups-back{display:inline-flex;align-items:center;gap:7px;margin-bottom:22px;color:var(--text-secondary,#536157);text-decoration:none;font-size:14px}
+      .followups-kicker{color:var(--text-secondary,#657568);font-size:11px;font-weight:750;letter-spacing:.12em}
+      .followups-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-top:8px}.followups-title-row h1{margin:0;font-size:clamp(32px,6vw,42px);line-height:1.1;letter-spacing:-.035em}.followups-title-row p{max-width:650px;margin:9px 0 0;color:var(--text-secondary,#5b665d);line-height:1.6}
+      .followups-refresh{flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--border,#d9dfd8);border-radius:12px;background:var(--surface,#fff);color:var(--text,#1f2a22)}
+      .followups-alert,.followups-notice,.followups-limitation{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;margin:0 0 16px}.followups-alert{border:1px solid #c78d78;background:#fff8f5;color:#713d2b}.followups-notice{border:1px solid #a8c1a5;background:#f4f8f2;color:#29452d}.followups-limitation{border:1px solid var(--border,#d9dfd8);background:var(--surface-muted,#f6f8f5);color:var(--text-secondary,#5b665d)}
+      .followups-section{display:grid;gap:12px;margin-top:28px}.followups-section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px}.followups-section-heading h2{margin:0;font-size:20px}.followups-section-heading p{margin:4px 0 0;color:var(--text-secondary,#647067);font-size:13px;line-height:1.45}.followups-section-heading>span{display:grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:var(--surface-muted,#edf2eb);font-size:13px;font-weight:700}
+      .followup-card{border:1px solid var(--border,#d9dfd8);border-radius:15px;background:var(--surface,#fff);padding:16px;display:grid;gap:10px}.followup-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.followup-eyebrow{margin:0 0 5px;color:var(--text-secondary,#667269);font-size:11px;text-transform:uppercase;letter-spacing:.055em}.followup-card h3{margin:0;font-size:17px;line-height:1.35}.followup-status{flex:0 0 auto;max-width:145px;padding:5px 8px;border-radius:999px;background:var(--surface-muted,#edf2eb);color:var(--text-secondary,#4f5d51);font-size:11px;font-weight:700;text-align:center}
+      .followup-meta{display:flex;flex-wrap:wrap;gap:12px;color:var(--text-secondary,#647067);font-size:12px}.followup-meta span,.followup-reason{display:inline-flex;align-items:center;gap:6px}.followup-reason{margin:0;color:#81502f;font-size:13px;line-height:1.45}.followup-detail{border-top:1px solid var(--border,#e1e5df);padding-top:10px;display:grid;gap:8px}.followup-detail p{margin:0;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.followup-history{border-top:1px solid var(--border,#e1e5df);padding-top:9px;font-size:13px}.followup-history ol{padding-left:20px;line-height:1.6}
+      .followup-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}.followup-text-button,.followup-secondary-button,.followup-primary-button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:650;cursor:pointer;text-decoration:none}.followup-text-button{border:0;background:transparent;color:var(--text,#263329)}.followup-secondary-button{border:1px solid var(--border,#d9dfd8);background:var(--surface,#fff);color:var(--text,#263329)}.followup-primary-button{border:1px solid #8eae8a;background:#b9d5b5;color:#17251c}.followup-primary-button:disabled{opacity:.55;cursor:not-allowed}
+      .followup-update-area{border-top:1px solid var(--border,#e1e5df);padding-top:12px}.followup-update-area form{display:grid;gap:9px}.followup-update-area label{font-size:12px;color:var(--text-secondary,#5b665d);line-height:1.5}.followup-update-area textarea{width:100%;box-sizing:border-box;border:1px solid var(--border,#cfd8cf);border-radius:9px;padding:10px;background:var(--surface,#fff);color:var(--text,#1f2a22);font:inherit;resize:vertical}
+      .followups-empty,.followups-empty-inline{border:1px dashed var(--border,#d9dfd8);border-radius:13px;padding:20px;color:var(--text-secondary,#647067);line-height:1.55}.followups-empty{display:grid;justify-items:start;gap:8px}.followups-empty h2{margin:0;color:var(--text,#263329);font-size:18px}.followups-empty p{margin:0 0 6px}.followups-empty-inline{margin:0;font-size:13px;padding:14px}
+      @media(max-width:560px){.followups-page{padding:18px 13px 48px}.followup-card{padding:13px}.followup-card-heading{display:grid}.followup-status{justify-self:start}}
+    `}</style>
+  </main>;
 }

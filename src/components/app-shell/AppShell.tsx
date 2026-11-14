@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   ClipboardList,
+  Clock3,
   FileText,
   Handshake,
   MessageCircle,
@@ -48,6 +49,7 @@ type InstallPromptEvent = Event & {
 const NAVIGATION = [
   { href: "/workspace/companion", label: "AI Companion", icon: MessageCircle },
   { href: "/workspace/care-continuity", label: "Care continuity", icon: ClipboardList },
+  { href: "/workspace/open-loops", label: "Follow-ups", icon: Clock3 },
   { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
