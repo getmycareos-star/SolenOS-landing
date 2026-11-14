@@ -55,8 +55,28 @@ assert.doesNotMatch(clarificationPanel, /I don't know the answer yet/, "Not know
 assert.match(clarificationPanel, /Never select a question automatically/, "Opening the panel must not auto-select a question.");
 assert.match(
   clarificationPanel,
-  /item\.priority === "critical"/,
-  "Critical questions must bypass the ordinary display limit.",
+  /criticalCaregiverQuestions\.slice\(0, 1\)/,
+  "Stored critical priority must not bypass the initial attention limit; show at most one first.",
+);
+assert.match(
+  clarificationPanel,
+  /criticalCaregiverQuestions\.slice\(0, 1\)[\s\S]*?\.slice\(0, 2\)/,
+  "The initial caregiver view must show no more than three questions, including at most one critical-priority item.",
+);
+assert.match(
+  clarificationPanel,
+  /Only a few questions are shown at once/,
+  "The caregiver must be told that other saved questions can wait without being framed as a backlog.",
+);
+assert.match(
+  clarificationPanel,
+  /See other care questions/,
+  "Additional questions must remain available without displaying a pressure-inducing count.",
+);
+assert.doesNotMatch(
+  clarificationPanel,
+  /See \{additionalCaregiverQuestions\.length\} more care question/,
+  "The collapsed section must not present a numerical backlog.",
 );
 assert.match(
   clarificationPanel,

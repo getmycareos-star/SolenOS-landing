@@ -217,10 +217,12 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       return (eligibleQuestionOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
         (eligibleQuestionOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER);
     });
-  // Critical items bypass the ordinary attention limit. Other questions are
-  // kept available on demand rather than becoming a long visible task list.
+  // Stored priority is not proof of urgency. Show one highest-priority
+  // question and at most two other necessary questions; keep the rest
+  // available on demand so a large record never becomes a caregiver task list.
+  const criticalCaregiverQuestions = caregiverOpenQuestions.filter((item) => item.priority === "critical");
   const visibleCaregiverQuestions = [
-    ...caregiverOpenQuestions.filter((item) => item.priority === "critical"),
+    ...criticalCaregiverQuestions.slice(0, 1),
     ...caregiverOpenQuestions.filter((item) => item.priority !== "critical").slice(0, 2),
   ];
   const visibleQuestionIds = new Set(visibleCaregiverQuestions.map((item) => item.id));
@@ -523,6 +525,11 @@ SolenOS only brings up a question when saved care information shows that an answ
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
       {caregiverOpenQuestions.length === 0 && <p>Nothing needs your input right now. SolenOS will ask when a care detail genuinely needs confirmation. You can talk through other questions with SolenOS Companion.</p>}
+      {caregiverOpenQuestions.length > visibleCaregiverQuestions.length && (
+        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+          Only a few questions are shown at once. Other saved questions can wait until you choose to review them.
+        </p>
+      )}
       {(caregiverOpenQuestions.length > 0 || questions.some((item) => item.status !== "open" && item.status !== "unresolved")) && <>
         <div style={{ display: "grid", gap: 10 }}>
           {visibleCaregiverQuestions.map((item) => (
@@ -546,7 +553,7 @@ SolenOS only brings up a question when saved care information shows that an answ
           {additionalCaregiverQuestions.length > 0 && (
             <details>
               <summary style={{ cursor: "pointer", fontSize: 13 }}>
-                See {additionalCaregiverQuestions.length} more care question{additionalCaregiverQuestions.length === 1 ? "" : "s"}
+                See other care questions
               </summary>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {additionalCaregiverQuestions.map((item) => (
