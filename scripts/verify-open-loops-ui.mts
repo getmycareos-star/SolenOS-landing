@@ -4,41 +4,30 @@ import fs from "node:fs";
 const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 
 const required: Array<[string, RegExp]> = [
-  ["create loop posts to the authoritative API", /postJSON\("\/open-loops"/],
-  ["create response refreshes persisted records", /await refresh\(\)[\s\S]*?Follow-up saved to your care record/],
-  ["create retries reuse an idempotency key for the same payload", /pendingCreateKey\.current = \{ signature, key: idempotencyKey \}/],
-  ["successful create clears the pending idempotency key", /await refresh\(\)[\s\S]*?pendingCreateKey\.current = null/],
-  ["history is loaded from the backend", /getJSON\(\`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/history/],
-  ["history is visibly rendered", /Previous updates[\s\S]*?historyById\[loop\.id\]/],
-  ["backend reassessment is requested", /postJSON\("\/open-loops\/reassess"/],
-  ["source evidence is fetched from the active person's care record", /getJSON\(\`\/evidence\/\$\{encodeURIComponent\(activeSession\.person\.id\)\}\`\)/],
-  ["professional response requires an existing selected source", /action === "response" && loop\.loop_type === "professional_input"[\s\S]*?const sourceChoice = window\.prompt[\s\S]*?const selected = Number\.isInteger\(sourceIndex\)[\s\S]*?selectedSourceId = String\(selected\.id\)/],
-  ["outcome corroboration requires two distinct persisted source IDs", /if \(action === "verify"\)[\s\S]*?const secondChoices = sources\.filter\(\(item\) => item\.id !== selectedSourceId\)[\s\S]*?const second = Number\.isInteger\(secondIndex\)[\s\S]*?selectedRelatedSourceId = String\(second\.id\)[\s\S]*?related_evidence_id: String\(second\.id\)/],
-  ["independent source relationship is persisted before corroboration", /relationship_type: "corroborates"[\s\S]*?source_independence_status: "independent"[\s\S]*?scope_type: "evidence_pair"[\s\S]*?await postJSON\(relationshipPath, relationshipBody\)/],
-  ["outcome verification calls the explicit corroboration endpoint", /action === "verify" \? "corroborate-outcome"/],
-  ["outcome verification and contradiction reconciliation both require source selection", /action === "verify" \|\| action === "reconcile"/],
-  ["verification requires two separate saved source records", /Choose two separate saved items from different people or documents/],
-  ["missing source evidence blocks the action", /No saved information is available for this review yet/],
-  ["mutation retries retain the key for the same pending action", /pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)[\s\S]*?pendingActionKeys\.current\[pendingKey\]/],
-  ["action keys are cleared only after a successful refresh", /await refresh\(\)[\s\S]*?if \(pendingActionKeyToClear\) delete pendingActionKeys\.current\[pendingActionKeyToClear\]/],
-  ["action errors are shown rather than reported as success", /We could not confirm that change\. Please try again\./],
-  ["no sample Open Loop records are fabricated", /No sample records are shown/],
+  ["loads the persisted person-scoped follow-ups", /getJSON\("\/open-loops\?limit=100"\)/],
+  ["loads the canonical situation-understanding assessment", /getJSON\("\/care-continuity\/situation-understanding"\)/],
+  ["keeps partial source failures visible", /Promise\.allSettled\([\s\S]*?if \(!nextLoops && !nextAssessment\)/],
+  ["refreshes a missing or stale assessment through the existing endpoint", /status === "not_assessed"[\s\S]*?reassessment_recommended === true[\s\S]*?postJSON\("\/care-continuity\/situation-understanding\/reassess"/],
+  ["does not use an assessment belonging to another person", /nextAssessmentResponse\.assessment\.person_id === personId/],
+  ["refreshes when a care record is changed or the caregiver returns", /careRecordUpdated[\s\S]*?window\.addEventListener\("focus"/],
+  ["records caregiver updates against the existing open loop", /postJSON\("\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/outcomes"/],
+  ["uses an idempotency key for caregiver updates", /idempotency_key: crypto\.randomUUID\(\)/],
+  ["states that a caregiver update is not a verified outcome", /Your update was saved as a caregiver report\. SolenOS has not marked the matter resolved\./],
+  ["fails closed when the update cannot be confirmed", /The update could not be confirmed\. Nothing has been marked resolved\./],
+  ["discloses bounded or incomplete source coverage", /assessmentIsBounded[\s\S]*?Some saved care information is incomplete or outside the current review/],
+  ["renders the four explicit attention classifications", /needs_attention_now[\s\S]*?important_to_address[\s\S]*?can_wait_with_documented_basis[\s\S]*?needs_clarification/],
+  ["shows linked source records and evidence references", /Evidence references[\s\S]*?uniqueEvidenceIds/],
+  ["does not expose manual task creation or a parallel open-loop writer", /function shareUpdate[\s\S]*?postJSON\("\/open-loops\/"[\s\S]*?\/outcomes/],
 ];
 
 for (const [label, pattern] of required) {
-  assert.match(page, pattern, `Open Loop UI contract missing: ${label}`);
+  assert.match(page, pattern, `Follow-ups contract missing: ${label}`);
 }
 
-for (const action of ["responses", "actions", "outcomes", "corroborate-outcome", "reconcile", "close", "reopen", "cancel"]) {
-  assert.ok(page.includes(`"${action}"`), `Open Loop action route missing: ${action}`);
-}
+assert.doesNotMatch(page, /function createLoop|postJSON\("\/open-loops",/, "caregivers must report changes to existing care matters; SolenOS manages the unresolved follow-up lifecycle");
+assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
+assert.ok(page.includes("SolenOS keeps track") || page.includes("SolenOS manages"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
-assert.ok(
-  page.includes("A caregiver compared two separate saved items. This does not prove that the reports are true or that one caused the other.")
-    && page.includes("This records source independence review, not semantic entailment or proof of causation."),
-  "verified outcomes must disclose that source independence review does not prove truth or causation",
-);
-
-console.log("OPEN_LOOPS_UI_CONTRACT=PASS");
-console.log(`Assertions=${required.length + 8}`);
+console.log("FOLLOW_UPS_UI_CONTRACT=PASS");
+console.log(`Assertions=${required.length + 3}`);
 console.log("Scope=frontend source contract; not a browser or deployed-system test");
