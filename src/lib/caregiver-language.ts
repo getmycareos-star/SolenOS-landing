@@ -6,6 +6,18 @@
  */
 
 const STATUS_LABELS: Readonly<Record<string, string>> = {
+  created: "Follow-up created",
+  updated: "Follow-up updated",
+  response_recorded: "Response recorded",
+  action_recorded: "Action recorded",
+  contradiction_reconciled: "Different reports reviewed",
+  outcome_reported: "Outcome reported",
+  outcome_attested: "Outcome checked by caregiver",
+  outcome_corroborated: "Two sources reviewed together",
+  closure_verified: "Closure reviewed",
+  cancelled: "Follow-up stopped",
+  reopened: "Follow-up reopened",
+  reassessed: "Follow-up reviewed",
   active: "Active",
   approved: "Approved",
   completed: "Completed",
