@@ -651,6 +651,16 @@ await record("06 Companion context and Qwen output", async () => {
     false,
     "the sleep/appetite question must not pull an unrelated medication report into its source set",
   );
+  assert.equal(
+    answer.payload.lcr_context_coverage?.prompt_context_complete,
+    true,
+    "Companion must disclose a complete prompt context for this bounded care-history question",
+  );
+  assert.ok(
+    Number(answer.payload.lcr_context_coverage?.prompt_context_chars || 0)
+      <= Number(answer.payload.lcr_context_coverage?.prompt_context_budget_chars || 0),
+    "Companion prompt context must remain inside its declared budget",
+  );
 
   const questionAnswer = await request("/api/v1/conversation/message", {
     token: identity.token,
