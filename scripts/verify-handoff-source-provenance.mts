@@ -29,6 +29,12 @@ assert.match(sharingComponent, /postJSON\("\/handoff-drafts\/prepare"/,
   "handoff preparation must be performed by the backend from the dedicated workspace");
 assert.match(sharingComponent, /X-Request-ID/,
   "draft preparation must reuse a stable request ID across retries");
+assert.match(sharingComponent, /retrieval_complete/,
+  "handoff review must disclose when the LCR source projection is incomplete");
+assert.match(sharingComponent, /partial_sources/,
+  "handoff review must identify source collections truncated by the retrieval bound");
+assert.match(sharingComponent, /additional records remain outside this draft/,
+  "caregivers must be told when additional saved history was not included");
 assert.match(sharingComponent, /generation_status/,
   "the persisted draft response must retain actual generation status");
 assert.match(sharingComponent, /validation_status/,
