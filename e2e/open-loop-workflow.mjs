@@ -392,31 +392,31 @@ try {
   await integrityDisclosure.click();
   // The conflict editor is intentionally inside its own disclosure.
   await page.locator("details.lcr-history-details > summary").filter({ hasText: "When information differs" }).click();
-  const conflictPanel = page.getByRole("region", { name: "Evidence-grounded conflict resolution" });
+  const conflictPanel = page.getByRole("region", { name: "Review reports that differ" });
   await conflictPanel.getByRole("heading", { name: "When information differs" }).waitFor({ timeout: 20_000 });
   await conflictPanel.getByLabel("Conflict").selectOption(persistedConflict.id);
-  await conflictPanel.getByLabel("Resolution transition").selectOption("partially_resolved");
-  await conflictPanel.getByLabel("Resolution rationale").fill(
+  await conflictPanel.getByLabel("Review status").selectOption("partially_resolved");
+  await conflictPanel.getByLabel("Why is this status changing?").fill(
     "CI-only review confirms the source document date, but not whether the medication is currently prescribed."
   );
   const resolvedScope = "The source document date was confirmed.";
   const unresolvedRemainder = "Current medication status remains unconfirmed.";
-  await conflictPanel.getByLabel("Exact scope resolved (required for partial resolution)").fill(resolvedScope);
-  await conflictPanel.getByLabel("What remains unresolved (required for partial resolution)").fill(unresolvedRemainder);
-  await conflictPanel.getByLabel("Evidence supporting the resolution (multi-select)").selectOption([sourceEvidenceId]);
-  await conflictPanel.getByRole("button", { name: "Save conflict transition" }).click();
-  await conflictPanel.getByRole("status").filter({ hasText: "Resolution transition saved with its rationale" }).waitFor({ timeout: 15_000 });
-  await conflictPanel.getByText(`Still unresolved: ${unresolvedRemainder}`).waitFor({ timeout: 10_000 });
-  await conflictPanel.getByText("unresolved → partially resolved", { exact: true }).waitFor({ timeout: 10_000 });
+  await conflictPanel.getByLabel("What part has been resolved? (required for a partial review)").fill(resolvedScope);
+  await conflictPanel.getByLabel("What still needs checking? (required for a partial review)").fill(unresolvedRemainder);
+  await conflictPanel.getByLabel("Supporting information").selectOption([sourceEvidenceId]);
+  await conflictPanel.getByRole("button", { name: "Save review" }).click();
+  await conflictPanel.getByRole("status").filter({ hasText: "Review status saved." }).waitFor({ timeout: 15_000 });
+  await conflictPanel.getByText(unresolvedRemainder, { exact: false }).waitFor({ timeout: 10_000 });
+  await conflictPanel.getByText("Still needs review → Partly reviewed", { exact: true }).waitFor({ timeout: 10_000 });
 
-  await conflictPanel.getByLabel("Resolution transition").selectOption("reopened");
-  await conflictPanel.getByLabel("Resolution rationale").fill(
+  await conflictPanel.getByLabel("Review status").selectOption("reopened");
+  await conflictPanel.getByLabel("Why is this status changing?").fill(
     "CI-only new report disputes the partial interpretation; reopen without deleting prior history."
   );
-  await conflictPanel.getByRole("button", { name: "Save conflict transition" }).click();
-  await conflictPanel.getByRole("status").filter({ hasText: "Resolution transition saved with its rationale" }).waitFor({ timeout: 15_000 });
-  await conflictPanel.getByText("partially resolved → reopened", { exact: true }).waitFor({ timeout: 10_000 });
-  await conflictPanel.getByText(`Still unresolved: ${unresolvedRemainder}`).waitFor({ timeout: 10_000 });
+  await conflictPanel.getByRole("button", { name: "Save review" }).click();
+  await conflictPanel.getByRole("status").filter({ hasText: "Review status saved." }).waitFor({ timeout: 15_000 });
+  await conflictPanel.getByText("Partly reviewed → Reopened", { exact: true }).waitFor({ timeout: 10_000 });
+  await conflictPanel.getByText(unresolvedRemainder, { exact: false }).waitFor({ timeout: 10_000 });
 
   const conflictHistoryResponse = await fetch(
     new URL(`/api/v1/uncertainty/contradictions/${encodeURIComponent(persistedConflict.id)}/history`, backend),
