@@ -100,7 +100,7 @@ export function classifyCaregiverTurn(params: {
 
   const emotionalOnly =
     !isCareAnchor &&
-    /\b(i'?m exhausted|i am exhausted|i'?m overwhelmed|i don'?t know what to do|i cant keep up|i can't keep up)\b/i.test(
+    /\b(i'?m exhausted|i am exhausted|i'?m overwhelmed|i don'?t know what to do|i cant keep up|i can't keep up|i'?m angry|i am angry|i'?m upset|i am upset|i just want a break|i'?ve had enough|i have had enough|i can'?t take this|i cannot take this|i feel hopeless)\b/i.test(
       text,
     ) &&
     !/\b(mom|dad|she|he|fell|eat|medication|doctor)\b/i.test(text);
