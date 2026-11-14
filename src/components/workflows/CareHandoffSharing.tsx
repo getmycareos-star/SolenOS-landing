@@ -81,8 +81,10 @@ type Snapshot = {
   audience?: string;
   window?: { days: number; from: string; to: string };
   sections?: Record<string, string>;
-  source_coverage?: Record<string, { status: string; reason?: string; label?: string; count: number }>;
-  limitations?: Array<{ source: string; status: string; reason?: string }>;
+  source_coverage?: Record<string, { status: string; reason?: string; label?: string; count: number; has_more?: boolean; retrieval_complete?: boolean }>;
+  retrieval_complete?: boolean;
+  partial_sources?: Array<{ source: string; returned_count: number }>;
+  limitations?: Array<{ source: string; status: string; reason?: string; returned_count?: number }>;
   source_references?: Array<{ source_ref: string; epistemic_status: string; record_status: string; event_at?: string | null; recorded_at?: string | null; stale_warning: boolean; document_id?: string | null; original_source_reference?: string | null; page_references?: unknown }>;
   content_sha256?: string;
   source_id_validation?: string;
@@ -792,6 +794,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 ))}
                 
                 {activeSnapshot.purpose && <p style={{ fontSize: 12 }}>Purpose: {handoffPurposeLabel(activeSnapshot.purpose)} · Shared with: {activeSnapshot.audience === "family" ? "Family caregiver" : activeSnapshot.audience === "professional" ? "Healthcare professional" : "Not recorded"} · Period covered: {activeSnapshot.window?.days ?? "Not recorded"} days</p>}
+                {activeSnapshot.retrieval_complete === false && <section role="status" style={{ margin: "10px 0", padding: 10, border: "1px solid #d8c9a5", borderRadius: 8, background: "#fbf8ef" }}>
+                  <strong style={{ fontSize: 12 }}>Some saved care history was not fully included</strong>
+                  <p style={{ fontSize: 11, margin: "5px 0" }}>This handoff is not a complete care history. Check the full care record before relying on it.</p>
+                  {(activeSnapshot.partial_sources ?? []).map(item => <p key={item.source} style={{ fontSize: 11, margin: "3px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved items were read; additional records may remain.</p>)}
+                </section>}
                 {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>Information included and availability</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{caregiverSafeAssistantText(value.label) || readableSection(key)}: {readableStatus(value.status)}{caregiverSafeAssistantText(value.reason) ? " — " + caregiverSafeAssistantText(value.reason) : ""} · {value.count} saved item(s)</p>)}</section>}
                 {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not available — {readableSection(item.source)}: {readableStatus(item.status)}{caregiverSafeAssistantText(item.reason) ? " (" + caregiverSafeAssistantText(item.reason) + ")" : ""}</p>)}
                 {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Saved information {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}{item.stale_warning ? " · older information — check before relying on it" : ""}{item.original_source_reference ? " · document source" : ""}{Array.isArray(item.page_references) && item.page_references.length ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
