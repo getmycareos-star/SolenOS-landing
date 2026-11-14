@@ -153,6 +153,20 @@ let session = await newSession("critical journey matrix");
 const identity = auth(session);
 const unique = (prefix) => `${prefix}-${randomUUID()}`;
 
+await record("01b visible Follow-ups navigation", async () => {
+  const { context, page } = await createBrowserPage(
+    session,
+    "/workspace/daily-care",
+    { width: 1280, height: 800 },
+  );
+  const followupsLink = page.getByRole("link", { name: "Follow-ups", exact: true });
+  await followupsLink.waitFor({ state: "visible", timeout: 20_000 });
+  await followupsLink.click();
+  await page.getByRole("heading", { name: "Follow-ups and questions", exact: true })
+    .waitFor({ timeout: 20_000 });
+  await context.close();
+});
+
 // 2. Daily Capture: write, idempotent replay, invalid payload, expired bearer, then retrieve.
 let dailyCaptureEventId;
 await record("02 Daily Capture", async () => {
