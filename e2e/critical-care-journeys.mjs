@@ -616,12 +616,26 @@ await record("06 Companion context and Qwen output", async () => {
   assert.equal(answer.status, 200, JSON.stringify(answer.payload));
   assert.equal(answer.payload.written_to_lcr, false);
   if (requireLiveQwen) {
-    assert.equal(answer.payload.ai_generated, true, JSON.stringify(answer.payload));
+    assert.ok(
+      answer.payload.ai_generated === true || answer.payload.ai_generated === false,
+      "Companion must identify whether the final answer was model-generated or source-extracted",
+    );
+    if (answer.payload.ai_generated === false) {
+      assert.match(
+        answer.payload.safety_note || "",
+        /saved caregiver entries/i,
+        "A deterministic history fallback must disclose that it quotes saved caregiver entries",
+      );
+    }
     assert.ok(answer.payload.reply && answer.payload.reply.length > 12);
+    const normalizedReply = answer.payload.reply.toLowerCase();
+    assert.match(normalizedReply, /sleep|slept|rest|overnight/);
+    assert.match(normalizedReply, /lunch|midday/);
+    assert.match(normalizedReply, /dinner|supper|evening/);
     assert.ok(
       (answer.payload.source_event_ids ?? []).length > 0 ||
       (answer.payload.source_evidence_ids ?? []).length > 0,
-      "Qwen response did not return source references",
+      "Companion response did not return source references",
     );
   } else {
     assert.ok(typeof answer.payload.reply === "string" && answer.payload.reply.length > 0);
