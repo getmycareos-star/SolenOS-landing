@@ -44,7 +44,8 @@ assert.match(
 );
 assert.match(clarificationPanel, /questionAudienceLabel\(item\.intended_answerer_role\)/, "Question cards must identify who the question is for without implying every question is the caregiver's task.");
 assert.match(clarificationPanel, /Why this came up/, "The caregiver must see a plain-language reason before deciding whether to answer.");
-assert.match(clarificationPanel, /caregiverQuestionTiming\(selectedQuestion\)/, "Caregiver-facing timing must come from the persisted source context, not model-inferred urgency.");
+assert.match(clarificationPanel, /caregiverQuestionGuidance\(selectedQuestion\)/, "Caregiver-facing explanations and timing must come from persisted source context, not model-inferred urgency.");
+assert.match(clarificationPanel, /timingPriority/, "When merged sources disagree about timing, the display must prefer the most restrictive source-backed timing.");
 assert.match(clarificationPanel, /When to ask:/, "The caregiver must be told when a question matters without treating all questions as urgent.");
 assert.match(clarificationPanel, /Add what you know/, "Answer entry must be an explicit caregiver choice, not an automatically opened form.");
 assert.match(clarificationPanel, /You can leave this unanswered if you do not know/, "The interface must explicitly permit caregivers to leave a question unanswered.");

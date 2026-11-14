@@ -134,16 +134,34 @@ function questionHasLinkedSource(item: Question): boolean {
   );
 }
 
-function caregiverQuestionTiming(item: Question): { label: string; targetAt?: string } | null {
+function caregiverQuestionGuidance(item: Question): { why?: string; timingLabel?: string; targetAt?: string } | null {
+  const timingPriority: Record<string, number> = {
+    before_relying_on_instruction: 4,
+    before_next_step: 4,
+    recorded_target_date: 3,
+    no_deadline_recorded: 2,
+    not_established: 1,
+  };
+  let selected: { why?: string; timingLabel?: string; targetAt?: string; priority: number } | null = null;
   for (const entry of item.context || []) {
     const raw = entry.caregiver_guidance;
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
     const guidance = raw as Record<string, unknown>;
-    const label = typeof guidance.timing_label === "string" ? guidance.timing_label.trim() : "";
+    const timing = typeof guidance.timing === "string" ? guidance.timing : "";
+    const timingLabel = typeof guidance.timing_label === "string" ? guidance.timing_label.trim() : "";
+    const why = typeof guidance.explanation === "string" ? guidance.explanation.trim() : "";
     const targetAt = typeof guidance.target_at === "string" ? guidance.target_at : undefined;
-    if (label) return { label, targetAt };
+    if (!timingLabel && !why) continue;
+    const candidate = {
+      why: why || undefined,
+      timingLabel: timingLabel || undefined,
+      targetAt,
+      priority: timingPriority[timing] ?? 0,
+    };
+    if (!selected || candidate.priority > selected.priority) selected = candidate;
   }
-  return null;
+  if (!selected) return null;
+  return { why: selected.why, timingLabel: selected.timingLabel, targetAt: selected.targetAt };
 }
 
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
@@ -575,21 +593,27 @@ SolenOS only brings up a question when saved care information shows that an answ
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
           <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionAudienceLabel(selectedQuestion.intended_answerer_role)}</p>
           <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
-          {selectedQuestion.necessity_rationale && (
-            <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
-              <strong style={{ fontSize: 12 }}>Why this came up</strong>
-              <p style={{ margin: "5px 0 0", fontSize: 12 }}>
-                {caregiverSafeAssistantText(selectedQuestion.necessity_rationale) || "The saved care information shows that this detail affects a care decision."}
-              </p>
-            </div>
-          )}
           {(() => {
-            const timing = caregiverQuestionTiming(selectedQuestion);
-            if (!timing) return null;
+            const guidance = caregiverQuestionGuidance(selectedQuestion);
+            const why = guidance?.why
+              ? caregiverSafeAssistantText(guidance.why)
+              : caregiverSafeAssistantText(selectedQuestion.necessity_rationale);
+            return (
+              <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
+                <strong style={{ fontSize: 12 }}>Why this came up</strong>
+                <p style={{ margin: "5px 0 0", fontSize: 12 }}>
+                  {why || "The saved care information shows that this detail affects a care decision."}
+                </p>
+              </div>
+            );
+          })()}
+          {(() => {
+            const guidance = caregiverQuestionGuidance(selectedQuestion);
+            if (!guidance?.timingLabel) return null;
             return (
               <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                <strong>When to ask:</strong> {timing.label}
-                {timing.targetAt ? " · " + displayDate(timing.targetAt) : ""}
+                <strong>When to ask:</strong> {guidance.timingLabel}
+                {guidance.targetAt ? " · " + displayDate(guidance.targetAt) : ""}
               </p>
             );
           })()}
