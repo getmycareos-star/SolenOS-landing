@@ -718,7 +718,7 @@ await record("06 Companion context and Qwen output", async () => {
   );
   assert.ok(
     /walking frame|walked to the kitchen|walking to the kitchen/i.test(documentAnswer.payload.reply || ""),
-    "Companion must answer from the persisted document extraction rather than generic care advice",
+    `Companion must answer from the persisted document extraction rather than generic care advice. Reply: ${String(documentAnswer.payload.reply || "").slice(0, 500)}; source analyses: ${JSON.stringify(documentAnswer.payload.source_document_analysis_ids || [])}`,
   );
 
   const overwhelmedAnswer = await request("/api/v1/conversation/message", {
