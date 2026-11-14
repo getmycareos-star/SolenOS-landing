@@ -43,8 +43,8 @@ assert.match(component, /assessmentError/);
 assert.match(component, /changesError.*This does not mean nothing has changed/s);
 assert.match(component, /patternsError.*This does not mean nothing is repeating/s);
 assert.match(component, /assessment\.open_loops\.has_more/);
-assert.match(component, /if \(savedNeedsReassessment\) \{/);
-assert.match(component, /saved\.status === "not_assessed"/);
-assert.match(component, /await refreshPersistedAssessment\(\)/);
+assert.match(component, /assessment\?\.care_attention/);
+assert.match(component, /careAttention\.important_to_address/);
+assert.match(component, /careAttention\.needs_clarification/);
 
 console.log("Attention summary classification and evidence-display contract checks passed.");

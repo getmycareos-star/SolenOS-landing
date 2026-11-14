@@ -20,8 +20,10 @@ assert.ok(
   loadBody.indexOf("setProjection(currentCare as CurrentCareProjection);") < loadBody.indexOf("setLoading(false);"),
   "first caregiver view must be released immediately after the validated projection and its non-blocking local timing mark",
 );
-assert.match(loadBody, /void Promise\.allSettled\(backgroundTasks\)/, "secondary caregiver sections must load concurrently without blocking first paint");
+assert.match(loadBody, /Promise\.allSettled\(backgroundTasks\)/, "secondary caregiver sections must load concurrently without blocking first paint");
 assert.doesNotMatch(loadBody, /postJSON\(/, "initial LCR hydration must not trigger reassessment or any other writes");
+assert.doesNotMatch(loadBody, /postJSON\(/, "initial LCR hydration must remain read-only");
+assert.match(component, /await load\(true\);\\s*await refreshSituationAssessment\(\);/, "care-record writes trigger a refreshed assessment after the read-only sections reload");
 assert.match(loadBody, /solenos\.workspace\.first-care-ready/, "first-care readiness must be measurable locally");
 assert.match(loadBody, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable locally");
 
