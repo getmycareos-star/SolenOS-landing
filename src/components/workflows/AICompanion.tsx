@@ -6,6 +6,7 @@ import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { isCasualGreetingInput, isHowAreYouInput, isGratitudeInput, isInsultOrFrustrationInput } from '@/lib/greeting-orientation'
 
 interface ClaimSourceReference {
   record_type: string
@@ -169,12 +170,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
     try {
       const session = await ensureAnonymousSession()
-      const response = await postJSON('/conversation/message', {
-        person_id: session.person.id,
-        text: submittedText,
-        session_id: sessionId,
-        client_turn_id: clientTurnId,
-      }) as any
+      const isOrientationTurn =
+        isCasualGreetingInput(submittedText) ||
+        isHowAreYouInput(submittedText) ||
+        isGratitudeInput(submittedText) ||
+        isInsultOrFrustrationInput(submittedText)
+      const response = isOrientationTurn
+        ? await postJSON('/api/lcr/orientation', { raw_input: submittedText }) as any
+        : await postJSON('/conversation/message', {
+            person_id: session.person.id,
+            text: submittedText,
+            session_id: sessionId,
+            client_turn_id: clientTurnId,
+          }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       const caregiverReply = caregiverSafeAssistantText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
