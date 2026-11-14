@@ -38,9 +38,11 @@ import type {
  * context. This module defines behavior and safety constraints; it does not
  * contain caregiver-facing canned replies.
  *
- * If Qwen is unavailable, the caller receives an error instead of a fabricated
- * or hardcoded response. The endpoint is read-only and never writes to LCR or
- * Companion history.
+ * Qwen generates the caregiver-facing response from authenticated server context.
+ * If Qwen is unavailable or violates the response contract, the endpoint may
+ * return an explicitly non-AI, bounded greeting fallback; it never presents
+ * that fallback as model output. The endpoint is read-only and never writes
+ * to LCR or Companion history.
  */
 export async function buildGreetingOrientation(
   context: GreetingOrientationContext,
