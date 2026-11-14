@@ -356,7 +356,7 @@ export default function OpenLoopsPage() {
       <form onSubmit={createLoop} style={{ border: "1px solid var(--border, #d6d9d3)", borderRadius: 16, padding: 18, marginBottom: 24, display: "grid", gap: 14 }}>
         <h2 style={{ fontSize: 20, margin: 0, display: "flex", alignItems: "center", gap: 8 }}><Plus size={19} aria-hidden /> Track an unresolved item</h2>
         <label style={{ display: "grid", gap: 6 }}>Type
-          <select value={loopType} onChange={(event) => setLoopType(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }}>
+          <select aria-label="Type" value={loopType} onChange={(event) => setLoopType(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }}>
             {LOOP_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
