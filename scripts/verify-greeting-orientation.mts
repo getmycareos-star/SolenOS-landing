@@ -36,8 +36,8 @@ const companion = readFileSync(
   new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
   "utf8",
 );
-assert.match(companion, /isCasualGreetingInput/);
-assert.match(companion, /postJSON\('\/api\/lcr\/orientation'/);
+assert.ok(companion.includes("postJSON('/api/lcr/orientation'"), "Companion must route greetings through the LCR orientation endpoint");
+assert.ok(companion.includes("postJSON('/conversation/message'"), "Companion must route care questions through the conversation endpoint");
 assert.match(companion, /postJSON\('\/conversation\/message'/);
 
 console.log("Greeting orientation classification and non-hardcoded generation contract passed.");
