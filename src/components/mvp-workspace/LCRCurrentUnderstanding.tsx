@@ -108,6 +108,43 @@ type CurrentCareItem = {
   }>;
 };
 
+type CareAttentionEvidenceRef = {
+  source: string;
+  record_id: string;
+  title: string;
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  evidence_ids: string[];
+};
+
+type CareAttentionDecision = {
+  id?: string;
+  source?: string;
+  record_id?: string;
+  title: string;
+  category: string;
+  reason?: string;
+  priority_basis?: string[];
+  evidence_ids?: string[];
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  due_at?: string | null;
+  review_at?: string | null;
+  records?: CareAttentionEvidenceRef[];
+};
+
+type CareAttentionAssessment = {
+  schema_version: string;
+  status: string;
+  needs_attention_now: CareAttentionDecision[];
+  important_to_address: CareAttentionDecision[];
+  can_wait_with_documented_basis: CareAttentionDecision[];
+  needs_clarification: CareAttentionDecision[];
+  counts: Record<string, number>;
+  source_coverage: Record<string, unknown>;
+  limitations: string[];
+};
+
 type SituationAssessment = {
   schema_version: string;
   person_id: string;
@@ -275,6 +312,7 @@ type SituationAssessment = {
     changes: Array<{ change_type: string; source: string; record_id: string; current: Record<string, unknown> | null; previous: Record<string, unknown> | null }>;
     interpretation_limit: string;
   };
+  care_attention?: CareAttentionAssessment;
   notice: string;
 };
 
@@ -877,8 +915,15 @@ export function LCRCurrentUnderstanding() {
   }, [load]);
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
-  const needsAttentionNow = selectImmediatePriorities(openLoopItems);
-  const canWaitItems = selectDeferredItems(openLoopItems);
+  const careAttention = assessment?.care_attention;
+  const findAttentionLoop = (decision: CareAttentionDecision) =>
+    openLoopItems.find((item) => item.id === decision.record_id && item.source === decision.source);
+  const needsAttentionNow = careAttention
+    ? careAttention.needs_attention_now.map(findAttentionLoop).filter((item): item is (typeof openLoopItems)[number] => Boolean(item))
+    : selectImmediatePriorities(openLoopItems);
+  const canWaitItems = careAttention
+    ? careAttention.can_wait_with_documented_basis.map(findAttentionLoop).filter((item): item is (typeof openLoopItems)[number] => Boolean(item))
+    : selectDeferredItems(openLoopItems);
   const watchChanges = selectWatchChanges(changes);
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
   const isMedicationConflict = (item: (typeof watchUncertainties)[number]) => {
@@ -1202,6 +1247,46 @@ export function LCRCurrentUnderstanding() {
                 </ul>
               )}
             </div>
+
+            {careAttention && (careAttention.important_to_address.length > 0 || careAttention.needs_clarification.length > 0) && (
+              <section className="lcr-current-fact" aria-labelledby="lcr-care-attention-review-heading">
+                <h4 id="lcr-care-attention-review-heading">Important changes and follow-ups</h4>
+                <p>These items deserve review based on the saved care history. They are not automatically emergencies.</p>
+                {careAttention.important_to_address.length > 0 && (
+                  <ul className="lcr-current-facts">
+                    {careAttention.important_to_address.map((item) => (
+                      <li key={item.id || item.source + ":" + item.record_id} className="lcr-current-fact">
+                        <strong>{caregiverSafeAssistantText(item.title) || "Care information to review"}</strong>
+                        <p>{caregiverSafeAssistantText(item.reason || item.priority_basis?.join("; ")) || "The saved care information indicates this needs follow-up."}</p>
+                        {item.records?.map((record) => (
+                          <small key={record.source + ":" + record.record_id}>
+                            {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened: {formatWhen(record.occurred_at)} · Saved: {formatWhen(record.recorded_at)}
+                          </small>
+                        ))}
+                        {item.evidence_ids && item.evidence_ids.length > 0 && <small>Linked sources: {item.evidence_ids.length}</small>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {careAttention.needs_clarification.length > 0 && (
+                  <>
+                    <h5>Needs clarification</h5>
+                    <p>Some details are missing or reports do not agree. SolenOS cannot determine the right next step until the information is checked.</p>
+                    <ul className="lcr-current-facts">
+                      {careAttention.needs_clarification.map((item) => (
+                        <li key={item.id || item.source + ":" + item.record_id} className="lcr-current-fact">
+                          <strong>{caregiverSafeAssistantText(item.title) || "Information needs checking"}</strong>
+                          <p>{caregiverSafeAssistantText(item.reason) || "The available information is not enough to determine the appropriate priority."}</p>
+                          <small>Source: {caregiverLabel(item.source)} · Happened: {formatWhen(item.occurred_at)} · Saved: {formatWhen(item.recorded_at)}</small>
+                          {item.evidence_ids && item.evidence_ids.length > 0 && <small>Linked sources: {item.evidence_ids.length}</small>}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                <small>Assessment uses saved records only. Missing history is not evidence that nothing happened, and grouped observations do not establish cause or diagnosis.</small>
+              </section>
+            )}
 
             {assessment.coverage.records_examined > 0 && (
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
