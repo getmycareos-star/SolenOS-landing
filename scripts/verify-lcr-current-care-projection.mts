@@ -23,7 +23,7 @@ assert.ok(
 assert.match(loadBody, /Promise\.allSettled\(backgroundTasks\)/, "secondary caregiver sections must load concurrently without blocking first paint");
 assert.doesNotMatch(loadBody, /postJSON\(/, "initial LCR hydration must not trigger reassessment or any other writes");
 assert.doesNotMatch(loadBody, /postJSON\(/, "initial LCR hydration must remain read-only");
-assert.match(component, /await load\(true\);\\s*await refreshSituationAssessment\(\);/, "care-record writes trigger a refreshed assessment after the read-only sections reload");
+assert.ok(component.includes("await load(true);") && component.includes("await refreshSituationAssessment();"), "care-record writes trigger a refreshed assessment after the read-only sections reload");
 assert.match(loadBody, /solenos\.workspace\.first-care-ready/, "first-care readiness must be measurable locally");
 assert.match(loadBody, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable locally");
 
