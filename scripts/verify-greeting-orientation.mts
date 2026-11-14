@@ -39,5 +39,14 @@ const companion = readFileSync(
 assert.ok(companion.includes("postJSON('/api/lcr/orientation'"), "Companion must route greetings through the LCR orientation endpoint");
 assert.ok(companion.includes("postJSON('/conversation/message'"), "Companion must route care questions through the conversation endpoint");
 assert.match(companion, /postJSON\('\/conversation\/message'/);
+const apiClient = readFileSync(
+  new URL("../src/api/client.ts", import.meta.url),
+  "utf8",
+);
+assert.match(
+  apiClient,
+  /pathname\.endsWith\("\/lcr\/orientation"\) && method === "POST"\) return 210_000;/,
+  "LCR orientation must not time out before the backend's bounded 180-second Qwen request",
+);
 
 console.log("Greeting orientation classification and non-hardcoded generation contract passed.");
