@@ -94,6 +94,10 @@ assert.match(sharingComponent, /Professional identity and role cannot yet be ver
   "professional sharing must fail closed until recipient identity and role are verified");
 assert.match(sharingComponent, /Accept and mark as received/,
   "receiving caregivers must explicitly accept and acknowledge");
+assert.match(sharingComponent, /activeSnapshot\.retrieval_complete === false/,
+  "receiving caregivers must be warned when the shared LCR history is incomplete");
+assert.match(sharingComponent, /activeSnapshot\.partial_sources/,
+  "receiving caregivers must see which source histories were truncated");
 assert.match(sharingComponent, /activeSnapshot\.source_coverage/,
   "recipients must see source coverage for the approved sharing scope");
 assert.match(sharingComponent, /activeSnapshot\.source_references/,
