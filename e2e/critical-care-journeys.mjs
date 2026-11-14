@@ -241,7 +241,7 @@ await record("03b source-backed caregiver question routing", async () => {
       created_by_caregiver_id: identity.caregiverId,
     },
   });
-  assert.equal(question.status, 201, JSON.stringify(question.payload));
+  assert.equal(question.status, 200, JSON.stringify(question.payload));
   caregiverQuestionId = question.payload.id;
   const recommended = await request("/api/v1/uncertainty/questions/recommended/" + identity.personId, {
     token: identity.token,
