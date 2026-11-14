@@ -14,7 +14,11 @@ export function isCaregiverQuestionPushback(text: string): boolean {
     /\bstop asking\b/i.test(t) ||
     /\bi already (?:said|told) you\b/i.test(t) ||
     /\bdon'?t ask (?:me )?(?:that|again)\b/i.test(t) ||
-    /\byou keep asking\b/i.test(t)
+    /\byou keep asking\b/i.test(t) ||
+    /\byou (?:are|aren't|are not) listening\b/i.test(t) ||
+    /\byou forgot\b/i.test(t) ||
+    /\bthis is (?:getting )?ridiculous\b/i.test(t) ||
+    /\bwhy do i have to repeat (?:myself|that)\b/i.test(t)
   );
 }
 
