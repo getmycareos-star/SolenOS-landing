@@ -13,6 +13,10 @@ const careCapture = readFileSync(
   new URL("../src/components/CareCapture.tsx", import.meta.url),
   "utf8",
 );
+const appointmentWorkspace = readFileSync(
+  new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url),
+  "utf8",
+);
 
 assert.match(
   clarificationPanel,
@@ -62,6 +66,16 @@ assert.doesNotMatch(
   clarificationPanel,
   /Ask another question/,
   "The primary caregiver interface must not create manual clarification tasks.",
+);
+assert.match(
+  appointmentWorkspace,
+  /brief\.open_questions\?\.length/,
+  "Appointment preparation must consume the backend-filtered LCR question projection.",
+);
+assert.match(
+  appointmentWorkspace,
+  /intended_answerer_label/,
+  "Appointment preparation must preserve who is expected to answer each question.",
 );
 assert.doesNotMatch(
   careCapture,
