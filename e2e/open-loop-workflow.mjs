@@ -416,7 +416,7 @@ try {
   await conflictPanel.getByRole("button", { name: "Save review" }).click();
   await conflictPanel.getByRole("status").filter({ hasText: "Review status saved." }).waitFor({ timeout: 15_000 });
   await conflictPanel.getByText("Partly reviewed → Reopened", { exact: true }).waitFor({ timeout: 10_000 });
-  await conflictPanel.locator("ol > li").last().getByText(unresolvedRemainder, { exact: false }).waitFor({ timeout: 10_000 });
+  await conflictPanel.locator("ol > li").first().getByText(unresolvedRemainder, { exact: false }).waitFor({ timeout: 10_000 });
 
   const conflictHistoryResponse = await fetch(
     new URL(`/api/v1/uncertainty/contradictions/${encodeURIComponent(persistedConflict.id)}/history`, backend),
