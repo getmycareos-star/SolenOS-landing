@@ -91,17 +91,13 @@ export async function buildGreetingOrientation(
 }
 
 export function isCasualGreetingInput(text: string): boolean {
-  const t = text.trim().toLowerCase();
-  // Pure greetings
-  if (/^(hi|hello|hey|yo|hiya|howdy)[,.!]?\s*$/i.test(t)) return true;
-  if (/^(good\s+(morning|afternoon|evening|day))[,.!]?\s*$/i.test(t)) return true;
-  if (/^(what'?s\s+up|sup|how'?s\s+it\s+going)[,.!]?\s*$/i.test(t)) return true;
-  // Greeting + product name
-  if (/^(hi|hello|hey)\s+solenos[,.!]?\s*$/i.test(t)) return true;
-  if (/^solenos[,.!]?\s*$/i.test(t)) return true;
+  const t = text.trim().toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
+  if (/^(hi|hello|hey|yo|hiya|howdy|sup)(?: there)?(?: solenos)?$/.test(t)) return true;
+  if (/^good (morning|afternoon|evening|day)(?: there)?(?: solenos)?$/.test(t)) return true;
+  if (/^(what'?s up|how'?s it going)(?: there)?(?: solenos)?$/.test(t)) return true;
+  if (/^solenos$/.test(t)) return true;
   return false;
 }
-
 /**
  * Detect whether raw input is asking "how are you?" or similar.
  */
