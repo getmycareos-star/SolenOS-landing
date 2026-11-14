@@ -216,13 +216,13 @@ try {
   await handoff.getByRole("button", { name: "View previous updates" }).click();
   await handoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
 
-  await handoff.getByRole("button", { name: "Attempt closure" }).click();
+  await handoff.getByRole("button", { name: "Ask to close" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   // Closed records leave the default Open filter. Switch to All statuses to
   // verify the persisted terminal state and exercise the explicit reopen path.
   await page.getByLabel("Filter follow-ups").selectOption("all");
   await handoff.getByText(/professional input · closed/i).waitFor({ timeout: 10_000 });
-  await handoff.getByRole("button", { name: "Reopen with reason" }).click();
+  await handoff.getByRole("button", { name: "Reopen" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await handoff.getByText(/professional input · open/i).waitFor({ timeout: 10_000 });
 
@@ -240,17 +240,17 @@ try {
 
   await conflict.getByRole("button", { name: "Record action" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
-  await conflict.getByRole("button", { name: "Record reconciliation" }).click();
+  await conflict.getByRole("button", { name: "Review different reports" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   await conflict.getByRole("button", { name: "Record outcome" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
-  await conflict.getByRole("button", { name: "Verify outcome" }).click();
+  await conflict.getByRole("button", { name: "Check outcome" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
-  await conflict.getByRole("button", { name: "Attempt closure" }).click();
+  await conflict.getByRole("button", { name: "Ask to close" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
-  await conflict.getByText(/contradiction · closed/i).waitFor({ timeout: 10_000 });
-  await conflict.getByRole("button", { name: "View audit history" }).click();
-  for (const eventName of ["action recorded", "contradiction reconciled", "outcome reported", "outcome corroborated", "closure verified"]) {
+  await conflict.getByText(/conflicting information · closed/i).waitFor({ timeout: 10_000 });
+  await conflict.getByRole("button", { name: "View previous updates" }).click();
+  for (const eventName of ["Action recorded", "Different reports reviewed", "Outcome reported", "Two sources reviewed together", "Closure reviewed"]) {
     await conflict.getByText(eventName, { exact: true }).first().waitFor({ timeout: 10_000 });
   }
 
@@ -276,13 +276,13 @@ try {
   const reloadedHandoff = page.locator("article").filter({
     has: page.getByRole("heading", { name: handoffTitle }),
   });
-  await reloadedHandoff.getByRole("button", { name: "View audit history" }).click();
+  await reloadedHandoff.getByRole("button", { name: "View previous updates" }).click();
   await reloadedHandoff.getByText("response recorded", { exact: false }).waitFor({ timeout: 10_000 });
   const reloadedConflict = page.locator("article").filter({
     has: page.getByRole("heading", { name: conflictTitle }),
   });
-  await reloadedConflict.getByRole("button", { name: "View audit history" }).click();
-  await reloadedConflict.getByText("contradiction reconciled", { exact: false }).waitFor({ timeout: 10_000 });
+  await reloadedConflict.getByRole("button", { name: "View previous updates" }).click();
+  await reloadedConflict.getByText("Different reports reviewed", { exact: false }).waitFor({ timeout: 10_000 });
 
   // Exercise the current Documents UI path: save the original once, let the
   // backend own extraction, reload the library, and verify byte-for-byte retrieval.
