@@ -31,8 +31,8 @@ const refreshStart = component.indexOf("const refreshSituationAssessment = useCa
 const refreshEnd = component.indexOf("}, []);", refreshStart);
 assert.ok(refreshStart >= 0 && refreshEnd > refreshStart, "manual care reassessment must be a stable callback");
 const refreshBody = component.slice(refreshStart, refreshEnd);
-assert.match(refreshBody, /ensureAnonymousSession\\(\\)/, "reassessment must resolve the active server session instead of capturing stale component state");
-assert.match(component, /\\}, \\[load, refreshSituationAssessment\\]\\);/, "care-write listener must subscribe to the stable reassessment callback");
+assert.ok(refreshBody.includes("ensureAnonymousSession()"), "reassessment must resolve the active server session instead of capturing stale component state");
+assert.ok(component.includes("}, [load, refreshSituationAssessment]);"), "care-write listener must subscribe to the stable reassessment callback");
 
 assert.match(component, /schema_status !== "complete"/, "incomplete source coverage must be visible");
 assert.match(component, /missing_required_sources/, "required source gaps must not be hidden");
