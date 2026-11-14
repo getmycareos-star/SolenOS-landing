@@ -133,11 +133,12 @@ export function resolveAnsweredUncertainties(params: {
   const resolved: string[] = [];
   const remaining: string[] = [];
 
-  // Pushback clears every open ask — re-asking after this is a trust failure.
+  // Pushback suppresses questions for this turn, but it is not an answer.
+  // Preserve unresolved care gaps; never convert frustration into false resolution.
   if (isCaregiverQuestionPushback(params.rawText)) {
     return {
-      remaining: [],
-      resolved: [...params.openQuestions],
+      remaining: [...params.openQuestions],
+      resolved: [],
     };
   }
 
