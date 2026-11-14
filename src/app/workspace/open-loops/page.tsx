@@ -103,7 +103,8 @@ export default function OpenLoopsPage() {
     await ensureAnonymousSession();
     const query = new URLSearchParams({ limit: "100" });
     if (filter !== "all") query.set("status", filter);
-    const [result, attentionResult] = await Promise.allSettled([getJSON(`/open-loops?${query.toString()}`), getJSON("/care-continuity/situation-understanding")]);
+    const openLoopsRequest = filter === "open" ? getJSON("/open-loops?limit=100") : getJSON(`/open-loops?${query.toString()}`);
+    const [result, attentionResult] = await Promise.allSettled([openLoopsRequest, getJSON("/care-continuity/situation-understanding")]);
     if (attentionResult.status === "fulfilled") {
       const response = attentionResult.value as any;
       let assessment = response?.assessment ?? null;
