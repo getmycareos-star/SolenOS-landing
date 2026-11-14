@@ -725,6 +725,24 @@ await record("08 Community and LCR isolation", async () => {
 // 9. Appointment: idempotent save and durable summary retrieval.
 let appointmentWorkspaceId;
 await record("09 appointment summary persistence", async () => {
+  const preparationBrief = await request("/api/v1/appointment-workspaces/preparation-brief?window_days=90", {
+    token: identity.token,
+  });
+  assert.equal(preparationBrief.status, 200, JSON.stringify(preparationBrief.payload));
+  assert.equal(preparationBrief.payload.read_only, true);
+  assert.ok(
+    preparationBrief.payload.events.some((item) => item.description?.includes("restless sleep"))
+      || preparationBrief.payload.events.some((item) => item.description?.includes("overnight awakenings")),
+    "appointment preparation must retrieve saved Daily Care history from the care record",
+  );
+  assert.ok(
+    preparationBrief.payload.documents.some((item) => item.source_evidence_id === documentId),
+    "appointment preparation must retrieve the persisted document extraction linked to its original upload",
+  );
+  assert.ok(
+    ["available", "empty"].includes(preparationBrief.payload.source_coverage.open_questions),
+    "appointment preparation must report whether caregiver questions were successfully retrieved",
+  );
   const payload = {
     status: "preparation",
     payload: {
@@ -764,6 +782,29 @@ await record("10 evidence-backed handoff", async () => {
   assert.equal(draft.status, 200, JSON.stringify(draft.payload));
   assert.equal(draft.payload.draft_persisted, true);
   assert.equal(draft.payload.updates_lcr, false);
+  assert.equal(typeof draft.payload.retrieval_complete, "boolean");
+  assert.ok(draft.payload.source_statuses.daily_care.status === "available");
+  assert.ok(draft.payload.source_statuses.documents.status === "available");
+  assert.ok(
+    draft.payload.source_references.some((item) => item.source_table === "care_events"),
+    "handoff draft must retrieve Daily Care entries from the same persisted care record",
+  );
+  assert.ok(
+    draft.payload.source_references.some((item) => item.source_table === "capture_analyses"),
+    "handoff draft must retrieve document extraction provenance from the same persisted care record",
+  );
+  if (requireLiveQwen) {
+    assert.equal(draft.payload.generation_status, "generated", JSON.stringify(draft.payload.generation));
+    assert.equal(draft.payload.validation_status, "exact_quote_reference_validation_passed");
+    assert.ok(draft.payload.generation.sections.length > 0, "live Qwen did not select source-grounded handoff sections");
+    assert.ok(
+      draft.payload.claim_provenance.claims.length > 0
+        && draft.payload.claim_provenance.claims.every((claim) =>
+          ["matched_saved_wording", "matched_historical_only"].includes(claim.support_status)
+        ),
+      "every generated handoff statement must resolve to exact saved source wording",
+    );
+  }
   handoffDraftId = draft.payload.draft_id;
   const replay = await request("/api/v1/handoff-drafts/prepare", {
     token: identity.token, method: "POST", body: handoffBody,
