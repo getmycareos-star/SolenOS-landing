@@ -90,6 +90,16 @@ function answererLabel(role?: string | null): string {
   return role ? labels[role] || "Not known" : "Not known";
 }
 
+function questionAudienceLabel(role?: string | null): string {
+  switch (role) {
+    case "professional": return "For the care team";
+    case "other_caregiver": return "For another caregiver";
+    case "person_receiving_care": return "For the person receiving care";
+    case "reporting_caregiver": return "Your observation, if known";
+    default: return "Worth clarifying";
+  }
+}
+
 function displayDate(value?: string | null): string {
   if (!value) return "Date not recorded";
   const date = new Date(value);
@@ -151,6 +161,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [answer, setAnswer] = useState("");
   const [answerProvenance, setAnswerProvenance] = useState("");
+  const [answerEntryOpen, setAnswerEntryOpen] = useState(false);
   const [history, setHistory] = useState<AnswerEvent[]>([]);
   const [reviewEvents, setReviewEvents] = useState<ReviewEvent[]>([]);
   const [reviewRationale, setReviewRationale] = useState("I reviewed this caregiver answer and accept it as a source-attributed report, not as independent verification.");
@@ -255,25 +266,14 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
         const eligibleIds = new Set(recommendation.eligible_question_ids as string[]);
-        const necessaryOpen = loadedQuestions.filter((row) =>
-          (row.status === "open" || row.status === "unresolved") &&
-          eligibleIds.has(row.id) &&
-          row.necessity === "necessary" &&
-          Boolean(row.necessity_rationale?.trim())
-        );
         const currentQuestion = loadedQuestions.find((row) => row.id === current);
         if (currentQuestion && (
           (currentQuestion.status !== "open" && currentQuestion.status !== "unresolved") ||
           (eligibleIds.has(currentQuestion.id) && currentQuestion.necessity === "necessary" && Boolean(currentQuestion.necessity_rationale?.trim()))
         )) return current;
-        const recommendedIds = recommendation.recommended_question_ids as string[];
-        const recommendedDefault = recommendedIds.find((id) =>
-          necessaryOpen.some((row) => row.id === id)
-        );
-        return recommendedDefault
-          ?? necessaryOpen[0]?.id
-          ?? loadedQuestions.find((row) => row.status !== "open" && row.status !== "unresolved")?.id
-          ?? "";
+        // Never select a question automatically. Opening the panel must not
+        // open an answer form or imply that the caregiver has work to complete.
+        return "";
       });
     } catch {
       setScopePersonId("");
@@ -421,7 +421,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         ? "Your answer has been saved. It will remain separate from confirmed care information until reviewed."
         : status === "open" ? "This question has been reopened. Earlier answers are still saved."
         : "No answer was recorded. This question remains open for later.");
-      if (status === "answered") { setAnswer(""); setAnswerProvenance(""); }
+      if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEntryOpen(false); }
       await loadAll();
       await loadHistory();
     } catch {
@@ -485,9 +485,9 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   }
 
   return <section style={panel} aria-label="Care details that need checking">
-    <h3 style={{ fontSize: 16, marginTop: 0 }}>Care details that need checking</h3>
+    <h3 style={{ fontSize: 16, marginTop: 0 }}>Questions worth clarifying</h3>
     <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-SolenOS brings a question to you only when a care detail needs your input. Your answer remains a caregiver report until it has been reviewed.
+SolenOS only brings up a question when saved care information shows that an answer could affect a care decision. You do not have to answer now. Anything you share remains a caregiver report until it has been reviewed.
     </p>
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
@@ -503,11 +503,12 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
                 setSelectedQuestionId(item.id);
                 setAnswer("");
                 setAnswerProvenance("");
+                setAnswerEntryOpen(false);
                 setError("");
               }}
               style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
             >
-              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id), item.intended_answerer_role)} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}</span>
+              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionAudienceLabel(item.intended_answerer_role)}</span>
               <strong style={{ fontSize: 14, fontWeight: 600 }}>{item.question}</strong>
               <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
@@ -526,12 +527,13 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
                       setSelectedQuestionId(item.id);
                       setAnswer("");
                       setAnswerProvenance("");
+                      setAnswerEntryOpen(false);
                       setError("");
                     }}
                     style={{ ...button, textAlign: "left", display: "grid", gap: 5 }}
                   >
                     <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                      {questionStatusLabel(item.status, Boolean(item.claim_id))} · {item.priority === "critical" || item.priority === "high" ? "Important" : "For your information"}
+                      {questionAudienceLabel(item.intended_answerer_role)}
                     </span>
                     <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
                   </button>
@@ -553,9 +555,22 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
             </details>
           )}
         </div>
+        {!selectedQuestion && caregiverOpenQuestions.length > 0 && (
+          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+            Open a question to see why it came up. You can leave it unanswered if you do not know.
+          </p>
+        )}
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
-          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(selectedQuestion.status, Boolean(selectedQuestion.claim_id), selectedQuestion.intended_answerer_role)} · {selectedQuestion.priority === "critical" || selectedQuestion.priority === "high" ? "Important to check" : "Helpful to know"}</p>
+          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionAudienceLabel(selectedQuestion.intended_answerer_role)}</p>
           <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
+          {selectedQuestion.necessity_rationale && (
+            <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
+              <strong style={{ fontSize: 12 }}>Why this came up</strong>
+              <p style={{ margin: "5px 0 0", fontSize: 12 }}>
+                {caregiverSafeAssistantText(selectedQuestion.necessity_rationale) || "The saved care information shows that this detail affects a care decision."}
+              </p>
+            </div>
+          )}
           {(() => {
             const linkedEvidence = evidence.filter((item) =>
               (selectedQuestion.evidence_ids || []).includes(item.id)
@@ -592,6 +607,16 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
           {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
+            {!answerEntryOpen ? (
+              <div style={{ margin: "10px 0" }}>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                  You can leave this unanswered if you do not know. SolenOS will keep the saved care information as it is.
+                </p>
+                <button type="button" style={button} onClick={() => setAnswerEntryOpen(true)}>
+                  Add what you know
+                </button>
+              </div>
+            ) : <>
             <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
               {selectedQuestion.intended_answerer_role === "professional"
                 ? "What did the care professional confirm?"
@@ -645,7 +670,8 @@ SolenOS brings a question to you only when a care detail needs your input. Your 
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>An answer will not be treated as confirmed until it has been reviewed.</p>
             <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
-            <button type="button" style={button} onClick={() => void updateQuestion("unresolved")} disabled={saving}>I don't know the answer yet</button>
+            <button type="button" style={button} onClick={() => { setAnswerEntryOpen(false); setAnswer(""); setAnswerProvenance(""); }}>Not now</button>
+            </>}
           </>}
           {selectedQuestion.status === "answered" && latestAnswer && (
             latestReview ? (

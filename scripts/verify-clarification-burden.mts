@@ -42,6 +42,14 @@ assert.match(
   /visibleCaregiverQuestions\.map\(/,
   "The initial caregiver view must use the attention-limited, necessity-filtered collection.",
 );
+assert.match(clarificationPanel, /questionAudienceLabel\(item\.intended_answerer_role\)/, "Question cards must identify who the question is for without implying every question is the caregiver's task.");
+assert.match(clarificationPanel, /Why this came up/, "The caregiver must see a plain-language reason before deciding whether to answer.");
+assert.match(clarificationPanel, /Add what you know/, "Answer entry must be an explicit caregiver choice, not an automatically opened form.");
+assert.match(clarificationPanel, /You can leave this unanswered if you do not know/, "The interface must explicitly permit caregivers to leave a question unanswered.");
+assert.match(clarificationPanel, /setAnswerEntryOpen\(false\)/, "Changing questions and cancelling must close the answer editor.");
+assert.doesNotMatch(clarificationPanel, /Important to check|For your information/, "Stored priority must not be presented as urgency or as a demand for attention.");
+assert.doesNotMatch(clarificationPanel, /I don't know the answer yet/, "Not knowing must not require a status-changing action.");
+assert.match(clarificationPanel, /Never select a question automatically/, "Opening the panel must not auto-select a question.");
 assert.match(
   clarificationPanel,
   /item\.priority === "critical"/,
