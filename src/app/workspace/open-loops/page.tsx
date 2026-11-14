@@ -261,7 +261,7 @@ export default function FollowUpsPage() {
       <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Living Care Record</Link>
       <p className="followups-kicker">SOLENOS CARE CONTINUITY</p>
       <div className="followups-title-row">
-        <div><h1>Follow-ups</h1><p>SolenOS reviews the saved care history and keeps unresolved matters visible. You only need to step in when your knowledge or action is needed.</p></div>
+        <div><h1>Follow-ups</h1><p>SolenOS manages unresolved matters by reviewing the saved care history and keeping important changes visible. You only need to step in when your knowledge or action is needed.</p></div>
         <button type="button" className="followups-refresh" onClick={() => { setLoading(true); void refresh().catch(() => setError("Follow-ups could not be refreshed. Try again.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
       </div>
     </header>
