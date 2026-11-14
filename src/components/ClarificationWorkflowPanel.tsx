@@ -80,6 +80,7 @@ function questionStatusLabel(status: string, hasLinkedClaim = true, answererRole
 
 function answererLabel(role?: string | null): string {
   const labels: Record<string, string> = {
+    caregiver: "You, as the caregiver",
     person_receiving_care: "Person receiving care",
     reporting_caregiver: "Caregiver who shared the report",
     other_caregiver: "Another caregiver",
