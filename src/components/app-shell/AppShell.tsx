@@ -52,6 +52,7 @@ const NAVIGATION = [
   { href: "/workspace/documents", label: "Documents", icon: FileText },
   { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
   { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
+  { href: "/workspace/open-loops", label: "Follow-ups", icon: ClipboardList },
 ] as const;
 
 const LOCAL_WORKSPACE_KEYS = [
