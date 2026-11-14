@@ -332,9 +332,9 @@ try {
   const dailyCareNote = "CI-only Daily Care capture: caregiver observed a later-than-usual bedtime and interrupted sleep.";
   await page.getByRole("button", { name: "Share something", exact: true }).click();
   await page.getByRole("group", { name: "Choose what you want to share" }).getByRole("button", { name: /Something happened/ }).click();
-  await page.getByLabel("Tell us what happened").fill(dailyCareNote);
-  await page.getByRole("button", { name: "Save to care record", exact: true }).click();
-  await page.getByText("Saved. " + dailyCareNote, { exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByLabel("Your update").fill(dailyCareNote);
+  await page.getByRole("button", { name: "Save update", exact: true }).click();
+  await page.getByText("Your update was saved to the care record.", { exact: true }).waitFor({ timeout: 20_000 });
   const eventListResponse = await fetch(new URL(`/api/v1/events/${encodeURIComponent(session.personId)}`, backend), {
     headers: { authorization: `Bearer ${session.token}` },
   });
