@@ -477,6 +477,6 @@ try {
   // The LCR pages may still have background refresh requests in flight after
   // the assertions complete. Drain route handlers before disposing the context
   // so successful UI assertions are not converted into teardown errors.
-  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await page.unrouteAll();
   await browser.close();
 }
