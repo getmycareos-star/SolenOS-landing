@@ -645,12 +645,15 @@ export function LCRCurrentUnderstanding() {
     }
   }, []);
 
-  const refreshSituationAssessment = async () => {
-    const scopedPersonId = personId;
-    if (!scopedPersonId) return;
+  const refreshSituationAssessment = useCallback(async () => {
     setAssessmentLoading(true);
     setAssessmentError(null);
     try {
+      const session = await ensureAnonymousSession();
+      const scopedPersonId = session.person?.id;
+      if (!scopedPersonId) {
+        throw new Error("The active care record session could not be confirmed.");
+      }
       const current = await postJSON(
         "/care-continuity/situation-understanding/reassess",
         {},
@@ -667,7 +670,7 @@ export function LCRCurrentUnderstanding() {
     } finally {
       setAssessmentLoading(false);
     }
-  };
+  }, []);
 
   const load = useCallback(async (manual = false) => {
     const timingId = ++workspaceLoadSequence;
@@ -919,7 +922,7 @@ export function LCRCurrentUnderstanding() {
     };
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
     return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
-  }, [load]);
+  }, [load, refreshSituationAssessment]);
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
   const careAttention = assessment?.care_attention;
