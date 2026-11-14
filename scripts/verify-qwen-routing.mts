@@ -130,6 +130,7 @@ const documentPage = read("src/app/workspace/documents/page.tsx");
 assert(!documentPage.includes("QwenAssistPanel"), "The saved-document library must not mount a separate AI workflow panel.");
 assert(documentPage.includes('capture="environment"'), "Snap a photo must launch the device camera from Documents.");
 assert(documentPage.includes('type="file"'), "Documents must provide direct file selection.");
+assert(documentPage.includes(".eml") && documentPage.includes(".msg"), "Documents must expose supported EML and Outlook MSG files in the picker.");
 requireText("src/app/workspace/documents/page.tsx", [
   "Upload files",
   "Snap a photo",
