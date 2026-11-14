@@ -179,6 +179,24 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
   console.log("✓ Locked B: known-unknowns persist across unrelated notes");
 }
 
+// Pushback suppresses the ask but must never falsely resolve the care gap.
+{
+  const pushedBack = resolveAnsweredUncertainties({
+    openQuestions: ["Did she hit her head?", "Has her appetite changed?"],
+    rawText: "You keep asking me the same questions. I've already told you this.",
+  });
+  assert.deepEqual(
+    pushedBack.remaining,
+    ["Did she hit her head?", "Has her appetite changed?"],
+    "Pushback preserves unanswered care gaps for continuity",
+  );
+  assert.deepEqual(
+    pushedBack.resolved,
+    [],
+    "Frustration is not evidence that a care question was answered",
+  );
+}
+
 // Locked B — auto-close when new evidence answers the gap
 {
   resetAll();
