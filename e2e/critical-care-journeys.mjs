@@ -211,6 +211,48 @@ await record("03 Add Record", async () => {
   assert.ok(reread.payload.some((row) => row.id === evidenceId));
 });
 
+// 3b. A caregiver-facing question must be linked to the exact saved source and intended answerer.
+let caregiverQuestionId;
+await record("03b source-backed caregiver question routing", async () => {
+  const rationale = "The healthcare professional needs to clarify the appetite change before the next care decision.";
+  const question = await request("/api/v1/uncertainty/questions", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      question: "Ask the healthcare professional whether the reduced breakfast appetite needs follow-up.",
+      subject_type: "person",
+      subject_id: identity.personId,
+      intended_answerer_role: "professional",
+      intended_answerer_label: "Healthcare professional",
+      necessity: "necessary",
+      necessity_rationale: rationale,
+      priority: "high",
+      evidence_ids: [evidenceId],
+      context: [{
+        source_kind: "caregiver_report",
+        source_id: evidenceId,
+        necessity_assessment: {
+          necessity_rationale: rationale,
+          decision_dependency: "The caregiver needs the professional's answer before deciding what follow-up is appropriate.",
+          evidence_ids: [evidenceId],
+        },
+      }],
+      created_by_caregiver_id: identity.caregiverId,
+    },
+  });
+  assert.equal(question.status, 201, JSON.stringify(question.payload));
+  caregiverQuestionId = question.payload.id;
+  const recommended = await request("/api/v1/uncertainty/questions/recommended/" + identity.personId, {
+    token: identity.token,
+  });
+  assert.equal(recommended.status, 200, JSON.stringify(recommended.payload));
+  assert.ok(
+    recommended.payload.questions.some((item) => item.id === caregiverQuestionId),
+    "the source-backed question with an explicit professional answerer must enter the caregiver question queue",
+  );
+});
+
 // 4. Document upload: original bytes -> server extraction -> persisted extraction read.
 let documentId;
 await record("04 document upload and extraction", async () => {
@@ -610,6 +652,25 @@ await record("06 Companion context and Qwen output", async () => {
     "the sleep/appetite question must not pull an unrelated medication report into its source set",
   );
 
+  const questionAnswer = await request("/api/v1/conversation/message", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      text: "What question should I raise with the healthcare professional about appetite?",
+      client_turn_id: randomUUID(),
+    },
+  });
+  assert.equal(questionAnswer.status, 200, JSON.stringify(questionAnswer.payload));
+  assert.ok(
+    (questionAnswer.payload.source_lcr_context_ids || []).includes(caregiverQuestionId),
+    "Companion must retrieve the source-validated caregiver question from the LCR question queue",
+  );
+  assert.ok(
+    questionAnswer.payload.lcr_context_coverage?.sources?.caregiver_question_queue?.selected_for_answer > 0,
+    "Companion must report that the validated caregiver question was actually supplied to Qwen",
+  );
+
   const documentAnswer = await request("/api/v1/conversation/message", {
     token: identity.token,
     method: "POST",
@@ -738,6 +799,14 @@ await record("09 appointment summary persistence", async () => {
   assert.ok(
     preparationBrief.payload.documents.some((item) => item.source_evidence_id === documentId),
     "appointment preparation must retrieve the persisted document extraction linked to its original upload",
+  );
+  assert.ok(
+    preparationBrief.payload.open_questions.some((item) => item.source_id === caregiverQuestionId),
+    "appointment preparation must retrieve the source-backed question and preserve its intended answerer",
+  );
+  assert.equal(
+    preparationBrief.payload.open_questions.find((item) => item.source_id === caregiverQuestionId).intended_answerer_role,
+    "professional",
   );
   assert.ok(
     ["available", "empty"].includes(preparationBrief.payload.source_coverage.open_questions),
