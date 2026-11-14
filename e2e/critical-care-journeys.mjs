@@ -153,17 +153,21 @@ let session = await newSession("critical journey matrix");
 const identity = auth(session);
 const unique = (prefix) => `${prefix}-${randomUUID()}`;
 
-await record("01b visible Follow-ups navigation", async () => {
+await record("01b visible Follow-ups button and mobile navigation", async () => {
   const { context, page } = await createBrowserPage(
     session,
     "/workspace/daily-care",
-    { width: 1280, height: 800 },
+    { width: 390, height: 844 },
   );
-  const followupsLink = page.getByRole("link", { name: "Follow-ups", exact: true });
-  await followupsLink.waitFor({ state: "visible", timeout: 20_000 });
-  await followupsLink.click();
+  const viewFollowups = page.getByRole("button", { name: "View follow-ups", exact: true });
+  await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
+  await viewFollowups.click();
   await page.getByRole("heading", { name: "Follow-ups and questions", exact: true })
     .waitFor({ timeout: 20_000 });
+  await verifyMobile(page);
+  await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+  await page.getByRole("link", { name: "Follow-ups", exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
   await context.close();
 });
 
