@@ -51,6 +51,16 @@ type PreparationBrief = {
     interpretation_limit: string
   }
   source_coverage: { evidence_freshness_assessments: string; open_questions?: string; contradictions?: string; medications_and_allergies?: string }
+  source_completeness?: Record<string, {
+    returned_count: number
+    has_more: boolean | null
+    retrieval_complete: boolean
+    record_limit?: number
+    candidate_count?: number | null
+    additional_ordinary_count?: number | null
+    display_limited?: boolean
+    interpretation_limit?: string
+  }>
 }
 type WorkspaceRecord = {
   id: string
@@ -350,6 +360,12 @@ export default function AppointmentWorkspace() {
           {!brief && <p className="guided-muted">Your care history could not be loaded. Missing information is not treated as proof that it does not exist.</p>}
           {brief && <>
             <div className="guided-columns">
+              {Object.entries(brief.source_completeness ?? {}).some(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false) && <section className="guided-muted" role="status" style={{ gridColumn: "1 / -1" }}>
+                <h5>Some saved information was not fully included</h5>
+                <p>This appointment summary shows a limited view of the care record. Check the full care record before relying on it as the complete history.</p>
+                <ul>{Object.entries(brief.source_completeness ?? {}).filter(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false).map(([source, coverage]) => <li key={source}>{source.replaceAll("_", " ")}: {coverage.returned_count} item(s) shown{coverage.record_limit ? " (view limit " + coverage.record_limit + ")" : ""}{coverage.has_more ? "; more saved items remain" : ""}</li>)}</ul>
+              </section>}
+              {brief.source_completeness?.open_questions?.display_limited && <p className="guided-muted" style={{ gridColumn: "1 / -1" }}>More questions may be waiting in the care record. This view shows the highest-priority questions first.</p>}
               <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || 'Care update'}</strong>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul> : <p className="guided-muted">No recent care updates are available for this summary.</p>}</section>
               <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>Care information</strong><p>{caregiverSafeAssistantText(item.value) || 'No detail recorded'}</p><small>{caregiverInformationLabel(item.epistemic_status) || 'Information status not available'}</small></li>)}</ul> : <p className="guided-muted">No saved care details are available for this summary.</p>}{brief.source_coverage.medications_and_allergies === "unavailable" && <p className="guided-muted">A separate medication and allergy list is not available. Only details recorded in the care information above are shown.</p>}</section>
             </div>
