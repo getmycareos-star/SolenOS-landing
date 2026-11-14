@@ -134,6 +134,18 @@ function questionHasLinkedSource(item: Question): boolean {
   );
 }
 
+function caregiverQuestionTiming(item: Question): { label: string; targetAt?: string } | null {
+  for (const entry of item.context || []) {
+    const raw = entry.caregiver_guidance;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    const guidance = raw as Record<string, unknown>;
+    const label = typeof guidance.timing_label === "string" ? guidance.timing_label.trim() : "";
+    const targetAt = typeof guidance.target_at === "string" ? guidance.target_at : undefined;
+    if (label) return { label, targetAt };
+  }
+  return null;
+}
+
 function assertScopedRows(rows: unknown, personId: string, label: string): asserts rows is Array<{ id: string; person_id: string }> {
   if (!Array.isArray(rows) || rows.some((value: unknown) => {
     if (!value || typeof value !== "object") return true;
@@ -484,7 +496,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     }
   }
 
-  return <section style={panel} aria-label="Care details that need checking">
+  return <section style={panel} aria-label="Questions worth clarifying">
     <h3 style={{ fontSize: 16, marginTop: 0 }}>Questions worth clarifying</h3>
     <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
 SolenOS only brings up a question when saved care information shows that an answer could affect a care decision. You do not have to answer now. Anything you share remains a caregiver report until it has been reviewed.
@@ -571,6 +583,16 @@ SolenOS only brings up a question when saved care information shows that an answ
               </p>
             </div>
           )}
+          {(() => {
+            const timing = caregiverQuestionTiming(selectedQuestion);
+            if (!timing) return null;
+            return (
+              <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                <strong>When to ask:</strong> {timing.label}
+                {timing.targetAt ? " · " + displayDate(timing.targetAt) : ""}
+              </p>
+            );
+          })()}
           {(() => {
             const linkedEvidence = evidence.filter((item) =>
               (selectedQuestion.evidence_ids || []).includes(item.id)
