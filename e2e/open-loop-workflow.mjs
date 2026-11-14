@@ -441,6 +441,9 @@ try {
 
   // A promised callback is still an unresolved commitment. It must remain
   // visible in the default Open view after the response mutation refreshes data.
+  isolateConflictUiRequests = false;
+  await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Follow-ups and questions" }).waitFor();
   const callbackTitle = "CI E2E callback promise remains outstanding";
   await page.getByLabel("Type").selectOption("follow_up");
   await page.getByLabel("Short title").fill(callbackTitle);
