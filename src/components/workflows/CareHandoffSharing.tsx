@@ -42,7 +42,9 @@ type DraftPayload = {
   window: { days: number; from: string; to: string };
   sections: Array<{ title: string; items: DraftItem[] }>;
   template_sections?: Array<{ title: string; coverage_status: string; required_fields: string[]; coverage_note: string }>;
-  source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number }>;
+  source_statuses: Record<string, { status: string; reason?: string; label?: string; count: number; returned_count?: number; has_more?: boolean; retrieval_complete?: boolean }>;
+  retrieval_complete?: boolean;
+  partial_sources?: Array<{ source: string; returned_count: number }>;
   source_references: Array<{ source_id: string; source_table: string }>;
   evidence_lineage?: {
     status: string;
@@ -211,6 +213,13 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     if (lines.join("\n").length + line.length > 16500) truncated = true;
     else lines.push(line);
   }
+  if (draft.retrieval_complete === false) {
+    lines.push("\n## Important: some saved history was not fully retrieved");
+    for (const partial of draft.partial_sources ?? []) {
+      lines.push("- " + readableSection(partial.source) + ": at least " + partial.returned_count + " saved items were read; additional records remain outside this draft.");
+    }
+    lines.push("This handoff is not a complete history. Open the full care record and review the listed sources before sharing.");
+  }
   lines.push("\n## What information was available");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
     const line = "- " + (caregiverSafeAssistantText(value.label) || readableSection(name)) + ": " + readableStatus(value.status) + (caregiverSafeAssistantText(value.reason) ? " (" + caregiverSafeAssistantText(value.reason) + ")" : "") + "; " + value.count + " saved item(s)";
@@ -218,7 +227,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     lines.push(line);
   }
   for (const limitation of draft.limitations) {
-    if (!includedSourceKeys.has(limitation.source)) continue;
+    if (limitation.status !== "partial" && !includedSourceKeys.has(limitation.source)) continue;
     const line = "- " + readableSection(limitation.source) + ": " + readableStatus(limitation.status) + (caregiverSafeAssistantText(limitation.reason) ? " (" + caregiverSafeAssistantText(limitation.reason) + ")" : "");
     if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
