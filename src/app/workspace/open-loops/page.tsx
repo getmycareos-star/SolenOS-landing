@@ -133,7 +133,17 @@ export default function OpenLoopsPage() {
       .finally(() => {
         if (active) setLoading(false);
       });
-    return () => { active = false; };
+    const refreshOnCareChange = () => { void refresh().catch(() => setAttentionWarning("SolenOS could not refresh its latest attention review. Saved follow-ups remain visible.")); };
+    const refreshWhenVisible = () => { if (document.visibilityState === "visible") refreshOnCareChange(); };
+    window.addEventListener("careRecordUpdated", refreshOnCareChange);
+    window.addEventListener("focus", refreshOnCareChange);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      active = false;
+      window.removeEventListener("careRecordUpdated", refreshOnCareChange);
+      window.removeEventListener("focus", refreshOnCareChange);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, [refresh]);
 
   const visibleLoops = useMemo(() => [...loops].sort((a, b) => {
