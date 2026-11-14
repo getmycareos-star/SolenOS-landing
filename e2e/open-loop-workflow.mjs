@@ -220,7 +220,7 @@ try {
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
   // Closed records leave the default Open filter. Switch to All statuses to
   // verify the persisted terminal state and exercise the explicit reopen path.
-  await page.getByLabel("Filter open loops").selectOption("all");
+  await page.getByLabel("Filter follow-ups").selectOption("all");
   await handoff.getByText(/professional input · closed/i).waitFor({ timeout: 10_000 });
   await handoff.getByRole("button", { name: "Reopen with reason" }).click();
   await page.getByRole("status").filter({ hasText: "Your update was saved. Check the status below." }).waitFor({ timeout: 10_000 });
@@ -260,7 +260,7 @@ try {
   // Wait for the first persisted row before switching filters; otherwise the
   // initial asynchronous list load can race and restore the default Open filter.
   await page.getByRole("heading", { name: handoffTitle }).waitFor({ timeout: 15_000 });
-  await page.getByLabel("Filter open loops").selectOption("all");
+  await page.getByLabel("Filter follow-ups").selectOption("all");
   const reloadedRowsResponse = await fetch(new URL("/api/v1/open-loops?limit=100", backend), {
     headers: { authorization: `Bearer ${session.token}` },
   });
