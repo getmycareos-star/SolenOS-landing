@@ -165,11 +165,13 @@ export default function FollowUpsPage() {
     const nextLoops = loopResult.status === "fulfilled" && Array.isArray((loopResult.value as { items?: unknown }).items)
       ? (loopResult.value as { items: OpenLoop[] }).items : null;
     let nextAssessmentResponse = assessmentResult.status === "fulfilled" ? assessmentResult.value as SituationAssessmentResponse : null;
+    let reassessmentFailed = false;
     if (nextAssessmentResponse && (nextAssessmentResponse.status === "not_assessed" || nextAssessmentResponse.source_freshness?.reassessment_recommended === true)) {
       try {
         nextAssessmentResponse = await postJSON("/care-continuity/situation-understanding/reassess", {}) as SituationAssessmentResponse;
       } catch {
-        setAttentionWarning("SolenOS could not finish refreshing its attention review. The last available saved view is retained.");
+        reassessmentFailed = true;
+        setAttentionWarning("SolenOS could not finish refreshing its attention review. The last available saved view is retained and may be out of date.");
       }
     }
     const nextAssessment = nextAssessmentResponse?.assessment && nextAssessmentResponse.assessment.person_id === personId
@@ -178,7 +180,7 @@ export default function FollowUpsPage() {
     setLoops(nextLoops || []);
     setAssessment(nextAssessment);
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
-    else setAttentionWarning("");
+    else if (!reassessmentFailed) setAttentionWarning("");
   }, []);
 
   useEffect(() => {
