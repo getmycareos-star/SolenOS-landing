@@ -68,7 +68,7 @@ function questionStatusLabel(status: string, hasLinkedClaim = true, answererRole
       if (answererRole === "other_caregiver") return "Waiting for another caregiver";
       if (answererRole === "person_receiving_care") return "Waiting for the person's response";
       if (!answererRole || answererRole === "not_known") return "Waiting to identify who can answer";
-      if (answererRole === "reporting_caregiver") return "Waiting for your observation";
+      if (answererRole === "caregiver" || answererRole === "reporting_caregiver") return "Waiting for your observation";
       return "Waiting for an answer";
     case "answered": return hasLinkedClaim ? "Answered — review needed" : "Answer saved";
     case "declined": return "No answer provided";
@@ -80,6 +80,7 @@ function questionStatusLabel(status: string, hasLinkedClaim = true, answererRole
 
 function answererLabel(role?: string | null): string {
   const labels: Record<string, string> = {
+    caregiver: "You, as the caregiver",
     person_receiving_care: "Person receiving care",
     reporting_caregiver: "Caregiver who shared the report",
     other_caregiver: "Another caregiver",
