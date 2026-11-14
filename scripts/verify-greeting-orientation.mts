@@ -15,6 +15,9 @@ import {
 
 assert.equal(isCasualGreetingInput("Hi"), true);
 assert.equal(isCasualGreetingInput("Good morning!"), true);
+assert.equal(isCasualGreetingInput("Good morning, SolenOS!"), true);
+assert.equal(isCasualGreetingInput("Hey there!"), true);
+assert.equal(isCasualGreetingInput("Hello, SolenOS."), true);
 assert.equal(isHowAreYouInput("How are you?"), true);
 assert.equal(isGratitudeInput("Thank you so much"), true);
 assert.equal(isInsultOrFrustrationInput("idiot"), true, "clear insult input must be classified as frustration");
@@ -29,4 +32,12 @@ const implementation = readFileSync(
 assert.match(implementation, /api\/lcr\/orientation/);
 assert.doesNotMatch(implementation, /Your previous updates are still here/);
 assert.doesNotMatch(implementation, /Ready to organize care information/);
+const companion = readFileSync(
+  new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
+  "utf8",
+);
+assert.match(companion, /isCasualGreetingInput/);
+assert.match(companion, /postJSON\\('\/api\/lcr\/orientation'/);
+assert.match(companion, /postJSON\\('\/conversation\/message'/);
+
 console.log("Greeting orientation classification and non-hardcoded generation contract passed.");
