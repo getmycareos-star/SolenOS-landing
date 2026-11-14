@@ -357,9 +357,8 @@ export default function OpenLoopsPage() {
         <h2 style={{ fontSize: 20, margin: 0, display: "flex", alignItems: "center", gap: 8 }}><Plus size={19} aria-hidden /> Track an unresolved item</h2>
         <label htmlFor="open-loop-type" style={{ display: "grid", gap: 6 }}>Type</label>
         <select id="open-loop-type" aria-label="Type" value={loopType} onChange={(event) => setLoopType(event.target.value)} style={{ minHeight: 44, padding: 10, borderRadius: 8 }}>
-            {LOOP_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-        </label>
+          {LOOP_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select>
         <label style={{ display: "grid", gap: 6 }}>Short title
           <input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={240} placeholder="What still needs attention?" style={{ minHeight: 44, padding: 10, borderRadius: 8 }} />
         </label>
