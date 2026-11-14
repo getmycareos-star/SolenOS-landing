@@ -451,6 +451,32 @@ assert(
 );
 console.log("✓ G8 pushback — heard, no repeated ask");
 
+// ——— G8b: Distress without a care detail — pause, do not force care work ———
+resetActiveCareSituationStore();
+const distressText = "I'm angry and upset. I just want a break.";
+const distressTurn = ingestActiveCareObservation({
+  caregiverId: "cg_distress_only",
+  rawText: distressText,
+  kind: classifyCareEventKind(distressText),
+  nowIso: "2026-07-16T20:10:00.000Z",
+});
+const distressClass = classifyCaregiverTurn({
+  latestRawText: distressText,
+  kind: classifyCareEventKind(distressText),
+  turn: distressTurn,
+});
+assert.equal(distressClass, "emotional_only", "distress without care facts must not become a care workflow");
+const distressResponse = composeCaregiverResponse({
+  turn: distressTurn,
+  latestRawText: distressText,
+  kind: classifyCareEventKind(distressText),
+});
+assertComposedResponseProfessional(distressResponse);
+assert.equal(distressResponse.still_unclear.length, 0, "distress-only turn must not add clarification burden");
+assert.equal(distressResponse.show_questions, false, "distress-only turn must not force questions");
+console.log("✓ G8b distress-only — no forced care workflow or questions");
+
+
 // ——— G6: Guidance demand after held notes — Continuity Demand, not topic keyword Clarity ———
 resetAll("cg_guidance");
 ingestActiveCareObservation({
