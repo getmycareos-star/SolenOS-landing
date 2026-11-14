@@ -9,6 +9,10 @@ const companion = readFileSync(
   new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
   "utf8",
 );
+const careCapture = readFileSync(
+  new URL("../src/components/CareCapture.tsx", import.meta.url),
+  "utf8",
+);
 
 assert.match(
   clarificationPanel,
@@ -58,6 +62,16 @@ assert.doesNotMatch(
   clarificationPanel,
   /Ask another question/,
   "The primary caregiver interface must not create manual clarification tasks.",
+);
+assert.doesNotMatch(
+  careCapture,
+  /candidates\.open_questions\.map\(/,
+  "Raw Qwen clarification candidates must never bypass the persisted caregiver-question gate.",
+);
+assert.match(
+  careCapture,
+  /only ask you to clarify something when the saved care record shows that your answer is needed/i,
+  "Daily Care must explain that questions are gated by the saved care record.",
 );
 assert.doesNotMatch(
   companion,
