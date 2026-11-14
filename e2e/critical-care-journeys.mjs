@@ -632,6 +632,9 @@ await record("06 Companion context and Qwen output", async () => {
   }
   const companionEventIds = new Set(answer.payload.source_event_ids || []);
   const companionEvidenceIds = new Set(answer.payload.source_evidence_ids || []);
+  const companionSourceRefs = new Set(
+    (answer.payload.source_record_refs || []).map((item) => `${item.record_type}:${item.record_id}`),
+  );
   for (const report of [
     "Mum slept poorly last night and seemed more unsettled this morning.",
     "Mum barely touched her lunch today. She drank some water, though.",
@@ -644,6 +647,14 @@ await record("06 Companion context and Qwen output", async () => {
     assert.ok(
       companionEvidenceIds.has(dailyScenarioEvidenceIdsByReport[report]),
       `Companion did not retrieve the source evidence for: ${report}`,
+    );
+    assert.ok(
+      companionSourceRefs.has(`care_event:${dailyScenarioEventIdsByReport[report]}`),
+      `Companion omitted typed care-event provenance for: ${report}`,
+    );
+    assert.ok(
+      companionSourceRefs.has(`care_evidence:${dailyScenarioEvidenceIdsByReport[report]}`),
+      `Companion omitted typed evidence provenance for: ${report}`,
     );
   }
   assert.equal(
