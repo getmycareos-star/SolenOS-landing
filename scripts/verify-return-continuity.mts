@@ -185,6 +185,19 @@ console.log("=== Return Continuity (G10 / G11 / G18) ===\n");
     openQuestions: ["Did she hit her head?", "Has her appetite changed?"],
     rawText: "You keep asking me the same questions. I've already told you this.",
   });
+  for (const complaint of [
+    "This is getting ridiculous.",
+    "You are not listening to me.",
+    "You forgot what I said.",
+    "Why do I have to repeat myself?",
+  ]) {
+    const result = resolveAnsweredUncertainties({
+      openQuestions: ["Did she hit her head?"],
+      rawText: complaint,
+    });
+    assert.equal(result.remaining.length, 1, `Pushback preserves the care gap: ${complaint}`);
+    assert.equal(result.resolved.length, 0, `Pushback is not evidence: ${complaint}`);
+  }
   assert.deepEqual(
     pushedBack.remaining,
     ["Did she hit her head?", "Has her appetite changed?"],
