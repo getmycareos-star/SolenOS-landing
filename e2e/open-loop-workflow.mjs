@@ -166,7 +166,7 @@ try {
       await dialog.accept("CI-only response: appointment date confirmed for the synthetic test.");
     } else if (message.startsWith("Choose the first saved item by entering its number.")) {
       await dialog.accept("1");
-    } else if (message.startsWith("Choose a different saved item from the list.")) {
+    } else if (message.startsWith("Choose a different saved item")) {
       await dialog.accept("1");
     } else if (message.startsWith("What action was actually taken?")) {
       await dialog.accept("CI-only action: asked the care team to confirm the conflicting reports.");
