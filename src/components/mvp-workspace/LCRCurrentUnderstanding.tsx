@@ -782,13 +782,37 @@ export function LCRCurrentUnderstanding() {
             const savedNeedsReassessment = saved.source_freshness?.reassessment_recommended === true;
             const savedBelongsToPerson =
               saved.status === "available" && saved.assessment?.person_id === scopedPersonId;
+            const refreshPersistedAssessment = async () => {
+              const refreshed = await postJSON(
+                "/care-continuity/situation-understanding/reassess",
+                {},
+              ) as SituationAssessmentResponse;
+              if (!refreshed.assessment || refreshed.assessment.person_id !== scopedPersonId) {
+                throw new Error("The refreshed assessment did not match the active care record.");
+              }
+              setAssessment(refreshed.assessment);
+              setSourceFreshness(refreshed.source_freshness ?? null);
+            };
             if (savedBelongsToPerson) {
               setAssessment(saved.assessment);
               setSourceFreshness(saved.source_freshness ?? null);
-              if (savedNeedsReassessment) {
-                // Hydration remains read-only; the caregiver can request a refresh explicitly.
-              }
               setAssessmentError(null);
+              if (savedNeedsReassessment) {
+                try {
+                  await refreshPersistedAssessment();
+                } catch {
+                  setAssessmentError("The saved care review may be out of date. Some recent changes could be missing.");
+                }
+              }
+            } else if (saved.status === "not_assessed") {
+              try {
+                await refreshPersistedAssessment();
+                setAssessmentError(null);
+              } catch {
+                setAssessment(null);
+                setSourceFreshness(null);
+                setAssessmentError("The first care review could not be created. Some care information may be missing.");
+              }
             } else {
               setAssessment(null);
               setSourceFreshness(null);
