@@ -616,7 +616,7 @@ await record("06 Companion context and Qwen output", async () => {
     body: {
       person_id: identity.personId,
       text: "What does the uploaded document say about walking?",
-      client_turn_id: unique("companion-document-source"),
+      client_turn_id: randomUUID(),
     },
   });
   assert.equal(documentAnswer.status, 200, JSON.stringify(documentAnswer.payload));
@@ -645,7 +645,7 @@ await record("06 Companion context and Qwen output", async () => {
     body: {
       person_id: identity.personId,
       text: "I'm exhausted. I can't keep up with all these updates and I don't know what to do.",
-      client_turn_id: unique("companion-caregiver-overload"),
+      client_turn_id: randomUUID(),
     },
   });
   assert.equal(overwhelmedAnswer.status, 200, JSON.stringify(overwhelmedAnswer.payload));
