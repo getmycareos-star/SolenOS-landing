@@ -28,7 +28,6 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   unresolved: "Still needs review",
   partially_resolved: "Partly reviewed",
   qualified: "Reviewed with limits",
-  superseded: "Replaced by newer information",
   resolved: "Resolved",
   closed: "Closed after review",
   reported: "Reported by caregiver",
