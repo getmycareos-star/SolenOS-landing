@@ -15,6 +15,7 @@ on:
       - "src/app/workspace/documents/page.tsx"
       - "e2e/workspace-first-screen-performance.mjs"
       - "src/api/client.ts"
+      - "src/lib/caregiver-language.ts"
       - "e2e/open-loop-workflow.mjs"
       - "scripts/verify-care-situation-understanding.mts"
       - ".github/workflows/open-loop-ui-e2e.yml"
@@ -30,6 +31,7 @@ on:
       - "e2e/workspace-first-screen-performance.mjs"
       - "scripts/verify-care-situation-understanding.mts"
       - "src/api/client.ts"
+      - "src/lib/caregiver-language.ts"
       - "e2e/open-loop-workflow.mjs"
       - ".github/workflows/open-loop-ui-e2e.yml"
 
