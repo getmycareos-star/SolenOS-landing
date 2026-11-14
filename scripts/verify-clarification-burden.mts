@@ -33,6 +33,7 @@ assert.match(clarificationPanel, /Waiting to identify who can answer/, "Unknown 
 assert.match(clarificationPanel, /Waiting for another caregiver/, "Questions assigned to another caregiver must say so.");
 assert.match(clarificationPanel, /Waiting for care-team confirmation/, "Professional-directed questions must not appear to be awaiting the caregiver's own answer.");
 assert.match(clarificationPanel, /Best person to ask:/, "The interface must identify the intended answerer for a necessary question.");
+assert.match(clarificationPanel, /caregiver: "You, as the caregiver"/, "Caregiver-assigned questions must identify the current caregiver rather than displaying an unknown answerer.");
 assert.match(
   clarificationPanel,
   /visibleCaregiverQuestions\.map\(/,
