@@ -37,7 +37,7 @@ const companion = readFileSync(
   "utf8",
 );
 assert.match(companion, /isCasualGreetingInput/);
-assert.match(companion, /postJSON\\('\/api\/lcr\/orientation'/);
-assert.match(companion, /postJSON\\('\/conversation\/message'/);
+assert.match(companion, /postJSON\('\/api\/lcr\/orientation'/);
+assert.match(companion, /postJSON\('\/conversation\/message'/);
 
 console.log("Greeting orientation classification and non-hardcoded generation contract passed.");
