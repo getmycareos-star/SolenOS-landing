@@ -479,7 +479,11 @@ function displayDescription(value?: string | null): string {
     const parsed: unknown = JSON.parse(value);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const parsedRecord = parsed as Record<string, unknown>;
-      const quickValue = parsedRecord.quick_check_in;
+      const captureValue = parsedRecord.original_capture;
+      const captureRecord = captureValue && typeof captureValue === "object" && !Array.isArray(captureValue)
+        ? captureValue as Record<string, unknown>
+        : parsedRecord;
+      const quickValue = captureRecord.quick_check_in;
       if (quickValue && typeof quickValue === "object" && !Array.isArray(quickValue)) {
         const quick = quickValue as Record<string, unknown>;
         const kindLabels: Record<string, string> = {
@@ -493,9 +497,11 @@ function displayDescription(value?: string | null): string {
           ? quick.selected_areas.filter((item): item is string => typeof item === "string")
                .map(caregiverLabel)
           : [];
-        const summary = typeof parsedRecord.notes === "string" ? caregiverSafeAssistantText(parsedRecord.notes) || "" : "";
+        const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
+        .find((item): item is string => typeof item === "string" && item.trim().length > 0);
+      const safeSummary = summary ? caregiverSafeAssistantText(summary) || "" : "";
         return [
-          summary,
+          safeSummary,
           `Update type: ${kindLabels[String(quick.kind)] || "Caregiver check-in"}`,
           areas.length ? `Areas selected: ${areas.join(", ")}` : "",
           quick.scope === "selected_areas_only" ? "Scope: selected areas only" : "",
