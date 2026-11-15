@@ -52,7 +52,7 @@ export function IdentityDeviceRecoveryPanel() {
       const result = await getJSON("/identity/devices") as { devices: Device[] };
       setDevices(result.devices ?? []);
     } catch {
-      setError("We couldn't load device registrations. Your care record has not been changed.");
+      setError("We couldn't load the devices linked to your account. Your Care Record has not been changed.");
     } finally {
       setLoading(false);
     }
@@ -67,18 +67,18 @@ export function IdentityDeviceRecoveryPanel() {
       await ensureAnonymousSession();
       const result = await postJSON("/identity/devices", {
         installation_key: getInstallationKey(),
-        label: "This browser/device",
+        label: "This device",
         platform: typeof navigator === "undefined" ? "unknown" : navigator.platform || "browser",
       }) as { device: Device };
       show(
         result.device.trust_status === "verified"
-          ? "This device is registered and verified for the signed-in account."
-          : "Device registration saved. Sign in to the account on this device to verify it.",
+          ? "This device is linked to your account."
+          : "This device was added. Sign in to your account here to finish setting it up.",
         "success",
       );
       await loadDevices();
     } catch (e) {
-      setError("We couldn't register this device. Please try again.");
+      setError("We couldn't add this device. Please try again.");
     } finally {
       setSavingDevice(false);
     }
@@ -90,9 +90,9 @@ export function IdentityDeviceRecoveryPanel() {
     try {
       await deleteJSON(`/identity/devices/${encodeURIComponent(device.id)}`);
       setDevices((current) => current.filter((item) => item.id !== device.id));
-      show("Device registration revoked.", "success");
+      show("Device access removed.", "success");
     } catch (e) {
-      setError("We couldn't remove this device's access. Please try again.");
+      setError("We couldn't remove this device from your account. Please try again.");
     } finally {
       setRevokingId(null);
     }
@@ -123,7 +123,7 @@ export function IdentityDeviceRecoveryPanel() {
       setReplacementRecoveryCode(body.recovery_code || "");
       setRecoveryCode("");
       setNewPassword("");
-      show("Account access restored.", "success");
+      show("You're back in your account.", "success");
     } catch (e) {
       setError("We couldn't recover this account. Check your details and try again.");
     } finally {
@@ -137,54 +137,54 @@ export function IdentityDeviceRecoveryPanel() {
         <ShieldCheck size={16} aria-hidden /> Devices and account access
       </h2>
       <p className="mobile-settings-hint">
-        You can use your care record without creating an account. Registering a device helps you recognize it later, but this device alone cannot prove who you are or restore account access.
+        You can use your Care Record without creating an account. Adding a device helps you recognize it later, but this device alone cannot confirm who you are or recover your account.
       </p>
-      {loading && <p className="mobile-settings-hint" role="status">Loading registered devices…</p>}
+      {loading && <p className="mobile-settings-hint" role="status">Loading devices…</p>}
       {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
-      {!loading && devices.length === 0 && <p className="mobile-settings-hint">No active devices are registered for this caregiver yet.</p>}
+      {!loading && devices.length === 0 && <p className="mobile-settings-hint">No devices are linked to your account yet.</p>}
       {devices.map((device) => (
         <div key={device.id} className="mobile-settings-row" style={{ alignItems: "flex-start" }}>
           <span>
             <span className="mobile-settings-label"><MonitorSmartphone size={14} aria-hidden /> {device.label}</span>
             <span className="mobile-settings-hint">
-              {device.trust_status === "verified" ? "Verified for this account" : device.trust_status === "unverified" ? "Not yet verified" : "Status not available"}
+              {device.trust_status === "verified" ? "Linked to your account" : device.trust_status === "unverified" ? "Not set up yet" : "Status not available"}
             </span>
-            <span className="mobile-settings-hint">This device cannot restore account access by itself.</span>
+            <span className="mobile-settings-hint">This device alone cannot help you recover your account.</span>
           </span>
           <Button variant="destructive" disabled={revokingId !== null} loading={revokingId === device.id} onClick={() => void revokeDevice(device)}>
-            {revokingId === device.id ? undefined : <><Trash2 size={14} aria-hidden /> Remove device access</>}
+            {revokingId === device.id ? undefined : <><Trash2 size={14} aria-hidden /> Remove device</>}
           </Button>
         </div>
       ))}
       <div className="mobile-settings-actions">
         <Button variant="primary" disabled={savingDevice || loading} loading={savingDevice} onClick={() => void registerThisDevice()}>
-          {savingDevice ? undefined : "Register this device"}
+          {savingDevice ? undefined : "Add this device"}
         </Button>
-        <Button variant="secondary" disabled={loading} onClick={() => void loadDevices()}>Refresh devices</Button>
+        <Button variant="secondary" disabled={loading} onClick={() => void loadDevices()}>Refresh</Button>
       </div>
       <div style={{ borderTop: "1px solid var(--border, #d8ded8)", marginTop: "1rem", paddingTop: "1rem" }}>
-        <h3 className="mobile-settings-label"><KeyRound size={14} aria-hidden /> Recover an account</h3>
+        <h3 className="mobile-settings-label"><KeyRound size={14} aria-hidden /> Get back into your account</h3>
         <p className="mobile-settings-hint">
-          Use the one-time recovery code saved when the account was created or last rotated. A successful recovery resets the password and revokes every existing session. A registered device alone cannot recover an account.
+          Use the recovery code you saved when you created your account or last changed the code. This resets your password and signs out all devices. A registered device alone cannot recover your account.
         </p>
         <form onSubmit={(event) => void recoverAccount(event)} style={{ display: "grid", gap: "0.7rem" }}>
           <label className="mobile-settings-label" htmlFor="identity-recovery-email">Account email
             <input id="identity-recovery-email" className="mobile-settings-input" type="email" autoComplete="email" required maxLength={320} value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
-          <label className="mobile-settings-label" htmlFor="identity-recovery-code">One-time recovery code
+          <label className="mobile-settings-label" htmlFor="identity-recovery-code">Recovery code
             <input id="identity-recovery-code" className="mobile-settings-input" type="text" autoComplete="off" required minLength={32} maxLength={200} value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value)} />
           </label>
           <label className="mobile-settings-label" htmlFor="identity-recovery-password">New password
             <input id="identity-recovery-password" className="mobile-settings-input" type="password" autoComplete="new-password" required minLength={12} maxLength={256} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
           </label>
           <Button type="submit" variant="secondary" loading={recoveryBusy} disabled={recoveryBusy}>
-            {recoveryBusy ? undefined : "Recover account"}
+            {recoveryBusy ? undefined : "Restore account access"}
           </Button>
         </form>
         {recoveryMessage && <p className="mobile-settings-hint" role="status">{recoveryMessage}</p>}
         {replacementRecoveryCode && (
           <div className="mobile-settings-hint" role="alert" style={{ border: "1px solid var(--border, #d8ded8)", borderRadius: "0.75rem", padding: "0.8rem" }}>
-            <strong>Save your replacement recovery code.</strong>
+            <strong>Save your new recovery code.</strong>
             <code style={{ display: "block", overflowWrap: "anywhere", userSelect: "all", padding: "0.5rem 0" }}>{replacementRecoveryCode}</code>
             <Button type="button" variant="secondary" onClick={() => setReplacementRecoveryCode("")}>I have saved the code</Button>
           </div>
