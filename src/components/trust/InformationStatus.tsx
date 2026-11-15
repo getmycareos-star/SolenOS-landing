@@ -15,7 +15,7 @@ export default function InformationStatus({
 
   const getStatusLabel = (): string => {
     switch (status) {
-      case 'known': return 'Recorded';
+      case 'known': return 'Known';
       case 'uncertain': return 'Not sure yet';
       case 'missing': return 'Not recorded';
       case 'needs-clarification': return 'Needs checking';
