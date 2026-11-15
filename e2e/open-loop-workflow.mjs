@@ -59,8 +59,7 @@ try {
       // navigation is tearing down background refreshes. Do not turn that
       // already-settled request into an unhandled test-process rejection.
       if (
-        route.isHandled() ||
-        /Request context disposed|Target closed|Target page, context or browser has been closed/i.test(message)
+        /Route is already handled|Request context disposed|Target closed|Target page, context or browser has been closed/i.test(message)
       ) {
         return;
       }
