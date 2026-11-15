@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { RecordState } from "@/components/ui/RecordState";
 
 type CareItem = {
   id: string;
@@ -56,6 +57,7 @@ export function CareRecordOverview() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyNote, setHistoryNote] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -75,6 +77,7 @@ export function CareRecordOverview() {
         throw new Error("The saved care information could not be verified for this session.");
       }
       setItems(response.items);
+      setHasLoaded(true);
       try {
         const history = await getJSON("/change/changes/" + encodeURIComponent(personId));
         if (!Array.isArray(history)) throw new Error("History was unavailable.");
@@ -85,8 +88,7 @@ export function CareRecordOverview() {
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Saved care information could not be loaded.");
-      setItems([]);
-      setChanges([]);
+      // Keep the last successfully loaded records visible if a refresh fails.
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -108,14 +110,14 @@ export function CareRecordOverview() {
         </button>
       </header>
 
-      {error && <p role="alert" style={{ margin: 0, padding: 13, borderRadius: 10, background: "#fff7f2", color: "#80523b", lineHeight: 1.55 }}>{error}</p>}
-      {loading ? <p role="status" style={{ color: "#69796c" }}>Loading saved care information…</p> : !error && (
+      {error && <RecordState kind="error" title="Care information could not be refreshed." description={error} />}
+      {loading && !hasLoaded ? <RecordState kind="loading" title="Loading saved care information…" /> : hasLoaded && (
         <>
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>What is saved</h3>
             <p style={{ margin: "0 0 12px", color: "#758276", fontSize: 12 }}>These are saved care details. A report is not automatically a confirmed fact.</p>
             {items.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No care information is available in this view yet. This does not mean there are no care needs or concerns.</p>
+              <RecordState kind="empty" title="No care information recorded yet." />
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {items.map((item) => (
@@ -136,7 +138,7 @@ export function CareRecordOverview() {
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes recorded over time</h3>
             {historyNote && <p role="status" style={{ color: "#805d3c", fontSize: 13 }}>{historyNote}</p>}
             {!historyNote && changes.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No saved changes were returned. SolenOS will not invent a change when there is no record of one.</p>
+              <RecordState kind="empty" title="No recent changes recorded." />
             ) : (
               <div style={{ display: "grid", gap: 9 }}>
                 {changes.map((change) => (
@@ -150,7 +152,7 @@ export function CareRecordOverview() {
             )}
           </section>
 
-          <p style={{ margin: 0, color: "#788579", fontSize: 12, lineHeight: 1.6 }}>This view shows saved information only. It does not diagnose, decide which conflicting report is correct, or treat missing information as proof that nothing happened.</p>
+          
         </>
       )}
     </section>
