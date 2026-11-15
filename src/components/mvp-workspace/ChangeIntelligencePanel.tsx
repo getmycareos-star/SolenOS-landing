@@ -211,9 +211,6 @@ export function ChangeIntelligencePanel() {
     return () => { active = false; };
   }, []);
 
-  return () => { active = false; };
-  }, []);
-
   return (
     <section className="lcr-record-section" aria-labelledby="change-intelligence-heading">
       <div className="lcr-section-heading">
