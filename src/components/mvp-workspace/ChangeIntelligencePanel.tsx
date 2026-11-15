@@ -196,9 +196,12 @@ export function ChangeIntelligencePanel() {
     setWarning(null);
     try {
       await reassessPersistedChangeIntelligence();
-      const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
-      setChanges(changeRows.filter((row) => row.is_active));
-      setPatterns(patternRows.filter((row) => row.is_active));
+      const [changeRows, patternRows, situationRows] = await Promise.all([
+        listPersistedChanges(), listPersistedPatterns(), listPersistedSituations(),
+      ]);
+      setChanges(changeRows);
+      setPatterns(patternRows);
+      setSituations(situationRows);
       setChangeOffset(0);
       setPatternOffset(0);
       setHasMoreChanges(changeRows.length === 100);
@@ -262,10 +265,13 @@ export function ChangeIntelligencePanel() {
     let active = true;
     async function load() {
       try {
-        const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
+        const [changeRows, patternRows, situationRows] = await Promise.all([
+        listPersistedChanges(), listPersistedPatterns(), listPersistedSituations(),
+      ]);
         if (!active) return;
-        setChanges(changeRows.filter((row) => row.is_active));
-        setPatterns(patternRows.filter((row) => row.is_active));
+        setChanges(changeRows);
+        setPatterns(patternRows);
+        setSituations(situationRows);
         setChangeOffset(0);
         setPatternOffset(0);
         setHasMoreChanges(changeRows.length === 100);
