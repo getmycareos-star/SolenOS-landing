@@ -745,7 +745,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     )}
                     {stateHistory.length > 0 ? (
                       <details>
-                        <summary>Previous status updates ({stateHistory.length})</summary>
+                        <summary>{t("changeIntelligence.previousStatusUpdates")} ({stateHistory.length})</summary>
                         <ul>
                           {stateHistory.map((entry, index) => (
                             <li key={situation.id + "-state-" + index}>
