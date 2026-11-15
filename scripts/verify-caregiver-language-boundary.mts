@@ -124,7 +124,7 @@ assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedTex
 assert.match(lcr, /displayDescription\(source\.description\)/);
 assert.match(lcr, /displayCurrentCareDescription\(item\)/);
 assert.match(lcr, /<details className="lcr-entry-status">/);
-line=>'assert.match(lcr, /<summary>Care details<\\\\/summary>/);'
+assert.match(lcr, /<summary>Care details<\/summary>/);
 assert.match(lcr, /Your saved care notes are still available below/);
 assert.doesNotMatch(lcr, /We couldn’t check which items may need attention\. Try refreshing\./);
 assert.match(lcr, /CURRENT_CARE_TITLE_LABELS/);
@@ -141,6 +141,24 @@ assert.doesNotMatch(careChangeHistory, /display\(run\.source/);
 assert.doesNotMatch(lcr, /<p>\{change\.explanation\}<\/p>/);
 assert.match(lcr, /caregiverSafeAssistantText\(source\.source_passage\)/);
 
+const workspaceNav = read("../src/app/workspace/layout.tsx");
+const workspaceHome = read("../src/app/workspace/page.tsx");
+const followUps = read("../src/app/workspace/open-loops/page.tsx");
+const timeline = read("../src/app/workspace/timeline/page.tsx");
+const informationStatus = read("../src/components/trust/InformationStatus.tsx");
+const statusCareDelta = read("../src/components/CareDeltaPanel.tsx");
+assert.match(workspaceNav, /label: "Care Record"/);
+assert.match(workspaceNav, /label: "Care Assistant"/);
+assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
+assert.match(informationStatus, /Not sure yet/);
+assert.match(informationStatus, /Not recorded/);
+assert.match(informationStatus, /Needs checking/);
+assert.match(followUps, /Related notes and documents/);
+assert.match(followUps, /Why this needs attention/);
+assert.match(followUps, /Information that is missing, unclear or does not match/);
+assert.match(timeline, /return to your Care Record/);
+assert.match(statusCareDelta, /Compare with saved care information/);
+assert.match(workspaceHome, /Ask about saved care information/);
 console.log("Caregiver language boundary checks passed.");
 
 assert.match(careDelta, /caregiverStatusLabel/);
