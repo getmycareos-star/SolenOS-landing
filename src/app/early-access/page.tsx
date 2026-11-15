@@ -22,7 +22,7 @@ export default function EarlyAccessPage() {
         </p>
         <div className="public-cta-group">
           <Link href="/workspace?enter=1" className="public-cta-primary">
-            Open your Living Care Record
+            Open your Care Record
           </Link>
         </div>
       </section>
