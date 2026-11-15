@@ -82,9 +82,11 @@ jobs:
           ];
           const failures = [];
           for (const name of required) {
-            const matches = (payload.check_runs || []).filter((item) => item.name === name);
-            if (matches.length !== 1) {
-              failures.push(`${name}: expected exactly one check, found ${matches.length}`);
+            const matches = (payload.check_runs || [])
+              .filter((item) => item.name === name)
+              .sort((a, b) => Date.parse(b.started_at || b.completed_at || 0) - Date.parse(a.started_at || a.completed_at || 0));
+            if (matches.length === 0) {
+              failures.push(`${name}: check not found`);
               continue;
             }
             const check = matches[0];
