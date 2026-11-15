@@ -13,6 +13,7 @@ import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDa
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -407,7 +408,6 @@ export default function DailyCarePage() {
           };
           if (!Array.isArray(payload?.records)) {
             setHistoryError("Recent care history could not be read. The daily summary is unavailable.");
-            setHistoryItems([]);
             setHistoryMayBeTruncated(false);
           } else {
             const records = payload.records as CareItem[];
@@ -557,7 +557,9 @@ export default function DailyCarePage() {
             <h2 id="daily-care-current-title">Where things stand</h2>
             <p className="daily-care-muted">The latest information currently available in the care record.</p>
             {contextLoading ? (
-              <p>Loading care information…</p>
+              <RecordState kind="loading" title="Loading care information…" />
+            ) : contextError ? (
+              <RecordState kind="error" title="Care information couldn’t be loaded." description="Try again to check the latest saved updates." />
             ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
               <ul className="daily-care-record-list">
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 2).map((item, index) => (
@@ -585,9 +587,8 @@ export default function DailyCarePage() {
                 ))}
               </ul>
             ) : (
-              <p>No current care updates are available to show. This does not mean nothing happened.</p>
+              <RecordState kind="empty" title="No care updates recorded yet." description="Share an update whenever you have something to add." />
             )}
-            {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
@@ -728,7 +729,9 @@ export default function DailyCarePage() {
             <p className="daily-care-muted">
               This summary uses records added since your previous visit on this device. It does not describe unrecorded care.
             </p>
-            {sinceLastOpenItems === null ? (
+            {historyError ? (
+              <RecordState kind="error" title="Recent care history couldn’t be loaded." description="Try again to check what has been recorded since your last visit." />
+            ) : sinceLastOpenItems === null ? (
               <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
             ) : sinceLastOpenItems.length > 0 ? (
               <>
@@ -761,7 +764,7 @@ export default function DailyCarePage() {
                 <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
               </>
             ) : (
-              <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
+              <RecordState kind="empty" title="No new records since your last visit." />
             )}
             {historyMayBeTruncated && <p className="daily-care-muted">The summary is based on the latest 200 history records. Open full history to check older entries.</p>}
           </section>
@@ -798,7 +801,7 @@ export default function DailyCarePage() {
                 );
               })
             ) : (
-              <p>No updates have been saved today. That does not mean nothing happened, and you do not need to add an entry.</p>
+              <RecordState kind="empty" title="No updates recorded today." />
             )}
           </section>
 
