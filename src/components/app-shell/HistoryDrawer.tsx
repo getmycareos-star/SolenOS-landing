@@ -466,7 +466,7 @@ function mapAppointment(
   const location = asText(payload.location);
   const status = record.status || listItem.status || asText(payload.reviewStatus) || "not specified";
   const savedAt = record.updated_at || record.created_at || listItem.updated_at || listItem.created_at || null;
-  const title = purpose || (clinician ? "Appointment with " + clinician : "Appointment workspace");
+  const title = purpose || (clinician ? "Appointment with " + clinician : "Appointment notes");
 
   return {
     id: "appointment:" + record.id,
@@ -1198,7 +1198,7 @@ export function HistoryDrawer() {
 
                 <section className="history-integrity-note">
                   <ShieldCheck size={16} aria-hidden />
-                  <span>Original information is shown separately from recorded metadata. A missing field is not treated as proof that something did not happen. Related events are not assumed to share a cause.</span>
+                  <span>Original information is shown separately from details about when it was saved. A missing detail does not mean something did not happen. Related events are not assumed to have the same cause.</span>
                 </section>
 
               </div>
