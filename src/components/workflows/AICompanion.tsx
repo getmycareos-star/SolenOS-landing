@@ -329,7 +329,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats with the Care Assistant are not added to your Care Record.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
