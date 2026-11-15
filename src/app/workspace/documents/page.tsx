@@ -212,7 +212,7 @@ export default function DocumentsPage() {
       };
     });
     setReviewPages((current) => [...current, ...pages]);
-    setUploadMessage({ kind: "success", text: `${files.length} original file(s) ready to save. Text extraction and document understanding will run after upload.` });
+    setUploadMessage({ kind: "success", text: `${files.length} original file(s) ready to save. SolenOS will read the text and prepare details for your review after upload.` });
   };
 
   useEffect(() => {
@@ -364,7 +364,7 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). Background extraction and document understanding are queued, running or already complete for ${backgroundProcessingQueued}; ${backgroundQueueUnavailable} file(s) need processing attention. You can leave this page. SolenOS will not add extracted statements to the Living Care Record without the required evidence review.`,
+        text: `Saved ${saved} original file(s). SolenOS is reading the documents. You can leave this page. Suggested details will not be added to your Care Record until you review and approve them. ${backgroundQueueUnavailable} file(s) need another look.`,
       });
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
@@ -385,7 +385,7 @@ export default function DocumentsPage() {
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
     } catch {
-      setPreviewError("The saved document record is available, but the original file could not be retrieved. Retry or refresh the list.");
+      setPreviewError("The document details are saved, but the original file could not be opened. Try again or refresh the list.");
     } finally {
       setPreviewLoading(false);
     }
@@ -439,7 +439,7 @@ export default function DocumentsPage() {
       closePreview();
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
-      setUploadMessage({ kind: "success", text: "The document and its uncommitted extracted information were deleted. Information already used in the Living Care Record must be resolved before its source can be deleted." });
+      setUploadMessage({ kind: "success", text: "The document and its unreviewed details were deleted. If details from this document are already in your Care Record, review those details before deleting the original." });
     } catch (error) {
       setPreviewError(error instanceof Error ? error.message : "SolenOS could not delete this document. No deletion was confirmed.");
     } finally {
@@ -625,7 +625,7 @@ export default function DocumentsPage() {
                 {[...(versionComparison.changed || []).map((item) => ({ kind: "Changed", subject: item.subject, details: (item.previous_statements || []).map((v) => v.statement).join("; ") + " → " + (item.replacement_statements || []).map((v) => v.statement).join("; ") })), ...(versionComparison.added || []).map((item) => ({ kind: "Added", subject: item.subject, details: item.statement || "" })), ...(versionComparison.removed || []).map((item) => ({ kind: "Removed", subject: item.subject, details: item.statement || "" }))].map((item, index) => <p key={item.kind + "-" + index} style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.5 }}><strong>{item.kind + (item.subject ? " · " + item.subject : "")}:</strong> {item.details}</p>)}
               </>}
             </section>}
-            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Opening original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: 13, color: "var(--text-secondary)" }}>The original file was retrieved successfully. Download it to open it in a compatible app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: 15 }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 14, lineHeight: 1.6 }}>{caregiverSafeAssistantText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>Original file preview is not available yet.</p>}
+            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Opening original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: 13, color: "var(--text-secondary)" }}>The original file was opened successfully. Download it to open it in another app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: 15 }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 14, lineHeight: 1.6 }}>{caregiverSafeAssistantText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>Original file preview is not available yet.</p>}
           </div>
         </section>
       </div>}
