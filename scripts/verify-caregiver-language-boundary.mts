@@ -190,7 +190,7 @@ assert.match(followUps, /Why this needs attention/);
 assert.match(followUps, /Information that is missing, unclear or does not match/);
 assert.match(timeline, /return to your Care Record/);
 assert.match(statusCareDelta, /Compare with saved care information/);
-assert.match(workspaceHome, /Ask about saved care information/);
+assert.match(workspaceHome, /ask SolenOS about information already saved/);
 console.log("Caregiver language boundary checks passed.");
 
 assert.match(careDelta, /caregiverStatusLabel/);
