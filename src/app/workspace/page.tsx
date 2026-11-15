@@ -46,7 +46,7 @@ function WorkspaceHomeInner() {
         </Link>
         <Link href="/workspace/timeline" style={{ display: "grid", gap: 5, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", color: "var(--text)", textDecoration: "none" }}>
           <strong>Care Timeline</strong>
-          <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Find earlier updates and corrections without changing the current Care Record directly.</span>
+          <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Review earlier updates and see how recorded corrections affect the current Care Record.</span>
         </Link>
         <Link href="/workspace/documents" style={{ display: "grid", gap: 5, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", color: "var(--text)", textDecoration: "none" }}>
           <strong>Documents</strong>
