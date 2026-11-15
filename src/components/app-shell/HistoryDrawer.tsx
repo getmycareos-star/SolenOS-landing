@@ -1203,7 +1203,7 @@ export function HistoryDrawer() {
 
                 <section className="history-integrity-note">
                   <ShieldCheck size={16} aria-hidden />
-                  <span>Original information is shown separately from details about when it was saved. A missing detail does not mean something did not happen. Related events are not assumed to have the same cause.</span>
+                  <span>Original information is shown separately from details about when it was saved. Related events are not assumed to have the same cause.</span>
                 </section>
 
               </div>
