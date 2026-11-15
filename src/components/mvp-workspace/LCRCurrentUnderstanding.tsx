@@ -1318,7 +1318,7 @@ export function LCRCurrentUnderstanding() {
                   {canWaitItems.map((item) => (
                     <li key={item.source + ":" + item.id} className="lcr-current-fact">
                       <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
-                      <p>{item.description || "No extra details were saved."}</p>
+                      <p>{displayDescription(item.description)}</p>
                       <p className="lcr-entry-status">Why this was postponed: {caregiverSafeAssistantText(item.deferred_reason) || "No reason was recorded."}</p>
                       <p className="lcr-entry-status">Status: {caregiverLabel(item.recorded_status)} · Priority: {caregiverLabel(item.priority)} · How certain this is: {caregiverLabel(item.epistemic_status)}</p>
                       {item.request_text && <p>Follow-up request: {caregiverSafeAssistantText(item.request_text) || "A follow-up request was saved."}</p>}
@@ -1369,7 +1369,7 @@ export function LCRCurrentUnderstanding() {
                         <strong>Possible follow-up · {item.title}</strong>
                         <p>This item was marked for follow-up. That does not mean it needs attention right away.</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
-                        {source?.description && <p>{caregiverSafeAssistantText(source.description) || "Saved care information is available."}</p>}
+                        {source?.description && <p>{displayDescription(source.description)}</p>}
                         <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                         <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
                         <small>Where this came from: {caregiverLabel(item.source)}</small>
@@ -1381,7 +1381,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>Still needs follow-up · {item.title}</strong>
                       <p>The saved information does not say whether this needs attention now or can wait. No due date is assumed.</p>
                       <p className="lcr-entry-status">Status: {caregiverLabel(item.recorded_status)} · Priority: {caregiverLabel(item.priority)} · How certain this is: {caregiverLabel(item.epistemic_status)}</p>
-                      {item.description && <p>{caregiverSafeAssistantText(item.description) || "Saved care information is available."}</p>}
+                      {item.description && <p>{displayDescription(item.description)}</p>}
                       {item.owner && <small>Responsible person: {item.owner}</small>}
                       {item.due_at && <small>Due date: {formatWhen(item.due_at)}</small>}
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
@@ -1409,7 +1409,7 @@ export function LCRCurrentUnderstanding() {
                         <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
                         <p>{disputed ? "Reports do not match, and the difference has not been resolved. Neither report is treated as correct." : "This still needs to be checked."}</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
-                        {source?.description && <p>{caregiverSafeAssistantText(source.description) || "Saved care information is available."}</p>}
+                        {source?.description && <p>{displayDescription(source.description)}</p>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note is saved."}</blockquote></details>}
                         <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                         <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
@@ -1442,7 +1442,7 @@ export function LCRCurrentUnderstanding() {
                       {expandedChangeId === change.id && changeEvidence[change.id]?.evidence.map((source) => (
                         <article key={source.id}>
                           <strong>{source.title}</strong>
-                          <p>{source.description || "No source description was recorded."}</p>
+                          <p>{displayDescription(source.description)}</p>
                           <small>Event: {formatWhen(source.occurred_at)} · Recorded: {formatWhen(source.recorded_at)}</small>
                         </article>
                       ))}
@@ -1653,7 +1653,7 @@ export function LCRCurrentUnderstanding() {
                     {changeEvidence[change.id]?.evidence.map((item) => (
                       <article key={item.id} className="lcr-current-fact">
                         <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
-                        <p>{item.description || "No source description was recorded."}</p>
+                        <p>{displayDescription(item.description)}</p>
                         <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : caregiverLabel(item.event_type)} · {item.status === "recorded" ? "Saved" : caregiverLabel(item.status)}</small>
                         <small>Observed: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
                         <small>Recorded: {formatWhen(item.recorded_at)}</small>
