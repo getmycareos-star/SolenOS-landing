@@ -65,6 +65,15 @@ assert.match(
 );
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
+assert.match(currentUnderstanding, /lcr-first-screen-summary/, "LCR opens with a concise caregiver-first orientation");
+assert.match(currentUnderstanding, /Where things stand/, "first screen describes the current recorded care picture");
+assert.match(currentUnderstanding, /What needs attention/, "first screen shows persisted care priorities");
+assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
+assert.match(currentUnderstanding, /View saved record/, "current-care summary links to the underlying saved record");
+assert.match(currentUnderstanding, /Review supporting records/, "change summaries provide a direct evidence review action");
+assert.match(currentUnderstanding, /immediateCareDecisions\.slice\(0, 2\)/, "first-screen attention items come from persisted decisions even when no open-loop row matches");
+assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed categories and history are progressively disclosed");
+assert.match(currentUnderstanding, /Missing information does not mean everything is fine/, "empty records are not presented as reassuring findings");
 assert.match(currentUnderstanding, /internalCaptureRecordTypes/, "capture wrapper records must be excluded from caregiver change summaries");
 assert.match(currentUnderstanding, /internalCaptureEventType/, "capture event identifiers embedded in technical explanations must also be excluded");
 assert.match(currentUnderstanding, /accepted: "Reviewed"/, "caregiver-facing review status must not say Accepted");
