@@ -145,7 +145,7 @@ assert.doesNotMatch(careChangeHistory, /display\(run\.source/);
 assert.doesNotMatch(lcr, /<p>\{change\.explanation\}<\/p>/);
 assert.match(lcr, /caregiverSafeAssistantText\(source\.source_passage\)/);
 
-const workspaceNav = read("../src/app/workspace/layout.tsx");
+const workspaceNav = read("../src/lib/workspace-navigation.ts");
 const workspaceHome = read("../src/app/workspace/page.tsx");
 const followUps = read("../src/app/workspace/open-loops/page.tsx");
 const timeline = read("../src/app/workspace/timeline/page.tsx");
