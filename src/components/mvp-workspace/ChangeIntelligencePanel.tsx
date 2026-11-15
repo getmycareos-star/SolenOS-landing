@@ -275,8 +275,12 @@ export function ChangeIntelligencePanel() {
     setWarning(null);
     try {
       await transitionSituationState(situation.id, targetState, reason, evidenceIds);
-      const refreshed = await listPersistedSituations();
+      const [refreshed, refreshedDetail] = await Promise.all([
+        listPersistedSituations(),
+        getPersistedSituationDetail(situation.id),
+      ]);
       setSituations(refreshed);
+      setSituationDetails((current) => ({ ...current, [situation.id]: refreshedDetail }));
       setSituationStates((current) => {
         const next = { ...current };
         delete next[situation.id];
