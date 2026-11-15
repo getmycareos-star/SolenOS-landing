@@ -129,14 +129,14 @@ assert(
 );
 
 assert(
-  /medications: variables\.medications\.map/.test(dailyCapture) &&
-  /scheduled_for: med\.scheduled_for \? new Date\(med\.scheduled_for\)\.toISOString\(\) : null/.test(dailyCapture) &&
-  /administered_at: med\.administered_at \? new Date\(med\.administered_at\)\.toISOString\(\) : null/.test(dailyCapture) &&
-  /measured_at: new Date\(vital\.measured_at\)\.toISOString\(\)/.test(dailyCapture) &&
-  /observed_at: new Date\(scale\.observed_at\)\.toISOString\(\)/.test(dailyCapture),
-  "Daily Capture Delta reconciliation must use the same normalized timestamps persisted in the care event",
+  !/CareDeltaPanel|deltaAutoInput|care-delta\\/reconcile/.test(dailyCapture),
+  "Daily Care must not launch a second browser-side Delta reconciliation; the persisted backend worker owns the authoritative processing path",
+);
+assert(
+  /window\\.dispatchEvent\\(new Event\\('careRecordUpdated'\\)\\)/.test(dailyCapture),
+  "a confirmed Daily Care save must refresh the existing persisted LCR projections",
 );
 
 console.log("CHANGE_INTELLIGENCE_UI_CONTRACT=PASS");
-console.log("Scope=persisted change/pattern/situation history + caregiver-confirmed trajectory + Delta history + primary LCR contract");
+console.log("Scope=persisted change/pattern/situation history + caregiver-confirmed trajectory + archived Delta history + single Daily Care reconciliation + primary LCR contract");
 console.log("Scope=source contract only; browser rendering and live production API remain separate gates");
