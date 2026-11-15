@@ -64,9 +64,9 @@ assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
   "Delta comparison must not support hidden automatic reconciliation");
 assert.match(deltaPanel, /onSubmit=\{\(event\) => \{ event\.preventDefault\(\); void reconcile\(/,
   "a Delta comparison must only run from an explicit caregiver submission");
-assert.doesNotMatch(dailyCapture, /CareDeltaPanel|deltaAutoInput|care-delta\\/reconcile/,
+assert.doesNotMatch(dailyCapture, /CareDeltaPanel|deltaAutoInput|care-delta\/reconcile/,
   "Daily Care must not launch a second browser-side Delta comparison; the persisted backend reconciliation is authoritative");
-assert.match(dailyCapture, /window\\.dispatchEvent\\(new Event\\('careRecordUpdated'\\)\\)/,
+assert.match(dailyCapture, /window\.dispatchEvent\(new Event\('careRecordUpdated'\)\)/,
   "a successful Daily Care save must refresh the existing persisted LCR projections");
 
 
