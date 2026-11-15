@@ -778,6 +778,11 @@ await record("06 Companion context and Qwen output", async () => {
   if (requireLiveQwen) assert.equal(overwhelmedAnswer.payload.ai_generated, true);
   const overloadReply = String(overwhelmedAnswer.payload.reply || "").trim();
   const overloadSentences = overloadReply.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+  assert.doesNotMatch(
+    overloadReply,
+    /\b(?:diagnos(?:ed|is)|prescribed|recommended\s+(?:a\s+)?(?:medication|treatment|dose)|ordered\s+(?:a\s+)?(?:test|scan|medication))\b/i,
+    "An overwhelmed caregiver must not receive an unsupported clinical recommendation or status claim",
+  );
   assert.ok(overloadReply.length > 0 && overloadReply.length <= 700, "Companion must keep an overwhelmed-caregiver response brief");
   assert.ok(overloadSentences.length <= 3, "Companion must not overwhelm the caregiver with a long response");
   assert.ok((overloadReply.match(/\?/g) || []).length <= 1, "Companion must ask at most one question when the caregiver is overwhelmed");
