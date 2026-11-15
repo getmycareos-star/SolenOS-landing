@@ -62,7 +62,7 @@ assert(
   "opening the LCR must read persisted assessments without triggering a write/reassessment",
 );
 assert(
-  /async function refreshSavedAssessments\(\)[\s\S]*?await reassessPersistedChangeIntelligence\(\)/.test(panel),
+  /async function refreshSavedAssessments\(\)[\s\S]*?await reassessPersistedChangeIntelligence\(personId\)/.test(panel),
   "reassessment must be available only through the explicit refresh action",
 );
 
