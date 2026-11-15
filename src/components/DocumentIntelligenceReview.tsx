@@ -360,7 +360,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                     : <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
                       {analysis.reviewEvents.map((event) => {
                         const after = event.after || {};
-                        const subject = typeof after.subject === "string" ? after.subject : "Candidate";
+                        const subject = typeof after.subject === "string" ? after.subject : "Care detail";
                         const observation = typeof after.observation === "string" ? after.observation : "";
                         return <li key={event.id} style={{ fontSize: 12, lineHeight: 1.5 }}>
                           <strong>Detail {event.candidate_index + 1} · {event.decision}</strong>
