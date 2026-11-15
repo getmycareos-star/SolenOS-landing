@@ -60,8 +60,10 @@ assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /postJSON\('\/conversation\/message'/);
 assert.doesNotMatch(companion, /refreshPendingCareUpdates|pendingCareUpdates/);
 assert.doesNotMatch(companion, /reviewCareUpdate|care_update_candidates|\/companion\/care-updates/);
-assert.match(deltaPanel, /if \(!showPanel\) return null/);
-assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);
+assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
+  "Delta comparison must not support hidden automatic reconciliation");
+assert.match(deltaPanel, /onSubmit=\{\(event\) => \{ event\.preventDefault\(\); void reconcile\(/,
+  "a Delta comparison must only run from an explicit caregiver submission");
 assert.doesNotMatch(dailyCapture, /CareDeltaPanel|deltaAutoInput|care-delta\\/reconcile/,
   "Daily Care must not launch a second browser-side Delta comparison; the persisted backend reconciliation is authoritative");
 assert.match(dailyCapture, /window\\.dispatchEvent\\(new Event\\('careRecordUpdated'\\)\\)/,
