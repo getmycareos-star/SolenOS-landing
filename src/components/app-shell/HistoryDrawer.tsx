@@ -1173,9 +1173,9 @@ export function HistoryDrawer() {
                         <dt>When it happened</dt><dd>{formatDateTime(selectedRecord.occurred_at)}{selectedRecord.occurred_at_timezone ? " (" + selectedRecord.occurred_at_timezone + ")" : ""}</dd>
                         <dt>When it was saved</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
                         <dt>Status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
-                        <dt>Who shared it</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver attribution recorded" : "Not recorded"}</dd>
+                        <dt>Who shared it</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver" : "Not recorded"}</dd>
                         <dt>How the date was recorded</dt><dd>{selectedRecord.time_provenance || "Not recorded"}</dd>
-                        <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? selectedRecord.evidence_ids.join(", ") : "No evidence references attached"}</dd>
+                        <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? selectedRecord.evidence_ids.join(", ") : "No related notes or documents attached"}</dd>
                         <dt>Labels</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.join(", ") : "No tags recorded"}</dd>
                         <dt>Last updated</dt><dd>{formatDateTime(selectedRecord.updated_at)}</dd>
                       </>
