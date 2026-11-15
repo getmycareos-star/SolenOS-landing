@@ -240,7 +240,7 @@ assert.match(claimReview, /Choose a note or document/);
 assert.match(claimReview, /This information needs another review/);
 assert.match(statusCareDelta, /Compare with saved care information/);
 assert.match(careRecordOverview, /See what has been saved, who shared it/);
-assert.match(persistedOrientation, /Your Care Record does not have any care information yet/);
+assert.match(persistedOrientation, /Your care record is taking shape/);
 assert.match(workspaceNav, /label: "Care Record"/);
 assert.match(workspaceNav, /label: "Care Assistant"/);
 assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
