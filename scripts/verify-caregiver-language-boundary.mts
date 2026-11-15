@@ -17,7 +17,7 @@ assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
 assert.equal(caregiverStatusLabel("unknown_internal_state"), null);
 assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
-assert.equal(caregiverFieldLabel("medication_name"), "Medication");
+assert.equal(caregiverFieldLabel("medication_name"), "Medication name as reported");
 assert.equal(caregiverFieldLabel("dose"), "Dose as reported");
 assert.equal(caregiverFieldLabel("medication_name"), "Medication name as reported");
 assert.equal(caregiverFieldLabel("medication_status"), "Medication status as reported");
