@@ -45,7 +45,8 @@
     "recentHistory": "Recent care history",
     "viewHistory": "View all history",
     "noHistory": "No recent care entries are available. No record is not proof that no care took place.",
-    "tagline": "Your care journey, remembered."
+    "tagline": "Your care journey, remembered.",
+    "longitudinalIncomplete": "This update is saved, but SolenOS could not complete its comparison with earlier care history. The change assessment is incomplete."
   },
   "changeIntelligence": {
     "eyebrow": "LONGITUDINAL UNDERSTANDING",
