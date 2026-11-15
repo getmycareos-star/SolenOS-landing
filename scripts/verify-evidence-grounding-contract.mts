@@ -89,7 +89,7 @@ console.log("PASS: source-lineage UI persists explicit relationship assessments 
 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
 assert(companion.includes("claim_provenance: response.claim_provenance"), "Companion must consume claim-level source references from the backend");
-assert(companion.includes("Not matched to the wording in a saved record"), "Companion must visibly mark statements without a matching source");
+assert(companion.includes("This statement does not match the wording in a saved record"), "Companion must visibly mark statements without a matching source");
 assert(companion.includes("Where this answer came from"), "Companion must show source details beside the specific statement they support");
 assert(companion.includes("does not prove that a report is true or that two records came from different people"), "Companion must not present source matching as proof of truth or source independence");
 assert(companion.includes("Supporting note or document"), "Matched care entries must expose their linked original notes and documents");
