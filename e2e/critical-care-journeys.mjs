@@ -741,6 +741,18 @@ await record("06 Companion context and Qwen output", async () => {
     "Companion must report that the validated caregiver question was actually supplied to Qwen",
   );
 
+  const professionalQuestionReply = String(questionAnswer.payload.reply || "").toLowerCase();
+  assert.match(
+    professionalQuestionReply,
+    /appetite|breakfast|eating|food/,
+    "Companion must answer the caregiver's actual appetite question",
+  );
+  assert.match(
+    professionalQuestionReply,
+    /healthcare professional|professional|doctor|clinician|care team/,
+    "Companion must preserve that the question is intended for a healthcare professional",
+  );
+
   const medicationAnswer = await request("/api/v1/conversation/message", {
     token: identity.token,
     method: "POST",
