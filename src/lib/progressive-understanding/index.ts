@@ -26,6 +26,16 @@ export type {
 } from "./types";
 export { processProgressiveUnderstanding } from "./process";
 export {
+  isPersistedDeltaChangeSupported,
+  projectPersistedDeltaUnderstanding,
+} from "./persisted-delta-projection";
+export type {
+  PersistedDeltaChange,
+  PersistedDeltaRun,
+  PersistedDeltaSourceReference,
+  PersistedProgressiveUnderstandingProjection,
+} from "./persisted-delta-projection";
+export {
   detectObservationSignals,
   collectSituationSignals,
   latestObservationSignals,
