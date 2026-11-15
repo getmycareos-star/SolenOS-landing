@@ -40,6 +40,9 @@ export type PersistedChange = {
   comparison_window_start: string | null;
   comparison_window_end: string | null;
   confidence: number | null;
+  significance_verdict?: "meaningful_candidate" | "not_meaningful" | "insufficient_evidence" | null;
+  attention_candidate?: boolean;
+  follow_up_candidate?: boolean;
   baseline_coverage_status?: CoverageStatus | null;
   current_coverage_status?: CoverageStatus | null;
   baseline_coverage_fraction?: number | null;
