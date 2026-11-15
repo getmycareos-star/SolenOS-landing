@@ -111,7 +111,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             ? {
                 ...current,
                 status: analysis.extraction_status || "unavailable",
-                processingStatus: longitudinalProcessingCompleted ? "completed" : "unavailable",
+                processingStatus: deltaCompleted && longitudinalProcessingCompleted ? "completed" : "unavailable",
                 analysisId,
                 candidates: analysis.candidates ?? null,
               }
