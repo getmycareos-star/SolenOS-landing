@@ -215,7 +215,7 @@ console.log("PASS: LCR context interpretation only runs after a persisted event 
 const documentReview = read("src/components/DocumentIntelligenceReview.tsx");
 assert(documentReview.includes("candidate.candidate_index"), "Document review must preserve stable candidate indices across batches.");
 assert(documentReview.includes("has_more_candidates"), "Document review must expose remaining statements instead of silently dropping overflow.");
-assert(documentReview.includes("Show next group of"), "Document review must allow the next bounded group after the current group is decided.");
+assert(documentReview.includes("Show the next "), "Document review must allow the next bounded group after the current group is decided.");
 assert(documentReview.includes("retryable_page_numbers"), "Only transient page failures may offer automatic retry.");
 assert(documentReview.includes("extraction_unprocessed_page_numbers"), "OCR extraction state must remain separate from Qwen page-window progress.");
 assert(documentReview.includes("blocked_page_numbers"), "Pages blocked by resource limits must not be offered for automatic retry.");
