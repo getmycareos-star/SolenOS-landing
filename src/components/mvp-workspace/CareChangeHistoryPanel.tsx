@@ -249,7 +249,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                   </div>
                 )}
                 {run.source_freshness?.status === "stale" && (
-                  <p role="note">A source record changed after this comparison. This result may need to be reviewed again.</p>
+                  <p role="note">The care record changed after this comparison. This result may need to be reviewed again.</p>
                 )}
                 {confirmed.length === 0 && needsReview.length === 0 && conflicts.length === 0 && (
                   <p>No supported change was established by this comparison.</p>

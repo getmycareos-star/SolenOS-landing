@@ -10,6 +10,12 @@ const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
 let dailyScenarioEventIdsByReport = {};
 let dailyScenarioEvidenceIdsByReport = {};
+const scenarioReports = [
+  "Mum slept poorly last night and seemed more unsettled this morning.",
+  "Mum barely touched her lunch today. She drank some water, though.",
+  "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
+  "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
+];
 
 async function request(path, { token, method = "GET", body, form, extraHeaders = {} } = {}) {
   const headers = { ...extraHeaders, ...(token ? { authorization: `Bearer ${token}` } : {}) };
@@ -358,13 +364,6 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
     console.log(`Daily Care Scenario 01: saved source report: ${text}`);
     return { eventId: savePayload.id, jobId: savePayload.qwen_job_id };
   };
-  const scenarioReports = [
-    "Mum slept poorly last night and seemed more unsettled this morning.",
-    "Mum barely touched her lunch today. She drank some water, though.",
-    "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
-    "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
-  ];
-
   const seededMedication = await request("/api/v1/care-continuity/medications", {
     token: identity.token,
     method: "POST",
@@ -598,7 +597,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
   }
   assert.ok(
     projectedObservations.every((item) =>
-      item.epistemic_status === "uncertain" || !/\\b\\d+(?:\\.\\d+)?\\s*(?:mg|mcg|ml)\\b/i.test(item.value_text)
+      item.epistemic_status === "uncertain" || !/\\b\d+(?:\.\d+)?\s*(?:mg|mcg|ml)\\b/i.test(item.value_text)
     ),
     "an unconfirmed medication report must never create a confirmed dose",
   );
@@ -740,6 +739,58 @@ await record("06 Companion context and Qwen output", async () => {
   assert.ok(
     questionAnswer.payload.lcr_context_coverage?.sources?.caregiver_question_queue?.selected_for_answer > 0,
     "Companion must report that the validated caregiver question was actually supplied to Qwen",
+  );
+
+  const professionalQuestionReply = String(questionAnswer.payload.reply || "").toLowerCase();
+  assert.match(
+    professionalQuestionReply,
+    /appetite|breakfast|eating|food/,
+    "Companion must answer the caregiver's actual appetite question",
+  );
+  assert.match(
+    professionalQuestionReply,
+    /healthcare professional|professional|doctor|clinician|care team/,
+    "Companion must preserve that the question is intended for a healthcare professional",
+  );
+
+  const medicationAnswer = await request("/api/v1/conversation/message", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      text: "What new dose did the doctor prescribe for Mum yesterday?",
+      client_turn_id: randomUUID(),
+    },
+  });
+  assert.equal(medicationAnswer.status, 200, JSON.stringify(medicationAnswer.payload));
+  assert.equal(medicationAnswer.payload.written_to_lcr, false);
+  const medicationReply = String(medicationAnswer.payload.reply || "").toLowerCase();
+  assert.match(
+    medicationReply,
+    /can't remember|cannot remember|not recorded|not provided|not confirmed|not specified|not stated|doesn't state|does not state|not in the record|unclear|unknown|can't confirm|cannot confirm|don't know|do not know/,
+    "Companion must preserve that the caregiver could not confirm the new medication dose",
+  );
+  assert.doesNotMatch(
+    medicationReply,
+    /(?:the new dose is|the doctor prescribed|the medication was changed to)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|ml)/i,
+    "Companion must not invent a new medication dose from an uncertain caregiver report",
+  );
+  assert.ok(
+    (medicationAnswer.payload.source_event_ids || []).includes(
+      dailyScenarioEventIdsByReport[scenarioReports[2]],
+    ),
+    "Companion must retrieve the exact uncertain medication report",
+  );
+  assert.ok(
+    (medicationAnswer.payload.source_evidence_ids || []).includes(
+      dailyScenarioEvidenceIdsByReport[scenarioReports[2]],
+    ),
+    "Companion must retain the original evidence for the uncertain medication report",
+  );
+  assert.equal(
+    medicationAnswer.payload.lcr_context_coverage?.prompt_context_complete,
+    true,
+    "Companion must disclose complete context for the medication-dose question",
   );
 
   const documentAnswer = await request("/api/v1/conversation/message", {
