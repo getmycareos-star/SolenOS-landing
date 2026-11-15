@@ -20,7 +20,7 @@ assert.match(component, /item\.evidence_ids/);
 assert.match(component, /Your Care Record does not have any care information yet/);
 assert.match(component, /Add a care update/);
 assert.match(component, /Some parts of the record may not be available in this view/);
-assert.match(component, /Missing information does not mean that nothing happened/);
+assert.doesNotMatch(component, /Missing information does not mean that nothing happened/);
 assert.match(component, /Try again/);
 
 // Reading the orientation screen must not trigger a write/reassessment.
