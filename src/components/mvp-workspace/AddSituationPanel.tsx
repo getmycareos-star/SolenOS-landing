@@ -292,8 +292,8 @@ export function AddSituationPanel({
               {doc.status === "failed" &&
                 ` · ${sanitizeCaregiverErrorMessage(doc.errorNote ?? "Could not read this document.")}`}
               {doc.status === "ready" && " · Attached"}
-              {doc.status === "saved" && doc.entryMethod === "snap" && " · Photo saved — not interpreted"}
-              {doc.status === "saved" && doc.entryMethod !== "snap" && (doc.errorNote ? " · Original saved — processing not started" : " · Saved — processing in background")}
+              {doc.status === "saved" && doc.entryMethod === "snap" && " · Photo saved — not read yet"}
+              {doc.status === "saved" && doc.entryMethod !== "snap" && (doc.errorNote ? " · Original saved — waiting for SolenOS to read it" : " · Saved — SolenOS is reading it in the background")}
               {doc.status === "saved" && doc.errorNote && <span role="alert"> · {sanitizeCaregiverErrorMessage(doc.errorNote)}</span>}
               {(doc.status === "failed" || (doc.status === "saved" && !!doc.errorNote)) && (
                 <button
