@@ -816,6 +816,19 @@ await record("06 Companion context and Qwen output", async () => {
     ),
     "Companion must retain the original evidence for the uncertain medication report",
   );
+  const medicationSourceRefs = new Set(
+    (medicationAnswer.payload.source_record_refs || []).map(
+      (item) => `${item.record_type}:${item.record_id}`,
+    ),
+  );
+  assert.ok(
+    medicationSourceRefs.has(`care_event:${dailyScenarioEventIdsByReport[scenarioReports[2]]}`),
+    "Medication recall must expose a typed reference to the exact caregiver event",
+  );
+  assert.ok(
+    medicationSourceRefs.has(`care_evidence:${dailyScenarioEvidenceIdsByReport[scenarioReports[2]]}`),
+    "Medication recall must expose a typed reference to the original evidence",
+  );
   assert.equal(
     medicationAnswer.payload.lcr_context_coverage?.prompt_context_complete,
     true,
