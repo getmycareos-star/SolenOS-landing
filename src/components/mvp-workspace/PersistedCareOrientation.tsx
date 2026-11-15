@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { RecordState } from "@/components/ui/RecordState";
 
 type CurrentCareItem = {
   id: string;
@@ -107,7 +108,7 @@ export function PersistedCareOrientation() {
   if (state === "loading") {
     return (
       <section className="persisted-care-orientation" aria-busy="true" aria-label="Saved care information">
-        <h2>Loading your care information…</h2>
+        <RecordState kind="loading" title="Loading your care information…" />
       </section>
     );
   }
@@ -118,7 +119,7 @@ export function PersistedCareOrientation() {
         <div className="persisted-care-orientation-header">
           <div><h2>We couldn't load your care information</h2></div>
         </div>
-        <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
+        <RecordState kind="error" title="We couldn’t load your care information." description={error || "Check your connection and try again."} />
         <button type="button" onClick={() => void load()}>Try again</button>
       </section>
     );
@@ -152,16 +153,12 @@ export function PersistedCareOrientation() {
         </>
       ) : (
         <div>
-          <p>Your Care Record does not have any care information yet.</p>
-          <p>When you share an update or document, it can be reviewed and added to this record.</p>
-          <Link href="/workspace">Add a care update</Link>
+          <RecordState kind="empty" title="No care information recorded yet." description="Add a care update or document to start building your record." action={<Link href="/workspace/daily-care">Add a care update</Link>} />
         </div>
       )}
 
       {(hasRequiredSourceGaps || hasOptionalSourceGaps || projection.schema_status !== "complete") && (
-        <p role="note">
-          Some parts of the record may not be available in this view. Missing information does not mean that nothing happened.
-        </p>
+        <p role="note">Some care information may not be included in this view.</p>
       )}
       <p role="note">{projection.notice}</p>
 
