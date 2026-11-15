@@ -1033,6 +1033,18 @@ await record("09 appointment summary persistence", async () => {
   });
   assert.equal(preparationBrief.status, 200, JSON.stringify(preparationBrief.payload));
   assert.equal(preparationBrief.payload.read_only, true);
+  assert.equal(preparationBrief.payload.living_care_record_context.person_id, identity.personId);
+  assert.equal(preparationBrief.payload.living_care_record_context.read_only, true);
+  assert.equal(preparationBrief.payload.living_care_record_context.retrieval_strategy, "person_scoped_full_source_scan");
+  assert.equal(preparationBrief.payload.living_care_record_context.retrieval_scan_complete, true);
+  assert.ok(
+    preparationBrief.payload.living_care_record_context.sources.events.items.some((item) => item.id === dailyCaptureEventId),
+    "appointment preparation must retrieve the same persisted Daily Care event through the shared LCR projection",
+  );
+  assert.ok(
+    preparationBrief.payload.living_care_record_context.sources.evidence.items.some((item) => item.id === documentId),
+    "appointment preparation must retrieve the same persisted document evidence through the shared LCR projection",
+  );
   assert.ok(
     preparationBrief.payload.events.some((item) => item.description?.includes("restless sleep"))
       || preparationBrief.payload.events.some((item) => item.description?.includes("overnight awakenings")),
