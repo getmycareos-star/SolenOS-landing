@@ -90,7 +90,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
   async function changeStatus(changeId: string, status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive" | "resolved") {
     const reason = confirmationReasons[changeId]?.trim() ?? "";
     if (status !== "awaiting_confirmation" && !reason) {
-      setDetailErrors((current) => ({ ...current, [changeId]: "A decision rationale is required to confirm, dispute, mark this assessment inconclusive, or confirm a resolution." }));
+      setDetailErrors((current) => ({ ...current, [changeId]: "Please tell us why you are confirming or correcting this change before you continue." }));
       return;
     }
     setTransitioningIds((current) => [...current, changeId]);
@@ -182,7 +182,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       setChangeOffset(nextOffset);
       setHasMoreChanges(rows.length === 100);
     } catch {
-      if (personIdRef.current === personId) setWarning("Earlier change assessments could not be loaded. The saved care record has not been changed.");
+      if (personIdRef.current === personId) setWarning("Earlier care changes could not be loaded. Your Care Record has not been changed.");
     } finally {
       if (personIdRef.current === personId) setLoadingMoreChanges(false);
     }
