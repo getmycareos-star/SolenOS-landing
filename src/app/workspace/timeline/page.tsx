@@ -377,6 +377,49 @@ export default function TimelinePage() {
     void loadEvents();
   }, [loadEvents]);
 
+  // Recover a pending correction after a browser reload and keep its visible
+  // status aligned with the durable backend receipt.
+  useEffect(() => {
+    if (pendingCorrectionId) return;
+    const pending = events.find(
+      (item) => item.source_type === "correction" && ["pending", "processing"].includes(item.processing_status || ""),
+    );
+    if (pending?.id) setPendingCorrectionId(pending.id);
+  }, [events, pendingCorrectionId]);
+
+  useEffect(() => {
+    if (!pendingCorrectionId) return;
+    let cancelled = false;
+
+    const refreshCorrectionStatus = async () => {
+      try {
+        const session = await ensureAnonymousSession();
+        if (!session.person?.id || !session.access_token) return;
+        const rows = await getJSON(`/corrections/${encodeURIComponent(session.person.id)}`) as Array<{
+          id?: string;
+          processing_status?: string;
+        }>;
+        if (cancelled || !Array.isArray(rows)) return;
+        const receipt = rows.find((row) => row.id === pendingCorrectionId);
+        if (receipt?.processing_status === "completed") {
+          setPendingCorrectionId(null);
+          setCorrectionMessage("The Care Record has been updated. The original entry remains available in your history.");
+          await loadEvents(true, appliedQuery);
+        }
+      } catch {
+        // Keep the saved correction visible as pending; a temporary read failure
+        // must never be presented as a successful update.
+      }
+    };
+
+    void refreshCorrectionStatus();
+    const interval = window.setInterval(() => void refreshCorrectionStatus(), 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [pendingCorrectionId, loadEvents, appliedQuery]);
+
   const submitCorrection = useCallback(async (event: CareEvent) => {
     if (!correctionText.trim() || correctionSaving) return;
     setCorrectionSaving(true);
