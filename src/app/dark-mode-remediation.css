@@ -766,3 +766,17 @@
   color: #ffffff !important;
   stroke: currentColor;
 }
+
+
+/* The Care Record's route shortcuts sit outside the white record card. Keep
+   their foreground readable on the dark workspace surface as well. */
+:root[data-solenos-theme="dark"] .lcr-home [aria-label="Care Record actions"] .lcr-text-action {
+  background: #26342a !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .lcr-home [aria-label="Care Record actions"] .lcr-text-action span {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
