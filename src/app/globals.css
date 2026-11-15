@@ -6030,3 +6030,109 @@ html:not([data-solenos-theme="dark"]) [role="button"][style*="var(--trust)"]:hov
   border-color: #496b47 !important;
   color: var(--solenos-button-ink) !important;
 }
+
+
+/* Caregiver navigation: visible by default on desktop, drawer on small screens. */
+.solenos-chat-sidebar-host {
+  flex: 0 0 264px;
+  width: 264px;
+  overflow: visible;
+}
+.solenos-chat-sidebar-host.is-sidebar-open {
+  flex-basis: 264px;
+  width: 264px;
+}
+.solenos-chat-sidebar-top > .solenos-sidebar-icon-button,
+.solenos-sidebar-toggle {
+  display: none;
+}
+.solenos-chat-primary-nav {
+  flex: 0 0 auto;
+  max-height: min(58dvh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 5px 0 12px;
+}
+.solenos-chat-nav-group {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+}
+.solenos-chat-nav-heading {
+  margin: 0;
+  padding: 3px 10px 5px;
+  color: #68766e;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .09em;
+  line-height: 1.3;
+}
+.solenos-chat-nav-item {
+  min-height: 48px;
+  align-items: center;
+  white-space: normal;
+}
+.solenos-chat-nav-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  text-align: left;
+}
+.solenos-chat-nav-label {
+  display: block;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+.solenos-chat-nav-description {
+  display: block;
+  color: #68766e;
+  font-size: 10.5px;
+  font-weight: 400;
+  line-height: 1.3;
+  white-space: normal;
+}
+.solenos-chat-nav-item.is-active .solenos-chat-nav-description {
+  color: #496653;
+}
+.solenos-chat-history-search {
+  min-height: 44px;
+}
+.solenos-chat-sidebar-bottom .solenos-chat-nav-item {
+  min-height: 48px;
+}
+@media (max-width: 760px) {
+  .solenos-chat-sidebar-host {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 120;
+    flex: 0 0 min(320px, 90vw);
+    width: min(320px, 90vw);
+    height: 100dvh;
+    overflow: visible;
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+  }
+  .solenos-chat-sidebar-host.is-sidebar-open {
+    flex-basis: min(320px, 90vw);
+    width: min(320px, 90vw);
+    transform: translateX(0);
+  }
+  .solenos-chat-sidebar-top > .solenos-sidebar-icon-button,
+  .solenos-sidebar-toggle {
+    display: inline-grid;
+  }
+  .solenos-sidebar-toggle {
+    display: inline-flex;
+  }
+  .solenos-chat-primary-nav {
+    max-height: 56dvh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .solenos-chat-sidebar-host {
+    transition: none;
+  }
+}
