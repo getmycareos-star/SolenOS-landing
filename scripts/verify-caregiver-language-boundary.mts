@@ -124,7 +124,7 @@ assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedTex
 assert.match(lcr, /displayDescription\(source\.description\)/);
 assert.match(lcr, /displayCurrentCareDescription\(item\)/);
 assert.match(lcr, /<details className="lcr-entry-status">/);
-assert.match(lcr, /<summary>Record details<\/summary>/);
+line=>'assert.match(lcr, /<summary>Care details<\\\\/summary>/);'
 assert.match(lcr, /Your saved care notes are still available below/);
 assert.doesNotMatch(lcr, /We couldn’t check which items may need attention\. Try refreshing\./);
 assert.match(lcr, /CURRENT_CARE_TITLE_LABELS/);
