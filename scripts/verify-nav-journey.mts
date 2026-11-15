@@ -43,7 +43,7 @@ assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
 assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct route to the Care Record");
 assert.match(appShell, /href === "\/workspace"\s*\? pathname === href/, "the Care Record active state must not match every nested route");
 
-for (const label of ["Care Record", "Daily Care", "Follow-ups", "Care history", "Documents", "Appointments", "Care Handoffs", "Care Assistant", "Settings"]) {
+for (const label of ["Care Record", "Daily Care", "Follow-ups", "Care history", "Documents", "Appointments", "Share care information", "Care Assistant", "Settings"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
 for (const route of [
@@ -104,7 +104,7 @@ const routeContracts = [
   ["src/app/workspace/timeline/page.tsx", "Care history"],
   ["src/app/workspace/documents/page.tsx", "Documents"],
   ["src/app/workspace/appointments/page.tsx", "Appointments"],
-  ["src/app/workspace/handoffs/page.tsx", "Care Handoffs"],
+  ["src/app/workspace/handoffs/page.tsx", "Share care information"],
   ["src/components/workflows/AICompanion.tsx", "Care Assistant"],
   ["src/app/workspace/settings/page.tsx", "Settings"],
 ];
