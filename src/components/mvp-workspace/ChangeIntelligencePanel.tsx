@@ -455,7 +455,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 <p className="panel-muted">
                   Based on {change.evidence_ids.length} saved item(s).
                 </p>
-                <p className="panel-muted">Some earlier care information may be missing. That does not mean the event did not happen.</p>
+                <p className="panel-muted">Some earlier care information may be missing.</p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
                   {expandedChangeId === change.id ? "Hide notes and documents" : "Review notes and documents"} <span aria-hidden="true">→</span>
                 </button>
