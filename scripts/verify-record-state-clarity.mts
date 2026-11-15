@@ -12,6 +12,7 @@ const overview = read("src/components/app-shell/CareRecordOverview.tsx");
 const daily = read("src/app/workspace/daily-care/page.tsx");
 const reminders = read("src/app/workspace/reminders/page.tsx");
 const history = read("src/components/app-shell/HistoryDrawer.tsx");
+const claimReview = read("src/components/ClaimAssessmentPanel.tsx");
 
 for (const kind of ["empty", "no-results", "loading", "error", "unavailable", "unconfirmed"]) {
   assert.ok(state.includes(`| "${kind}"`) || state.includes(`= "${kind}"`), `shared state supports ${kind}`);
@@ -48,5 +49,8 @@ assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
 assert.doesNotMatch(read("src/components/mvp-workspace/ChangeIntelligencePanel.tsx"), /This does not mean nothing changed/);
 assert.doesNotMatch(read("src/app/workspace/open-loops/page.tsx"), /An empty section does not mean nothing needs attention/);
+assert.doesNotMatch(claimReview, /This does not mean there are no past reviews|This does not mean this review is current/);
+assert.match(claimReview, /Past reviews could not be loaded\\. Try again\\./);
+assert.match(claimReview, /New information could not be checked\\. Try again before relying on this review\\./);
 
 console.log("Record-state clarity and failure-separation checks passed.");
