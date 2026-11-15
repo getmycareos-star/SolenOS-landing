@@ -272,7 +272,7 @@ export default function ClaimAssessmentPanel() {
       } catch {
         if (!cancelled) {
           setDependencies([]);
-          setDependencyError("Related care details could not be loaded. This does not mean there are no related details.");
+          setDependencyError("Related care details couldn’t be loaded. Try again.");
         }
       } finally {
         if (!cancelled) setDependencyLoading(false);
@@ -479,7 +479,7 @@ export default function ClaimAssessmentPanel() {
           <div style={{ fontSize: 12, marginTop: 5 }}>Review: {simpleReviewStatus(assessmentImpact.status)}</div>
           {assessmentImpact.reasons.length > 0
             ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{simpleReviewStatus(reason)}</li>)}</ul>
-            : <p style={{ fontSize: 12 }}>No new information was found that requires another review in the information checked. This does not prove that the review is complete or correct.</p>}
+            : <p style={{ fontSize: 12 }}>No new information requiring another review was found in the information checked.</p>}
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Notes or documents that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Notes or documents not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
