@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
