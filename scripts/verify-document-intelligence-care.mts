@@ -263,6 +263,49 @@ for (const med of dischargeJourney.medications) {
   }
 }
 console.log("✓ SolenOS never confirms diagnoses or validates medications");
+ 
+// ─── 8a. Medication language must not invent dosing decisions ────────────────
+const medicationSafetyJourney: CareJourneyUnderstanding = {
+  ...dischargeJourney,
+  medications: [
+    {
+      name: "ExampleMed",
+      status: "new",
+      duplicateDose: true,
+      missedDose: true,
+      unclearInstructions: true,
+      sourceText: ["Caregiver reports a possible duplicate dose and a missed dose."],
+    },
+  ],
+};
+const medicationSafetyLines = buildCaregiverTranslation(medicationSafetyJourney).join(" ").toLowerCase();
+for (const unsafePhrase of [
+  "check whether a make-up dose is needed",
+  "confirm the correct dose before the next dose is given",
+  "check whether to add it to the care routine",
+]) {
+  if (medicationSafetyLines.includes(unsafePhrase)) {
+    throw new Error(`medication explanation must not imply a dosing decision: ${unsafePhrase}`);
+  }
+}
+for (const requiredPhrase of ["prescriber", "pharmacist", "does not establish"]) {
+  if (!medicationSafetyLines.includes(requiredPhrase)) {
+    throw new Error(`medication explanation must preserve uncertainty and direct to an appropriate professional: ${requiredPhrase}`);
+  }
+}
+const medicationSafetyChanges = detectCareChanges(medicationSafetyJourney, firstJourney);
+const medicationSafetyChangeText = medicationSafetyChanges.map((change) => change.detail).join(" ").toLowerCase();
+if (
+  medicationSafetyChangeText.includes("make-up dose is needed") ||
+  medicationSafetyChangeText.includes("before the next dose is given")
+) {
+  throw new Error("medication change detection must not imply an unverified dosing instruction");
+}
+if (!medicationSafetyChangeText.includes("prescriber") || !medicationSafetyChangeText.includes("pharmacist")) {
+  throw new Error("medication change detection must preserve uncertainty and direct to a prescriber or pharmacist");
+}
+console.log("✓ medication explanations and change detection preserve uncertainty without dosing advice");
+
 
 // ─── 9. Uncertainty preservation ─────────────────────────────────────────────
 
