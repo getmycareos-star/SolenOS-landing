@@ -19,7 +19,8 @@ assert.match(state, /role=\{isError \? "alert" : "status"\}/);
 
 assert.match(lcr, /No care information recorded yet/);
 assert.doesNotMatch(lcr, /Missing information does not mean everything is fine/);
-assert.doesNotMatch(lcr, /This does not mean there are no care needs/);
+assert.doesNotMatch(lcr, /This does not mean there are no care needs|This is not a statement that no care needs exist/);
+assert.match(lcr, /Not everything that happens is automatically recorded/);
 assert.match(orientation, /No care information recorded yet/);
 assert.match(orientation, /href="\/workspace\/daily-care"/);
 assert.doesNotMatch(orientation, /Missing information does not mean that nothing happened/);
@@ -43,5 +44,6 @@ assert.match(reminders, /RecordState kind="loading"/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
 assert.doesNotMatch(history, /empty section does not mean nothing happened/);
+assert.doesNotMatch(read("src/app/workspace/open-loops/page.tsx"), /An empty section does not mean nothing needs attention/);
 
 console.log("Record-state clarity and failure-separation checks passed.");
