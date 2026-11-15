@@ -49,6 +49,8 @@ for (const [source, pattern, label] of [
   [historyPanel, /What still needs checking/, "uncertain findings must remain visible as uncertain"],
   [historyPanel, /Reports that differ/, "conflicting reports must remain visible"],
   [historyPanel, /source_freshness\?\.status === "stale"/, "stale comparisons must be disclosed"],
+  [historyPanel, /const confirmed = stale \? \[\] : changes\.filter\(supported\)/, "stale comparisons must not be presented as supported changes"],
+  [historyPanel, /const needsReview = stale \? changes : changes\.filter/, "all findings from stale comparisons must remain review-only"],
   [lcr, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the primary LCR"],
   [historyPanel, /if \(!personId\) return null/, "history must wait for a scoped care record"],
 ]) {
