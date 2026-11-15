@@ -424,7 +424,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
           disabled={refreshing || loading}
           onClick={() => void refreshSavedAssessments()}
         >
-          {refreshing ? "Checking for new changes…" : "Check for updates"}
+          {refreshing ? "Checking for updates…" : "Check for updates"}
         </button>
       </div>
       {loading ? <p role="status" className="panel-muted">Loading care changes…</p> : null}
