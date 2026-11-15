@@ -1271,10 +1271,10 @@ export function LCRCurrentUnderstanding() {
               Nothing in the information checked is marked for immediate attention.
               {importantCareDecisions.length > 0 ? ` ${importantCareDecisions.length} important ${importantCareDecisions.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review.` : ""}
               {clarificationCareDecisions.length > 0 ? ` ${clarificationCareDecisions.length} ${clarificationCareDecisions.length === 1 ? "detail needs" : "details need"} clarification.` : ""}
-              {" "}This is not a statement that no care needs exist.
+
             </p>
           ) : (
-            <p>Nothing in the information checked is marked for immediate attention. This is not a statement that no care needs exist.</p>
+            <p>No items are currently marked for immediate attention in the information checked.</p>
           )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
         </div>
@@ -1336,7 +1336,7 @@ export function LCRCurrentUnderstanding() {
           <p role="status">We couldn’t check what needs attention just now. Your saved care notes are still available below.</p>
         )}
         {!assessmentError && !assessment && !loading && !assessmentLoading && (
-          <p role="status">We don’t yet have enough information to identify priorities. This does not mean there are no care needs.</p>
+          <RecordState kind="empty" title="Care priorities aren’t available yet." description="More recorded information may be needed." />
         )}
         {assessment && !assessment.open_loops && (
           <p role="status">Some follow-up details are not available yet. No priority has been assumed.</p>
@@ -1499,7 +1499,7 @@ export function LCRCurrentUnderstanding() {
                     </button>
                   </div>
                 )}
-                <small>Assessment uses saved records only. Missing history is not evidence that nothing happened, and grouped observations do not establish cause or diagnosis.</small>
+                <small>Assessment uses saved records only. Grouped observations do not establish cause or diagnosis.</small>
               </section>
             )}
 
