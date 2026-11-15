@@ -137,7 +137,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         ? { ...item, reviewEvents: Array.isArray(history.items) ? history.items : [], reviewHistoryUnavailable: false }
         : item));
     } catch {
-      setHistoryErrors((current) => ({ ...current, [analysisId]: "The saved review history could not be loaded. A missing history does not mean no earlier decision was made." }));
+      setHistoryErrors((current) => ({ ...current, [analysisId]: "Saved review history couldn’t be loaded. Try again." }));
     } finally {
       setHistoryLoading((current) => ({ ...current, [analysisId]: false }));
     }
