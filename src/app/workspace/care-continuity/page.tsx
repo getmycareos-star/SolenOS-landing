@@ -250,7 +250,7 @@ function WorkspacePageInner() {
                       </div>
                     )}
                     {(situation.conflicts?.length ?? 0) > 0 && (
-                      <details className="lcr-entry-details" aria-label="Unresolved conflicting reports">
+                      <details className="lcr-entry-details" aria-label="Reports that do not match">
                         <summary>{situation.conflicts!.length} reports do not match yet</summary>
                         {situation.conflicts!.map((conflict) => (
                           <div key={conflict.id} className="lcr-source-statement">
