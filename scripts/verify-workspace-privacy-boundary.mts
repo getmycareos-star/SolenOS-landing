@@ -21,7 +21,7 @@ assert.match(legacyRecordRoute, /redirect\("\/workspace"\)/,
   "the legacy LCR route redirects to the AI Companion home");
 assert.doesNotMatch(legacyRecordRoute, /ResearchPreviewAckGate|ConsentGatePanel|Living Care Record/,
   "the old LCR page is not rendered or used as a workspace destination");
-assert.match(workspacePage, /Living Care Record/,
+assert.match(workspacePage, /Your Care Record/,
   "the retained care-continuity workspace preserves the current care record view");
 assert.doesNotMatch(workspacePage, /ResearchPreviewAckGate/,
   "the care-continuity workspace must not mount an early-version acknowledgement gate");
