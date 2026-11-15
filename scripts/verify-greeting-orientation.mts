@@ -11,6 +11,7 @@ import {
   isGratitudeInput,
   isInsultOrFrustrationInput,
   isChangeOrientedInput,
+  shouldUseLcrOrientationEndpoint,
 } from "../src/lib/greeting-orientation";
 
 assert.equal(isCasualGreetingInput("Hi"), true);
@@ -23,6 +24,12 @@ assert.equal(isGratitudeInput("Thank you so much"), true);
 assert.equal(isInsultOrFrustrationInput("idiot"), true, "clear insult input must be classified as frustration");
 assert.equal(isInsultOrFrustrationInput("you suck"), true, "direct insult input must be classified as frustration");
 assert.equal(isInsultOrFrustrationInput("Mom fell last night"), false);
+assert.equal(shouldUseLcrOrientationEndpoint("Good morning, SolenOS!"), true);
+assert.equal(shouldUseLcrOrientationEndpoint("How are you?"), true);
+assert.equal(shouldUseLcrOrientationEndpoint("Thank you so much"), true);
+assert.equal(shouldUseLcrOrientationEndpoint("That's wrong"), false, "corrections must retain conversation context");
+assert.equal(shouldUseLcrOrientationEndpoint("You keep asking me the same questions"), false, "frustration must retain conversation context");
+assert.equal(shouldUseLcrOrientationEndpoint("Mom fell last night"), false);
 assert.equal(isChangeOrientedInput("Mom has been more confused lately"), true);
 
 const implementation = readFileSync(
