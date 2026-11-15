@@ -299,6 +299,28 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setError(null);
+    setWarning(null);
+    setChanges([]);
+    setPatterns([]);
+    setSituations([]);
+    setChangeOffset(0);
+    setPatternOffset(0);
+    setHasMoreChanges(false);
+    setHasMorePatterns(false);
+    setDetails({});
+    setPatternDetails({});
+    setSituationDetails({});
+    setExpandedSituationIds([]);
+    setSituationStates({});
+    setSituationReasons({});
+    setRefreshing(false);
+    setTransitioningIds([]);
+    setSituationTransitioningIds([]);
+    setSituationDetailLoadingIds([]);
+    setLoadingMoreChanges(false);
+    setLoadingMorePatterns(false);
     async function load() {
       try {
         const [changeRows, patternRows, situationRows] = await Promise.all([
@@ -324,7 +346,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     void load();
 
     return () => { active = false; };
-  }, []);
+  }, [personId]);
 
   return (
     <section className="lcr-record-section" aria-labelledby="change-intelligence-heading">
