@@ -43,7 +43,7 @@ for (const contract of [
   ["historical assessments remain visible", /setChanges\(changeRows\)/],
   ["inactive assessments are labeled as history", /Past assessment/],
   ["change explanations use the caregiver-safe change language filter", /caregiverSafeChangeText\(change\.explanation\)/],
-  ["change source details are user-reviewable", /Review source evidence/],
+  ["change source details are user-reviewable", /Review notes and documents/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
   ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
   ["failed loads are exposed as an error state", /role="alert"/],
