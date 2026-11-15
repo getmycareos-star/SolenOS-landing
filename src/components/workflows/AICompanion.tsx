@@ -126,6 +126,7 @@ interface Message {
   claim_provenance?: ClaimProvenance
   lcr_context_coverage?: LcrContextCoverage
   ai_generated?: boolean
+  response_mode?: string
   written_to_lcr?: boolean
   persistence?: string
   timestamp: Date
@@ -208,6 +209,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         claim_provenance: response.claim_provenance,
         lcr_context_coverage: response.lcr_context_coverage,
         ai_generated: response.ai_generated,
+        response_mode: response.response_mode,
         written_to_lcr: response.written_to_lcr,
         persistence: response.persistence,
         timestamp: new Date(),
@@ -315,6 +317,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
+                    {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
+                      <p>I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record.</p>
+                    </section>}
                     {!isUser && msg.ai_generated && coverage && <section className="companion-provenance" role="status" aria-label="Care history coverage">
                       <strong>How much of the saved care history was checked</strong>
                       <p>{coverageIsPartial
