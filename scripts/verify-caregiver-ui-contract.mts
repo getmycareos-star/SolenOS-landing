@@ -61,6 +61,7 @@ assert.match(companion, /postJSON\('\/conversation\/message'/);
 assert.doesNotMatch(companion, /refreshPendingCareUpdates|pendingCareUpdates/);
 assert.doesNotMatch(companion, /reviewCareUpdate|care_update_candidates|\/companion\/care-updates/);
 assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
+assert.doesNotMatch(dailyCapture, /QwenWorkflowPanel|QwenAssistPanel|showPanel\\s*=/, "Daily Capture must not render a separate workflow panel");
   "Delta comparison must not support hidden automatic reconciliation");
 assert.match(deltaPanel, /onSubmit=\{\(event\) => \{ event\.preventDefault\(\); void reconcile\(/,
   "a Delta comparison must only run from an explicit caregiver submission");
