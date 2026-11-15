@@ -58,8 +58,13 @@ assert.doesNotMatch(companion, /The safety engine flagged this exchange/);
 assert.match(companion, /A few words are enough/);
 assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /postJSON\('\/conversation\/message'/);
-assert.doesNotMatch(companion, /refreshPendingCareUpdates|pendingCareUpdates/);
-assert.doesNotMatch(companion, /reviewCareUpdate|care_update_candidates|\/companion\/care-updates/);
+assert.match(companion, /pendingCareUpdates/, "Companion must load persisted, caregiver-scoped care suggestions");
+assert.match(companion, /getJSON\('\/companion\/care-updates'/, "Companion must use the existing authenticated review queue");
+assert.match(companion, /reviewCareUpdate/, "caregivers must be able to explicitly review a suggested update");
+assert.match(companion, /postJSON\('\/companion\/care-updates\//, "review decisions must use the persisted backend review endpoint");
+assert.match(companion, /Add to Care Record/, "adding a Companion report must require an explicit caregiver action");
+assert.match(companion, /Don’t add/, "caregivers must be able to decline a suggested update");
+assert.match(companion, /not been independently verified/, "accepted Companion reports must remain distinct from clinical verification");
 assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
   "Delta comparison must not support hidden automatic reconciliation");
 assert.match(deltaPanel, /onSubmit=\{\(event\) => \{ event\.preventDefault\(\); void reconcile\(/,
