@@ -1226,24 +1226,23 @@ export function LCRCurrentUnderstanding() {
                       <li key={item.source + ":" + item.id} className="lcr-current-fact">
                         <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
                         <p>{caregiverSafeAssistantText(item.description || source?.description) || "No further description was recorded."}</p>
-                        <p className="lcr-entry-status">
-                          Why it appears: {(item.priority_reasons ?? []).map(caregiverSafeAssistantText).filter(Boolean).join("; ") || "The saved record marks this item for attention, but no reason was provided."}
-                        </p>
-                        <p className="lcr-entry-status">
-                          Status: {caregiverLabel(item.recorded_status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}
-                        </p>
-                        <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                        {item.request_text && <p>Follow-up: {caregiverSafeAssistantText(item.request_text) || "A follow-up was requested."}</p>}
                         {item.owner && <small>Responsible person: {caregiverSafeAssistantText(item.owner) || "Not recorded"}</small>}
-                        {item.request_text && <p>Follow-up request: {caregiverSafeAssistantText(item.request_text) || "A follow-up was requested."}</p>}
-                        {item.verification_rule && <small>How completion was checked: {caregiverSafeAssistantText(item.verification_rule) || "No further details are available."}</small>}
-                        {item.outcome_status && <small>Recorded outcome status: {caregiverStatusLabel(item.outcome_status) || "Status not available"}</small>}
                         {item.due_at && <small>Due date: {formatWhen(item.due_at)}</small>}
-                        {item.evidence_ids.length > 0
-                          ? <small>Sources: {item.evidence_ids.length} saved item(s)</small>
-                          : <small>This item was marked for follow-up in the saved record, but no supporting information is linked here.</small>}
-                        {source?.source_label && <small>Shared by: {caregiverSafeAssistantText(source.source_label) || "Not recorded"}</small>}
-                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
-                        {source && source.claim_count > 0 && <small>{source.claim_count} related report(s). Review the saved details before deciding whether they differ.</small>}
+                        <details className="lcr-entry-status">
+                          <summary>More about this item</summary>
+                          <p>Why it appears: {(item.priority_reasons ?? []).map(caregiverSafeAssistantText).filter(Boolean).join("; ") || "The saved record marks this item for attention, but no reason was provided."}</p>
+                          <p>Status: {caregiverLabel(item.recorded_status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
+                          <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                          {item.verification_rule && <small>How completion was checked: {caregiverSafeAssistantText(item.verification_rule) || "No further details are available."}</small>}
+                          {item.outcome_status && <small>Recorded outcome status: {caregiverStatusLabel(item.outcome_status) || "Status not available"}</small>}
+                          {item.evidence_ids.length > 0
+                            ? <small>Sources: {item.evidence_ids.length} saved item(s)</small>
+                            : <small>This item was marked for follow-up in the saved record, but no supporting information is linked here.</small>}
+                          {source?.source_label && <small>Shared by: {caregiverSafeAssistantText(source.source_label) || "Not recorded"}</small>}
+                          {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
+                          {source && source.claim_count > 0 && <small>{source.claim_count} related report(s). Review the saved details before deciding whether they differ.</small>}
+                        </details>
                         {actionForSuggestion(item) ? (
                           <p className="lcr-entry-status">Agreed action: {caregiverLabel(actionForSuggestion(item)?.status)}. This suggestion has already been saved as an agreed action.</p>
                         ) : item.request_text?.trim() && item.evidence_ids.length > 0 ? (
