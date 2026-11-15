@@ -901,10 +901,23 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       // reconciliation for queued captures. Do not launch a second client-side
       // reconciliation for the same event.
       if (!data?.qwen_job_id) {
+        // Reconcile the exact normalized values persisted by mutationFn.
+        // The backend binds Delta input to the saved CareEvent JSON; sending
+        // pre-normalized Date values here can make a valid capture look unrelated.
         const deltaContent = JSON.stringify({
-          medications: variables.medications,
-          vitals: variables.vitals,
-          scales: variables.scales,
+          medications: variables.medications.map((med) => ({
+            ...med,
+            scheduled_for: med.scheduled_for ? new Date(med.scheduled_for).toISOString() : null,
+            administered_at: med.administered_at ? new Date(med.administered_at).toISOString() : null,
+          })),
+          vitals: variables.vitals.map((vital) => ({
+            ...vital,
+            measured_at: new Date(vital.measured_at).toISOString(),
+          })),
+          scales: variables.scales.map((scale) => ({
+            ...scale,
+            observed_at: new Date(scale.observed_at).toISOString(),
+          })),
           notes: variables.notes,
         }, null, 2);
         const nextDeltaToken = deltaToken + 1;
