@@ -64,10 +64,10 @@ export function ChangeIntelligencePanel() {
   const [hasMorePatterns, setHasMorePatterns] = useState(false);
   const [loadingMoreChanges, setLoadingMoreChanges] = useState(false);
   const [loadingMorePatterns, setLoadingMorePatterns] = useState(false);
-  async function changeStatus(changeId: string, status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive") {
+  async function changeStatus(changeId: string, status: "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive" | "resolved") {
     const reason = confirmationReasons[changeId]?.trim() ?? "";
     if (status !== "awaiting_confirmation" && !reason) {
-      setDetailErrors((current) => ({ ...current, [changeId]: "A decision rationale is required to confirm, dispute, or mark this assessment inconclusive." }));
+      setDetailErrors((current) => ({ ...current, [changeId]: "A decision rationale is required to confirm, dispute, mark this assessment inconclusive, or confirm a resolution." }));
       return;
     }
     setTransitioningIds((current) => [...current, changeId]);
@@ -282,13 +282,24 @@ export function ChangeIntelligencePanel() {
                       />
                     </label>
                     <div className="lcr-inline-actions">
-                      {["confirmed", "rejected", "inconclusive"].includes(change.confirmation_status) ? (
+                      {["confirmed", "rejected", "inconclusive", "resolved"].includes(change.confirmation_status) ? (
                         <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
                       ) : (
                         <>
                           <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
                           <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
                           <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
+                          {["cessation", "disappearance"].includes(change.change_type) &&
+                            change.baseline_coverage_status === "covered" &&
+                            change.current_coverage_status === "covered" ? (
+                            <button
+                              type="button"
+                              disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)}
+                              onClick={() => void changeStatus(change.id, "resolved")}
+                            >
+                              Confirm resolved
+                            </button>
+                          ) : null}
                         </>
                       )}
                     </div>
