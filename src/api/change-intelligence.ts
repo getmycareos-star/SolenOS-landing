@@ -90,6 +90,27 @@ export type PersistedSituation = {
 };
 
 export type SituationTrajectoryState = "active" | "worsening" | "improving" | "resolved" | "unknown";
+export type SituationSourceRecord = {
+  id: string;
+  source_type: string;
+  title: string;
+  excerpt: string | null;
+  occurred_at: string | null;
+  recorded_at: string | null;
+  source_label: string | null;
+  status: string | null;
+  evidence_ids: string[];
+  epistemic_status: string | null;
+  negated: boolean | null;
+  hedge_marker: string | null;
+  ambiguity_note: string | null;
+};
+
+export type SituationDetail = {
+  situation: PersistedSituation;
+  source_records: SituationSourceRecord[];
+  state_history: Array<Record<string, unknown>>;
+};
 function requirePersonId(): string {
   const personId = getPersonId();
   if (!personId) {
@@ -123,6 +144,11 @@ export async function listPersistedPatterns(
 export async function listPersistedSituations(): Promise<PersistedSituation[]> {
   const personId = encodeURIComponent(requirePersonId());
   return await getJSON(`/change/situations/${personId}`) as PersistedSituation[];
+}
+
+export async function getPersistedSituationDetail(situationId: string): Promise<SituationDetail> {
+  const personId = encodeURIComponent(requirePersonId());
+  return await getJSON(`/change/situations/${personId}/${encodeURIComponent(situationId)}/detail`) as SituationDetail;
 }
 
 export async function transitionSituationState(
