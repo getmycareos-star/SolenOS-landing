@@ -271,8 +271,7 @@ export function caregiverRoleLabel(value?: string | null): string | null {
 }
 
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
-  /\\b(?:LCR|Delta Engine|AI Companion|Qwen)\\b/i,
-  /\\b(?:evidence|provenance|reconciliation|assertion|epistemic|lineage|retrieval|schema|OCR|extraction|assessment coverage)\\b/i,
+  /\b(?:Delta Engine|AI Companion|Qwen (?:inference|model|endpoint)|LCR (?:projection|retrieval|engine))\b/i,
   /database schema/i,
   /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint)\b/i,
   /\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\b/i,
