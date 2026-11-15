@@ -55,7 +55,13 @@ try {
       // the test context is torn down. Ignore only those teardown races; real
       // API failures remain test failures.
       const message = String(error);
-      if (/Request context disposed|Target closed|Target page, context or browser has been closed/i.test(message)) {
+      // Playwright can settle an intercepted request itself while a page
+      // navigation is tearing down background refreshes. Do not turn that
+      // already-settled request into an unhandled test-process rejection.
+      if (
+        route.isHandled() ||
+        /Request context disposed|Target closed|Target page, context or browser has been closed/i.test(message)
+      ) {
         return;
       }
       throw error;
