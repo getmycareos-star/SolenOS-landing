@@ -102,6 +102,8 @@ export function ChangeIntelligencePanel() {
       setChanges(changeRows);
       setPatterns(patternRows);
       setSituations(situationRows);
+      setSituationStates({});
+      setSituationReasons({});
       setChangeOffset(0);
       setPatternOffset(0);
       setHasMoreChanges(changeRows.length === 100);
@@ -252,6 +254,11 @@ export function ChangeIntelligencePanel() {
       await transitionSituationState(situation.id, targetState, reason, evidenceIds);
       const refreshed = await listPersistedSituations();
       setSituations(refreshed);
+      setSituationStates((current) => {
+        const next = { ...current };
+        delete next[situation.id];
+        return next;
+      });
       setSituationReasons((current) => ({ ...current, [situation.id]: "" }));
       setWarning(null);
     } catch {
@@ -272,6 +279,8 @@ export function ChangeIntelligencePanel() {
         setChanges(changeRows);
         setPatterns(patternRows);
         setSituations(situationRows);
+        setSituationStates({});
+        setSituationReasons({});
         setChangeOffset(0);
         setPatternOffset(0);
         setHasMoreChanges(changeRows.length === 100);
