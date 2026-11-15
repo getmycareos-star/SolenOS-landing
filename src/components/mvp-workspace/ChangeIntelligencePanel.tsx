@@ -538,8 +538,9 @@ export function ChangeIntelligencePanel() {
                 ? ["active"]
                 : (["active", "worsening", "improving", "resolved", "unknown"] as SituationTrajectoryState[])
                     .filter((state) => state !== situation.state);
-              const stateHistory = Array.isArray(situation.context?.state_history)
-                ? situation.context.state_history as Array<Record<string, unknown>>
+              const savedStateHistory = situationDetails[situation.id]?.state_history ?? situation.context?.state_history;
+              const stateHistory = Array.isArray(savedStateHistory)
+                ? savedStateHistory as Array<Record<string, unknown>>
                 : [];
               return (
                 <article key={situation.id} className="lcr-timeline-item">
@@ -553,6 +554,54 @@ export function ChangeIntelligencePanel() {
                     <p className="panel-muted">
                       {formatWindow(situation.temporal_start, situation.temporal_end)} · {evidenceIds.length} linked source record(s)
                     </p>
+                    <button
+                      type="button"
+                      className="lcr-text-action"
+                      disabled={situationDetailLoadingIds.includes(situation.id)}
+                      onClick={() => void toggleSituationDetail(situation.id)}
+                    >
+                      {situationDetailLoadingIds.includes(situation.id)
+                        ? "Loading linked records…"
+                        : expandedSituationIds.includes(situation.id)
+                          ? "Hide linked records"
+                          : "Review linked records"}
+                    </button>
+                    {expandedSituationIds.includes(situation.id) ? (
+                      <div className="lcr-evidence-list">
+                        {situationDetailLoadingIds.includes(situation.id) ? (
+                          <p className="panel-muted">Loading the saved source records…</p>
+                        ) : situationDetails[situation.id]?.source_records.length ? (
+                          situationDetails[situation.id].source_records.map((record) => (
+                            <article key={record.source_type + ":" + record.id} className="lcr-evidence-item">
+                              <div className="lcr-entry-heading">
+                                <strong>{caregiverSafeAssistantText(record.title) ?? "Saved care record"}</strong>
+                                <span>{caregiverStatusLabel(record.status) ?? "Recorded"}</span>
+                              </div>
+                              <p className="panel-muted">
+                                {record.source_label ?? "Saved source"}
+                                {record.occurred_at || record.recorded_at
+                                  ? " · " + new Date(record.occurred_at ?? record.recorded_at ?? "").toLocaleString()
+                                  : ""}
+                              </p>
+                              {record.excerpt ? (
+                                <p>{caregiverSafeChangeText(record.excerpt) ?? "Source text is available for review."}</p>
+                              ) : null}
+                              {record.epistemic_status ? (
+                                <p className="panel-muted">
+                                  Information status: {caregiverStatusLabel(record.epistemic_status) ?? "Reported"}
+                                </p>
+                              ) : null}
+                              {record.negated ? <p className="panel-muted">Recorded as not present</p> : null}
+                              {record.hedge_marker || record.ambiguity_note ? (
+                                <p className="panel-muted">This record needs clarification before it is treated as a confirmed change.</p>
+                              ) : null}
+                            </article>
+                          ))
+                        ) : (
+                          <p className="panel-muted">No linked source records were returned for this situation.</p>
+                        )}
+                      </div>
+                    ) : null}
                     {situation.is_active && situation.state !== "evolved" ? (
                       <div>
                         <label>
