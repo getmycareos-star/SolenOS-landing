@@ -60,7 +60,7 @@ assert.match(currentUnderstanding, /setClarificationOpen\(true\)/, "an explicit 
 assert.match(currentUnderstanding, /Earlier care history/, "detailed care history is progressively disclosed");
 assert.match(
   currentUnderstanding,
-  /careHistoryOpen \? \([\s\S]*?<ChangeIntelligencePanel \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>[\s\S]*?\) : null/,
+  /careHistoryOpen \? \([\s\S]*?<ChangeIntelligencePanel personId=\{personId\} \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>[\s\S]*?\) : null/,
   "change assessments and the history panel mount together only when a caregiver opens earlier care history",
 );
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
