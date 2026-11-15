@@ -730,7 +730,13 @@ export default function DailyCarePage() {
               {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} that may need checking.
               Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, Daily Care will use it instead of creating a duplicate.
             </p>
-            {followUpsError && <p role="alert">{caregiverSafeAssistantText(followUpsError) || "Your follow-ups could not be loaded. Try again."}</p>}
+            {followUpsError && !followUpsLoaded ? (
+              <RecordState kind="error" title="Saved follow-ups couldn’t be loaded." description="Try again to check what still needs attention." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />
+            ) : !followUpsLoaded ? (
+              <RecordState kind="loading" title="Loading saved follow-ups…" />
+            ) : followUpsError ? (
+              <RecordState kind="error" title="Saved follow-ups couldn’t be refreshed." description="Showing the last saved list. Try again to refresh." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />
+            ) : null}
             {followUps.length > 0 && (
               <ul aria-label="Saved follow-ups" className="daily-care-follow-up-list">
                 {followUps.slice(0, 4).map((item) => (
@@ -747,8 +753,8 @@ export default function DailyCarePage() {
                 ))}
               </ul>
             )}
-            {!followUps.length && !followUpsError && (
-              <p className="daily-care-follow-up-empty">There are no open follow-ups saved right now.</p>
+            {!followUps.length && followUpsLoaded && !followUpsError && (
+              <RecordState kind="empty" title="No outstanding items recorded." />
             )}
             {deliveryIssues.length > 0 && (
               <div role="status" className="daily-care-medication-confirmation">
