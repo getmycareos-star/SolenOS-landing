@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, AlertCircle, Clock3, FileText, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type OpenLoop = {
   id: string;
