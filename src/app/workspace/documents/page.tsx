@@ -133,6 +133,8 @@ export default function DocumentsPage() {
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoadedDocuments, setHasLoadedDocuments] = useState(false);
+  const hasLoadedDocumentsRef = useRef(false);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<UploadMessage>(null);
@@ -161,8 +163,12 @@ export default function DocumentsPage() {
         .map(toDocument)
         .sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
       setDocuments(next);
+      hasLoadedDocumentsRef.current = true;
+      setHasLoadedDocuments(true);
     } catch {
-      setListError("SolenOS could not load saved documents. Your saved files have not been deleted. Check the connection and try again.");
+      setListError(hasLoadedDocumentsRef.current
+        ? "Saved documents couldn’t be refreshed. Showing the last saved list. Try again."
+        : "Saved documents couldn’t be loaded. Try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -552,7 +558,7 @@ export default function DocumentsPage() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search document names and available text" aria-label="Search documents" style={{ width: "100%", minWidth: 0, border: 0, outline: 0, background: "transparent", color: "var(--text)", fontSize: 15, minHeight: 42 }} />
         </div>
 
-        {loading ? <div role="status" style={{ padding: 24, textAlign: "center", color: "var(--text-secondary)" }}><LivingArchiveMark size="sm" label="Loading saved documents…" /></div> : visibleDocuments.length === 0 ? (
+        {loading && !hasLoadedDocuments ? <div role="status" style={{ padding: 24, textAlign: "center", color: "var(--text-secondary)" }}><LivingArchiveMark size="sm" label="Loading saved documents…" /></div> : listError && !hasLoadedDocuments ? null : visibleDocuments.length === 0 ? (
           <div style={{ padding: "26px 12px", textAlign: "center" }}>
             <FileText size={34} style={{ margin: "0 auto 10px", color: "var(--text-secondary)" }} />
             <h3 style={{ margin: 0, fontSize: 16 }}>{documents.length === 0 ? "No saved documents yet" : "No matching documents"}</h3>
