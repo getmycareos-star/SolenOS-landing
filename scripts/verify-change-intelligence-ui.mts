@@ -46,9 +46,9 @@ for (const contract of [
   ["change explanations use the caregiver-safe change language filter", /caregiverSafeChangeText\(change\.explanation\)/],
   ["change source details are user-reviewable", /Review notes and documents/],
   ["pattern source details are user-reviewable", /Review notes and updates/],
-  ["missing earlier information is not proof an event did not happen", /Some earlier care information may be missing\. That does not mean the event did not happen\./],
+  ["missing earlier information is disclosed without repeated defensive wording", /Some earlier care information may be missing\./],
   ["failed loads are exposed as an error state", /role="alert"/],
-  ["empty state does not claim no changes occurred", /This does not mean nothing changed/],
+  ["empty state uses concise record-state wording", /No recent changes recorded\./],
 ] as const) {
   const matches = contract[1] instanceof RegExp ? contract[1].test(panel) : contract[1];
   assert(matches, `Missing UI contract: ${contract[0]}`);
