@@ -182,7 +182,7 @@ export default function FollowUpsPage() {
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
     if (nextLoops) setLoops(nextLoops);
     if (nextAssessment) setAssessment(nextAssessment);
-    if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
+    if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information couldn’t be loaded. The items shown may not be complete.");
     else if (!reassessmentFailed) setAttentionWarning("");
   }, []);
 
@@ -192,7 +192,7 @@ export default function FollowUpsPage() {
     setError("");
     void refresh().catch(() => { if (active) setError("Follow-ups could not be loaded from the care record. Check your connection and try again."); })
       .finally(() => { if (active) setLoading(false); });
-    const refreshAfterCareChange = () => { void refresh().catch(() => setAttentionWarning("SolenOS could not check the latest follow-ups. Your saved follow-ups remain visible.")); };
+    const refreshAfterCareChange = () => { void refresh().catch(() => setAttentionWarning("We couldn’t check the latest follow-ups. Your saved items are still shown.")); };
     const refreshWhenVisible = () => { if (document.visibilityState === "visible") refreshAfterCareChange(); };
     window.addEventListener("careRecordUpdated", refreshAfterCareChange);
     window.addEventListener("focus", refreshAfterCareChange);
