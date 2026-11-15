@@ -33,7 +33,7 @@ function WorkspaceHomeInner() {
       <section aria-label="Ask SolenOS" style={{ display: "grid", gap: 10, padding: "18px 0" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 18 }}>What would you like to do?</h2>
-          <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>Talk through the saved care history, recent changes, appointments or information that is still unclear.</p>
+          <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>Record a new care update or ask SolenOS about information already saved.</p>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           <Link href="/workspace/companion" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 46, width: "fit-content", border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 16px", textDecoration: "none" }}>Ask SolenOS</Link>
