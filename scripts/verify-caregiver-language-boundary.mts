@@ -198,8 +198,8 @@ assert.doesNotMatch(changeIntelligence, /saved care assessments|Caregiver-report
 assert.doesNotMatch(historyDrawer, /Living Care Record|LCR revision|Evidence references|caregiver ID|Immutable/);
 assert.match(historyDrawer, /Your saved care history, in date order/);
 assert.match(historyDrawer, /What was saved and where it came from/);
-assert.doesNotMatch(careRecordOverview, /Living Care Record|provenance|longitudinal/i);
-assert.doesNotMatch(handoff, /Living Care Record|provenance|Qwen/);
+assert.doesNotMatch(careRecordOverview, /Your Living Care Record|Living Care Record|AI Companion/);
+assert.doesNotMatch(handoff, /Living Care Record|Qwen quotations|Evidence IDs:|Origin groups:/);
 console.log("Caregiver language boundary checks passed.");
 
 assert.match(careDelta, /caregiverStatusLabel/);
