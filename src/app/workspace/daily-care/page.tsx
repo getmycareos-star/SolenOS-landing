@@ -566,11 +566,11 @@ export default function DailyCarePage() {
             <p className="daily-care-muted">The latest care information saved so far.</p>
             {contextLoading && !careItemsLoaded && <RecordState kind="loading" title="Loading care information…" />}
             {contextError && !careItemsLoaded ? (
-              <RecordState kind="error" title="Care information couldn’t be loaded." description="Try again to check the latest saved updates." />
+              <RecordState kind="error" title="Care information couldn’t be loaded." description="Try again to check the latest saved updates." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />
             ) : (
               <>
                 {contextLoading && careItemsLoaded && <RecordState kind="loading" title="Refreshing care information…" />}
-                {contextError && careItemsLoaded && <RecordState kind="error" title="Care information couldn’t be refreshed." description="Showing the last information that loaded. Try again to refresh." />}
+                {contextError && careItemsLoaded && <RecordState kind="error" title="Care information couldn’t be refreshed." description="Showing the last information that loaded. Try again to refresh." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />}
                 {careItemsLoaded && careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
               <ul className="daily-care-record-list">
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 2).map((item, index) => (
@@ -760,12 +760,12 @@ export default function DailyCarePage() {
             <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
             <p className="daily-care-muted">New records saved since your previous visit on this device.</p>
             {historyError && !historyLoaded ? (
-              <RecordState kind="error" title="Recent care history couldn’t be loaded." description="Try again to check what was saved since your last visit." />
+              <RecordState kind="error" title="Recent care history couldn’t be loaded." description="Try again to check what was saved since your last visit." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />
             ) : !historyLoaded ? (
               <RecordState kind="loading" title="Loading recent care history…" />
             ) : (
               <>
-                {historyError && <RecordState kind="error" title="Recent care history couldn’t be refreshed." description="Showing the last saved history. Try again to refresh." />}
+                {historyError && <RecordState kind="error" title="Recent care history couldn’t be refreshed." description="Showing the last saved history. Try again to refresh." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />}
                 {sinceLastOpenItems === null ? (
               <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
             ) : sinceLastOpenItems.length > 0 ? (
@@ -817,12 +817,12 @@ export default function DailyCarePage() {
               </div>
             )}
             {historyError && !historyLoaded ? (
-              <RecordState kind="error" title="Today’s care updates couldn’t be loaded." description="Try again to check the latest saved updates." />
+              <RecordState kind="error" title="Today’s care updates couldn’t be loaded." description="Try again to check the latest saved updates." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />
             ) : !historyLoaded ? (
               <RecordState kind="loading" title="Loading today’s care updates…" />
             ) : (
               <>
-                {historyError && <RecordState kind="error" title="Today’s care updates couldn’t be refreshed." description="Showing the last saved updates. Try again to refresh." />}
+                {historyError && <RecordState kind="error" title="Today’s care updates couldn’t be refreshed." description="Showing the last saved updates. Try again to refresh." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />}
                 {todayItems.length ? todayPeriods.map((period) => {
                 const items = todayItems.filter((item) => dailyTimePeriod(item) === period.key);
                 if (!items.length) return null;
