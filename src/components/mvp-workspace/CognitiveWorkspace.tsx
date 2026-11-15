@@ -982,24 +982,24 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
               </div>
             </section>
             {situationResponse.care_continuity_execution?.stages && (
-              <section className="panel panel-response" aria-label="Care record processing status" role="status">
+              <section className="panel panel-response" aria-label="Care update status" role="status">
                 <p>
-                  Original entry: {situationResponse.care_continuity_execution.stages.source_preservation === "verified" ? "saved" : "not confirmed"}.
-                  {" "}Source evidence: {situationResponse.care_continuity_execution.stages.evidence === "verified" ? "linked" : situationResponse.care_continuity_execution.stages.evidence === "not_applicable" ? "not required" : "not confirmed"}.
-                  {" "}Care-record reconciliation: {situationResponse.care_continuity_execution.stages.reconciliation === "committed" ? "completed" : "not confirmed"}.
+                  Your original update: {situationResponse.care_continuity_execution.stages.source_preservation === "verified" ? "saved" : "not confirmed"}.
+                  {" "}Related notes or documents: {situationResponse.care_continuity_execution.stages.evidence === "verified" ? "linked" : situationResponse.care_continuity_execution.stages.evidence === "not_applicable" ? "not needed" : "not confirmed"}.
+                  {" "}Care Record: {situationResponse.care_continuity_execution.stages.reconciliation === "committed" ? "updated" : "not confirmed"}.
                 </p>
               </section>
             )}
             {situationResponse.analysis_status === "partial" && (
               <p className="workspace-status-warning" role="status">
                 {situationResponse.analysis_warning ||
-                  "Care input was saved, but change and situation analysis could not be completed. The recorded evidence remains available."}
+                  "Your update was saved, but SolenOS could not check it against earlier care information. Your original note is still saved."}
               </p>
             )}
             {situationResponse.qwen_extraction_status === "available" && situationResponse.qwen_candidates && (
               <section className="panel panel-response" aria-label="Suggested observations for review" role="status">
-                <h3>Suggested observations — review required</h3>
-                <p>These suggestions were generated from the submitted source. They are not confirmed facts and were not written to the Living Care Record.</p>
+                <h3>Suggested details — check before adding</h3>
+                <p>These suggestions came from the note or document you shared. They have not been confirmed and have not been added to your Care Record.</p>
                 {(situationResponse.qwen_candidates.observations ?? []).length > 0 ? (
                   <ul>
                     {(situationResponse.qwen_candidates.observations ?? []).map((candidate, index) => (
@@ -1009,30 +1009,30 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                       </li>
                     ))}
                   </ul>
-                ) : <p>No source-grounded observations are available to suggest for review.</p>}
+                ) : <p>No suggested details are available to check.</p>}
                 {(situationResponse.qwen_candidates.open_questions ?? []).map((question, index) => (
-                  <p key={`${question}-${index}`}>Question for clarification: {question}</p>
+                  <p key={`${question}-${index}`}>Question to answer: {question}</p>
                 ))}
               </section>
             )}
             {situationResponse.qwen_extraction_status === "unavailable" && (
-              <p className="workspace-status-warning" role="status">The care entry was saved, but additional suggestions are unavailable right now. The saved entry was not changed.</p>
+              <p className="workspace-status-warning" role="status">SolenOS couldn't prepare extra suggestions right now. Your saved update has not changed.</p>
             )}
             {situationResponse.ok === true && !situationResponse.active_care_situation ? (
               savedEventReceipt ? (
                 <section className="panel panel-response" role="status" aria-live="polite">
-                  <h3>{savedEventReceipt.readbackVerified ? "Care entry saved" : "Care entry accepted"}</h3>
+                  <h3>{savedEventReceipt.readbackVerified ? "Care update saved" : "Care update saved"}</h3>
                   <p>{savedEventReceipt.readbackVerified
-                    ? "The saved event was found on read-back. SolenOS did not infer a separate active care situation from this entry."
-                    : "Your entry was saved, but we couldn’t refresh the full record view. Please refresh the record before trying again."}</p>
-                  <p><strong>Entry:</strong> {savedEventReceipt.title}</p>
-                  <p><strong>Record reference:</strong> {savedEventReceipt.id}</p>
+                    ? "Your update is saved. It has not been treated as a separate ongoing care situation."
+                    : "Your update was saved, but we couldn’t refresh your Care Record. Refresh it before trying again."}</p>
+                  <p><strong>Care update:</strong> {savedEventReceipt.title}</p>
+                  <p>Your update is saved in your Care Record.</p>
                   {savedEventReceipt.description && <p>{savedEventReceipt.description}</p>}
                 </section>
               ) : (
                 <section className="panel panel-response" role="status" aria-live="polite">
-                  <h3>Care record view unavailable</h3>
-                  <p>We couldn’t confirm the saved entry in the care record. Please refresh the record before trying again. Do not submit the same information again yet.</p>
+                  <h3>Care Record could not be refreshed</h3>
+                  <p>We couldn’t confirm that your update appears in your Care Record. Refresh before trying again. Don’t submit the same information again yet.</p>
                 </section>
               )
             ) : (
