@@ -1233,7 +1233,7 @@ export function LCRCurrentUnderstanding() {
             <>
               <ul className="lcr-first-screen-list">
                 {immediateCareDecisions.slice(0, 2).map((decision) => (
-                  <li key={decision.id || decision.source + ":" + decision.record_id}>
+                  <li key={decision.id || (decision.source ?? "priority") + ":" + (decision.record_id ?? decision.title)}>
                     <strong>{caregiverSafeAssistantText(decision.title) || "Care follow-up"}</strong>
                     <p>{caregiverSafeAssistantText(decision.reason || decision.priority_basis?.join("; ")) || "The saved care assessment marked this for attention."}</p>
                     {decision.due_at && <small>Due {formatWhen(decision.due_at)}</small>}
