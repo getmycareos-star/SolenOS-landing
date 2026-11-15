@@ -51,6 +51,20 @@ type PreparationBrief = {
     interpretation_limit: string
   }
   source_coverage: { evidence_freshness_assessments: string; open_questions?: string; contradictions?: string; medications_and_allergies?: string }
+  living_care_record_context?: {
+    retrieval_scan_complete?: boolean
+    retrieval_projection_complete?: boolean
+    schema_status?: string
+    missing_required_sources?: string[]
+    missing_optional_sources?: string[]
+    sources?: Record<string, {
+      status?: string
+      returned_count?: number
+      candidate_count?: number
+      has_more?: boolean
+      candidate_scan_complete?: boolean
+    }>
+  }
   source_completeness?: Record<string, {
     returned_count: number
     has_more: boolean | null
@@ -366,6 +380,14 @@ export default function AppointmentWorkspace() {
                 <ul>{Object.entries(brief.source_completeness ?? {}).filter(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false).map(([source, coverage]) => <li key={source}>{caregiverInformationAreaLabel(source) || "Other care information"}: {coverage.returned_count} item(s) shown{coverage.record_limit ? " (view limit " + coverage.record_limit + ")" : ""}{coverage.has_more ? "; more saved items remain" : ""}</li>)}</ul>
               </section>}
               {brief.source_completeness?.open_questions?.display_limited && <p className="guided-muted" style={{ gridColumn: "1 / -1" }}>More questions may be waiting in the care record. This view shows the highest-priority questions first.</p>}
+              {brief.living_care_record_context && brief.living_care_record_context.retrieval_projection_complete !== true && <section className="guided-muted" role="status" style={{ gridColumn: "1 / -1" }}>
+                <h5>Some parts of the Care Record could not be fully checked</h5>
+                <p>This visit summary uses the saved information listed below. Some other care information may be missing or only partly included. Check the full Care Record before relying on this summary as complete.</p>
+                {brief.living_care_record_context.schema_status === "failed" && <p>We could not check the full Care Record just now. Refresh or open the Care Record before relying on this visit summary.</p>}
+                {brief.living_care_record_context.missing_required_sources?.length ? <p>Sources that could not be checked: {brief.living_care_record_context.missing_required_sources.map(source => caregiverInformationAreaLabel(source) || "Other care information").join(", ")}.</p> : null}
+                {brief.living_care_record_context.missing_optional_sources?.length ? <p>Some other saved care information is not available in this view.</p> : null}
+                {Object.entries(brief.living_care_record_context.sources ?? {}).filter(([, source]) => source.has_more === true || source.candidate_scan_complete === false).length > 0 ? <ul>{Object.entries(brief.living_care_record_context.sources ?? {}).filter(([, source]) => source.has_more === true || source.candidate_scan_complete === false).map(([source, coverage]) => <li key={source}>{caregiverInformationAreaLabel(source) || "Other care information"}: {coverage.returned_count ?? 0} item(s) shown{coverage.has_more ? "; more saved information remains" : ""}</li>)}</ul> : null}
+              </section>}
               <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || 'Care update'}</strong>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul> : <p className="guided-muted">No recent care updates are available for this summary.</p>}</section>
               <section><h5>Recorded care information</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>Care information</strong><p>{caregiverSafeAssistantText(item.value) || 'No detail recorded'}</p><small>{caregiverInformationLabel(item.epistemic_status) || 'Information status not available'}</small></li>)}</ul> : <p className="guided-muted">No saved care details are available for this summary.</p>}{brief.source_coverage.medications_and_allergies === "unavailable" && <p className="guided-muted">A separate medication and allergy list is not available. Only details recorded in the care information above are shown.</p>}</section>
             </div>
