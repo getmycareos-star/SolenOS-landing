@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Clock3, Plus, X } from "lucide-react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
+import { RecordState } from "@/components/ui/RecordState";
 
 type ReminderStatus = "open" | "completed" | "cancelled";
 
@@ -57,6 +58,7 @@ export default function CareRemindersPage() {
   const [dueAt, setDueAt] = useState(() => localDateTimeValue(new Date(Date.now() + 24 * 60 * 60 * 1000)));
   const [filter, setFilter] = useState<"open" | "completed" | "cancelled" | "all">("open");
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -70,6 +72,7 @@ export default function CareRemindersPage() {
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
     const items = data as CareReminder[];
     setReminders(items);
+    setHasLoaded(true);
     setSnoozeSupported(items.length > 0 && items.every((item) => typeof item.snooze_count === "number"));
   }, []);
 
@@ -237,14 +240,10 @@ export default function CareRemindersPage() {
           </label>
         </div>
 
-        {loading ? (
-          <BrandLoading animate message="Loading saved reminders…" />
-        ) : visibleReminders.length === 0 ? (
-          <div className="care-reminders-empty">
-            <Clock3 size={24} aria-hidden />
-            <h3>No {filter === "all" ? "" : filter + " "}reminders saved</h3>
-            <p>Reminders you create will appear here. SolenOS does not invent sample reminders.</p>
-          </div>
+        {loading && !hasLoaded ? (
+          <RecordState kind="loading" title="Loading saved reminders…" />
+        ) : !hasLoaded && error ? null : visibleReminders.length === 0 ? (
+          <RecordState kind={filter === "open" ? "empty" : "no-results"} title={filter === "all" ? "No reminders saved yet." : filter === "open" ? "No open reminders." : `No ${filter} reminders.`} description={filter === "open" ? "Reminders you add will appear here." : "Try another filter to see other reminders."} />
         ) : (
           <ul className="care-reminders-items">
             {visibleReminders.map((reminder) => {
