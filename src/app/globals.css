@@ -5982,6 +5982,11 @@ html[data-solenos-theme="dark"] .solenos-sidebar-toggle:hover {
   color: #17251c !important;
 }
 
+html[data-solenos-theme="dark"] .solenos-sidebar-toggle-label {
+  color: #17251c !important;
+  -webkit-text-fill-color: #17251c !important;
+}
+
 html[data-solenos-theme="dark"] .care-reminders-inline-link,
 html[data-solenos-theme="dark"] .care-reminders-back,
 html[data-solenos-theme="dark"] .care-reminders-settings-link {
