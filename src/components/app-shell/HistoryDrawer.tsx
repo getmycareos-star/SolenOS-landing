@@ -446,7 +446,7 @@ function appointmentDescription(payload: Record<string, unknown>): string {
       .filter((item) => item && typeof item === "object")
       .map((item) => {
         const followUp = item as Record<string, unknown>;
-        return [asText(followUp.action), asText(followUp.owner), asText(followUp.due), asText(followUp.status)].filter(Boolean).join(" · ");
+        return [asText(followUp.action), asText(followUp.owner), asText(followUp.due), followUp.status ? (caregiverStatusLabel(asText(followUp.status)) || "Status not available") : ""].filter(Boolean).join(" · ");
       })
       .filter(Boolean);
     if (followUps.length) lines.push("Follow-ups:\n- " + followUps.join("\n- "));
