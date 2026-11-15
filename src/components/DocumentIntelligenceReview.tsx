@@ -136,7 +136,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         ? { ...item, reviewEvents: Array.isArray(history.items) ? history.items : [], reviewHistoryUnavailable: false }
         : item));
     } catch {
-      setHistoryErrors((current) => ({ ...current, [analysisId]: "The immutable decision history could not be retrieved. Do not interpret a missing history as no earlier decision." }));
+      setHistoryErrors((current) => ({ ...current, [analysisId]: "The saved review history could not be loaded. A missing history does not mean no earlier decision was made." }));
     } finally {
       setHistoryLoading((current) => ({ ...current, [analysisId]: false }));
     }
@@ -163,7 +163,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         ? { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "", extractionMethod: typeof detail.extraction_method === "string" ? detail.extraction_method : undefined }
         : item));
     } catch {
-      setTextErrors((current) => ({ ...current, [analysisId]: "The persisted source text could not be retrieved. Retry without re-uploading the original." }));
+      setTextErrors((current) => ({ ...current, [analysisId]: "The saved text could not be loaded. Try again without uploading the original again." }));
     } finally {
       setTextLoading((current) => ({ ...current, [analysisId]: false }));
     }
@@ -266,20 +266,20 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           {!active && <button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>{job?.status === "failed" ? "Retry extraction" : "Extract and understand"}</button>}
         </div>;
       })}</div>}
-      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No saved document analyses yet. Upload a supported document or scan; server extraction and OCR prepare readable source text for caregiver review.</p> : items.map((analysis) => (
+      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No documents are ready to review yet. Upload or scan a document. SolenOS will read the text so you can check the suggested details.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Source document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} statement(s) in this group</p>
+          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} statement(s) in this group</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
                 ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
                   ? `More statements are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
-                  : `Partial extraction · processed ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
-                : analysis.intelligence_status === "available" ? "Page extraction completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "Document understanding is processing in the background" : "Document understanding not yet completed"}
+                  : `Some pages could not be read · ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
+                : analysis.intelligence_status === "available" ? "Page extraction completed" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "The document has not finished processing"}
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not processed: ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · still being read: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · retryable: ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · over size limit: ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · unreadable pages: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on this extraction.</p>}
             {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
-              OCR engine confidence (0–100 heuristic, not a probability): {analysis.ocr_quality_by_page.map((page) => `Page ${page.page_number}: ${page.mean_token_confidence === null ? "unavailable" : page.mean_token_confidence + "/100"}; ${page.low_confidence_token_count} low-confidence word(s) of ${page.token_count}`).join(" · ")}. Handwriting may still be misread, even when engine confidence is high.
+              Some words may be misread, especially handwriting. Check the original document before accepting suggested details.
             </p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{caregiverSafeAssistantText(question) || "More information may be needed."}</p>)}
@@ -288,9 +288,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Text read from your document</summary>
             {analysis.extractionMethod?.includes("tesseract") && <p style={{ fontSize: 12 }}>OCR can misread names, dates and numbers. Compare each candidate quotation with the original document before accepting it.</p>}
-            {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving and verifying the saved extraction…</p>
-              : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry source text</button></div>
-              : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the persisted text from the server.</p>
+            {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Loading the saved text…</p>
+              : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Try loading text again</button></div>
+              : analysis.extractedText === undefined ? <p style={{ fontSize: 12 }}>Open to see the saved text.</p>
                 : analysis.extractedText ? <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{caregiverSafeAssistantText(analysis.extractedText) || "The saved text cannot be displayed in a readable form here. You can still open the original document."}</p>
                   : <p style={{ fontSize: 12 }}>No readable server-extracted text is stored for this document.</p>}
           </details>
@@ -321,9 +321,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{candidate.observation}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: "var(--text-secondary)" }}>
                 <span>Field: {candidate.field_type || "observation"}</span>
-                <span>Source page: {candidate.page_number ? candidate.page_number : "Unresolved"}</span>
+                <span>Page: {candidate.page_number ? candidate.page_number : "Unresolved"}</span>
                 <span>Event date: {candidate.event_date || "Not stated"}</span>
-                <span>Source recorded: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Not stated in document"}</span>
+                <span>Date on document: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Not stated in document"}</span>
                 {candidate.extracted_at && <span>Extracted: {new Date(candidate.extracted_at).toLocaleString()}</span>}
               </div>
               {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: 12 }}>
@@ -335,7 +335,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <strong style={{ fontSize: 12 }}>Needs clarification</strong>
                 {candidate.warnings.map((warning, warningIndex) => <p key={warningIndex} style={{ margin: 0, fontSize: 12 }}>{caregiverSafeAssistantText(warning) || "This detail may need another look."}</p>)}
               </div>}
-              <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>EXACT WORDS IN THE DOCUMENT</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(candidate.source_quote) || "The original wording is available in the source document."}</p></div>
+              <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>ORIGINAL WORDS IN THE DOCUMENT</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(candidate.source_quote) || "The original wording is available in the document."}</p></div>
               {pending && <>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected subject<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected interpretation<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
@@ -346,16 +346,16 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 </div>
               </>}
               {candidate.review_status === "accepted_by_caregiver" && candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>Saved as an unconfirmed medication report. The existing medication record was not changed. A prescribing clinician or pharmacist must confirm the current instruction.</p>}
-              {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>Caregiver accepted. A source-linked, attributed assertion was saved to the LCR; it is not independently verified clinical fact.</p>}
-              {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>Rejected. No LCR assertion was created.</p>}
+              {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>You approved this detail. It was added to your Care Record with a link to the original document. This does not mean a healthcare professional has confirmed it.</p>}
+              {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>You chose not to add this detail to your Care Record.</p>}
             </div>;
           }) : analysis.extraction_status === "partial" ? <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No statements are available for review because not every page could be read. Retry pages that failed processing, or upload a clearer copy for unreadable pages.</p> : null}
           {analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && analysis.observations.length > 0 && analysis.observations.every((candidate) => ["accepted_by_caregiver", "rejected_by_caregiver"].includes(candidate.review_status)) && <button type="button" disabled={busy !== null} onClick={() => void showNextCandidateGroup(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Show next group of {Math.min(60, analysis.remaining_candidate_count ?? 0)} statements</button>}
           <details onToggle={(event) => { if (event.currentTarget.open) void loadReviewHistory(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Caregiver review history{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " immutable event(s)" : ""}</summary>
-            {historyLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Retrieving saved review events…</p>
+            {historyLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Loading saved review history…</p>
               : historyErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{historyErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadReviewHistory(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry history</button></div>
-                : analysis.reviewEvents === undefined ? <p style={{ fontSize: 12 }}>Open to retrieve the append-only caregiver decision history.</p>
+                : analysis.reviewEvents === undefined ? <p style={{ fontSize: 12 }}>Open to see the saved review history.</p>
                   : analysis.reviewEvents.length === 0 ? <p style={{ fontSize: 12 }}>No caregiver review decisions are recorded for this analysis.</p>
                     : <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
                       {analysis.reviewEvents.map((event) => {
@@ -367,7 +367,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                           {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
                           {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
                           {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {caregiverSafeAssistantText(event.rationale) || "No further note was recorded."}</p> : null}
-                          {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision created a source-linked LCR report.</p> : null}
+                          {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision added a report linked to the original document.</p> : null}
                         </li>;
                       })}
                     </ol>}
