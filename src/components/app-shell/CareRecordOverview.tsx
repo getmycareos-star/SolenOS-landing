@@ -99,9 +99,9 @@ export function CareRecordOverview() {
     <section className="care-record-overview" aria-labelledby="care-record-overview-title" style={{ display: "grid", gap: 18, color: "#26392c" }}>
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <p style={{ margin: "0 0 5px", color: "#66816a", fontSize: 11, fontWeight: 800, letterSpacing: ".08em" }}>SAVED CARE INFORMATION</p>
+          <p style={{ margin: "0 0 5px", color: "#66816a", fontSize: 11, fontWeight: 800, letterSpacing: ".08em" }}>YOUR CARE INFORMATION</p>
           <h2 id="care-record-overview-title" style={{ margin: 0, fontSize: 22 }}>Care record details</h2>
-          <p style={{ margin: "7px 0 0", color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>A clear view of what has been saved, where it came from, and what may still need checking.</p>
+          <p style={{ margin: "7px 0 0", color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>See what has been saved, who shared it and what may still need checking.</p>
         </div>
         <button type="button" onClick={() => void load(true)} disabled={loading || refreshing} style={{ display: "inline-flex", alignItems: "center", gap: 7, minHeight: 42, padding: "8px 12px", border: "1px solid #dce6da", borderRadius: 10, background: "#f8fbf7", color: "#39533d", fontWeight: 700 }}>
           <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
@@ -113,9 +113,9 @@ export function CareRecordOverview() {
         <>
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>What is saved</h3>
-            <p style={{ margin: "0 0 12px", color: "#758276", fontSize: 12 }}>These are entries returned from the saved care record. A report is not automatically a confirmed fact.</p>
+            <p style={{ margin: "0 0 12px", color: "#758276", fontSize: 12 }}>These are saved care details. A report is not automatically a confirmed fact.</p>
             {items.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No care entries were returned from the available record sources. This does not mean there are no care needs or concerns.</p>
+              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No care information is available in this view yet. This does not mean there are no care needs or concerns.</p>
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {items.map((item) => (
@@ -125,7 +125,7 @@ export function CareRecordOverview() {
                       <span style={{ padding: "3px 7px", borderRadius: 7, background: "#eef4ec", color: "#536e55", fontSize: 11 }}>{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
                     {item.description && <p style={{ margin: "7px 0 0", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{item.description}</p>}
-                    <p style={{ margin: "8px 0 0", color: "#758276", fontSize: 11 }}>From: {item.source_label || "Source not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
+                    <p style={{ margin: "8px 0 0", color: "#758276", fontSize: 11 }}>Added by: {item.source_label || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
                   </article>
                 ))}
               </div>
