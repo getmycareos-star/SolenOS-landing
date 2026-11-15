@@ -399,7 +399,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   </div>
                 </article>
               })}
-              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>SolenOS Companion</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="Companion is responding"><i /><i /><i /></div></div></div>}
+              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>Care Assistant</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="Care Assistant is responding"><i /><i /><i /></div></div></div>}
               <div ref={bottomRef} />
             </div>
           )}
@@ -408,11 +408,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </div>
 
       <div className="companion-composer-wrap">
-        <form className="companion-composer" aria-label="Send a message to Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
+        <form className="companion-composer" aria-label="Send a message to the Care Assistant" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Ask about the saved care history, a recent change or something that is unclear…" disabled={loading} rows={2} />
+          }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading} rows={2} />
           <div className="companion-composer-footer">
             <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
