@@ -10,6 +10,12 @@ const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
 let dailyScenarioEventIdsByReport = {};
 let dailyScenarioEvidenceIdsByReport = {};
+const scenarioReports = [
+  "Mum slept poorly last night and seemed more unsettled this morning.",
+  "Mum barely touched her lunch today. She drank some water, though.",
+  "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
+  "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
+];
 
 async function request(path, { token, method = "GET", body, form, extraHeaders = {} } = {}) {
   const headers = { ...extraHeaders, ...(token ? { authorization: `Bearer ${token}` } : {}) };
@@ -358,13 +364,6 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
     console.log(`Daily Care Scenario 01: saved source report: ${text}`);
     return { eventId: savePayload.id, jobId: savePayload.qwen_job_id };
   };
-  const scenarioReports = [
-    "Mum slept poorly last night and seemed more unsettled this morning.",
-    "Mum barely touched her lunch today. She drank some water, though.",
-    "I think the doctor changed Mum's medication yesterday, but I can't remember the new dose.",
-    "Mum was calmer this evening. She ate a little more at dinner and is now resting.",
-  ];
-
   const seededMedication = await request("/api/v1/care-continuity/medications", {
     token: identity.token,
     method: "POST",
