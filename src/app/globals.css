@@ -6136,3 +6136,45 @@ html:not([data-solenos-theme="dark"]) [role="button"][style*="var(--trust)"]:hov
     transition: none;
   }
 }
+
+
+/* Shared, accessible states for saved care information. */
+.record-state {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  line-height: 1.5;
+}
+.record-state-title {
+  font-size: 14px;
+  font-weight: 650;
+}
+.record-state-description {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.record-state-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.record-state--loading {
+  border-style: dashed;
+}
+.record-state--error,
+.record-state--unavailable {
+  border-color: var(--theme-warning-border, var(--border));
+}
+@media (max-width: 480px) {
+  .record-state {
+    padding: 10px 11px;
+  }
+}
