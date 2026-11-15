@@ -139,7 +139,7 @@ for (const action of ["something", "medicine", "measurement", "photo", "checkin"
 }
 assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
   "capture opens within the Daily Care screen");
-assert.match(dailyCarePage, /Open matters/,
+assert.match(dailyCarePage, /Things that need attention/,
   "unresolved questions and conflicts have a distinct current-care section");
 assert.match(dailyCarePage, /Since you last opened Daily Care/,
   "returning caregivers get a summary of newly recorded information");
