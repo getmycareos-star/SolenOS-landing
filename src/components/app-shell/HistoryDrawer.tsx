@@ -45,6 +45,7 @@ type HistoryRecord = {
   title: string;
   description?: string | null;
   evidence_ids?: string[] | null;
+  source_record_ids?: string[] | null;
   time_provenance?: string | null;
   tags?: string[] | null;
   created_by_caregiver_id?: string | null;
@@ -65,6 +66,53 @@ type CareEvent = Omit<HistoryRecord, "source_kind"> & {
   event_type: string;
   title: string;
 };
+
+function collapseDuplicateDailyCaptureWrappers(events: CareEvent[]): CareEvent[] {
+  const wrapperTypes = new Set(["structured_daily_capture", "daily_care_entry"]);
+  const groups = new Map<string, CareEvent[]>();
+  const result: CareEvent[] = [];
+
+  for (const event of events) {
+    const eventType = event.event_type.trim().toLowerCase();
+    const evidenceIds = [...new Set((event.evidence_ids ?? []).filter(Boolean))].sort();
+    if (!wrapperTypes.has(eventType) || evidenceIds.length === 0) {
+      result.push(event);
+      continue;
+    }
+    const key = JSON.stringify(evidenceIds);
+    const group = groups.get(key) ?? [];
+    group.push(event);
+    groups.set(key, group);
+  }
+
+  for (const group of groups.values()) {
+    const types = new Set(group.map((event) => event.event_type.trim().toLowerCase()));
+    if (group.length < 2 || ![...wrapperTypes].every((type) => types.has(type))) {
+      result.push(...group);
+      continue;
+    }
+
+    const ordered = [...group].sort((left, right) => {
+      const descriptionDifference = (right.description?.trim().length ?? 0) - (left.description?.trim().length ?? 0);
+      if (descriptionDifference !== 0) return descriptionDifference;
+      return Number(right.event_type === "structured_daily_capture") - Number(left.event_type === "structured_daily_capture");
+    });
+    const primary = ordered[0];
+    const genericTitle = /^(structured daily capture|daily care entry|daily care update)$/i;
+    const specificTitle = group.find((event) => !genericTitle.test(event.title.trim()))?.title;
+    const description = ordered.find((event) => event.description?.trim())?.description ?? null;
+    result.push({
+      ...primary,
+      title: specificTitle || "Daily care update",
+      event_type: "daily_care_entry",
+      description,
+      source_record_ids: group.map((event) => event.id),
+      evidence_ids: [...new Set(group.flatMap((event) => event.evidence_ids ?? []))],
+    });
+  }
+
+  return result;
+}
 
 type EvidenceRecord = {
   id: string;
@@ -742,10 +790,10 @@ export function HistoryDrawer() {
               : null;
       if (eventResult.status === "fulfilled" && eventItems) {
         availableSources += 1;
-        const validEvents = (eventItems as CareEvent[]).filter((item) =>
+        const validEvents = collapseDuplicateDailyCaptureWrappers((eventItems as CareEvent[]).filter((item) =>
           Boolean(item && typeof item.id === "string" && item.person_id === session.person.id &&
             typeof item.event_type === "string" && typeof item.title === "string")
-        );
+        ));
         nextRecords.push(...validEvents.map((event) => ({ ...event, source_kind: "care-event" as const })));
       } else {
         eventReadProblem = true;
@@ -787,6 +835,7 @@ export function HistoryDrawer() {
             title: item.title as string,
             description: typeof item.description === "string" ? item.description : null,
             evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.filter((id): id is string => typeof id === "string") : [],
+            source_record_ids: Array.isArray(item.source_record_ids) ? item.source_record_ids.filter((id): id is string => typeof id === "string") : [],
             source_kind: "care-event",
             tags: ["daily-care", "lcr-projection-fallback"],
           });

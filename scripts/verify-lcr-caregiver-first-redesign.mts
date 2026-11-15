@@ -11,6 +11,7 @@ const changeIntelligence = fs.readFileSync("src/components/mvp-workspace/ChangeI
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
+const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 
 assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR home must redirect to the Companion");
 assert.doesNotMatch(legacyRoute, /SOLENOS · LIVING CARE RECORD|Record timeline|Add to record|CognitiveWorkspace/, "old LCR interface must not be rendered as a separate home");
@@ -71,6 +72,9 @@ assert.match(integrityPanel, /caregiverVisibleRevisions/, "the caregiver record-
 assert.match(currentUnderstanding, /structured_daily_capture.*daily_care_entry.*daily_capture/, "known capture wrapper types must not be presented as separate care changes");
 assert.doesNotMatch(integrityPanel, /No contradiction records returned|current engine inputs/i, "backend query terminology is not used in caregiver-facing empty states");
 assert.doesNotMatch(careContinuity, /lcr-primary-actions|Capture how today is going/, "Care Continuity does not expose parallel capture shortcuts");
+
+assert.match(historyDrawer, /collapseDuplicateDailyCaptureWrappers/, "recent history groups capture wrappers linked to the exact same source evidence");
+assert.match(historyDrawer, /source_record_ids: group\\.map/, "grouped history keeps the IDs of every original source event");
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
