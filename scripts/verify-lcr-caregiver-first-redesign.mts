@@ -68,6 +68,8 @@ assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "c
 assert.ok(currentUnderstanding.includes("if (!item.description?.trim()) return null;"), "missing current-care descriptions are omitted instead of rendered as empty-state filler");
 assert.ok(currentUnderstanding.includes("Reported as current"), "medication status is explicitly qualified as a report, not a verified instruction");
 assert.ok(currentUnderstanding.includes("Medication details are copied from saved reports."), "medication details carry a clear provenance and safety limitation");
+assert.ok(currentUnderstanding.includes("The original note could not be displayed."), "source display failures are stated honestly");
+assert.ok(!currentUnderstanding.includes("The original note is saved."), "the UI does not claim source visibility when the original note cannot be displayed");
 assert.ok(currentUnderstanding.includes('["no description was recorded.", "saved care information"].includes(normalizedDescription)'), "generic source placeholders are not presented as care facts");
 assert.ok(!currentUnderstanding.includes("Additional details are saved.") && !currentUnderstanding.includes("A recorded detail is available in the original note."), "empty observation and interpretation fields do not create caregiver-facing filler");
 assert.doesNotMatch(caregiverRenderedCode, /capture_idempotency_key|capture_request_fingerprint|capture_kind/, "idempotency and capture metadata must never appear in caregiver-facing record details");

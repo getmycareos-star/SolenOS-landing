@@ -1242,7 +1242,7 @@ export function LCRCurrentUnderstanding() {
                           ? <small>Sources: {item.evidence_ids.length} saved item(s)</small>
                           : <small>This item was marked for follow-up in the saved record, but no supporting information is linked here.</small>}
                         {source?.source_label && <small>Shared by: {caregiverSafeAssistantText(source.source_label) || "Not recorded"}</small>}
-                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note is saved."}</blockquote></details>}
+                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
                         {source && source.claim_count > 0 && <small>{source.claim_count} related report(s). Review the saved details before deciding whether they differ.</small>}
                         {actionForSuggestion(item) ? (
                           <p className="lcr-entry-status">Agreed action: {caregiverLabel(actionForSuggestion(item)?.status)}. This suggestion has already been saved as an agreed action.</p>
@@ -1470,7 +1470,7 @@ export function LCRCurrentUnderstanding() {
                         <p>{disputed ? "Reports do not match, and the difference has not been resolved. Neither report is treated as correct." : "This still needs to be checked."}</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                         {source?.description && <p>{displayDescription(source.description)}</p>}
-                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note is saved."}</blockquote></details>}
+                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
                         <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                         <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
                         <small>Where this came from: {caregiverLabel(item.source)}</small>
@@ -1853,7 +1853,7 @@ export function LCRCurrentUnderstanding() {
                               {observation.source_passage && (
                                 <details>
                                   <summary>Read the original note</summary>
-                                  <blockquote>{caregiverSafeAssistantText(observation.source_passage) || "The original note is saved."}</blockquote>
+                                  <blockquote>{caregiverSafeAssistantText(observation.source_passage) || "The original note could not be displayed."}</blockquote>
                                 </details>
                               )}
                               {observation.negated != null && <small>Does the note say this did not happen? {observation.negated ? "Yes" : "No"}</small>}
@@ -1876,7 +1876,7 @@ export function LCRCurrentUnderstanding() {
                         {item.source_passage && (
                           <details>
                             <summary>Read the original note</summary>
-                            <blockquote>{caregiverSafeAssistantText(item.source_passage) || "The original note is saved."}</blockquote>
+                            <blockquote>{caregiverSafeAssistantText(item.source_passage) || "The original note could not be displayed."}</blockquote>
                           </details>
                         )}
                         {item.supersedes_observation_id && <small>This entry corrects an earlier observation.</small>}
