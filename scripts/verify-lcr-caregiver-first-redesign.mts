@@ -43,7 +43,7 @@ assert.match(currentUnderstanding, /What has changed/, "first screen summarizes 
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed care information is progressively disclosed");
 assert.match(currentUnderstanding, /No care information recorded yet/, "empty records are described as record state, not care reality");
 assert.doesNotMatch(currentUnderstanding, /Missing information does not mean everything is fine/, "the defensive disclaimer is not repeated in the empty state");
-assert.match(currentUnderstanding, /Do not assume there is nothing that needs attention/, "failed priority retrieval is not presented as an empty queue");
+assert.match(currentUnderstanding, /RecordState kind="error" title="We couldn’t check follow-ups"/, "failed priority retrieval is distinct from a genuine empty state");
 assert.ok(
   workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf("What would you like to do?") &&
   workspaceHome.indexOf("What would you like to do?") < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
