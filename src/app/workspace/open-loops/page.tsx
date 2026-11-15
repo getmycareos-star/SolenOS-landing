@@ -119,13 +119,13 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
     {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join(" · ")}</p>}
     <div className="followup-meta">
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
-      <span><FileText size={14} /> {evidenceIds.length} evidence reference(s)</span>
+      <span><FileText size={14} /> {evidenceIds.length} linked note(s) or document(s)</span>
       {item.due_at && <span>Recorded due date: {dateLabel(item.due_at)}</span>}
     </div>
     {expanded && <div className="followup-detail">
-      <p><strong>Why SolenOS surfaced this</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "The assessment did not return a separate explanation."}</p>
+      <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "The assessment did not return a separate explanation."}</p>
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverSafeAssistantText(record.source)} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
-      <p><strong>Evidence references</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No linked evidence references were returned."}</p>
+      <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No linked evidence references were returned."}</p>
       {item.review_at && <p><strong>Next recorded review</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved evidence item(s)" : ""}</li>)}</ol>}</section>}
     </div>}
@@ -269,8 +269,8 @@ export default function FollowUpsPage() {
 
   return <main className="mobile-screen followups-page">
     <header className="followups-header">
-      <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Living Care Record</Link>
-      <p className="followups-kicker">SOLENOS CARE CONTINUITY</p>
+      <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
+      <p className="followups-kicker">CARE FOLLOW-UPS</p>
       <div className="followups-title-row">
         <div><h1>Follow-ups</h1><p>SolenOS manages unresolved matters by reviewing the saved care history and keeping important changes visible. You only need to step in when your knowledge or action is needed.</p></div>
         <button type="button" className="followups-refresh" onClick={() => { setLoading(true); void refresh().catch(() => setError("Follow-ups could not be refreshed. Try again.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
@@ -293,9 +293,9 @@ export default function FollowUpsPage() {
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">No other open matters were returned by the available assessment.</p>}
       </section>
       <section className="followups-section">
-        <div className="followups-section-heading"><div><h2>Needs clarification</h2><p>Missing, uncertain or conflicting information. SolenOS will not guess which account is correct.</p></div><span>{categorized.needsClarification.length}</span></div>
+        <div className="followups-section-heading"><div><h2>Needs clarification</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length}</span></div>
         {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
-        {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">No clarification items were returned by the latest assessment.</p>}
+        {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">Nothing needs checking based on the information reviewed.</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items closed in the saved follow-up record.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
