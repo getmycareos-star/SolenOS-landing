@@ -564,11 +564,11 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
                   <h3>{caregiverStatusLabel(pattern.pattern_type) ?? "Repeated care change"}</h3>
-                  <span>{pattern.is_active ? caregiverStatusLabel(pattern.pattern_strength) ?? "Pattern not rated" : "Past pattern"}</span>
+                  <span>{pattern.is_active ? caregiverStatusLabel(pattern.pattern_strength) ?? "Pattern not rated" : "Earlier pattern"}</span>
                 </div>
-                <p>Observed interval: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
+                <p>Dates covered: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
                 <p className="panel-muted">
-                  Saved care updates considered: {pattern.event_ids.length}.
+                  Care updates included: {pattern.event_ids.length}.
                 </p>
                 {pattern.pattern_metrics?.source_history_truncated === true ? <p className="panel-muted">Earlier care updates may not all be included in this review.</p> : null}
                 {pattern.alternative_interpretations?.length ? (
@@ -642,9 +642,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       <h3>{caregiverSafeAssistantText(situation.title) ?? "Saved care situation"}</h3>
                       <span>{caregiverSituationStateLabel(situation.state) ?? caregiverStatusLabel(situation.state) ?? "Needs review"}</span>
                     </div>
-                    <p>{caregiverSafeChangeText(situation.description ?? situation.explanation) ?? "This situation is based on saved care records."}</p>
+                    <p>{caregiverSafeChangeText(situation.description ?? situation.explanation) ?? "This care topic is based on saved information."}</p>
                     <p className="panel-muted">
-                      {formatWindow(situation.temporal_start, situation.temporal_end)} · {evidenceIds.length} linked source record(s)
+                      {formatWindow(situation.temporal_start, situation.temporal_end)} · {evidenceIds.length} linked note(s) or document(s)
                     </p>
                     <button
                       type="button"
@@ -653,10 +653,10 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       onClick={() => void toggleSituationDetail(situation.id)}
                     >
                       {situationDetailLoadingIds.includes(situation.id)
-                        ? "Loading linked records…"
+                        ? "Loading related notes and documents…"
                         : expandedSituationIds.includes(situation.id)
-                          ? "Hide linked records"
-                          : "Review linked records"}
+                          ? "Hide related notes and documents"
+                          : "Review related notes and documents"}
                     </button>
                     {expandedSituationIds.includes(situation.id) ? (
                       <div className="lcr-evidence-list">
@@ -753,7 +753,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               </p>
                               <p>{caregiverSafeChangeText(String(entry.reason ?? "")) ?? "A caregiver recorded a status update."}</p>
                               <p className="panel-muted">
-                                {Array.isArray(entry.evidence_ids) ? entry.evidence_ids.length : 0} linked source record(s)
+                                {Array.isArray(entry.evidence_ids) ? entry.evidence_ids.length : 0} linked note(s) or document(s)
                               </p>
                             </li>
                           ))}
