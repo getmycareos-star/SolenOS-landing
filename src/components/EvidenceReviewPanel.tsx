@@ -112,7 +112,7 @@ const outcomes: Record<ReviewType, string[]> = {
 }
 const labels: Record<ReviewType, string> = {
   quality: 'Information quality',
-  reliability: 'How reliable the source is',
+  reliability: 'How reliable this information is',
   source_confidence: 'Who provided the information',
   freshness: 'How recent it is',
   completeness: 'How complete it is',
@@ -125,7 +125,7 @@ const reviewStatusLabel = (value: string) => ({
   verified: 'Checked',
   partially_verified: 'Partly checked',
   independent_source_linked: 'A separate report is linked',
-  copied_or_same_origin: 'Copied from the same original source',
+  copied_or_same_origin: 'Copied from the same original',
   none_linked: 'No other report is linked',
   stale: 'May be out of date',
   historical: 'Older information',
@@ -138,7 +138,7 @@ const reviewStatusLabel = (value: string) => ({
   adequate: 'Enough detail',
   limited: 'Limited detail',
   insufficient: 'Not enough detail',
-  supported: 'Matches the saved source',
+  supported: 'Matches the saved note or document',
   contested: 'Other information disagrees',
   complete: 'Complete',
   caregiver_reported: 'Reported by a caregiver',
@@ -192,7 +192,7 @@ function historicalSnapshotDetails(value: Record<string, unknown> | null): Histo
     { table: 'care_facts', label: 'Saved care information', title: ['field', 'fact_type', 'title'], detail: ['fact_value', 'value', 'description', 'details'], date: ['recorded_at', 'created_at'], status: ['epistemic_state', 'status'], source: ['source_label', 'source_type'] },
     { table: 'care_assertions', label: 'Caregiver reports', title: ['field', 'subject_type'], detail: ['asserted_value', 'source_text', 'description'], date: ['observed_at', 'recorded_at', 'created_at'], status: ['epistemic_state', 'assertion_status'], source: ['source_label'] },
     { table: 'care_events', label: 'Daily care and other events', title: ['title', 'event_type'], detail: ['description', 'summary', 'details'], date: ['occurred_at', 'recorded_at', 'created_at'], status: ['status'], source: ['source_label', 'source_type'] },
-    { table: 'evidence', label: 'Documents and other sources', title: ['filename', 'title', 'type'], detail: ['description', 'summary', 'source_text'], date: ['recorded_at', 'created_at', 'uploaded_at'], status: ['review_status', 'status'], source: ['source_label', 'source_type'] },
+    { table: 'evidence', label: 'Documents and notes', title: ['filename', 'title', 'type'], detail: ['description', 'summary', 'source_text'], date: ['recorded_at', 'created_at', 'uploaded_at'], status: ['review_status', 'status'], source: ['source_label', 'source_type'] },
     { table: 'care_decisions', label: 'Care decisions', title: ['title', 'decision_type'], detail: ['decision_text', 'description', 'rationale'], date: ['decided_at', 'recorded_at', 'created_at'], status: ['decision_status', 'status'], source: ['source_label'] },
     { table: 'caregiver_observations', label: 'Caregiver observations', title: ['observation_type', 'category'], detail: ['description', 'observed_value', 'value'], date: ['observed_at', 'recorded_at', 'created_at'], status: ['epistemic_status', 'status'], source: ['source_label', 'source_type'] },
     { table: 'care_uncertainties', label: 'Items that still need checking', title: ['field', 'subject_type', 'title'], detail: ['question', 'description', 'reason'], date: ['created_at', 'recorded_at'], status: ['status'], source: ['source_label'] },
@@ -238,7 +238,7 @@ function historicalSnapshotSections(value: Record<string, unknown> | null): Arra
     care_facts: 'Saved care information',
     care_assertions: 'Caregiver reports',
     care_events: 'Daily care and other events',
-    evidence: 'Documents and other sources',
+    evidence: 'Documents and notes',
     changes: 'Recorded changes',
     situations: 'Care situations',
     care_state_revisions: 'Earlier saved changes',
@@ -249,13 +249,13 @@ function historicalSnapshotSections(value: Record<string, unknown> | null): Arra
     care_timeline_entries: 'Care history entries',
     care_follow_up_links: 'Follow-ups',
     care_review_decisions: 'Review decisions',
-    care_provenance_records: 'Source details',
+    care_provenance_records: 'Where the information came from',
     care_uncertainties: 'Items needing clarification',
     care_missing_information: 'Missing information',
     care_conflicts: 'Reports that do not match',
     care_action_outcomes: 'Follow-up results',
-    record_provenance: 'Source records',
-    record_provenance_links: 'Links to sources',
+    record_provenance: 'Related notes and documents',
+    record_provenance_links: 'Links to notes and documents',
     care_record_change_sets: 'Saved record changes',
     care_record_change_items: 'Details of record changes',
     care_corrections: 'Corrections',
@@ -273,7 +273,7 @@ function historicalSnapshotSections(value: Record<string, unknown> | null): Arra
     care_observation_revisions: 'Observation history',
     care_change_revisions: 'Change history',
     care_situation_revisions: 'Care situation history',
-    care_evidence_revisions: 'Source history',
+    care_evidence_revisions: 'Note and document history',
     care_record_retractions: 'Removed record items',
     care_record_restorations: 'Restored record items',
     caregiver_contexts: 'Caregiver context',
@@ -832,8 +832,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
                 {section.total > section.items.length && <p>Showing {section.items.length} of {section.total} saved items.</p>}
               </details>
             ))}
-            {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and other sources', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0) > 0 && (
-              <p>Other saved care details: {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and other sources', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0)} saved item(s).</p>
+            {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and notes', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0) > 0 && (
+              <p>Other saved care details: {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and notes', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0)} saved item(s).</p>
             )}
             <p>This saved copy may not include every care update. Information added after this date is not shown.</p>
           </div>}
@@ -909,7 +909,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </label>
         <label style={{ fontSize: 12 }}>Was this reported separately?
           <select style={field} value={corroborationResult} onChange={event => setCorroborationResult(event.target.value)}>
-            <option value="not_assessed">Not checked</option><option value="independent_source_linked">A separate report is linked</option><option value="copied_or_same_origin">Copied from the same original source</option><option value="none_linked">No other report is linked</option>
+            <option value="not_assessed">Not checked</option><option value="independent_source_linked">A separate report is linked</option><option value="copied_or_same_origin">Copied from the same original</option><option value="none_linked">No other report is linked</option>
           </select>
         </label>
         <label style={{ fontSize: 12 }}>When did it happen?
