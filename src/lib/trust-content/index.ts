@@ -223,7 +223,7 @@ export const HOW_IT_WORKS = {
       body: [
         "Every piece of information becomes part of the care story.",
         'You add: "Mom has been sleeping more recently."',
-        "SolenOS understands the observation, related context, connected medication changes, and questions worth discussing with a clinician.",
+        "SolenOS can help connect the update to related saved care information and questions you may want to discuss with a healthcare professional.",
         "The value is not storing the note. The value is understanding the change.",
       ],
     },
@@ -241,7 +241,7 @@ export const HOW_IT_WORKS = {
       title: "Understand why things happened.",
       body: [
         "Care decisions often lose their context.",
-        "SolenOS preserves what decision was made, when, who was involved, why, and what happened afterward.",
+        "SolenOS keeps track of what decision was made, when it was made, who was involved, why it was made, and what happened afterward.",
         'Instead of "Medication stopped," SolenOS can preserve: "Medication was stopped after dizziness concerns were discussed. Symptoms improved afterward."',
         "The story matters.",
       ],
@@ -260,7 +260,7 @@ export const HOW_IT_WORKS = {
       title: "See what SolenOS understands — and what it doesn't.",
       body: [
         "Trust requires honesty.",
-        "SolenOS shows what is known, what is uncertain, and what information is missing.",
+        "SolenOS shows what is known, what is not clear yet, and what has not been recorded.",
         "A trustworthy system knows its limits.",
       ],
     },
@@ -269,8 +269,8 @@ export const HOW_IT_WORKS = {
       title: "Built around the caregiver, not the data.",
       body: [
         "Caregivers should not become data entry workers.",
-        "SolenOS is designed around natural inputs: photos, documents, messages, voice notes, and observations.",
-        "The caregiver provides what they already have. SolenOS helps create understanding.",
+        "SolenOS is designed around the ways caregivers already share information: photos, documents, messages, voice notes, and updates.",
+        "Caregivers can share what they already have. SolenOS helps make the information easier to understand.",
       ],
     },
   ],
