@@ -139,7 +139,7 @@ export function PersistedCareOrientation() {
           <p>{projection.item_count} saved care detail{projection.item_count === 1 ? "" : "s"} shown.</p>
           {items.map((item) => (
             <article className="persisted-care-orientation-latest" key={item.source_collection + ":" + item.id}>
-              <strong>{item.title?.trim() || "Care record item"}</strong>
+              <strong>{item.title?.trim() || "Saved care detail"}</strong>
               {item.description?.trim() && <p>{item.description}</p>}
               <p>{readableStatus(item.epistemic_status)} · {readableStatus(item.status)}</p>
               <p>{item.source_label || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
