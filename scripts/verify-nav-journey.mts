@@ -124,9 +124,9 @@ for (const route of [
   "src/app/workspace/settings/page.tsx",
 ]) {
   const source = fs.readFileSync(path.join(root, route), "utf8");
-  assert.doesNotMatch(source, /<main\\b/, `${route} must not create a nested main landmark inside the app shell`);
+  assert.doesNotMatch(source, /<main\b/, `${route} must not create a nested main landmark inside the app shell`);
 }
-assert.doesNotMatch(companion, /<main\\b/, "AI Companion must not add a nested main landmark");
+assert.doesNotMatch(companion, /<main\b/, "AI Companion must not add a nested main landmark");
 
 console.log("✓ route titles and breadcrumbs agree with navigation labels");
 console.log("✓ mobile drawer has focus containment, Escape handling, inert background, and focus restoration");
