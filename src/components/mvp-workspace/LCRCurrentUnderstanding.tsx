@@ -1215,7 +1215,7 @@ export function LCRCurrentUnderstanding() {
               {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open the full record below to review the rest.</p>}
             </>
           ) : projection ? (
-            <RecordState kind="empty" title="No care information recorded yet." description="This record reflects the information that has been added and confirmed." />
+            <RecordState kind="empty" title="No care information recorded yet." />
           ) : (
             <p>The current care picture is not available yet. SolenOS will not fill gaps with guesses.</p>
           )}
