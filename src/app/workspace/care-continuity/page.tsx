@@ -47,7 +47,7 @@ function WorkspacePageInner() {
     return (
       <main className="mobile-screen lcr-screen">
         <section className="lcr-empty-state" aria-labelledby="archived-workspace-title">
-          <h1 id="archived-workspace-title">Your record is archived on this device</h1>
+          <h1 id="archived-workspace-title">Your Care Record is stored on this device</h1>
           <p>This only hides the workspace on this device. It does not delete care information stored by SolenOS.</p>
           {archiveRestoreError && <p role="alert">{archiveRestoreError}</p>}
           <Button
@@ -79,7 +79,7 @@ function WorkspacePageInner() {
           <div>
             <p className="lcr-eyebrow">YOUR CARE RECORD</p>
             <h1>Your Care Record</h1>
-            <p className="lcr-intro">See what is currently understood about care, what still needs checking and where the information came from.</p>
+            <p className="lcr-intro">See what has been saved, what still needs checking, and where it came from.</p>
           </div>
           <div className="lcr-record-meta">
             <span>Updated {formatLastUpdated(latestUpdated)}</span>
@@ -117,7 +117,7 @@ function WorkspacePageInner() {
               Add a care update
             </button>
             <button type="button" className="lcr-text-action lcr-record-timeline-action" onClick={() => router.push("/workspace/timeline")}>
-              View care timeline <span aria-hidden="true">→</span>
+              View care history <span aria-hidden="true">→</span>
             </button>
           </div>
         </section>
