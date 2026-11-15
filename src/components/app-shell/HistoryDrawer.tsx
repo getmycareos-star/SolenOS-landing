@@ -760,7 +760,7 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
-        getJSON("/care-continuity/current-care?limit_per_source=50"),
+        getJSON("/care-continuity/context?limit_per_source=50&include_all_history=true"),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
@@ -807,51 +807,111 @@ export function HistoryDrawer() {
       // dedicated event-history route fails or returns no event rows.
       {
         const projectionResult = results[8];
-        const projection = projectionResult.status === "fulfilled" && projectionResult.value &&
+        const historyContext = projectionResult.status === "fulfilled" && projectionResult.value &&
           typeof projectionResult.value === "object"
           ? projectionResult.value as {
-            items?: unknown;
-            source_coverage?: Record<string, { status?: string; returned_count?: number }>;
+            sources?: {
+              events?: {
+                items?: unknown;
+                status?: string;
+                candidate_count?: number;
+                candidate_scan_complete?: boolean;
+                has_more?: boolean;
+                next_offset?: number | null;
+              };
+            };
           }
           : null;
-        const projectionItems = projection && Array.isArray(projection.items)
-          ? projection.items as Array<Record<string, unknown>>
-          : [];
-        const fallbackEvents = projectionItems.filter((item) =>
-          item.source_collection === "events" &&
-          typeof item.id === "string" &&
-          typeof item.title === "string"
-        );
+        let eventSource = historyContext?.sources?.events ?? null;
+        const fallbackEvents: Array<Record<string, unknown>> = [];
+        const appendFallbackEvents = (items: unknown) => {
+          if (!Array.isArray(items)) return;
+          for (const item of items) {
+            if (item && typeof item === "object" &&
+              typeof (item as Record<string, unknown>).id === "string" &&
+              typeof (item as Record<string, unknown>).title === "string") {
+              fallbackEvents.push(item as Record<string, unknown>);
+            }
+          }
+        };
+        appendFallbackEvents(eventSource?.items);
+
+        // The dedicated event route normally returns the full timeline. If it
+        // fails, recover the complete persisted event source through the LCR's
+        // explicit per-source pagination instead of a recent-only projection.
+        let fallbackPageReadFailed = false;
+        let fallbackPagesFetched = 1;
+        while (eventSource?.has_more === true &&
+          typeof eventSource.next_offset === "number" &&
+          fallbackPagesFetched < 4) {
+          const offsets = encodeURIComponent(JSON.stringify({ events: eventSource.next_offset }));
+          try {
+            const page = await getJSON(
+              "/care-continuity/context?limit_per_source=50&include_all_history=true&source_offsets_json=" + offsets,
+            ) as {
+              sources?: {
+                events?: {
+                  items?: unknown;
+                  status?: string;
+                  candidate_count?: number;
+                  candidate_scan_complete?: boolean;
+                  has_more?: boolean;
+                  next_offset?: number | null;
+                };
+              };
+            };
+            eventSource = page?.sources?.events ?? null;
+            appendFallbackEvents(eventSource?.items);
+            fallbackPagesFetched += 1;
+          } catch {
+            fallbackPageReadFailed = true;
+            break;
+          }
+        }
+
         const existingEventIds = new Set(nextRecords.filter((record) => record.source_kind === "care-event").map((record) => record.id));
         for (const item of fallbackEvents) {
-          if (existingEventIds.has(item.id as string)) continue;
+          const id = item.id as string;
+          if (existingEventIds.has(id)) continue;
           nextRecords.push({
-            id: item.id as string,
+            id,
             person_id: session.person.id,
-            event_type: typeof item.source_event_type === "string" ? item.source_event_type : "daily_care",
+            event_type: typeof item.event_type === "string" ? item.event_type : "daily_care",
             status: typeof item.status === "string" ? item.status : "recorded",
             occurred_at: typeof item.occurred_at === "string" ? item.occurred_at : null,
+            occurred_at_timezone: typeof item.occurred_at_timezone === "string" ? item.occurred_at_timezone : null,
             recorded_at: typeof item.recorded_at === "string" ? item.recorded_at : null,
+            updated_at: typeof item.updated_at === "string" ? item.updated_at : null,
             title: item.title as string,
             description: typeof item.description === "string" ? item.description : null,
-            evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.filter((id): id is string => typeof id === "string") : [],
-            source_record_ids: Array.isArray(item.source_record_ids) ? item.source_record_ids.filter((id): id is string => typeof id === "string") : [],
+            evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.filter((value): value is string => typeof value === "string") : [],
+            source_record_ids: Array.isArray(item.source_record_ids) ? item.source_record_ids.filter((value): value is string => typeof value === "string") : [],
+            time_provenance: typeof item.time_provenance === "string" ? item.time_provenance : null,
+            tags: Array.isArray(item.tags) ? item.tags.filter((value): value is string => typeof value === "string") : ["daily-care", "lcr-history-fallback"],
             source_kind: "care-event",
-            tags: ["daily-care", "lcr-projection-fallback"],
           });
-          existingEventIds.add(item.id as string);
+          existingEventIds.add(id);
         }
         if (fallbackEvents.length > 0 && !(eventResult.status === "fulfilled" && eventItems)) {
           availableSources += 1;
         }
-        const eventCoverage = projection?.source_coverage?.events;
-        const eventCoverageStatus = String(eventCoverage?.status || "").toLowerCase();
+        const eventCoverageStatus = String(eventSource?.status || "").toLowerCase();
         const eventSourceVerifiedEmpty = (
           ["available", "empty", "complete"].includes(eventCoverageStatus) &&
-          Number(eventCoverage?.returned_count ?? -1) === 0
+          eventSource?.candidate_scan_complete === true &&
+          Number(eventSource?.candidate_count ?? -1) === 0
         );
-        if (eventReadProblem && fallbackEvents.length > 0) {
-          warnings.push("The dedicated history read was unavailable; care events were recovered from the LCR projection.");
+        const fallbackHistoryIncomplete = Boolean(
+          fallbackPageReadFailed ||
+          eventSource?.has_more === true ||
+          eventSource?.candidate_scan_complete !== true ||
+          fallbackEvents.length < Number(eventSource?.candidate_count ?? fallbackEvents.length)
+        );
+        if ((eventReadProblem || eventItems?.length === 0) && fallbackEvents.length > 0) {
+          warnings.push("The dedicated history read was unavailable or incomplete; saved care events were recovered from the LCR history.");
+        }
+        if (fallbackEvents.length > 0 && fallbackHistoryIncomplete) {
+          warnings.push("Only part of the saved event history could be recovered. More records may be available; refresh to try again.");
         } else if (
           fallbackEvents.length === 0 &&
           !eventSourceVerifiedEmpty &&
