@@ -74,7 +74,7 @@ assert.doesNotMatch(integrityPanel, /No contradiction records returned|current e
 assert.doesNotMatch(careContinuity, /lcr-primary-actions|Capture how today is going/, "Care Continuity does not expose parallel capture shortcuts");
 
 assert.match(historyDrawer, /collapseDuplicateDailyCaptureWrappers/, "recent history groups capture wrappers linked to the exact same source evidence");
-assert.match(historyDrawer, /source_record_ids: group\\.map/, "grouped history keeps the IDs of every original source event");
+assert.ok(historyDrawer.includes("source_record_ids: group.map"), "grouped history keeps the IDs of every original source event");
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
