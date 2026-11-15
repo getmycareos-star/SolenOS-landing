@@ -90,6 +90,10 @@ type CareItem = {
     job_id?: string | null;
     review_required?: boolean;
     message?: string | null;
+    execution_status?: {
+      longitudinal_processing?: string | null;
+      longitudinal_processing_error?: string | null;
+    } | null;
   } | null;
 };
 
@@ -564,6 +568,11 @@ export default function DailyCarePage() {
                     {item.capture_processing?.message && (
                       <p className="daily-care-muted">{item.capture_processing.message}</p>
                     )}
+                    {item.capture_processing?.execution_status?.longitudinal_processing === "incomplete" && (
+                      <p className="daily-care-warning" role="status">
+                        {t("dailyCare.longitudinalIncomplete")}
+                      </p>
+                    )}
                     <span>{displayHistoryTime(item)}</span>
                     <span> · {displayHistorySource(item)}</span>
                     {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
@@ -854,6 +863,11 @@ export default function DailyCarePage() {
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     {item.capture_processing?.message && (
                       <p className="daily-care-muted">{item.capture_processing.message}</p>
+                    )}
+                    {item.capture_processing?.execution_status?.longitudinal_processing === "incomplete" && (
+                      <p className="daily-care-warning" role="status">
+                        {t("dailyCare.longitudinalIncomplete")}
+                      </p>
                     )}
                     <span>{displayHistoryTime(item)}</span>
                     {item.source_label && <span> · {item.source_label}</span>}
