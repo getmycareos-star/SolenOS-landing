@@ -344,7 +344,12 @@ export default function DailyCarePage() {
 
         if (careResult.status === "fulfilled") {
           const payload = careResult.value as { items?: unknown };
-          setCareItems(Array.isArray(payload?.items) ? payload.items as CareItem[] : []);
+          if (Array.isArray(payload?.items)) {
+            setCareItems(payload.items as CareItem[]);
+            setContextError("");
+          } else {
+            setContextError("Current care information could not be loaded. Try refreshing the record.");
+          }
         } else {
           setContextError("Current care information could not be loaded. Try refreshing the record.");
         }
