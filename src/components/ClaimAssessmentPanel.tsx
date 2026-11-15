@@ -171,7 +171,7 @@ export default function ClaimAssessmentPanel() {
       if (!Array.isArray(evidenceRows) || evidenceRows.some((item) =>
         item?.person_id !== scopedPersonId || typeof item?.id !== "string" ||
         typeof item?.source_text !== "string")) {
-        throw new Error("Source informations were not valid for the authenticated care record");
+        throw new Error("Choose a note or documents were not valid for the authenticated care record");
       }
       setPersonId(scopedPersonId);
       setClaims(claimRows as Claim[]);
@@ -382,7 +382,7 @@ export default function ClaimAssessmentPanel() {
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
       Compare a care detail with the saved sources. Any quoted passage must match the source exactly. Each review is saved as a new version. The original report is kept, and a review does not prove a medical fact.
     </p>
-    {loading && <p role="status">Loading saved care details and sources…</p>}
+    {loading && <p role="status">Loading saved care details and related notes…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && claims.length === 0 && <p>There are no care details to review yet.</p>}
     {!loading && !error && claims.length > 0 && <>
@@ -394,9 +394,9 @@ export default function ClaimAssessmentPanel() {
       {selectedClaim && <div style={{ fontSize: 12, padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
         <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
         <div><strong>Who reported it:</strong> {caregiverSafeAssistantText(selectedClaim.source_label) || "Not recorded"}</div>
-        <div><strong>Information status:</strong> {caregiverInformationLabel(selectedClaim.epistemic_state || "reported") || "Not yet confirmed"}</div>
-        <div><strong>Review status:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
-        <div><strong>Sources attached:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
+        <div><strong>What we know:</strong> {caregiverInformationLabel(selectedClaim.epistemic_state || "reported") || "Not yet confirmed"}</div>
+        <div><strong>Review:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
+        <div><strong>Related notes or documents:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
       </div>}
       <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 12, minWidth: 0 }}>
         <legend style={{ fontSize: 12 }}>How this detail relates to other details</legend>
@@ -449,34 +449,34 @@ export default function ClaimAssessmentPanel() {
       <div style={{ display: "grid", gap: 10 }}>
         {links.map((link, index) => <fieldset key={index} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
           <legend style={{ fontSize: 12 }}>Source link {index + 1}</legend>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Source information
+          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Choose a note or document
             <select style={field} value={link.evidence_id} onChange={(event) => updateLink(index, { evidence_id: event.target.value })}>
               <option value="">Choose a source</option>
               {evidence.map((item) => <option key={item.id} value={item.id}>{simpleReviewStatus(item.type)}</option>)}
             </select>
           </label>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>How this source relates to the care detail
+          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>How this note or document relates to this care detail
             <select style={field} value={link.relationship} onChange={(event) => updateLink(index, { relationship: event.target.value as DraftLink["relationship"] })}>
               {relationships.map((value) => <option key={value} value={value}>{simpleReviewStatus(value)}</option>)}
             </select>
           </label>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Exact words from the source
+          <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Exact words from the note or document
             <textarea style={{ ...field, minHeight: 68 }} value={caregiverSafeAssistantText(link.source_passage) || "The original wording is saved."} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact words from the selected source. Do not rewrite them." />
           </label>
-          <label style={{ display: "block", fontSize: 12 }}>What this source does not show (optional)
+          <label style={{ display: "block", fontSize: 12 }}>What this note or document does not tell us (optional)
             <input style={field} value={link.scope_note} onChange={(event) => updateLink(index, { scope_note: event.target.value })} placeholder="What this passage does or does not establish" />
           </label>
           {links.length > 1 && <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => setLinks((current) => current.filter((_, i) => i !== index))}>Remove source</button>}
         </fieldset>)}
       </div>
       <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => setLinks((current) => [...current, emptyLink()])} disabled={links.length >= 10}>Add another source</button>
-      <label style={{ display: "block", fontSize: 12, marginTop: 9 }}>Why this review was made
+      <label style={{ display: "block", fontSize: 12, marginTop: 9 }}>Why are you reviewing this information?
         <textarea style={{ ...field, minHeight: 75 }} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Explain what information you checked and what is still unclear." />
       </label>
       <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || historyLoading}>{saving ? "Saving…" : "Save review"}</button>
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <section aria-label="Check for new information" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
-        <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Check whether new information affects this review</h4>
+        <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Check whether anything new changes this review</h4>
         <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This check looks for new or missing sources, changes to related care details, and reports that do not match. It does not prove that the information is true or complete.</p>
         {impactLoading && <p role="status">Checking whether new information affects this review…</p>}
         {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
@@ -486,8 +486,8 @@ export default function ClaimAssessmentPanel() {
           {assessmentImpact.reasons.length > 0
             ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{simpleReviewStatus(reason)}</li>)}</ul>
             : <p style={{ fontSize: 12 }}>No reason to repeat this review was found in the information checked. This does not prove that the review is complete or correct.</p>}
-          {assessmentImpact.missing_evidence_ids.length > 0 && <p>Sources that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
-          {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Sources not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
+          {assessmentImpact.missing_evidence_ids.length > 0 && <p>Notes or documents that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
+          {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Notes or documents not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Source details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
           {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
           {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {simpleReviewStatus(item.field)}</strong><div>{caregiverSafeAssistantText(item.description) || "The saved reports do not match."}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
