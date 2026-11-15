@@ -6166,6 +6166,18 @@ html:not([data-solenos-theme="dark"]) [role="button"][style*="var(--trust)"]:hov
   gap: 8px;
   margin-top: 2px;
 }
+.record-state-action button {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
 .record-state--loading {
   border-style: dashed;
 }
