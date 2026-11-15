@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import {
+  isPersistedDeltaChangeSupported,
+  projectPersistedDeltaUnderstanding,
+} from "@/lib/progressive-understanding";
 
 type SourceReference = {
   record_type?: string;
@@ -19,6 +23,9 @@ type ComputedChange = {
   domain?: string;
   name?: string;
   change_type?: string;
+  classification?: string;
+  attention_candidate?: boolean;
+  follow_up_candidate?: boolean;
   previous?: string | null;
   current?: string | null;
   certainty?: string;
@@ -36,7 +43,11 @@ type DeltaRun = {
   created_at?: string;
   source_freshness?: { status?: string; reasons?: string[] };
   delta?: {
+    caregiver_summary?: string | null;
+    history_coverage?: { complete?: boolean };
     computed_changes?: ComputedChange[];
+    clinical_gaps?: Array<{ subject?: string; description?: string }>;
+    follow_ups?: Array<{ question?: string; status?: string }>;
     contradictions?: Array<{
       topic?: string;
       reports?: string[];
@@ -82,15 +93,6 @@ function readableSource(value?: string | null): string {
 
 function readableChangeType(value?: string | null): string {
   return caregiverStatusLabel(value || "") || displayChangeText(value, "Care change");
-}
-
-function supported(change: ComputedChange): boolean {
-  return change.certainty === "supported" &&
-    change.evidence_supported === true &&
-    change.claim_supported !== false &&
-    Array.isArray(change.source_record_refs) &&
-    change.source_record_refs.length > 0 &&
-    change.historical_only !== true;
 }
 
 export default function CareChangeHistoryPanel({ personId }: { personId: string }) {
@@ -181,10 +183,35 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
     </section>
   );
 
+  const latestUnderstanding = projectPersistedDeltaUnderstanding(runs[0]);
+
   return (
     <section aria-label="Care changes over time">
       <h2>What has changed over time</h2>
       <p>These comparisons use saved care reports. A reported change is not, by itself, a medical conclusion.</p>
+      <section aria-label="What changed in our understanding" className="my-4 rounded-lg border border-gray-200 p-4">
+        <h3>What changed in our understanding</h3>
+        <p>{latestUnderstanding.what_changed_in_understanding || latestUnderstanding.synthesis || "There is not enough saved information to explain a change yet."}</p>
+        {latestUnderstanding.what_matters_now && (
+          <p><strong>What may need follow-up:</strong> {latestUnderstanding.what_matters_now}</p>
+        )}
+        {latestUnderstanding.known_unknowns.length > 0 && (
+          <div>
+            <h4>What remains uncertain</h4>
+            <ul>
+              {latestUnderstanding.known_unknowns.map((item, index) => <li key={`pue-unknown-${index}`}>{item}</li>)}
+            </ul>
+          </div>
+        )}
+        {latestUnderstanding.open_questions.length > 0 && (
+          <div>
+            <h4>Questions to clarify</h4>
+            <ul>
+              {latestUnderstanding.open_questions.map((item, index) => <li key={`pue-question-${index}`}>{item}</li>)}
+            </ul>
+          </div>
+        )}
+      </section>
       <ol>
         {runs.map((run) => {
           const changes = run.delta?.computed_changes ?? [];
@@ -193,8 +220,8 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
           // Only a comparison whose complete source/context check succeeded may
           // be presented as currently supported. Stale, missing, and unchecked
           // freshness are all fail-closed review states.
-          const confirmed = comparisonCurrent ? changes.filter(supported) : [];
-          const needsReview = comparisonCurrent ? changes.filter((item) => !supported(item)) : changes;
+          const confirmed = comparisonCurrent ? changes.filter(isPersistedDeltaChangeSupported) : [];
+          const needsReview = comparisonCurrent ? changes.filter((item) => !isPersistedDeltaChangeSupported(item)) : changes;
           const conflicts = run.delta?.contradictions ?? [];
           return (
             <li key={run.id}>
