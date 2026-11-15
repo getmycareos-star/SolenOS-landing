@@ -116,7 +116,7 @@ function WorkspacePageInner() {
             >
               Add a care update
             </button>
-            <button type="button" className="lcr-text-action" onClick={() => router.push("/workspace/timeline")}>
+            <button type="button" className="lcr-text-action lcr-record-timeline-action" onClick={() => router.push("/workspace/timeline")}>
               View care timeline <span aria-hidden="true">→</span>
             </button>
           </div>
