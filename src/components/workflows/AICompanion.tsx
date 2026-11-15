@@ -479,7 +479,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       <p>This conversation has not been added to your Care Record.</p>
                     </section>}
                     {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">We couldn’t check how recent these care details are. Their current status is unknown.</p>}
-                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">We couldn’t find a review of how recent these care details are. This does not mean they are current.</p>}
+                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">No review of how recent these care details is was found.</p>}
                   </div>
                 </article>
               })}
