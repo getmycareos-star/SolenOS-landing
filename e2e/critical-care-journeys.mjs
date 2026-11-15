@@ -173,9 +173,16 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
   await page.getByRole("heading", { name: "Follow-ups", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await verifyMobile(page);
-  await page.getByRole("button", { name: "Open navigation", exact: true }).click();
-  await page.getByRole("link", { name: /Follow-ups/ })
-    .waitFor({ state: "visible", timeout: 10_000 });
+  const navigationToggle = page.getByRole("button", { name: "Open navigation", exact: true });
+  await navigationToggle.click();
+  await navigationToggle.waitFor({ state: "attached" });
+  await page.waitForFunction(() =>
+    document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
+  , { timeout: 5_000 });
+  const followUpsNavigationLink = page.locator("#solenos-navigation")
+    .getByRole("link", { name: /Follow-ups/ });
+  await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
   await context.close();
 });
 
