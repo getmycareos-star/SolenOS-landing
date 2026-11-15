@@ -77,7 +77,6 @@ export async function buildGreetingOrientation(
     context.is_change_oriented ? "change_detected" :
     context.is_how_are_you ? "how_are_you" :
     context.is_gratitude ? "gratitude" :
-    isInsultOrFrustrationInput(input) ? "frustration_or_insult" :
     context.is_first_session ? "new_caregiver" : "returning_no_threads";
 
   return {
