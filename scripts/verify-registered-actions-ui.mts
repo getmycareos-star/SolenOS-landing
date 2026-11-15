@@ -19,7 +19,7 @@ for (const contract of [
   'idempotency_key:',
   'suggestion_id:',
   'evidence_ids: item.evidence_ids',
-  'Suggested follow-up — not a registered action',
+  'This item is shown for reference only. It cannot be added as a follow-up without a clear request and supporting information.',
   'Approve and register',
   'Keep as suggestion',
   'Defer consideration',
