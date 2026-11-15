@@ -30,9 +30,8 @@ export default function EarlyAccessPage() {
       <section className="public-section">
         <h2 className="public-section-title">About early access</h2>
         <p className="public-prose">
-          SolenOS is continuing to improve its care-continuity capabilities. Some features may
-          be incomplete or need correction. The record should preserve uncertainty rather than
-          presenting an AI interpretation as established fact.
+          SolenOS is still being improved. Some features may be incomplete or need correction.
+          Check suggestions against the information you shared before relying on them.
         </p>
         <h2 className="public-section-title">Before adding care information</h2>
         <ul className="public-quiet-list">
