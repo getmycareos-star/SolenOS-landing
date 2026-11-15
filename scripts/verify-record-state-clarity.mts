@@ -56,7 +56,9 @@ assert.doesNotMatch(daily, /No updates have been saved today/);
 assert.doesNotMatch(daily, /setHistoryItems\(\[\]\);\s*setHistoryMayBeTruncated\(false\);/);
 
 assert.match(overview, /setHasLoaded\(true\)/);
-assert.match(overview, /Keep the last successfully loaded records visible if a refresh fails/);
+assert.match(overview, /error && <RecordState kind="error"/);
+assert.match(overview, /No recent changes recorded\./);
+assert.doesNotMatch(overview, /SolenOS will not invent a change when there is no record of one/);
 assert.doesNotMatch(overview, /No care information is available in this view yet/);
 assert.doesNotMatch(overview, /missing information as proof that nothing happened/);
 
