@@ -27,7 +27,8 @@ function caregiverChangeLabel(change: PersistedChange): string {
   ) {
     return caregiverStatusLabel(change.change_type) ?? "No longer reported";
   }
-  if (change.significance_verdict === "insufficient_evidence") {
+  if (change.significance_verdict === "insufficient_evidence" &&
+    !["cessation", "disappearance"].includes(change.change_type)) {
     return "Needs more information";
   }
   // Frequency changes require comparable observation coverage. Without it,
