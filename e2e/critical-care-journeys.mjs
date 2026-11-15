@@ -1428,7 +1428,7 @@ finally:
     hasText: "Sleep changes",
   });
   await situationCard.waitFor({ state: "visible", timeout: 20_000 });
-  await situationCard.getByRole("button", { name: "Review linked records", exact: true }).click();
+  await situationCard.getByRole("button", { name: "Review related notes and documents", exact: true }).click();
   await situationCard.getByText("restless sleep and three overnight awakenings", { exact: false })
     .waitFor({ timeout: 15_000 });
 
