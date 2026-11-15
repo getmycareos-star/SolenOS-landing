@@ -174,13 +174,13 @@ export default function CareContinuityIntegrityPanel({
     <section aria-label="Care record details" style={{ marginTop: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: 19, margin: 0 }}>Record details</h2>
+          <h2 style={{ fontSize: 19, margin: 0 }}>Care Record details</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 5 }}>
-            Review reported information, unresolved questions, changes and recorded outcomes. A review status records a review step; it does not by itself mean a healthcare professional has verified the information.
+            Review what was reported, questions that still need answers, changes, and what happened next. A caregiver review does not mean a healthcare professional has confirmed the information.
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => void load()} disabled={loading}>
-          {loading ? 'Refreshing…' : 'Refresh record details'}
+          {loading ? 'Refreshing…' : 'Refresh Care Record details'}
         </button>
       </div>
 
@@ -200,7 +200,7 @@ export default function CareContinuityIntegrityPanel({
               Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Review: {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{caregiverSafeAssistantText(fresh.explanation) || 'No further explanation is available.'}</p>}
-            {item.source_text && <><small>Original source wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{caregiverSafeAssistantText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
+            {item.source_text && <><small>Original words</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{caregiverSafeAssistantText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
                 ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as checked by a caregiver</button>
@@ -212,8 +212,8 @@ export default function CareContinuityIntegrityPanel({
 
 
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Record history</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A history of how recorded care information has changed over time.</p>
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>Care history</h3>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>See how saved care information has changed over time.</p>
         {caregiverVisibleRevisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care changes are available to show here yet.</p> : caregiverVisibleRevisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
@@ -224,7 +224,7 @@ export default function CareContinuityIntegrityPanel({
       </div>
 
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Recorded outcomes and corrections</h3>
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>What happened next and corrections</h3>
         {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No recorded outcomes are available yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
             <strong>{simpleRecordLabel(item.outcome_status)}</strong> · {new Date(item.created_at).toLocaleString()}
