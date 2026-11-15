@@ -47,7 +47,8 @@ const companion = readFileSync(
   "utf8",
 );
 assert.ok(companion.includes("postJSON('/api/lcr/orientation'"), "Companion must route greetings through the LCR orientation endpoint");
-assert.ok(companion.includes("postJSON('/conversation/message'"), "Companion must route care questions through the conversation endpoint");
+assert.ok(companion.includes("shouldUseLcrOrientationEndpoint(submittedText)"), "Only context-free social turns may use read-only orientation");
+assert.ok(companion.includes("postJSON('/conversation/message'"), "Companion must route care questions, corrections, and frustration through the conversation endpoint");
 assert.match(companion, /postJSON\('\/conversation\/message'/);
 const apiClient = readFileSync(
   new URL("../src/api/client.ts", import.meta.url),
