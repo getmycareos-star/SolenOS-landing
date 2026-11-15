@@ -1360,7 +1360,7 @@ try:
         person_id=person_id,
         situation_type=SituationType.UNKNOWN,
         state=SituationState.ACTIVE,
-        title="Sleep disruption follow-up",
+        title="Sleep changes",
         description="A caregiver recorded restless sleep and overnight awakenings.",
         signal_ids=[event.id],
         signal_types=["care_event"],
@@ -1396,7 +1396,7 @@ finally:
   const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
   await page.getByText("Earlier care history", { exact: true }).click();
   const situationCard = page.locator("article.lcr-timeline-item").filter({
-    hasText: "Sleep disruption follow-up",
+    hasText: "Sleep changes",
   });
   await situationCard.waitFor({ state: "visible", timeout: 20_000 });
   await situationCard.getByRole("button", { name: "Review linked records", exact: true }).click();
@@ -1415,7 +1415,7 @@ finally:
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByText("Earlier care history", { exact: true }).click();
   const reloadedCard = page.locator("article.lcr-timeline-item").filter({
-    hasText: "Sleep disruption follow-up",
+    hasText: "Sleep changes",
   });
   await reloadedCard.getByText("Previous status updates (1)", { exact: true })
     .waitFor({ timeout: 20_000 });
