@@ -116,7 +116,7 @@ function requirePersonId(requestedPersonId?: string): string {
   if (!activePersonId) {
     throw new Error("A server-issued SolenOS care session is required before loading change intelligence.");
   }
-  if (requestedPersonId && requestedPersonId !== activePersonId) {
+  if (requestedPersonId !== undefined && requestedPersonId !== activePersonId) {
     throw new Error("The requested care record does not match the active caregiver session.");
   }
   return requestedPersonId ?? activePersonId;
