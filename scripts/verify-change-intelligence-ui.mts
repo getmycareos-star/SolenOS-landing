@@ -26,7 +26,7 @@ for (const contract of [
   ["caregiver trajectory decisions are explicit and evidence-linked", /transitionSituationState\(situation\.id, targetState, reason, evidenceIds, personId\)/],
   ["caregiver-facing status controls and history are present", /Caregiver-reported status[\s\S]*Previous status updates/],
   ["care situation source details can be loaded", /getPersistedSituationDetail\(situationId, personId\)/],
-  ["care situation linked records are reviewable", /Review linked records[\s\S]*source_records\.map/],
+  ["care situation linked records are reviewable", /Review related notes and documents[\s\S]*source_records\.map/],
   ["caregiver status history is visible", /state_history/],
   ["panel is bound to the displayed person", /export function ChangeIntelligencePanel\(\{ personId \}: \{ personId: string \}\)/],
   ["panel reloads when the displayed person changes", /\}, \[personId\]\);/],
