@@ -148,7 +148,13 @@
     "measurementRecords": "registros de mediciones",
     "quickCheckIns": "registros rápidos",
     "careHandoffs": "traspasos de cuidados",
-    "otherCareUpdates": "otras actualizaciones de cuidados"
+    "otherCareUpdates": "otras actualizaciones de cuidados",
+    "openDocuments": "Abrir documentos",
+    "reviewDocument": "Revisar el documento",
+    "viewFollowups": "Ver seguimientos",
+    "notificationAttention": "Hay que revisar la entrega de notificaciones",
+    "unresolved": "Sin resolver",
+    "due": "Vence"
   },
   "changeIntelligence": {
     "eyebrow": "COMPRENSIÓN A LO LARGO DEL TIEMPO",
