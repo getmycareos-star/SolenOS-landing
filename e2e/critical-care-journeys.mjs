@@ -784,8 +784,12 @@ await record("06 Companion context and Qwen output", async () => {
       );
       assert.match(
         overwhelmedAnswer.payload.safety_note || "",
-        /did not pass.*grounding checks/i,
-        "The fallback must disclose why it was used",
+        /couldn't confirm a reliable answer from the care record/i,
+        "The fallback must disclose its limits in caregiver-facing language",
+      );
+      assert.equal(
+        overwhelmedAnswer.payload.reply,
+        "I hear that you're exhausted. We can take this one concern at a time.",
       );
       assert.deepEqual(overwhelmedAnswer.payload.source_event_ids || [], []);
       assert.deepEqual(overwhelmedAnswer.payload.source_evidence_ids || [], []);
