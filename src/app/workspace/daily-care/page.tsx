@@ -356,10 +356,10 @@ export default function DailyCarePage() {
             setFollowUps(items.filter((item) => !["closed", "cancelled"].includes(item.status)));
             setFollowUpsError("");
           } else {
-            setFollowUpsError("The saved follow-up list could not be read. Check it before assuming nothing is outstanding.");
+            setFollowUpsError("The saved follow-up list could not be read. Try again to load saved follow-ups.");
           }
         } else {
-          setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
+          setFollowUpsError("Existing follow-ups could not be loaded. Try again to load saved follow-ups.");
         }
 
         if (documentsResult.status === "fulfilled") {
@@ -727,7 +727,7 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
             <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
             <p className="daily-care-muted">
-              This summary uses records added since your previous visit on this device. It does not describe unrecorded care.
+              This summary shows records added since your previous visit on this device.
             </p>
             {historyError ? (
               <RecordState kind="error" title="Recent care history couldn’t be loaded." description="Try again to check what has been recorded since your last visit." />
