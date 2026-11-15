@@ -1189,8 +1189,8 @@ await record("clarification questions are linked, answerable, skippable and dura
   const answerQuestion = await createQuestion(answerQuestionText);
   const skipQuestion = await createQuestion(skipQuestionText);
 
-  const { context, page } = await createBrowserPage(session, "/workspace");
-  await page.getByRole("heading", { name: "Care details that need checking" }).waitFor({ timeout: 20_000 });
+  const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
+  await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().click();
   const exactAnswer = "I observed this on " + tag + ".";
@@ -1226,7 +1226,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   assert.equal(questions.payload.find((row) => row.id === skipQuestion.id)?.status, "unresolved");
   assert.equal(questions.payload.find((row) => row.id === answerQuestion.id)?.status, "answered");
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Care details that need checking" }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
   await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText("View answered and closed questions", { exact: true }).click();
   await page.getByRole("button", { name: new RegExp(answerQuestionText) }).click();
