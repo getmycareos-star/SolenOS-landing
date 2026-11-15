@@ -179,8 +179,8 @@ assert.match(statusCareDelta, /Compare with saved care information/);
 assert.match(careRecordOverview, /See what has been saved, who shared it/);
 assert.match(persistedOrientation, /Your Care Record does not have any care information yet/);
 assert.match(workspaceNav, /label: "Care Record"/);
-assert.match(workspaceNav, /label: "AI Companion"/);
-assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "Care Assistant"/);
+assert.match(workspaceNav, /label: "Care Assistant"/);
+assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
 assert.match(informationStatus, /Known/);
 assert.match(informationStatus, /Not sure yet/);
 assert.match(informationStatus, /Not recorded/);
@@ -191,6 +191,15 @@ assert.match(followUps, /Information that is missing, unclear or does not match/
 assert.match(timeline, /return to your Care Record/);
 assert.match(statusCareDelta, /Compare with saved care information/);
 assert.match(workspaceHome, /ask SolenOS about information already saved/);
+assert.doesNotMatch(workspaceHome, /AI Companion/);
+assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Send a message to Companion|Companion is responding/);
+assert.doesNotMatch(persistedOrientation, /Your Living Care Record|source information|care record item/);
+assert.doesNotMatch(changeIntelligence, /saved care assessments|Caregiver-reported status|Saved information used|Care updates included/);
+assert.doesNotMatch(historyDrawer, /Living Care Record|LCR revision|Evidence references|caregiver ID|Immutable/);
+assert.match(historyDrawer, /Your saved care history, in date order/);
+assert.match(historyDrawer, /What was saved and where it came from/);
+assert.doesNotMatch(careRecordOverview, /Living Care Record|provenance|longitudinal/i);
+assert.doesNotMatch(handoff, /Living Care Record|provenance|Qwen/);
 console.log("Caregiver language boundary checks passed.");
 
 assert.match(careDelta, /caregiverStatusLabel/);
