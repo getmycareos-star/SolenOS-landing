@@ -196,7 +196,7 @@ export default function DocumentsPage() {
     setUploadMessage(null);
     const invalid = files.find((file) => file.size <= 0 || file.size > MAX_FILE_BYTES);
     if (invalid) {
-      setUploadMessage({ kind: "error", text: invalid.size <= 0 ? `${invalid.name} is empty.` : `${invalid.name} is larger than 10 MiB. Choose a smaller file.` });
+      setUploadMessage({ kind: "error", text: invalid.size <= 0 ? `${invalid.name} is empty.` : `${invalid.name} is too large to upload. Choose a smaller file.` });
       return;
     }
     const pages: ReviewPage[] = files.map((file) => {
@@ -205,14 +205,14 @@ export default function DocumentsPage() {
         ingestionKey: crypto.randomUUID(),
         captureTimestamp: new Date().toISOString(),
         file,
-        note: "Original file is ready. SolenOS will extract and process it after the upload is saved.",
+        note: "Your original file is ready. SolenOS will read it and prepare details for you to check after upload.",
         rotation: 0,
         crop: { top: 0, right: 0, bottom: 0, left: 0 },
         previewUrl: isScannedImage ? URL.createObjectURL(file) : file.type === "application/pdf" ? URL.createObjectURL(file) : null,
       };
     });
     setReviewPages((current) => [...current, ...pages]);
-    setUploadMessage({ kind: "success", text: `${files.length} original file(s) ready to save. SolenOS will read the text and prepare details for your review after upload.` });
+    setUploadMessage({ kind: "success", text: `${files.length} ${files.length === 1 ? "file is" : "files are"} ready to save. SolenOS will read them and prepare details for you to check after upload.` });
   };
 
   useEffect(() => {
@@ -340,7 +340,7 @@ export default function DocumentsPage() {
         form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload");
         form.append("capture_timestamp", page.captureTimestamp);
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(scanPageNumber));
-        // The server extracts from the preserved original. Browser text is not authoritative.
+        // SolenOS reads from the original file. Text shown in the browser does not replace the original.
         form.append("scan_review_status", "not_reviewed");
         form.append("scan_rotation_degrees", String(page.rotation));
         form.append("scan_crop_json", JSON.stringify(page.crop));
@@ -364,12 +364,12 @@ export default function DocumentsPage() {
       setIntakeMode(null);
       setUploadMessage({
         kind: "success",
-        text: `Saved ${saved} original file(s). SolenOS is reading the documents. You can leave this page. Suggested details will not be added to your Care Record until you review and approve them. ${backgroundQueueUnavailable} file(s) need another look.`,
+        text: `SolenOS saved ${saved} original ${saved === 1 ? "file" : "files"}. It is reading the documents now. You can leave this page. Suggested details will not be added to your Care Record until you check and approve them. ${backgroundQueueUnavailable} ${backgroundQueueUnavailable === 1 ? "file needs" : "files need"} another look.`,
       });
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
     } catch {
-      setUploadMessage({ kind: "error", text: `Saved ${saved} of ${reviewPages.length} file(s) before saving stopped. Retry the same batch; the server reuses each saved upload ID.` });
+      setUploadMessage({ kind: "error", text: `SolenOS saved ${saved} of ${reviewPages.length} files before it stopped. You can try again; files already saved will not be duplicated.` });
       await loadDocuments(true);
     } finally { setUploading(false); }
   };
@@ -419,10 +419,10 @@ export default function DocumentsPage() {
       if (result.relationship !== "corrected_version_of") throw new Error("SolenOS did not confirm the document-version link.");
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
-      setUploadMessage({ kind: "success", text: "The corrected document is linked to its earlier version. Both originals remain preserved; existing care-record information has not been silently replaced." });
+      setUploadMessage({ kind: "success", text: "The corrected document is linked to the earlier version. Both original files are kept, and existing Care Record details have not been replaced." });
       setVersionPredecessorId("");
     } catch (error) {
-      setPreviewError(error instanceof Error ? error.message : "SolenOS could not link these document versions.");
+      setPreviewError(error instanceof Error ? error.message : "SolenOS could not link these document versions. Try again.");
     } finally {
       setLinkingVersion(false);
     }
@@ -466,8 +466,8 @@ export default function DocumentsPage() {
       <section aria-label="Document library" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Your document library</h2>
-            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>Original files are stored separately from AI interpretation.</p>
+            <h2 style={{ margin: 0, fontSize: 18 }}>Your saved documents</h2>
+            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>Your original files are kept separate from suggested details.</p>
           </div>
           <button type="button" onClick={() => void loadDocuments(true)} disabled={refreshing || loading} style={{ minHeight: 42, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }} aria-label="Refresh documents">
             <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
@@ -477,11 +477,11 @@ export default function DocumentsPage() {
 
         {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
-          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save your captured pages now. SolenOS will process them after upload." : "Save the original file now. SolenOS will process it after upload."} Original files are preserved.</p>
-          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You do not need to read or correct extracted text before saving. SolenOS preserves the original and processes it in the background. Unclear results remain marked as uncertain.</p>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save your captured pages now. SolenOS will read them after upload." : "Save the original file now. SolenOS will read it after upload."} Original files are preserved.</p>
+          <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You do not need to read or correct the text before saving. SolenOS keeps the original and reads it in the background. Anything unclear stays marked as uncertain.</p>
           <p style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}><strong>About text from scanned pages:</strong> The original page is saved. SolenOS reads the text and keeps suggested details linked to the document. Review each suggested detail before it is added to your Care Record.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
-            <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · Original file · Server processing after upload</p>
+            <strong style={{ overflowWrap: "anywhere" }}>{page.file.name}</strong><p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(page.file.size)} · Original file · SolenOS will read it after upload</p>
             {page.file.type === "application/pdf" && page.previewUrl && <iframe title={page.file.name + " preview"} src={page.previewUrl} style={{ width: "100%", height: 320, border: "1px solid var(--border)", borderRadius: 8 }} />}
             {page.previewUrl && page.file.type.startsWith("image/") && <div style={{ display: "grid", gap: 8, margin: "10px 0" }}>
               <div data-scan-crop-stage style={{ position: "relative", width: "fit-content", maxWidth: "100%", margin: "0 auto", touchAction: "none", transform: `rotate(${page.rotation}deg)`, transformOrigin: "center center" }}>
