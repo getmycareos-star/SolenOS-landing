@@ -13,6 +13,7 @@ on:
       - ".github/workflows/frontend-checks.yml"
       - ".github/workflows/anonymous-account-continuity-e2e.yml"
       - ".github/workflows/open-loop-ui-e2e.yml"
+      - "scripts/**"
   pull_request:
     paths:
       - "src/**"
@@ -23,6 +24,7 @@ on:
       - ".github/workflows/frontend-checks.yml"
       - ".github/workflows/anonymous-account-continuity-e2e.yml"
       - ".github/workflows/open-loop-ui-e2e.yml"
+      - "scripts/**"
 
 permissions:
   contents: read
@@ -69,7 +71,7 @@ jobs:
   deploy:
     name: Deploy production to Netlify
     needs: verify
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && !contains(github.event.head_commit.message, '[verify-only]')
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !contains(github.event.head_commit.message, '[verify-only]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
