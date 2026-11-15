@@ -131,24 +131,24 @@ export function PersistedCareOrientation() {
   return (
     <section className="persisted-care-orientation" aria-label="Saved care information">
       <div className="persisted-care-orientation-header">
-        <div><h2>Your Living Care Record</h2></div>
+        <div><h2>Your Care Record</h2></div>
       </div>
 
       {items.length > 0 ? (
         <>
-          <p>{projection.item_count} care record item{projection.item_count === 1 ? "" : "s"} shown.</p>
+          <p>{projection.item_count} saved care detail{projection.item_count === 1 ? "" : "s"} shown.</p>
           {items.map((item) => (
             <article className="persisted-care-orientation-latest" key={item.source_collection + ":" + item.id}>
               <strong>{item.title?.trim() || "Care record item"}</strong>
               {item.description?.trim() && <p>{item.description}</p>}
               <p>{readableStatus(item.epistemic_status)} · {readableStatus(item.status)}</p>
-              <p>{item.source_label || "Source not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
+              <p>{item.source_label || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
               {item.evidence_ids.length > 0 && (
-                <small>Linked source information is available for review.</small>
+                <small>The original note or document is available to review.</small>
               )}
             </article>
           ))}
-          {projection.has_more && <p>More care record items are available in the full record.</p>}
+          {projection.has_more && <p>More saved care details are available in your full Care Record.</p>}
         </>
       ) : (
         <div>
@@ -166,8 +166,8 @@ export function PersistedCareOrientation() {
       <p role="note">{projection.notice}</p>
 
       <div className="persisted-care-orientation-links">
-        <Link href="/workspace/timeline">Review timeline</Link>
-        <Link href="/workspace/documents">Review documents</Link>
+        <Link href="/workspace/timeline">View care history</Link>
+        <Link href="/workspace/documents">View documents</Link>
       </div>
     </section>
   );
