@@ -147,7 +147,7 @@ assert.doesNotMatch(dailyCarePage, /followUps\.slice\(0, 6\)|careItems\.filter\(
   "Daily Care must not duplicate the full Follow-ups list");
 assert.doesNotMatch(dailyCarePage, /daily-care-history-title|<h2>Recent care history<\/h2>/,
   "the full chronological history belongs to the Care Timeline");
-assert.match(dailyCarePage, /Open Care Timeline/,
+assert.match(dailyCarePage, /Open care history/,
   "Daily Care links to the dedicated historical view");
 assert.match(dailyCarePage, /Since you last opened Daily Care/,
   "returning caregivers get a summary of newly recorded information");
