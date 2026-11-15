@@ -45,12 +45,17 @@ for (const contract of [
   ["change explanations use the caregiver-safe change language filter", /caregiverSafeChangeText\(change\.explanation\)/],
   ["change source details are user-reviewable", /Review source evidence/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
-  ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
+  ["missing earlier information is not proof an event did not happen", /t\("changeIntelligence\.historyMissing"\)/],
   ["failed loads are exposed as an error state", /role="alert"/],
   ["empty state does not claim no changes occurred", /This does not mean that no changes occurred/],
 ] as const) {
   const matches = contract[1] instanceof RegExp ? contract[1].test(panel) : contract[1];
   assert(matches, `Missing UI contract: ${contract[0]}`);
+}
+for (const locale of ["en", "es", "fr"]) {
+  const translations = JSON.parse(fs.readFileSync(path.join(root, `src/lib/i18n/locales/${locale}/translation.json`), "utf8"));
+  assert(typeof translations.changeIntelligence?.historyMissing === "string" && translations.changeIntelligence.historyMissing.length > 0,
+    `${locale} must explain missing earlier information without implying the event did not happen`);
 }
 assert(!/\bconfidence\b/i.test(panel), "uncalibrated model confidence must not be displayed in caregiver-facing change intelligence");
 assert(!/changes\.slice\(0,\s*8\)/.test(panel), "change history must not be silently truncated to eight rows");

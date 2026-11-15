@@ -27,6 +27,8 @@ import {
 } from "@/lib/care-entry";
 import { hasCompletedOnboarding } from "@/lib/onboarding";
 import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
+import { coerceSolenOSUiLanguage } from "@/lib/language-preference";
+import type { SolenOSUiLanguage } from "@/lib/language-preference";
 
 const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 const CARE_SESSION_STORAGE_KEY = "solenos_care_session_id";
@@ -37,7 +39,8 @@ export type WorkspaceContextValue = {
   careKey: string;
   sessionId: string;
   telemetryUserId: string | null;
-  language: string;
+  language: SolenOSUiLanguage;
+  setLanguage: (language: SolenOSUiLanguage) => void;
   hydrated: boolean;
   entryReady: boolean;
   opsMode: boolean;
@@ -76,10 +79,37 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
   const [careKey, setCareKey] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [telemetryUserId, setTelemetryUserId] = useState<string | null>(null);
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState<SolenOSUiLanguage>("en");
   const [hydrated, setHydrated] = useState(false);
   const [entryReady, setEntryReady] = useState(false);
   const [opsMode, setOpsMode] = useState(false);
+
+  useEffect(() => {
+    const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    setLanguage(coerceSolenOSUiLanguage(savedLanguage));
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  useEffect(() => {
+    const onLanguageChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ language?: unknown }>).detail;
+      setLanguage(coerceSolenOSUiLanguage(detail?.language));
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === LANGUAGE_STORAGE_KEY) {
+        setLanguage(coerceSolenOSUiLanguage(event.newValue));
+      }
+    };
+    window.addEventListener("solenos:language-change", onLanguageChange);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("solenos:language-change", onLanguageChange);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -93,8 +123,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
     }
 
-    setLanguage("en");
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, "en");
 
     const key = ensureClientDurableCareKey(previousKey);
     const sid = ensureClientInteractionSessionId(
@@ -338,6 +366,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       sessionId,
       telemetryUserId,
       language,
+      setLanguage,
       hydrated,
       entryReady,
       opsMode,
@@ -346,7 +375,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       handleSituationComplete,
       handlePauseActive,
     }),
-    [runtime, careKey, sessionId, telemetryUserId, language, hydrated, entryReady, opsMode, updateRuntime, handleSituationComplete, handlePauseActive],
+    [runtime, careKey, sessionId, telemetryUserId, language, setLanguage, hydrated, entryReady, opsMode, updateRuntime, handleSituationComplete, handlePauseActive],
   );
 
   return (

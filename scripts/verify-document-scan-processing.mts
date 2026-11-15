@@ -91,7 +91,11 @@ assert.match(source, /selected\.possibleVersionOfEvidenceId && !selected\.eviden
 assert.match(source, /version-comparison/, "the document view must retrieve source-grounded differences for corrected versions");
 assert.match(source, /These differences have not been clinically verified/, "version differences must not be presented as clinical truth");
 assert.match(dailyCare, /\/documents\/status\?limit=10/, "Daily Care must retrieve persisted document processing status");
-assert.match(dailyCare, /Recent documents/, "Daily Care must surface recent document activity");
+assert.match(dailyCare, /t\("dailyCare\.documents"\)/, "Daily Care must surface recent document activity through the active locale");
+for (const locale of ["en", "es", "fr"]) {
+  const translations = JSON.parse(readFileSync(`src/lib/i18n/locales/${locale}/translation.json`, "utf8"));
+  assert.ok(translations.dailyCare?.documents, `${locale} must translate the recent documents heading`);
+}
 assert.match(dailyCare, /You do not need to stay on this screen/, "background processing must not require the caregiver to supervise it");
 assert.match(dailyCare, /could not be read/, "unreadable pages must be reported without treating missing text as empty content");
 assert.match(dailyCare, /Follow-up added to your existing follow-ups/, "accepted document recommendations must be surfaced through the existing follow-up record");

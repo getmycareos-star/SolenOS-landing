@@ -5,20 +5,78 @@ import Link from "next/link";
 import { ensureAnonymousSession } from "@/api/client";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { canSubmitEarlyAccessConsent } from "@/lib/trust-content/early-access-consent";
+import type { SolenOSUiLanguage } from "@/lib/language-preference";
 
 /**
  * One required checkbox covers both linked legal documents. The server confirms
  * the acknowledgement before local onboarding is marked complete.
  */
+const CONSENT_COPY: Record<SolenOSUiLanguage, {
+  lead: string;
+  agreeStart: string;
+  terms: string;
+  agreeMiddle: string;
+  privacy: string;
+  agreeEnd: string;
+  saving: string;
+  whatFirst: string;
+  verificationError: string;
+  saveError: string;
+  legalEnglish: string;
+}> = {
+  en: {
+    lead: "Before you begin, please confirm you agree to how SolenOS handles your information.",
+    agreeStart: "I agree to the SolenOS",
+    terms: "Terms of Service",
+    agreeMiddle: "and confirm that I have read and understand the",
+    privacy: "Privacy Policy",
+    agreeEnd: ".",
+    saving: "Saving your acknowledgement…",
+    whatFirst: "{copy.whatFirst}",
+    verificationError: "We couldn’t verify your acknowledgement. Please try again.",
+    saveError: "Your acknowledgement could not be saved. Please try again.",
+    legalEnglish: "",
+  },
+  es: {
+    lead: "Antes de comenzar, confirma que aceptas cómo SolenOS trata tu información.",
+    agreeStart: "Acepto los",
+    terms: "Términos del servicio",
+    agreeMiddle: "de SolenOS y confirmo que he leído y entiendo la",
+    privacy: "Política de privacidad",
+    agreeEnd: ".",
+    saving: "Guardando tu confirmación…",
+    whatFirst: "Qué sucede primero",
+    verificationError: "No pudimos verificar tu confirmación. Inténtalo de nuevo.",
+    saveError: "No se pudo guardar tu confirmación. Inténtalo de nuevo.",
+    legalEnglish: "Los documentos legales están disponibles en inglés.",
+  },
+  fr: {
+    lead: "Avant de commencer, veuillez confirmer que vous acceptez la manière dont SolenOS traite vos informations.",
+    agreeStart: "J’accepte les",
+    terms: "Conditions d’utilisation",
+    agreeMiddle: "de SolenOS et confirme avoir lu et compris la",
+    privacy: "Politique de confidentialité",
+    agreeEnd: ".",
+    saving: "Enregistrement de votre confirmation…",
+    whatFirst: "Que se passe-t-il d’abord",
+    verificationError: "Nous n’avons pas pu vérifier votre confirmation. Veuillez réessayer.",
+    saveError: "Votre confirmation n’a pas pu être enregistrée. Veuillez réessayer.",
+    legalEnglish: "Les documents juridiques sont actuellement disponibles en anglais.",
+  },
+};
+
 export function EarlyAccessConsentForm({
   continueHref = "/workspace?enter=1",
   continueLabel = "Begin your Living Care Record",
   onConsentDone,
+  language = "en",
 }: {
   continueHref?: string;
   continueLabel?: string;
   onConsentDone?: () => void;
+  language?: SolenOSUiLanguage;
 }) {
+  const copy = CONSENT_COPY[language];
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +108,7 @@ export function EarlyAccessConsentForm({
         error?: string;
       };
       if (!statusRes.ok) {
-        throw new Error(status.detail ?? status.error ?? "Could not verify your privacy acknowledgement.");
+        throw new Error(copy.verificationError);
       }
 
       if (status.required !== false) {
@@ -78,7 +136,7 @@ export function EarlyAccessConsentForm({
           error?: string;
         };
         if (!consentRes.ok || saved.verified !== true || saved.required !== false) {
-          throw new Error(saved.detail ?? saved.error ?? "SolenOS could not confirm that your acknowledgement was saved. Please try again.");
+          throw new Error(copy.saveError);
         }
       }
 
@@ -87,7 +145,7 @@ export function EarlyAccessConsentForm({
       onConsentDone?.();
       if (continueHref) window.location.assign(continueHref);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Your acknowledgement could not be saved. Please try again.");
+      setError(cause instanceof Error ? cause.message : copy.saveError);
     } finally {
       setSubmitting(false);
     }
@@ -96,7 +154,7 @@ export function EarlyAccessConsentForm({
   return (
     <form className="early-access-consent" onSubmit={handleSubmit} noValidate>
       <p className="early-access-consent-lead">
-        Before you begin, please confirm you agree to how SolenOS treats your information.
+        {copy.lead}
       </p>
 
       <label className="early-access-consent-check">
@@ -108,29 +166,30 @@ export function EarlyAccessConsentForm({
           aria-required="true"
         />
         <span>
-          I agree to the SolenOS{" "}
+          {copy.agreeStart}{" "}
           <Link href="/terms" target="_blank" rel="noopener noreferrer">
-            Terms of Service
+            {copy.terms}
           </Link>{" "}
-          and confirm that I have read and understand the{" "}
+          {copy.agreeMiddle}{" "}
           <Link href="/privacy" target="_blank" rel="noopener noreferrer">
-            Privacy Policy
-          </Link>.
+            {copy.privacy}
+          </Link>{copy.agreeEnd}
         </span>
       </label>
 
       {error && <p className="early-access-consent-error" role="alert">{error}</p>}
 
+      {copy.legalEnglish && <p className="onboarding-legal-note">{copy.legalEnglish}</p>}
       <div className="early-access-consent-actions">
         <button
           type="submit"
           className="public-cta-primary early-access-consent-submit"
           disabled={!ready || submitting}
         >
-          {submitting ? "Saving your acknowledgement…" : continueLabel}
+          {submitting ? copy.saving : continueLabel}
         </button>
         <Link href="/how-it-works#first-use" className="public-cta-secondary">
-          What happens first
+          {copy.whatFirst}
         </Link>
       </div>
     </form>
