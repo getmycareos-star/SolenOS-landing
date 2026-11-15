@@ -753,7 +753,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               </p>
                               <p>{caregiverSafeChangeText(String(entry.reason ?? "")) ?? "A caregiver recorded a status update."}</p>
                               <p className="panel-muted">
-                                {Array.isArray(entry.evidence_ids) ? entry.evidence_ids.length : 0} related note(s) or document(s)
+                                {Array.isArray(entry.evidence_ids) ? entry.evidence_ids.length : 0} related {Array.isArray(entry.evidence_ids) && entry.evidence_ids.length === 1 ? "note or document" : "notes or documents"}
                               </p>
                             </li>
                           ))}
