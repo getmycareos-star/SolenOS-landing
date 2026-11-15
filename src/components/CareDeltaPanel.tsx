@@ -239,7 +239,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       {renderRows('Pending follow-ups', result.follow_ups)}
       {renderRows('Conflicting reports', result.contradictions)}
       {renderRows('Missing information and next questions', result.clinical_gaps)}
-      {result.clinician_summary && <details style={{ marginTop: 10 }}><summary style={{ cursor: 'pointer', fontSize: 12 }}>Clinician-oriented summary</summary><p style={{ fontSize: 12, whiteSpace: 'pre-wrap' }}>{caregiverSafeAssistantText(result.clinician_summary) || 'This summary is not available to display.'}</p></details>}
+      {result.clinician_summary && <details style={{ marginTop: 10 }}><summary style={{ cursor: 'pointer', fontSize: 12 }}>Summary for a healthcare professional</summary><p style={{ fontSize: 12, whiteSpace: 'pre-wrap' }}>{caregiverSafeAssistantText(result.clinician_summary) || 'This summary is not available to display.'}</p></details>}
       <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 10 }}>
         {result.provenance?.persisted ? 'This comparison was saved with its supporting care information.' : 'This comparison was not saved.'} Review conflicting or uncertain information before treating it as current.
       </p>
