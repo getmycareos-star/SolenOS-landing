@@ -146,7 +146,7 @@ assert(documentPage.includes("Your original file is ready. SolenOS will read it 
 assert(!documentPage.includes("/api/extract") && !documentPage.includes("extractText("), "Document intake must not duplicate server extraction in the browser.");
 assert(!documentPage.includes('form.append("extracted_text"'), "Browser-extracted text must not be sent as source evidence.");
 assert(!documentPage.includes("Extracted text — review and correct before saving"), "Caregivers must not be forced to review extracted text before saving the original.");
-assert(documentPage.includes("Suggested details will not be added to your Care Record until you review and approve them."), "Extracted statements must remain evidence-gated before entering the Care Record.");
+assert(documentPage.includes("Suggested details will not be added to your Care Record until you check and approve them."), "Extracted statements must remain evidence-gated before entering the Care Record.");
 assert(documentPage.includes(".eml") && documentPage.includes(".msg"), "Supported email files must be selectable in Documents.");
 assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
