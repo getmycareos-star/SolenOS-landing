@@ -134,7 +134,8 @@ assert(!companion.includes("new URLSearchParams(window.location.search).get('dra
 assert(companion.includes("postJSON('/conversation/message'"));
 assert(companion.includes("ensureAnonymousSession()"));
 assert(companion.includes("person_id: session.person.id"));
-assert(companion.includes('aria-label="Send a message to Companion"'));
+assert(companion.includes('aria-label="Send a message to the Care Assistant"'));
+assert(companion.includes('aria-label={loading ? "Sending" : "Send"}'));
 assert(companion.includes('className="companion-send" type="submit"'));
 assert(companion.includes("void sendMessage()"));
 assert(companion.includes("type=\"submit\""));
@@ -165,9 +166,13 @@ console.log("✓ Community has a visible Send post button wired to the real comm
 const companionSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "AICompanion.tsx"), "utf8");
 assert(companionSource.includes("postJSON('/conversation/message'"), "Companion must use the conversation endpoint");
 assert(companionSource.includes("client_turn_id"), "Companion turns must be idempotent");
-assert(!companionSource.includes("care_update_candidates"), "Companion must not create or review LCR proposals");
-assert(!companionSource.includes("reviewCareUpdate"), "Companion must not expose care-record review actions");
-assert(!companionSource.includes("/companion/care-updates"), "Companion must not run a parallel care-review workflow");
+assert(!companionSource.includes("care_update_candidates"), "model-generated chat output must not become care facts");
+assert(companionSource.includes("pendingCareUpdates"), "Companion must load persisted review-only care reports");
+assert(companionSource.includes("/companion/care-updates"), "Companion must use the existing care-report review endpoints");
+assert(companionSource.includes("reviewCareUpdate"), "caregivers must explicitly accept or decline a care report");
+assert(companionSource.includes("from-message/"), "caregivers must explicitly save an original message as a care report");
+assert(companionSource.includes("confirm_care_report: true"), "care-report creation must require caregiver confirmation");
+assert(companionSource.includes("not a question, possibility or guess"), "care-report confirmation must reject questions and hypotheticals");
 assert(!companionSource.includes("ScanDocumentCapture"), "Document scanning belongs in Documents");
 assert(!companionSource.includes("SnapCameraCapture"), "Camera capture belongs in Documents");
 
