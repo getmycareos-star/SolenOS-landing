@@ -72,7 +72,7 @@ assert.match(dailyCapture, /window\.dispatchEvent\(new Event\('careRecordUpdated
 
 // The saved-care orientation must use the same authenticated, read-only
 // current-care projection as the main Care Continuity view.
-assert.match(orientation, /Your Living Care Record does not have any care information available yet/);
+assert.match(orientation, /Your Care Record does not have any care information yet/);
 assert.match(orientation, /getJSON\("\/care-continuity\/current-care/);
 assert.match(orientation, /projection_type !== "bounded_evidence_derived_current_care"/);
 assert.match(orientation, /data\.read_only !== true/);
