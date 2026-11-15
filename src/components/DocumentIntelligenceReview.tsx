@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText } from "@/lib/caregiver-language";
 
 type Candidate = {
   candidate_index?: number;
@@ -239,11 +239,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   };
 
   if (loading && items.length === 0) {
-    return <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}><p role="status">Loading saved document understanding…</p></section>;
+    return <section aria-label="Document review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}><p role="status">Loading saved document understanding…</p></section>;
   }
 
   return (
-    <section aria-label="Document intelligence review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
+    <section aria-label="Document review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", display: "grid", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <div><h2 style={{ margin: 0, fontSize: 17 }}>Review document details</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>You can check the original document and the text SolenOS read. Review each suggested detail before adding it to your Care Record.</p></div>
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
@@ -268,7 +268,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       })}</div>}
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No documents are ready to review yet. Upload or scan a document. SolenOS will read the text so you can check the suggested details.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>Document · {analysis.document_type?.replaceAll("_", " ") || "care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} statement(s) in this group</p>
+          <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>{caregiverInformationAreaLabel(analysis.document_type) || caregiverFieldLabel(analysis.document_type) || "Care document"} · {analysis.page_count ?? "?"} page(s) · {analysis.observations.length} suggested detail(s)</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
                 ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
@@ -280,7 +280,6 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
             {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
               Some words may be misread, especially handwriting. Check the original document before accepting suggested details.
-              OCR reading confidence describes text-recognition quality; it is not a probability that the words are correct.
             </p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{caregiverSafeAssistantText(question) || "More information may be needed."}</p>)}
@@ -298,8 +297,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           {analysis.extraction_status === "partial" && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS could not read every page. Do not treat the suggested details as a complete account of this document.</p>}
           {processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is processing this document in the background. You do not need to stay on this screen.</p>}
           {(analysis.retryable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is retrying the pages that did not finish. The original document is preserved.</p>}
-          {(analysis.retry_exhausted_page_numbers?.length ?? 0) > 0 && <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS tried several times but could not read page{analysis.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {analysis.retry_exhausted_page_numbers!.join(", ")}. No care details were created from those pages.</p>}
-          {(analysis.unreadable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.unreadable_page_numbers!.length === 1 ? "" : "s"} {analysis.unreadable_page_numbers!.join(", ")} could not be read clearly. No care details were created from those pages.</p>}
+          {(analysis.retry_exhausted_page_numbers?.length ?? 0) > 0 && <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS tried several times but could not read page{analysis.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {analysis.retry_exhausted_page_numbers!.join(", ")}. No care details were added from those pages.</p>}
+          {(analysis.unreadable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.unreadable_page_numbers!.length === 1 ? "" : "s"} {analysis.unreadable_page_numbers!.join(", ")} could not be read clearly. No care details were added from those pages.</p>}
           {(analysis.blocked_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.blocked_page_numbers!.length === 1 ? "" : "s"} {analysis.blocked_page_numbers!.join(", ")} could not be read because of file size or a processing problem. The original document is still saved.</p>}
           {analysis.intelligence_status !== "available" && analysis.extraction_status === "available" && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS has not finished checking this document. The original file and saved text are still available.</p>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No care-related details were found in this document. Nothing was added to your Care Record.</p>}
@@ -308,24 +307,24 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             const key = analysis.analysis_id + ":" + candidateIndex;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
             const statusPresentation = pending
-              ? { label: candidate.review_status === "corrected_pending_approval" ? "CORRECTION AWAITING APPROVAL" : "PENDING CAREGIVER REVIEW", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
+              ? { label: candidate.review_status === "corrected_pending_approval" ? "Correction saved — waiting for approval" : "Waiting for your review", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
               : candidate.review_status === "accepted_by_caregiver" && candidate.professional_confirmation_question_id
-                ? { label: "SAVED AS UNCONFIRMED REPORT", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
+                ? { label: "Saved as a report — not confirmed by a healthcare professional", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
                 : candidate.review_status === "accepted_by_caregiver"
-                  ? { label: "ADDED TO CARE RECORD", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
+                  ? { label: "Added to Care Record", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
                   : candidate.review_status === "rejected_by_caregiver"
-                  ? { label: "NOT ADDED", border: "#999999", background: "#eeeeee", color: "#444444" }
+                  ? { label: "Not added", border: "#999999", background: "#eeeeee", color: "#444444" }
                   : { label: "Status unavailable", border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
             const correction = corrections[key] || { subject: candidate.subject, observation: candidate.observation };
             return <div key={key} style={{ display: "grid", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 14 }}>{candidate.subject}</strong><span aria-label={statusPresentation.label} style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.02em", padding: "4px 8px", borderRadius: 999, border: "1px solid " + statusPresentation.border, background: statusPresentation.background, color: statusPresentation.color }}>{statusPresentation.label}</span></div>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{candidate.observation}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: "var(--text-secondary)" }}>
-                <span>Type of detail: {candidate.field_type || "Care detail"}</span>
+                <span>Type of detail: {caregiverFieldLabel(candidate.field_type) || caregiverInformationAreaLabel(candidate.field_type) || "Care detail"}</span>
                 <span>Page: {candidate.page_number ? candidate.page_number : "Not identified"}</span>
-                <span>Event date: {candidate.event_date || "Not stated"}</span>
-                <span>Date on document: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Not stated in document"}</span>
-                {candidate.extracted_at && <span>Text read: {new Date(candidate.extracted_at).toLocaleString()}</span>}
+                <span>When it happened: {candidate.event_date || "Not stated"}</span>
+                <span>Date shown on document: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Not stated in document"}</span>
+                {candidate.extracted_at && <span>Text saved: {new Date(candidate.extracted_at).toLocaleString()}</span>}
               </div>
               {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: 12 }}>
                 <strong>Medicine details — not changed</strong>
@@ -338,7 +337,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               </div>}
               <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>ORIGINAL WORDS IN THE DOCUMENT</span><p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(candidate.source_quote) || "The original wording is available in the document."}</p></div>
               {pending && <>
-                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected subject<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
+                <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected topic<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
                 <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Corrected detail<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>Add to Care Record</button>
@@ -357,7 +356,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             {historyLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: 12 }}>Loading saved review history…</p>
               : historyErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: 12 }}>{historyErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadReviewHistory(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Retry history</button></div>
                 : analysis.reviewEvents === undefined ? <p style={{ fontSize: 12 }}>Open to see the saved review history.</p>
-                  : analysis.reviewEvents.length === 0 ? <p style={{ fontSize: 12 }}>No review decisions are saved for this document.</p>
+                  : analysis.reviewEvents.length === 0 ? <p style={{ fontSize: 12 }}>No review choices are saved for this document.</p>
                     : <ol style={{ display: "grid", gap: 9, margin: "10px 0 0", paddingLeft: 20 }}>
                       {analysis.reviewEvents.map((event) => {
                         const after = event.after || {};
