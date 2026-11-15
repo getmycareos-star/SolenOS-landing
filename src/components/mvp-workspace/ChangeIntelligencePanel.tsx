@@ -614,7 +614,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       ) : null}
       {hasMorePatterns ? (
         <button type="button" className="lcr-text-action" disabled={loadingMorePatterns} onClick={() => void loadMorePatterns()}>
-          {loadingMorePatterns ? "Loading earlier patterns…" : "Load earlier changes"}
+          {loadingMorePatterns ? "Loading earlier patterns…" : "Load earlier patterns"}
         </button>
       ) : null}
       {situations.length > 0 ? (
