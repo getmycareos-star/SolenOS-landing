@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
-import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
+import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
@@ -108,6 +108,13 @@ interface LcrContextCoverage {
   }>
 }
 
+interface PendingCareUpdate {
+  id: string
+  status: string
+  proposed_change: { asserted_value?: string; source_quote?: string; event_time_text?: string | null }
+  created_at?: string | null
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -145,6 +152,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
+  const [careUpdateLoading, setCareUpdateLoading] = useState(false)
+  const [reviewingCareUpdateId, setReviewingCareUpdateId] = useState<string | null>(null)
+  const [careUpdateError, setCareUpdateError] = useState<string | null>(null)
+  const [careUpdateNotice, setCareUpdateNotice] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -215,6 +227,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
+      void loadPendingCareUpdates()
 
 
     } catch {
@@ -226,6 +239,41 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     }
   }
 
+
+  const loadPendingCareUpdates = async () => {
+    setCareUpdateLoading(true)
+    setCareUpdateError(null)
+    try {
+      const response = await getJSON('/companion/care-updates') as { items?: PendingCareUpdate[] }
+      setPendingCareUpdates(Array.isArray(response?.items) ? response.items : [])
+    } catch {
+      setCareUpdateError('Care suggestions could not be loaded. Your conversation is still saved. Try refreshing these suggestions.')
+    } finally {
+      setCareUpdateLoading(false)
+    }
+  }
+
+  const reviewCareUpdate = async (proposalId: string, decision: 'accept' | 'reject') => {
+    if (reviewingCareUpdateId) return
+    setReviewingCareUpdateId(proposalId)
+    setCareUpdateError(null)
+    setCareUpdateNotice(null)
+    try {
+      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as { written_to_lcr?: boolean }
+      setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
+      setCareUpdateNotice(decision === 'accept' && response?.written_to_lcr
+        ? 'Your report was added to the Care Record as a caregiver-reviewed observation. It has not been independently verified.'
+        : 'This suggestion was declined. Nothing was added to the Care Record.')
+    } catch {
+      setCareUpdateError('This care suggestion could not be reviewed. It has not been marked as accepted. Refresh and try again.')
+    } finally {
+      setReviewingCareUpdateId(null)
+    }
+  }
+
+  useEffect(() => {
+    void loadPendingCareUpdates()
+  }, [])
 
   useEffect(() => {
     const prompt = initialPrompt?.trim()
@@ -407,6 +455,25 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         <aside className="companion-side-note" aria-label="Companion guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Grounded, not guesswork</strong><p>The Companion can help organise observations and questions. It does not diagnose, replace a professional, or decide what becomes part of the care record.</p></div></aside>
       </div>
 
+      {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice) && <section className="companion-care-updates" aria-label="Care suggestions to review">
+        <div className="companion-care-updates-heading">
+          <div><span className="companion-kicker">YOUR CARE RECORD</span><h3>Care updates to review</h3><p>These are exact words from your message that may be useful to save. Nothing is added unless you choose to accept it.</p></div>
+          <button type="button" className="companion-care-refresh" onClick={() => void loadPendingCareUpdates()} disabled={careUpdateLoading || Boolean(reviewingCareUpdateId)}>{careUpdateLoading ? 'Checking…' : 'Refresh'}</button>
+        </div>
+        {careUpdateError && <p className="companion-care-update-message is-error" role="alert">{careUpdateError}</p>}
+        {careUpdateNotice && <p className="companion-care-update-message" role="status">{careUpdateNotice}</p>}
+        {pendingCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
+          <div><strong>Possible care update</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p>
+            {item.proposed_change?.event_time_text && <small>When you said it happened: {item.proposed_change.event_time_text}</small>}
+            <small>This is your report, not a medical conclusion. Accepting it records that you reviewed the wording; it does not independently verify it.</small>
+          </div>
+          <div className="companion-care-update-actions">
+            <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
+            <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={Boolean(reviewingCareUpdateId)}>Don’t add</button>
+          </div>
+        </article>)}
+      </section>}
+
       <div className="companion-composer-wrap">
         <form className="companion-composer" aria-label="Send a message to the Care Assistant" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
@@ -478,6 +545,23 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-handoff-status { flex:0 0 auto; padding:4px 7px; border-radius:8px; background:#edf2ec; color:#4d654f; font-size:10px; text-transform:capitalize; }
         .companion-handoff-status.status-unavailable,.companion-handoff-status.status-not_authorized { background:#f8eee5; color:#87552c; }
         .companion-handoff-status.status-empty { background:#f2f3ef; color:#687368; }
+        .companion-care-updates { padding:16px; border:1px solid #dfe8e1; border-radius:16px; background:#fbfdfb; }
+        .companion-care-updates-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+        .companion-care-updates-heading h3 { margin:0; color:#25372b; font-size:17px; }
+        .companion-care-updates-heading p { margin:5px 0 0; color:#68776e; font-size:12px; line-height:1.55; }
+        .companion-care-refresh { min-height:38px; padding:8px 12px; border:1px solid #cfdbd0; border-radius:10px; background:#fff; color:#344b39; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+        .companion-care-update { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-top:13px; padding:13px; border:1px solid #e2e9e1; border-radius:12px; background:#fff; }
+        .companion-care-update>div:first-child { min-width:0; }
+        .companion-care-update strong { color:#34463a; font-size:12px; }
+        .companion-care-update p { margin:6px 0; color:#26392c; font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .companion-care-update small { display:block; margin-top:5px; color:#718075; font-size:10px; line-height:1.5; }
+        .companion-care-update-actions { display:flex; flex:0 0 auto; flex-wrap:wrap; gap:7px; }
+        .companion-care-update-actions button { min-height:38px; padding:8px 11px; border:1px solid #cbdcc9; border-radius:10px; background:#e7f0e5; color:#203b27; font:inherit; font-size:11px; font-weight:750; cursor:pointer; }
+        .companion-care-update-actions button.is-secondary { background:#fff; color:#526457; border-color:#dfe8e1; }
+        .companion-care-update-actions button:disabled,.companion-care-refresh:disabled { opacity:.55; cursor:not-allowed; }
+        .companion-care-update-message { margin:10px 0 0; color:#426849; font-size:12px; line-height:1.5; }
+        .companion-care-update-message.is-error { color:#9b2c2c; }
+        @media (max-width:650px) { .companion-care-update { flex-direction:column; } .companion-care-update-actions { width:100%; } .companion-care-update-actions button { flex:1; } }
         .companion-shell { --cc-ink:#1d3028; --cc-muted:#68776e; --cc-line:#dfe8e1; width:100%; max-width:1180px; min-width:0; margin:0 auto; display:flex; flex-direction:column; gap:20px; color:var(--cc-ink); font-family:inherit; }
         .companion-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:4px 0 16px; border-bottom:1px solid var(--cc-line); }
         .companion-brand { display:flex; align-items:center; gap:12px; min-width:0; }
