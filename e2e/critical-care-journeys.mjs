@@ -795,8 +795,8 @@ await record("06 Companion context and Qwen output", async () => {
   const medicationReply = String(medicationAnswer.payload.reply || "").toLowerCase();
   assert.match(
     medicationReply,
-    /can't remember|cannot remember|not recorded|not provided|not confirmed|not specified|not stated|doesn't state|does not state|not in the record|unclear|unknown|can't confirm|cannot confirm|don't know|do not know/,
-    "Companion must preserve that the caregiver could not confirm the new medication dose",
+    /i think the doctor changed mum's medication yesterday, but i can't remember the new dose/,
+    "Companion must quote the caregiver's uncertain medication report instead of inventing a dose",
   );
   assert.doesNotMatch(
     medicationReply,
