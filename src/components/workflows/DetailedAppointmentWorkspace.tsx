@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
+import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 
 type Stage = 'prepare' | 'during' | 'after'
 type EvidenceSource = {
