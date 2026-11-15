@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
@@ -310,8 +311,8 @@ function categoryLabel(category: HistoryCategory, eventType?: string): string {
   if (category === "decision") return "Decision";
   if (category === "outcome") return "Outcome";
   if (category === "follow-up") return "Follow-up";
-  if (category === "lcr-update") return "Living Care Record";
-  return (eventType || "Care record").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (category === "lcr-update") return "Care Record update";
+  return "Care update";
 }
 
 function parseDescription(description?: string | null): string {
@@ -414,7 +415,7 @@ function mapDocument(item: EvidenceRecord): HistoryRecord {
       { label: "Evidence status", value: status },
       { label: "Source type", value: item.source_type || "" },
       { label: "Upload time", value: uploadedAt ? formatDateTime(uploadedAt) : "Not recorded" },
-      { label: "Evidence ID", value: item.id },
+      
     ]),
   };
 }
@@ -536,10 +537,10 @@ function mapLcrRevision(item: CareStateRevision): HistoryRecord {
   const targetType = asText(item.target_type).replaceAll("_", " ") || "care record";
   const changedAt = item.changed_at || null;
   const description = changeKind === "deleted"
-    ? "A deletion is recorded for this Living Care Record item. The prior state remains represented in this revision entry."
+    ? "This Care Record item was deleted. Its earlier saved details remain in the care history."
     : changedFields.length
-      ? "Recorded " + changeKind + " revision. Changed fields: " + changedFields.join(", ") + "."
-      : "Recorded " + changeKind + " revision for " + targetType + ".";
+      ? "Care information was " + changeKind + ". Updated details: " + changedFields.join(", ") + "."
+      : "Care information was " + changeKind + " for " + targetType + ".";
   return {
     id: "lcr-revision:" + item.id,
     event_type: "lcr_revision",
@@ -547,22 +548,22 @@ function mapLcrRevision(item: CareStateRevision): HistoryRecord {
     occurred_at: null,
     recorded_at: changedAt,
     display_date: changedAt,
-    display_date_label: "LCR revision recorded",
-    title: "Living Care Record · " + targetType,
+    display_date_label: "Care Record updated", 
+    title: "Care Record · " + targetType,
     description,
     evidence_ids: item.evidence_ids ?? [],
-    time_provenance: "Revision timestamp records when this state change was saved; it does not establish when the underlying care event occurred.",
-    tags: ["living care record", "revision", changeKind],
+    time_provenance: "This date shows when the saved information was changed, not when the care event happened.",
+    tags: ["care record", "update", changeKind],
     source_kind: "lcr-revision",
     source_details: detailFields([
-      { label: "Target type", value: item.target_type || "Not recorded" },
-      { label: "Target ID", value: item.target_id || "Not recorded" },
+      
+      
       { label: "Change kind", value: changeKind },
-      { label: "Revision number", value: typeof item.revision_number === "number" ? String(item.revision_number) : "Not returned" },
-      { label: "Changed by caregiver ID", value: item.changed_by_caregiver_id || "" },
-      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
-      { label: "Previous recorded state", value: snapshotText(item.before_state) },
-      { label: "Updated recorded state", value: snapshotText(item.after_state) },
+      
+      
+      
+      { label: "Previous saved details", value: snapshotText(item.before_state) },
+      { label: "Updated saved details", value: snapshotText(item.after_state) },
     ]),
   };
 }
@@ -598,8 +599,8 @@ function mapDecision(item: CareDecision): HistoryRecord {
       { label: "Decision status", value: item.decision_status || "Not specified" },
       { label: "Decided at", value: item.decided_at ? formatDateTime(item.decided_at) : "Not recorded" },
       { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
-      { label: "Recorded by caregiver ID", value: item.created_by_caregiver_id || "" },
-      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
+      
+      
     ]),
   };
 }
@@ -629,8 +630,8 @@ function mapOutcome(item: CareOutcome): HistoryRecord {
       { label: "Action ID", value: item.action_id || "Not recorded" },
       { label: "Outcome status", value: status },
       { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
-      { label: "Recorded by caregiver ID", value: item.created_by_caregiver_id || "" },
-      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
+      
+      
     ]),
   };
 }
@@ -679,7 +680,7 @@ function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
     display_date_label: "Shared",
     title: "Outgoing care handoff" + recipientLabel,
     description: item.has_summary
-      ? "A caregiver-reviewed summary was attached to this handoff. Sharing did not change the Living Care Record."
+      ? "A caregiver-reviewed summary was attached to this handoff. Sharing did not change the Care Record."
       : "The outgoing handoff record does not report an attached summary.",
     tags: ["handoff", "outgoing"],
     source_kind: "handoff-out",
@@ -1129,7 +1130,7 @@ export function HistoryDrawer() {
                 )}
                 <div className="history-drawer-heading">
                   <strong>{selectedRecord ? "Care record" : "Care history"}</strong>
-                  <span>{selectedRecord ? "Saved source information and record details" : "A chronological view across your saved care records"}</span>
+                  <span>{selectedRecord ? "What was saved and where it came from" : "Your saved care history, in date order"}</span>
                 </div>
 
               </div>
@@ -1151,17 +1152,17 @@ export function HistoryDrawer() {
                   <h3>{selectedDescriptionHeading}</h3>
                   <p className="history-original-text">{parseDescription(selectedRecord.description) || (
                     selectedRecord.source_kind === "document"
-                      ? "No extracted text was saved. The original file can still be retrieved."
+                      ? "No text was saved from this document. You can still open the original file."
                       : "No additional text was saved with this record."
                   )}</p>
                   {selectedRecord.source_kind === "document" && (
-                    <p className="history-detail-hint">Extracted text can be incomplete or incorrect. It is not a substitute for the original document.</p>
+                    <p className="history-detail-hint">The text SolenOS read may be incomplete or incorrect. Check the original document.</p>
                   )}
                   {selectedRecord.source_kind === "handoff-in" && (
-                    <p className="history-detail-hint">The handoff summary is caregiver-provided information. Its presence does not independently verify the statements it contains.</p>
+                    <p className="history-detail-hint">This summary was shared by a caregiver. That does not mean the details have been confirmed by anyone else.</p>
                   )}
                   {selectedRecord.source_kind === "appointment" && (
-                    <p className="history-detail-hint">Caregiver reports and caregiver-recorded clinician statements remain distinct. Saving this workspace does not reconcile its contents into LCR facts.</p>
+                    <p className="history-detail-hint">Caregiver reports and notes about what a healthcare professional said are kept separate. Saving this page does not automatically add them to your Care Record.</p>
                   )}
                 </section>
 
@@ -1170,21 +1171,21 @@ export function HistoryDrawer() {
                   <dl className="history-detail-list">
                     {selectedRecord.source_kind === "care-event" ? (
                       <>
-                        <dt>Event time</dt><dd>{formatDateTime(selectedRecord.occurred_at)}{selectedRecord.occurred_at_timezone ? " (" + selectedRecord.occurred_at_timezone + ")" : ""}</dd>
-                        <dt>Recorded in SolenOS</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
-                        <dt>Record status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
-                        <dt>Source attribution</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver attribution recorded" : "Not recorded"}</dd>
-                        <dt>Time provenance</dt><dd>{selectedRecord.time_provenance || "Not recorded"}</dd>
-                        <dt>Evidence references</dt><dd>{selectedRecord.evidence_ids?.length ? selectedRecord.evidence_ids.join(", ") : "No evidence references attached"}</dd>
-                        <dt>Tags</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.join(", ") : "No tags recorded"}</dd>
+                        <dt>When it happened</dt><dd>{formatDateTime(selectedRecord.occurred_at)}{selectedRecord.occurred_at_timezone ? " (" + selectedRecord.occurred_at_timezone + ")" : ""}</dd>
+                        <dt>When it was saved</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
+                        <dt>Status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
+                        <dt>Who shared it</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver attribution recorded" : "Not recorded"}</dd>
+                        <dt>How the date was recorded</dt><dd>{selectedRecord.time_provenance || "Not recorded"}</dd>
+                        <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? selectedRecord.evidence_ids.join(", ") : "No evidence references attached"}</dd>
+                        <dt>Labels</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.join(", ") : "No tags recorded"}</dd>
                         <dt>Last updated</dt><dd>{formatDateTime(selectedRecord.updated_at)}</dd>
                       </>
                     ) : (
                       <>
-                        <dt>Record source</dt><dd>{selectedRecord.source_kind === "document" ? "Saved document evidence" : selectedRecord.source_kind === "appointment" ? "Appointment workspace" : selectedRecord.source_kind === "handoff-in" ? "Incoming handoff" : selectedRecord.source_kind === "handoff-out" ? "Outgoing handoff" : selectedRecord.source_kind === "lcr-revision" ? "Immutable Living Care Record revision" : selectedRecord.source_kind === "decision" ? "Persisted care decision" : "Persisted action outcome"}</dd>
-                        <dt>Recorded in SolenOS</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
-                        <dt>Record status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
-                        {selectedRecord.evidence_ids?.length ? <><dt>Evidence references</dt><dd>{selectedRecord.evidence_ids.join(", ")}</dd></> : null}
+                        <dt>Where it came from</dt><dd>{selectedRecord.source_kind === "document" ? "Saved document evidence" : selectedRecord.source_kind === "appointment" ? "Appointment workspace" : selectedRecord.source_kind === "handoff-in" ? "Incoming handoff" : selectedRecord.source_kind === "handoff-out" ? "Outgoing handoff" : selectedRecord.source_kind === "lcr-revision" ? "Care Record update" : selectedRecord.source_kind === "decision" ? "Persisted care decision" : "Persisted action outcome"}</dd>
+                        <dt>When it was saved</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
+                        <dt>Status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
+                        {selectedRecord.evidence_ids?.length ? <><dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids.join(", ")}</dd></> : null}
                         {(selectedRecord.source_details ?? []).map((field) => (
                           <ReactDetailField key={field.label} field={field} />
                         ))}
@@ -1257,19 +1258,25 @@ export function HistoryDrawer() {
                     </div>
                   )}
 
-                  {sourceWarnings.length > 0 && !loading && (
+                  {error && records.length > 0 && (
+                    <RecordState
+                      kind="error"
+                      title="Care history couldn’t be refreshed."
+                      description="Showing the last saved history. Try again to refresh."
+                      action={<button type="button" onClick={() => void loadHistory(true)} disabled={refreshing}>Try again</button>}
+                    />
+                  )}
+
+                  {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries we could retrieve are still shown. Other entries may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
+                      <span>Some entries couldn’t be loaded. Refresh to try again.</span>
                     </div>
                   )}
 
-                  {loading ? (
-                    <div className="history-state" role="status">
-                      <span className="history-loading-dot" />
-                      Loading saved care history…
-                    </div>
-                  ) : error ? (
+                  {loading && !hasLoaded ? (
+                    <RecordState kind="loading" title="Loading saved care history…" />
+                  ) : error && records.length === 0 ? (
                     <div className="history-error" role="alert">
                       <AlertCircle size={19} aria-hidden />
                       <div>
@@ -1281,8 +1288,8 @@ export function HistoryDrawer() {
                   ) : visibleRecords.length === 0 ? (
                     <div className="history-empty">
                       <HistoryEmptyIcon />
-                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not retrieve every source. This empty view is not evidence that no care was recorded. Refresh to try again." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
+                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Some care history is unavailable" : "Your care history starts with saved records"}</strong>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "Refresh to try again." : "Saved care entries will appear here."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
@@ -1327,7 +1334,7 @@ export function HistoryDrawer() {
 
                 <footer className="history-drawer-footer">
                   <ShieldCheck size={15} aria-hidden />
-                  <span>History combines saved care events, documents, appointment workspaces, handoffs, Living Care Record revisions, decisions and outcomes where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
+                  <span>History brings together saved care updates, documents, appointments, handoffs, Care Record changes, decisions and outcomes where available. It shows both when something happened and when it was saved{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
                 </footer>
               </>
             )}
