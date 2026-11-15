@@ -71,7 +71,7 @@ console.log("✓ classify new vs returning from memory depth");
   assert.ok(/already noted|continues|care record/i.test(softRet));
 
   const changedNew = composeMemoryAwareWhatChanged({ state: "new_care_reality" });
-  assert.ok(/First care observations/i.test(changedNew));
+  assert.ok(/Your first care updates are saved/i.test(changedNew));
   assert.ok(!containsFakeContinuity(changedNew));
 
   const confNew = composeNewCareRealityConfirmation({ subjectLabel: null });
