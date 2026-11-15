@@ -402,9 +402,10 @@ export default function TimelinePage() {
         if (cancelled || !Array.isArray(rows)) return;
         const receipt = rows.find((row) => row.id === pendingCorrectionId);
         if (receipt?.processing_status === "completed") {
+          await loadEvents(true, appliedQuery);
+          if (cancelled) return;
           setPendingCorrectionId(null);
           setCorrectionMessage("The Care Record has been updated. The original entry remains available in your history.");
-          await loadEvents(true, appliedQuery);
         }
       } catch {
         // Keep the saved correction visible as pending; a temporary read failure
