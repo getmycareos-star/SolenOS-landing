@@ -70,3 +70,65 @@ assert.match(styles, /\.solenos-chat-nav-item\s*\{[^}]*min-height:\s*48px/s,
 console.log("✓ one canonical navigation registry drives every workspace navigation group");
 console.log("✓ all visible navigation destinations resolve to existing workspace routes");
 console.log("✓ desktop navigation is visible by default and mobile navigation opens as a drawer");
+
+
+// End-to-end navigation safeguards: real route contracts, consistent titles,
+// caregiver-session gating, keyboard operation, and modal mobile-drawer behavior.
+const navigationA11y = fs.readFileSync(path.join(root, "src/components/app-shell/WorkspaceNavigationAccessibility.tsx"), "utf8");
+const breadcrumbs = fs.readFileSync(path.join(root, "src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx"), "utf8");
+const workspaceStyles = fs.readFileSync(path.join(root, "src/app/workspace/navigation-accessibility.css"), "utf8");
+const workspaceContext = fs.readFileSync(path.join(root, "src/lib/workspace-context.tsx"), "utf8");
+const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
+
+assert.match(layout, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
+assert.match(workspaceContext, /ensureAnonymousSession\(\)/, "caregiver workspace bootstraps a server-issued session before entry");
+assert.match(navigationA11y, /event\.key === "Escape"/, "Escape closes the mobile drawer");
+assert.match(navigationA11y, /event\.key !== "Tab"/, "Tab handling is explicitly trapped in the open drawer");
+assert.match(navigationA11y, /workspace\.inert = true/, "background workspace is inert while the drawer is open");
+assert.match(navigationA11y, /host\.inert = true/, "closed mobile navigation cannot receive keyboard focus");
+assert.match(navigationA11y, /aria-modal/, "mobile drawer is announced as a modal dialog");
+assert.match(navigationA11y, /trigger\.focus/, "focus returns to the menu trigger after closing");
+assert.match(navigationA11y, /main\.focus/, "route changes move keyboard focus to the new page content");
+assert.match(breadcrumbs, /aria-label="Breadcrumb"/);
+assert.match(breadcrumbs, /aria-current="page"/);
+assert.match(breadcrumbs, /href="\/workspace"/);
+assert.match(workspaceStyles, /:focus-visible/);
+assert.match(workspaceStyles, /overflow-y: auto/);
+
+const routeContracts = [
+  ["src/app/workspace/page.tsx", "Care Record"],
+  ["src/app/workspace/daily-care/page.tsx", "Daily Care"],
+  ["src/app/workspace/open-loops/page.tsx", "Follow-ups"],
+  ["src/app/workspace/timeline/page.tsx", "Care Timeline"],
+  ["src/app/workspace/documents/page.tsx", "Documents"],
+  ["src/app/workspace/appointments/page.tsx", "Appointments"],
+  ["src/app/workspace/handoffs/page.tsx", "Care Handoffs"],
+  ["src/components/workflows/AICompanion.tsx", "AI Companion"],
+  ["src/app/workspace/settings/page.tsx", "Settings"],
+];
+for (const [route, title] of routeContracts) {
+  const source = fs.readFileSync(path.join(root, route), "utf8");
+  assert.match(source, new RegExp("<h1\\b[\\s\\S]{0,220}" + title.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") + "[\\s\\S]{0,40}<\\/h1>"),
+    `${title} has a page-level heading that matches its navigation label`);
+}
+
+for (const route of [
+  "src/app/workspace/page.tsx",
+  "src/app/workspace/daily-care/page.tsx",
+  "src/app/workspace/open-loops/page.tsx",
+  "src/app/workspace/timeline/page.tsx",
+  "src/app/workspace/documents/page.tsx",
+  "src/app/workspace/appointments/page.tsx",
+  "src/app/workspace/handoffs/page.tsx",
+  "src/app/workspace/companion/page.tsx",
+  "src/app/workspace/settings/page.tsx",
+]) {
+  const source = fs.readFileSync(path.join(root, route), "utf8");
+  assert.doesNotMatch(source, /<main\\b/, `${route} must not create a nested main landmark inside the app shell`);
+}
+assert.doesNotMatch(companion, /<main\\b/, "AI Companion must not add a nested main landmark");
+
+console.log("✓ route titles and breadcrumbs agree with navigation labels");
+console.log("✓ mobile drawer has focus containment, Escape handling, inert background, and focus restoration");
+console.log("✓ workspace routes are gated on caregiver session bootstrap");
+console.log("✓ workspace destinations do not create nested main landmarks");
