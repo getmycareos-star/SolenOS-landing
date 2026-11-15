@@ -8,11 +8,13 @@ import {
   listPersistedChanges,
   listPersistedPatterns,
   listPersistedSituations,
+  getPersistedSituationDetail,
   reassessPersistedChangeIntelligence,
   type ChangeDetail,
   type PersistedChange,
   type PersistedPattern,
   type PersistedSituation,
+  type SituationDetail,
   type PatternDetail,
   type SituationTrajectoryState,
   transitionChangeConfirmation,
@@ -62,6 +64,9 @@ export function ChangeIntelligencePanel() {
   const [situationStates, setSituationStates] = useState<Record<string, SituationTrajectoryState>>({});
   const [situationReasons, setSituationReasons] = useState<Record<string, string>>({});
   const [situationTransitioningIds, setSituationTransitioningIds] = useState<string[]>([]);
+  const [situationDetails, setSituationDetails] = useState<Record<string, SituationDetail>>({});
+  const [situationDetailLoadingIds, setSituationDetailLoadingIds] = useState<string[]>([]);
+  const [expandedSituationIds, setExpandedSituationIds] = useState<string[]>([]);
   const [expandedPatternId, setExpandedPatternId] = useState<string | null>(null);
   const [patternDetails, setPatternDetails] = useState<Record<string, PatternDetail>>({});
   const [patternDetailErrors, setPatternDetailErrors] = useState<Record<string, string>>({});
@@ -233,6 +238,24 @@ export function ChangeIntelligencePanel() {
       ...linkedPatterns.flatMap((pattern) => pattern.event_ids ?? []),
       ...linkedChanges.flatMap((change) => change.evidence_ids ?? []),
     ].filter(Boolean))];
+  }
+
+  async function toggleSituationDetail(situationId: string) {
+    if (expandedSituationIds.includes(situationId)) {
+      setExpandedSituationIds((current) => current.filter((id) => id !== situationId));
+      return;
+    }
+    setExpandedSituationIds((current) => [...current, situationId]);
+    if (situationDetails[situationId]) return;
+    setSituationDetailLoadingIds((current) => [...current, situationId]);
+    try {
+      const detail = await getPersistedSituationDetail(situationId);
+      setSituationDetails((current) => ({ ...current, [situationId]: detail }));
+    } catch {
+      setWarning("The linked care records could not be loaded. The saved situation status has not changed.");
+    } finally {
+      setSituationDetailLoadingIds((current) => current.filter((id) => id !== situationId));
+    }
   }
 
   async function saveSituationState(situation: PersistedSituation) {
