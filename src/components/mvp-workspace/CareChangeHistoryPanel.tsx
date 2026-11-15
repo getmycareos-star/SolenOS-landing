@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
@@ -75,6 +75,8 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
   const [hasMore, setHasMore] = useState(false);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
   const [earlierError, setEarlierError] = useState("");
+  const requestSequence = useRef(0);
+  const earlierRequestActive = useRef(false);
 
   const load = useCallback(async () => {
     if (!personId) {
@@ -83,34 +85,47 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
       setLoading(false);
       return;
     }
+    const requestId = ++requestSequence.current;
     setLoading(true);
     setError("");
     try {
       const result = await getJSON(`/care-delta/runs/${encodeURIComponent(personId)}?limit=20&offset=0`);
       if (!Array.isArray(result)) throw new Error("Unexpected care-change history response");
+      if (requestId !== requestSequence.current) return;
       setRuns(result as DeltaRun[]);
       setHasMore(result.length === 20);
       setEarlierError("");
     } catch {
-      setError("Earlier care-change comparisons could not be loaded. Your saved care information has not been changed.");
+      if (requestId === requestSequence.current) {
+        setError("Earlier care-change comparisons could not be loaded. Your saved care information has not been changed.");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
   }, [personId]);
 
   const loadEarlier = useCallback(async () => {
-    if (!personId || loadingEarlier || !hasMore) return;
+    if (!personId || loadingEarlier || earlierRequestActive.current || !hasMore) return;
+    earlierRequestActive.current = true;
+    const requestId = requestSequence.current;
     setLoadingEarlier(true);
     setEarlierError("");
     try {
       const result = await getJSON(`/care-delta/runs/${encodeURIComponent(personId)}?limit=20&offset=${runs.length}`);
       if (!Array.isArray(result)) throw new Error("Unexpected care-change history response");
-      setRuns((current) => [...current, ...(result as DeltaRun[])]);
+      if (requestId !== requestSequence.current) return;
+      setRuns((current) => {
+        const knownIds = new Set(current.map((run) => run.id));
+        return [...current, ...(result as DeltaRun[]).filter((run) => !knownIds.has(run.id))];
+      });
       setHasMore(result.length === 20);
     } catch {
-      setEarlierError("Earlier comparisons could not be loaded. The comparisons already shown are still available.");
+      if (requestId === requestSequence.current) {
+        setEarlierError("Earlier comparisons could not be loaded. The comparisons already shown are still available.");
+      }
     } finally {
-      setLoadingEarlier(false);
+      earlierRequestActive.current = false;
+      if (requestId === requestSequence.current) setLoadingEarlier(false);
     }
   }, [hasMore, loadingEarlier, personId, runs.length]);
 
