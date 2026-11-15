@@ -1,6 +1,7 @@
 name: Critical care journeys — real backend and browser
 
 on:
+  workflow_call:
   push:
     branches: [main]
     paths:
