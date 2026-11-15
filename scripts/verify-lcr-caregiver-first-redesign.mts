@@ -11,6 +11,7 @@ const changeIntelligence = fs.readFileSync("src/components/mvp-workspace/ChangeI
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
+const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 
 assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR home must redirect to the Companion");
@@ -44,6 +45,13 @@ assert.match(currentUnderstanding, /What has changed/, "first screen summarizes 
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed categories, actions and history are progressively disclosed");
 assert.match(currentUnderstanding, /Missing information does not mean everything is fine/, "empty care records are not presented as reassuring findings");
 assert.match(currentUnderstanding, /Do not assume there is nothing that needs attention/, "failed priority retrieval is not presented as an empty queue");
+assert.ok(
+  workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf("What would you like to do?") &&
+  workspaceHome.indexOf("What would you like to do?") < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
+  "the workspace must show current-care orientation, then primary actions, then pending handovers"
+);
+assert.match(workspaceHome, /href="\/workspace\/companion"/, "Ask SolenOS remains directly accessible from the first screen");
+assert.match(workspaceHome, /href="\/workspace\/daily-care"/, "Add a care update remains directly accessible from the first screen");
 assert.match(currentUnderstanding, /<EvidenceReviewPanel personId={personId} \/>/, "Care Continuity mounts the evidence panel in its review-only form");
 assert.match(currentUnderstanding, /<CareContinuityIntegrityPanel personId={personId} \/>/, "Care Continuity mounts the integrity panel for review");
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
