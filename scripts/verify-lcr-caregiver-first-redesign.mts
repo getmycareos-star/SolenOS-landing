@@ -101,3 +101,10 @@ assert.ok(historyDrawer.includes("source_record_ids: group.map"), "grouped histo
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
 console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
+
+assert.match(currentUnderstanding, /lcr-first-screen-summary/, "workspace starts with a concise care orientation");
+assert.match(currentUnderstanding, /Where things stand/, "first screen describes recorded care");
+assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces saved priorities");
+assert.match(currentUnderstanding, /What has changed/, "first screen surfaces saved changes");
+assert.match(currentUnderstanding, /careAttention\\?\.needs_attention_now/, "first-screen priorities use persisted assessment decisions");
+assert.match(currentUnderstanding, /View saved record/, "highlighted care details link to their saved records");
