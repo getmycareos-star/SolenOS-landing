@@ -811,7 +811,6 @@ export function LCRCurrentUnderstanding() {
             setRegisteredActions(savedActions as RegisteredAction[]);
             setRegisteredActionsError(null);
           } catch (cause) {
-            setRegisteredActions([]);
             setRegisteredActionsError("Agreed actions could not be loaded. Please try again.");
           }
         })(),
@@ -826,7 +825,6 @@ export function LCRCurrentUnderstanding() {
             setChanges(validateChanges(await getJSON(changePath)));
             setChangesError(null);
           } catch (cause) {
-            setChanges([]);
             setChangesError("Saved care changes could not be loaded. Please try again.");
           }
         })(),
@@ -839,7 +837,6 @@ export function LCRCurrentUnderstanding() {
             setPatterns(persistedPatterns as PersistedPattern[]);
             setPatternsError(null);
           } catch (cause) {
-            setPatterns([]);
             setPatternsError("Repeated changes could not be loaded. Please try again.");
           }
         })(),
@@ -857,13 +854,9 @@ export function LCRCurrentUnderstanding() {
               }
               setAssessmentError(null);
             } else {
-              setAssessment(null);
-              setSourceFreshness(null);
               setAssessmentError("The care summary is not available yet. Some care information may be missing.");
             }
           } catch (cause) {
-            setAssessment(null);
-            setSourceFreshness(null);
             setAssessmentError("The saved care summary could not be loaded. Please try again.");
           }
         })(),
@@ -872,11 +865,13 @@ export function LCRCurrentUnderstanding() {
       if (manual) await backgroundWork;
       else void backgroundWork;
     } catch (cause) {
-      setPersonId("");
-      setCurrentCaregiverId("");
-      setProjection(null);
-      setRegisteredActions([]);
-      setRegisteredActionsError("Agreed actions are unavailable because your care record session could not be confirmed.");
+      if (!manual) {
+        setPersonId("");
+        setCurrentCaregiverId("");
+        setProjection(null);
+        setRegisteredActions([]);
+      }
+      setRegisteredActionsError("Agreed actions could not be refreshed. Try again.");
       setError("The care history could not be loaded. Please try again.");
     } finally {
       setLoading(false);
@@ -947,9 +942,7 @@ export function LCRCurrentUnderstanding() {
       setChangeEvidence((previous) => ({
         ...previous,
         [change.id]: {
-          evidence: [],
-          assertions: [],
-          confirmation_history: [],
+          ...(previous[change.id] ?? { evidence: [], assertions: [], confirmation_history: [] }),
           error: "Supporting evidence could not be loaded.",
         },
       }));
@@ -1190,10 +1183,10 @@ export function LCRCurrentUnderstanding() {
       <section className="lcr-first-screen-summary" aria-label="Care at a glance">
         <div className="lcr-first-screen-card">
           <h3>Where things stand</h3>
-          {loading ? (
-            <p role="status">Loading saved care information…</p>
-          ) : error ? (
-            <p role="status">We couldn’t load the current care picture. Check your connection and try again.</p>
+          {loading && !projection ? (
+            <RecordState kind="loading" title="Loading saved care information…" />
+          ) : error && !projection ? (
+            <RecordState kind="error" title="We couldn’t load the current care picture." description="Check your connection and try again." />
           ) : projection?.items.length ? (
             <>
               <p>
@@ -1906,16 +1899,23 @@ export function LCRCurrentUnderstanding() {
       {/* Detailed assessment diagnostics remain available to the care engine and audit services,
           but are intentionally not exposed as caregiver-facing copy. The record itself remains
           available through the timeline, source review and care-history controls. */}
-      {loading ? (
-        <p role="status">Loading saved care information…</p>
-      ) : error ? (
-        <div role="alert" className="lcr-empty-state">
-          <AlertCircle size={20} aria-hidden="true" />
-          <h3>Your care information isn’t available right now</h3>
-          <p>We couldn’t load this care information. Check your connection and try again. Your saved records have not been changed.</p>
-          
-          <button type="button" className="lcr-text-action" onClick={() => void load(true)}>Try again</button>
-        </div>
+      {error && projection && (
+        <RecordState
+          kind="error"
+          title="We couldn’t refresh your care information."
+          description="Showing the last information that loaded. Try again to refresh."
+          action={<button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={refreshing}>Try again</button>}
+        />
+      )}
+      {loading && !projection ? (
+        <RecordState kind="loading" title="Loading saved care information…" />
+      ) : error && !projection ? (
+        <RecordState
+          kind="error"
+          title="We couldn’t load your care information."
+          description="Check your connection and try again."
+          action={<button type="button" className="lcr-text-action" onClick={() => void load(true)}>Try again</button>}
+        />
       ) : projection ? (
         <>
           {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
@@ -1934,8 +1934,12 @@ export function LCRCurrentUnderstanding() {
 
           {projection.items.length === 0 ? (
             <div className="lcr-empty-state">
-              <h3>Your Care Record does not have any care information yet.</h3>
-              <p>Add what you know in Daily Care or upload a care document. You can also ask the Care Assistant to help you understand saved information.</p>
+              <RecordState
+                kind="empty"
+                title="No saved care details to review yet."
+                description="Add an update in Daily Care or upload a care document."
+                action={<Link href="/workspace/daily-care" className="lcr-text-action">Add a care update</Link>}
+              />
             </div>
           ) : (
             <div className="lcr-current-facts">
