@@ -139,10 +139,16 @@ for (const action of ["something", "medicine", "measurement", "photo", "checkin"
 }
 assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
   "capture opens within the Daily Care screen");
-assert.match(dailyCarePage, /Open matters/,
+assert.match(dailyCarePage, /t\("dailyCare\.openMatters"\)/,
   "unresolved questions and conflicts have a distinct current-care section");
-assert.match(dailyCarePage, /Since you last opened Daily Care/,
+assert.match(dailyCarePage, /t\("dailyCare\.sinceLastOpened"\)/,
   "returning caregivers get a summary of newly recorded information");
+for (const locale of ["en", "es", "fr"]) {
+  const translations = JSON.parse(readFileSync(`src/lib/i18n/locales/${locale}/translation.json`, "utf8"));
+  for (const key of ["openMatters", "openMattersDescription", "sinceLastOpened", "sinceLastOpenedDescription", "firstVisit", "noNewRecords", "historyLimit", "anythingDifferent", "shareSomething", "historyDescription", "viewAllHistory"]) {
+    assert.ok(translations.dailyCare?.[key], `${locale} must translate dailyCare.${key}`);
+  }
+}
 assert.match(dailyCarePage, /visitBaselineRef/,
   "the last-visit baseline is retained for the whole page visit");
 assert.match(dailyCarePage, /solenos:daily-care:last-opened:/,
