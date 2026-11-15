@@ -19,6 +19,7 @@ type ComputedChange = {
   domain?: string;
   name?: string;
   change_type?: string;
+  classification?: string;
   previous?: string | null;
   current?: string | null;
   certainty?: string;
@@ -80,8 +81,21 @@ function readableSource(value?: string | null): string {
   return labels[value.trim().toLowerCase()] || displayChangeText(value);
 }
 
-function readableChangeType(value?: string | null): string {
-  return caregiverStatusLabel(value || "") || displayChangeText(value, "Care change");
+function readableChangeType(value?: string | null, classification?: string | null): string {
+  const candidateLabels: Record<string, string> = {
+    potential_worsening: "May be getting worse",
+    potential_improvement: "May be improving",
+    potential_resolution: "May no longer be happening",
+    recurring: "Reported again",
+    persistent: "Still reported",
+    unchanged: "No meaningful change identified",
+    new: "Newly reported",
+    uncertain: "Direction is unclear",
+  };
+  const classificationKey = String(classification || "").trim().toLowerCase();
+  return candidateLabels[classificationKey]
+    || caregiverStatusLabel(value || "")
+    || displayChangeText(value, "Care change");
 }
 
 function supported(change: ComputedChange): boolean {
@@ -209,7 +223,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                         <li key={`${run.id}-supported-${index}`}>
                           <strong>{display(item.name || item.domain)}</strong>
                           <p>
-                            {readableChangeType(item.change_type)}.
+                            {readableChangeType(item.change_type, item.classification)}.
                             {item.previous != null ? ` Previous: ${displayChangeText(item.previous, "Earlier details are not available.")}.` : ""}
                             {item.current != null ? ` Reported now: ${displayChangeText(item.current, "Current details are saved but need a closer look.")}.` : ""}
                           </p>
@@ -233,7 +247,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                     <ul>
                       {needsReview.map((item, index) => (
                         <li key={`${run.id}-review-${index}`}>
-                          {display(item.name || item.domain)}: {display(item.change_type)}.
+                          {display(item.name || item.domain)}: {readableChangeType(item.change_type, item.classification)}.
                           {item.comparison_basis ? ` ${displayChangeText(item.comparison_basis, "The available records do not support a reliable comparison yet.")}` : " The available records do not support a reliable comparison yet."}
                         </li>
                       ))}
