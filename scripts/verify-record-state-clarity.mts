@@ -98,9 +98,10 @@ assert.doesNotMatch(documents, /SolenOS will not make up a history/);
 assert.match(documentReview, /Saved document reviews couldn’t be loaded/);
 assert.match(documentReview, /No document details are ready to review yet/);
 assert.doesNotMatch(documentReview, /No documents are ready to review yet/);
+assert.doesNotMatch(documentReview, /A missing history does not mean no earlier decision was made/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
-assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
+assert.doesNotMatch(history, /empty view is not evidence that no care was recorded|A missing detail does not mean something did not happen/);
 assert.match(history, /error && records\.length > 0/);
 assert.match(history, /error && !hasLoaded \? "Unavailable"/);
 assert.match(history, /loading \? \([\s\S]*?Loading saved care history/);
