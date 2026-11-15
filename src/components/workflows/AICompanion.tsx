@@ -264,7 +264,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   return (
-    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS AI Companion">
+    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS Care Assistant">
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
@@ -315,31 +315,31 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
-                    <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
+                    <div className="companion-message-meta"><strong>{isUser ? 'You' : 'Care Assistant'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
                     </section>}
                     {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="Care history coverage">
-                      <strong>How much of the saved care history was checked</strong>
+                      <strong>What care information was checked</strong>
                       <p>{coverageIsPartial
                         ? 'This answer may not include all relevant saved care information. Some sources were unavailable, more matching records remain, or not all retrieved information fit into the answer.'
                         : 'All matching records in the available care sources were searched for this question. This does not mean information missing from the record is known.'}</p>
                     </section>}
-                    {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Selected saved sources">
-                      <strong>Selected saved sources</strong>
+                    {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Saved information used">
+                      <strong>Saved information used</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
                         <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
                           <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
                           {reference.record_type === 'document_extractions' && <p>Text read from a document is only a suggestion. Review it in Documents before it is added to your care record.</p>}
-                          {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Prior Companion message — conversation context only. It is not care evidence.</p>}
+                          {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Earlier Care Assistant message — this is conversation history, not a care update.</p>}
                         </div>
                       ))}
                     </section>}
                     {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Sources for this answer">
-                      <strong>What this answer is based on</strong>
+                      <strong>Where this answer came from</strong>
                       <p>Each statement is checked against the wording in saved records. A match does not prove that a report is true or that two records came from different people.</p>
-                      <p><strong>Supporting source details</strong></p>
+                      <p><strong>Details from saved information</strong></p>
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
@@ -392,7 +392,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           ) : claim.support_status === 'not_matched_to_saved_wording' ? <p role="note">Not matched to the wording in a saved record. Check this statement before relying on it.</p> : null}
                         </article>
                       ))}
-                      <p>Conversation only. Nothing in this answer was added to the Living Care Record.</p>
+                      <p>This conversation has not been added to your Care Record.</p>
                     </section>}
                     {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">We couldn’t check how recent these care details are. Their current status is unknown.</p>}
                     {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">We couldn’t find a review of how recent these care details are. This does not mean they are current.</p>}
