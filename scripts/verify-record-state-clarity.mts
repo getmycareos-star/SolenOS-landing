@@ -13,6 +13,8 @@ const daily = read("src/app/workspace/daily-care/page.tsx");
 const reminders = read("src/app/workspace/reminders/page.tsx");
 const history = read("src/components/app-shell/HistoryDrawer.tsx");
 const claimReview = read("src/components/ClaimAssessmentPanel.tsx");
+const evidenceReview = read("src/components/EvidenceReviewPanel.tsx");
+const appointmentWorkspace = read("src/components/workflows/AppointmentWorkspace.tsx");
 
 for (const kind of ["empty", "no-results", "loading", "error", "unavailable", "unconfirmed"]) {
   assert.ok(state.includes(`| "${kind}"`) || state.includes(`= "${kind}"`), `shared state supports ${kind}`);
@@ -79,6 +81,11 @@ assert.match(history, /loading && !hasLoaded/);
 assert.doesNotMatch(read("src/components/mvp-workspace/ChangeIntelligencePanel.tsx"), /This does not mean nothing changed/);
 assert.doesNotMatch(read("src/app/workspace/open-loops/page.tsx"), /An empty section does not mean nothing needs attention/);
 assert.doesNotMatch(claimReview, /This does not mean there are no past reviews|This does not mean this review is current/);
+assert.doesNotMatch(appointmentWorkspace, /This does not mean none exist|This does not mean that no appointment exists|SolenOS will not invent what happened/);
+assert.doesNotMatch(evidenceReview, /This does not mean there are no past reviews|This does not mean the record was empty|This does not mean they match|A missing historical revision is not proof/);
+assert.doesNotMatch(evidenceReview, /setFreshnessAssessments\(\[\]\);\s*setFreshnessHistoryError/);
+assert.doesNotMatch(evidenceReview, /setReviews\(\[\]\);\s*setHistoryUnavailable/);
+assert.match(evidenceReview, /historyUnavailable && <p role="alert"/);
 assert.match(claimReview, /Past reviews could not be loaded\. Try again\./);
 assert.match(claimReview, /New information could not be checked\. Try again before relying on this review\./);
 
