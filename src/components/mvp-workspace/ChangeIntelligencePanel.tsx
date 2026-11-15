@@ -362,6 +362,52 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     return () => { active = false; };
   }, [personId]);
 
+  // Daily Care dispatches this event only after its durable worker has finished
+  // persisting the capture and its backend change assessments. Refresh the saved
+  // projection here; do not trigger a second reconciliation from the browser.
+  useEffect(() => {
+    let active = true;
+    async function refreshAfterSavedCareUpdate() {
+      if (!active || personIdRef.current !== personId) return;
+      setRefreshing(true);
+      try {
+        const [changeRows, patternRows, situationRows] = await Promise.all([
+          listPersistedChanges(undefined, 100, 0, personId),
+          listPersistedPatterns(undefined, 100, 0, personId),
+          listPersistedSituations(personId),
+        ]);
+        if (!active || personIdRef.current !== personId) return;
+        setChanges(changeRows);
+        setPatterns(patternRows);
+        setSituations(situationRows);
+        setChangeOffset(0);
+        setPatternOffset(0);
+        setHasMoreChanges(changeRows.length === 100);
+        setHasMorePatterns(patternRows.length === 100);
+        setDetails({});
+        setDetailErrors({});
+        setPatternDetails({});
+        setPatternDetailErrors({});
+        setSituationDetails({});
+        setExpandedChangeId(null);
+        setExpandedPatternId(null);
+        setExpandedSituationIds([]);
+        setWarning(null);
+      } catch {
+        if (active && personIdRef.current === personId) {
+          setWarning("The care update was saved, but the latest changes could not be loaded. The previous saved information is still shown.");
+        }
+      } finally {
+        if (active && personIdRef.current === personId) setRefreshing(false);
+      }
+    }
+    window.addEventListener("careRecordUpdated", refreshAfterSavedCareUpdate);
+    return () => {
+      active = false;
+      window.removeEventListener("careRecordUpdated", refreshAfterSavedCareUpdate);
+    };
+  }, [personId]);
+
   return (
     <section className="lcr-record-section" aria-labelledby="change-intelligence-heading">
       <div className="lcr-section-heading">
