@@ -467,7 +467,9 @@ export default function DocumentsPage() {
         <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
       </section>
 
-      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
+      {hasLoadedDocuments && documents.length > 0 && (
+        <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
+      )}
 
       <section aria-label="Saved documents" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
