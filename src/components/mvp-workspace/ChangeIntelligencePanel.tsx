@@ -436,7 +436,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       ) : null}
       {!loading && !error && changes.length === 0 && patterns.length === 0 && situations.length === 0 ? (
         <p className="panel-muted">
-          There is not enough saved information to show changes or patterns yet. This does not mean nothing changed.
+          No recent changes recorded.
         </p>
       ) : null}
       {changes.length > 0 ? (
@@ -455,7 +455,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 <p className="panel-muted">
                   Based on {change.evidence_ids.length} saved care {change.evidence_ids.length === 1 ? "detail" : "details"}.
                 </p>
-                <p className="panel-muted">Some earlier care information may be missing. That does not mean the event did not happen.</p>
+                <p className="panel-muted">Some earlier care information may be missing.</p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
                   {expandedChangeId === change.id ? "Hide notes and documents" : "Review notes and documents"} <span aria-hidden="true">→</span>
                 </button>
