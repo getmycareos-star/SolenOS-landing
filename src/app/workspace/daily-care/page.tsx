@@ -711,6 +711,25 @@ export default function DailyCarePage() {
               Manage questions, decisions and unresolved matters in one place. Daily Care does not create a second copy of an existing follow-up.
             </p>
             {followUpsError && <p role="alert">{followUpsError}</p>}
+            {followUps.length > 0 && (
+              <ul aria-label="Saved follow-ups" className="daily-care-follow-up-list">
+                {followUps.slice(0, 4).map((item) => (
+                  <li key={item.id} className="daily-care-follow-up-item">
+                    <strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>
+                    {item.description && (
+                      <p>{caregiverSafeAssistantText(item.description)}</p>
+                    )}
+                    <div className="daily-care-follow-up-meta">
+                      <span>{caregiverStatusLabel(item.status)}</span>
+                      {item.deadline_at && <span>Due {displayCareTime(item.deadline_at)}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!followUps.length && !followUpsError && (
+              <p className="daily-care-follow-up-empty">There are no open follow-ups saved right now.</p>
+            )}
             {deliveryIssues.length > 0 && (
               <div role="status" className="daily-care-medication-confirmation">
                 <strong>Notification delivery needs attention</strong>
@@ -1114,6 +1133,42 @@ export default function DailyCarePage() {
           max-width: 38rem;
           margin-inline: auto;
           overflow-wrap: anywhere;
+        }
+        .daily-care-follow-up-list {
+          display: grid;
+          gap: .55rem;
+          margin: .75rem 0 0;
+          padding: 0;
+          list-style: none;
+        }
+        .daily-care-follow-up-item {
+          display: grid;
+          gap: .35rem;
+          min-width: 0;
+          padding: .8rem .9rem;
+          border: 1px solid var(--theme-panel-border);
+          border-radius: 12px;
+          background: var(--theme-panel-bg);
+          color: var(--theme-panel-fg);
+          overflow-wrap: anywhere;
+        }
+        .daily-care-follow-up-item strong {
+          color: var(--theme-panel-fg);
+          font-size: .95rem;
+          line-height: 1.4;
+        }
+        .daily-care-follow-up-item p,
+        .daily-care-follow-up-meta,
+        .daily-care-follow-up-empty {
+          margin: 0;
+          color: var(--theme-panel-muted);
+          font-size: .85rem;
+          line-height: 1.45;
+        }
+        .daily-care-follow-up-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: .5rem .9rem;
         }
         @media (max-width: 600px) {
           .daily-care-screen { padding: .75rem; }
