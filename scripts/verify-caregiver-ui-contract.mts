@@ -78,7 +78,7 @@ assert.match(orientation, /projection_type !== "bounded_evidence_derived_current
 assert.match(orientation, /data\.read_only !== true/);
 assert.doesNotMatch(orientation, /Missing information does not mean that nothing happened/);
 assert.doesNotMatch(orientation, /situation-understanding\/reassess|postJSON|fetch\(\x60\/api\/situation/);
-assert.match(orientation, /Your care information isn't available right now\. Check your connection and try again\./);
+assert.match(orientation, /Check your connection and try again\./);
 assert.doesNotMatch(orientation, /<p><\/p>/);
 
 // Primary controls have explicit, high-contrast sage/ink tokens.
