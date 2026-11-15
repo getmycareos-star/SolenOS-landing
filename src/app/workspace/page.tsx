@@ -54,7 +54,7 @@ function WorkspaceHomeInner() {
           <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Keep original care files and review information taken from them.</span>
         </Link>
         <Link href="/workspace/companion" style={{ display: "grid", gap: 5, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", color: "var(--text)", textDecoration: "none" }}>
-          <strong>AI Companion</strong>
+          <strong>Care Assistant</strong>
           <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Ask questions about saved care information and where it came from.</span>
         </Link>
       </nav>
