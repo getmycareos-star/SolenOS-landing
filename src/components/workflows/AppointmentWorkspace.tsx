@@ -387,7 +387,7 @@ export default function AppointmentWorkspace() {
                 <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
                 <small>Date on the information: {item.source_time ? new Date(item.source_time).toLocaleString() : 'Not recorded'} · Checked {item.assessed_at ? new Date(item.assessed_at).toLocaleString() : 'time not recorded'}</small>
                 <small>{caregiverSafeAssistantText(item.interpretation_limit) || 'The available dates may not tell the whole story.'}</small>
-              </li>)}</ul> : brief.source_coverage.evidence_freshness_assessments !== 'unavailable' && <p className="guided-muted">We couldn’t check how recent the linked information is. This does not mean it is current.</p>}
+              </li>)}</ul> : brief.source_coverage.evidence_freshness_assessments !== 'unavailable' && <p className="guided-muted">No review of how recent the linked information is was found.</p>}
               <p className="guided-footnote">{caregiverSafeAssistantText(brief.freshness_assessment_scope.interpretation_limit) || "The available dates may not tell the whole story."}</p>
             </section>
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknown details are kept separate.</p>
