@@ -14,7 +14,7 @@ assert(
 );
 assert(source.includes("reviewEvents"), "review history events must be retained in component state");
 assert(source.includes("decision_version"), "each displayed decision must retain its per-candidate version");
-assert(source.includes("historyErrors") && source.includes("A missing history does not mean no earlier decision was made"), "failed history retrieval must not be presented as an empty history");
+assert(source.includes("historyErrors") && source.includes("Saved review history couldn’t be loaded. Try again."), "failed history retrieval must not be presented as an empty history");
 assert(source.includes("Review history") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
 assert(source.includes("corrected_pending_approval"), "corrections must remain pending until explicitly accepted");
 assert(source.includes("ORIGINAL WORDS IN THE DOCUMENT"), "each candidate must show its exact source quotation");
