@@ -84,9 +84,9 @@ export function composeNewCareRealityConfirmation(params: {
 }): string {
   const who = params.subjectLabel?.trim();
   if (who && who !== "they" && who !== "Your loved one" && who !== "person") {
-    return `Beginning of ${who}'s Living Care Record — held so you do not have to reconstruct it later.`;
+    return `${who}'s Care Record starts here. The details you share can stay together, so you do not have to piece them together later.`;
   }
-  return "Beginning of the Living Care Record — held so you do not have to reconstruct it later.";
+  return "Your Care Record starts here. The details you share can stay together, so you do not have to piece them together later.";
 }
 
 /**
@@ -97,9 +97,9 @@ export function composeReturningCareRealityConfirmation(params: {
 }): string {
   const who = params.subjectLabel?.trim();
   if (who && who !== "they" && who !== "Your loved one" && who !== "person") {
-    return `Updated ${who}'s Living Care Record — connected to what is already held.`;
+    return `Updated ${who}'s Care Record. The new details are kept with the earlier information.`;
   }
-  return "Updated the Living Care Record — connected to what is already held.";
+  return "Your Care Record has been updated with the new details and the earlier information.";
 }
 
 /** No care-worthy evidence in the record yet — never "Added to the care story". */
@@ -108,9 +108,9 @@ export function composeAwaitingCareEvidenceConfirmation(params: {
 }): string {
   const who = params.subjectLabel?.trim();
   if (who && who !== "they" && who !== "Your loved one" && who !== "person") {
-    return `Nothing about ${who}'s care is held yet. Share what is happening — notes, documents, or photos are all fine.`;
+    return `There are no care details saved for ${who} yet. You can share what is happening in a note, document, or photo.`;
   }
-  return "Nothing about the person's care is held yet. Share what is happening — notes, documents, or photos are all fine.";
+  return "There are no care details saved yet. You can share what is happening in a note, document, or photo.";
 }
 
 /** Recognition when the record has no care anchors yet. */
@@ -120,7 +120,7 @@ export function composeAwaitingCareEvidenceRecognition(): string {
 
 /** Recognition when this turn is product meta but prior care evidence exists. */
 export function composeProductMetaTurnRecognition(): string {
-  return "That note was about using SolenOS — not the person's care. What you already shared about care stays held.";
+  return "That note was about using SolenOS, not about care. The care details you shared earlier are still saved.";
 }
 
 /** Latest turn is product/session meta — not a care observation. */
@@ -129,7 +129,7 @@ export function composeProductMetaTurnConfirmation(params: {
   subjectLabel: string | null;
 }): string {
   if (params.hasPriorCareEvidence) {
-    return "That note was about using SolenOS — not about the person's care. What you already shared about care stays held.";
+    return "That note was about using SolenOS, not about care. The care details you shared earlier are still saved.";
   }
   return composeAwaitingCareEvidenceConfirmation({ subjectLabel: params.subjectLabel });
 }
@@ -142,8 +142,8 @@ export function composeIdentityMismatchConfirmation(params: {
   const named =
     who && who !== "Your loved one" && who !== "they" && who !== "person" ? who : null;
   return named
-    ? `This note is held for now — it will not be linked to ${named}'s record until it is clear who it is about.`
-    : "This note is held for now — it will not be linked to the care record until it is clear who it is about.";
+    ? `This note has been set aside. It will not be added to ${named}'s Care Record until we know who it is about.`
+    : "This note has been set aside. It will not be added to the Care Record until we know who it is about.";
 }
 
 export function composeIdentityMismatchRecognition(params: {
@@ -153,8 +153,8 @@ export function composeIdentityMismatchRecognition(params: {
   const named =
     who && who !== "Your loved one" && who !== "they" && who !== "person" ? who : null;
   return named
-    ? `What is already held about ${named} stays as-is — this new note may be about someone else.`
-    : "What is already held stays as-is — this new note may be about someone else.";
+    ? `The saved details about ${named} have not changed. This new note may be about someone else.`
+    : "The saved care details have not changed. This new note may be about someone else.";
 }
 
 /**
