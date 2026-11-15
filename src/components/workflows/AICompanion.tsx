@@ -82,8 +82,8 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   appointments: 'Appointment record',
   caregiver_observations: 'Caregiver observation',
   caregiver_perspectives: 'Caregiver perspective',
-  conversation_messages: 'Prior Companion message',
-  companion_messages: 'Prior Companion message',
+  conversation_messages: 'Earlier Care Assistant message',
+  companion_messages: 'Earlier Care Assistant message',
 }
 
 interface LcrContextCoverage {
@@ -268,7 +268,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h2>Your care companion</h2></div>
+          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h2>Care Assistant</h2></div>
         </div>
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
@@ -281,7 +281,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Companion conversations are not added to the care record.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats with the Care Assistant are not added to your Care Record.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
