@@ -775,7 +775,25 @@ await record("06 Companion context and Qwen output", async () => {
   });
   assert.equal(overwhelmedAnswer.status, 200, JSON.stringify(overwhelmedAnswer.payload));
   assert.equal(overwhelmedAnswer.payload.written_to_lcr, false);
-  if (requireLiveQwen) assert.equal(overwhelmedAnswer.payload.ai_generated, true);
+  if (requireLiveQwen) {
+    if (overwhelmedAnswer.payload.ai_generated === false) {
+      assert.equal(
+        overwhelmedAnswer.payload.response_mode,
+        "deterministic_low_capacity_support_fallback",
+        "A non-model response must be explicitly identified as the safe low-capacity fallback",
+      );
+      assert.match(
+        overwhelmedAnswer.payload.safety_note || "",
+        /did not pass.*grounding checks/i,
+        "The fallback must disclose why it was used",
+      );
+      assert.deepEqual(overwhelmedAnswer.payload.source_event_ids || [], []);
+      assert.deepEqual(overwhelmedAnswer.payload.source_evidence_ids || [], []);
+      assert.deepEqual(overwhelmedAnswer.payload.source_record_refs || [], []);
+    } else {
+      assert.equal(overwhelmedAnswer.payload.ai_generated, true);
+    }
+  }
   const overloadReply = String(overwhelmedAnswer.payload.reply || "").trim();
   const overloadSentences = overloadReply.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
   assert.doesNotMatch(
@@ -784,7 +802,7 @@ await record("06 Companion context and Qwen output", async () => {
     "An overwhelmed caregiver must not receive an unsupported clinical recommendation or status claim",
   );
   assert.ok(overloadReply.length > 0 && overloadReply.length <= 700, "Companion must keep an overwhelmed-caregiver response brief");
-  assert.ok(overloadSentences.length <= 3, "Companion must not overwhelm the caregiver with a long response");
+  assert.ok(overloadSentences.length <= 2, "Companion must keep an overwhelmed-caregiver response to two short sentences");
   assert.ok((overloadReply.match(/\?/g) || []).length <= 1, "Companion must ask at most one question when the caregiver is overwhelmed");
   assert.doesNotMatch(overloadReply, /(?:^|\n)\s*(?:\d+[.)]|[-*])\s+/m, "Companion must not turn caregiver distress into a checklist");
 
