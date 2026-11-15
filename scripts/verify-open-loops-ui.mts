@@ -19,7 +19,7 @@ const required: Array<[string, RegExp]> = [
   ["fails closed when the update cannot be confirmed", /The update could not be confirmed\. Nothing has been marked resolved\./],
   ["discloses bounded or incomplete source coverage", /assessmentIsBounded[\s\S]*?Some saved care information is incomplete or outside the current review/],
   ["renders the four explicit attention classifications", /needs_attention_now[\s\S]*?important_to_address[\s\S]*?can_wait_with_documented_basis[\s\S]*?needs_clarification/],
-  ["shows linked notes and documents", /Related notes and documents[\\s\\S]*?uniqueEvidenceIds/],
+  ["shows linked notes and documents", /Related notes and documents[\s\S]*?uniqueEvidenceIds/],
   ["does not expose manual task creation or a parallel open-loop writer", /function shareUpdate[\s\S]*?postJSON\("\/open-loops\/"[\s\S]*?\/outcomes/],
 ];
 
@@ -33,7 +33,7 @@ assert.ok(page.includes("SolenOS keeps track") || page.includes("SolenOS manages
 
 
 assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
-assert.match(careContinuity, /These are changes or things that are still unclear in the saved care history[\\s\\S]*?not automatically tasks[\\s\\S]*?Follow-ups screen/, "monitoring signals must remain distinct from the follow-up workflow");
+assert.match(careContinuity, /These are changes or things that are still unclear in the saved care history[\s\S]*?not automatically tasks[\s\S]*?Follow-ups screen/, "monitoring signals must remain distinct from the follow-up workflow");
 assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
 assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Changes to keep an eye on must link to the dedicated Follow-ups screen");
 
