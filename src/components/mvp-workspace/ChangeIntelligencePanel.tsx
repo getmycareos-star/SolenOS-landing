@@ -215,7 +215,7 @@ export function ChangeIntelligencePanel() {
       setExpandedChangeId(null);
       setExpandedPatternId(null);
     } catch {
-      setWarning("Saved assessments could not be refreshed. The last saved results remain available.");
+      setWarning("SolenOS could not check for new changes. The last saved information is still shown.");
     } finally {
       setRefreshing(false);
     }
@@ -310,10 +310,10 @@ export function ChangeIntelligencePanel() {
           disabled={refreshing || loading}
           onClick={() => void refreshSavedAssessments()}
         >
-          {refreshing ? "Refreshing saved assessments…" : "Refresh saved assessments"}
+          {refreshing ? "Checking for new changes…" : "Check for new changes"}
         </button>
       </div>
-      {loading ? <p role="status" className="panel-muted">Loading saved changes and patterns…</p> : null}
+      {loading ? <p role="status" className="panel-muted">Loading saved care changes…</p> : null}
       {warning ? <p role="status" className="panel-muted">{warning}</p> : null}
       {error ? (
         <p role="alert" className="panel-muted">
