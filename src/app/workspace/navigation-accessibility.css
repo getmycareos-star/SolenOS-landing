@@ -86,3 +86,20 @@
 @media (prefers-reduced-motion: reduce) {
   .solenos-chat-sidebar-host { transition: none !important; }
 }
+
+.solenos-workspace-page-heading {
+  width: min(100% - 32px, 1120px);
+  margin: 10px auto 12px;
+}
+.solenos-workspace-page-heading h1,
+.companion-page-title {
+  margin: 0;
+  color: var(--text, #263329);
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+@media (max-width: 760px) {
+  .solenos-workspace-page-heading { width: calc(100% - 24px); }
+}
