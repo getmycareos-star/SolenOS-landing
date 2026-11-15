@@ -31,7 +31,7 @@ for (const [label, pattern] of required) {
 
 assert.doesNotMatch(page, /function createLoop|postJSON\("\/open-loops",/, "caregivers must report changes to existing care matters; SolenOS manages the unresolved follow-up lifecycle");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
-assert.ok(page.includes("SolenOS reviews saved care information"), "caregiver copy must explain that SolenOS manages unresolved matters");
+assert.ok(page.includes("SolenOS checks the care information you have saved and keeps follow-ups easy to find"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
 
 assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
