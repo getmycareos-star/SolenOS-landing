@@ -16,17 +16,21 @@ assert.match(drawer, /item\.person_id === session\.person\.id/, "history events 
 
 assert.match(drawer, /ensureAnonymousSession/);
 assert.match(drawer, /getJSON\("\/events\/"/);
-assert.match(drawer, /getJSON\("\/care-continuity\/current-care\?limit_per_source=50"\)/);
+assert.match(drawer, /getJSON\("\/care-continuity\/context\?limit_per_source=50&include_all_history=true"\)/);
 assert.match(drawer, /projectionResult = results\[8\]/,
-  "the LCR projection is used when the dedicated event-history read is empty or unavailable");
-assert.match(drawer, /source_collection === "events"/,
-  "only actual care-event rows are recovered from the LCR fallback");
+  "the full-history LCR context is used when the dedicated event-history read is empty or unavailable");
+assert.match(drawer, /sources\?\.events/,
+  "fallback recovery reads the persisted events source from the LCR context");
+assert.match(drawer, /source_offsets_json=/,
+  "fallback recovery follows per-source offsets instead of stopping at the first page");
+assert.match(drawer, /fallbackPagesFetched < 4/,
+  "fallback history pagination has an explicit bounded page limit");
 assert.match(drawer, /existingEventIds/,
   "the fallback does not duplicate event IDs already returned by the event-history endpoint");
-assert.match(drawer, /source_event_type/,
-  "fallback records preserve the original care-event type rather than the evidence source type");
-assert.match(drawer, /source_coverage\?\.events/,
-  "a zero count is trusted only when the LCR confirms the event source is available and empty");
+assert.match(drawer, /typeof item\.event_type === "string"/,
+  "fallback records preserve the original care-event type");
+assert.match(drawer, /candidate_scan_complete === true/,
+  "a zero count is trusted only when the LCR confirms a complete event-source scan");
 assert.match(drawer, /"available", "empty", "complete"/,
   "the backend's explicit empty status is recognized as a verified empty source");
 assert.match(drawer, /A zero count is not confirmation that the care record is empty/,
