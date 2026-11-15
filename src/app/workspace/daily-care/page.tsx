@@ -816,10 +816,14 @@ export default function DailyCarePage() {
                 <p>A medication change was reported, but the new dose has not been confirmed. Check the doctor’s instructions or contact the prescribing professional before relying on a different dose.</p>
               </div>
             )}
-            {historyError ? (
-              <p role="alert">{historyError}</p>
-            ) : todayItems.length ? (
-              todayPeriods.map((period) => {
+            {historyError && !historyLoaded ? (
+              <RecordState kind="error" title="Today’s care updates couldn’t be loaded." description="Try again to check the latest saved updates." />
+            ) : !historyLoaded ? (
+              <RecordState kind="loading" title="Loading today’s care updates…" />
+            ) : (
+              <>
+                {historyError && <RecordState kind="error" title="Today’s care updates couldn’t be refreshed." description="Showing the last saved updates. Try again to refresh." />}
+                {todayItems.length ? todayPeriods.map((period) => {
                 const items = todayItems.filter((item) => dailyTimePeriod(item) === period.key);
                 if (!items.length) return null;
                 return (
@@ -836,9 +840,10 @@ export default function DailyCarePage() {
                     </ul>
                   </div>
                 );
-              })
-            ) : (
-              <p>No updates have been saved today. That does not mean nothing happened, and you do not need to add an entry.</p>
+              }) : (
+                  <RecordState kind="empty" title="No updates recorded today." />
+                )}
+              </>
             )}
           </section>
 
