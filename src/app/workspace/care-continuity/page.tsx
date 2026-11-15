@@ -6,11 +6,7 @@ import { Button } from "@/components/ui/Button";
 
 import { BrandLoading } from "@/components/brand";
 import { useWorkspace } from "@/lib/workspace-context";
-import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
-import { ensureAnonymousSession } from "@/api/client";
-import { apiUrl } from "@/lib/api-url";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
-import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 function formatLastUpdated(iso: string | null): string {
   if (!iso) return "Not yet updated";
@@ -27,90 +23,12 @@ function formatLastUpdated(iso: string | null): string {
   }
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  active: "Current",
-  blocked: "Needs attention",
-  waiting: "Waiting",
-  paused: "Paused",
-  resolved: "Resolved",
-};
-
 function WorkspacePageInner() {
   const router = useRouter();
-  const { runtime, hydrated, entryReady, updateRuntime } = useWorkspace();
+  const { runtime, hydrated, entryReady } = useWorkspace();
   const [isArchived, setIsArchived] = useState(false);
   const [archiveStateLoaded, setArchiveStateLoaded] = useState(false);
   const [archiveRestoreError, setArchiveRestoreError] = useState("");
-  const [relationshipTargets, setRelationshipTargets] = useState<Record<string, string>>({});
-  const [linkingSituationId, setLinkingSituationId] = useState<string | null>(null);
-  const [relationshipFeedback, setRelationshipFeedback] = useState("");
-  const [relationshipFeedbackFor, setRelationshipFeedbackFor] = useState<string | null>(null);
-
-  const resumableSituations = runtime.situations.filter(
-    (situation) => situation.persistedThread && situation.status !== "resolved",
-  );
-
-  async function linkRelatedSituation(
-    sourceSituationId: string,
-    explicitTargetId?: string,
-    relationshipType: "related_to" | "unrelated_to" = "related_to",
-  ) {
-    const relatedId = explicitTargetId ?? relationshipTargets[sourceSituationId];
-    if (!relatedId || relatedId === sourceSituationId) return;
-    setLinkingSituationId(sourceSituationId);
-    setRelationshipFeedback("");
-    setRelationshipFeedbackFor(sourceSituationId);
-    try {
-      const session = await ensureAnonymousSession();
-      if (!session.access_token) throw new Error("A secure care session is required.");
-      const response = await fetch(apiUrl("/api/v1/care-continuity/relationships"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          source_type: "situation",
-          source_id: sourceSituationId,
-          relationship_type: relationshipType,
-          target_type: "situation",
-          target_id: relatedId,
-          provenance: relationshipType === "related_to"
-            ? "Caregiver explicitly linked these concerns as related; this relationship does not merge their care threads or establish causation."
-            : "Caregiver explicitly retracted the prior related-concern link; the historical link remains in the audit record.",
-        }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(
-          "The related care topics could not be linked. Please try again.",
-        );
-      }
-      const refreshed = await fetch(apiUrl("/api/situation"), {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        cache: "no-store",
-      });
-      if (!refreshed.ok) {
-        throw new Error("The relationship was saved, but the care timeline could not be refreshed.");
-      }
-      const payload = await refreshed.json();
-      updateRuntime((previous) => ({
-        ...previous,
-        situations: openSituationsFromSituationApi(payload),
-      }));
-      setRelationshipFeedback(
-        relationshipType === "related_to"
-          ? "Related care topics are linked. Each keeps its own history and supporting information."
-          : "The link was removed. Both care topics remain separate.",
-      );
-      setRelationshipTargets((previous) => ({ ...previous, [sourceSituationId]: "" }));
-    } catch (error) {
-      setRelationshipFeedback("The related care topics could not be linked. Please try again.");
-    } finally {
-      setLinkingSituationId(null);
-    }
-  }
-
   useEffect(() => {
     try {
       setIsArchived(window.localStorage.getItem("solenos_workspace_archived") === "1");
