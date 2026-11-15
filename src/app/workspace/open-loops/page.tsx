@@ -123,11 +123,11 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
       {item.due_at && <span>Recorded due date: {dateLabel(item.due_at)}</span>}
     </div>
     {expanded && <div className="followup-detail">
-      <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "The assessment did not return a separate explanation."}</p>
+      <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverSafeAssistantText(record.source)} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
-      <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No linked evidence references were returned."}</p>
+      <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No notes or documents are linked here."}</p>
       {item.review_at && <p><strong>Next recorded review</strong><br />{dateLabel(item.review_at)}</p>}
-      {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved evidence item(s)" : ""}</li>)}</ol>}</section>}
+      {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
     </div>}
     {loop && !["closed", "cancelled"].includes(loop.status) && <div className="followup-update-area">
       {showUpdate ? <form onSubmit={(event) => { event.preventDefault(); if (updateText.trim()) void onUpdate(loop, updateText.trim()).then(() => { setUpdateText(""); setShowUpdate(false); }).catch(() => { /* Keep the exact report text available for a safe retry. */ }); }}>
@@ -280,17 +280,17 @@ export default function FollowUpsPage() {
     {notice && <p className="followups-notice" role="status">{notice}</p>}
     {attentionWarning && <p className="followups-limitation" role="note">{attentionWarning}</p>}
     {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is incomplete or outside the current review. An empty section does not prove that nothing remains unresolved.</p>}
-    {loading ? <section className="followups-empty" aria-live="polite">Reviewing the saved care history…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Care history is unavailable</h2><p>SolenOS cannot safely determine what remains unresolved until the saved care information can be loaded.</p></section> : <>
+    {loading ? <section className="followups-empty" aria-live="polite">Reviewing the saved care history…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Matters with a recorded reason to address them now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
         {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
-        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "No matters were classified as needing attention in the latest assessment." : "SolenOS could not load its attention assessment. Saved open matters remain visible below."}</p>}
+        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "No items were marked as needing attention in the latest review." : "SolenOS could not check what needs attention. Saved follow-ups remain visible below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Matters that can wait on the basis of the saved information, or have no stronger priority basis.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
         {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
         {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === loop.id} history={historyById[loop.id]} />)}
-        {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">No other open matters were returned by the available assessment.</p>}
+        {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">There are no other items to show from the information reviewed.</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs clarification</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length}</span></div>
