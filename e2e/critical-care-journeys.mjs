@@ -175,10 +175,10 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
   await verifyMobile(page);
   const navigationToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navigationToggle.click();
-  await navigationToggle.waitFor({ state: "attached" });
   await page.waitForFunction(() =>
+    document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
     document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
-  , { timeout: 5_000 });
+  , undefined, { timeout: 5_000 });
   const followUpsNavigationLink = page.locator("#solenos-navigation")
     .getByRole("link", { name: /Follow-ups/ });
   await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
