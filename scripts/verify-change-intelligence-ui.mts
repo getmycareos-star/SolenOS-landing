@@ -13,6 +13,7 @@ const panel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/Chan
 const api = fs.readFileSync(path.join(root, "src/api/change-intelligence.ts"), "utf8");
 const historyPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CareChangeHistoryPanel.tsx"), "utf8");
 const lcr = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
+const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -80,6 +81,15 @@ assert(
 assert(
   !/runPatternEngine|runPatternIntelligence|resetPatternIntelligenceStore/.test(panel),
   "The live panel must not synthesize findings with the local pattern-intelligence store",
+);
+
+assert(
+  /medications: variables\.medications\.map/.test(dailyCapture) &&
+  /scheduled_for: med\.scheduled_for \? new Date\(med\.scheduled_for\)\.toISOString\(\) : null/.test(dailyCapture) &&
+  /administered_at: med\.administered_at \? new Date\(med\.administered_at\)\.toISOString\(\) : null/.test(dailyCapture) &&
+  /measured_at: new Date\(vital\.measured_at\)\.toISOString\(\)/.test(dailyCapture) &&
+  /observed_at: new Date\(scale\.observed_at\)\.toISOString\(\)/.test(dailyCapture),
+  "Daily Capture Delta reconciliation must use the same normalized timestamps persisted in the care event",
 );
 
 console.log("CHANGE_INTELLIGENCE_UI_CONTRACT=PASS");
