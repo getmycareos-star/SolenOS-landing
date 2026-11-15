@@ -39,7 +39,7 @@ assert.match(component, /missing_required_sources/, "required source gaps must n
 assert.match(component, /epistemic_status/, "epistemic status must remain visible");
 assert.match(component, /source_label/, "source attribution must remain visible");
 assert.match(component, /evidence_ids/, "linked evidence references must remain visible");
-assert.match(component, /We couldn’t load this care information\. Check your connection and try again/, "failed LCR reads must use caregiver-readable recovery guidance");
+assert.match(component, /The saved care summary could not be loaded\. Please try again/, "failed LCR reads must use caregiver-readable recovery guidance");
 assert.match(component, /<summary>Where this information came from<\/summary>/, "source and assessment details remain collapsed behind a caregiver-readable disclosure");
 assert.doesNotMatch(component, /LONGITUDINAL RECORD|No current-care items were returned|Record coverage is incomplete/, "caregiver-facing LCR copy must not expose internal terminology");
 assert.match(timeline, /\/daily-care\/intelligence\/history\?limit=200/, "chronological timeline reads the persisted care-history endpoint independently");
