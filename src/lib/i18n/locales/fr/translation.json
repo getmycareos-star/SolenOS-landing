@@ -141,7 +141,14 @@
     "followupsDescription": "Les suivis ouverts restent dans leur dossier actuel. Soins quotidiens ne crée pas de doublon.",
     "noFollowups": "Aucun suivi non résolu n'est actuellement enregistré. Cela ne confirme pas qu'aucune action n'est nécessaire.",
     "originalFiles": "SolenOS conserve les fichiers originaux et indique ce qui s'est réellement passé pendant leur traitement.",
-    "noDocuments": "Aucun document n'a encore été importé depuis ce compte."
+    "noDocuments": "Aucun document n'a encore été importé depuis ce compte.",
+    "previousVisit": "votre visite précédente",
+    "observationRecords": "entrées d'observation",
+    "medicationEventRecords": "événements liés aux médicaments",
+    "measurementRecords": "mesures enregistrées",
+    "quickCheckIns": "points rapides",
+    "careHandoffs": "transmissions de soins",
+    "otherCareUpdates": "autres mises à jour des soins"
   },
   "changeIntelligence": {
     "eyebrow": "COMPRÉHENSION DANS LA DURÉE",
