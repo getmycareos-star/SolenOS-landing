@@ -1182,6 +1182,15 @@ export function LCRCurrentUnderstanding() {
         </button>
       </div>
 
+      {error && projection && (
+        <RecordState
+          kind="error"
+          title="We couldn’t refresh your care information."
+          description="Showing the last information that loaded. Try again to refresh."
+          action={<button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={refreshing}>Try again</button>}
+        />
+      )}
+
       <section className="lcr-first-screen-summary" aria-label="Care at a glance">
         <div className="lcr-first-screen-card">
           <h3>Where things stand</h3>
@@ -1901,38 +1910,13 @@ export function LCRCurrentUnderstanding() {
       {/* Detailed assessment diagnostics remain available to the care engine and audit services,
           but are intentionally not exposed as caregiver-facing copy. The record itself remains
           available through the timeline, source review and care-history controls. */}
-      {loading ? (
-        <p role="status">Loading saved care information…</p>
-      ) : error ? (
-        <div role="alert" className="lcr-empty-state">
-          <AlertCircle size={20} aria-hidden="true" />
-          <h3>Your care information isn’t available right now</h3>
-          <p>We couldn’t load this care information. Check your connection and try again. Your saved records have not been changed.</p>
-          
-          <button type="button" className="lcr-text-action" onClick={() => void load(true)}>Try again</button>
-        </div>
-      ) : projection ? (
+      {projection ? (
         <>
           {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
-            <div role="status" className="lcr-empty-state">
-              <AlertCircle size={20} aria-hidden="true" />
-              <h3>Some care information is unavailable</h3>
-              <p>We couldn’t load all of the available care information. The picture shown may be incomplete. Try refreshing later.</p>
-              {projection.missing_required_sources.length > 0 && (
-                <p>Some important care information may be missing from this view.</p>
-              )}
-              {projection.missing_optional_sources.length > 0 && (
-                <p>Some additional care information may not be available right now.</p>
-              )}
-            </div>
+            <RecordState kind="unavailable" title="Some care information may be missing from this view." description="This summary includes only sources currently available." />
           )}
 
-          {projection.items.length === 0 ? (
-            <div className="lcr-empty-state">
-              <h3>Your Care Record does not have any care information yet.</h3>
-              <p>Add what you know in Daily Care or upload a care document. You can also ask the Care Assistant to help you understand saved information.</p>
-            </div>
-          ) : (
+          {projection.items.length === 0 ? null : (
             <div className="lcr-current-facts">
               <ul>
                 {projection.items.map((item) => (
