@@ -598,7 +598,7 @@ export default function DailyCarePage() {
 
           <section aria-labelledby="daily-care-documents-title" className="daily-care-context-panel">
             <h2 id="daily-care-documents-title">{t("dailyCare.documents")}</h2>
-            <p className="daily-care-muted">SolenOS keeps the original files and reports what actually happened during processing.</p>
+            <p className="daily-care-muted">{t("dailyCare.originalFiles")}</p>
             {documentsError ? (
               <p role="alert">{documentsError}</p>
             ) : documents.length ? (
@@ -631,20 +631,20 @@ export default function DailyCarePage() {
                       {item.medication_report_saved && <p>Medication information was saved as an unconfirmed report. The existing medication record was not changed.</p>}
                       {item.written_to_lcr && !item.medication_report_saved && <span> · Reviewed information saved to the Living Care Record</span>}
                       {(item.accepted_follow_up_ids || []).length > 0 && <span> · Follow-up added to your existing follow-ups</span>}
-                      {item.review_required && <p><Link href="/workspace/documents">Review the document</Link></p>}
+                      {item.review_required && <p><Link href="/workspace/documents">{t("dailyCare.reviewDocument")}</Link></p>}
                     </li>
                   );
                 })}
               </ul>
             ) : (
-              <p>No documents have been uploaded from this account yet.</p>
+              <p>{t("dailyCare.noDocuments")}</p>
             )}
-            <Button variant="secondary" onClick={() => router.push("/workspace/documents")}>Open documents</Button>
+            <Button variant="secondary" onClick={() => router.push("/workspace/documents")}>{t("dailyCare.openDocuments")}</Button>
           </section>
 
           <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
-            <h2 id="daily-care-follow-ups-title">Existing follow-ups</h2>
-            <p className="daily-care-muted">Open follow-ups stay in their existing record. Daily Care does not create a second copy.</p>
+            <h2 id="daily-care-follow-ups-title">{t("dailyCare.followups")}</h2>
+            <p className="daily-care-muted">{t("dailyCare.followupsDescription")}</p>
             {followUpsError ? (
               <p role="alert">{followUpsError}</p>
             ) : followUps.length ? (
@@ -653,24 +653,24 @@ export default function DailyCarePage() {
                   <li key={item.id}>
                     <strong>{caregiverSafeAssistantText(item.title) || "Care follow-up"}</strong>
                     {item.description && <p>{caregiverSafeAssistantText(item.description)}</p>}
-                    <span>{caregiverStatusLabel(item.status) || "Unresolved"}</span>
-                    {item.deadline_at && <span> · Due {displayCareTime(item.deadline_at)}</span>}
+                    <span>{caregiverStatusLabel(item.status) || t("dailyCare.unresolved")}</span>
+                    {item.deadline_at && <span> · {t("dailyCare.due")} {displayCareTime(item.deadline_at)}</span>}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p>No unresolved follow-ups are currently recorded. This does not confirm that no action is outstanding.</p>
+              <p>{t("dailyCare.noFollowups")}</p>
             )}
             {deliveryIssues.length > 0 && (
               <div role="status" className="daily-care-medication-confirmation">
-                <strong>Notification delivery needs attention</strong>
+                <strong>{t("dailyCare.notificationAttention")}</strong>
                 {deliveryIssues.slice(0, 3).map((issue) => (
                   <p key={issue.id}>{issue.title}: {issue.message}</p>
                 ))}
               </div>
             )}
             {deliveryStatusError && <p role="status">{deliveryStatusError}</p>}
-            <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>View follow-ups</Button>
+            <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>{t("dailyCare.viewFollowups")}</Button>
           </section>
 
           <section aria-labelledby="daily-care-open-matters-title" className="daily-care-context-panel">
