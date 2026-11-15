@@ -72,10 +72,11 @@ function readableStatus(value?: string | null): string {
 export function PersistedCareOrientation() {
   const [state, setState] = useState<LoadState>("loading");
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    setState("loading");
+    if (!hasLoaded) setState("loading");
     setError("");
     try {
       const session = await ensureAnonymousSession();
@@ -93,19 +94,22 @@ export function PersistedCareOrientation() {
         throw new Error("The current care record could not be verified for this session.");
       }
       setProjection(data as CurrentCareProjection);
+      setHasLoaded(true);
       setState("ready");
     } catch {
-      setProjection(null);
+      if (!hasLoaded) {
+        setProjection(null);
+        setState("unavailable");
+      }
       setError("Check your connection and try again.");
-      setState("unavailable");
     }
-  }, []);
+  }, [hasLoaded]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  if (state === "loading") {
+  if (state === "loading" && !hasLoaded) {
     return (
       <section className="persisted-care-orientation" aria-busy="true" aria-label="Saved care information">
         <RecordState kind="loading" title="Loading your care information…" />
@@ -113,7 +117,7 @@ export function PersistedCareOrientation() {
     );
   }
 
-  if (state === "unavailable" || !projection) {
+  if ((state === "unavailable" || !projection) && !hasLoaded) {
     return (
       <section className="persisted-care-orientation" aria-label="Saved care information">
         <div className="persisted-care-orientation-header">
@@ -134,6 +138,15 @@ export function PersistedCareOrientation() {
       <div className="persisted-care-orientation-header">
         <div><h2>Your Living Care Record</h2></div>
       </div>
+
+      {error && (
+        <RecordState
+          kind="error"
+          title="We couldn’t refresh your care information."
+          description="Showing the last information that loaded. Try again to refresh."
+          action={<button type="button" onClick={() => void load()}>Try again</button>}
+        />
+      )}
 
       {items.length > 0 ? (
         <>
