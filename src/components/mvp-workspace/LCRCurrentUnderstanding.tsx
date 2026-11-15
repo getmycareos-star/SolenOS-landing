@@ -507,7 +507,7 @@ function displayDescription(value?: string | null): string {
           quick.scope === "selected_areas_only" ? "Scope: selected areas only" : "",
         ].filter(Boolean).join("\n");
       }
-      const summary = [parsedRecord.notes, parsedRecord.text, parsedRecord.description, parsedRecord.observation, parsedRecord.summary]
+      const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
         .find((item): item is string => typeof item === "string" && item.trim().length > 0);
       if (summary) return caregiverSafeAssistantText(summary) || "Saved care information";
       return "Saved care information";
