@@ -758,10 +758,15 @@ export default function DailyCarePage() {
 
           <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
             <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
-            <p className="daily-care-muted">
-              This summary uses records added since your previous visit on this device. It does not describe unrecorded care.
-            </p>
-            {sinceLastOpenItems === null ? (
+            <p className="daily-care-muted">New records saved since your previous visit on this device.</p>
+            {historyError && !historyLoaded ? (
+              <RecordState kind="error" title="Recent care history couldn’t be loaded." description="Try again to check what was saved since your last visit." />
+            ) : !historyLoaded ? (
+              <RecordState kind="loading" title="Loading recent care history…" />
+            ) : (
+              <>
+                {historyError && <RecordState kind="error" title="Recent care history couldn’t be refreshed." description="Showing the last saved history. Try again to refresh." />}
+                {sinceLastOpenItems === null ? (
               <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
             ) : sinceLastOpenItems.length > 0 ? (
               <>
@@ -793,8 +798,10 @@ export default function DailyCarePage() {
                 </ul>
                 <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
               </>
-            ) : (
-              <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
+                ) : (
+                  <RecordState kind="empty" title="No new records since your last visit." />
+                )}
+              </>
             )}
             {historyMayBeTruncated && <p className="daily-care-muted">This summary shows the latest 200 saved updates. Open full care history to see older ones.</p>}
           </section>
