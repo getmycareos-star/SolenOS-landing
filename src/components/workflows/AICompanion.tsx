@@ -318,7 +318,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
-                      <p>I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record.</p>
+                      <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
                     </section>}
                     {!isUser && msg.ai_generated && coverage && <section className="companion-provenance" role="status" aria-label="Care history coverage">
                       <strong>How much of the saved care history was checked</strong>
