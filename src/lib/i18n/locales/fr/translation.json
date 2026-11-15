@@ -173,6 +173,7 @@
     "situations": "Situations de soins",
     "disclaimer": "Ces changements d'état sont signalés par l'aidant. Ils ne constituent pas des conclusions médicales.",
     "reportedStatus": "État signalé par l'aidant",
-    "statusReason": "Motif de cet état (obligatoire)"
+    "statusReason": "Motif de cet état (obligatoire)",
+    "previousStatusUpdates": "Mises à jour d’état précédentes"
   }
 }
