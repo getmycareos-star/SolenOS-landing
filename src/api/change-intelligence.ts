@@ -70,6 +70,25 @@ export type PersistedPattern = {
   is_active: boolean;
 };
 
+export type PersistedSituation = {
+  id: string;
+  person_id: string;
+  situation_type: string;
+  state: string;
+  title: string;
+  description: string | null;
+  signal_ids: string[];
+  signal_types: string[];
+  temporal_start: string;
+  temporal_end: string;
+  pattern_ids: string[] | null;
+  change_ids: string[] | null;
+  context: Record<string, unknown> | null;
+  is_active: boolean;
+  superseded_by_situation_id: string | null;
+};
+
+export type SituationTrajectoryState = "active" | "worsening" | "improving" | "resolved" | "unknown";
 function requirePersonId(): string {
   const personId = getPersonId();
   if (!personId) {
@@ -98,6 +117,24 @@ export async function listPersistedPatterns(
   const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (subjectType) query.set("subject_type", subjectType);
   return await getJSON(`/change/patterns/${personId}?${query.toString()}`) as PersistedPattern[];
+}
+
+export async function listPersistedSituations(): Promise<PersistedSituation[]> {
+  const personId = encodeURIComponent(requirePersonId());
+  return await getJSON(`/change/situations/${personId}`) as PersistedSituation[];
+}
+
+export async function transitionSituationState(
+  situationId: string,
+  state: SituationTrajectoryState,
+  reason: string,
+  evidenceIds: string[],
+): Promise<{ situation: PersistedSituation; previous_state: string; new_state: string }> {
+  const personId = encodeURIComponent(requirePersonId());
+  return await postJSON(
+    `/change/situations/${personId}/${encodeURIComponent(situationId)}/state`,
+    { state, reason, evidence_ids: evidenceIds },
+  ) as { situation: PersistedSituation; previous_state: string; new_state: string };
 }
 
 export async function assessObservationCoverage(
