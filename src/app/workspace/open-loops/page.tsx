@@ -24,6 +24,7 @@ type OpenLoop = {
   outcome_evidence: Array<Record<string, unknown>>;
   created_at: string;
   updated_at: string;
+  review_at: string | null;
 };
 
 type AttentionDecision = {
@@ -126,7 +127,7 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
       <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No notes or documents are linked here."}</p>
-      {item.review_at && <p><strong>Next review date</strong><br />{dateLabel(item.review_at)}</p>}
+      {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Review requested" : "Next review date"}</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
     </div>}
     {loop && !["closed", "cancelled"].includes(loop.status) && <div className="followup-update-area">
@@ -289,7 +290,7 @@ export default function FollowUpsPage() {
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Items that can wait based on the information available.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
         {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
-        {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === loop.id} history={historyById[loop.id]} />)}
+        {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, review_at: loop.review_at, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === loop.id} history={historyById[loop.id]} />)}
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">There are no other items to show from the information reviewed.</p>}
       </section>
       <section className="followups-section">
