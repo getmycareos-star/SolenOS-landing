@@ -102,7 +102,8 @@
     "recentHistory": "Historique récent des soins",
     "viewHistory": "Voir tout l'historique",
     "noHistory": "Aucune entrée récente. L'absence de dossier ne prouve pas qu'aucun soin n'a eu lieu.",
-    "tagline": "Le parcours de soins, gardé en mémoire."
+    "tagline": "Le parcours de soins, gardé en mémoire.",
+    "longitudinalIncomplete": "Cette mise à jour est enregistrée, mais SolenOS n'a pas pu terminer la comparaison avec l'historique des soins. L'évaluation du changement est incomplète."
   },
   "changeIntelligence": {
     "eyebrow": "COMPRÉHENSION DANS LA DURÉE",
