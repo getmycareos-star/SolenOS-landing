@@ -54,7 +54,7 @@ function readableStatus(value?: string | null): string {
     uncertain: "Still unclear",
     unverified: "Not confirmed",
     disputed: "Reports do not match",
-    needs_clarification: "Needs clarification",
+    needs_clarification: "Needs checking",
     awaiting_confirmation: "Needs review",
     active: "Current",
     open: "Open",
