@@ -27,11 +27,12 @@ function WorkspaceHomeInner() {
 
   return (
     <main className="mobile-screen feature-page solenos-lcr-home">
-      <CaregiverHandoverInbox />
+      {/* The current-care summary is the first workspace content. Its detailed record
+          remains behind the progressive-disclosure section inside LCRCurrentUnderstanding. */}
       <LCRCurrentUnderstanding />
       <section aria-label="Ask SolenOS" style={{ display: "grid", gap: 10, padding: "18px 0" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 18 }}>Ask SolenOS</h2>
+          <h2 style={{ margin: 0, fontSize: 18 }}>What would you like to do?</h2>
           <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>Talk through the saved care history, recent changes, appointments or information that is still unclear.</p>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -39,6 +40,7 @@ function WorkspaceHomeInner() {
           <Link href="/workspace/daily-care" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 46, width: "fit-content", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650, padding: "10px 16px", textDecoration: "none" }}>Add a care update</Link>
         </div>
       </section>
+      <CaregiverHandoverInbox />
     </main>
   );
 }
