@@ -7,12 +7,16 @@ import {
   getPersistedPatternDetail,
   listPersistedChanges,
   listPersistedPatterns,
+  listPersistedSituations,
   reassessPersistedChangeIntelligence,
   type ChangeDetail,
   type PersistedChange,
   type PersistedPattern,
+  type PersistedSituation,
   type PatternDetail,
+  type SituationTrajectoryState,
   transitionChangeConfirmation,
+  transitionSituationState,
 } from "@/api/change-intelligence";
 
 function caregiverChangeLabel(change: PersistedChange): string {
@@ -54,6 +58,10 @@ function formatWindow(start: string | null, end: string | null): string {
 export function ChangeIntelligencePanel() {
   const [changes, setChanges] = useState<PersistedChange[]>([]);
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
+  const [situations, setSituations] = useState<PersistedSituation[]>([]);
+  const [situationStates, setSituationStates] = useState<Record<string, SituationTrajectoryState>>({});
+  const [situationReasons, setSituationReasons] = useState<Record<string, string>>({});
+  const [situationTransitioningIds, setSituationTransitioningIds] = useState<string[]>([]);
   const [expandedPatternId, setExpandedPatternId] = useState<string | null>(null);
   const [patternDetails, setPatternDetails] = useState<Record<string, PatternDetail>>({});
   const [patternDetailErrors, setPatternDetailErrors] = useState<Record<string, string>>({});
@@ -88,9 +96,12 @@ export function ChangeIntelligencePanel() {
         ...(detail?.observations.map((item) => item.id) ?? []),
       ];
       await transitionChangeConfirmation(changeId, status, reason, [...new Set(supportingIds)]);
-      const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
+      const [changeRows, patternRows, situationRows] = await Promise.all([
+        listPersistedChanges(), listPersistedPatterns(), listPersistedSituations(),
+      ]);
       setChanges(changeRows);
-      setPatterns(patternRows.filter((row) => row.is_active));
+      setPatterns(patternRows);
+      setSituations(situationRows);
       setChangeOffset(0);
       setPatternOffset(0);
       setHasMoreChanges(changeRows.length === 100);
@@ -205,6 +216,48 @@ export function ChangeIntelligencePanel() {
     }
   }
 
+  function situationEvidenceIds(situation: PersistedSituation): string[] {
+    const linkedChangeIds = new Set(situation.change_ids ?? []);
+    const linkedPatterns = patterns.filter((pattern) => (situation.pattern_ids ?? []).includes(pattern.id));
+    for (const pattern of linkedPatterns) {
+      for (const changeId of pattern.change_ids ?? []) linkedChangeIds.add(changeId);
+    }
+    const linkedChanges = changes.filter((change) => linkedChangeIds.has(change.id));
+    return [...new Set([
+      ...(situation.signal_ids ?? []),
+      ...linkedPatterns.flatMap((pattern) => pattern.event_ids ?? []),
+      ...linkedChanges.flatMap((change) => change.evidence_ids ?? []),
+    ].filter(Boolean))];
+  }
+
+  async function saveSituationState(situation: PersistedSituation) {
+    const targetState = situationStates[situation.id] ?? (situation.state as SituationTrajectoryState);
+    const reason = (situationReasons[situation.id] ?? "").trim();
+    const evidenceIds = situationEvidenceIds(situation);
+    if (!reason) {
+      setWarning("Add a short reason before saving a care situation status.");
+      return;
+    }
+    if (!evidenceIds.length) {
+      setWarning("This situation has no linked source records to support a status change.");
+      return;
+    }
+    if (targetState === situation.state) return;
+    setSituationTransitioningIds((current) => [...current, situation.id]);
+    setWarning(null);
+    try {
+      await transitionSituationState(situation.id, targetState, reason, evidenceIds);
+      const refreshed = await listPersistedSituations();
+      setSituations(refreshed);
+      setSituationReasons((current) => ({ ...current, [situation.id]: "" }));
+      setWarning(null);
+    } catch {
+      setWarning("The care situation status could not be saved. The previous saved status remains in place.");
+    } finally {
+      setSituationTransitioningIds((current) => current.filter((id) => id !== situation.id));
+    }
+  }
+
   useEffect(() => {
     let active = true;
     async function load() {
@@ -245,14 +298,14 @@ export function ChangeIntelligencePanel() {
           {refreshing ? "Refreshing saved assessments…" : "Refresh saved assessments"}
         </button>
       </div>
-      {loading ? <p role="status" className="panel-muted">Reviewing saved care changes…</p> : null}
+      {loading ? <p role="status" className="panel-muted">Loading saved changes and patterns…</p> : null}
       {warning ? <p role="status" className="panel-muted">{warning}</p> : null}
       {error ? (
         <p role="alert" className="panel-muted">
           Change assessments are unavailable right now. The record is preserved; no conclusion is inferred from this loading failure.
         </p>
       ) : null}
-      {!loading && !error && changes.length === 0 && patterns.length === 0 ? (
+      {!loading && !error && changes.length === 0 && patterns.length === 0 && situations.length === 0 ? (
         <p className="panel-muted">
           No persisted change or pattern assessments are available yet. This does not mean that no changes occurred.
         </p>
