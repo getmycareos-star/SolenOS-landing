@@ -152,7 +152,7 @@ jobs:
           cat /tmp/solenos-critical-frontend.log
           exit 1
 
-      - name: Execute all 12 real-backend journeys in Chromium
+      - name: Execute real-backend caregiver and situation journeys in Chromium
         env:
           FRONTEND_URL: http://127.0.0.1:3000
           BACKEND_URL: http://127.0.0.1:8000
