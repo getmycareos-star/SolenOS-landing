@@ -69,7 +69,7 @@ export const WORKSPACE_NAVIGATION = {
     {
       id: "care-handoffs",
       href: "/workspace/handoffs",
-      label: "Care Handoffs",
+      label: "Share care information",
       description: "Prepare information for someone else",
       icon: Handshake,
     },
