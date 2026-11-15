@@ -46,7 +46,7 @@ function plainStatus(value?: string | null): string {
     not_recorded: "Not recorded",
   };
   if (!value) return "Not recorded";
-  return labels[value] || value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return labels[value] || "Not available";
 }
 
 export function CareRecordOverview() {
@@ -100,7 +100,7 @@ export function CareRecordOverview() {
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <p style={{ margin: "0 0 5px", color: "#66816a", fontSize: 11, fontWeight: 800, letterSpacing: ".08em" }}>YOUR CARE INFORMATION</p>
-          <h2 id="care-record-overview-title" style={{ margin: 0, fontSize: 22 }}>Care record details</h2>
+          <h2 id="care-record-overview-title" style={{ margin: 0, fontSize: 22 }}>Care Record details</h2>
           <p style={{ margin: "7px 0 0", color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>See what has been saved, who shared it and what may still need checking.</p>
         </div>
         <button type="button" onClick={() => void load(true)} disabled={loading || refreshing} style={{ display: "inline-flex", alignItems: "center", gap: 7, minHeight: 42, padding: "8px 12px", border: "1px solid #dce6da", borderRadius: 10, background: "#f8fbf7", color: "#39533d", fontWeight: 700 }}>
@@ -125,7 +125,7 @@ export function CareRecordOverview() {
                       <span style={{ padding: "3px 7px", borderRadius: 7, background: "#eef4ec", color: "#536e55", fontSize: 11 }}>{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
                     {item.description && <p style={{ margin: "7px 0 0", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{item.description}</p>}
-                    <p style={{ margin: "8px 0 0", color: "#758276", fontSize: 11 }}>Added by: {item.source_label || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
+                    <p style={{ margin: "8px 0 0", color: "#758276", fontSize: 11 }}>Shared by: {item.source_label || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
                   </article>
                 ))}
               </div>
@@ -133,10 +133,10 @@ export function CareRecordOverview() {
           </section>
 
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
-            <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes recorded over time</h3>
+            <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes over time</h3>
             {historyNote && <p role="status" style={{ color: "#805d3c", fontSize: 13 }}>{historyNote}</p>}
             {!historyNote && changes.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No saved changes were returned. SolenOS will not invent a change when there is no record of one.</p>
+              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No changes were found in the information available. SolenOS will not invent a change when there is no record of one.</p>
             ) : (
               <div style={{ display: "grid", gap: 9 }}>
                 {changes.map((change) => (
