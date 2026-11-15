@@ -297,15 +297,26 @@ await record("04 document upload and extraction", async () => {
   assert.equal(reviewed.status, 200, JSON.stringify(reviewed.payload));
   assert.ok(String(reviewed.payload.extracted_text).toLowerCase().includes("follow-up appointment"));
   const intelligence = await request("/api/v1/documents/" + documentId + "/intelligence", { token: identity.token, method: "POST", body: {} });
-  assert.equal(intelligence.status, 201, JSON.stringify(intelligence.payload));
-  assert.ok(intelligence.payload.observations.length > 0, "Qwen did not produce a reviewable document candidate");
-  assert.equal(intelligence.payload.written_to_lcr, false);
-  const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
-  assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
-  assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
-  const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", { token: identity.token, method: "POST", body: { candidate_index: 0, decision: "accept" } });
-  assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
-  assert.equal(accepted.payload.written_to_lcr, true);
+  if (intelligence.status === 201) {
+    // A real configured model may produce candidates. They must remain outside the LCR until reviewed.
+    assert.ok(intelligence.payload.observations.length > 0, "successful live intelligence must return reviewable document candidates");
+    assert.equal(intelligence.payload.written_to_lcr, false);
+    const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+    assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
+    assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
+    const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", { token: identity.token, method: "POST", body: { candidate_index: 0, decision: "accept" } });
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
+    assert.equal(accepted.payload.written_to_lcr, true);
+  } else {
+    // CI intentionally has no Qwen runtime. Only the explicit unavailable response is acceptable;
+    // do not replace it with fixtures, generated candidates, or a false successful inference.
+    assert.equal(intelligence.status, 503, JSON.stringify(intelligence.payload));
+    assert.equal(intelligence.payload.detail?.code, "runtime_unreachable", JSON.stringify(intelligence.payload));
+    assert.match(intelligence.payload.detail?.message ?? "", /AI assistance is unavailable/i);
+    const unchanged = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+    assert.equal(unchanged.status, 200, JSON.stringify(unchanged.payload));
+    assert.ok(!unchanged.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unavailable AI processing must not write document-derived facts to the LCR");
+  }
   const duplicateForm = new FormData();
   duplicateForm.append("person_id", identity.personId);
   duplicateForm.append("caregiver_id", identity.caregiverId);
