@@ -88,6 +88,11 @@ const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
 const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
 const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
 const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
+const dailyCapture = read("../src/components/workflows/StructuredDailyCapture.tsx");
+const policySettings = read("../src/components/mvp-workspace/PolicySettingsPanel.tsx");
+const identityRecovery = read("../src/components/mvp-workspace/IdentityDeviceRecoveryPanel.tsx");
+const caregiverAccess = read("../src/components/mvp-workspace/CaregiverAccessPanel.tsx");
+const companionRoute = read("../src/app/workspace/companion/page.tsx");
 const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
 const careDelta = read("../src/components/CareDeltaPanel.tsx");
 const careChangeHistory = read("../src/components/mvp-workspace/CareChangeHistoryPanel.tsx");
@@ -123,6 +128,24 @@ assert.match(handoff, /function readableStatus\(value: string\): string \{\s+ret
 assert.match(appointment, /caregiverSafeAssistantText\(item\.title\)/);
 assert.match(detailedAppointment, /caregiverSafeAssistantText\(source\.original_author\)/);
 assert.doesNotMatch(detailedAppointment, /Evidence IDs:|Assessment \{item\.assessment_id/);
+assert.doesNotMatch(dailyCapture, /Care-record reconciliation:|change and pattern assessments|Accept and add to LCR|LCR projection|LCR fact|No LCR assertion|Living Care Record/);
+assert.match(dailyCapture, /Original information:/);
+assert.match(dailyCapture, /Add to Care Record/);
+assert.doesNotMatch(documentReview, /Document intelligence review|OCR reading confidence|CORRECTION AWAITING APPROVAL|PENDING CAREGIVER REVIEW|SAVED AS UNCONFIRMED REPORT|statement\(s\)/);
+assert.match(documentReview, /Text read from your document/);
+assert.doesNotMatch(documentReview, /event\.decision\}/);
+assert.doesNotMatch(settings, /Living Care Record|anonymous session|Clear local data/);
+assert.doesNotMatch(policySettings, /Living Care Record|Companion conversations|eligible feedback|Direct identifiers|processing path|retention and handling rules/);
+assert.match(policySettings, /Your full Care Record or your full care history/);
+assert.doesNotMatch(identityRecovery, /device registration|registered devices|one-time recovery code|revokes every existing session/);
+assert.match(identityRecovery, /Get back into your account/);
+assert.doesNotMatch(caregiverAccess, /responsibility_type\.replaceAll|transfer responsibility|primary caregiver transfer declined|No change should be assumed/);
+assert.match(caregiverAccess, /Hand over a care task/);
+assert.doesNotMatch(appointment, /source completeness|Recorded observations and caregiver reports|Information status unavailable|item\(s\) shown|saved source\(s\)/);
+assert.doesNotMatch(detailedAppointment, /clinician findings|Consultation opening summary|clinical follow-up remains open|Closure status/);
+assert.match(detailedAppointment, /Summary to start the visit/);
+assert.doesNotMatch(companionRoute, /SolenOS Companion/);
+
 
 
 assert.match(historyDrawer, /caregiverSafeAssistantText/);
