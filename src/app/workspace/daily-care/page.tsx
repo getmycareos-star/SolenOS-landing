@@ -564,9 +564,14 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-current-title" className="daily-care-context-panel">
             <h2 id="daily-care-current-title">Where things stand</h2>
             <p className="daily-care-muted">The latest care information saved so far.</p>
-            {contextLoading ? (
-              <p>Loading care information…</p>
-            ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
+            {contextLoading && !careItemsLoaded && <RecordState kind="loading" title="Loading care information…" />}
+            {contextError && !careItemsLoaded ? (
+              <RecordState kind="error" title="Care information couldn’t be loaded." description="Try again to check the latest saved updates." />
+            ) : (
+              <>
+                {contextLoading && careItemsLoaded && <RecordState kind="loading" title="Refreshing care information…" />}
+                {contextError && careItemsLoaded && <RecordState kind="error" title="Care information couldn’t be refreshed." description="Showing the last information that loaded. Try again to refresh." />}
+                {careItemsLoaded && careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
               <ul className="daily-care-record-list">
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 2).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
@@ -592,10 +597,11 @@ export default function DailyCarePage() {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p>No current care updates are available to show. This does not mean nothing happened.</p>
+                ) : careItemsLoaded ? (
+                  <RecordState kind="empty" title="No care updates recorded yet." />
+                ) : null}
+              </>
             )}
-            {contextError && <p role="status" className="daily-care-muted">{caregiverSafeAssistantText(contextError) || "Some care information could not be loaded. Try again."}</p>}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
