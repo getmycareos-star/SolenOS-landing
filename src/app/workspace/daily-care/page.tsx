@@ -734,7 +734,6 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
             <h2 id="daily-care-follow-ups-title">Follow-ups</h2>
             <p className="daily-care-muted">
-              {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} that may need checking.
               Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, Daily Care will use it instead of creating a duplicate.
             </p>
             {followUpsError && !followUpsLoaded ? (
