@@ -698,10 +698,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   }
 
   if (!personId && !evidenceLoading && !evidenceError) return null
-  return <section style={panel} aria-label="Saved source reviews">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Sources and supporting information</h3>
-    {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Retry evidence load</button></p>}
-    {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading saved source information…</p>}
+  return <section style={panel} aria-label="Reviews of saved notes and documents">
+    <h3 style={{ fontSize: 15, marginTop: 0 }}>Notes and documents behind care information</h3>
+    {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Try loading again</button></p>}
+    {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading saved notes and documents…</p>}
     <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Reviews are saved with the reason and date. They do not turn a caregiver report into an independently confirmed fact.</p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Check whether information is still up to date</summary>
@@ -735,9 +735,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {selected && <>
         <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Type of source</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.type || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.evidence_kind || 'not_assessed')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How sure we are about this information</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Type of note or document</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.type || 'not_recorded')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How this information was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.evidence_kind || 'not_assessed')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How certain this information is</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Added by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id ? 'Caregiver' : null].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
@@ -745,28 +745,28 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || 'not_recorded')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How this information was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref ? 'A device was recorded' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Original file or link</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date added</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Original reference</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference ? 'An original reference is saved' : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Related original source</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Original file or link</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference ? 'An original reference is saved' : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Related original note or document</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>How this source is linked to other saved information ({relationships.length})</summary>
-          <p>These links show how sources are connected. They do not prove that two reports are separate or that a statement is true.</p>
+          <summary>How this note or document is connected to other information ({relationships.length})</summary>
+          <p>These connections show when notes or documents come from the same original. They do not prove that two reports are separate or that a statement is true.</p>
           {relationshipsLoading && <p role="status">Loading links to other saved information…</p>}
           {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
-          {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No links to other saved sources are recorded for this item yet.</p>}
+          {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No other notes or documents are linked to this item yet.</p>}
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.relationship_type)}</strong>
-            <div>This source is linked to another saved source.</div>
+            <div>This note or document is linked to another saved item.</div>
             <div>Were these reports separate? {reviewStatusLabel(item.source_independence_status)}</div>
             {item.source_independence_status === 'shared_origin' && (
-              <p>This source and the linked source came from the same original. They should not be counted as separate reports.</p>
+              <p>These items came from the same original. They should not be counted as separate reports.</p>
             )}
             {item.origin_group_key && <p>Shared source grouping is recorded.</p>}
             <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
@@ -774,11 +774,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </article>)}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Details in this source ({observations.length})</summary>
-          <p>Each detail keeps the exact words from the original source. A report stays labelled as a report; an interpretation is not shown as something someone directly saw.</p>
+          <summary>Details found in this note or document ({observations.length})</summary>
+          <p>Each detail keeps the exact words from the original note or document. A report stays labelled as a report; an interpretation is not shown as something someone directly saw.</p>
           {observationsLoading && <p role="status">Loading recorded details…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
-          {!observationsLoading && !observationsError && observations.length === 0 && <p>No extracted details are available for this source yet.</p>}
+          {!observationsLoading && !observationsError && observations.length === 0 && <p>No details have been read from this note or document yet.</p>}
           {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
@@ -840,7 +840,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </details>
 
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>See source information from an earlier date</summary>
+          <summary>See information saved earlier</summary>
           <p>Choose a date and time to see the latest saved version from then. This does not prove the statement was true.</p>
           <label style={{ display: 'block', marginTop: 8 }}>Date and time
             <input style={field} type="datetime-local" value={historyAsOf} onChange={event => { setHistoryAsOf(event.target.value); setReconstructedHistory(null); setHistoryReconstructionError('') }} />
@@ -857,11 +857,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>Check whether the saved wording has changed</summary>
-          {sourceIntegrityLoading && <p role="status">Checking saved wording…</p>}
+          {sourceIntegrityLoading && <p role="status">Checking the saved wording…</p>}
           {sourceIntegrityError && <p role="alert" style={{ color: 'var(--error)' }}>{sourceIntegrityError} <button type="button" style={button} onClick={() => void loadSourceIntegrity()} disabled={sourceIntegrityLoading}>Try again</button></p>}
           {!sourceIntegrityLoading && !sourceIntegrityError && sourceIntegrity && <>
             <p><strong>Saved wording:</strong> {sourceIntegrity.source_text_integrity_status === 'match' ? 'Matches the original saved copy' : sourceIntegrity.source_text_integrity_status === 'mismatch' ? 'Does not match the original saved copy' : 'Comparison is not available'}</p>
-            <p><strong>Original uploaded file:</strong> {sourceIntegrity.original_binary_status === 'match' ? 'Matches the saved copy' : sourceIntegrity.original_binary_status === 'mismatch' ? 'Does not match the saved copy' : sourceIntegrity.original_binary_available === false ? 'Cannot be opened' : 'Not checked'}</p>
+            <p><strong>Original file:</strong> {sourceIntegrity.original_binary_status === 'match' ? 'Matches the saved copy' : sourceIntegrity.original_binary_status === 'mismatch' ? 'Does not match the saved copy' : sourceIntegrity.original_binary_available === false ? 'Cannot be opened' : 'Not checked'}</p>
             {sourceIntegrity.original_binary_status === 'match' && (
               <p>The original file matches the copy first saved.</p>
             )}
@@ -874,15 +874,15 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Other records with the same original file:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_binary_duplicate_candidate_ids.length + ' possible match(es)'
               : 'No identical original file was found.'}</p>
-            <p><strong>Similar wording check:</strong> {sourceIntegrity.near_duplicate_comparison_status === 'complete' ? 'Finished' : sourceIntegrity.near_duplicate_comparison_status === 'not_run' ? 'Not checked' : 'Could not be completed'}</p>
+            <p><strong>Check for similar wording:</strong> {sourceIntegrity.near_duplicate_comparison_status === 'complete' ? 'Finished' : sourceIntegrity.near_duplicate_comparison_status === 'not_run' ? 'Not checked' : 'Could not be completed'}</p>
             {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
               <p key={group.evidence_ids.join(':') + index}>
                 Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {caregiverSafeAssistantText(group.interpretation) || 'The relationship between these sources is not fully known.'}
               </p>
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
-            <p><strong>How recent it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How complete it is:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
-            <p><strong>Original reference:</strong> {sourceIntegrity.external_source_reference ? 'An original reference is saved' : 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
+            <p><strong>How recent it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How much information is included:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
+            <p><strong>Original file or link:</strong> {sourceIntegrity.external_source_reference ? 'An original reference is saved' : 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
