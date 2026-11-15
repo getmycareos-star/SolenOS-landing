@@ -182,7 +182,7 @@ export default function ClaimAssessmentPanel() {
           : claimRows[0]?.id ?? "",
       );
     } catch {
-      setError("Care details and related notes couldn’t be loaded. Try again when you’re connected.");
+      setError("Care details and related notes couldn’t be loaded. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
