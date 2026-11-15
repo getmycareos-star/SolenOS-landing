@@ -278,8 +278,8 @@ export function resolveCareTurnConfirmation(params: {
 
   if (params.patternLabel === "gradual daily-living changes") {
     return named
-      ? `Updated ${named}'s record — small changes over time are being held together.`
-      : "Updated — small changes over time are being held together.";
+      ? `Updated ${named}'s Care Record. Small changes over time are kept together.`
+      : "Your Care Record has been updated. Small changes over time are kept together.";
   }
 
   return composeReturningCareRealityConfirmation({ subjectLabel: named });
