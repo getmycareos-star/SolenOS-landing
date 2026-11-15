@@ -24,7 +24,9 @@ for (const contract of [
   ["panel lists persisted patterns", /listPersistedPatterns\(\)/],
   ["older change assessments can be loaded", /Load earlier changes/],
   ["older patterns can be loaded", /Load earlier patterns/],
-  ["panel requests backend reassessment", /reassessPersistedChangeIntelligence\(\)/],
+  ["panel offers an explicit saved-assessment refresh", /Refresh saved assessments/],
+  ["manual refresh is visibly in progress", /Refreshing saved assessments…/],
+  ["panel keeps backend reassessment available for deliberate refresh", /reassessPersistedChangeIntelligence\(\)/],
   ["change source details are user-reviewable", /Review source evidence/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
   ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
@@ -37,6 +39,19 @@ for (const contract of [
 assert(!/\bconfidence\b/i.test(panel), "uncalibrated model confidence must not be displayed in caregiver-facing change intelligence");
 assert(!/changes\.slice\(0,\s*8\)/.test(panel), "change history must not be silently truncated to eight rows");
 assert(!/patterns\.slice\(0,\s*8\)/.test(panel), "pattern history must not be silently truncated to eight rows");
+
+const initialLoadStart = panel.indexOf("useEffect(() => {");
+const initialLoadEnd = panel.indexOf("  return (", initialLoadStart);
+assert(initialLoadStart >= 0 && initialLoadEnd > initialLoadStart, "initial persisted assessment load must exist");
+const initialLoad = panel.slice(initialLoadStart, initialLoadEnd);
+assert(
+  !/reassessPersistedChangeIntelligence\(\)/.test(initialLoad),
+  "opening the LCR must read persisted assessments without triggering a write/reassessment",
+);
+assert(
+  /async function refreshSavedAssessments\(\)[\s\S]*?await reassessPersistedChangeIntelligence\(\)/.test(panel),
+  "reassessment must be available only through the explicit refresh action",
+);
 
 assert(!/recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\b/.test(panel), "observation coverage cannot be independently submitted from this panel");
 
@@ -54,6 +69,7 @@ for (const [source, pattern, label] of [
   [historyPanel, /const needsReview = comparisonCurrent \? changes\.filter/, "all findings from stale or unchecked comparisons must remain review-only"],
   [historyPanel, /SolenOS could not confirm that the source history for this comparison is current/, "unchecked source freshness must be disclosed to caregivers"],
   [lcr, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the primary LCR"],
+  [lcr, /careHistoryOpen \? \([\s\S]*?<ChangeIntelligencePanel \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>/, "persisted change intelligence and Delta history must appear together in earlier care history"],
   [historyPanel, /if \(!personId\) return null/, "history must wait for a scoped care record"],
 ]) {
   assert(pattern.test(source), "Missing persisted care-change contract: " + label);
