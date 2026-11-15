@@ -27,7 +27,7 @@ assert.match(companion, /companion-shell.*is-home/);
 assert.match(companion, /SOURCE_REFERENCE_LABELS/, "Companion provenance must use explicit source-reference labels");
 assert.match(companion, /document_extractions/, "persisted document extraction references must be presented");
 assert.match(companion, /Text read from a document is only a suggestion\. Review it in Documents before it is added to your care record\./, "document text must remain review-only until the caregiver accepts it");
-assert.match(companion, /Prior Companion message.*conversation context only/, "prior conversation references must be distinguished from care evidence");
+assert.match(companion, /Earlier Care Assistant message.*conversation history, not a care update/, "prior conversation references must be distinguished from care evidence");
 assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
 assert.doesNotMatch(companion, /Add to care story/);
 assert.doesNotMatch(
