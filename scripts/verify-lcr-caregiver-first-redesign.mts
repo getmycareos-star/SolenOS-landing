@@ -65,6 +65,8 @@ assert.match(currentUnderstanding, /We couldn’t check whether this care summar
 assert.match(currentUnderstanding, /original report is not linked to this item/i, "a missing source link must be distinguished from unavailable source text");
 assert.match(currentUnderstanding, /captureRecord\.notes/, "serialized capture details must be reduced to the original caregiver report");
 assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "care-source descriptions must pass through the caregiver-readable parser");
+assert.ok(currentUnderstanding.includes("if (!item.description?.trim()) return null;"), "missing current-care descriptions are omitted instead of rendered as empty-state filler");
+assert.ok(currentUnderstanding.includes('["no description was recorded.", "saved care information"].includes(normalizedDescription)'), "generic source placeholders are not presented as care facts");
 assert.doesNotMatch(caregiverRenderedCode, /capture_idempotency_key|capture_request_fingerprint|capture_kind/, "idempotency and capture metadata must never appear in caregiver-facing record details");
 assert.doesNotMatch(currentUnderstanding, /Source details: /, "technical source-availability fallback must not be exposed to caregivers");
 assert.match(integrityPanel, /INTERNAL_REVISION_TARGET_TYPES/, "internal assessment and baseline revisions must not be rendered as caregiver care-history changes");

@@ -488,11 +488,14 @@ function displayCurrentCareTitle(item: CurrentCareItem): string {
 }
 
 function displayCurrentCareDescription(item: CurrentCareItem): string | null {
-  const original = item.description?.trim().toLowerCase() || "";
+  if (!item.description?.trim()) return null;
+  const original = item.description.trim().toLowerCase();
   const originalTitle = item.title?.trim().toLowerCase() || "";
   if (original && originalTitle && original === originalTitle) return null;
   const description = displayDescription(item.description);
-  return description.trim().toLowerCase() === displayCurrentCareTitle(item).trim().toLowerCase()
+  const normalizedDescription = description.trim().toLowerCase();
+  if (["no description was recorded.", "saved care information"].includes(normalizedDescription)) return null;
+  return normalizedDescription === displayCurrentCareTitle(item).trim().toLowerCase()
     ? null
     : description;
 }
