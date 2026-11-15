@@ -268,7 +268,7 @@ export default function FollowUpsPage() {
   const linkedKeys = new Set(allAttention.map((item) => String(item.record_id || item.id || "")));
   const unclassifiedLoops = linkedLoops.filter((loop) => !linkedKeys.has(loop.id));
 
-  return <main className="mobile-screen followups-page">
+  return <div className="mobile-screen followups-page">
     <header className="followups-header">
       <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
       <p className="followups-kicker">CARE FOLLOW-UPS</p>
@@ -320,5 +320,5 @@ export default function FollowUpsPage() {
       .followups-empty,.followups-empty-inline{border:1px dashed var(--border,#d9dfd8);border-radius:13px;padding:20px;color:var(--text-secondary,#647067);line-height:1.55}.followups-empty{display:grid;justify-items:start;gap:8px}.followups-empty h2{margin:0;color:var(--text,#263329);font-size:18px}.followups-empty p{margin:0 0 6px}.followups-empty-inline{margin:0;font-size:13px;padding:14px}
       @media(max-width:560px){.followups-page{padding:18px 13px 48px}.followup-card{padding:13px}.followup-card-heading{display:grid}.followup-status{justify-self:start}}
     `}</style>
-  </main>;
+  </div>;
 }
