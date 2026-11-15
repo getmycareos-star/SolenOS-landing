@@ -821,6 +821,16 @@ await record("06 Companion context and Qwen output", async () => {
     true,
     "Companion must disclose complete context for the medication-dose question",
   );
+  assert.equal(
+    medicationAnswer.payload.lcr_context_coverage?.direct_medication_recall?.status,
+    "available",
+    "Medication recall must perform a person-scoped lookup of saved caregiver reports",
+  );
+  assert.equal(
+    medicationAnswer.payload.lcr_context_coverage?.direct_medication_recall?.history_complete,
+    true,
+    "Medication recall must disclose whether its direct source lookup covered the matching history",
+  );
 
   const documentAnswer = await request("/api/v1/conversation/message", {
     token: identity.token,
