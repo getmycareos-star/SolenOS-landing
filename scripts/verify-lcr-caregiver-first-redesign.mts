@@ -58,7 +58,11 @@ assert.doesNotMatch(currentUnderstanding, /careAttention\.needs_clarification\.m
 assert.match(currentUnderstanding, /Review useful questions/, "the summary routes unresolved clarification needs to one shared question list");
 assert.match(currentUnderstanding, /setClarificationOpen\(true\)/, "an explicit request for clarification opens the workflow");
 assert.match(currentUnderstanding, /Earlier care history/, "detailed care history is progressively disclosed");
-assert.match(currentUnderstanding, /careHistoryOpen \? <CareChangeHistoryPanel/, "the history panel is not mounted until requested");
+assert.match(
+  currentUnderstanding,
+  /careHistoryOpen \? \([\s\S]*?<ChangeIntelligencePanel \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>[\s\S]*?\) : null/,
+  "change assessments and the history panel mount together only when a caregiver opens earlier care history",
+);
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
 assert.match(currentUnderstanding, /internalCaptureRecordTypes/, "capture wrapper records must be excluded from caregiver change summaries");
