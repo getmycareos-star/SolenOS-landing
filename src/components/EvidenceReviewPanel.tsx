@@ -432,8 +432,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       if (!Array.isArray(result?.items)) throw new Error('Invalid review of how recent this information is history')
       setFreshnessAssessments(result.items)
     } catch {
-      setFreshnessAssessments([])
-      setFreshnessHistoryError('Past reviews are unavailable. This does not mean there are no past reviews.')
+      setFreshnessHistoryError('Past reviews couldn’t be loaded. Try again.')
     } finally {
       setFreshnessHistoryLoading(false)
     }
@@ -516,7 +515,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setRecordHistory(result as Record<string, unknown>)
     } catch {
-      setRecordHistoryError('No verified saved copy of the full care record is available for that date. This does not mean the record was empty.')
+      setRecordHistoryError('A verified copy of the care record isn’t available for that date.')
     } finally {
       setRecordHistoryLoading(false)
     }
@@ -532,7 +531,6 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       if (!Array.isArray(result)) throw new Error('Invalid review response')
       setReviews(result as Review[])
     } catch {
-      setReviews([])
       setHistoryUnavailable(true)
       setError('Saved evidence reviews could not be loaded. Check the connection and retry; no review history is assumed.')
     } finally {
@@ -570,7 +568,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setSourceIntegrity(result as SourceIntegrity)
     } catch {
       setSourceIntegrity(null)
-      setSourceIntegrityError('We couldn’t compare the saved wording with its original copy. This does not mean they match. Try again when connected.')
+      setSourceIntegrityError('We couldn’t compare the saved wording with its original copy. Try again when connected.')
     } finally {
       setSourceIntegrityLoading(false)
     }
@@ -599,7 +597,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
-      setHistoryReconstructionError('An earlier saved version could not be shown for that time. This does not establish that the evidence did not exist. A missing historical revision is not proof that the source was absent; try again or choose another date.')
+      setHistoryReconstructionError('An earlier saved version couldn’t be loaded for that time. Try again or choose another date.')
     } finally {
       setHistoryReconstructionLoading(false)
     }
@@ -936,7 +934,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{error}</p>}
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <h4 style={{ fontSize: 13, marginBottom: 5 }}>Past reviews</h4>
-      {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Past reviews could not be loaded. Try again; a failed load does not mean there are no reviews.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No past reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
+      {historyUnavailable && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>Past reviews couldn’t be loaded. Try again.</p>}{!historyUnavailable && reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No past reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
         <strong>{labels[review.review_type] || 'Saved review'}: {reviewStatusLabel(review.outcome)}</strong>
         <div>{new Date(review.created_at).toLocaleString()}</div>
         <p>{review.rationale}</p>
