@@ -40,8 +40,8 @@ assert.match(component, /formatWhen\(item\.occurred_at\).*formatWhen\(item\.reco
 assert.match(component, /View supporting information/);
 assert.match(component, /Review state:/);
 assert.match(component, /assessmentError/);
-assert.match(component, /changesError.*This does not mean nothing has changed/s);
-assert.match(component, /patternsError.*This does not mean nothing is repeating/s);
+assert.match(component, /changesError.*We couldn’t check the saved change history\. Try again\./s);
+assert.match(component, /patternsError.*We couldn’t check whether changes are repeating\. Try again\./s);
 assert.match(component, /assessment\.open_loops\.has_more/);
 assert.match(component, /assessment\?\.care_attention/);
 assert.match(component, /careAttention\.important_to_address/);
