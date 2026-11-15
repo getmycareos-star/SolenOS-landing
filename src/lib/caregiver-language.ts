@@ -195,6 +195,19 @@ export function caregiverStatusLabel(value?: string | null): string | null {
   return STATUS_LABELS[value.trim().toLowerCase()] ?? null;
 }
 
+/** Labels caregiver-confirmed situation states without presenting them as clinical conclusions. */
+export function caregiverSituationStateLabel(value?: string | null): string | null {
+  switch (value?.trim().toLowerCase()) {
+    case "active": return "Active";
+    case "worsening": return "Caregiver reports worsening";
+    case "improving": return "Caregiver reports improvement";
+    case "resolved": return "Resolved";
+    case "unknown": return "Needs more information";
+    case "evolved": return "Earlier situation";
+    default: return null;
+  }
+}
+
 export function caregiverInformationLabel(value?: string | null): string | null {
   if (!value) return null;
   return INFORMATION_LABELS[value.trim().toLowerCase()] ?? null;
