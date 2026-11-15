@@ -320,11 +320,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
                     </section>}
-                    {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="Care history coverage">
+                    {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
                       <p>{coverageIsPartial
                         ? 'This answer may not include all relevant saved care information. Some sources were unavailable, more matching records remain, or not all retrieved information fit into the answer.'
-                        : 'All matching records in the available care sources were searched for this question. This does not mean information missing from the record is known.'}</p>
+                        : 'The available saved notes and documents were checked for this question. This does not mean information missing from the record is known.'}</p>
                     </section>}
                     {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Saved information used">
                       <strong>Saved information used</strong>
@@ -336,7 +336,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         </div>
                       ))}
                     </section>}
-                    {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Sources for this answer">
+                    {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Saved information behind this answer">
                       <strong>Where this answer came from</strong>
                       <p>Each statement is checked against the wording in saved records. A match does not prove that a report is true or that two records came from different people.</p>
                       <p><strong>Details from saved information</strong></p>
@@ -360,10 +360,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.correction_note && <p>{source.correction_note}</p>}
                                   {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
                                   {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
-                                  {source.source_independence_status === 'shared_origin' && <p>This source shares its original with another saved record. It is not a separate report.</p>}
+                                  {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved item. It is not a separate report.</p>}
                                   {source.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
-                                  {source.source_independence_status === 'not_assessed' && <p>Whether this source is separate from other reports has not been checked.</p>}
-                                  {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {source.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
+                                  {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
+                                  {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {source.exact_wording_duplicate_count} other saved item(s). Do not count these as separate reports.</p>}
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Supporting note or document</strong>
