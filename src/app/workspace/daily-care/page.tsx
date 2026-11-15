@@ -675,7 +675,7 @@ export default function DailyCarePage() {
 
           <section aria-labelledby="daily-care-open-matters-title" className="daily-care-context-panel">
             <h2 id="daily-care-open-matters-title">{t("dailyCare.openMatters")}</h2>
-            <p className="daily-care-muted">Questions, missing information and disagreements that have not been marked as resolved.</p>
+            <p className="daily-care-muted">{t("dailyCare.openMattersDescription")}</p>
             {careItems.filter(isOpenMatter).length > 0 ? (
               <ul className="daily-care-record-list">
                 {careItems.filter(isOpenMatter).slice(0, 8).map((item, index) => (
@@ -690,28 +690,28 @@ export default function DailyCarePage() {
                 ))}
               </ul>
             ) : (
-              <p>No open matters are currently recorded in this view. This does not confirm that none exist.</p>
+              <p>{t("dailyCare.noOpenMatters")}</p>
             )}
           </section>
 
           <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
-            <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
+            <h2 id="daily-care-since-last-title">{t("dailyCare.sinceLastOpened")}</h2>
             <p className="daily-care-muted">
-              This summary uses records added since your previous visit on this device. It does not describe unrecorded care.
+              {t("dailyCare.sinceLastOpenedDescription")}
             </p>
             {sinceLastOpenItems === null ? (
-              <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
+              <p>{t("dailyCare.firstVisit")}</p>
             ) : sinceLastOpenItems.length > 0 ? (
               <>
-                <p><strong>{sinceLastOpenItems.length}</strong> new care record{sinceLastOpenItems.length === 1 ? "" : "s"} added since {lastOpenedAt ? displayCareTime(lastOpenedAt) : "your previous visit"}.</p>
+                <p><strong>{sinceLastOpenItems.length}</strong> {t(sinceLastOpenItems.length === 1 ? "dailyCare.newRecord" : "dailyCare.newRecords")} {t("dailyCare.recordsAddedSince")} {lastOpenedAt ? displayCareTime(lastOpenedAt) : t("dailyCare.previousVisit")}.</p>
                 <ul className="daily-care-record-list">
                   {([
-                    ["observations", "Observation records"],
-                    ["medicines", "Medication event records"],
-                    ["measurements", "Measurement records"],
-                    ["checkIns", "Quick check-ins"],
-                    ["handoffs", "Care handoffs"],
-                    ["updates", "Other care updates"],
+                    ["observations", "observationRecords"],
+                    ["medicines", "medicationEventRecords"],
+                    ["measurements", "measurementRecords"],
+                    ["checkIns", "quickCheckIns"],
+                    ["handoffs", "careHandoffs"],
+                    ["updates", "otherCareUpdates"],
                   ] as const).filter(([key]) => sinceLastOpenItems.some((item) => classifyHistoryRecord(item) === key))
                     .map(([key, label]) => {
                       const matching = sinceLastOpenItems.filter((item) => classifyHistoryRecord(item) === key);
@@ -720,7 +720,7 @@ export default function DailyCarePage() {
                         <li key={key}>
                           {targetId ? (
                             <a href={`#daily-care-event-${targetId}`}>
-                              {matching.length} {label.toLowerCase()}
+                              {matching.length} {t(`dailyCare.${label}`)}
                             </a>
                           ) : (
                             <>{matching.length} {label.toLowerCase()}</>
@@ -729,22 +729,22 @@ export default function DailyCarePage() {
                       );
                     })}
                 </ul>
-                <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
+                <p className="daily-care-muted">{t("dailyCare.selectCount")}</p>
               </>
             ) : (
-              <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
+              <p>{t("dailyCare.noNewRecords")}</p>
             )}
-            {historyMayBeTruncated && <p className="daily-care-muted">The summary is based on the latest 200 history records. Open full history to check older entries.</p>}
+            {historyMayBeTruncated && <p className="daily-care-muted">{t("dailyCare.historyLimit")}</p>}
           </section>
 
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
             <h2 id="daily-care-today-title">{t("dailyCare.careToday")}</h2>
-            <p className="daily-care-muted">Updates saved today, in time order. No daily entry is required.</p>
+            <p className="daily-care-muted">{t("dailyCare.updatesSavedToday")}</p>
             {medicationConcern && (
               <div role="status" className="daily-care-medication-confirmation">
                 <strong>{t("dailyCare.needsConfirmation")}</strong>
                 <p>{displayHistoryText(medicationConcern)}</p>
-                <p>A medication change was reported, but the new dose has not been confirmed. Check the doctor’s instructions or contact the prescribing professional before relying on a different dose.</p>
+                <p>{t("dailyCare.medicationChangeNotConfirmed")}</p>
               </div>
             )}
             {historyError ? (
@@ -769,13 +769,13 @@ export default function DailyCarePage() {
                 );
               })
             ) : (
-              <p>No updates have been saved today. That does not mean nothing happened, and you do not need to add an entry.</p>
+              <p>{t("dailyCare.noUpdatesToday")}</p>
             )}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
-            <h2 id="daily-care-capture-title">Anything different today?</h2>
-            <p className="daily-care-muted">Share something, check in, or leave things as they are. Nothing is required.</p>
+            <h2 id="daily-care-capture-title">{t("dailyCare.anythingDifferent")}</h2>
+            <p className="daily-care-muted">{t("dailyCare.shareSomething")}</p>
             <Button
               variant="primary"
               aria-expanded={captureOpen}
@@ -788,19 +788,19 @@ export default function DailyCarePage() {
                 }
               }}
             >
-              {captureOpen ? "Close capture" : "Share something"}
+              {captureOpen ? t("dailyCare.closeCapture") : t("dailyCare.shareSomethingButton")}
             </Button>
             {captureOpen && (
               <div className="daily-care-capture-state">
                 {!captureMode ? (
-                  <div role="group" aria-label="Choose what you want to share" className="daily-care-capture-options">
+                  <div role="group" aria-label={t("dailyCare.chooseShare")} className="daily-care-capture-options">
                     {([
-                      { value: "something", label: "Something happened", detail: "Share an observation in your own words." },
-                      { value: "medicine", label: "Medicine", detail: "Record what happened with a medicine." },
-                      { value: "measurement", label: "Measurement", detail: "Record a reading that was actually taken." },
-                      { value: "photo", label: "Photograph", detail: "Add a photo as care-record evidence." },
-                      { value: "checkin", label: "Quick check-in", detail: "Share one overall impression of today." },
-                      { value: "note", label: "Note", detail: "Save a short note without categorizing it." },
+                      { value: "something", label: t("dailyCare.somethingHappened"), detail: t("dailyCare.somethingDetail") },
+                      { value: "medicine", label: t("dailyCare.captureMedicine"), detail: t("dailyCare.medicineDetail") },
+                      { value: "measurement", label: t("dailyCare.captureMeasurement"), detail: t("dailyCare.measurementDetail") },
+                      { value: "photo", label: t("dailyCare.photograph"), detail: t("dailyCare.photographDetail") },
+                      { value: "checkin", label: t("dailyCare.quickCheckIn"), detail: t("dailyCare.quickCheckInDetail") },
+                      { value: "note", label: t("dailyCare.captureNote"), detail: t("dailyCare.noteDetail") },
                     ] as const).map((option) => (
                       <button
                         key={option.value}
@@ -817,14 +817,14 @@ export default function DailyCarePage() {
                   <>
                     <div className="daily-care-capture-mode-heading">
                       <strong>{({
-                        something: "Something happened",
-                        medicine: "Medicine",
-                        measurement: "Measurement",
-                        photo: "Photograph",
-                        checkin: "Quick check-in",
-                        note: "Note",
+                        something: t("dailyCare.somethingHappened"),
+                        medicine: t("dailyCare.captureMedicine"),
+                        measurement: t("dailyCare.captureMeasurement"),
+                        photo: t("dailyCare.photograph"),
+                        checkin: t("dailyCare.quickCheckIn"),
+                        note: t("dailyCare.captureNote"),
                       } as const)[captureMode]}</strong>
-                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>Back to choices</Button>
+                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>{t("dailyCare.backToChoices")}</Button>
                     </div>
                     {captureMode === "checkin" ? (
                       <QuickDailyCheckIn />
@@ -845,9 +845,9 @@ export default function DailyCarePage() {
             <div className="daily-care-history-heading">
               <div>
                 <h2 id="daily-care-history-title">{t("dailyCare.recentHistory")}</h2>
-                <p className="daily-care-muted">Recorded events, in time order. Missing days do not mean nothing happened.</p>
+                <p className="daily-care-muted">{t("dailyCare.historyDescription")}</p>
               </div>
-              <Link href="/workspace/timeline" className="care-reminders-inline-link">View all history</Link>
+              <Link href="/workspace/timeline" className="care-reminders-inline-link">{t("dailyCare.viewAllHistory")}</Link>
             </div>
             {historyItems.length > 0 ? (
               <ul className="daily-care-record-list">
