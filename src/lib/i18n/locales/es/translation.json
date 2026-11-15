@@ -141,7 +141,14 @@
     "followupsDescription": "Los seguimientos abiertos permanecen en su registro. Cuidado Diario no crea una copia.",
     "noFollowups": "No hay seguimientos pendientes registrados. Esto no confirma que no haya ninguna acción pendiente.",
     "originalFiles": "SolenOS conserva los archivos originales e informa de lo que ocurrió durante el procesamiento.",
-    "noDocuments": "Todavía no se han subido documentos desde esta cuenta."
+    "noDocuments": "Todavía no se han subido documentos desde esta cuenta.",
+    "previousVisit": "tu visita anterior",
+    "observationRecords": "registros de observaciones",
+    "medicationEventRecords": "registros de eventos de medicación",
+    "measurementRecords": "registros de mediciones",
+    "quickCheckIns": "registros rápidos",
+    "careHandoffs": "traspasos de cuidados",
+    "otherCareUpdates": "otras actualizaciones de cuidados"
   },
   "changeIntelligence": {
     "eyebrow": "COMPRENSIÓN A LO LARGO DEL TIEMPO",
