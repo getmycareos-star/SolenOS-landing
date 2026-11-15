@@ -115,10 +115,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               }
             : current);
           setCareContinuityExecution({ stages: execution, workflow: "daily_care_entry" });
+          const deltaCompleted = ["completed", "not_applicable"].includes(execution.delta_reconciliation || "");
+          const longitudinalProcessingCompleted = ["completed", "not_applicable"].includes(execution.longitudinal_processing || "");
           setChangeIntelligenceStatus(
             execution.reconciliation === "completed"
               && execution.projection === "verified"
               && execution.longitudinal_retrieval === "verified"
+              && deltaCompleted
+              && longitudinalProcessingCompleted
               ? "available"
               : "unavailable"
           );
