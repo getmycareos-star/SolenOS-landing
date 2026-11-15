@@ -5972,3 +5972,34 @@ html[data-solenos-theme="dark"] .care-reminders-back,
 html[data-solenos-theme="dark"] .care-reminders-settings-link {
   color: #b9d5b5 !important;
 }
+
+
+/* Light-mode action contrast: make sage controls visibly distinct from white surfaces. */
+html:not([data-solenos-theme="dark"]) {
+  --solenos-sage-button: #9ab994;
+  --solenos-sage-button-hover: #89aa83;
+  --solenos-button-ink: #17251c;
+}
+html:not([data-solenos-theme="dark"]) .solenos-shell .solenos-btn--primary,
+html:not([data-solenos-theme="dark"]) .solenos-shell .workspace-primary,
+html:not([data-solenos-theme="dark"]) .solenos-shell .el-button,
+html:not([data-solenos-theme="dark"]) .solenos-shell .structured-daily-capture button,
+html:not([data-solenos-theme="dark"]) .solenos-shell button[style*="var(--accent)"],
+html:not([data-solenos-theme="dark"]) .solenos-shell button[style*="var(--trust)"],
+html:not([data-solenos-theme="dark"]) .solenos-shell [role="button"][style*="var(--accent)"],
+html:not([data-solenos-theme="dark"]) .solenos-shell [role="button"][style*="var(--trust)"] {
+  background-color: var(--solenos-sage-button) !important;
+  border: 2px solid #587a55 !important;
+  color: var(--solenos-button-ink) !important;
+  box-shadow: 0 2px 0 rgba(23, 43, 32, 0.16), 0 3px 9px rgba(23, 43, 32, 0.1);
+}
+html:not([data-solenos-theme="dark"]) .solenos-shell .solenos-btn--primary:hover:not(:disabled),
+html:not([data-solenos-theme="dark"]) .solenos-shell .workspace-primary:hover:not(:disabled),
+html:not([data-solenos-theme="dark"]) .solenos-shell .el-button:hover:not(:disabled),
+html:not([data-solenos-theme="dark"]) .solenos-shell .structured-daily-capture button:hover:not(:disabled),
+html:not([data-solenos-theme="dark"]) .solenos-shell button[style*="var(--accent)"]:hover:not(:disabled),
+html:not([data-solenos-theme="dark"]) .solenos-shell button[style*="var(--trust)"]:hover:not(:disabled) {
+  background-color: var(--solenos-sage-button-hover) !important;
+  border-color: #496b47 !important;
+  color: var(--solenos-button-ink) !important;
+}
