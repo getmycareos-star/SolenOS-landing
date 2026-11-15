@@ -78,6 +78,8 @@ assert.match(currentUnderstanding, /captureRecord\.notes/, "serialized capture d
 assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "care-source descriptions must pass through the caregiver-readable parser");
 assert.ok(currentUnderstanding.includes("if (!item.description?.trim()) return null;"), "missing current-care descriptions are omitted instead of rendered as empty-state filler");
 assert.ok(currentUnderstanding.includes("Reported as current"), "medication status is explicitly qualified as a report, not a verified instruction");
+assert.ok(currentUnderstanding.includes("Reported amount: "), "medication doses and strengths are labelled as reported values, not verified prescriptions");
+assert.ok(currentUnderstanding.includes("Reported medication: "), "extracted medication names are labelled as caregiver-reported information");
 assert.ok(currentUnderstanding.includes("Medication details are copied from saved reports."), "medication details carry a clear provenance and safety limitation");
 assert.ok(currentUnderstanding.includes("The original note could not be displayed."), "source display failures are stated honestly");
 assert.match(currentUnderstanding, /<details className="lcr-entry-status">\s*<summary>More about this item<\/summary>/, "priority provenance and diagnostics stay collapsed until requested");
