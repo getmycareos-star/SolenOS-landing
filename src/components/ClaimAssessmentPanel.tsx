@@ -305,8 +305,17 @@ export default function ClaimAssessmentPanel() {
         dependency_type: dependencyType,
         rationale: dependencyRationale.trim(),
       });
-      setDependencyRationale("");
-      setDependencyNotice("The connection was saved. This records how the details are related; it does not prove that either detail is true.");
+    } catch {
+      setDependencyError("We couldn't confirm that this link was saved. Refresh related care details before trying again.");
+      setDependencySaving(false);
+      return;
+    }
+
+    // The write endpoint confirmed persistence. A later read failure must not
+    // reverse that receipt or claim that no change was made.
+    setDependencyRationale("");
+    setDependencyNotice("The link was saved. This records how the details are related; it does not prove that either detail is true.");
+    try {
       const result = await getJSON(
         `/uncertainty/claims/${encodeURIComponent(selectedClaim.id)}/dependencies`,
       );
@@ -320,7 +329,7 @@ export default function ClaimAssessmentPanel() {
       }
       setDependencies(rows);
     } catch {
-      setDependencyError("This connection could not be saved. It may already exist or conflict with another care detail. No change was made.");
+      setDependencyError("The link was saved, but related care details could not be refreshed. Try reloading this section.");
     } finally {
       setDependencySaving(false);
     }
