@@ -7,11 +7,11 @@ export default function RestrictedRolePage({ role }: Props) {
     <main style={{ padding: 24, maxWidth: 600, margin: '0 auto' }}>
       <h1>{role} access is not available yet</h1>
       <p role="alert">
-        SolenOS has not verified a server-issued identity and permissions for this role.
-        This route is blocked rather than showing an unverified or demo dashboard.
+        We can't open this area because access has not been confirmed yet.
+        Your care information is protected.
       </p>
-      <p>Caregiver access remains available through the private anonymous care session.</p>
-      <a href="/" style={{ color: 'var(--trust)' }}>Return to caregiver workspace</a>
+      <p>You can still use your Care Record.</p>
+      <a href="/workspace" style={{ color: 'var(--trust)' }}>Return to your Care Record</a>
     </main>
   );
 }
