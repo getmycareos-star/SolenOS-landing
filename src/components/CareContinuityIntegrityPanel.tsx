@@ -64,19 +64,19 @@ const INTERNAL_REVISION_TARGET_TYPES = new Set([
 function simpleRecordLabel(value?: string | null): string {
   if (!value) return "Not recorded";
   return ({
-    current: "Still current",
+    current: "Still applies", 
     stale: "May be out of date",
     historical: "Older information",
-    undetermined: "Not sure",
-    unknown: "Not yet known",
+    undetermined: "Not sure yet", 
+    unknown: "Not sure yet", 
     not_assessed: "Not checked",
     reported: "Reported by caregiver",
-    observed: "Direct observation",
-    verified: "Verified through review",
-    inferred: "Interpretation, not verified",
-    uncertain: "Still uncertain",
-    conflicting: "Conflicting information",
-    missing: "Missing information",
+    observed: "Seen by a caregiver", 
+    verified: "Checked against a source", 
+    inferred: "Possible explanation", 
+    uncertain: "Not sure yet", 
+    conflicting: "Reports do not match", 
+    missing: "Not recorded", 
     accepted: "Reviewed",
     rejected: "Not accepted",
     superseded: "Replaced by newer information",
@@ -86,6 +86,9 @@ function simpleRecordLabel(value?: string | null): string {
     deleted: "Removed",
     restored: "Restored",
     current_state: "Current care information",
+    time_bound_observation: "Information for a specific time",
+    within_review_window: "Recently checked",
+    needs_confirmation: "Needs a fresh check", 
     historical_observation: "Earlier observation",
   } as Record<string, string>)[value] ?? "Status not available";
 }
