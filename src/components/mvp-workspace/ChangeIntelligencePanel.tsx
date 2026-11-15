@@ -40,6 +40,7 @@ export function ChangeIntelligencePanel() {
   const [patternDetails, setPatternDetails] = useState<Record<string, PatternDetail>>({});
   const [patternDetailErrors, setPatternDetailErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
@@ -160,14 +161,35 @@ export function ChangeIntelligencePanel() {
     }
   }
 
+  async function refreshSavedAssessments() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setWarning(null);
+    try {
+      await reassessPersistedChangeIntelligence();
+      const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
+      setChanges(changeRows.filter((row) => row.is_active));
+      setPatterns(patternRows.filter((row) => row.is_active));
+      setChangeOffset(0);
+      setPatternOffset(0);
+      setHasMoreChanges(changeRows.length === 100);
+      setHasMorePatterns(patternRows.length === 100);
+      setDetails({});
+      setDetailErrors({});
+      setPatternDetails({});
+      setPatternDetailErrors({});
+      setExpandedChangeId(null);
+      setExpandedPatternId(null);
+    } catch {
+      setWarning("Saved assessments could not be refreshed. The last saved results remain available.");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
     async function load() {
-      try {
-        await reassessPersistedChangeIntelligence();
-      } catch {
-        if (active) setWarning("A fresh reassessment could not be completed. Previously persisted results will still be loaded; no result is inferred from this failure.");
-      }
       try {
         const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
         if (!active) return;
@@ -185,7 +207,11 @@ export function ChangeIntelligencePanel() {
       }
     }
     void load();
+
     return () => { active = false; };
+  }, []);
+
+  return () => { active = false; };
   }, []);
 
   return (
@@ -195,6 +221,14 @@ export function ChangeIntelligencePanel() {
           <p className="lcr-eyebrow">LONGITUDINAL UNDERSTANDING</p>
           <h2 id="change-intelligence-heading">Changes and patterns</h2>
         </div>
+        <button
+          type="button"
+          className="lcr-text-action"
+          disabled={refreshing || loading}
+          onClick={() => void refreshSavedAssessments()}
+        >
+          {refreshing ? "Refreshing saved assessments…" : "Refresh saved assessments"}
+        </button>
       </div>
       {loading ? <p role="status" className="panel-muted">Reviewing saved care changes…</p> : null}
       {warning ? <p role="status" className="panel-muted">{warning}</p> : null}
