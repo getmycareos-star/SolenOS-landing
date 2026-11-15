@@ -129,11 +129,11 @@ assert(
 );
 
 assert(
-  !/CareDeltaPanel|deltaAutoInput|care-delta\\/reconcile/.test(dailyCapture),
+  !/CareDeltaPanel|deltaAutoInput|care-delta\/reconcile/.test(dailyCapture),
   "Daily Care must not launch a second browser-side Delta reconciliation; the persisted backend worker owns the authoritative processing path",
 );
 assert(
-  /window\\.dispatchEvent\\(new Event\\('careRecordUpdated'\\)\\)/.test(dailyCapture),
+  /window\.dispatchEvent\(new Event\('careRecordUpdated'\)\)/.test(dailyCapture),
   "a confirmed Daily Care save must refresh the existing persisted LCR projections",
 );
 
