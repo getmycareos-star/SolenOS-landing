@@ -194,7 +194,7 @@ try {
   await pageA.locator("#account-email").fill(email);
   await pageA.locator("#account-password").fill(password);
   await pageA.getByRole("button", { name: "Sign in", exact: true }).click();
-  await pageA.getByText("Signed in. Your existing care record is available in this session.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageA.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
 
   const afterRegistration = await pageA.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
