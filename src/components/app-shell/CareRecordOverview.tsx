@@ -153,7 +153,7 @@ export function CareRecordOverview() {
                   </article>
                 ))}
               </div>
-            )}
+            ) : null}
           </section>
 
           <p style={{ margin: 0, color: "#788579", fontSize: 12, lineHeight: 1.6 }}>This view shows saved information only. It does not diagnose or decide which conflicting report is correct.</p>
