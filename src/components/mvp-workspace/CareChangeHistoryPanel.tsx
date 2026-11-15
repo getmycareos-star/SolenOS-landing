@@ -72,25 +72,47 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
   const [runs, setRuns] = useState<DeltaRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingEarlier, setLoadingEarlier] = useState(false);
+  const [earlierError, setEarlierError] = useState("");
 
   const load = useCallback(async () => {
     if (!personId) {
       setRuns([]);
+      setHasMore(false);
       setLoading(false);
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const result = await getJSON(`/care-delta/runs/${encodeURIComponent(personId)}?limit=20`);
+      const result = await getJSON(`/care-delta/runs/${encodeURIComponent(personId)}?limit=20&offset=0`);
       if (!Array.isArray(result)) throw new Error("Unexpected care-change history response");
       setRuns(result as DeltaRun[]);
+      setHasMore(result.length === 20);
+      setEarlierError("");
     } catch {
       setError("Earlier care-change comparisons could not be loaded. Your saved care information has not been changed.");
     } finally {
       setLoading(false);
     }
   }, [personId]);
+
+  const loadEarlier = useCallback(async () => {
+    if (!personId || loadingEarlier || !hasMore) return;
+    setLoadingEarlier(true);
+    setEarlierError("");
+    try {
+      const result = await getJSON(`/care-delta/runs/${encodeURIComponent(personId)}?limit=20&offset=${runs.length}`);
+      if (!Array.isArray(result)) throw new Error("Unexpected care-change history response");
+      setRuns((current) => [...current, ...(result as DeltaRun[])]);
+      setHasMore(result.length === 20);
+    } catch {
+      setEarlierError("Earlier comparisons could not be loaded. The comparisons already shown are still available.");
+    } finally {
+      setLoadingEarlier(false);
+    }
+  }, [hasMore, loadingEarlier, personId, runs.length]);
 
   useEffect(() => {
     void load();
@@ -197,6 +219,12 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
           );
         })}
       </ol>
+      {earlierError && <p role="alert">{earlierError}</p>}
+      {hasMore && (
+        <button type="button" onClick={() => void loadEarlier()} disabled={loadingEarlier}>
+          {loadingEarlier ? "Loading earlier comparisons…" : "Load earlier comparisons"}
+        </button>
+      )}
       <button type="button" onClick={() => void load()}>Refresh saved comparisons</button>
     </section>
   );
