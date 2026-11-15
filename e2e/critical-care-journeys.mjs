@@ -1190,6 +1190,9 @@ await record("clarification questions are linked, answerable, skippable and dura
   const skipQuestion = await createQuestion(skipQuestionText);
 
   const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
+  // Clarification is intentionally progressive disclosure: the long-form review
+  // workflow must not expand into the caregiver's first-screen summary.
+  await page.getByText("Questions that may help clarify care", { exact: true }).click();
   await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().click();
