@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, AlertCircle, Clock3, FileText, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type OpenLoop = {
   id: string;
@@ -124,7 +124,7 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
     </div>
     {expanded && <div className="followup-detail">
       <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
-      {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverSafeAssistantText(record.source)} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
+      {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No notes or documents are linked here."}</p>
       {item.review_at && <p><strong>Next recorded review</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
