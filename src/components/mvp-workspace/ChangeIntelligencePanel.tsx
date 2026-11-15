@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
 import {
   getPersistedChangeDetail,
   getPersistedPatternDetail,
@@ -16,10 +16,20 @@ import {
 } from "@/api/change-intelligence";
 
 function caregiverChangeLabel(change: PersistedChange): string {
-  // A database "emergence" with unknown/partial historical observation is only
-  // first appearance in available records, not proof that the event began now.
+  // A first appearance in an incomplete history is not proof of a new onset.
   if (change.change_type === "emergence" && change.baseline_coverage_status !== "covered") {
     return "First observed";
+  }
+  if (change.significance_verdict === "insufficient_evidence") {
+    return "Needs more information";
+  }
+  // Frequency changes require comparable observation coverage. Without it,
+  // show the uncertainty instead of presenting a directional change as settled.
+  if (
+    ["increase", "decrease", "cessation", "disappearance", "recurrence", "stabilization"].includes(change.change_type) &&
+    (change.baseline_coverage_status !== "covered" || change.current_coverage_status !== "covered")
+  ) {
+    return "Needs more information";
   }
   return caregiverStatusLabel(change.change_type) ?? "Care change";
 }
@@ -248,8 +258,9 @@ export function ChangeIntelligencePanel() {
                 <div className="lcr-entry-heading">
                   <h3>{caregiverChangeLabel(change)}</h3>
                   <span>{caregiverStatusLabel(change.confirmation_status) ?? "Needs review"}</span>
+                  {change.significance_verdict ? <span>{caregiverStatusLabel(change.significance_verdict) ?? "Not yet assessed"}</span> : null}
                 </div>
-                {change.explanation ? <p>{caregiverSafeAssistantText(change.explanation) ?? "A possible change was found in the saved care information."}</p> : <p>{caregiverSafeAssistantText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
+                {change.explanation ? <p>{caregiverSafeChangeText(change.explanation) ?? "A possible change was found in the saved care information. Review the linked records before drawing a conclusion."}</p> : <p>{caregiverSafeChangeText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
                 <p className="panel-muted">{formatWindow(change.comparison_window_start, change.comparison_window_end)}</p>
                 <p className="panel-muted">
                   Supporting saved information: {change.evidence_ids.length}.
