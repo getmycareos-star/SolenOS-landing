@@ -702,13 +702,13 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Notes and documents behind care information</h3>
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Try loading again</button></p>}
     {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading saved notes and documents…</p>}
-    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Reviews are saved with the reason and date. They do not turn a caregiver report into an independently confirmed fact.</p>
+    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Reviews are saved with the reason and date. A caregiver review does not mean a healthcare professional has confirmed the information.</p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Check whether information is still up to date</summary>
-      <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Choose a review rule set by the caregiver. There is no single time limit for every kind of information. A review does not prove that information is true or still applies today.</p>
+      <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Choose how often this information should be checked. Different kinds of information may need different check-in times. A review does not prove that information is true or still applies today.</p>
       {freshnessPolicyLoading && <p role="status">Loading saved review rules…</p>}
       {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry review rules</button></p>}
-      <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>Choose a saved review rule
+      <label style={{ display: 'block', fontSize: 12, marginTop: 10 }}>How often should this information be checked?
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
           <option value="">Choose a review rule</option>
           {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{reviewStatusLabel(policy.domain_key)} · {policy.max_age_days == null ? 'No time limit set' : 'Review after ' + policy.max_age_days + ' days'}</option>)}
@@ -716,7 +716,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       </label>
       <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Reviewing…' : 'Review this information'}</button>
       {freshnessPolicyNotice && <p role="status" style={{ fontSize: 12 }}>{freshnessPolicyNotice}</p>}
-      <h4 style={{ fontSize: 12, marginBottom: 4 }}>Past reviews of how current this information is</h4>
+      <h4 style={{ fontSize: 12, marginBottom: 4 }}>Earlier checks</h4>
       {freshnessHistoryLoading && <p role="status" style={{ fontSize: 12 }}>Loading past reviews…</p>}
       {freshnessHistoryError && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{freshnessHistoryError} <button type="button" style={button} onClick={() => void loadFreshnessHistory()} disabled={freshnessHistoryLoading}>Retry history</button></p>}
       {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No earlier reviews were found for this information.</p>}
@@ -746,13 +746,13 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How this information was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.origin_device_ref ? 'A device was recorded' : 'Not recorded'}</dd></div>
+          
           <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Original file or link</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.transfer_reference ? 'Recorded' : 'Not recorded'}</dd></div>
+          
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date added</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Original file or link</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference ? 'An original reference is saved' : 'Not recorded'}</dd></div>
+          
           <div><dt style={{ color: 'var(--text-secondary)' }}>Related original note or document</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
