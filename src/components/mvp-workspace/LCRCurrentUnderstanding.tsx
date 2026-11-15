@@ -1175,7 +1175,7 @@ export function LCRCurrentUnderstanding() {
     <section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">
       <div className="lcr-section-heading">
         <div>
-          <p className="lcr-eyebrow">CURRENT CARE SUMMARY</p>
+          <p className="lcr-eyebrow">YOUR CARE</p>
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
           <p>The latest care information, what needs attention, and what is still unknown.</p>
         </div>
@@ -1216,7 +1216,7 @@ export function LCRCurrentUnderstanding() {
             <h4>Medication instruction needs confirmation</h4>
             <p>Different reports about a medication do not match. The record does not establish the current instruction. Please contact the prescribing clinician or pharmacist promptly to confirm it. SolenOS has not changed the medication record.</p>
             <small>When the report was recorded: {formatWhen(item.recorded_at)}</small>
-            <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+            <small>From: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No note or document is linked"}</small>
           </div>
         ))}
         {assessment?.open_loops && (
@@ -1248,10 +1248,10 @@ export function LCRCurrentUnderstanding() {
                           {item.verification_rule && <small>How completion was checked: {caregiverSafeAssistantText(item.verification_rule) || "No further details are available."}</small>}
                           {item.outcome_status && <small>Recorded outcome status: {caregiverStatusLabel(item.outcome_status) || "Status not available"}</small>}
                           {item.evidence_ids.length > 0
-                            ? <small>Sources: {item.evidence_ids.length} saved item(s)</small>
+                            ? <small>From: {item.evidence_ids.length} saved item(s)</small>
                             : <small>This item was marked for follow-up in the saved record, but no supporting information is linked here.</small>}
                           {source?.source_label && <small>Shared by: {caregiverSafeAssistantText(source.source_label) || "Not recorded"}</small>}
-                          {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
+                          {source?.source_passage && <details><summary>Read the original note</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
                           {source && source.claim_count > 0 && <small>{source.claim_count} related report(s). Review the saved details before deciding whether they differ.</small>}
                         </details>
                         {actionForSuggestion(item) ? (
@@ -1266,10 +1266,10 @@ export function LCRCurrentUnderstanding() {
                             }}>Review suggested follow-up for approval</button>
                             {reviewingSuggestionId === suggestionReference(item) && (
                               <div className="lcr-current-fact" aria-label="Review suggested action before approval">
-                                <strong>Suggested follow-up — not a registered action</strong>
+                                <strong>Suggested next step — not yet agreed</strong>
                                 <p>Proposed action: {caregiverSafeAssistantText(item.request_text) || "A follow-up request was saved."}</p>
                                 <p>Why suggested: {(item.priority_reasons ?? []).map(caregiverSafeAssistantText).filter(Boolean).join("; ") || caregiverSafeAssistantText(item.description) || "A follow-up request is saved in the care record."}</p>
-                                <p>Sources: {item.evidence_ids.length} saved item(s)</p>
+                                <p>From: {item.evidence_ids.length} saved item(s)</p>
                                 <p>What this does not tell us: This information is marked {caregiverLabel(item.epistemic_status)}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
                                 <p>Responsible caregiver: the caregiver authenticated in this session. No other caregiver will be assigned.</p>
                                 <p>Due date: {item.due_at ? `The source record contains ${formatWhen(item.due_at)}; no reminder will be created unless you explicitly choose one below.` : "No supported due date is recorded."}</p>
@@ -1375,7 +1375,7 @@ export function LCRCurrentUnderstanding() {
 
             {assessment.coverage.records_examined > 0 && (
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-wait-heading">
-              <h4 id="lcr-attention-wait-heading">Previously postponed</h4>
+              <h4 id="lcr-attention-wait-heading">Put off for now</h4>
               {canWaitItems.length === 0 ? (
                 <p>No care items are currently recorded as postponed. Unresolved items are not automatically safe to put off.</p>
               ) : (
@@ -1397,7 +1397,7 @@ export function LCRCurrentUnderstanding() {
                         : <small>No reason for the priority change was saved. Review it again if the care information changes.</small>}
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                       <small>Where this came from: {caregiverLabel(item.source)}</small>
-                      <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+                      <small>From: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No note or document is linked"}</small>
                     </li>
                   ))}
                   </ul>
@@ -1408,9 +1408,9 @@ export function LCRCurrentUnderstanding() {
 
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
-              <h4 id="lcr-attention-watch-heading">Changes to keep an eye on</h4>
-              <p>These are changes or uncertainties found in the saved history. They are not automatically tasks or follow-ups. SolenOS tracks unresolved care matters and their progress on the Follow-ups screen.</p>
-              <Link href="/workspace/open-loops" className="lcr-text-action">Open Follow-ups <span aria-hidden="true">→</span></Link>
+              <h4 id="lcr-attention-watch-heading">Changes to watch</h4>
+              <p>These are changes or things that are still unclear in the saved care history. They are not automatically tasks. You can see items that need follow-up on the Follow-ups screen.</p>
+              <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
               {changesError && <p role="status">We couldn’t check the saved change history. This does not mean nothing has changed.</p>}
               {patternsError && <p role="status">We couldn’t check whether any changes are repeating. This does not mean nothing is repeating.</p>}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
@@ -1425,7 +1425,7 @@ export function LCRCurrentUnderstanding() {
                       <p>This was marked as a usual or starting point for this person. It is not a comparison with other people.</p>
                       <p className="lcr-entry-status">Source: {caregiverLabel(item.source)} · Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)}</p>
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
-                      <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+                      <small>From: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No note or document is linked"}</small>
                       {item.interpretation_limit && <small>{caregiverSafeAssistantText(item.interpretation_limit) || "The available information may not tell the whole story."}</small>}
                     </li>
                   ))}
@@ -1440,7 +1440,7 @@ export function LCRCurrentUnderstanding() {
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                         {source?.description && <p>{displayDescription(source.description)}</p>}
                         <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
-                        <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+                        <small>From: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No note or document is linked"}</small>
                         <small>Where this came from: {caregiverLabel(item.source)}</small>
                       </li>
                     );
@@ -1454,7 +1454,7 @@ export function LCRCurrentUnderstanding() {
                       {item.owner && <small>Responsible person: {item.owner}</small>}
                       {item.due_at && <small>Due date: {formatWhen(item.due_at)}</small>}
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
-                      <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+                      <small>From: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No note or document is linked"}</small>
                       <small>Where this came from: {caregiverLabel(item.source)}</small>
                     </li>
                   ))}
@@ -1464,7 +1464,7 @@ export function LCRCurrentUnderstanding() {
                       <p>This information is still missing. That alone does not tell us how urgent it is.</p>
                       <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
-                      <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+                      <small>From: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No note or document is linked"}</small>
                       <small>Where this came from: {caregiverLabel(item.source)}</small>
                     </li>
                   ))}
@@ -1479,9 +1479,9 @@ export function LCRCurrentUnderstanding() {
                         <p>{disputed ? "Reports do not match, and the difference has not been resolved. Neither report is treated as correct." : "This still needs to be checked."}</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                         {source?.description && <p>{displayDescription(source.description)}</p>}
-                        {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
+                        {source?.source_passage && <details><summary>Read the original note</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
                         <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
-                        <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
+                        <small>From: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No note or document is linked"}</small>
                         <small>Where this came from: {caregiverLabel(item.source)}</small>
                       </li>
                     );
@@ -1503,7 +1503,7 @@ export function LCRCurrentUnderstanding() {
                               : " This possible change has not been confirmed."}
                       </p>
                       <small>Dates compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
-                      <small>Sources: {change.evidence_ids.length} saved item(s)</small>
+                      <small>From: {change.evidence_ids.length} saved item(s)</small>
                       <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
                         {expandedChangeId === change.id ? "Hide supporting records" : "View supporting records"}
                       </button>
@@ -1541,7 +1541,7 @@ export function LCRCurrentUnderstanding() {
 
             {(registeredActions.length > 0 || Boolean(registeredActionsError) || (assessment?.coverage.records_examined ?? 0) > 0) && (
             <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
-              <h4 id="lcr-registered-actions-heading">Agreed actions</h4>
+              <h4 id="lcr-registered-actions-heading">Agreed next steps</h4>
               {registeredActionsError && <p role="alert">Agreed actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
               {!registeredActionsError && registeredActions.length === 0 && <p>No actions have been agreed yet.</p>}
               {registeredActions.length > 0 && (
@@ -1551,7 +1551,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{caregiverSafeAssistantText(action.normalized_action) || "Saved care action"}</strong>
                       <p className="lcr-entry-status">Agreed action · {caregiverStatusLabel(action.status) || "Status not available"}</p>
                       <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"} · Created by: {action.created_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}</small>
-                      <small>Sources: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)</small>
+                      <small>From: {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)</small>
                       {action.deadline && <small>Due date: {formatWhen(action.deadline)}</small>}
                       {action.linked_reminder_status && <small>Linked reminder: {caregiverStatusLabel(action.linked_reminder_status) || "Status not available"} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
                       {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
@@ -1593,7 +1593,7 @@ export function LCRCurrentUnderstanding() {
                             <li key={event.id}>
                               {caregiverStatusLabel(event.previous_status) || "Not recorded"} → {caregiverStatusLabel(event.new_status) || "Status not available"} · {formatWhen(event.created_at)} · Changed by: {event.actor_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}
                               {event.reason && <p>{caregiverSafeAssistantText(event.reason) || "A reason was recorded."}</p>}
-                              <small>Sources: {event.evidence_ids.length} saved item(s)</small>
+                              <small>From: {event.evidence_ids.length} saved item(s)</small>
                             </li>
                           ))}
                         </ol>
@@ -1606,10 +1606,10 @@ export function LCRCurrentUnderstanding() {
             )}
 
 
-      <details className="lcr-history-details"><summary>See repeated changes over time</summary>
+      <details className="lcr-history-details"><summary>See changes that have happened more than once</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
-          <h3 id="lcr-pattern-history-heading">Repeated changes over time</h3>
+          <h3 id="lcr-pattern-history-heading">Changes that have happened more than once</h3>
           <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} repeated changes in the saved history</span>
         </div>
         {patternsError && <p role="status">Saved repeated-change history could not be loaded: {patternsError}</p>}
@@ -1646,10 +1646,10 @@ export function LCRCurrentUnderstanding() {
       </div>
 
       </details>
-      <details className="lcr-history-details"><summary>Review saved changes</summary>
+      <details className="lcr-history-details"><summary>Review care changes</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
-          <h3 id="lcr-change-history-heading">Changes over time</h3>
+          <h3 id="lcr-change-history-heading">Care changes over time</h3>
           <span>{changes.length} saved change reviews</span>
         </div>
         {changesError && <p role="status">Saved change history could not be loaded: {changesError}</p>}
@@ -1701,7 +1701,7 @@ export function LCRCurrentUnderstanding() {
                   <small>A newer review replaced this one. The earlier review remains in the care history.</small>
                 )}
                 <small>Compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
-                <small>Sources: {change.evidence_ids.length} saved item(s)</small>
+                <small>From: {change.evidence_ids.length} saved item(s)</small>
                 <button
                   type="button"
                   className="lcr-text-action"
@@ -1716,7 +1716,7 @@ export function LCRCurrentUnderstanding() {
                       : "View supporting evidence"}
                 </button>
                 {expandedChangeId === change.id && (
-                  <div className="lcr-current-facts" aria-label="Supporting information">
+                  <div className="lcr-current-facts" aria-label="Related notes and documents">
                     {changeEvidence[change.id]?.error && (
                       <p role="status">Saved source details could not be loaded. Please try again.</p>
                     )}
@@ -1735,7 +1735,7 @@ export function LCRCurrentUnderstanding() {
                     )}
                     {changeEvidence[change.id]?.assertions.length > 0 && (
                       <div aria-label="Saved reports">
-                        <strong>Recorded observations</strong>
+                        <strong>What was reported</strong>
                         <ul>
                           {changeEvidence[change.id].assertions.map((assertion) => (
                             <li key={assertion.id}>
@@ -1808,8 +1808,8 @@ export function LCRCurrentUnderstanding() {
 
           {projection.items.length === 0 ? (
             <div className="lcr-empty-state">
-              <h3>Your Living Care Record does not have any care information available yet.</h3>
-              <p>Share what you know through AI Companion. Information reviewed and approved there will appear in your care record.</p>
+              <h3>Your Care Record does not have any care information yet.</h3>
+              <p>Add what you know in Daily Care or upload a care document. You can also ask the Care Assistant to help you understand saved information.</p>
             </div>
           ) : (
             <div className="lcr-current-facts">
@@ -1822,7 +1822,7 @@ export function LCRCurrentUnderstanding() {
                     </div>
                     {displayCurrentCareDescription(item) && <p style={{ whiteSpace: "pre-line" }}>{displayCurrentCareDescription(item)}</p>}
                     <details className="lcr-entry-status">
-                      <summary>Record details</summary>
+                      <summary>Care details</summary>
                       <p>{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
                       <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"}</small>
                       <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
@@ -1844,7 +1844,7 @@ export function LCRCurrentUnderstanding() {
                     </details>
                     {item.derived_observations && item.derived_observations.length > 0 && (
                       <details className="lcr-entry-status">
-                        <summary>Details identified in this note ({item.derived_observations.length})</summary>
+                        <summary>Details found in this note ({item.derived_observations.length})</summary>
                         <p>These details come from the same report. They are not separate reports or independent confirmation.</p>
                         {item.derived_observations.some((observation) => isMedicationObservation(observation.attribute)) && (
                           <p>Medication details are copied from saved reports. They do not confirm the current prescription or whether a dose was given. They are not instructions to start, stop, or change medicine.</p>
@@ -1957,11 +1957,11 @@ export function LCRCurrentUnderstanding() {
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
         <details className="lcr-history-details">
-          <summary>Evidence and sources</summary>
+          <summary>Notes and documents behind this information</summary>
           {advancedPanelsOpen ? <EvidenceReviewPanel personId={personId} /> : null}
         </details>
         <details className="lcr-history-details">
-          <summary>Review information supporting a care detail</summary>
+          <summary>Review the notes behind a care detail</summary>
           {advancedPanelsOpen ? <ClaimAssessmentPanel /> : null}
         </details>
         <details className="lcr-history-details">
