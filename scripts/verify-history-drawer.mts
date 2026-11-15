@@ -17,8 +17,10 @@ assert.match(drawer, /item\.person_id === session\.person\.id/, "history events 
 assert.match(drawer, /ensureAnonymousSession/);
 assert.match(drawer, /getJSON\("\/events\/"/);
 assert.match(drawer, /getJSON\("\/care-continuity\/context\?limit_per_source=50&include_all_history=true"\)/);
-assert.match(drawer, /projectionResult = results\[8\]/,
-  "the full-history LCR context is used when the dedicated event-history read is empty or unavailable");
+assert.match(drawer, /let projectionResult: PromiseSettledResult<unknown>/,
+  "the full-history fallback has an explicit success/failure state");
+assert.match(drawer, /if \(eventReadProblem \|\| eventItems\?\.length === 0\)/,
+  "the full-history scan runs only when the dedicated event-history read is incomplete");
 assert.match(drawer, /sources\?\.events/,
   "fallback recovery reads the persisted events source from the LCR context");
 assert.match(drawer, /source_offsets_json=/,
