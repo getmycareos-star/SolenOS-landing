@@ -569,7 +569,7 @@ export default function TimelinePage() {
                             <dt style={{ color: "var(--solenos-muted)" }}>When it was saved</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Review</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>When it happened</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Contributor</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Who added it</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Type of care update</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type === "correction" ? "Correction" : event.source_type === "evidence" ? "Document" : event.source_type === "appointment" ? "Appointment" : event.source_type === "professional" ? "Healthcare professional" : event.created_by_caregiver_id ? "Caregiver" : "Care update"}</dd>
                             {event.source_type === "correction" && event.target_id && (
                               <>
