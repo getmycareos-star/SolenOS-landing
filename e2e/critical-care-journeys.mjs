@@ -1453,5 +1453,31 @@ finally:
   await context.close();
 });
 
+await record("13 identity isolation across private care records", async () => {
+  assert.ok(dailyCaptureEventId, "identity isolation requires an existing private care event");
+  const foreignSession = await newSession("identity isolation");
+  const foreignToken = foreignSession.access_token;
+
+  const foreignEvents = await request(`/api/v1/events/${encodeURIComponent(identity.personId)}`, {
+    token: foreignToken,
+  });
+  assert.equal(foreignEvents.status, 403, JSON.stringify(foreignEvents.payload));
+
+  const foreignEvidence = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, {
+    token: foreignToken,
+  });
+  assert.equal(foreignEvidence.status, 403, JSON.stringify(foreignEvidence.payload));
+
+  const foreignLcr = await request("/api/v1/care-continuity/current-care?limit_per_source=50", {
+    token: foreignToken,
+  });
+  assert.equal(foreignLcr.status, 200, JSON.stringify(foreignLcr.payload));
+  assert.equal(
+    JSON.stringify(foreignLcr.payload).includes(dailyCaptureEventId),
+    false,
+    "a different caregiver session must never receive another person's event in its LCR",
+  );
+});
+
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
