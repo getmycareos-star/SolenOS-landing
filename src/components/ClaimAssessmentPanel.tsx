@@ -208,8 +208,7 @@ export default function ClaimAssessmentPanel() {
       }
       setHistory(rows as Assessment[]);
     } catch {
-      setHistory([]);
-      setHistoryError("Past reviews could not be loaded. This does not mean there are no past reviews.");
+      setHistoryError("Past reviews could not be loaded. Try again.");
     } finally {
       setHistoryLoading(false);
     }
@@ -240,8 +239,7 @@ export default function ClaimAssessmentPanel() {
       }
       setAssessmentImpact(result as AssessmentImpact);
     } catch {
-      setAssessmentImpact(null);
-      setImpactError("New information could not be checked. This does not mean this review is current.");
+      setImpactError("New information could not be checked. Try again before relying on this review.");
     } finally {
       setImpactLoading(false);
     }
