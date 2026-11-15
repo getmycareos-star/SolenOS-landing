@@ -130,6 +130,7 @@ interface Message {
   written_to_lcr?: boolean
   persistence?: string
   timestamp: Date
+  source_message_id?: string | null
 }
 
 const STARTER_PROMPTS = [
@@ -145,6 +146,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [careUpdateProposals, setCareUpdateProposals] = useState<Record<string, any>>({})
+  const [careUpdateBusy, setCareUpdateBusy] = useState<string | null>(null)
+  const [careUpdateNotice, setCareUpdateNotice] = useState<Record<string, string>>({})
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -154,6 +158,40 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
+
+  const prepareCareUpdate = async (messageId: string) => {
+    if (careUpdateBusy) return
+    setCareUpdateBusy(messageId)
+    setCareUpdateNotice(prev => ({ ...prev, [messageId]: '' }))
+    try {
+      const result = await postJSON('/companion/care-updates/capture', { source_message_id: messageId }) as any
+      if (!result?.proposal?.id || result.proposal.status !== 'pending_authorization') {
+        throw new Error('The care update could not be prepared for review.')
+      }
+      setCareUpdateProposals(prev => ({ ...prev, [messageId]: result.proposal }))
+    } catch (error) {
+      setCareUpdateNotice(prev => ({ ...prev, [messageId]: error instanceof Error ? error.message : 'Could not prepare this care update.' }))
+    } finally {
+      setCareUpdateBusy(null)
+    }
+  }
+
+  const decideCareUpdate = async (messageId: string, proposalId: string, decision: 'accept' | 'reject') => {
+    if (careUpdateBusy) return
+    setCareUpdateBusy(messageId)
+    try {
+      const result = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as any
+      if (decision === 'accept' && result?.written_to_lcr !== true) {
+        throw new Error('The Care Record update was not confirmed. Refresh and check its status.')
+      }
+      setCareUpdateProposals(prev => ({ ...prev, [messageId]: { ...prev[messageId], status: decision === 'accept' ? 'accepted' : 'rejected' } }))
+      setCareUpdateNotice(prev => ({ ...prev, [messageId]: decision === 'accept' ? 'Added to your Care Record. The original message remains in your conversation.' : 'Not added to your Care Record.' }))
+    } catch (error) {
+      setCareUpdateNotice(prev => ({ ...prev, [messageId]: error instanceof Error ? error.message : 'Your decision could not be saved.' }))
+    } finally {
+      setCareUpdateBusy(null)
+    }
+  }
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
@@ -191,6 +229,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const isEmergency = isEmergencyCompanionResponse(response)
       if (isEmergency) setEmergency(true)
 
+      userMsg.source_message_id = typeof response.source_message_id === 'string' ? response.source_message_id : null
       const assistantMsg: Message = {
         role: 'assistant',
         text: caregiverReply,
@@ -281,7 +320,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats with the Care Assistant are not added to your Care Record.</p></div>
+              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>You can also choose to review one of your messages and add its exact wording to your Care Record. Nothing is added from chat unless you choose to do so.</p></div>
               <div className="companion-starters">
                 {STARTER_PROMPTS.map(item => {
                   const Icon = item.icon
@@ -317,6 +356,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'Care Assistant'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
+                    {isUser && msg.source_message_id && <section aria-label="Care Record action" style={{ marginTop: 8, padding: 10, border: '1px solid #e2e9e1', borderRadius: 12, background: '#fbfcfa' }}>
+                      {!careUpdateProposals[msg.source_message_id] ? <button type="button" disabled={careUpdateBusy === msg.source_message_id || careUpdateBusy !== null} onClick={() => void prepareCareUpdate(msg.source_message_id!)} style={{ border: '1px solid #cbdcc9', borderRadius: 9, padding: '8px 11px', background: '#e7f0e5', color: '#203b27', font: 'inherit', fontSize: 12, fontWeight: 700 }}>
+                        {careUpdateBusy === msg.source_message_id ? 'Preparing…' : 'Review this message for my Care Record'}
+                      </button> : careUpdateProposals[msg.source_message_id].status === 'pending_authorization' ? <div>
+                        <p style={{ margin: '0 0 8px', fontSize: 12, color: '#526457' }}>Review the exact wording below. It will be saved as your report, not as a verified medical fact.</p>
+                        <blockquote style={{ margin: '0 0 10px', padding: '9px 11px', borderLeft: '3px solid #9bb99b', background: '#f5f8f4', fontSize: 13 }}>{careUpdateProposals[msg.source_message_id].proposed_change?.asserted_value || msg.text}</blockquote>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button type="button" disabled={careUpdateBusy !== null} onClick={() => void decideCareUpdate(msg.source_message_id!, careUpdateProposals[msg.source_message_id].id, 'accept')} style={{ border: '1px solid #cbdcc9', borderRadius: 9, padding: '8px 11px', background: '#e7f0e5', color: '#203b27', font: 'inherit', fontSize: 12, fontWeight: 700 }}>Add exact wording</button>
+                          <button type="button" disabled={careUpdateBusy !== null} onClick={() => void decideCareUpdate(msg.source_message_id!, careUpdateProposals[msg.source_message_id].id, 'reject')} style={{ border: '1px solid #dce4dc', borderRadius: 9, padding: '8px 11px', background: '#fff', color: '#526457', font: 'inherit', fontSize: 12 }}>Don't add</button>
+                        </div>
+                      </div> : <p role="status" style={{ margin: 0, fontSize: 12, color: '#526457' }}>{careUpdateNotice[msg.source_message_id] || (careUpdateProposals[msg.source_message_id].status === 'accepted' ? 'Added to your Care Record.' : 'Not added to your Care Record.')}</p>}
+                      {careUpdateNotice[msg.source_message_id] && careUpdateProposals[msg.source_message_id].status === 'pending_authorization' && <p role="alert" style={{ margin: '7px 0 0', fontSize: 12, color: '#8a4b35' }}>{careUpdateNotice[msg.source_message_id]}</p>}
+                    </section>}
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
                     </section>}
