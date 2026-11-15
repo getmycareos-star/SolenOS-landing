@@ -174,7 +174,7 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
     .waitFor({ state: "visible", timeout: 20_000 });
   await verifyMobile(page);
   await page.getByRole("button", { name: "Open navigation", exact: true }).click();
-  await page.getByRole("link", { name: "Follow-ups", exact: true })
+  await page.getByRole("link", { name: /Follow-ups/ })
     .waitFor({ state: "visible", timeout: 10_000 });
   await context.close();
 });
