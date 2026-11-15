@@ -426,7 +426,7 @@ export default function TimelinePage() {
 
   const retryPendingCorrection = useCallback(async () => {
     const correctionId = pendingCorrectionId || events.find(
-      (item) => item.source_type === "correction" && item.processing_status !== "completed",
+      (item) => item.source_type === "correction" && ["pending", "processing"].includes(item.processing_status || ""),
     )?.id;
     if (!correctionId || retryingCorrection) return;
     setRetryingCorrection(true);
@@ -705,7 +705,7 @@ export default function TimelinePage() {
       {correctionMessage && (
         <div role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 13, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <span>{correctionMessage}</span>
-          {(pendingCorrectionId || events.some((item) => item.source_type === "correction" && item.processing_status !== "completed")) && (
+          {(pendingCorrectionId || events.some((item) => item.source_type === "correction" && ["pending", "processing"].includes(item.processing_status || ""))) && (
             <Button variant="secondary" disabled={retryingCorrection} onClick={() => void retryPendingCorrection()}>
               {retryingCorrection ? "Checking update…" : "Retry Care Record update"}
             </Button>
