@@ -26,6 +26,7 @@ type ComputedChange = {
   evidence_supported?: boolean;
   claim_supported?: boolean | null;
   source_record_refs?: SourceReference[];
+  source_reference_status?: string;
   comparison_basis?: string;
   historical_only?: boolean;
 };
@@ -249,6 +250,20 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                         <li key={`${run.id}-review-${index}`}>
                           {display(item.name || item.domain)}: {readableChangeType(item.change_type, item.classification)}.
                           {item.comparison_basis ? ` ${displayChangeText(item.comparison_basis, "The available records do not support a reliable comparison yet.")}` : " The available records do not support a reliable comparison yet."}
+                          {item.source_reference_status === "partial" && <p>Some source details are missing or could not be matched.</p>}
+                          {item.source_record_refs?.length ? (
+                            <details>
+                              <summary>Review available source details</summary>
+                              {item.source_record_refs.map((source, sourceIndex) => (
+                                <div key={`${run.id}-review-source-${index}-${sourceIndex}`}>
+                                  <p>{displayChangeText(source.label || readableSource(source.record_type))}</p>
+                                  {source.source_excerpt && <blockquote>{display(source.source_excerpt)}</blockquote>}
+                                  <p>Happened: {formatDate(source.occurred_at)} · Recorded: {formatDate(source.recorded_at)}</p>
+                                  {source.reported_by && <p>Reported by: {display(source.reported_by)}</p>}
+                                </div>
+                              ))}
+                            </details>
+                          ) : <p>No linked source details are available for this comparison.</p>}
                         </li>
                       ))}
                     </ul>
