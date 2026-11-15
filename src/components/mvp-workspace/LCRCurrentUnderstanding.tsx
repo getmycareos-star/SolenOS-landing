@@ -1180,6 +1180,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-eyebrow">YOUR CARE</p>
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
           <p>The latest care information, what needs attention, and what is still unknown.</p>
+          <p className="lcr-entry-status">SolenOS brings together information you and your care team record. Not everything that happens is automatically recorded.</p>
         </div>
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh care summary">
           <RefreshCw size={16} aria-hidden="true" /> Refresh care summary
@@ -1266,10 +1267,10 @@ export function LCRCurrentUnderstanding() {
               No items are marked for immediate attention in the information checked.
               {importantCareDecisions.length > 0 ? ` ${importantCareDecisions.length} important ${importantCareDecisions.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review.` : ""}
               {clarificationCareDecisions.length > 0 ? ` ${clarificationCareDecisions.length} ${clarificationCareDecisions.length === 1 ? "detail needs" : "details need"} clarification.` : ""}
-              {" "}This is not a statement that no care needs exist.
+              
             </p>
           ) : (
-            <p>No items are currently marked for immediate attention in the information checked. This is not a statement that no care needs exist.</p>
+            <p>No items are currently marked for immediate attention in the information checked.</p>
           )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
         </div>
@@ -1494,7 +1495,7 @@ export function LCRCurrentUnderstanding() {
                     </button>
                   </div>
                 )}
-                <small>Assessment uses saved records only. Missing history is not evidence that nothing happened, and grouped observations do not establish cause or diagnosis.</small>
+                <small>Assessment uses saved records only. Grouped observations do not establish cause or diagnosis.</small>
               </section>
             )}
 
@@ -1536,8 +1537,8 @@ export function LCRCurrentUnderstanding() {
               <h4 id="lcr-attention-watch-heading">Changes to watch</h4>
               <p>These are changes or things that are still unclear in the saved care history. They are not automatically tasks. You can see items that need follow-up on the Follow-ups screen.</p>
               <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
-              {changesError && <p role="status">We couldn’t check the saved change history. This does not mean nothing has changed.</p>}
-              {patternsError && <p role="status">We couldn’t check whether any changes are repeating. This does not mean nothing is repeating.</p>}
+              {changesError && <p role="status">We couldn’t check the saved change history. Try again.</p>}
+              {patternsError && <p role="status">We couldn’t check whether changes are repeating. Try again.</p>}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
                 <p>{changesError || patternsError
                   ? "Some care history could not be checked. Changes may be missing from this view."
@@ -1667,7 +1668,7 @@ export function LCRCurrentUnderstanding() {
             {(registeredActions.length > 0 || Boolean(registeredActionsError) || (assessment?.coverage.records_examined ?? 0) > 0) && (
             <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
               <h4 id="lcr-registered-actions-heading">Agreed next steps</h4>
-              {registeredActionsError && <p role="alert">Agreed actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
+              {registeredActionsError && <p role="alert">Agreed actions could not be loaded. Try again.</p>}
               {!registeredActionsError && registeredActions.length === 0 && <p>No actions have been agreed yet.</p>}
               {registeredActions.length > 0 && (
                 <ul className="lcr-current-facts">
@@ -1779,7 +1780,7 @@ export function LCRCurrentUnderstanding() {
         </div>
         {changesError && <p role="status">Saved change history could not be loaded: {changesError}</p>}
         {!changesError && changes.length === 0 && (
-          <p>There is not enough saved information to describe changes yet. Missing records do not mean nothing changed.</p>
+          <p>No recent changes recorded.</p>
         )}
         {changes.length > 0 && (
           <ul className="lcr-current-facts">
