@@ -7,7 +7,7 @@ assert.ok(component.includes('You do not need to document while speaking with th
 assert.ok(component.includes('You can leave this empty and return later.'), 'during capture must be optional')
 assert.ok(component.includes("getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft')"), 'after stage must retrieve the persisted backend outcome draft')
 assert.ok(component.includes("postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {})"), 'after stage must request persisted backend outcome proposals')
-assert.ok(component.includes('No appointment outcome has been recorded yet.'), 'empty outcome must be honest')
+assert.ok(component.includes('No appointment outcome recorded yet. You can return later to add one.'), 'empty outcome must be honest and concise')
 assert.ok(component.includes('nothing here changes your Care Record without your approval.'), 'draft generation must not silently update the LCR')
 assert.ok(component.toLowerCase().includes('Your reports stay marked as yours'), 'caregiver notes must preserve attribution')
 assert.ok(component.includes('Nothing to fill in.'), 'preparation must not be another required caregiver form')
