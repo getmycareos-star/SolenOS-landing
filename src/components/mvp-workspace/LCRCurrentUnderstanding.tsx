@@ -495,14 +495,24 @@ function isMedicationObservation(attribute?: string | null): boolean {
 function displayCurrentCareObservationValue(attribute?: string | null, rawValue?: unknown): string | null {
   const value = caregiverSafeAssistantText(rawValue);
   if (!value) return null;
-  if ((attribute || "").trim().toLowerCase() !== "medication_status") return value;
-  const normalized = value.trim().toLowerCase();
-  if (["active", "current", "currently active"].includes(normalized)) return "Reported as current";
-  if (["inactive", "discontinued", "stopped", "no longer taking"].includes(normalized)) return "Reported as no longer current";
-  if (["unknown", "uncertain", "not confirmed"].includes(normalized)) return "Not confirmed";
-  return `Reported status: ${value}`;
+  const field = (attribute || "").trim().toLowerCase();
+  if (field === "medication_status") {
+    const normalized = value.trim().toLowerCase();
+    if (["active", "current", "currently active"].includes(normalized)) return "Reported as current";
+    if (["inactive", "discontinued", "stopped", "no longer taking"].includes(normalized)) return "Reported as no longer current";
+    if (["unknown", "uncertain", "not confirmed"].includes(normalized)) return "Not confirmed";
+    return "Reported status: " + value;
+  }
+  // A medication name or amount extracted from a caregiver note is not a
+  // verified prescription. Label the value as reported at the point where it
+  // is displayed, rather than relying only on a disclaimer above the list.
+  if (isMedicationObservation(field)) {
+    if (/dose|strength|amount/i.test(field)) return "Reported amount: " + value;
+    if (/name|drug/i.test(field)) return "Reported medication: " + value;
+    return "Reported medication detail: " + value;
+  }
+  return value;
 }
-
 function displayCurrentCareDescription(item: CurrentCareItem): string | null {
   if (!item.description?.trim()) return null;
   const original = item.description.trim().toLowerCase();
