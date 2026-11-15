@@ -131,7 +131,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
             {row.current != null ? `Reported now: ${caregiverSafeAssistantText(String(row.current)) || 'Not available'} · ` : ''}
             {row.status ? `Status: ${caregiverStatusLabel(String(row.status)) || 'Not available'} · ` : ''}
             {row.certainty ? `Information: ${caregiverStatusLabel(String(row.certainty)) || 'Not confirmed'} · ` : ''}
-            {row.result_present === false ? 'Result not present in supplied record. ' : ''}
+            {row.result_present === false ? 'This result was not found in the information provided. ' : ''}
             {caregiverSafeAssistantText(String(row.next_question || row.why_conflicting || row.why_it_matters || '')) || ''}
           </p>
           {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Original wording: “{row.evidence_excerpt}”</p>}
@@ -192,9 +192,9 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
         getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
           .then((rows) => {
             if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[]);
-            else setHistoryError("Earlier care-change comparisons are still unavailable. Please try again shortly.");
+            else setHistoryError("Earlier comparisons are still unavailable. Please try again shortly.");
           })
-          .catch(() => setHistoryError("Your saved care-change history is still unavailable. Try again shortly."));
+          .catch(() => setHistoryError("Your saved comparison history is still unavailable. Try again shortly."));
       }} style={{ padding: "8px 12px", minHeight: 40, borderRadius: 8, border: "2px solid var(--solenos-slate, #173f4b)", background: "var(--solenos-slate, #173f4b)", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Try again</button>
     </div>}
     {history.length > 0 && <section style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 10 }}>
