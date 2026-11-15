@@ -108,7 +108,7 @@ function isOpenMatter(item: CareItem): boolean {
   return new Set([
     "Conflict",
     "Information that needs checking",
-    "Reconciliation review",
+    "Care information review",
     "reconciliation_review",
     "Needs clarification",
     "Information missing",
@@ -612,7 +612,7 @@ export default function DailyCarePage() {
                       { value: "something", label: "Something happened", detail: "Share an observation in your own words." },
                       { value: "medicine", label: "Medicine", detail: "Record what happened with a medicine." },
                       { value: "measurement", label: "Measurement", detail: "Record a reading that was actually taken." },
-                      { value: "photo", label: "Photograph", detail: "Add a photo as care-record evidence." },
+                      { value: "photo", label: "Photograph", detail: "Add a photo to your care information." },
                       { value: "checkin", label: "Quick check-in", detail: "Share one overall impression of today." },
                       { value: "note", label: "Note", detail: "Save a short note without categorizing it." },
                     ] as const).map((option) => (
@@ -688,7 +688,7 @@ export default function DailyCarePage() {
                       {unprocessed.length > 0 && <p>Page{unprocessed.length === 1 ? "" : "s"} {unprocessed.join(", ")} still need processing.</p>}
                       {item.medication_conflict && <p role="status">The document appears to differ from the current medication record. The instruction is unconfirmed. Confirm the current instruction with the prescribing professional or pharmacist before acting on it.</p>}
                       {item.medication_report_saved && <p>Medication information was saved as an unconfirmed report. The existing medication record was not changed.</p>}
-                      {item.written_to_lcr && !item.medication_report_saved && <span> · Reviewed information saved to the Living Care Record</span>}
+                      {item.written_to_lcr && !item.medication_report_saved && <span> · Reviewed information saved to your Care Record</span>}
                       {(item.accepted_follow_up_ids || []).length > 0 && <span> · Follow-up added to your existing follow-ups</span>}
                       {item.review_required && <p><Link href="/workspace/documents">Review the document</Link></p>}
                     </li>
@@ -733,8 +733,8 @@ export default function DailyCarePage() {
           </section>
 
           <section aria-labelledby="daily-care-open-matters-title" className="daily-care-context-panel">
-            <h2 id="daily-care-open-matters-title">Open matters</h2>
-            <p className="daily-care-muted">Questions, missing information and disagreements that have not been marked as resolved.</p>
+            <h2 id="daily-care-open-matters-title">Things that need attention</h2>
+            <p className="daily-care-muted">Questions, missing details and information that does not match.</p>
             {careItems.filter(isOpenMatter).length > 0 ? (
               <ul className="daily-care-record-list">
                 {careItems.filter(isOpenMatter).slice(0, 8).map((item, index) => (
@@ -749,7 +749,7 @@ export default function DailyCarePage() {
                 ))}
               </ul>
             ) : (
-              <p>No open matters are currently recorded in this view. This does not confirm that none exist.</p>
+              <p>Nothing is listed here right now. This does not mean there is nothing to follow up on.</p>
             )}
           </section>
 
@@ -836,7 +836,7 @@ export default function DailyCarePage() {
             <div className="daily-care-history-heading">
               <div>
                 <h2 id="daily-care-history-title">Recent care history</h2>
-                <p className="daily-care-muted">Recorded events, in time order. Missing days do not mean nothing happened.</p>
+                <p className="daily-care-muted">Care updates in date order. A day without an update does not mean nothing happened.</p>
               </div>
               <Link href="/workspace/timeline" className="care-reminders-inline-link">View all history</Link>
             </div>
