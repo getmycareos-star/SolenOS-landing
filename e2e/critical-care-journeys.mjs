@@ -627,6 +627,23 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
 
 });
 
+await record("LCR care history shows the original caregiver report before source metadata", async () => {
+  const history = await createBrowserPage(session, "/workspace/care-continuity");
+  await history.page.getByRole("heading", { name: "Your Living Care Record" }).waitFor({ timeout: 20_000 });
+  await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
+
+  const sourceSummary = history.page.getByText("Source details", { exact: true }).first();
+  await sourceSummary.waitFor({ timeout: 15_000 });
+  const sourceDetails = sourceSummary.locator("xpath=..");
+  assert.equal(await sourceDetails.evaluate((element) => element.open), false,
+    "source metadata must stay collapsed in the default care history");
+  await sourceSummary.click();
+  assert.equal(await sourceDetails.evaluate((element) => element.open), true,
+    "caregivers must be able to open the original source details on demand");
+  await verifyMobile(history.page);
+  await history.context.close();
+});
+
 await record("06 Companion context and Qwen output", async () => {
   const answer = await request("/api/v1/conversation/message", {
     token: identity.token, method: "POST",
