@@ -1753,12 +1753,11 @@ export function LCRCurrentUnderstanding() {
                     <p style={{ whiteSpace: "pre-line" }}>{displayDescription(item.description)}</p>
                     <p className="lcr-entry-status">{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
                     <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · {item.occurred_at ? `Event: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
-                    {item.evidence_ids?.length > 0 && <small>Original caregiver report linked to this entry</small>}
-                    {item.evidence_link_validation && <small>{item.evidence_link_validation === "valid" ? "Source record linked" : "Source details: " + (caregiverStatusLabel(item.evidence_link_validation) || "Not available")}</small>}
+                    {(item.evidence_ids?.length > 0 || item.evidence_link_validation) && <small>{item.evidence_link_validation === "valid" ? "Original source linked" : item.evidence_ids?.length > 0 ? "A source is linked, but its details are not available here." : "Source details are not available for this entry."}</small>}
                     {item.derived_observations && item.derived_observations.length > 0 && (
                       <details className="lcr-entry-status">
-                        <summary>What was taken from this note ({item.derived_observations.length})</summary>
-                        <p>These are structured readings of the same source report, not independent corroborating reports.</p>
+                        <summary>Details identified in this note ({item.derived_observations.length})</summary>
+                        <p>These details come from the same report. They are not separate reports or independent confirmation.</p>
                         <ul>
                           {item.derived_observations.map((observation) => (
                             <li key={observation.id}>
