@@ -264,7 +264,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   return (
-    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS Care Assistant">
+    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS AI Companion">
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
@@ -483,7 +483,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-brand { display:flex; align-items:center; gap:12px; min-width:0; }
         .companion-mark { display:grid; place-items:center; flex:0 0 46px; width:46px; height:46px; border:1px solid #cbdccb; border-radius:15px; background:#edf5ed; color:#365a40; }
         .companion-eyebrow { font-size:10px; letter-spacing:.14em; font-weight:800; color:#718075; margin-bottom:3px; }
-        .companion-brand h2 { margin:0; font-size:clamp(20px,2.4vw,25px); letter-spacing:-.035em; line-height:1.2; font-weight:750; }
+        .companion-brand .companion-page-title { margin:0; font-size:clamp(20px,2.4vw,25px); letter-spacing:-.035em; line-height:1.2; font-weight:750; }
         .companion-new { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:10px 14px; border:1px solid #cfdbd0; border-radius:12px; color:#243c2b; background:#fff; font:inherit; font-size:13px; font-weight:700; cursor:pointer; transition:background .15s ease,border-color .15s ease; }
         .companion-new:hover { background:#f3f8f2; border-color:#a9c4aa; } .companion-new:disabled { opacity:.55; cursor:not-allowed; }
         .companion-purpose { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(240px,.8fr); gap:24px; align-items:center; padding:clamp(20px,3.2vw,32px); border:1px solid #e0e9e0; border-radius:22px; background:linear-gradient(115deg,#f7faf6 0%,#f0f6ef 65%,#f5f8f3 100%); }
@@ -538,7 +538,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         @media (max-width:860px) { .companion-purpose { grid-template-columns:minmax(0,1fr); gap:17px; } .companion-workspace { grid-template-columns:minmax(0,1fr); } .companion-side-note { order:2; } .companion-conversation { min-height:280px; } }
         @media (max-width:560px) {
           .companion-shell { gap:14px; } .companion-topbar { align-items:flex-start; gap:10px; padding-bottom:13px; } .companion-mark { flex-basis:40px; width:40px; height:40px; border-radius:13px; }
-          .companion-eyebrow { font-size:9px; } .companion-brand h2 { font-size:21px; } .companion-new { width:42px; min-width:42px; padding:0; gap:0; } .companion-new span { display:none; }
+          .companion-eyebrow { font-size:9px; } .companion-brand .companion-page-title { font-size:21px; } .companion-new { width:42px; min-width:42px; padding:0; gap:0; } .companion-new span { display:none; }
           .companion-purpose { padding:19px 17px; border-radius:17px; } .companion-purpose h3 { font-size:24px; } .companion-purpose-copy p { font-size:13px; } .companion-desktop-break { display:none; }
           .companion-boundary { padding:12px; } .companion-workspace { gap:12px; } .companion-conversation { border-radius:16px; min-height:250px; } .companion-empty { padding:20px 15px; }
           .companion-empty-heading { margin-top:15px; } .companion-empty-heading h3 { font-size:21px; } .companion-starters { grid-template-columns:minmax(0,1fr); gap:8px; margin-top:17px; }
@@ -553,7 +553,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
          .companion-shell.is-home { width:100%; max-width:860px; height:100%; min-height:0; gap:0; padding:0 0 10px; }
         .companion-shell.is-home .companion-topbar { flex:0 0 auto; padding:10px 4px 16px; border-bottom:1px solid #edf1ed; }
         .companion-shell.is-home .companion-mark { width:34px; height:34px; flex-basis:34px; border-radius:11px; }
-        .companion-shell.is-home .companion-brand h2 { font-size:18px; font-weight:650; letter-spacing:-.02em; }
+        .companion-shell.is-home .companion-brand .companion-page-title { font-size:18px; font-weight:650; letter-spacing:-.02em; }
         .companion-shell.is-home .companion-eyebrow { font-size:9px; letter-spacing:.09em; }
         .companion-shell.is-home .companion-new { min-height:38px; padding:8px 11px; border-radius:999px; background:#f7faf6; }
         .companion-shell.is-home .companion-workspace { display:block; flex:1 1 auto; min-height:0; margin:0; }
