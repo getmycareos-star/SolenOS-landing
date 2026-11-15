@@ -248,7 +248,14 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         <div><h2 style={{ margin: 0, fontSize: 17 }}>Review document details</h2><p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>You can check the original document and the text SolenOS read. Review each suggested detail before adding it to your Care Record.</p></div>
         <button type="button" onClick={() => void load()} disabled={loading || busy !== null} style={{ minHeight: 38, padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Refresh</button>
       </div>
-      {error && <p role="alert" style={{ margin: 0, fontSize: 13 }}>{error}</p>}
+      {error && (
+        <RecordState
+          kind="error"
+          title={items.length > 0 ? "Saved document reviews couldn’t be refreshed." : "Saved document reviews couldn’t be loaded."}
+          description="Try again. Your original documents are still saved."
+          action={<button type="button" onClick={() => void load()} disabled={loading || busy !== null}>Try again</button>}
+        />
+      )}
       {items.some((item) => item.open_questions?.length) && <div role="note" style={{ padding: 10, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 5 }}>
         <strong style={{ fontSize: 12 }}>Notes about the text we read</strong>
         {items.flatMap((item) => item.open_questions || []).map((question, index) => <p key={index} style={{ margin: 0, fontSize: 12 }}>{question}</p>)}
@@ -266,7 +273,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           {!active && <button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>{job?.status === "failed" ? "Try reading again" : "Read document"}</button>}
         </div>;
       })}</div>}
-      {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 14 }}>No documents are ready to review yet. Upload or scan a document. SolenOS will read the text so you can check the suggested details.</p> : items.map((analysis) => (
+      {!items.length && documents.length > 0 && !error ? (
+        <RecordState kind="empty" title="No document details are ready to review yet." description="Suggested details will appear here after a document has been read." />
+      ) : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: 12 }}>{caregiverInformationAreaLabel(analysis.document_type) || caregiverFieldLabel(analysis.document_type) || "Care document"} · {analysis.page_count ?? "?"} {analysis.page_count === 1 ? "page" : "pages"} · {analysis.observations.length} {analysis.observations.length === 1 ? "suggested detail" : "suggested details"}</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
