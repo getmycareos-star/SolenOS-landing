@@ -39,6 +39,24 @@ function WorkspaceHomeInner() {
           <Link href="/workspace/daily-care" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 46, width: "fit-content", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650, padding: "10px 16px", textDecoration: "none" }}>Add a care update</Link>
         </div>
       </section>
+      <nav aria-label="Care information" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 230px), 1fr))", gap: 10, padding: "8px 0 20px" }}>
+        <Link href="/workspace/open-loops" style={{ display: "grid", gap: 5, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", color: "var(--text)", textDecoration: "none" }}>
+          <strong>Follow-ups</strong>
+          <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Resolve open questions, review decisions and manage what still needs attention.</span>
+        </Link>
+        <Link href="/workspace/timeline" style={{ display: "grid", gap: 5, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", color: "var(--text)", textDecoration: "none" }}>
+          <strong>Care Timeline</strong>
+          <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Find earlier updates and corrections without changing the current Care Record directly.</span>
+        </Link>
+        <Link href="/workspace/documents" style={{ display: "grid", gap: 5, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", color: "var(--text)", textDecoration: "none" }}>
+          <strong>Documents</strong>
+          <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Keep original care files and review information taken from them.</span>
+        </Link>
+        <Link href="/workspace/companion" style={{ display: "grid", gap: 5, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", color: "var(--text)", textDecoration: "none" }}>
+          <strong>AI Companion</strong>
+          <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Ask questions about saved care information and where it came from.</span>
+        </Link>
+      </nav>
       <CaregiverHandoverInbox />
     </main>
   );
