@@ -4,20 +4,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import {
-  CalendarDays,
-  ClipboardList,
-  Clock3,
-  FileText,
-  Handshake,
-  MessageCircle,
-  Menu,
-  PanelLeftClose,
-  Search,
-  Settings,
-  ShieldCheck,
-  X,
-} from "lucide-react";
+import { Menu, PanelLeftClose, Search, X } from "lucide-react";
+import { WORKSPACE_NAVIGATION } from "@/lib/workspace-navigation";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
@@ -30,13 +18,10 @@ const CareRecordOverview = dynamic(
   { ssr: false, loading: () => <p className="solenos-record-details-loading">Loading saved care details…</p> },
 );
 
-type NavItem = { href: string; label: string; icon?: string };
 type AppShellProps = {
   children: ReactNode;
-  navItems?: readonly NavItem[];
   careContext?: ReactNode;
   brandHref?: string;
-  onMenuToggle?: () => void;
 };
 
 type SharePanelContext = { caregiverId: string; careSessionId: string; careRecipientName?: string };
@@ -45,16 +30,6 @@ type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
-
-const NAVIGATION = [
-  { href: "/workspace/companion", label: "Care Assistant", icon: MessageCircle },
-  { href: "/workspace/care-continuity", label: "Care overview", icon: ClipboardList },
-  { href: "/workspace/open-loops", label: "Follow-ups", icon: Clock3 },
-  { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
-  { href: "/workspace/documents", label: "Documents", icon: FileText },
-  { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
-  { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
-] as const;
 
 const LOCAL_WORKSPACE_KEYS = [
   "solenos_durable_care_key",
@@ -262,17 +237,74 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           </div>
 
           <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
-            <button type="button" className="solenos-chat-nav-item" onClick={() => {
+            <button type="button" className="solenos-chat-nav-item solenos-chat-history-search" onClick={() => {
               const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
               input?.focus();
               input?.scrollIntoView({ block: "nearest" });
             }}>
               <span className="solenos-chat-nav-icon"><Search size={19} strokeWidth={1.8} /></span>
-              <span>Search history</span>
+              <span className="solenos-chat-nav-copy">
+                <span className="solenos-chat-nav-label">Search history</span>
+                <span className="solenos-chat-nav-description">Find something recorded before</span>
+              </span>
             </button>
-            {NAVIGATION.map(({ href, label, icon: Icon }) => (
+
+            <div className="solenos-chat-nav-group" aria-label="Care">
+              <p className="solenos-chat-nav-heading">CARE</p>
+              {WORKSPACE_NAVIGATION.care.map(({ id, href, label, description, icon: Icon }) => (
+                <Link
+                  key={id}
+                  href={href}
+                  prefetch={false}
+                  className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
+                  aria-current={active(href) ? "page" : undefined}
+                  onMouseEnter={() => router.prefetch(href)}
+                  onFocus={() => router.prefetch(href)}
+                  onTouchStart={() => router.prefetch(href)}
+                  onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
+                >
+                  <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
+                  <span className="solenos-chat-nav-copy">
+                    <span className="solenos-chat-nav-label">{label}</span>
+                    <span className="solenos-chat-nav-description">{description}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            <div className="solenos-chat-nav-group" aria-label="Support">
+              <p className="solenos-chat-nav-heading">SUPPORT</p>
+              {WORKSPACE_NAVIGATION.support.map(({ id, href, label, description, icon: Icon }) => (
+                <Link
+                  key={id}
+                  href={href}
+                  prefetch={false}
+                  className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
+                  aria-current={active(href) ? "page" : undefined}
+                  onMouseEnter={() => router.prefetch(href)}
+                  onFocus={() => router.prefetch(href)}
+                  onTouchStart={() => router.prefetch(href)}
+                  onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
+                >
+                  <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
+                  <span className="solenos-chat-nav-copy">
+                    <span className="solenos-chat-nav-label">{label}</span>
+                    <span className="solenos-chat-nav-description">{description}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </nav>
+
+          <div className="solenos-chat-history-section">
+            <div className="solenos-chat-history-heading">Recent history</div>
+            <HistoryDrawer />
+          </div>
+
+          <div className="solenos-chat-sidebar-bottom">
+            {WORKSPACE_NAVIGATION.settings.map(({ id, href, label, description, icon: Icon }) => (
               <Link
-                key={href}
+                key={id}
                 href={href}
                 prefetch={false}
                 className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
@@ -283,29 +315,12 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
-                <span>{label}</span>
+                <span className="solenos-chat-nav-copy">
+                  <span className="solenos-chat-nav-label">{label}</span>
+                  <span className="solenos-chat-nav-description">{description}</span>
+                </span>
               </Link>
             ))}
-          </nav>
-
-          <div className="solenos-chat-history-section">
-            <div className="solenos-chat-history-heading">Recent history</div>
-            <HistoryDrawer />
-          </div>
-
-          <div className="solenos-chat-sidebar-bottom">
-            <Link
-              href="/workspace/settings"
-              prefetch={false}
-              className={`solenos-chat-nav-item${active("/workspace/settings") ? " is-active" : ""}`}
-              onMouseEnter={() => router.prefetch("/workspace/settings")}
-              onFocus={() => router.prefetch("/workspace/settings")}
-              onTouchStart={() => router.prefetch("/workspace/settings")}
-              onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
-            >
-              <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
-              <span>Settings</span>
-            </Link>
           </div>
         </aside>
       </div>
