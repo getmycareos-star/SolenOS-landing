@@ -2238,3 +2238,67 @@
   font-size: 0.72rem;
   line-height: 1.45;
 }
+
+
+/* Caregiver-first LCR summary: concise orientation before detailed review. */
+.lcr-first-screen-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  margin: 1rem 0 1.25rem;
+}
+.lcr-first-screen-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border, #d9e1da);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+}
+.lcr-first-screen-card h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+.lcr-first-screen-card > p {
+  margin: 0.35rem 0;
+  line-height: 1.55;
+}
+.lcr-first-screen-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.65rem 0;
+  padding-left: 1.15rem;
+}
+.lcr-first-screen-list li {
+  padding-left: 0.1rem;
+}
+.lcr-first-screen-list li p {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+.lcr-first-screen-list li small {
+  display: block;
+  margin-top: 0.25rem;
+}
+.lcr-progressive-disclosure {
+  margin-top: 1rem;
+}
+.lcr-progressive-disclosure > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border, #d9e1da);
+  border-radius: 12px;
+  line-height: 1.45;
+}
+.lcr-progressive-disclosure[open] > summary {
+  margin-bottom: 1rem;
+}
+@media (min-width: 760px) {
+  .lcr-first-screen-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lcr-first-screen-card:first-child {
+    grid-column: 1 / -1;
+  }
+}
