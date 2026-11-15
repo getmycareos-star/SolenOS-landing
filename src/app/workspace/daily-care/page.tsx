@@ -856,7 +856,7 @@ export default function DailyCarePage() {
                       <p className="daily-care-muted">{item.capture_processing.message}</p>
                     )}
                     <span>{displayHistoryTime(item)}</span>
-                    {item.source_label && <span> · {item.source_label}</span>}
+                    {item.source_label && <span> · {caregiverSafeAssistantText(item.source_label) || "Saved care information"}</span>}
                     {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
                     {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
                   </li>
