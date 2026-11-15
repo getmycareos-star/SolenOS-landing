@@ -1482,7 +1482,7 @@ await record("13 identity isolation across private care records", async () => {
 await record("14 privacy deletion request remains pending until independent review and verified fulfilment", async () => {
   const deletionSession = await newSession("privacy deletion boundary");
   const token = deletionSession.access_token;
-  const personId = deletionSession.person_id;
+  const personId = deletionSession.person.id;
 
   const submitted = await request("/api/v1/privacy/requests", {
     token,
@@ -1502,7 +1502,7 @@ await record("14 privacy deletion request remains pending until independent revi
 
   const listed = await request("/api/v1/privacy/requests", { token });
   assert.equal(listed.status, 200, JSON.stringify(listed.payload));
-  assert.ok(listed.payload.items.some((item) => item.id === submitted.payload.id));
+  assert.ok(listed.payload.requests.some((item) => item.id === submitted.payload.id));
 
   const stillPresent = await request(`/api/v1/persons/${encodeURIComponent(personId)}`, { token });
   assert.equal(stillPresent.status, 200, JSON.stringify(stillPresent.payload));
