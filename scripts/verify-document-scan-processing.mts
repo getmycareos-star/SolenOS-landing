@@ -9,7 +9,7 @@ assert(!source.includes("review and correct its extracted text first"), "caregiv
 assert(!source.includes("page.reviewed") && !source.includes("page.text"), "the upload draft must not carry discarded client-side text or review flags");
 assert(!source.includes('apiUrl("/api/extract")'), "the Documents screen must not send the same original through a preflight extractor before saving");
 assert(!source.includes('Extracted text — review and correct before saving'), "caregivers must not correct client-side text that the upload API does not persist");
-assert.match(source, /SolenOS will extract and process it after the upload is saved/, "the caregiver must be told that server extraction starts after the original is saved");
+assert.match(source, /SolenOS will read the text and prepare details for your review after upload/, "the caregiver must be told that server extraction starts after the original is saved");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
 assert.equal((source.match(/Array\.from\(event\.currentTarget\.files \|\| \[\]\)/g) || []).length, 2, "both upload and camera inputs must copy FileList entries before clearing the input");
 assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
@@ -60,8 +60,8 @@ assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURICom
 assert.doesNotMatch(intelligenceReviewSource, /Retry background processing|Continue reading/, "caregivers must not be asked to supervise or manually resume document processing");
 assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial"/, "partial source extraction must be distinct from Qwen processing status");
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
-assert.match(intelligenceReviewSource, /not a probability/, "OCR confidence must not be represented as a correctness probability");
-assert.match(intelligenceReviewSource, /Handwriting may still be misread/, "handwriting uncertainty must remain visible");
+assert.match(intelligenceReviewSource, /Some words may be misread, especially handwriting/, "OCR confidence must not be represented as a correctness probability");
+assert.match(intelligenceReviewSource, /Compare each suggested detail with the original document before accepting it/, "handwriting uncertainty must remain visible");
 assert.match(intelligenceReviewSource, /model_provenance/, "document processing model provenance must be available to the review view");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
@@ -85,7 +85,7 @@ assert.match(saveFunction, /You can leave this page/, "the caregiver can leave a
 
 assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\)/, "scan retry must preserve capture time");
 assert.match(source, /deleteJSON\("\/upload\/" \+ encodeURIComponent\(selected\.id\)\)/, "document deletion must call the authenticated backend lifecycle endpoint");
-assert.match(source, /The document and its uncommitted extracted information were deleted/, "the caregiver must receive a success message only after backend deletion confirms");
+assert.match(source, /The document and its unreviewed details were deleted/, "the caregiver must receive a success message only after backend deletion confirms");
 assert.match(source, /Link versions/, "caregivers must be able to explicitly link a corrected copy to its predecessor");
 assert.match(source, /selected\.possibleVersionOfEvidenceId && !selected\.evidence\.parent_evidence_id/, "corrected-version clarification must appear only when a possible predecessor is detected");
 assert.match(source, /version-comparison/, "the document view must retrieve source-grounded differences for corrected versions");
