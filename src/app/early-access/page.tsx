@@ -34,10 +34,15 @@ export default function EarlyAccessPage() {
           be incomplete or need correction. The record should preserve uncertainty rather than
           presenting an AI interpretation as established fact.
         </p>
+        <h2 className="public-section-title">Before adding care information</h2>
+        <ul className="public-quiet-list">
+          <li>Your notes and uploaded documents are stored online with the care record. Keep your own copy of important information.</li>
+          <li>Only enter or upload information you have permission to share.</li>
+          <li>AI can miss or misread details. Check suggestions against the original information before relying on them.</li>
+          <li>Privacy requests are reviewed by people. Deletion is not self-service, and shared care records may need a separate scope review.</li>
+        </ul>
         <p className="public-prose">
-          Privacy and terms information remains available before or after entering the workspace:
-          {" "}<Link href="/privacy">Privacy Policy</Link>
-          {" · "}<Link href="/terms">Terms of Service</Link>.
+          Read the <Link href="/privacy">Privacy Policy</Link> and <Link href="/terms">Terms of Service</Link> before adding care information.
         </p>
       </section>
     </PublicShell>
