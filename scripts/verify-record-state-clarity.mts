@@ -37,7 +37,7 @@ assert.match(orientation, /No care information recorded yet/);
 assert.match(orientation, /href="\/workspace\/daily-care"/);
 assert.match(orientation, /hasLoadedRef\.current = true/);
 assert.doesNotMatch(orientation, /catch \{\s*setProjection\(null\)/);
-assert.match(orientation, /error && <RecordState/);
+assert.match(orientation, /error && \([\s\S]*?<RecordState/);
 assert.doesNotMatch(orientation, /Missing information does not mean that nothing happened/);
 
 assert.match(daily, /contextLoading && !careItemsLoaded \? \([\s\S]*?RecordState kind="loading"/);
