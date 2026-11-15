@@ -1,3 +1,4 @@
+// These assertions track the current caregiver-facing source and review language.
 import fs from "node:fs";
 import path from "node:path";
 import {
