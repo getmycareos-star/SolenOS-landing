@@ -113,7 +113,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
         }
       })
       .catch(() => {
-        if (!cancelled) setHistoryError("We couldn't load earlier care-change comparisons. You can still add a new note; try again to view saved comparisons.")
+        if (!cancelled) setHistoryError("We couldn't load earlier comparisons. You can still add a new note; try again to view them.")
       })
     return () => { cancelled = true }
   }, [personId])
@@ -151,7 +151,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
               ))}
             </div>
           )}
-          {row.claim_supported === false && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>This value could not be matched to the care update or current information. It remains unconfirmed and was not saved as a current fact.</p>}
+          {row.claim_supported === false && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>We could not match this detail to the care update or current information. It has not been confirmed or saved as current information.</p>}
           {row.historical_only && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>This was reported earlier. It has not been treated as current information.</p>}
           {row.promotion_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeAssistantText(String(row.promotion_warning)) || 'This item needs review before it is used.'}</p>}
           {row.provenance_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeAssistantText(String(row.provenance_warning)) || 'Where this information came from needs checking.'}</p>}
@@ -177,8 +177,8 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
           <input style={fieldStyle} type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
         </label>
       </div>
-      <label style={{ fontSize: 12 }}>New care event or note
-        <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Paste the new event or use a text document above. Keep the original wording. Do not add AI-generated conclusions as if someone reported them." maxLength={100000} required />
+      <label style={{ fontSize: 12 }}>New care update or note
+        <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Add the new care update or paste the original words from a note. Do not present AI suggestions as if someone reported them." maxLength={100000} required />
       </label>
       <div><button type="submit" disabled={busy || !personId || !content.trim()} style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: busy ? 'var(--bg)' : 'var(--accent)', color: busy ? 'var(--text-secondary)' : 'white', fontSize: 12 }}>
         {busy ? 'Comparing with saved care information…' : 'Compare with saved care information'}
@@ -209,9 +209,9 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
     </section>}
     {result && <div aria-live="polite" style={{ marginTop: 14 }}>
       <h3 style={{ fontSize: 15, margin: 0 }}>What may have changed</h3>
-      <p style={{ fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(result.caregiver_summary || result.event_summary) || 'The comparison is ready, but its summary is not available to display.'}</p>
-      {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>We could not find the notes or documents behind some of these findings. Check them before relying on them.</p>}
-      {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each finding is linked to the words in a saved note or document. This does not prove the information is medically correct or came from a separate report.</p>}
+      <p style={{ fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(result.caregiver_summary || result.event_summary) || 'The comparison is ready, but its summary is not available to show.'}</p>
+      {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>We could not find the notes or documents behind some of these possible changes. Check them before relying on them.</p>}
+      {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each finding is linked to the words in a saved note or document. This does not prove the information is medically correct or came from a different report.</p>}
       {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary') && (
         <section style={{ borderTop: '1px solid var(--border)', paddingTop: 9, marginTop: 9 }}>
           <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Check the summary against saved information</h4>
