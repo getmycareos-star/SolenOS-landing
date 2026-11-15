@@ -24,12 +24,20 @@ assert.match(lcr, /No care information recorded yet/);
 assert.doesNotMatch(lcr, /Missing information does not mean everything is fine/);
 assert.doesNotMatch(lcr, /This does not mean there are no care needs|This is not a statement that no care needs exist/);
 assert.match(lcr, /Not everything that happens is automatically recorded/);
+assert.match(lcr, /error && projection &&/);
+assert.doesNotMatch(lcr, /Your Care Record does not have any care information yet/);
+assert.match(lcr, /No saved care details to review yet/);
+assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setChanges\(\[\]\)/);
+assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setPatterns\(\[\]\)/);
+assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setAssessment\(null\)/);
 assert.match(orientation, /No care information recorded yet/);
 assert.match(orientation, /href="\/workspace\/daily-care"/);
 assert.doesNotMatch(orientation, /Missing information does not mean that nothing happened/);
 
 assert.match(daily, /contextLoading \? \([\s\S]*?RecordState kind="loading"/);
 assert.match(daily, /contextError \? \([\s\S]*?RecordState kind="error"/);
+assert.match(daily, /if \(Array\.isArray\(payload\?\.items\)\) \{\s*setCareItems/);
+assert.doesNotMatch(daily, /setCareItems\(Array\.isArray\(payload\?\.items\) \?/);
 assert.match(daily, /historyError \? \([\s\S]*?RecordState kind="error"/);
 assert.doesNotMatch(daily, /This does not mean nothing happened|That does not mean nothing happened/);
 assert.doesNotMatch(daily, /No new care records have been added since your last visit/);
@@ -43,6 +51,9 @@ assert.doesNotMatch(overview, /missing information as proof that nothing happene
 
 assert.match(reminders, /const \[hasLoaded, setHasLoaded\] = useState\(false\)/);
 assert.match(reminders, /!hasLoaded && error \? null/);
+const followUps = read("src/app/workspace/open-loops/page.tsx");
+assert.match(followUps, /if \(nextLoops\) setLoops\(nextLoops\)/);
+assert.doesNotMatch(followUps, /setLoops\(nextLoops \|\| \[\]\)/);
 assert.match(reminders, /RecordState kind="loading"/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
