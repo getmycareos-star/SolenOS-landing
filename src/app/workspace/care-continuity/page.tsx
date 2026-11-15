@@ -162,9 +162,9 @@ function WorkspacePageInner() {
       <div className="lcr-home">
         <header className="lcr-header">
           <div>
-            <p className="lcr-eyebrow">SOLENOS · LIVING CARE RECORD</p>
-            <h1>Your Living Care Record</h1>
-            <p className="lcr-intro">Review the care information shared with SolenOS, its sources and how it has changed over time.</p>
+            <p className="lcr-eyebrow">YOUR CARE RECORD</p>
+            <h1>Your Care Record</h1>
+            <p className="lcr-intro">See the care information shared with SolenOS, where it came from and what has changed over time.</p>
           </div>
           <div className="lcr-record-meta">
             <span>Updated {formatLastUpdated(latestUpdated)}</span>
@@ -173,11 +173,11 @@ function WorkspacePageInner() {
 
         <section className="lcr-current-fact lcr-companion-entry" aria-labelledby="lcr-companion-entry-heading">
           <div>
-            <h2 id="lcr-companion-entry-heading">Share new information through AI Companion</h2>
-            <p>Tell Companion what has happened, or share a message, document or photo. You can review proposed care-record updates before they are saved.</p>
+            <h2 id="lcr-companion-entry-heading">Talk through a care update</h2>
+            <p>Tell the Care Assistant what happened, or share a message, document or photo. You can review suggested changes before they are saved to your Care Record.</p>
           </div>
           <button type="button" className="lcr-text-action" onClick={() => router.push("/workspace/companion")}>
-            Open AI Companion <span aria-hidden="true">→</span>
+            Open Care Assistant <span aria-hidden="true">→</span>
           </button>
         </section>
 
@@ -196,7 +196,7 @@ function WorkspacePageInner() {
             <div className="lcr-empty-state">
               <div className="lcr-empty-icon" aria-hidden="true"><FileText size={27} /></div>
               <h3>No care events are available in this timeline yet</h3>
-              <p>This timeline shows saved care situations. Other saved care information may still appear in the current summary and source review.</p>
+              <p>This timeline shows saved care updates. Other saved information may still appear in your care summary.</p>
             </div>
           ) : (
             <div className="lcr-timeline">
@@ -211,7 +211,7 @@ function WorkspacePageInner() {
                     {situation.contextSummary && caregiverSafeAssistantText(situation.contextSummary) && <p>{caregiverSafeAssistantText(situation.contextSummary)}</p>}
                     {(situation.sourceStatements?.length ?? 0) > 0 && (
                       <div className="lcr-source-statements" aria-label="Statements preserved from original sources">
-                        <p>Statements from original sources</p>
+                        <p>What was reported</p>
                         {situation.sourceStatements!.map((statement) => (
                           <div key={statement.id} className="lcr-source-statement">
                             <p>
@@ -231,7 +231,7 @@ function WorkspacePageInner() {
                               </small>
                             )}
                             <details className="lcr-entry-details">
-                              <summary>Source details</summary>
+                              <summary>When and by whom it was reported</summary>
                               <small>
                                 {statement.occurred_at
                                   ? "Happened: " + formatLastUpdated(statement.occurred_at)
@@ -251,7 +251,7 @@ function WorkspacePageInner() {
                     )}
                     {(situation.conflicts?.length ?? 0) > 0 && (
                       <details className="lcr-entry-details" aria-label="Unresolved conflicting reports">
-                        <summary>{situation.conflicts!.length} reports differ and have not been reconciled</summary>
+                        <summary>{situation.conflicts!.length} reports do not match yet</summary>
                         {situation.conflicts!.map((conflict) => (
                           <div key={conflict.id} className="lcr-source-statement">
                             <p>{caregiverSafeAssistantText(conflict.description) || "The saved reports differ."}</p>
@@ -264,8 +264,8 @@ function WorkspacePageInner() {
                       </details>
                     )}
                     {(situation.informationGaps?.length ?? 0) > 0 && (
-                      <details className="lcr-entry-details" aria-label="Information still being clarified">
-                        <summary>Information still being clarified ({situation.informationGaps!.length})</summary>
+                      <details className="lcr-entry-details" aria-label="Information that still needs checking">
+                        <summary>Information that still needs checking ({situation.informationGaps!.length})</summary>
                         {situation.informationGaps!.map((gap) => (
                           <div key={gap.id} className="lcr-source-statement">
                             {gap.description && <p>{caregiverSafeAssistantText(gap.description) || "More information may be needed."}</p>}
@@ -278,7 +278,7 @@ function WorkspacePageInner() {
                     <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? caregiverStatusLabel(situation.status) ?? "Status not available"}</span>
                     {situation.persistedThread && situation.status !== "resolved" && resumableSituations.length > 1 && (
                       <div className="lcr-related-situation-control">
-                        <label htmlFor={`related-situation-${situation.id}`}>Link a related concern without merging it</label>
+                        <label htmlFor={`related-situation-${situation.id}`}>Link a related care topic without combining the records</label>
                         <select
                           id={`related-situation-${situation.id}`}
                           value={relationshipTargets[situation.id] ?? ""}
@@ -287,7 +287,7 @@ function WorkspacePageInner() {
                             [situation.id]: event.target.value,
                           }))}
                         >
-                          <option value="">Choose another care thread</option>
+                          <option value="">Choose another care topic</option>
                           {resumableSituations
                             .filter((candidate) =>
                               candidate.id !== situation.id &&
