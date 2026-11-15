@@ -2,7 +2,7 @@
 
 ## Hosting boundary
 
-- **Frontend:** React + TypeScript, built and published by **Netlify** from this repository.
+- **Frontend:** Next.js (React + TypeScript), built and published by **Netlify** from this repository.
 - **Backend API:** FastAPI, deployed separately on Railway.
 - **Database:** PostgreSQL; schema changes are managed by the backend Alembic migration chain.
 
@@ -10,13 +10,13 @@
 
 The root `netlify.toml` is the source of truth for the frontend build:
 
-- Build command: `npm run build`
-- Publish directory: `dist`
+- Build command: `npm test && npm run build`
+- Publish directory: `.next`
 - Node.js: 20
-- `/api/*` is proxied to the backend.
-- All other paths fall back to `/index.html` for React Router.
+- Netlify's Next.js plugin adapts the Next.js build output for Netlify hosting.
+- `/api/v1/*` and `/api/situation` are proxied to the Railway backend.
 
-Keep the frontend build and routing configuration aligned with the actual application entrypoint and Netlify configuration. When changing the backend API origin, update the Netlify proxy target deliberately and verify the resulting deployed endpoint.
+Keep the application framework, build scripts, Netlify plugin, and deployment configuration aligned. When changing the backend API origin, update the Netlify proxy target deliberately and verify the resulting deployed endpoint.
 
 ## Local development
 
@@ -25,7 +25,7 @@ npm ci
 npm run dev
 ```
 
-The local development server defaults to port 5173. Run `npm run typecheck`, the repository's test command, and `npm run build` before considering a frontend change verified.
+The Next.js development server defaults to port 3000. Run `npm run typecheck`, the repository's test command, and `npm run build` before considering a frontend change verified.
 
 ## Environment and secrets
 
