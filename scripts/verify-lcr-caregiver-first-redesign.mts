@@ -49,6 +49,8 @@ assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
 assert.match(currentUnderstanding, /internalCaptureRecordTypes/, "capture wrapper records must be excluded from caregiver change summaries");
 assert.match(currentUnderstanding, /internalCaptureEventType/, "capture event identifiers embedded in technical explanations must also be excluded");
+assert.match(integrityPanel, /INTERNAL_REVISION_TARGET_TYPES/, "internal assessment and baseline revisions must not be rendered as caregiver care-history changes");
+assert.match(integrityPanel, /caregiverVisibleRevisions/, "the caregiver record-history panel must use its filtered revision view");
 assert.match(currentUnderstanding, /structured_daily_capture.*daily_care_entry.*daily_capture/, "known capture wrapper types must not be presented as separate care changes");
 assert.doesNotMatch(integrityPanel, /No contradiction records returned|current engine inputs/i, "backend query terminology is not used in caregiver-facing empty states");
 assert.doesNotMatch(careContinuity, /lcr-primary-actions|Capture how today is going/, "Care Continuity does not expose parallel capture shortcuts");
