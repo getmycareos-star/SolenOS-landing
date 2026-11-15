@@ -27,8 +27,8 @@ function WorkspaceHomeInner() {
 
   return (
     <main className="mobile-screen feature-page solenos-lcr-home">
-      <CaregiverHandoverInbox />
       <LCRCurrentUnderstanding />
+      <CaregiverHandoverInbox />
       <section aria-label="Ask SolenOS" style={{ display: "grid", gap: 10, padding: "18px 0" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 18 }}>Ask SolenOS</h2>
