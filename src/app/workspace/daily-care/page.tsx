@@ -681,9 +681,14 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-documents-title" className="daily-care-context-panel">
             <h2 id="daily-care-documents-title">Recent documents</h2>
             <p className="daily-care-muted">SolenOS keeps the original files and shows what it could read from them.</p>
-            {documentsError ? (
-              <p role="alert">{caregiverSafeAssistantText(documentsError) || "Your documents could not be loaded. Try again."}</p>
-            ) : documents.length ? (
+            {documentsError && !documentsLoaded ? (
+              <RecordState kind="error" title="Recent documents couldn’t be loaded." description="Try again to check the latest saved documents." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />
+            ) : !documentsLoaded ? (
+              <RecordState kind="loading" title="Loading recent documents…" />
+            ) : (
+              <>
+                {documentsError && <RecordState kind="error" title="Recent documents couldn’t be refreshed." description="Showing the last saved list. Try again to refresh." action={<button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Try again</button>} />}
+                {documents.length ? (
               <ul className="daily-care-record-list">
                 {documents.slice(0, 5).map((item) => {
                   const statusText: Record<string, string> = {
@@ -718,8 +723,10 @@ export default function DailyCarePage() {
                   );
                 })}
               </ul>
-            ) : (
-              <p>No documents have been uploaded from this account yet.</p>
+                ) : (
+                  <RecordState kind="empty" title="No documents added yet." />
+                )}
+              </>
             )}
             <Button variant="secondary" onClick={() => router.push("/workspace/documents")}>Open documents</Button>
           </section>
