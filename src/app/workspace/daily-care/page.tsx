@@ -527,11 +527,13 @@ export default function DailyCarePage() {
     <div className="mobile-screen daily-care-screen">
       <div className="daily-care-page-head">
         <Button
-          variant="icon"
+          variant="secondary"
+          className="daily-care-back-button"
           aria-label="Back to care record"
           onClick={() => router.push("/workspace")}
         >
-          <ArrowLeft size={20} aria-hidden />
+          <ArrowLeft size={18} aria-hidden />
+          <span>Back</span>
         </Button>
         <div>
           <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
@@ -555,7 +557,7 @@ export default function DailyCarePage() {
               <p>Loading care information…</p>
             ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
               <ul className="daily-care-record-list">
-                {careItems.filter((item) => !isOpenMatter(item)).slice(0, 5).map((item, index) => (
+                {careItems.filter((item) => !isOpenMatter(item)).slice(0, 2).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
                     <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
@@ -583,6 +585,74 @@ export default function DailyCarePage() {
               <p>No current care updates are available to show. This does not mean nothing happened.</p>
             )}
             {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
+          </section>
+
+          <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
+            <h2 id="daily-care-capture-title">Anything different today?</h2>
+            <p className="daily-care-muted">Share something, check in, or leave things as they are. Nothing is required.</p>
+            <Button
+              variant="primary"
+              aria-expanded={captureOpen}
+              onClick={() => {
+                if (captureOpen) {
+                  setCaptureOpen(false);
+                  setCaptureMode(null);
+                } else {
+                  setCaptureOpen(true);
+                }
+              }}
+            >
+              {captureOpen ? "Close capture" : "Share something"}
+            </Button>
+            {captureOpen && (
+              <div className="daily-care-capture-state">
+                {!captureMode ? (
+                  <div role="group" aria-label="Choose what you want to share" className="daily-care-capture-options">
+                    {([
+                      { value: "something", label: "Something happened", detail: "Share an observation in your own words." },
+                      { value: "medicine", label: "Medicine", detail: "Record what happened with a medicine." },
+                      { value: "measurement", label: "Measurement", detail: "Record a reading that was actually taken." },
+                      { value: "photo", label: "Photograph", detail: "Add a photo as care-record evidence." },
+                      { value: "checkin", label: "Quick check-in", detail: "Share one overall impression of today." },
+                      { value: "note", label: "Note", detail: "Save a short note without categorizing it." },
+                    ] as const).map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className="daily-care-capture-option"
+                        onClick={() => setCaptureMode(option.value)}
+                      >
+                        <strong>{option.label}</strong>
+                        <span>{option.detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="daily-care-capture-mode-heading">
+                      <strong>{({
+                        something: "Something happened",
+                        medicine: "Medicine",
+                        measurement: "Measurement",
+                        photo: "Photograph",
+                        checkin: "Quick check-in",
+                        note: "Note",
+                      } as const)[captureMode]}</strong>
+                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>Back to choices</Button>
+                    </div>
+                    {captureMode === "checkin" ? (
+                      <QuickDailyCheckIn />
+                    ) : captureMode === "photo" ? (
+                      <DailyCarePhotoCapture />
+                    ) : captureMode === "something" ? (
+                      <NaturalLanguageDailyUpdate />
+                    ) : (
+                      <StructuredDailyCapture mode={captureMode} />
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </section>
 
           <section aria-labelledby="daily-care-documents-title" className="daily-care-context-panel">
@@ -762,74 +832,6 @@ export default function DailyCarePage() {
             )}
           </section>
 
-          <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
-            <h2 id="daily-care-capture-title">Anything different today?</h2>
-            <p className="daily-care-muted">Share something, check in, or leave things as they are. Nothing is required.</p>
-            <Button
-              variant="primary"
-              aria-expanded={captureOpen}
-              onClick={() => {
-                if (captureOpen) {
-                  setCaptureOpen(false);
-                  setCaptureMode(null);
-                } else {
-                  setCaptureOpen(true);
-                }
-              }}
-            >
-              {captureOpen ? "Close capture" : "Share something"}
-            </Button>
-            {captureOpen && (
-              <div className="daily-care-capture-state">
-                {!captureMode ? (
-                  <div role="group" aria-label="Choose what you want to share" className="daily-care-capture-options">
-                    {([
-                      { value: "something", label: "Something happened", detail: "Share an observation in your own words." },
-                      { value: "medicine", label: "Medicine", detail: "Record what happened with a medicine." },
-                      { value: "measurement", label: "Measurement", detail: "Record a reading that was actually taken." },
-                      { value: "photo", label: "Photograph", detail: "Add a photo as care-record evidence." },
-                      { value: "checkin", label: "Quick check-in", detail: "Share one overall impression of today." },
-                      { value: "note", label: "Note", detail: "Save a short note without categorizing it." },
-                    ] as const).map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className="daily-care-capture-option"
-                        onClick={() => setCaptureMode(option.value)}
-                      >
-                        <strong>{option.label}</strong>
-                        <span>{option.detail}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <div className="daily-care-capture-mode-heading">
-                      <strong>{({
-                        something: "Something happened",
-                        medicine: "Medicine",
-                        measurement: "Measurement",
-                        photo: "Photograph",
-                        checkin: "Quick check-in",
-                        note: "Note",
-                      } as const)[captureMode]}</strong>
-                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>Back to choices</Button>
-                    </div>
-                    {captureMode === "checkin" ? (
-                      <QuickDailyCheckIn />
-                    ) : captureMode === "photo" ? (
-                      <DailyCarePhotoCapture />
-                    ) : captureMode === "something" ? (
-                      <NaturalLanguageDailyUpdate />
-                    ) : (
-                      <StructuredDailyCapture mode={captureMode} />
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </section>
-
           <section aria-labelledby="daily-care-history-title" className="daily-care-context-panel">
             <div className="daily-care-history-heading">
               <div>
@@ -900,6 +902,19 @@ export default function DailyCarePage() {
           max-width: 48rem;
           margin: 0 auto 1.25rem;
           gap: .65rem;
+        }
+        .daily-care-back-button {
+          display: inline-flex;
+          flex: 0 0 auto;
+          align-items: center;
+          justify-content: center;
+          gap: .4rem;
+          min-height: 44px;
+          padding-inline: .8rem;
+          border-color: var(--theme-panel-border);
+          color: var(--theme-panel-fg);
+          font-weight: 600;
+          white-space: nowrap;
         }
         .daily-care-context-panel {
           width: 100%;
