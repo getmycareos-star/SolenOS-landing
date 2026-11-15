@@ -79,15 +79,15 @@ for (const [source, pattern, label] of [
   [historyPanel, /const needsReview = comparisonCurrent \? changes\.filter/, "all findings from stale or unchecked comparisons must remain review-only"],
   [historyPanel, /SolenOS could not confirm that the source history for this comparison is current/, "unchecked source freshness must be disclosed to caregivers"],
   [lcr, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the primary LCR"],
-  [lcr, /careHistoryOpen \? \([\s\S]*?<ChangeIntelligencePanel \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>/, "persisted change intelligence and Delta history must appear together in earlier care history"],
+  [lcr, /careHistoryOpen \? \([\s\S]*?<ChangeIntelligencePanel personId=\{personId\} \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>/, "persisted change intelligence and Delta history must appear together in earlier care history"],
   [historyPanel, /if \(!personId\) return null/, "history must wait for a scoped care record"],
 ]) {
   assert(pattern.test(source), "Missing persisted care-change contract: " + label);
 }
 
 assert(
-  /function requirePersonId\(\)[\s\S]*?getPersonId\(\)[\s\S]*?server-issued SolenOS care session is required/.test(api),
-  "API requests must require the current server-issued care session",
+  /function requirePersonId\(requestedPersonId\?\: string\)[\s\S]*?requestedPersonId !== activePersonId/.test(api),
+  "Change intelligence requests must reject a person id outside the active caregiver session",
 );
 assert(
   /getJSON\(\`\/change\/changes\/\$\{personId\}/.test(api),
