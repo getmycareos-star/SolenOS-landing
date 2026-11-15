@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverStatusLabel, caregiverSituationStateLabel } from "@/lib/caregiver-language";
 import {
   getPersistedChangeDetail,
   getPersistedPatternDetail,
@@ -591,7 +591,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                   <div className="lcr-timeline-content">
                     <div className="lcr-entry-heading">
                       <h3>{caregiverSafeAssistantText(situation.title) ?? "Saved care situation"}</h3>
-                      <span>{caregiverStatusLabel(situation.state) ?? "Needs review"}</span>
+                      <span>{caregiverSituationStateLabel(situation.state) ?? caregiverStatusLabel(situation.state) ?? "Needs review"}</span>
                     </div>
                     <p>{caregiverSafeChangeText(situation.description ?? situation.explanation) ?? "This situation is based on saved care records."}</p>
                     <p className="panel-muted">
@@ -660,7 +660,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               {caregiverStatusLabel(situation.state) ?? "Current status"} (current)
                             </option>
                             {allowedStates.map((state) => (
-                              <option key={state} value={state}>{caregiverStatusLabel(state) ?? state}</option>
+                              <option key={state} value={state}>{caregiverSituationStateLabel(state) ?? caregiverStatusLabel(state) ?? state}</option>
                             ))}
                           </select>
                         </label>
@@ -698,7 +698,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                         <ul>
                           {stateHistory.map((entry, index) => (
                             <li key={situation.id + "-state-" + index}>
-                              <strong>{caregiverStatusLabel(String(entry.new_state ?? "")) ?? "Status updated"}</strong>
+                              <strong>{caregiverSituationStateLabel(String(entry.new_state ?? "")) ?? caregiverStatusLabel(String(entry.new_state ?? "")) ?? "Status updated"}</strong>
                               <p className="panel-muted">
                                 {entry.recorded_at ? new Date(String(entry.recorded_at)).toLocaleString() : "Time not recorded"}
                               </p>
