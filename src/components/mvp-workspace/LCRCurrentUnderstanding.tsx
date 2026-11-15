@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
 const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <p role="status">Loading saved care information…</p> });
@@ -472,8 +472,29 @@ const DOCUMENT_ASSERTION_LABELS: Record<string, string> = {
   document_observation_statement: "Observation from document",
 }
 
+const CURRENT_CARE_TITLE_LABELS: Readonly<Record<string, string>> = {
+  "structured daily capture": "Daily care update",
+  "daily care entry": "Daily care note",
+  "daily capture": "Daily care update",
+};
+
 function displayCurrentCareTitle(item: CurrentCareItem): string {
-  return DOCUMENT_ASSERTION_LABELS[item.title || ""] || caregiverSafeAssistantText(item.title) || caregiverLabel(item.kind) || "Care record item"
+  const title = item.title?.trim().toLowerCase() || "";
+  return DOCUMENT_ASSERTION_LABELS[item.title || ""] ||
+    CURRENT_CARE_TITLE_LABELS[title] ||
+    caregiverSafeAssistantText(item.title) ||
+    caregiverLabel(item.kind) ||
+    "Care record item";
+}
+
+function displayCurrentCareDescription(item: CurrentCareItem): string | null {
+  const original = item.description?.trim().toLowerCase() || "";
+  const originalTitle = item.title?.trim().toLowerCase() || "";
+  if (original && originalTitle && original === originalTitle) return null;
+  const description = displayDescription(item.description);
+  return description.trim().toLowerCase() === displayCurrentCareTitle(item).trim().toLowerCase()
+    ? null
+    : description;
 }
 
 function displayDescription(value?: string | null): string {
@@ -590,6 +611,9 @@ const CAREGIVER_LABELS: Record<string, string> = {
   mobility: "Movement",
   care_recipient: "Person receiving care",
   daily_care: "Daily care",
+  structured_daily_capture: "Daily care update",
+  daily_care_entry: "Daily care note",
+  daily_capture: "Daily care update",
 };
 
 function caregiverLabel(value?: string | null): string {
@@ -1682,7 +1706,7 @@ export function LCRCurrentUnderstanding() {
                         <ul>
                           {changeEvidence[change.id].assertions.map((assertion) => (
                             <li key={assertion.id}>
-                              <p>{caregiverLabel(assertion.field)}: {assertion.asserted_value}</p>
+                              <p>{caregiverFieldLabel(assertion.field) || caregiverLabel(assertion.field)}: {assertion.asserted_value}</p>
                               <small>{caregiverLabel(assertion.subject_type)} · Information: {caregiverInformationLabel(assertion.epistemic_state || "reported") || "Caregiver report"} · Review: {caregiverLabel(assertion.assertion_status)} · {caregiverSafeAssistantText(assertion.source_label) || "Saved care record"}</small>
                               <small>Observed: {formatWhen(assertion.observed_at)} · Recorded: {formatWhen(assertion.recorded_at)}</small>
                               {assertion.source_text && <p>{caregiverSafeAssistantText(assertion.source_text) || "The original wording is saved."}</p>}
@@ -1763,10 +1787,24 @@ export function LCRCurrentUnderstanding() {
                       <strong>{displayCurrentCareTitle(item)}</strong>
                       <span>{caregiverLabel(item.epistemic_status)}</span>
                     </div>
-                    <p style={{ whiteSpace: "pre-line" }}>{displayDescription(item.description)}</p>
+                    {displayCurrentCareDescription(item) && <p style={{ whiteSpace: "pre-line" }}>{displayCurrentCareDescription(item)}</p>}
                     <p className="lcr-entry-status">{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
                     <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · {item.occurred_at ? `Event: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
-                    {(item.evidence_ids?.length > 0 || item.evidence_link_validation) && <small>{item.evidence_link_validation === "valid" ? "Original source linked" : item.evidence_ids?.length > 0 ? "A source is linked, but its details are not available here." : "Source details are not available for this entry."}</small>}
+                    {item.evidence_ids?.length > 0 ? (
+                      <div>
+                        <small>{item.evidence_link_validation === "valid" ? "Original report attached" : "Related report linked"}</small>
+                        {item.source_passage ? (
+                          <details>
+                            <summary>Read original report</summary>
+                            <blockquote>{caregiverSafeAssistantText(item.source_passage) || "The original wording is saved."}</blockquote>
+                          </details>
+                        ) : (
+                          <small>Original report text is not available in this view.</small>
+                        )}
+                      </div>
+                    ) : (
+                      <small>Original report is not linked to this item.</small>
+                    )}
                     {item.derived_observations && item.derived_observations.length > 0 && (
                       <details className="lcr-entry-status">
                         <summary>Details identified in this note ({item.derived_observations.length})</summary>
@@ -1774,7 +1812,7 @@ export function LCRCurrentUnderstanding() {
                         <ul>
                           {item.derived_observations.map((observation) => (
                             <li key={observation.id}>
-                              <strong>{caregiverLabel(observation.attribute || observation.observation_kind)}</strong>
+                              <strong>{caregiverFieldLabel(observation.attribute) || caregiverLabel(observation.attribute || observation.observation_kind)}</strong>
                               {observation.subject_label && <small>About: {caregiverSafeAssistantText(observation.subject_label) || "Person receiving care"}</small>}
                               {observation.observer_label && <small>Reported by: {caregiverSafeAssistantText(observation.observer_label) || "Not recorded"}</small>}
                               {observation.observation_method && <small>Observation method: {caregiverLabel(observation.observation_method)}</small>}
