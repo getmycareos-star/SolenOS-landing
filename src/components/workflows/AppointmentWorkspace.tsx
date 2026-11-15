@@ -209,7 +209,7 @@ export default function AppointmentWorkspace() {
       setOutcomeProposals(result.items || [])
       // Candidates stay in proposal storage until explicit caregiver acceptance creates an care record detail.
       if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
-      setMessage((result.count || 0) + ' outcome candidate(s) prepared from the saved saved appointment details. No care record detail is created until you accept a candidate after review.')
+      setMessage((result.count || 0) + ' possible care updates were prepared from your saved appointment details. Nothing is added to your Care Record until you review and approve a suggested detail.')
     } catch (cause) {
       setError('Appointment information could not be prepared for review. Please try again.')
     } finally {
@@ -248,11 +248,11 @@ export default function AppointmentWorkspace() {
         ? (result.written_to_lcr
             ? result.reconciliation?.stages?.reconciliation === 'committed'
               ? 'Accepted as a caregiver-reviewed care record detail, and the care record was reassessed. It is not clinically verified.'
-              : 'Accepted as a caregiver-reviewed care record detail. The original report remains attributed to the caregiver; reassessment status was not returned.'
+              : 'Added to your Care Record after your review. The original report still shows that you shared it.'
             : 'No care record detail was created.')
         : decision === 'correct'
-          ? 'Correction saved as a separate pending candidate. Review and accept it separately before it becomes an care record detail.'
-          : 'Candidate rejected. No care record detail was created; the rejection remains in review history.')
+          ? 'Your correction was saved for review. It will not change your Care Record until you approve it.'
+          : 'You chose not to add this detail. Your decision is saved in the review history.')
     } catch (cause) {
       setError('Your review could not be saved. Please try again.')
     } finally {
@@ -346,7 +346,7 @@ export default function AppointmentWorkspace() {
       </div>
 
       {open && <>
-        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>You are not expected to complete forms before, during or after a visit. Notes are optional. Caregiver reports stay attributed to the caregiver, and nothing here silently changes the Living Care Record.</span></div>
+        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>You are not expected to complete forms before, during or after a visit. Notes are optional. Caregiver reports stay attributed to the caregiver, and nothing here silently changes the Care Record.</span></div>
         <nav className="guided-stages" aria-label="Appointment stages">
           {([['prepare', 'Before'], ['during', 'During'], ['after', 'After']] as const).map(([key, label]) => (
             <button key={key} type="button" className={stage === key ? 'is-active' : ''} aria-pressed={stage === key} onClick={() => setStage(key)}>{label}</button>
@@ -401,7 +401,7 @@ export default function AppointmentWorkspace() {
             <textarea value={note} onChange={event => setNote(event.target.value)} rows={4} placeholder="Optional note. Your own words are enough." />
           </label>
           <button className="guided-primary" type="button" onClick={() => void saveNote()} disabled={saving}>{saving ? 'Saving…' : 'Save note and continue'}</button>
-          <p className="guided-footnote">A saved note is attributed to the caregiver. It is not a verified professional statement and does not change the Living Care Record.</p>
+          <p className="guided-footnote">A saved note is attributed to the caregiver. It is not a verified professional statement and does not change the Care Record.</p>
         </div>}
 
         {stage === 'after' && <div className="guided-panel">
