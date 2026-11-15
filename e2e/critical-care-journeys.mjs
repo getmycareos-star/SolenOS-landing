@@ -667,6 +667,21 @@ await record("06 Companion context and Qwen output", async () => {
     assert.match(normalizedReply, /sleep|slept|rest|overnight/);
     assert.match(normalizedReply, /lunch|midday/);
     assert.match(normalizedReply, /dinner|supper|evening/);
+    assert.match(
+      normalizedReply,
+      /poorly|poor sleep|unsettled|restless|rough sleep/,
+      "Companion did not communicate the recorded poor-sleep or unsettled observation",
+    );
+    assert.match(
+      normalizedReply,
+      /barely|hardly|little.*lunch|lunch.*little|low appetite|small lunch/,
+      "Companion did not communicate the recorded low-lunch-intake observation",
+    );
+    assert.match(
+      normalizedReply,
+      /calmer|more.*dinner|dinner.*more|ate a little more|settled this evening/,
+      "Companion did not communicate the recorded evening improvement observation",
+    );
     assert.ok(
       (answer.payload.source_event_ids ?? []).length > 0 ||
       (answer.payload.source_evidence_ids ?? []).length > 0,
