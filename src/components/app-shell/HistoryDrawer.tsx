@@ -1260,7 +1260,7 @@ export function HistoryDrawer() {
                   {sourceWarnings.length > 0 && !loading && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries we could retrieve are still shown. Other entries may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
+                      <span>Some entries couldn’t be loaded. Refresh to try again.</span>
                     </div>
                   )}
 
