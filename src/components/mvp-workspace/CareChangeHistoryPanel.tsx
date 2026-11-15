@@ -125,7 +125,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
       }
     } finally {
       earlierRequestActive.current = false;
-      if (requestId === requestSequence.current) setLoadingEarlier(false);
+      setLoadingEarlier(false);
     }
   }, [hasMore, loadingEarlier, personId, runs.length]);
 
