@@ -632,7 +632,7 @@ await record("LCR care history shows the original caregiver report before source
   await history.page.getByRole("heading", { name: "Your care, at a glance" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
 
-  const sourceSummary = history.page.getByText("Source details", { exact: true }).first();
+  const sourceSummary = history.page.getByText("When and by whom it was reported", { exact: true }).first();
   await sourceSummary.waitFor({ timeout: 15_000 });
   const sourceDetails = sourceSummary.locator("xpath=..");
   assert.equal(await sourceDetails.evaluate((element) => element.open), false,
