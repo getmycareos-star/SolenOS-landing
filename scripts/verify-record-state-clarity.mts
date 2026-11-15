@@ -26,6 +26,8 @@ assert.doesNotMatch(lcr, /Missing information does not mean everything is fine/)
 assert.doesNotMatch(lcr, /This does not mean there are no care needs|This is not a statement that no care needs exist/);
 assert.match(lcr, /Not everything that happens is automatically recorded/);
 assert.match(lcr, /error && projection &&/);
+assert.match(lcr, /if \(manual\) setRefreshing\(true\);\s*else \{[\s\S]*?setProjection\(null\)/);
+assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setProjection\(null\)/);
 assert.doesNotMatch(lcr, /Your Care Record does not have any care information yet/);
 assert.doesNotMatch(lcr, /No saved care details to review yet/);
 assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setChanges\(\[\]\)/);
@@ -54,6 +56,7 @@ assert.match(reminders, /const \[hasLoaded, setHasLoaded\] = useState\(false\)/)
 assert.match(reminders, /!hasLoaded && error \? null/);
 const followUps = read("src/app/workspace/open-loops/page.tsx");
 assert.match(followUps, /if \(nextLoops\) setLoops\(nextLoops\)/);
+assert.match(followUps, /if \(nextAssessment\) setAssessment\(nextAssessment\)/);
 assert.doesNotMatch(followUps, /setLoops\(nextLoops \|\| \[\]\)/);
 assert.match(reminders, /RecordState kind="loading"/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
