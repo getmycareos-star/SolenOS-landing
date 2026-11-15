@@ -311,7 +311,7 @@ function categoryLabel(category: HistoryCategory, eventType?: string): string {
   if (category === "outcome") return "Outcome";
   if (category === "follow-up") return "Follow-up";
   if (category === "lcr-update") return "Care Record update";
-  return (eventType || "Care record").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return "Care update";
 }
 
 function parseDescription(description?: string | null): string {
@@ -414,7 +414,7 @@ function mapDocument(item: EvidenceRecord): HistoryRecord {
       { label: "Evidence status", value: status },
       { label: "Source type", value: item.source_type || "" },
       { label: "Upload time", value: uploadedAt ? formatDateTime(uploadedAt) : "Not recorded" },
-      { label: "Evidence ID", value: item.id },
+      
     ]),
   };
 }
@@ -555,14 +555,14 @@ function mapLcrRevision(item: CareStateRevision): HistoryRecord {
     tags: ["care record", "update", changeKind],
     source_kind: "lcr-revision",
     source_details: detailFields([
-      { label: "Target type", value: item.target_type || "Not recorded" },
-      { label: "Target ID", value: item.target_id || "Not recorded" },
+      
+      
       { label: "Change kind", value: changeKind },
-      { label: "Revision number", value: typeof item.revision_number === "number" ? String(item.revision_number) : "Not returned" },
-      { label: "Changed by caregiver ID", value: item.changed_by_caregiver_id || "" },
-      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
-      { label: "Previous recorded state", value: snapshotText(item.before_state) },
-      { label: "Updated recorded state", value: snapshotText(item.after_state) },
+      
+      
+      
+      { label: "Previous saved details", value: snapshotText(item.before_state) },
+      { label: "Updated saved details", value: snapshotText(item.after_state) },
     ]),
   };
 }
@@ -598,8 +598,8 @@ function mapDecision(item: CareDecision): HistoryRecord {
       { label: "Decision status", value: item.decision_status || "Not specified" },
       { label: "Decided at", value: item.decided_at ? formatDateTime(item.decided_at) : "Not recorded" },
       { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
-      { label: "Recorded by caregiver ID", value: item.created_by_caregiver_id || "" },
-      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
+      
+      
     ]),
   };
 }
@@ -629,8 +629,8 @@ function mapOutcome(item: CareOutcome): HistoryRecord {
       { label: "Action ID", value: item.action_id || "Not recorded" },
       { label: "Outcome status", value: status },
       { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
-      { label: "Recorded by caregiver ID", value: item.created_by_caregiver_id || "" },
-      { label: "Evidence references", value: item.evidence_ids?.join(", ") || "None attached" },
+      
+      
     ]),
   };
 }
@@ -679,7 +679,7 @@ function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
     display_date_label: "Shared",
     title: "Outgoing care handoff" + recipientLabel,
     description: item.has_summary
-      ? "A caregiver-reviewed summary was attached to this handoff. Sharing did not change the Living Care Record."
+      ? "A caregiver-reviewed summary was attached to this handoff. Sharing did not change the Care Record."
       : "The outgoing handoff record does not report an attached summary.",
     tags: ["handoff", "outgoing"],
     source_kind: "handoff-out",
@@ -1327,7 +1327,7 @@ export function HistoryDrawer() {
 
                 <footer className="history-drawer-footer">
                   <ShieldCheck size={15} aria-hidden />
-                  <span>History combines saved care events, documents, appointment workspaces, handoffs, Living Care Record revisions, decisions and outcomes where those sources are available. Event time and recording time remain distinct{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
+                  <span>History brings together saved care updates, documents, appointments, handoffs, Care Record changes, decisions and outcomes where available. It shows both when something happened and when it was saved{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
                 </footer>
               </>
             )}
