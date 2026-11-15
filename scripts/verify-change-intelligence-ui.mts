@@ -41,7 +41,7 @@ for (const contract of [
   ["panel keeps backend reassessment available for deliberate refresh", /reassessPersistedChangeIntelligence\(personId\)/],
   ["resolved decisions are restricted to cessation/disappearance with complete coverage", /\["cessation", "disappearance"\][\s\S]*?baseline_coverage_status === "covered"[\s\S]*?current_coverage_status === "covered"[\s\S]*?changeStatus\(change\.id, "resolved"\)/],
   ["historical assessments remain visible", /setChanges\(changeRows\)/],
-  ["inactive assessments are labeled as history", /Past assessment/],
+  ["inactive reviews remain in the care history", /Earlier review/],
   ["change explanations use the caregiver-safe change language filter", /caregiverSafeChangeText\(change\.explanation\)/],
   ["change source details are user-reviewable", /Review notes and documents/],
   ["pattern source details are user-reviewable", /Review pattern sources/],
