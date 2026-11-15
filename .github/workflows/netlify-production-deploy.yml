@@ -76,6 +76,7 @@ jobs:
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: dfbe1cd8-6450-4ed7-b9d8-e3bb39a0acbe
+      SOLENOS_RELEASE_APPROVED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
