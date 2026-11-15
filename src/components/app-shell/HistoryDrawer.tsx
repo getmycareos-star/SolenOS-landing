@@ -1281,7 +1281,7 @@ export function HistoryDrawer() {
                   ) : visibleRecords.length === 0 ? (
                     <div className="history-empty">
                       <HistoryEmptyIcon />
-                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
+                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Some care history is unavailable" : "Your care history starts with saved records"}</strong>
                       <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not retrieve every source. This empty view is not evidence that no care was recorded. Refresh to try again." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
