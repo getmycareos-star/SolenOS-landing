@@ -38,7 +38,7 @@ assert.match(source, /idempotency_key: idempotencyKey/,
   "a correction retry reuses a stable idempotency key");
 assert.match(source, /processing_status === "completed"/,
   "the UI only reports a completed correction after durable backend processing");
-assert.match(source, /corrections\\/\$\{encodeURIComponent\(session\.person\.id\)\}\\/\$\{encodeURIComponent\(correctionId\)\}\\/retry/,
+assert.ok(source.includes('/corrections/${encodeURIComponent(session.person.id)}/${encodeURIComponent(correctionId)}/retry'),
   "a pending correction can be retried through its person-scoped backend receipt");
 assert.match(source, /processing_status !== "completed"/,
   "pending correction state remains visible after the timeline is reloaded");
