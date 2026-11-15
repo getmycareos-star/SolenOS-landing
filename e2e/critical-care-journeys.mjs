@@ -1479,5 +1479,34 @@ await record("13 identity isolation across private care records", async () => {
   );
 });
 
+await record("14 privacy deletion request remains pending until independent review and verified fulfilment", async () => {
+  const deletionSession = await newSession("privacy deletion boundary");
+  const token = deletionSession.access_token;
+  const personId = deletionSession.person_id;
+
+  const submitted = await request("/api/v1/privacy/requests", {
+    token,
+    method: "POST",
+    body: {
+      request_type: "deletion",
+      authority_basis: "self",
+      authority_attested: true,
+      note: "Synthetic acceptance test; verify request intake does not delete data automatically.",
+    },
+  });
+  assert.equal(submitted.status, 201, JSON.stringify(submitted.payload));
+  assert.equal(submitted.payload.request_type, "deletion");
+  assert.equal(submitted.payload.request_status, "received_pending_authority_review");
+  assert.equal(submitted.payload.authority_verified, false);
+  assert.equal(submitted.payload.fulfilment_started, false);
+
+  const listed = await request("/api/v1/privacy/requests", { token });
+  assert.equal(listed.status, 200, JSON.stringify(listed.payload));
+  assert.ok(listed.payload.items.some((item) => item.id === submitted.payload.id));
+
+  const stillPresent = await request(`/api/v1/persons/${encodeURIComponent(personId)}`, { token });
+  assert.equal(stillPresent.status, 200, JSON.stringify(stillPresent.payload));
+});
+
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
