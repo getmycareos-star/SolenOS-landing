@@ -566,6 +566,7 @@ const CAREGIVER_LABELS: Record<string, string> = {
   awaiting_confirmation: "Needs review",
   detected: "Found in saved information",
   inconclusive: "Could not be confirmed",
+  accepted: "Reviewed",
   rejected: "Not supported",
   superseded: "Replaced by a newer review",
   active: "Current",
