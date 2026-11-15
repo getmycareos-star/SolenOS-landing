@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type Candidate = {
   candidate_index?: number;
