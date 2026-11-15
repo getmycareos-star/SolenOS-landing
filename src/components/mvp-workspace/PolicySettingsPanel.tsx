@@ -182,7 +182,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
           </p>
           <label className="consent-checkbox">
             <input type="checkbox" checked={requiredAck} disabled={saving} onChange={(event) => setRequiredAck(event.target.checked)} />
-            <span>I have read and accept the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. I understand SolenOS is not medical or emergency guidance, care information is not sold or used for advertising, and trusted contributors may add notes to the care record.</span>
+            <span>I have read and accept the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. I understand SolenOS does not provide medical or emergency advice, care information is not sold or used for advertising, and people I trust who have access can add notes to my Care Record.</span>
           </label>
           <button type="button" className="workspace-primary policy-acknowledge-button" onClick={() => void acknowledgeRequiredTerms()} disabled={!requiredAck || acknowledgementBusy || saving}>
             {acknowledgementBusy ? "Saving…" : "Confirm and save"}
@@ -207,8 +207,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
 
       {loadError ? (
         <p className="panel-muted">
-          We couldn't confirm whether this is on or off, so the control is disabled until your
-          saved choice can be checked.
+          We couldn't check whether feedback sharing is on or off. This setting is disabled until we can check your saved choice.
         </p>
       ) : dataImprovement ? (
         <div className="policy-improvement-details">
