@@ -43,6 +43,9 @@ const earlyAccess = fs.readFileSync(path.join(root, "src/app/early-access/page.t
 const workspaceLayout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 assert.match(earlyAccess, /href="\/workspace\?enter=1"/);
 assert.doesNotMatch(earlyAccess, /EarlyAccessConsentForm|type="checkbox"|ResearchPreviewAckGate/);
+assert.match(earlyAccess, /stored online with the care record/i);
+assert.match(earlyAccess, /permission to share/i);
+assert.match(earlyAccess, /Deletion is not self-service/i);
 assert.doesNotMatch(workspaceLayout, /ConsentGatePanel|WorkspacePrivacyBoundary|ResearchPreviewAckGate|type="checkbox"/);
 
 const settings = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PolicySettingsPanel.tsx"), "utf8");
