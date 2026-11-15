@@ -88,10 +88,13 @@ assert.match(
   /slice\(0, 2\)/,
   "The initial view must show no more than two ordinary questions.",
 );
+assert.match(clarificationPanel, /recommendationUnavailable/, "an unavailable recommendation read must have a distinct state");
+assert.match(clarificationPanel, /We couldn’t check for care questions just now/, "recommendation failure must be communicated plainly");
+assert.match(clarificationPanel, /caregiverOpenQuestions\.length === 0 && !recommendationUnavailable/, "an empty successful result must be distinct from an unavailable result");
 assert.match(
   clarificationPanel,
-  /SolenOS will ask when a care detail genuinely needs confirmation/,
-  "The empty state must explain that SolenOS, not the caregiver, initiates necessary clarification.",
+  /There are no care questions for you to review right now/,
+  "The empty state must only appear after a successful recommendation read.",
 );
 assert.doesNotMatch(
   clarificationPanel,
