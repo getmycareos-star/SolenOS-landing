@@ -174,7 +174,7 @@ assert.doesNotMatch(howItWorksCopy, /Living Care Record|AI Companion|natural inp
 assert.match(careOverviewPage, /Your Care Record/);
 assert.match(careOverviewPage, /Open Daily Care/);
 assert.doesNotMatch(careOverviewPage, /Your Living Care Record|AI Companion/);
-assert.match(changeIntelligence, /CARE CHANGES OVER TIME/);
+assert.match(changeIntelligence, /CHANGES IN CARE OVER TIME/);
 assert.match(changeIntelligence, /Review notes and documents/);
 assert.doesNotMatch(changeIntelligence, /LONGITUDINAL UNDERSTANDING|Past assessment|Review source evidence/);
 assert.match(sourceReview, /Notes and documents behind care information/);
@@ -203,6 +203,12 @@ assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Send a message to
 assert.doesNotMatch(persistedOrientation, /Your Living Care Record|source information|care record item/);
 assert.doesNotMatch(changeIntelligence, /saved care assessments|Caregiver-reported status|Saved information used|Care updates included/);
 assert.doesNotMatch(historyDrawer, /Living Care Record|LCR revision|Evidence references|caregiver ID|Immutable/);
+assert.doesNotMatch(historyDrawer, /evidence_ids\.join|Extracted text|Recorded LCR change|Persisted care decision|Persisted action outcome|Appointment workspace/);
+assert.match(historyDrawer, /Text read from the document/);
+assert.match(historyDrawer, /Related notes or documents/);
+assert.doesNotMatch(changeIntelligence, /CARE CHANGES OVER TIME|Observation time unknown|saved item\(s\)/);
+assert.doesNotMatch(persistedOrientation, /value\.replaceAll\("_", " "\)/);
+assert.doesNotMatch(persistedOrientation, /Possible interpretation|Still unclear|Confirmed/);
 assert.match(historyDrawer, /Your saved care history, in date order/);
 assert.match(historyDrawer, /What was saved and where it came from/);
 assert.doesNotMatch(careRecordOverview, /Your Living Care Record|Living Care Record|AI Companion/);
