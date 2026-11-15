@@ -436,7 +436,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       ) : null}
       {!loading && !error && changes.length === 0 && patterns.length === 0 && situations.length === 0 ? (
         <p className="panel-muted">
-          There is not enough saved information to show changes or patterns yet. This does not mean nothing changed.
+          No recent changes recorded.
         </p>
       ) : null}
       {changes.length > 0 ? (
