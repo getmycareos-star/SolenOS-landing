@@ -262,9 +262,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setCareUpdateError(null)
     setCareUpdateNotice(null)
     try {
-      await postJSON('/companion/care-updates/from-message/' + encodeURIComponent(messageId), { confirm_care_report: true })
+      const response = await postJSON('/companion/care-updates/from-message/' + encodeURIComponent(messageId), { confirm_care_report: true }) as { proposal?: { status?: string } }
       setConfirmingCareReportId(null)
-      setCareUpdateNotice('Saved for review. It will not enter your Care Record unless you accept it below.')
+      setCareUpdateNotice(response?.proposal?.status === 'accepted'
+        ? 'This report is already in your Care Record.'
+        : response?.proposal?.status === 'rejected'
+          ? 'This report was previously declined and was not added to your Care Record.'
+          : 'Saved for review. It will not enter your Care Record unless you accept it below.')
       await loadPendingCareUpdates()
     } catch {
       setCareUpdateError('This message could not be saved for review. It has not been added to your Care Record.')
