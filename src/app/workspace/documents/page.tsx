@@ -430,7 +430,7 @@ export default function DocumentsPage() {
 
   const deleteSelectedDocument = async () => {
     if (!selected || deletingDocument) return;
-    if (!window.confirm("Delete this document and its uncommitted extraction data? This cannot be undone.")) return;
+    if (!window.confirm("Delete this document and its unreviewed details? This cannot be undone.")) return;
     setDeletingDocument(true);
     setPreviewError(null);
     try {
