@@ -51,6 +51,16 @@ type PanelData = {
 }
 
 const emptyData: PanelData = { assertions: [], freshness: [], revisions: [], outcomes: [] }
+const INTERNAL_REVISION_TARGET_TYPES = new Set([
+  "baselines",
+  "changes",
+  "uncertainty_assessments",
+  "patterns",
+  "significance_assessments",
+  "change_confirmations",
+  "care_attention_assessments",
+  "situation_assessments",
+])
 function simpleRecordLabel(value?: string | null): string {
   if (!value) return "Not recorded";
   return ({
@@ -137,6 +147,10 @@ export default function CareContinuityIntegrityPanel({
     [data.freshness],
   )
 
+  const caregiverVisibleRevisions = data.revisions.filter((item) =>
+    !INTERNAL_REVISION_TARGET_TYPES.has(item.target_type.trim().toLowerCase())
+  )
+
   async function markReviewed(assertion: Assertion) {
     setError('')
     setNotice('')
@@ -200,7 +214,7 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record history</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A history of how recorded care information has changed over time.</p>
-        {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes to the saved care information are available yet.</p> : data.revisions.slice(0, 20).map((item) =>
+        {caregiverVisibleRevisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care changes are available to show here yet.</p> : caregiverVisibleRevisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
             <p style={{ fontSize: 12, margin: '5px 0' }}>Change recorded {new Date(item.changed_at).toLocaleString()} · {simpleRecordLabel(item.change_kind)}</p>
