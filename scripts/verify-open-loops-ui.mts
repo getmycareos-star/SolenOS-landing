@@ -17,7 +17,7 @@ const required: Array<[string, RegExp]> = [
   ["preserves the caregiver report draft after an uncertain save", /onUpdate\(loop, updateText\.trim\(\)\)[\s\S]*?\.catch\(\(\) => \{ \/\* Keep the exact report text available for a safe retry\. \*\//],
   ["states that a caregiver update is not a verified outcome", /Your update was saved as a caregiver report\. SolenOS has not marked the matter resolved\./],
   ["fails closed when the update cannot be confirmed", /The update could not be confirmed\. Nothing has been marked resolved\./],
-  ["discloses bounded or incomplete source coverage", /assessmentIsBounded[\s\S]*?Some saved care information is incomplete or outside the current review/],
+  ["discloses bounded or incomplete source coverage", /assessmentIsBounded[\s\S]*?Some saved care information is missing or was not checked/],
   ["renders the four explicit attention classifications", /needs_attention_now[\s\S]*?important_to_address[\s\S]*?can_wait_with_documented_basis[\s\S]*?needs_clarification/],
   ["shows linked notes and documents", /Related notes and documents[\s\S]*?uniqueEvidenceIds/],
   ["does not expose manual task creation or a parallel open-loop writer", /function shareUpdate[\s\S]*?postJSON\("\/open-loops\/"[\s\S]*?\/outcomes/],
@@ -29,7 +29,7 @@ for (const [label, pattern] of required) {
 
 assert.doesNotMatch(page, /function createLoop|postJSON\("\/open-loops",/, "caregivers must report changes to existing care matters; SolenOS manages the unresolved follow-up lifecycle");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
-assert.ok(page.includes("SolenOS keeps track") || page.includes("SolenOS manages"), "caregiver copy must explain that SolenOS manages unresolved matters");
+assert.ok(page.includes("SolenOS reviews saved care information"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
 
 assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
