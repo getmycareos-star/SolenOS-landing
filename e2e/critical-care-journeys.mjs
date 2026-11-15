@@ -1005,7 +1005,7 @@ await record("07 change detection and supporting evidence", async () => {
     if (change.certainty === "supported") {
       assert.ok(change.source_record_refs.length > 0, "a supported change must be linked to source evidence");
     }
-    if (["potential_worsening", "potential_improvement"].includes(change.change_direction)) {
+    if (["potential_worsening", "potential_improvement"].includes(change.classification)) {
       assert.equal(change.certainty, "candidate", "possible direction must not be promoted to a confirmed change");
     }
   }
