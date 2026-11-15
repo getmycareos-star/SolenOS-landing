@@ -1163,7 +1163,9 @@ export function LCRCurrentUnderstanding() {
         </div>
         {sourceFreshness?.reassessment_recommended && (
           <div role="status">
-            <p>Some information may have changed since this picture was last reviewed. Refresh to check for updates.</p>
+            <p>{sourceFreshness.status === "freshness_check_unavailable"
+              ? "We couldn’t check whether this care summary is up to date. The last saved version is still available, but it may be out of date. Refresh before relying on it."
+              : "Some information may have changed since this picture was last reviewed. Refresh to check for updates."}</p>
             <button type="button" onClick={() => void refreshSituationAssessment()} disabled={assessmentLoading}>
               {assessmentLoading ? "Refreshing…" : "Refresh care summary"}
             </button>
