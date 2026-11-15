@@ -275,7 +275,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           eligible_question_ids: [],
           recommended_question_ids: [],
         };
-        setNotice("Care questions are temporarily unavailable. Your saved information has not changed.");
         setRecommendationUnavailable(true);
       }
       assertScopedRows(claimRows, sessionPersonId, "claims");
