@@ -89,9 +89,9 @@ export function PolicySettingsPanel(_props: Props = {}) {
       setDataImprovement(Boolean(saved.profile?.data_improvement_consent));
       setLimitedMode(Boolean(saved.profile?.limited_mode));
       setAcceptedAt(saved.consent?.accepted_at ?? new Date().toISOString());
-      setMessage("Required privacy acknowledgement saved. You can now change your optional improvement choice.");
+      setMessage("Your privacy terms have been saved. You can now choose whether to share feedback to help improve SolenOS.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "We couldn't save the acknowledgement. Please try again.");
+      setMessage("We couldn't save your privacy choice. Please try again.");
     } finally {
       setSaving(false);
       setAcknowledgementBusy(false);
@@ -134,8 +134,8 @@ export function PolicySettingsPanel(_props: Props = {}) {
       setDataImprovement(enabled);
       setMessage(
         enabled
-          ? "Your opt-in preference is saved. Only eligible feedback you deliberately submit can enter optional improvement review; required terms must also be acknowledged before feedback is accepted."
-          : "Your opt-out preference is saved. New submissions are blocked from optional improvement processing, and queued review-stage contributions are removed. Your Living Care Record remains available.",
+          ? "Your choice is saved. Feedback you choose to send may be reviewed to help improve SolenOS. You must also accept the Terms of Service and Privacy Policy before it can be used."
+          : "Your choice is saved. New feedback will not be used to improve SolenOS, and any feedback waiting for review has been removed. Your Care Record is still available.",
       );
     } catch {
       // Keep the previously confirmed preference as the source of truth.
