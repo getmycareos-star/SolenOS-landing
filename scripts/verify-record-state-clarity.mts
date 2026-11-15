@@ -62,6 +62,8 @@ assert.match(reminders, /!hasLoaded && error \? null/);
 const followUps = read("src/app/workspace/open-loops/page.tsx");
 assert.match(followUps, /if \(nextLoops\) setLoops\(nextLoops\)/);
 assert.match(followUps, /if \(nextAssessment\) setAssessment\(nextAssessment\)/);
+assert.match(followUps, /import \{ RecordState \} from "@\/components\/ui\/RecordState"/);
+assert.match(followUps, /RecordState kind=\{attentionWarning \? "unavailable" : "empty"\}/);
 assert.doesNotMatch(followUps, /setLoops\(nextLoops \|\| \[\]\)/);
 assert.match(reminders, /RecordState kind="loading"/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
