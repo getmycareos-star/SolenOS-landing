@@ -289,7 +289,7 @@ export default function FollowUpsPage() {
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Matters that can wait on the basis of the saved information, or have no stronger priority basis.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
         {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
-        {unclassifiedLoops.map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Saved follow-up · {statusLabel(loop.status)}</p><h3>{caregiverSafeAssistantText(loop.title) || "Care matter"}</h3><p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span><Clock3 size={14} /> First recorded {dateLabel(loop.created_at)}</span></p><button type="button" className="followup-text-button" onClick={() => void loadHistory(loop)}>View previous updates</button></article>)}
+        {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === loop.id} history={historyById[loop.id]} />)}
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">No other open matters were returned by the available assessment.</p>}
       </section>
       <section className="followups-section">
