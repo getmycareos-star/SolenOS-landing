@@ -119,7 +119,7 @@ export function PersistedCareOrientation() {
         <div className="persisted-care-orientation-header">
           <div><h2>We couldn't load your care information</h2></div>
         </div>
-        <p className="persisted-care-orientation-error" role="alert">{error || "Your saved care information isn't available right now."}</p>
+        <p className="persisted-care-orientation-error" role="alert">{caregiverSafeAssistantText(error) || "Your saved care information isn't available right now."}</p>
         <button type="button" onClick={() => void load()}>Try again</button>
       </section>
     );
