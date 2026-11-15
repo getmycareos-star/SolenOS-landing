@@ -20,7 +20,8 @@ const required: Array<[string, RegExp]> = [
   ["discloses bounded or incomplete source coverage", /assessmentIsBounded[\s\S]*?Some saved care information is missing or was not checked/],
   ["renders the four explicit attention classifications", /needs_attention_now[\s\S]*?important_to_address[\s\S]*?can_wait_with_documented_basis[\s\S]*?needs_clarification/],
   ["shows linked notes and documents", /Related notes and documents[\s\S]*?uniqueEvidenceIds/],
-  ["shows follow-ups that need review after a linked source correction", /review_at: loop\.review_at[\s\S]*?Review requested/],
+  ["passes a linked follow-up review date into its card", /review_at: loop\.review_at/],
+  ["labels a due review as requested rather than as a future date", /Review requested/],
   ["does not expose manual task creation or a parallel open-loop writer", /function shareUpdate[\s\S]*?postJSON\("\/open-loops\/"[\s\S]*?\/outcomes/],
 ];
 
