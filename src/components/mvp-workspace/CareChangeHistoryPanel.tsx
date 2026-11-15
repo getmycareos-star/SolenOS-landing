@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type SourceReference = {
   record_type?: string;
@@ -57,6 +57,31 @@ function formatDate(value?: string | null): string {
 
 function display(value: unknown): string {
   return caregiverSafeAssistantText(String(value ?? "")) || "Not recorded";
+}
+
+function displayChangeText(value: unknown, fallback = "Saved care information"): string {
+  return caregiverSafeChangeText(value) || fallback;
+}
+
+function readableSource(value?: string | null): string {
+  if (!value) return "Saved care information";
+  const labels: Record<string, string> = {
+    caregiver_report: "Caregiver report",
+    daily_care: "Daily care",
+    daily_care_entry: "Daily care update",
+    daily_care_capture: "Daily care",
+    solenos_daily_capture: "Daily care",
+    situation_understanding_assessment: "Care situation review",
+    document: "Document",
+    document_upload: "Document",
+    appointment: "Appointment",
+    care_handoff: "Care handoff",
+  };
+  return labels[value.trim().toLowerCase()] || displayChangeText(value);
+}
+
+function readableChangeType(value?: string | null): string {
+  return caregiverStatusLabel(value || "") || displayChangeText(value, "Care change");
 }
 
 function supported(change: ComputedChange): boolean {
@@ -170,7 +195,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
             <li key={run.id}>
               <article>
                 <h3>{formatDate(run.event_date || run.created_at)}</h3>
-                <p>Compared with earlier information · {display(run.source || "Caregiver report")}</p>
+                <p>Compared with earlier information · {readableSource(run.source)}</p>
                 {confirmed.length > 0 && (
                   <div>
                     <h4>Changes supported by saved records</h4>
@@ -179,14 +204,14 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                         <li key={`${run.id}-supported-${index}`}>
                           <strong>{display(item.name || item.domain)}</strong>
                           <p>
-                            {display(caregiverStatusLabel(item.change_type || "") || item.change_type)}.
-                            {item.previous != null ? ` Previous: ${display(item.previous)}.` : ""}
-                            {item.current != null ? ` Reported now: ${display(item.current)}.` : ""}
+                            {readableChangeType(item.change_type)}.
+                            {item.previous != null ? ` Previous: ${displayChangeText(item.previous, "Earlier details are not available.")}.` : ""}
+                            {item.current != null ? ` Reported now: ${displayChangeText(item.current, "Current details are saved but need a closer look.")}.` : ""}
                           </p>
                           {item.source_record_refs?.map((source, sourceIndex) => (
                             <details key={`${run.id}-source-${index}-${sourceIndex}`}>
                               <summary>Where this information came from</summary>
-                              <p>{display(source.label || source.record_type)}</p>
+                              <p>{displayChangeText(source.label || readableSource(source.record_type))}</p>
                               {source.source_excerpt && <blockquote>{display(source.source_excerpt)}</blockquote>}
                               <p>Happened: {formatDate(source.occurred_at)} · Recorded: {formatDate(source.recorded_at)}</p>
                               {source.reported_by && <p>Reported by: {display(source.reported_by)}</p>}
@@ -204,7 +229,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                       {needsReview.map((item, index) => (
                         <li key={`${run.id}-review-${index}`}>
                           {display(item.name || item.domain)}: {display(item.change_type)}.
-                          {item.comparison_basis ? ` ${display(item.comparison_basis)}` : " The available records do not support a reliable comparison yet."}
+                          {item.comparison_basis ? ` ${displayChangeText(item.comparison_basis, "The available records do not support a reliable comparison yet.")}` : " The available records do not support a reliable comparison yet."}
                         </li>
                       ))}
                     </ul>
