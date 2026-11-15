@@ -7,7 +7,7 @@ import { BrandLoading } from "@/components/brand";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
-  loading: () => <BrandLoading animate message="Opening your care companion…" />,
+  loading: () => <BrandLoading animate message="Opening Care Assistant…" />,
 });
 
 function WorkspaceHomeInner() {
