@@ -305,7 +305,7 @@ export default function DetailedAppointmentWorkspace() {
       </div>
 
       {open && <>
-        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This workspace saves separately from Living Care Record facts. Caregiver reports, notes about what a healthcare professional said, and SolenOS suggestions remain separate; saving does not confirm clinical statements or silently change your care record.</span></div>
+        <div className="appointment-boundary"><ShieldCheck size={17} aria-hidden="true" /><span>This appointment workspace saves separately from your Care Record. Your reports, notes about what a healthcare professional said, and SolenOS suggestions stay separate. Saving them does not confirm medical details or change your Care Record.</span></div>
         <nav className="appointment-stages" aria-label="Appointment stages">
           {([
             ['prepare', '1. Before the visit'],
