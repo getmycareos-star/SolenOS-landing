@@ -286,7 +286,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as { written_to_lcr?: boolean }
       setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
       setCareUpdateNotice(decision === 'accept' && response?.written_to_lcr
-        ? 'Your report was added to the Care Record as a caregiver-reviewed observation. It has not been independently verified.'
+        ? 'Your report was added to the Care Record. A healthcare professional has not confirmed it.'
         : 'This suggestion was declined. Nothing was added to the Care Record.')
     } catch {
       setCareUpdateError('This care suggestion could not be reviewed. It has not been marked as accepted. Refresh and try again.')
@@ -394,7 +394,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         <p>Only continue if this describes something that happened or something you were told — not a question, possibility or guess.</p>
                         <button type="button" onClick={() => void createCareReport(msg.source_message_id!)} disabled={savingCareReportId === msg.source_message_id}>{savingCareReportId === msg.source_message_id ? 'Saving…' : 'Yes, save for review'}</button>
                         <button type="button" className="is-secondary" onClick={() => setConfirmingCareReportId(null)} disabled={Boolean(savingCareReportId)}>Cancel</button>
-                      </div> : <button type="button" onClick={() => setConfirmingCareReportId(msg.source_message_id || null)} disabled={Boolean(savingCareReportId)}>Save as care report</button>}
+                      </div> : <button type="button" onClick={() => setConfirmingCareReportId(msg.source_message_id || null)} disabled={Boolean(savingCareReportId)}>Save as a care note</button>}
                     </div>}
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
@@ -427,7 +427,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
                               <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'This count was checked against distinct, dated care updates.' : 'This wording appears in a saved record.'}</p>
-                              {claim.support_status === 'matched_validated_aggregate' && <p>Counted {claim.aggregate?.count ?? claim.source_references.length} distinct care updates{claim.aggregate?.window_label ? ' during ' + claim.aggregate.window_label : ''}. Repeated records were not counted twice.</p>}
+                              {claim.support_status === 'matched_validated_aggregate' && <p>Counted {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? ' during ' + claim.aggregate.window_label : ''}. Repeated records were not counted twice.</p>}
                               {claim.source_references.map((source, sourceIndex) => (
                                 <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
                                   <strong>{source.label}</strong>
@@ -440,9 +440,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
                                   {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
                                   {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved item. It is not a separate report.</p>}
-                                  {source.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
+                                  {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                   {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
-                                  {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {source.exact_wording_duplicate_count} other saved item(s). Do not count these as separate reports.</p>}
+                                  {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Supporting note or document</strong>
@@ -451,7 +451,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.reported_by && <p>Reported by: {item.reported_by}</p>}
                                       {item.entered_by && <p>Added by: {item.entered_by}</p>}
                                       {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved item. It is not a separate report.</p>}
-                                      {item.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
+                                      {item.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                       {item.source_independence_status === 'not_assessed' && <p>We have not checked whether this note is separate from other reports.</p>}
                                       {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {item.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
@@ -468,7 +468,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                 </div>
                               ))}
                             </div>
-                          ) : claim.support_status === 'not_matched_to_saved_wording' ? <p role="note">Not matched to the wording in a saved record. Check this statement before relying on it.</p> : null}
+                          ) : claim.support_status === 'not_matched_to_saved_wording' ? <p role="note">This statement does not match the wording in a saved record. Check it before relying on it.</p> : null}
                         </article>
                       ))}
                       <p>This conversation has not been added to your Care Record.</p>
@@ -496,7 +496,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         {pendingCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
           <div><strong>Possible care update</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p>
             {item.proposed_change?.event_time_text && <small>When you said it happened: {item.proposed_change.event_time_text}</small>}
-            <small>This is your report, not a medical conclusion. Accepting it records that you reviewed the wording; it does not independently verify it.</small>
+            <small>This is your report, not a medical conclusion. Adding it records that you checked the wording; it does not mean a healthcare professional has confirmed it.</small>
           </div>
           <div className="companion-care-update-actions">
             <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
