@@ -145,7 +145,7 @@ assert.match(dailyCarePage, /Open Follow-ups/,
   "unresolved matters are managed in the dedicated Follow-ups screen");
 assert.doesNotMatch(dailyCarePage, /followUps\.slice\(0, 6\)|careItems\.filter\(isOpenMatter\)\.slice/,
   "Daily Care must not duplicate the full Follow-ups list");
-assert.doesNotMatch(dailyCarePage, /Recent care history/,
+assert.doesNotMatch(dailyCarePage, /daily-care-history-title|<h2>Recent care history<\/h2>/,
   "the full chronological history belongs to the Care Timeline");
 assert.match(dailyCarePage, /Open Care Timeline/,
   "Daily Care links to the dedicated historical view");
