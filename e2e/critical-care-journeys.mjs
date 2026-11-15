@@ -166,7 +166,7 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
     "/workspace/daily-care",
     { width: 390, height: 844 },
   );
-  const viewFollowups = page.getByRole("button", { name: "View follow-ups", exact: true });
+  const viewFollowups = page.getByRole("button", { name: "Open Follow-ups", exact: true });
   await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
   await viewFollowups.click();
   await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
