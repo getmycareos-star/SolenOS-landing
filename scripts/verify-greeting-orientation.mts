@@ -39,9 +39,9 @@ const implementation = readFileSync(
 assert.match(implementation, /api\/lcr\/orientation/);
 assert.doesNotMatch(implementation, /Your previous updates are still here/);
 assert.doesNotMatch(implementation, /Ready to organize care information/);
-assert.doesNotMatch(implementation, /isInsultOrFrustrationInput\\(input\\)/, "frustration must not enter the context-free orientation endpoint");
+assert.doesNotMatch(implementation, /isInsultOrFrustrationInput\(input\)/, "frustration must not enter the context-free orientation endpoint");
 const communication = readFileSync(new URL("../src/intelligence/communication/index.ts", import.meta.url), "utf8");
-assert.match(communication, /shouldUseLcrOrientationEndpoint\\(raw_input\\)/);
+assert.match(communication, /shouldUseLcrOrientationEndpoint\(raw_input\)/);
 const companion = readFileSync(
   new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
   "utf8",
