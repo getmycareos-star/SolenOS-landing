@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { ensureAnonymousSession, getCaregiverId, getJSON, getPersonId } from "@/api/client";
 import { Button } from "@/components/ui/Button";
+import { RecordState } from "@/components/ui/RecordState";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDailyUpdate";
@@ -321,11 +322,14 @@ export default function DailyCarePage() {
   });
   const [contextLoading, setContextLoading] = useState(true);
   const [contextError, setContextError] = useState("");
+  const [careItemsLoaded, setCareItemsLoaded] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
     setContextLoading(true);
     setContextError("");
+    setHistoryError("");
     void ensureAnonymousSession()
       .then(async () => {
         // Do not make caregivers wait for current-care and history reads before
@@ -343,9 +347,14 @@ export default function DailyCarePage() {
 
         if (careResult.status === "fulfilled") {
           const payload = careResult.value as { items?: unknown };
-          setCareItems(Array.isArray(payload?.items) ? payload.items as CareItem[] : []);
+          if (Array.isArray(payload?.items)) {
+            setCareItems(payload.items as CareItem[]);
+            setCareItemsLoaded(true);
+          } else {
+            setContextError("Current care information could not be read. Try again.");
+          }
         } else {
-          setContextError("Current care information could not be loaded. Try refreshing the record.");
+          setContextError("Current care information could not be loaded. Try again.");
         }
 
         if (followUpsResult.status === "fulfilled") {
@@ -406,13 +415,12 @@ export default function DailyCarePage() {
             page?: { has_more?: boolean };
           };
           if (!Array.isArray(payload?.records)) {
-            setHistoryError("Recent care history could not be read. The daily summary is unavailable.");
-            setHistoryItems([]);
-            setHistoryMayBeTruncated(false);
+            setHistoryError("Recent care history could not be read. Try again.");
           } else {
             const records = payload.records as CareItem[];
             setHistoryError("");
             setHistoryItems(records);
+            setHistoryLoaded(true);
             setHistoryMayBeTruncated(Boolean(payload.page?.has_more));
 
           const personId = getPersonId();
