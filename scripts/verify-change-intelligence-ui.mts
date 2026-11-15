@@ -49,9 +49,10 @@ for (const [source, pattern, label] of [
   [historyPanel, /change\.source_record_refs\.length > 0/, "promoted changes require linked source records"],
   [historyPanel, /What still needs checking/, "uncertain findings must remain visible as uncertain"],
   [historyPanel, /Reports that differ/, "conflicting reports must remain visible"],
-  [historyPanel, /source_freshness\?\.status === "stale"/, "stale comparisons must be disclosed"],
-  [historyPanel, /const confirmed = stale \? \[\] : changes\.filter\(supported\)/, "stale comparisons must not be presented as supported changes"],
-  [historyPanel, /const needsReview = stale \? changes : changes\.filter/, "all findings from stale comparisons must remain review-only"],
+  [historyPanel, /const comparisonCurrent = freshnessStatus === "current"/, "only explicitly current source history may be promoted"],
+  [historyPanel, /const confirmed = comparisonCurrent \? changes\.filter\(supported\) : \[\]/, "stale or unchecked comparisons must not be presented as supported changes"],
+  [historyPanel, /const needsReview = comparisonCurrent \? changes\.filter/, "all findings from stale or unchecked comparisons must remain review-only"],
+  [historyPanel, /SolenOS could not confirm that the source history for this comparison is current/, "unchecked source freshness must be disclosed to caregivers"],
   [lcr, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the primary LCR"],
   [historyPanel, /if \(!personId\) return null/, "history must wait for a scoped care record"],
 ]) {
