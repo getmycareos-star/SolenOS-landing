@@ -177,7 +177,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       status?: string;
     };
     if (!result.job_id || !["queued", "processing"].includes(result.status || "")) {
-      throw new Error("The server did not confirm that document processing was queued.");
+      throw new Error("SolenOS could not start reading this document. The original file is still saved.");
     }
     await load();
     window.dispatchEvent(new Event("careRecordUpdated"));
@@ -232,14 +232,14 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       await postJSON("/documents/" + encodeURIComponent(analysis.source_evidence_id) + "/intelligence", {});
       await load();
     } catch {
-      setError("The next group of document statements could not be loaded. Your saved decisions are unchanged.");
+      setError("More details from this document could not be loaded. Your saved choices are unchanged.");
     } finally {
       setBusy(null);
     }
   };
 
   if (loading && items.length === 0) {
-    return <section aria-label="Document review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}><p role="status">Loading saved document understanding…</p></section>;
+    return <section aria-label="Document review" style={{ marginTop: 18, padding: 14, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}><p role="status">Loading saved document details…</p></section>;
   }
 
   return (
@@ -272,9 +272,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             <p role="status" style={{ margin: "5px 0 0", fontSize: 12, color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.intelligence_status === "partial"
                 ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
-                  ? `More statements are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
+                  ? `More details are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
                   : `Some pages could not be read · ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
-                : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "The document has not finished processing"}
+                : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "SolenOS has not finished reading this document"}
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read: ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · still being read: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · can be tried again: ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · too large to read: ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · pages that could not be read: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
@@ -329,7 +329,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: 12 }}>
                 <strong>Medicine details — not changed</strong>
                 <span>Strength: {candidate.canonical_candidate.medication_details.strength || "Not stated"}</span>
-                <span>Dosage instructions: {candidate.canonical_candidate.medication_details.dosage_instructions || "Not stated"}</span>
+                <span>How to take it: {candidate.canonical_candidate.medication_details.dosage_instructions || "Not stated"}</span>
               </div>}
               {!!candidate.warnings?.length && <div role="note" style={{ padding: 9, border: "1px solid #b99a62", borderRadius: 8, background: "var(--surface)", display: "grid", gap: 4 }}>
                 <strong style={{ fontSize: 12 }}>Needs clarification</strong>
@@ -349,7 +349,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>You approved this detail. It was added to your Care Record with a link to the original document. This does not mean a healthcare professional has confirmed it.</p>}
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>You chose not to add this detail to your Care Record.</p>}
             </div>;
-          }) : analysis.extraction_status === "partial" ? <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>We couldn't read every page, so there are no details to review yet. Try reading the failed pages again or upload a clearer copy.</p> : null}
+          }) : analysis.extraction_status === "partial" ? <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>We couldn't read every page, so there are no details to review yet. Try those pages again or upload a clearer copy.</p> : null}
           {analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && analysis.observations.length > 0 && analysis.observations.every((candidate) => ["accepted_by_caregiver", "rejected_by_caregiver"].includes(candidate.review_status)) && <button type="button" disabled={busy !== null} onClick={() => void showNextCandidateGroup(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Show the next {Math.min(60, analysis.remaining_candidate_count ?? 0)} details</button>}
           <details onToggle={(event) => { if (event.currentTarget.open) void loadReviewHistory(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 650 }}>Review history{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " updates" : ""}</summary>
@@ -363,16 +363,16 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                         const subject = typeof after.subject === "string" ? after.subject : "Care detail";
                         const observation = typeof after.observation === "string" ? after.observation : "";
                         return <li key={event.id} style={{ fontSize: 12, lineHeight: 1.5 }}>
-                          <strong>Detail {event.candidate_index + 1} · {event.decision}</strong>
+                          <strong>Detail {event.candidate_index + 1} · {event.decision === "accept" ? "Added to Care Record" : event.decision === "correct" ? "Correction saved" : "Not added"}</strong>
                           {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
                           {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
                           {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {caregiverSafeAssistantText(event.rationale) || "No further note was recorded."}</p> : null}
-                          {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This decision added a report linked to the original document.</p> : null}
+                          {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This choice added a report and kept a link to the original document.</p> : null}
                         </li>;
                       })}
                     </ol>}
           </details>
-          {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: 12 }}>Questions that remain open</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: 13 }}>{analysis.open_questions?.map((question, i) => <li key={i}>{question}</li>)}</ul></div>}
+          {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: 12 }}>Questions that still need answers</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: 13 }}>{analysis.open_questions?.map((question, i) => <li key={i}>{question}</li>)}</ul></div>}
         </article>
       ))}
     </section>
