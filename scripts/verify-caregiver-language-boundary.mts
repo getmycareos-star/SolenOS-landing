@@ -139,7 +139,7 @@ assert.match(lcr, /caregiverFieldLabel\(assertion\.field\)/);
 assert.match(lcr, /caregiverSafeChangeText\(change\.explanation\)/);
 assert.match(lcr, /caregiverSafeChangeText\(change\.previous_state\)/);
 assert.match(careChangeHistory, /readableSource\(run\.source\)/);
-assert.match(careChangeHistory, /readableChangeType\(item\.change_type\)/);
+assert.match(careChangeHistory, /readableChangeType\(item\.change_type, item\.classification\)/);
 assert.match(careChangeHistory, /displayChangeText\(item\.comparison_basis/);
 assert.doesNotMatch(careChangeHistory, /display\(run\.source/);
 assert.doesNotMatch(lcr, /<p>\{change\.explanation\}<\/p>/);
