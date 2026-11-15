@@ -15,10 +15,10 @@ export default function InformationStatus({
 
   const getStatusLabel = (): string => {
     switch (status) {
-      case 'known': return 'Known';
-      case 'uncertain': return 'Uncertain';
-      case 'missing': return 'Missing';
-      case 'needs-clarification': return 'Needs clarification';
+      case 'known': return 'Recorded';
+      case 'uncertain': return 'Not sure yet';
+      case 'missing': return 'Not recorded';
+      case 'needs-clarification': return 'Needs checking';
       default: return 'Unknown';
     }
   };
@@ -112,7 +112,7 @@ export default function InformationStatus({
               fontWeight: '500',
               color: 'var(--text)'
             }}>
-              Information Status
+              About this information
             </span>
             <button
               onClick={() => setExpanded(false)}
@@ -164,7 +164,7 @@ export default function InformationStatus({
                 display: 'block',
                 marginBottom: '2px'
               }}>
-                Why this status:
+                Why it is marked this way:
               </span>
               <p style={{ 
                 fontSize: '12px', 
