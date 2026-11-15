@@ -1037,7 +1037,12 @@ export function HistoryDrawer() {
       });
 
       // Internal persistence revisions remain in the backend audit history, not the caregiver timeline.
-      setRecords(nextRecords.filter((record) => record.source_kind !== "lcr-revision"));
+      const visibleNextRecords = nextRecords.filter((record) => record.source_kind !== "lcr-revision");
+      setRecords((current) => {
+        if (warnings.length === 0 || current.length === 0) return visibleNextRecords;
+        const nextIds = new Set(visibleNextRecords.map((record) => record.id));
+        return [...visibleNextRecords, ...current.filter((record) => !nextIds.has(record.id))];
+      });
       setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
@@ -1260,16 +1265,22 @@ export function HistoryDrawer() {
                   {sourceWarnings.length > 0 && !loading && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries that loaded are still shown. Some others may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
+                      <span>The entries that loaded are still shown. Some others may be missing. Try refreshing to check again.</span>
                     </div>
                   )}
 
+                  {error && records.length > 0 && (
+                    <div className="history-source-warning" role="alert">
+                      <strong>Care history couldn’t be refreshed</strong>
+                      <span>Showing the last saved history. Try again to refresh.</span>
+                    </div>
+                  )}
                   {loading ? (
                     <div className="history-state" role="status">
                       <span className="history-loading-dot" />
                       Loading saved care history…
                     </div>
-                  ) : error ? (
+                  ) : error && records.length === 0 ? (
                     <div className="history-error" role="alert">
                       <AlertCircle size={19} aria-hidden />
                       <div>
@@ -1282,7 +1293,7 @@ export function HistoryDrawer() {
                     <div className="history-empty">
                       <HistoryEmptyIcon />
                       <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not load every part of your care history. An empty view does not mean nothing was recorded. Try refreshing." : "No saved care updates were found in the information available. SolenOS will not make up a history."}</p>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "Some care history couldn’t be loaded. Refresh to try again." : "No saved care updates yet."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
