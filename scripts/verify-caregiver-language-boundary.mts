@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  caregiverFieldLabel,
   caregiverInformationLabel,
   caregiverSafeAssistantText,
   caregiverSafeChangeText,
@@ -16,6 +17,10 @@ assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
 assert.equal(caregiverStatusLabel("unknown_internal_state"), null);
 assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
+assert.equal(caregiverFieldLabel("medication_name"), "Medication");
+assert.equal(caregiverFieldLabel("dose"), "Dose as reported");
+assert.equal(caregiverFieldLabel("medication_status"), "Medication status as reported");
+assert.equal(caregiverFieldLabel("unknown_internal_field"), null);
 assert.equal(
   caregiverSafeChangeText("daily_care_entry was first observed in the available records; this is not a claim about onset. 2 event(s) recorded in the current observation window."),
   null,
@@ -110,6 +115,12 @@ assert.match(historyDrawer, /Earlier care details are saved/);
 assert.match(documentsPage, /caregiverSafeAssistantText\(selected\.extractedText\)/);
 assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedText\)/);
 assert.match(lcr, /displayDescription\(source\.description\)/);
+assert.match(lcr, /displayCurrentCareDescription\(item\)/);
+assert.match(lcr, /CURRENT_CARE_TITLE_LABELS/);
+assert.match(lcr, /Original report text is not available in this view/);
+assert.match(lcr, /Read original report/);
+assert.match(lcr, /caregiverFieldLabel\(observation\.attribute\)/);
+assert.match(lcr, /caregiverFieldLabel\(assertion\.field\)/);
 assert.match(lcr, /caregiverSafeChangeText\(change\.explanation\)/);
 assert.match(lcr, /caregiverSafeChangeText\(change\.previous_state\)/);
 assert.match(careChangeHistory, /readableSource\(run\.source\)/);
