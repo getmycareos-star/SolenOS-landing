@@ -1234,6 +1234,8 @@ export function LCRCurrentUnderstanding() {
                 </li>
               ))}
             </ul>
+          ) : careAttention?.important_to_address.length ? (
+            <p>No items are marked for immediate attention in the information checked. {careAttention.important_to_address.length} important {careAttention.important_to_address.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review. This is not a statement that no care needs exist.</p>
           ) : (
             <p>No items are currently marked for immediate attention in the information checked. This is not a statement that no care needs exist.</p>
           )}
