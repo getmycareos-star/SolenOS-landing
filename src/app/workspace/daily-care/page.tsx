@@ -708,7 +708,7 @@ export default function DailyCarePage() {
             <h2 id="daily-care-follow-ups-title">Follow-ups</h2>
             <p className="daily-care-muted">
               {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} needing a check.
-              Manage questions, decisions and unresolved matters in one place.
+              Manage questions, decisions and unresolved matters in one place. Daily Care does not create a second copy of your follow-ups.
             </p>
             {followUpsError && <p role="alert">{followUpsError}</p>}
             {deliveryIssues.length > 0 && (
