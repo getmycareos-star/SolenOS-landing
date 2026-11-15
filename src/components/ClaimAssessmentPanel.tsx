@@ -451,7 +451,7 @@ export default function ClaimAssessmentPanel() {
           <legend style={{ fontSize: 12 }}>Note or document {index + 1}</legend>
           <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Choose a note or document
             <select style={field} value={link.evidence_id} onChange={(event) => updateLink(index, { evidence_id: event.target.value })}>
-              <option value="">Choose a source</option>
+              <option value="">Choose a note or document</option>
               {evidence.map((item) => <option key={item.id} value={item.id}>{simpleReviewStatus(item.type)}</option>)}
             </select>
           </label>
@@ -461,15 +461,15 @@ export default function ClaimAssessmentPanel() {
             </select>
           </label>
           <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Exact words from the note or document
-            <textarea style={{ ...field, minHeight: 68 }} value={caregiverSafeAssistantText(link.source_passage) || "The original wording is saved."} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact words from the selected source. Do not rewrite them." />
+            <textarea style={{ ...field, minHeight: 68 }} value={caregiverSafeAssistantText(link.source_passage) || "The original wording is saved."} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact words from the selected note or document. Do not rewrite them." />
           </label>
           <label style={{ display: "block", fontSize: 12 }}>What this note or document does not tell us (optional)
-            <input style={field} value={link.scope_note} onChange={(event) => updateLink(index, { scope_note: event.target.value })} placeholder="What this passage does or does not establish" />
+            <input style={field} value={link.scope_note} onChange={(event) => updateLink(index, { scope_note: event.target.value })} placeholder="What this note or document does or does not tell us" />
           </label>
-          {links.length > 1 && <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => setLinks((current) => current.filter((_, i) => i !== index))}>Remove source</button>}
+          {links.length > 1 && <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => setLinks((current) => current.filter((_, i) => i !== index))}>Remove note or document</button>}
         </fieldset>)}
       </div>
-      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => setLinks((current) => [...current, emptyLink()])} disabled={links.length >= 10}>Add another source</button>
+      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => setLinks((current) => [...current, emptyLink()])} disabled={links.length >= 10}>Add another note or document</button>
       <label style={{ display: "block", fontSize: 12, marginTop: 9 }}>Why are you reviewing this information?
         <textarea style={{ ...field, minHeight: 75 }} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Explain what information you checked and what is still unclear." />
       </label>
@@ -477,15 +477,15 @@ export default function ClaimAssessmentPanel() {
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
       <section aria-label="Check for new information" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
         <h4 style={{ fontSize: 13, marginTop: 0, marginBottom: 5 }}>Check whether anything new changes this review</h4>
-        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This check looks for new or missing sources, changes to related care details, and reports that do not match. It does not prove that the information is true or complete.</p>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>This check looks for new or missing notes or documents, changes to related care details, and reports that do not match. It does not prove that the information is true or complete.</p>
         {impactLoading && <p role="status">Checking whether new information affects this review…</p>}
         {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
         {!impactLoading && !impactError && assessmentImpact && <>
-          <strong>{assessmentImpact.review_required ? "Review required or not yet established as current" : "No reason to repeat this review was found"}</strong>
+          <strong>{assessmentImpact.review_required ? "This information needs another review" : "No new information was found that requires another review"}</strong>
           <div style={{ fontSize: 12, marginTop: 5 }}>Review: {simpleReviewStatus(assessmentImpact.status)}</div>
           {assessmentImpact.reasons.length > 0
             ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{simpleReviewStatus(reason)}</li>)}</ul>
-            : <p style={{ fontSize: 12 }}>No reason to repeat this review was found in the information checked. This does not prove that the review is complete or correct.</p>}
+            : <p style={{ fontSize: 12 }}>No new information was found that requires another review in the information checked. This does not prove that the review is complete or correct.</p>}
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Notes or documents that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Notes or documents not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
