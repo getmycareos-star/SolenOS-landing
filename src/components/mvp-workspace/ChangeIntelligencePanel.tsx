@@ -424,10 +424,10 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
           disabled={refreshing || loading}
           onClick={() => void refreshSavedAssessments()}
         >
-          {refreshing ? "Checking for new changes…" : "Check for new changes"}
+          {refreshing ? "Checking for new changes…" : "Check for updates"}
         </button>
       </div>
-      {loading ? <p role="status" className="panel-muted">Loading saved care changes…</p> : null}
+      {loading ? <p role="status" className="panel-muted">Loading care changes…</p> : null}
       {warning ? <p role="status" className="panel-muted">{warning}</p> : null}
       {error ? (
         <p role="alert" className="panel-muted">
@@ -453,9 +453,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 {change.explanation ? <p>{caregiverSafeChangeText(change.explanation) ?? "A possible change was found in the saved care information. Review the linked records before drawing a conclusion."}</p> : <p>{caregiverSafeChangeText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
                 <p className="panel-muted">{formatWindow(change.comparison_window_start, change.comparison_window_end)}</p>
                 <p className="panel-muted">
-                  Saved information used: {change.evidence_ids.length}.
+                  Based on {change.evidence_ids.length} saved item(s).
                 </p>
-                <p className="panel-muted">Earlier care information may be missing.</p>
+                <p className="panel-muted">Some earlier care information may be missing. That does not mean the event did not happen.</p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
                   {expandedChangeId === change.id ? "Hide notes and documents" : "Review notes and documents"} <span aria-hidden="true">→</span>
                 </button>
@@ -475,7 +475,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       <div className="lcr-inline-actions">
                         {["confirmed", "rejected", "inconclusive", "resolved"].includes(change.confirmation_status) ? (
                           <>
-                            <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Review again</button>
                             {change.confirmation_status === "confirmed" &&
                               ["cessation", "disappearance"].includes(change.change_type) &&
                               change.baseline_coverage_status === "covered" &&
@@ -491,7 +491,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                           </>
                         ) : (
                           <>
-                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm this change</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm this change is correct</button>
                             <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>This change is not right</button>
                             <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>I can’t confirm this</button>
                             {["cessation", "disappearance"].includes(change.change_type) &&
@@ -566,9 +566,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                   <h3>{caregiverStatusLabel(pattern.pattern_type) ?? "Repeated care change"}</h3>
                   <span>{pattern.is_active ? caregiverStatusLabel(pattern.pattern_strength) ?? "Not rated yet" : "Earlier pattern"}</span>
                 </div>
-                <p>Dates covered: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
+                <p>Time period: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
                 <p className="panel-muted">
-                  Care updates included: {pattern.event_ids.length}.
+                  Based on {pattern.event_ids.length} care update(s).
                 </p>
                 {pattern.pattern_metrics?.source_history_truncated === true ? <p className="panel-muted">Earlier care updates may not all be included in this review.</p> : null}
                 {pattern.alternative_interpretations?.length ? (
@@ -584,8 +584,8 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 {expandedPatternId === pattern.id && patternDetailErrors[pattern.id] ? <p role="alert" className="panel-muted">{patternDetailErrors[pattern.id]}</p> : null}
                 {expandedPatternId === pattern.id && patternDetails[pattern.id] ? (
                   <div>
-                    <strong>Care updates used for this review</strong>
-                    {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No matching care updates could be found for this pattern.</p> : null}
+                    <strong>Care updates considered</strong>
+                    {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No matching care updates were found.</p> : null}
                     {patternDetails[pattern.id].events.map((source) => (
                       <article key={source.id}>
                         <strong>{caregiverSafeAssistantText(source.title) ?? "Saved care update"}</strong>
@@ -595,7 +595,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     ))}
                     {patternDetails[pattern.id].changes.length > 0 ? (
                       <>
-                        <strong>Related reviews</strong>
+                        <strong>Related changes</strong>
                         {patternDetails[pattern.id].changes.map((change) => (
                           <article key={change.id}>
                             <strong>{caregiverStatusLabel(change.change_type) ?? "Care change"} · {caregiverStatusLabel(change.change_direction) ?? "Direction not recorded"}</strong>
@@ -614,13 +614,13 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       ) : null}
       {hasMorePatterns ? (
         <button type="button" className="lcr-text-action" disabled={loadingMorePatterns} onClick={() => void loadMorePatterns()}>
-          {loadingMorePatterns ? "Loading earlier patterns…" : "Load earlier patterns"}
+          {loadingMorePatterns ? "Loading earlier patterns…" : "Load earlier changes"}
         </button>
       ) : null}
       {situations.length > 0 ? (
         <div className="lcr-subsection">
           <h3>Care topics</h3>
-          <p className="panel-muted">These status updates are recorded by the caregiver. They are not medical conclusions.</p>
+          <p className="panel-muted">These updates were shared by a caregiver. They are not medical conclusions.</p>
           <div className="lcr-timeline">
             {situations.map((situation) => {
               const evidenceIds = situationEvidenceIds(situation);
@@ -680,7 +680,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               ) : null}
                               {record.epistemic_status ? (
                                 <p className="panel-muted">
-                                  What was reported: {caregiverStatusLabel(record.epistemic_status) ?? "Reported"}
+                                  What was shared: {caregiverStatusLabel(record.epistemic_status) ?? "Reported"}
                                 </p>
                               ) : null}
                               {record.negated ? <p className="panel-muted">Recorded as not present</p> : null}
@@ -697,7 +697,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     {situation.is_active && situation.state !== "evolved" ? (
                       <div>
                         <label>
-                          <span>Caregiver-reported status</span>
+                          <span>Status shared by caregiver</span>
                           <select
                             value={selectedState}
                             onChange={(event) => setSituationStates((current) => ({
