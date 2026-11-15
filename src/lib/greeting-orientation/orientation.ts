@@ -121,6 +121,14 @@ export function isGratitudeInput(text: string): boolean {
   return false;
 }
 
+/** Keep read-only orientation limited to context-free social turns.
+ * Frustration and corrections must use the conversation endpoint so Qwen can
+ * retrieve the prior turn and correct the actual mistake instead of losing context.
+ */
+export function shouldUseLcrOrientationEndpoint(text: string): boolean {
+  return isCasualGreetingInput(text) || isHowAreYouInput(text) || isGratitudeInput(text);
+}
+
 /**
  * Dementia Wedge: Detect whether raw input is describing a change in the care recipient.
  *
