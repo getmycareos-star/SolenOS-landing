@@ -30,8 +30,8 @@ assert.doesNotMatch(caregiverRenderedCode, /persisted records examined|\bConfide
 assert.doesNotMatch(careContinuity, /Add an update|Add the first detail|Add update to this thread|compose=1|CognitiveWorkspace|AddSituationPanel/, "Care Continuity must not expose a second capture interface");
 assert.match(careContinuity, /Open Daily Care/, "the Care Record routes new information to the Daily Care capture screen");
 assert.match(careContinuity, /Need to add something\?/, "the Care Record links to the owning capture workflow");
-assert.match(careContinuity, /View care timeline/, "the Care Record links to the dedicated historical timeline");
-assert.doesNotMatch(careContinuity, /Care history|lcr-timeline|situations\.map/, "the Care Record does not render a second historical event feed");
+assert.match(careContinuity, /View care history/, "the Care Record links to the dedicated historical timeline");
+assert.doesNotMatch(careContinuity, /lcr-timeline|situations\.map/, "the Care Record does not render a second historical event feed");
 assert.doesNotMatch(careContinuity, /Additional care details are saved\./, "timeline entries never substitute generic filler for a missing care summary");
 assert.doesNotMatch(careContinuity, /situation\.openQuestions\.map/, "care questions are not duplicated under every timeline thread");
 assert.doesNotMatch(careContinuity, /Winner selected: no|Supporting information:/, "raw conflict evidence counts and audit flags are not shown in the default timeline");
