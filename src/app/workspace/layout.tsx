@@ -9,8 +9,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { BrandLoading } from "@/components/brand";
 
 const WORKSPACE_NAV = [
-  { href: "/workspace", label: "Living Care Record", icon: "◉" },
-  { href: "/workspace/companion", label: "AI Companion", icon: "✦" },
+  { href: "/workspace", label: "Care Record", icon: "◉" },
+  { href: "/workspace/companion", label: "Care Assistant", icon: "✦" },
   { href: "/workspace/timeline", label: "Care Timeline", icon: "◷" },
   { href: "/workspace/open-loops", label: "Follow-ups", icon: "↻" },
   { href: "/workspace/documents", label: "Documents", icon: "📄" },
@@ -56,13 +56,13 @@ function CareContextBar() {
             </>
           ) : hasSituations ? (
             <>
-              <span className="care-context-name">{runtime.situations.length} situations</span>
+              <span className="care-context-name">{runtime.situations.length} care areas</span>
               <span className="care-context-status care-context-status--paused">
                 No active
               </span>
             </>
           ) : (
-            <span className="care-context-meta">Your Living Care Record</span>
+            <span className="care-context-meta">Your Care Record</span>
           )}
         </div>
       </div>
