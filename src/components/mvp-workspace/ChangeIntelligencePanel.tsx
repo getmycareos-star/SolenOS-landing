@@ -181,7 +181,7 @@ export function ChangeIntelligencePanel() {
       const rows = await listPersistedPatterns(undefined, 100, nextOffset);
       setPatterns((current) => {
         const known = new Set(current.map((item) => item.id));
-        return [...current, ...rows.filter((item) => item.is_active && !known.has(item.id))];
+        return [...current, ...rows.filter((item) => !known.has(item.id))];
       });
       setPatternOffset(nextOffset);
       setHasMorePatterns(rows.length === 100);
