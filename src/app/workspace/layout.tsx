@@ -1,7 +1,10 @@
 "use client";
 
 import "./../accessibility-overrides.css";
+import "./navigation-accessibility.css";
 import { AppShell } from "@/components/app-shell/AppShell";
+import { WorkspaceNavigationAccessibility } from "@/components/app-shell/WorkspaceNavigationAccessibility";
+import { WorkspaceRouteBreadcrumbs } from "@/components/app-shell/WorkspaceRouteBreadcrumbs";
 import { GlobalDisplayPreferences } from "@/components/accessibility/GlobalDisplayPreferences";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { useEffect, useState, type ReactNode } from "react";
@@ -62,6 +65,23 @@ function CareContextBar() {
 }
 
 /**
+ * Do not expose caregiver destinations until the workspace has completed its
+ * server-issued anonymous/authenticated session bootstrap and entry decision.
+ * Data authorization remains enforced by the API for every protected request.
+ */
+function WorkspaceEntryGate({ children }: { children: ReactNode }) {
+  const { entryReady } = useWorkspace();
+  if (!entryReady) {
+    return (
+      <main className="workspace-route-loading" role="status" aria-live="polite">
+        <BrandLoading animate message="Preparing your care workspace…" />
+      </main>
+    );
+  }
+  return <>{children}</>;
+}
+
+/**
  * LCR entry is intentionally direct: no privacy checkbox, early-version
  * acknowledgement, or onboarding confirmation blocks workspace access.
  * Privacy and Terms remain discoverable through in-product navigation.
@@ -71,18 +91,22 @@ function CareContextBar() {
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
     <WorkspaceProvider>
-      <ErrorBoundary name="Workspace" fallback={
+      <ErrorBoundary fallback={
         <div style={{ padding: "24px", textAlign: "center" }}>
           <p style={{ color: "#78716c" }}>The workspace encountered an error. Please refresh the page.</p>
         </div>
       }>
-        <AppShell
-          brandHref="/workspace"
-          careContext={<CareContextBar />}
-        >
-          {children}
-        </AppShell>
-        <GlobalDisplayPreferences />
+        <WorkspaceEntryGate>
+          <AppShell
+            brandHref="/workspace"
+            careContext={<CareContextBar />}
+          >
+            <WorkspaceRouteBreadcrumbs />
+            {children}
+          </AppShell>
+          <WorkspaceNavigationAccessibility />
+          <GlobalDisplayPreferences />
+        </WorkspaceEntryGate>
       </ErrorBoundary>
     </WorkspaceProvider>
   );
