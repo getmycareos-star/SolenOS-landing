@@ -103,9 +103,11 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
         ...(detail?.observations.map((item) => item.id) ?? []),
       ];
       await transitionChangeConfirmation(changeId, status, reason, [...new Set(supportingIds)], personId);
+      if (personIdRef.current !== personId) return;
       const [changeRows, patternRows, situationRows] = await Promise.all([
         listPersistedChanges(undefined, 100, 0, personId), listPersistedPatterns(undefined, 100, 0, personId), listPersistedSituations(personId),
       ]);
+      if (personIdRef.current !== personId) return;
       setChanges(changeRows);
       setPatterns(patternRows);
       setSituations(situationRows);
@@ -116,12 +118,13 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       setHasMoreChanges(changeRows.length === 100);
       setHasMorePatterns(patternRows.length === 100);
       const refreshedDetail = await getPersistedChangeDetail(changeId, personId);
+      if (personIdRef.current !== personId) return;
       setDetails((current) => ({ ...current, [changeId]: refreshedDetail }));
       setConfirmationReasons((current) => ({ ...current, [changeId]: "" }));
     } catch (reason: unknown) {
-      setDetailErrors((current) => ({ ...current, [changeId]: caregiverSafeErrorMessage() }));
+      if (personIdRef.current === personId) setDetailErrors((current) => ({ ...current, [changeId]: caregiverSafeErrorMessage() }));
     } finally {
-      setTransitioningIds((current) => current.filter((id) => id !== changeId));
+      if (personIdRef.current === personId) setTransitioningIds((current) => current.filter((id) => id !== changeId));
     }
   }
 
@@ -134,8 +137,10 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     if (patternDetails[patternId] || patternDetailErrors[patternId]) return;
     try {
       const detail = await getPersistedPatternDetail(patternId, personId);
+      if (personIdRef.current !== personId) return;
       setPatternDetails((current) => ({ ...current, [patternId]: detail }));
     } catch (reason: unknown) {
+      if (personIdRef.current !== personId) return;
       setPatternDetailErrors((current) => ({
         ...current,
         [patternId]: caregiverSafeErrorMessage(),
@@ -152,8 +157,10 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     if (details[changeId] || detailErrors[changeId]) return;
     try {
       const detail = await getPersistedChangeDetail(changeId, personId);
+      if (personIdRef.current !== personId) return;
       setDetails((current) => ({ ...current, [changeId]: detail }));
     } catch (reason: unknown) {
+      if (personIdRef.current !== personId) return;
       setDetailErrors((current) => ({
         ...current,
         [changeId]: caregiverSafeErrorMessage(),
@@ -167,6 +174,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     try {
       const nextOffset = changeOffset + 100;
       const rows = await listPersistedChanges(undefined, 100, nextOffset, personId);
+      if (personIdRef.current !== personId) return;
       setChanges((current) => {
         const known = new Set(current.map((item) => item.id));
         return [...current, ...rows.filter((item) => !known.has(item.id))];
@@ -174,9 +182,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       setChangeOffset(nextOffset);
       setHasMoreChanges(rows.length === 100);
     } catch {
-      setWarning("Earlier change assessments could not be loaded. The saved care record has not been changed.");
+      if (personIdRef.current === personId) setWarning("Earlier change assessments could not be loaded. The saved care record has not been changed.");
     } finally {
-      setLoadingMoreChanges(false);
+      if (personIdRef.current === personId) setLoadingMoreChanges(false);
     }
   }
 
@@ -186,6 +194,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     try {
       const nextOffset = patternOffset + 100;
       const rows = await listPersistedPatterns(undefined, 100, nextOffset, personId);
+      if (personIdRef.current !== personId) return;
       setPatterns((current) => {
         const known = new Set(current.map((item) => item.id));
         return [...current, ...rows.filter((item) => !known.has(item.id))];
@@ -193,9 +202,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       setPatternOffset(nextOffset);
       setHasMorePatterns(rows.length === 100);
     } catch {
-      setWarning("Earlier care patterns could not be loaded. The saved care record has not been changed.");
+      if (personIdRef.current === personId) setWarning("Earlier care patterns could not be loaded. The saved care record has not been changed.");
     } finally {
-      setLoadingMorePatterns(false);
+      if (personIdRef.current === personId) setLoadingMorePatterns(false);
     }
   }
 
@@ -205,9 +214,11 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     setWarning(null);
     try {
       await reassessPersistedChangeIntelligence(personId);
+      if (personIdRef.current !== personId) return;
       const [changeRows, patternRows, situationRows] = await Promise.all([
         listPersistedChanges(undefined, 100, 0, personId), listPersistedPatterns(undefined, 100, 0, personId), listPersistedSituations(personId),
       ]);
+      if (personIdRef.current !== personId) return;
       setChanges(changeRows);
       setPatterns(patternRows);
       setSituations(situationRows);
@@ -222,9 +233,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       setExpandedChangeId(null);
       setExpandedPatternId(null);
     } catch {
-      setWarning("SolenOS could not check for new changes. The last saved information is still shown.");
+      if (personIdRef.current === personId) setWarning("SolenOS could not check for new changes. The last saved information is still shown.");
     } finally {
-      setRefreshing(false);
+      if (personIdRef.current === personId) setRefreshing(false);
     }
   }
 
@@ -252,11 +263,12 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     setSituationDetailLoadingIds((current) => [...current, situationId]);
     try {
       const detail = await getPersistedSituationDetail(situationId, personId);
+      if (personIdRef.current !== personId) return;
       setSituationDetails((current) => ({ ...current, [situationId]: detail }));
     } catch {
-      setWarning("The linked care records could not be loaded. The saved situation status has not changed.");
+      if (personIdRef.current === personId) setWarning("The linked care records could not be loaded. The saved situation status has not changed.");
     } finally {
-      setSituationDetailLoadingIds((current) => current.filter((id) => id !== situationId));
+      if (personIdRef.current === personId) setSituationDetailLoadingIds((current) => current.filter((id) => id !== situationId));
     }
   }
 
@@ -277,10 +289,12 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     setWarning(null);
     try {
       await transitionSituationState(situation.id, targetState, reason, evidenceIds, personId);
+      if (personIdRef.current !== personId) return;
       const [refreshed, refreshedDetail] = await Promise.all([
         listPersistedSituations(personId),
         getPersistedSituationDetail(situation.id, personId),
       ]);
+      if (personIdRef.current !== personId) return;
       setSituations(refreshed);
       setSituationDetails((current) => ({ ...current, [situation.id]: refreshedDetail }));
       setSituationStates((current) => {
@@ -291,9 +305,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       setSituationReasons((current) => ({ ...current, [situation.id]: "" }));
       setWarning(null);
     } catch {
-      setWarning("The care situation status could not be saved. The previous saved status remains in place.");
+      if (personIdRef.current === personId) setWarning("The care situation status could not be saved. The previous saved status remains in place.");
     } finally {
-      setSituationTransitioningIds((current) => current.filter((id) => id !== situation.id));
+      if (personIdRef.current === personId) setSituationTransitioningIds((current) => current.filter((id) => id !== situation.id));
     }
   }
 
