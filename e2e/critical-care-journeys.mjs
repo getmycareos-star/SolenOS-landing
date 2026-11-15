@@ -732,13 +732,16 @@ await record("06 Companion context and Qwen output", async () => {
     },
   });
   assert.equal(questionAnswer.status, 200, JSON.stringify(questionAnswer.payload));
+  assert.equal(questionAnswer.payload.ai_generated, false);
+  assert.equal(questionAnswer.payload.response_mode, "source_quoted_caregiver_question");
+  assert.equal(questionAnswer.payload.written_to_lcr, false);
   assert.ok(
     (questionAnswer.payload.source_lcr_context_ids || []).includes(caregiverQuestionId),
     "Companion must retrieve the source-validated caregiver question from the LCR question queue",
   );
   assert.ok(
     questionAnswer.payload.lcr_context_coverage?.sources?.caregiver_question_queue?.selected_for_answer > 0,
-    "Companion must report that the validated caregiver question was actually supplied to Qwen",
+    "Companion must report that the validated caregiver question was selected for the source-grounded answer",
   );
 
   const professionalQuestionReply = String(questionAnswer.payload.reply || "").toLowerCase();
