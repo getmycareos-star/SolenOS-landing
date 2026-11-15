@@ -597,7 +597,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
   }
   assert.ok(
     projectedObservations.every((item) =>
-      item.epistemic_status === "uncertain" || !/\\b\\d+(?:\\.\\d+)?\\s*(?:mg|mcg|ml)\\b/i.test(item.value_text)
+      item.epistemic_status === "uncertain" || !/\\b\d+(?:\.\d+)?\s*(?:mg|mcg|ml)\\b/i.test(item.value_text)
     ),
     "an unconfirmed medication report must never create a confirmed dose",
   );
@@ -760,7 +760,7 @@ await record("06 Companion context and Qwen output", async () => {
   );
   assert.doesNotMatch(
     medicationReply,
-    /(?:the new dose is|the doctor prescribed|the medication was changed to)\\s+\\d+(?:\\.\\d+)?\\s*(?:mg|mcg|ml)/i,
+    /(?:the new dose is|the doctor prescribed|the medication was changed to)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|ml)/i,
     "Companion must not invent a new medication dose from an uncertain caregiver report",
   );
   assert.ok(
