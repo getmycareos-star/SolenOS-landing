@@ -139,7 +139,7 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
     <div className="followup-actions">
       <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
       {loop && <button type="button" className="followup-text-button" onClick={() => void onHistory(loop)}>View previous updates</button>}
-      <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care evidence: " + item.title + ". Explain what is known, what is uncertain and what remains unresolved.")}><MessageCircle size={15} /> Ask SolenOS</Link>
+      <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care information: " + item.title + ". Explain what is known, what is not clear yet and what still needs attention.")}><MessageCircle size={15} /> Ask SolenOS</Link>
     </div>
   </article>;
 }
