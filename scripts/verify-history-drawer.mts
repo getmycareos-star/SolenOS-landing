@@ -41,7 +41,7 @@ assert.match(drawer, /getJSON\("\/care-continuity\/outcomes\/" \+ personPath\)/)
 assert.match(drawer, /mapLcrRevision/);
 assert.match(drawer, /setRecords\(nextRecords\.filter\(\(record\) => record\.source_kind !== "lcr-revision"\)\)/, "internal LCR revisions must not appear as caregiver care-history events");
 assert.doesNotMatch(drawer, /Living Care Record revision history could not be loaded/, "internal audit-source failures must not be shown as missing caregiver care history");
-assert.match(drawer, /must not make an otherwise failed history load look successful/, "internal audit reads must not count as an available caregiver-history source");
+assert.match(drawer, /must not make an otherwise failed history\s+load look successful/, "internal audit reads must not count as an available caregiver-history source");
 assert.match(drawer, /shouldShowLcrRevision/);
 assert.match(drawer, /REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE/);
 assert.match(drawer, /mapDecision/);
