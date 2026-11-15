@@ -1208,9 +1208,9 @@ export function LCRCurrentUnderstanding() {
               {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open the full record below to review the rest.</p>}
             </>
           ) : projection ? (
-            <RecordState kind="empty" title="No care information recorded yet." />
+            <RecordState kind="empty" title="No care information recorded yet." description="Add an update in Daily Care or upload a care document." action={<Link href="/workspace/daily-care" className="lcr-text-action">Add a care update</Link>} />
           ) : (
-            <p>The current care picture is not available yet. SolenOS will not fill gaps with guesses.</p>
+            <RecordState kind="unavailable" title="The current care picture isn’t available yet." description="Try refreshing the care summary." />
           )}
         </div>
 
@@ -1919,29 +1919,14 @@ export function LCRCurrentUnderstanding() {
       ) : projection ? (
         <>
           {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
-            <div role="status" className="lcr-empty-state">
-              <AlertCircle size={20} aria-hidden="true" />
-              <h3>Some care information is unavailable</h3>
-              <p>We couldn’t load all of the available care information. The picture shown may be incomplete. Try refreshing later.</p>
-              {projection.missing_required_sources.length > 0 && (
-                <p>Some important care information may be missing from this view.</p>
-              )}
-              {projection.missing_optional_sources.length > 0 && (
-                <p>Some additional care information may not be available right now.</p>
-              )}
-            </div>
+            <RecordState
+              kind="unavailable"
+              title="Some care information may be missing from this view."
+              description="This summary includes only sources currently available."
+            />
           )}
 
-          {projection.items.length === 0 ? (
-            <div className="lcr-empty-state">
-              <RecordState
-                kind="empty"
-                title="No saved care details to review yet."
-                description="Add an update in Daily Care or upload a care document."
-                action={<Link href="/workspace/daily-care" className="lcr-text-action">Add a care update</Link>}
-              />
-            </div>
-          ) : (
+          {projection.items.length === 0 ? null : (
             <div className="lcr-current-facts">
               <ul>
                 {projection.items.map((item) => (
