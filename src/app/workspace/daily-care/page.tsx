@@ -76,6 +76,8 @@ type CareItem = {
   original_text?: string | null;
   corrected_text?: string | null;
   reason?: string | null;
+  processing_status?: string | null;
+  processing_attempts?: number;
   scheduled_at?: string | null;
   uploaded_at?: string | null;
   source_type?: string | null;
@@ -181,6 +183,7 @@ function displayHistoryText(item: CareItem): string {
       item.original_text ? `Earlier entry: ${caregiverSafeAssistantText(item.original_text) || "An earlier entry was saved."}` : "",
       item.corrected_text ? `Correction: ${caregiverSafeAssistantText(item.corrected_text) || "A correction was saved."}` : "",
       item.reason ? `Reason: ${caregiverSafeAssistantText(item.reason) || "A reason was recorded."}` : "",
+      item.processing_status === "completed" ? "Care Record updated" : ["pending", "processing"].includes(item.processing_status || "") ? "Care Record update still pending" : "",
     ].filter(Boolean).join(" · ");
   }
 
