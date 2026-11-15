@@ -40,6 +40,10 @@ assert.doesNotMatch(orientation, /Missing information does not mean that nothing
 assert.match(daily, /contextLoading \? \([\s\S]*?RecordState kind="loading"/);
 assert.match(daily, /contextError \? \([\s\S]*?RecordState kind="error"/);
 assert.match(daily, /if \(Array\.isArray\(payload\?\.items\)\) \{\s*setCareItems/);
+assert.match(daily, /const \[careItemsLoaded, setCareItemsLoaded\] = useState\(false\)/);
+assert.match(daily, /const \[historyLoaded, setHistoryLoaded\] = useState\(false\)/);
+assert.match(daily, /contextError && careItemsLoaded/);
+assert.match(daily, /historyError && historyLoaded/);
 assert.doesNotMatch(daily, /setCareItems\(Array\.isArray\(payload\?\.items\) \?/);
 assert.match(daily, /historyError \? \([\s\S]*?RecordState kind="error"/);
 assert.doesNotMatch(daily, /This does not mean nothing happened|That does not mean nothing happened/);
