@@ -20,6 +20,13 @@ function caregiverChangeLabel(change: PersistedChange): string {
   if (change.change_type === "emergence" && change.baseline_coverage_status !== "covered") {
     return "First observed";
   }
+  if (
+    ["cessation", "disappearance"].includes(change.change_type) &&
+    change.baseline_coverage_status === "covered" &&
+    change.current_coverage_status === "covered"
+  ) {
+    return caregiverStatusLabel(change.change_type) ?? "No longer reported";
+  }
   if (change.significance_verdict === "insufficient_evidence") {
     return "Needs more information";
   }
