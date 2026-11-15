@@ -489,7 +489,7 @@ function displayCurrentCareTitle(item: CurrentCareItem): string {
 }
 
 function isMedicationObservation(attribute?: string | null): boolean {
-  return /medication|drug|dose|strength/i.test(attribute || "");
+  return /medication|medicine|drug|prescription|dose|strength/i.test(attribute || "");
 }
 
 function displayCurrentCareObservationValue(attribute?: string | null, rawValue?: unknown): string | null {
