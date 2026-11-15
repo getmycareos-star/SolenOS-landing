@@ -379,7 +379,7 @@ export default function ClaimAssessmentPanel() {
     {loading && <p role="status">Loading saved care details and related notes…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && claims.length === 0 && <p>There are no care details to review yet.</p>}
-    {!loading && !error && claims.length > 0 && <>
+    {!loading && claims.length > 0 && <>
       <label style={{ display: "block", fontSize: 12, marginBottom: 9 }}>Care detail
         <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
           {claims.map((claim) => <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {claim.asserted_value.slice(0, 120)}</option>)}
