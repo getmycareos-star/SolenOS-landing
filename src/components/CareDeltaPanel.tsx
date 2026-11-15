@@ -30,7 +30,6 @@ type DeltaResult = {
   }
 }
 
-type DeltaInput = { personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string }
 
 const panelStyle: React.CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
@@ -41,7 +40,7 @@ const fieldStyle: React.CSSProperties = {
   borderRadius: 8, padding: 9, background: 'var(--bg)', color: 'var(--text)', fontSize: 13
 }
 
-export default function CareDeltaPanel({ personId, autoInput, showPanel = true }: { personId: string; autoInput?: DeltaInput | null; showPanel?: boolean }) {
+export default function CareDeltaPanel({ personId }: { personId: string }) {
   const [source, setSource] = useState('Caregiver report')
   const [eventDate, setEventDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('')
@@ -50,7 +49,6 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
   const [historyError, setHistoryError] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const lastToken = useRef<number | null>(null)
   const requestSequence = useRef(0)
 
   async function reconcile(input: { content: string; source: string; eventDate: string; evidenceIds?: string[]; sourceEventId?: string }) {
@@ -104,8 +102,7 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
     setContent('')
     setSource('Caregiver report')
     setEventDate(new Date().toISOString().slice(0, 10))
-    lastToken.current = null
-    if (!personId || !showPanel) {
+    if (!personId) {
       return () => { cancelled = true }
     }
     getJSON(`/care-delta/runs/${encodeURIComponent(personId)}`)
@@ -119,18 +116,7 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
         if (!cancelled) setHistoryError("We couldn't load earlier care-change comparisons. You can still add a new note; try again to view saved comparisons.")
       })
     return () => { cancelled = true }
-  }, [personId, showPanel])
-
-  useEffect(() => {
-    if (!autoInput || autoInput.personId !== personId || lastToken.current === autoInput.token) return
-    lastToken.current = autoInput.token
-    setSource(autoInput.source)
-    setEventDate(autoInput.eventDate.slice(0, 10))
-    setContent(autoInput.content)
-    void reconcile(autoInput)
-    // autoInput token intentionally controls this one-shot capture trigger.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoInput?.token, autoInput?.personId, personId])
+  }, [personId])
 
   function renderRows(title: string, rows?: Array<Record<string, any>>) {
     if (!rows?.length) return null
@@ -174,10 +160,6 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
       </div>
     </section>
   }
-
-  // Background reconciliation remains active when the caregiver-facing controls are hidden.
-  // The internal comparison panel exposes engine terms and is not part of the caregiver chat UI.
-  if (!showPanel) return null;
 
   return <section aria-label="SolenOS Delta Engine" style={panelStyle}>
     <div>
