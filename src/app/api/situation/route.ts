@@ -9,7 +9,7 @@ async function proxySituation(request: Request): Promise<Response> {
   const authorization = request.headers.get("authorization");
   if (!authorization?.toLowerCase().startsWith("bearer ")) {
     return NextResponse.json(
-      { detail: "A valid SolenOS anonymous session is required." },
+      { detail: "Your access to SolenOS could not be confirmed. Refresh the page and try again." },
       { status: 401 },
     );
   }
