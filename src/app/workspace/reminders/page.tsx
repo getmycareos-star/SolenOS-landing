@@ -243,7 +243,7 @@ export default function CareRemindersPage() {
         {loading && !hasLoaded ? (
           <RecordState kind="loading" title="Loading saved reminders…" />
         ) : !hasLoaded && error ? null : visibleReminders.length === 0 ? (
-          <RecordState kind={filter === "open" ? "empty" : "no-results"} title={filter === "all" ? "No reminders saved yet." : filter === "open" ? "No open reminders." : `No ${filter} reminders.`} description={filter === "open" ? "Reminders you add will appear here." : "Try another filter to see other reminders."} />
+          <RecordState kind={filter === "open" ? "empty" : "no-results"} title={reminders.length === 0 ? "No reminders saved yet." : filter === "all" ? "No reminders to show." : `No ${filter} reminders.`} description={reminders.length === 0 ? "Add a reminder when something needs following up." : "Try another filter to view your saved reminders."} />
         ) : (
           <ul className="care-reminders-items">
             {visibleReminders.map((reminder) => {
