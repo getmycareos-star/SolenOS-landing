@@ -50,7 +50,7 @@ assert.doesNotMatch(history, /empty view is not evidence that no care was record
 assert.doesNotMatch(read("src/components/mvp-workspace/ChangeIntelligencePanel.tsx"), /This does not mean nothing changed/);
 assert.doesNotMatch(read("src/app/workspace/open-loops/page.tsx"), /An empty section does not mean nothing needs attention/);
 assert.doesNotMatch(claimReview, /This does not mean there are no past reviews|This does not mean this review is current/);
-assert.match(claimReview, /Past reviews could not be loaded\\. Try again\\./);
-assert.match(claimReview, /New information could not be checked\\. Try again before relying on this review\\./);
+assert.match(claimReview, /Past reviews could not be loaded\. Try again\./);
+assert.match(claimReview, /New information could not be checked\. Try again before relying on this review\./);
 
 console.log("Record-state clarity and failure-separation checks passed.");
