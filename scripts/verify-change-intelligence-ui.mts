@@ -47,7 +47,7 @@ for (const contract of [
   ["pattern source details are user-reviewable", /Review pattern sources/],
   ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
   ["failed loads are exposed as an error state", /role="alert"/],
-  ["empty state does not claim no changes occurred", /This does not mean that no changes occurred/],
+  ["empty state does not claim no changes occurred", /This does not mean nothing changed/],
 ] as const) {
   const matches = contract[1] instanceof RegExp ? contract[1].test(panel) : contract[1];
   assert(matches, `Missing UI contract: ${contract[0]}`);
