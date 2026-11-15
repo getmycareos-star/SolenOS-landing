@@ -33,7 +33,7 @@ export function PublicNav({
           </nav>
         )}
         <Link href="/workspace?enter=1" className="public-nav-product">
-          Living Care Record
+          Care Record
         </Link>
       </div>
     </header>
