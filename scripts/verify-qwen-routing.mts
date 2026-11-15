@@ -115,7 +115,7 @@ assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1,
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
   'placeholder="Ask about saved care information, a recent change, or something that is unclear…"',
-  "aria-label=\"Send a message to Companion\"",
+  "aria-label=\"Send a message to the Care Assistant\"",
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
@@ -152,7 +152,7 @@ assert(!documentPage.includes("runtime.situations"), "Document library must not 
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
   "Your update was saved to your Care Record",
   "Your update was saved, but SolenOS could not refresh your Care Record.",
-  "We won’t ask you to submit the same entry again.",
+  "We won’t ask you to submit the same information again.",
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("The backend confirmed"));
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
