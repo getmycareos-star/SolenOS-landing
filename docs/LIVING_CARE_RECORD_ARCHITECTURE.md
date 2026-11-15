@@ -68,3 +68,23 @@ Until this journey passes, the architecture is implemented in parts but not veri
 The backend already contains a PostgreSQL-backed HTTP journey in [postgres_anonymous_e2e.py](https://github.com/getmycareos-star/SolenOS_backend/blob/main/backend/scripts/postgres_anonymous_e2e.py). The [Backend tests workflow](https://github.com/getmycareos-star/SolenOS_backend/blob/main/.github/workflows/backend-tests.yml) runs it against a disposable PostgreSQL service. It covers Daily Care source/event persistence, review correction, explicit acceptance/rejection, LCR retrieval, session refresh, cross-person isolation, and other continuity workflows.
 
 The same journey seeds persisted extraction candidates directly rather than depending on a live model call. That is appropriate for deterministic verification of persistence and review/promotion boundaries, but it does **not** prove extraction quality. Live model extraction must remain a separate test gate. The PostgreSQL test run must report success before the complete architecture is marked verified.
+
+## Screen responsibility and correction contract
+
+The six caregiver screens are interaction surfaces over one governed care information system; they are not six independent records.
+
+| Screen | Primary responsibility | Boundary |
+|---|---|---|
+| Care Record | Current supported understanding: known, uncertain, missing, conflicting, and recently changed information | Current-state projection; not a second event feed |
+| Daily Care | Capture new observations, events, reports, and corrections | Capture workflow; full historical browsing belongs in Timeline |
+| Care Timeline | Browse recorded events and subsequent corrections over time | Historical projection; not an independent current-state editor |
+| Follow-ups | Manage unresolved questions, actions, decisions, awaited responses, and outcomes | Workflow state; does not replace the underlying care information |
+| Documents | Preserve original files and review extracted information | Original file remains unchanged; extraction is not acceptance |
+| AI Companion | Explain and retrieve saved information with source and uncertainty context | Retrieval interface; conversation alone does not write authoritative care facts |
+
+A correction must preserve the earlier report, record who corrected it and why, reassess affected current-care information and follow-ups, and refresh every affected projection. A caregiver must not need to know which screen originally displayed the information to make a correction.
+
+The detailed backend model, API, transaction, retry, and acceptance-test contract is maintained in [Care Information Lifecycle Contract](https://github.com/getmycareos-star/SolenOS_backend/blob/main/backend/docs/care-information-lifecycle-contract.md). Backend and frontend changes are made directly on `main`; do not implement this contract on feature branches or through new pull requests.
+
+Daily Care may show a concise confirmation and link to the saved entry. It should not become the full history browser. Timeline may launch the shared correction workflow, but it must not create a separate correction store. Follow-ups may collect a caregiver update, but an update is not a resolution unless its recorded verification condition is met.
+
