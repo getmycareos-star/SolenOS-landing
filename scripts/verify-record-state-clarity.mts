@@ -38,7 +38,7 @@ assert.doesNotMatch(lcr, /No saved care details to review yet/);
 assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setChanges\(\[\]\)/);
 assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setPatterns\(\[\]\)/);
 assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setAssessment\(null\)/);
-assert.match(orientation, /No care information recorded yet/);
+assert.match(orientation, /Your care record is taking shape/);
 assert.match(orientation, /href="\/workspace\/daily-care"/);
 assert.match(orientation, /hasLoadedRef\.current = true/);
 assert.doesNotMatch(orientation, /catch \{\s*setProjection\(null\)/);
@@ -61,7 +61,7 @@ assert.doesNotMatch(daily, /No updates have been saved today/);
 assert.doesNotMatch(daily, /setHistoryItems\(\[\]\);\s*setHistoryMayBeTruncated\(false\);/);
 
 assert.match(overview, /setHasLoaded\(true\)/);
-assert.match(overview, /error && <RecordState kind="error"/);
+assert.match(overview, /error && !hasLoaded && <RecordState kind="error"/);\nassert.match(overview, /error && hasLoaded && <RecordState kind="error"/);
 assert.match(overview, /No recent changes recorded\./);
 assert.doesNotMatch(overview, /SolenOS will not invent a change when there is no record of one/);
 assert.doesNotMatch(overview, /No care information is available in this view yet/);
@@ -80,7 +80,7 @@ assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
 assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
 assert.match(history, /error && records\.length > 0/);
-assert.match(history, /loading && !hasLoaded/);
+assert.match(history, /loading \\? \\([\\s\\S]*?Loading saved care history/);
 assert.doesNotMatch(read("src/components/mvp-workspace/ChangeIntelligencePanel.tsx"), /This does not mean nothing changed/);
 assert.doesNotMatch(read("src/app/workspace/open-loops/page.tsx"), /An empty section does not mean nothing needs attention/);
 assert.doesNotMatch(claimReview, /This does not mean there are no past reviews|This does not mean this review is current/);
