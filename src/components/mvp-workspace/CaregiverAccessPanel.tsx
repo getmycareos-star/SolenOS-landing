@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Shield, UserPlus, Users, X, Check, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getAnonymousAccessToken, getPersonId, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
+import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Member = {
   caregiver_id: string;
@@ -168,7 +169,7 @@ export function CaregiverAccessPanel() {
       });
       setSelectedPrimaryRecipient("");
       setPrimaryReason("");
-      setNotice("Primary caregiver transfer requested. Your access and responsibilities have not changed until the receiving caregiver accepts.");
+      setNotice("Request to change the main caregiver sent. Your access and care tasks stay the same until the other caregiver accepts.");
       await load();
     } catch {
       setError("We couldn't request this change. The current primary caregiver remains in place.");
@@ -184,7 +185,7 @@ export function CaregiverAccessPanel() {
     try {
       await postJSON("/caregiver-access/primary-transfers/" + encodeURIComponent(transfer.id) + "/" + decision, {});
       setNotice(decision === "accept"
-        ? "You are now the primary caregiver. The previous caregiver's access and history have been retained."
+        ? "You are now the main caregiver. The previous caregiver's access and past notes have been kept."
         : "Primary caregiver transfer declined. The current primary caregiver remains in place.");
       await load();
     } catch {
@@ -205,7 +206,7 @@ export function CaregiverAccessPanel() {
         : "Transfer declined. The previous assignment remains in place.");
       await load();
     } catch {
-      setError("We couldn't record your response. The transfer status has not been assumed.");
+      setError("We couldn't save your response. No change has been made.");
     } finally {
       setBusy(false);
     }
@@ -221,26 +222,26 @@ export function CaregiverAccessPanel() {
       });
       setNotice(accessScope === "documents_only"
         ? member.name + " can now access documents and appointment paperwork only."
-        : member.name + " can access the full care record.");
+        : member.name + " can access the full Care Record.");
       await load();
     } catch {
-      setError("We couldn't update this caregiver's permissions. Their previous access remains in place.");
+      setError("We couldn't change this caregiver's access. Their previous access remains in place.");
     } finally {
       setBusy(false);
     }
   };
 
   const revoke = async (member: Member) => {
-    if (!window.confirm("Remove " + member.name + "'s access to this care record? Their past contributions will remain in the history.")) return;
+    if (!window.confirm("Remove " + member.name + "'s access to this Care Record? Notes they added in the past will stay.")) return;
     setBusy(true);
     setError("");
     setNotice("");
     try {
       await deleteJSON("/caregiver-access/members/" + encodeURIComponent(member.caregiver_id));
-      setNotice(member.name + " can no longer access this care record. Their historical contributions remain.");
+      setNotice(member.name + " can no longer open this Care Record. Their earlier notes are still saved.");
       await load();
     } catch {
-      setError("We couldn't change this caregiver's access. No change should be assumed.");
+      setError("We couldn't change this caregiver's access. No change has been made.");
     } finally {
       setBusy(false);
     }
@@ -254,7 +255,7 @@ export function CaregiverAccessPanel() {
 
       {allowed ? (
         <>
-          <p className="mobile-settings-hint">Invite someone to this care record or remove their access. Past notes and contributions are kept when access changes.</p>
+          <p className="mobile-settings-hint">Invite someone to help with care or remove their access. Notes they added in the past will stay in your Care Record.</p>
           <form onSubmit={(event) => void invite(event)} style={{ display: "grid", gap: "0.7rem", marginTop: "0.9rem" }}>
             <label className="mobile-settings-label" htmlFor="caregiver-invite-email">Email address</label>
             <input id="caregiver-invite-email" className="mobile-settings-input" type="email" autoComplete="email" required maxLength={320} value={email} onChange={(event) => setEmail(event.target.value)} />
@@ -276,7 +277,7 @@ export function CaregiverAccessPanel() {
               <div key={member.caregiver_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.8rem", borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
                 <div>
                   <strong>{member.name}</strong>
-                  <p className="mobile-settings-hint" style={{ margin: 0 }}>{member.email ?? "No email"} · {member.role === "primary" ? "Primary caregiver" : "Family caregiver"} · {member.status}</p>
+                  <p className="mobile-settings-hint" style={{ margin: 0 }}>{member.email ?? "No email"} · {member.role === "primary" ? "Main caregiver" : "Family caregiver"} · {caregiverStatusLabel(member.status) || "Status not available"}</p>
                   <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>Access: {member.access_scope === "documents_only" ? "Documents and appointment paperwork" : "Full care record"}</p>
                   {member.status === "active" && !member.can_manage_members && (
                     <select
@@ -299,30 +300,30 @@ export function CaregiverAccessPanel() {
           </div>
 
           <div style={{ display: "grid", gap: "0.7rem", marginTop: "1.2rem" }}>
-            <h3 className="mobile-settings-label"><Shield size={15} aria-hidden /> Change primary caregiver</h3>
-            <p className="mobile-settings-hint">This changes who administers caregiver access. It does not automatically transfer individual responsibilities; those are handled separately below.</p>
+            <h3 className="mobile-settings-label"><Shield size={15} aria-hidden /> Change the main caregiver</h3>
+            <p className="mobile-settings-hint">This changes who manages access for other caregivers. It does not move individual care tasks; you can hand those over separately below.</p>
             <form onSubmit={(event) => void createPrimaryTransfer(event)} style={{ display: "grid", gap: "0.65rem" }}>
-              <label className="mobile-settings-label" htmlFor="primary-transfer-recipient">New primary caregiver</label>
+              <label className="mobile-settings-label" htmlFor="primary-transfer-recipient">New main caregiver</label>
               <select id="primary-transfer-recipient" className="mobile-settings-input" required value={selectedPrimaryRecipient} onChange={(event) => setSelectedPrimaryRecipient(event.target.value)}>
                 <option value="">Choose a caregiver</option>
                 {members.filter((member) => member.status === "active" && !member.can_manage_members).map((member) => <option key={member.caregiver_id} value={member.caregiver_id}>{member.name}</option>)}
               </select>
               <label className="mobile-settings-label" htmlFor="primary-transfer-reason">Reason (optional)</label>
               <input id="primary-transfer-reason" className="mobile-settings-input" maxLength={1000} value={primaryReason} onChange={(event) => setPrimaryReason(event.target.value)} />
-              <Button type="submit" variant="primary" disabled={busy || !selectedPrimaryRecipient} loading={busy}>Request primary caregiver change</Button>
+              <Button type="submit" variant="primary" disabled={busy || !selectedPrimaryRecipient} loading={busy}>Request change of main caregiver</Button>
             </form>
           </div>
 
           <div style={{ display: "grid", gap: "0.7rem", marginTop: "1.2rem" }}>
-            <h3 className="mobile-settings-label"><ArrowRightLeft size={15} aria-hidden /> Transfer a responsibility</h3>
-            <p className="mobile-settings-hint">The current assignment stays in place until the receiving caregiver accepts. Each responsibility transfers separately.</p>
+            <h3 className="mobile-settings-label"><ArrowRightLeft size={15} aria-hidden /> Hand over a care task</h3>
+            <p className="mobile-settings-hint">The current caregiver stays responsible until the other caregiver accepts. Each task is handed over separately.</p>
             <form onSubmit={(event) => void createTransfer(event)} style={{ display: "grid", gap: "0.65rem" }}>
-              <label className="mobile-settings-label" htmlFor="transfer-responsibility">Current responsibility</label>
+              <label className="mobile-settings-label" htmlFor="transfer-responsibility">Care task to hand over</label>
               <select id="transfer-responsibility" className="mobile-settings-input" required value={selectedResponsibility} onChange={(event) => setSelectedResponsibility(event.target.value)}>
                 <option value="">Choose a responsibility</option>
-                {responsibilities.map((item) => <option key={item.id} value={item.id}>{item.responsibility_type.replaceAll("_", " ")} — {item.scope || "No additional detail"}</option>)}
+                {responsibilities.map((item) => <option key={item.id} value={item.id}>{caregiverFieldLabel(item.responsibility_type) || caregiverStatusLabel(item.responsibility_type) || "Care task"} — {caregiverSafeAssistantText(item.scope) || "No additional detail"}</option>)}
               </select>
-              <label className="mobile-settings-label" htmlFor="transfer-recipient">Receiving caregiver</label>
+              <label className="mobile-settings-label" htmlFor="transfer-recipient">New caregiver</label>
               <select id="transfer-recipient" className="mobile-settings-input" required value={selectedRecipient} onChange={(event) => setSelectedRecipient(event.target.value)}>
                 <option value="">Choose a caregiver</option>
                 {members.filter((member) => member.status === "active" && member.caregiver_profile_id && !member.can_manage_members).map((member) => <option key={member.caregiver_profile_id} value={member.caregiver_profile_id!}>{member.name}</option>)}
@@ -334,20 +335,20 @@ export function CaregiverAccessPanel() {
               </select>
               <label className="mobile-settings-label" htmlFor="transfer-reason">Reason (optional)</label>
               <input id="transfer-reason" className="mobile-settings-input" maxLength={1000} value={transferReason} onChange={(event) => setTransferReason(event.target.value)} />
-              <Button type="submit" variant="primary" disabled={busy || !selectedResponsibility || !selectedRecipient} loading={busy}>Request responsibility transfer</Button>
+              <Button type="submit" variant="primary" disabled={busy || !selectedResponsibility || !selectedRecipient} loading={busy}>Request handover</Button>
             </form>
           </div>
         </>
       ) : (
-        <p className="mobile-settings-hint">Caregiver access is managed by the person authorised to administer this care record. You can still review and respond to responsibilities handed to you.</p>
+        <p className="mobile-settings-hint">The main caregiver manages who can access this Care Record. You can still review and respond to care tasks handed to you.</p>
       )}
 
       {primaryTransfers.length > 0 && (
         <div style={{ display: "grid", gap: "0.7rem", marginTop: "1rem" }}>
-          <h3 className="mobile-settings-label">Primary caregiver handovers</h3>
+          <h3 className="mobile-settings-label">Main caregiver changes</h3>
           {primaryTransfers.map((transfer) => (
             <div key={transfer.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
-              <strong>Change primary caregiver · {transfer.status}</strong>
+              <strong>Change main caregiver · {caregiverStatusLabel(transfer.status) || "Status not available"}</strong>
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
               {transfer.status === "pending" && !allowed && (
                 <div className="mobile-settings-buttons">
@@ -362,11 +363,11 @@ export function CaregiverAccessPanel() {
 
       {transfers.length > 0 && (
         <div style={{ display: "grid", gap: "0.7rem", marginTop: "1rem" }}>
-          <h3 className="mobile-settings-label">Responsibility handovers</h3>
+          <h3 className="mobile-settings-label">Care task handovers</h3>
           {transfers.map((transfer) => (
             <div key={transfer.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
-              <strong>{transfer.responsibility_type.replaceAll("_", " ")}</strong>
-              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>{transfer.from_caregiver_name} → {transfer.to_caregiver_name} · {transfer.status}</p>
+              <strong>{caregiverFieldLabel(transfer.responsibility_type) || caregiverStatusLabel(transfer.responsibility_type) || "Care task"}</strong>
+              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>{transfer.from_caregiver_name} → {transfer.to_caregiver_name} · {caregiverStatusLabel(transfer.status) || "Status not available"}</p>
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
               {transfer.status === "pending" && !allowed && (
                 <div className="mobile-settings-buttons">
@@ -381,7 +382,7 @@ export function CaregiverAccessPanel() {
 
       {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
       {notice && <p className="mobile-settings-hint" role="status">{notice}</p>}
-      <Button type="button" variant="secondary" onClick={() => void load()} disabled={busy}>Refresh access list</Button>
+      <Button type="button" variant="secondary" onClick={() => void load()} disabled={busy}>Refresh</Button>
     </section>
   );
 }
