@@ -150,7 +150,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
     return (
       <section className="policy-settings-panel">
         <h4>Help improve SolenOS (optional)</h4>
-        <p className="panel-muted" role="status">Checking your saved privacy choice…</p>
+        <p className="panel-muted" role="status">Checking your privacy choice…</p>
       </section>
     );
   }
@@ -159,7 +159,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
     <section className="policy-settings-panel" aria-labelledby="improvement-consent-heading">
       <h4 id="improvement-consent-heading">Help improve SolenOS (optional)</h4>
       <p className="panel-muted">
-        This optional choice controls whether eligible feedback you deliberately submit may be considered for SolenOS improvement. It does not automatically submit your care notes, documents, or Companion conversations. Your Living Care Record and the processing needed to provide the features you request are separate from optional improvement processing. This preference stays saved until you change it.
+        This optional choice controls whether feedback you choose to send can be used to improve SolenOS. It does not automatically send your care notes, documents, or Care Assistant conversations. Your Care Record and the work needed to provide the features you ask for are separate from this choice. Your choice stays saved until you change it.
       </p>
 
       {loadError && (
@@ -172,26 +172,26 @@ export function PolicySettingsPanel(_props: Props = {}) {
       )}
       {verified && acceptedAt && (
         <p className="panel-muted">
-          Required privacy acknowledgement accepted on {new Date(acceptedAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.
+          You confirmed these privacy terms on {new Date(acceptedAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}.
         </p>
       )}
       {!verified && !loadError && !limitedMode && (
         <div className="policy-required-ack">
           <p className="panel-muted">
-            Required privacy acknowledgement has not yet been confirmed for this care-record session. Review and accept the Terms of Service and Privacy Policy below to complete the required acknowledgement. This is separate from your optional improvement preference; changing that preference does not accept these terms.
+            You have not yet confirmed that you have read and accepted the Terms of Service and Privacy Policy for this Care Record. Read them below, then check the box to confirm. This is separate from optional feedback sharing; turning it on does not mean you have accepted the terms.
           </p>
           <label className="consent-checkbox">
             <input type="checkbox" checked={requiredAck} disabled={saving} onChange={(event) => setRequiredAck(event.target.checked)} />
             <span>I have read and accept the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. I understand SolenOS is not medical or emergency guidance, care information is not sold or used for advertising, and trusted contributors may add notes to the care record.</span>
           </label>
           <button type="button" className="workspace-primary policy-acknowledge-button" onClick={() => void acknowledgeRequiredTerms()} disabled={!requiredAck || acknowledgementBusy || saving}>
-            {acknowledgementBusy ? "Saving acknowledgement…" : "Confirm and save acknowledgement"}
+            {acknowledgementBusy ? "Saving…" : "Confirm and save"}
           </button>
         </div>
       )}
       {limitedMode && (
         <p className="panel-muted" role="status">
-          Optional improvement use is unavailable while privacy access is limited. Your care history has not been deleted.
+          You cannot change optional feedback sharing right now. Your care history has not been deleted.
         </p>
       )}
 
@@ -202,7 +202,7 @@ export function PolicySettingsPanel(_props: Props = {}) {
           disabled={limitedMode || saving || Boolean(loadError)}
           onChange={(e) => void toggleImprovement(e.target.checked)}
         />
-        <span>{saving ? "Saving your choice…" : "Allow submitted feedback to contribute to SolenOS improvements"}</span>
+        <span>{saving ? "Saving your choice…" : "Allow feedback I choose to send to help improve SolenOS"}</span>
       </label>
 
       {loadError ? (
@@ -212,22 +212,22 @@ export function PolicySettingsPanel(_props: Props = {}) {
         </p>
       ) : dataImprovement ? (
         <div className="policy-improvement-details">
-          <h5>Optional improvement is on</h5>
+          <h5>Optional feedback sharing is on</h5>
           <p>Your preference is saved. It remains on until you turn it off.</p>
-          <h5>What may be used</h5>
+          <h5>What may be shared</h5>
           <ul>
-            <li>Feedback you deliberately submit through an improvement or validation option.</li>
-            <li>The feedback category and any context you explicitly include with that submission, plus details needed to review it.</li>
-            <li>Eligible submitted material for SolenOS product and service improvement, subject to access controls and the safeguards described in the Privacy Policy.</li>
+            <li>Feedback you choose to send through an improvement or testing option.</li>
+            <li>The type of feedback and any details you include, along with information needed to review it.</li>
+            <li>Some of the material you choose to send may be used to improve SolenOS, as explained in the Privacy Policy.</li>
           </ul>
-          <h5>What is not included just because you opted in</h5>
+          <h5>What is not shared automatically</h5>
           <ul>
-            <li>Your entire Living Care Record or all of your personal care history.</li>
-            <li>Automatic collection of every care note, uploaded document, or Companion conversation as improvement feedback.</li>
-            <li>Publishing your care details, selling your personal information, or using it for targeted advertising.</li>
+            <li>Your full Care Record or your full care history.</li>
+            <li>Your care notes, uploaded documents, or Care Assistant conversations are not automatically sent as feedback.</li>
+            <li>Your care details are not published, your personal information is not sold, and your information is not used for targeted advertising.</li>
           </ul>
           <p className="panel-muted">
-            Direct identifiers are redacted from supported feedback fields before review where the processing path provides that safeguard; this is not a promise that every possible identifier in every attachment is automatically removed. Optional improvement opt-in does not itself satisfy the separate required privacy acknowledgement, and feedback will not be accepted until required consent checks pass. See the Privacy Policy for the applicable retention and handling rules.
+            Where possible, direct personal details are removed from feedback before it is reviewed. This does not guarantee that every personal detail is removed from every attachment. Turning on optional feedback sharing does not mean you have accepted the Terms of Service or Privacy Policy. Feedback is not accepted until the required privacy choices are confirmed. See the Privacy Policy for how information is stored and handled.
           </p>
         </div>
       ) : null}
