@@ -50,8 +50,8 @@ assert.ok(
   workspaceHome.indexOf("What would you like to do?") < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
   "the workspace must show current-care orientation, then primary actions, then pending handovers"
 );
-assert.match(workspaceHome, /href="\\/workspace\\/companion"/, "Ask SolenOS remains directly accessible from the first screen");
-assert.match(workspaceHome, /href="\\/workspace\\/daily-care"/, "Add a care update remains directly accessible from the first screen");
+assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Ask SolenOS remains directly accessible from the first screen");
+assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Add a care update remains directly accessible from the first screen");
 assert.match(currentUnderstanding, /<EvidenceReviewPanel personId={personId} \/>/, "Care Continuity mounts the evidence panel in its review-only form");
 assert.match(currentUnderstanding, /<CareContinuityIntegrityPanel personId={personId} \/>/, "Care Continuity mounts the integrity panel for review");
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
