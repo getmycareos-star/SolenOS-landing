@@ -79,8 +79,10 @@ const breadcrumbs = fs.readFileSync(path.join(root, "src/components/app-shell/Wo
 const workspaceStyles = fs.readFileSync(path.join(root, "src/app/workspace/navigation-accessibility.css"), "utf8");
 const workspaceContext = fs.readFileSync(path.join(root, "src/lib/workspace-context.tsx"), "utf8");
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
+const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
 assert.match(layout, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
+assert.match(workspaceHome, /\/\* Show the current care situation before inbox and detailed record content\. \*\/\}/, "Care Record page JSX comment must be closed");
 assert.match(workspaceContext, /ensureAnonymousSession\(\)/, "caregiver workspace bootstraps a server-issued session before entry");
 assert.match(navigationA11y, /event\.key === "Escape"/, "Escape closes the mobile drawer");
 assert.match(navigationA11y, /event\.key !== "Tab"/, "Tab handling is explicitly trapped in the open drawer");
