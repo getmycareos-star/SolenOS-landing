@@ -116,6 +116,7 @@
     "situations": "Care situations",
     "disclaimer": "These status updates are recorded by the caregiver. They are not medical conclusions.",
     "reportedStatus": "Caregiver-reported status",
-    "statusReason": "Reason for this status (required)"
+    "statusReason": "Reason for this status (required)",
+    "previousStatusUpdates": "Previous status updates"
   }
 }
