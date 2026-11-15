@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 
 const CARE_EXPERIENCE = [
   {
-    title: "Living Care Record",
+    title: "Care Record",
     subtitle: "Understand the full care story",
     body:
-      "The Living Care Record (LCR) is the long-term, organized history of a person's care. It brings together recorded observations, events, documents, decisions, and follow-up questions so caregivers can review what has happened over time.",
+      "The Care Record keeps a person’s care information together over time. It brings together updates, documents, decisions and questions so caregivers can see what has happened.",
     useWhen:
       "Use it to review care history, find earlier information, prepare a source-grounded summary, and see what is known, uncertain, or still missing.",
   },
@@ -26,10 +26,10 @@ const CARE_EXPERIENCE = [
       "Use it when something happens today, when you need to add or correct a care note, or when you want to capture an update for later review.",
   },
   {
-    title: "AI Companion",
+    title: "Care Assistant",
     subtitle: "Get help working through care situations",
     body:
-      "AI Companion helps caregivers organize their thoughts, understand available information, prepare questions, and get ready for appointments or care handoffs. It can use relevant, authorized care context when available, while making uncertainty clear.",
+      "The Care Assistant helps caregivers think through a situation, understand saved information, prepare questions and get ready for appointments or care handoffs. It explains when something is not clear.",
     useWhen:
       "Use it when you want help thinking through a situation, making sense of information, or preparing what to ask a care professional.",
   },
@@ -95,17 +95,17 @@ export default function HowItWorksPage() {
         <p className="public-prose">
           You do not have to visit all three parts every time. Something
           happened? Start in Daily Care. Need the bigger picture? Open the
-          Living Care Record. Need help thinking, organizing, or preparing?
-          Use AI Companion.
+          Care Record. Need help thinking something through or getting ready for an appointment?
+          Use the Care Assistant.
         </p>
         <blockquote className="public-pull">
-          Capture it in Daily Care. Understand it in your Living Care Record.
-          Work through it with AI Companion.
+          Add an update in Daily Care. Find it later in your Care Record.
+          Talk it through with the Care Assistant.
         </blockquote>
         <p className="public-prose">
-          The Living Care Record is the foundation and source of truth for
+          The Care Record keeps the saved care information together
           recorded care information. Daily Care helps add and correct
-          information. AI Companion is a support layer, not a medical
+          information. The Care Assistant can help explain it, but it is not a medical
           professional and not a separate source of truth. SolenOS should
           distinguish recorded facts from suggestions, uncertainty, and
           missing information.
