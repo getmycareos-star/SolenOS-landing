@@ -436,7 +436,7 @@ export function ChangeIntelligencePanel() {
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
                   <h3>{caregiverStatusLabel(pattern.pattern_type) ?? "Repeated care change"}</h3>
-                  <span>{caregiverStatusLabel(pattern.pattern_strength) ?? "Pattern not rated"}</span>
+                  <span>{pattern.is_active ? caregiverStatusLabel(pattern.pattern_strength) ?? "Pattern not rated" : "Past pattern"}</span>
                 </div>
                 <p>Observed interval: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
                 <p className="panel-muted">
