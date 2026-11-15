@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
@@ -59,10 +59,11 @@ export function CareRecordOverview() {
   const [error, setError] = useState<string | null>(null);
   const [historyNote, setHistoryNote] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
-    else if (!hasLoaded) setLoading(true);
+    else if (!hasLoadedRef.current) setLoading(true);
     setError(null);
     setHistoryNote(null);
     try {
@@ -78,6 +79,7 @@ export function CareRecordOverview() {
         throw new Error("The saved care information could not be verified for this session.");
       }
       setItems(response.items);
+      hasLoadedRef.current = true;
       setHasLoaded(true);
       try {
         const history = await getJSON("/change/changes/" + encodeURIComponent(personId));
@@ -92,7 +94,7 @@ export function CareRecordOverview() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [hasLoaded]);
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
 
