@@ -64,6 +64,7 @@ jobs:
 
   caregiver-acceptance:
     name: Verify all caregiver journeys against PostgreSQL and a real browser
+    if: github.event_name == 'workflow_dispatch' && inputs.release_approved == true
     uses: ./.github/workflows/critical-care-journeys-e2e.yml
 
   deploy:
