@@ -79,7 +79,7 @@ try {
   });
   await card.waitFor({ timeout: 20_000 });
   await card.getByRole("button", { name: "Share what changed" }).click();
-  await card.getByLabel(/Share what has changed/).fill(
+  await card.getByLabel(/Tell SolenOS what has changed/).fill(
     "CI-only caregiver report: I contacted the clinic and was told the appointment date is still being checked."
   );
   await card.getByRole("button", { name: "Share update" }).click();
