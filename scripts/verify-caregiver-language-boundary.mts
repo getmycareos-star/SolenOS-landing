@@ -75,6 +75,7 @@ assert.equal(
 assert.match(caregiverSafeErrorMessage(), /check your connection/i);
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+const careContinuity = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
 const companion = read("../src/components/workflows/AICompanion.tsx");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
@@ -215,7 +216,6 @@ const informationStatus = read("../src/components/trust/InformationStatus.tsx");
 const statusCareDelta = read("../src/components/CareDeltaPanel.tsx");
 const careOverviewPage = read("../src/app/workspace/care-continuity/page.tsx");
 const sourceReview = read("../src/components/EvidenceReviewPanel.tsx");
-const careContinuity = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const careRecordOverview = read("../src/components/app-shell/CareRecordOverview.tsx");
 const persistedOrientation = read("../src/components/mvp-workspace/PersistedCareOrientation.tsx");
 const howItWorksPage = read("../src/app/how-it-works/page.tsx");
