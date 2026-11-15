@@ -741,6 +741,46 @@ await record("06 Companion context and Qwen output", async () => {
     "Companion must report that the validated caregiver question was actually supplied to Qwen",
   );
 
+  const medicationAnswer = await request("/api/v1/conversation/message", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      text: "What new dose did the doctor prescribe for Mum yesterday?",
+      client_turn_id: randomUUID(),
+    },
+  });
+  assert.equal(medicationAnswer.status, 200, JSON.stringify(medicationAnswer.payload));
+  assert.equal(medicationAnswer.payload.written_to_lcr, false);
+  const medicationReply = String(medicationAnswer.payload.reply || "").toLowerCase();
+  assert.match(
+    medicationReply,
+    /can't remember|cannot remember|not recorded|not provided|not confirmed|unclear|can't confirm|cannot confirm|don't know|do not know/,
+    "Companion must preserve that the caregiver could not confirm the new medication dose",
+  );
+  assert.doesNotMatch(
+    medicationReply,
+    /(?:the new dose is|the doctor prescribed|the medication was changed to)\\s+\\d+(?:\\.\\d+)?\\s*(?:mg|mcg|ml)/i,
+    "Companion must not invent a new medication dose from an uncertain caregiver report",
+  );
+  assert.ok(
+    (medicationAnswer.payload.source_event_ids || []).includes(
+      dailyScenarioEventIdsByReport[scenarioReports[2]],
+    ),
+    "Companion must retrieve the exact uncertain medication report",
+  );
+  assert.ok(
+    (medicationAnswer.payload.source_evidence_ids || []).includes(
+      dailyScenarioEvidenceIdsByReport[scenarioReports[2]],
+    ),
+    "Companion must retain the original evidence for the uncertain medication report",
+  );
+  assert.equal(
+    medicationAnswer.payload.lcr_context_coverage?.prompt_context_complete,
+    true,
+    "Companion must disclose complete context for the medication-dose question",
+  );
+
   const documentAnswer = await request("/api/v1/conversation/message", {
     token: identity.token,
     method: "POST",
