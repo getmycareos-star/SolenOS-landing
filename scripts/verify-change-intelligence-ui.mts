@@ -36,7 +36,7 @@ for (const contract of [
   ["caregiver change panel removes its refresh listener on unmount", /window\.removeEventListener\("careRecordUpdated", refreshAfterSavedCareUpdate\)/],
   ["stale person responses are discarded", /personIdRef\.current !== personId/],
   ["older change assessments can be loaded", /Load earlier changes/],
-  ["older patterns can be loaded", /Load earlier patterns/],
+  ["older patterns can be loaded", /Load earlier changes/],
   ["panel offers an explicit saved-assessment refresh", /Check for new changes/],
   ["manual refresh is visibly in progress", /Checking for new changes…/],
   ["panel keeps backend reassessment available for deliberate refresh", /reassessPersistedChangeIntelligence\(personId\)/],
@@ -46,7 +46,7 @@ for (const contract of [
   ["change explanations use the caregiver-safe change language filter", /caregiverSafeChangeText\(change\.explanation\)/],
   ["change source details are user-reviewable", /Review notes and documents/],
   ["pattern source details are user-reviewable", /Review notes and updates/],
-  ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
+  ["missing earlier information is not proof an event did not happen", /Some earlier care information may be missing\. That does not mean the event did not happen\./],
   ["failed loads are exposed as an error state", /role="alert"/],
   ["empty state does not claim no changes occurred", /This does not mean nothing changed/],
 ] as const) {
