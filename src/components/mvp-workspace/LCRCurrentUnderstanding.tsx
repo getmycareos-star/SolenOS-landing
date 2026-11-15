@@ -992,6 +992,11 @@ export function LCRCurrentUnderstanding() {
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
   const careAttention = assessment?.care_attention;
+  // Use the persisted care-attention decisions already returned by the assessment.
+  // These are not synthesized from UI heuristics.
+  const immediateCareDecisions = careAttention?.needs_attention_now ?? [];
+  const importantCareDecisions = careAttention?.important_to_address ?? [];
+  const clarificationCareDecisions = careAttention?.needs_clarification ?? [];
   const findAttentionLoop = (decision: CareAttentionDecision) =>
     openLoopItems.find((item) => item.id === decision.record_id && item.source === decision.source);
   const needsAttentionNow = careAttention
