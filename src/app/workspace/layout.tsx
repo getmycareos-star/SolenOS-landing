@@ -91,7 +91,7 @@ function WorkspaceEntryGate({ children }: { children: ReactNode }) {
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
     <WorkspaceProvider>
-      <ErrorBoundary fallback={
+      <ErrorBoundary name="Workspace" fallback={
         <div style={{ padding: "24px", textAlign: "center" }}>
           <p style={{ color: "#78716c" }}>The workspace encountered an error. Please refresh the page.</p>
         </div>
