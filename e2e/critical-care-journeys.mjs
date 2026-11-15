@@ -767,6 +767,16 @@ await record("06 Companion context and Qwen output", async () => {
   });
   assert.equal(medicationAnswer.status, 200, JSON.stringify(medicationAnswer.payload));
   assert.equal(medicationAnswer.payload.written_to_lcr, false);
+  assert.equal(
+    medicationAnswer.payload.ai_generated,
+    false,
+    "medication-dose recall must use a source-bound deterministic response, not model completion",
+  );
+  assert.match(
+    medicationAnswer.payload.safety_note || "",
+    /does not confirm the prescribed dose or current medication instructions/i,
+    "the medication recall answer must disclose that a caregiver report does not verify the prescription",
+  );
   const medicationReply = String(medicationAnswer.payload.reply || "").toLowerCase();
   assert.match(
     medicationReply,
