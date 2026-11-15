@@ -15,6 +15,7 @@ const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentP
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
 const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading information that may need checking…</p> });
 const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
+const ChangeIntelligencePanel = dynamic(() => import("@/components/mvp-workspace/ChangeIntelligencePanel").then((module) => module.ChangeIntelligencePanel), { ssr: false, loading: () => <p role="status">Loading saved change assessments…</p> });
 
 let workspaceLoadSequence = 0;
 
@@ -1929,7 +1930,12 @@ export function LCRCurrentUnderstanding() {
       ) : null}
       <details className="lcr-history-details" open={careHistoryOpen} onToggle={(event) => setCareHistoryOpen(event.currentTarget.open)}>
         <summary>Earlier care history</summary>
-        {careHistoryOpen ? <CareChangeHistoryPanel personId={personId} /> : null}
+        {careHistoryOpen ? (
+          <>
+            <ChangeIntelligencePanel />
+            <CareChangeHistoryPanel personId={personId} />
+          </>
+        ) : null}
       </details>
       <div id="lcr-clarification-workflow">
         <details className="lcr-history-details" open={clarificationOpen} onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
