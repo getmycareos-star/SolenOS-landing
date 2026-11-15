@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -1131,7 +1133,8 @@ export function LCRCurrentUnderstanding() {
         <div className="lcr-entry-heading">
           <div>
             <h3 id="lcr-attention-now-heading">Care priorities</h3>
-            <p>Follow-ups and changes recorded in the care history. A flag is not a diagnosis or a medical judgement.</p>
+            <p>A short view of what the saved care history may need attention. A flag is not a diagnosis or medical judgement. SolenOS tracks unresolved matters separately in Follow-ups.</p>
+            <Link href="/workspace/open-loops" className="lcr-text-action">View all follow-ups <span aria-hidden="true">→</span></Link>
           </div>
         </div>
         {sourceFreshness?.reassessment_recommended && (
@@ -1350,6 +1353,8 @@ export function LCRCurrentUnderstanding() {
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Changes to keep an eye on</h4>
+              <p>These are changes or uncertainties found in the saved history. They are not automatically tasks or follow-ups. SolenOS tracks unresolved care matters and their progress on the Follow-ups screen.</p>
+              <Link href="/workspace/open-loops" className="lcr-text-action">Open Follow-ups <span aria-hidden="true">→</span></Link>
               {changesError && <p role="status">We couldn’t check the saved change history. This does not mean nothing has changed.</p>}
               {patternsError && <p role="status">We couldn’t check whether any changes are repeating. This does not mean nothing is repeating.</p>}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
