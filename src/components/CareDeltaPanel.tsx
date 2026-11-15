@@ -51,6 +51,7 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const lastToken = useRef<number | null>(null)
+  const requestSequence = useRef(0)
 
   async function reconcile(input: { content: string; source: string; eventDate: string; evidenceIds?: string[]; sourceEventId?: string }) {
     const scopedPersonId = getPersonId()
@@ -62,6 +63,7 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
       setError('Add a care update before comparing changes.')
       return
     }
+    const requestId = ++requestSequence.current
     setBusy(true)
     setError('')
     try {
@@ -74,22 +76,27 @@ export default function CareDeltaPanel({ personId, autoInput, showPanel = true }
         source_event_id: input.sourceEventId,
         persist: true,
       }) as DeltaResult
+      if (requestId !== requestSequence.current) return
       setResult(response)
       try {
         const rows = await getJSON(`/care-delta/runs/${encodeURIComponent(scopedPersonId)}`)
-        if (Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[])
+        if (requestId === requestSequence.current && Array.isArray(rows)) setHistory(rows as DeltaHistoryEntry[])
       } catch {
-        setHistoryError('The comparison finished, but earlier comparisons could not be refreshed.')
+        if (requestId === requestSequence.current) setHistoryError('The comparison finished, but earlier comparisons could not be refreshed.')
       }
-    } catch (reason) {
-      setError('We couldn’t compare this care update right now. Your existing care record has not been changed. Please try again.')
+    } catch {
+      if (requestId === requestSequence.current) {
+        setError('We couldn’t compare this care update right now. Your existing care record has not been changed. Please try again.')
+      }
     } finally {
-      setBusy(false)
+      if (requestId === requestSequence.current) setBusy(false)
     }
   }
 
   useEffect(() => {
     let cancelled = false
+    requestSequence.current += 1
+    setBusy(false)
     setResult(null)
     setHistory([])
     setError('')
