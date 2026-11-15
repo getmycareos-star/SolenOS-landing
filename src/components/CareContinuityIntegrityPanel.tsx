@@ -67,7 +67,7 @@ function simpleRecordLabel(value?: string | null): string {
     uncertain: "Still uncertain",
     conflicting: "Conflicting information",
     missing: "Missing information",
-    accepted: "Accepted",
+    accepted: "Reviewed by caregiver",
     rejected: "Not accepted",
     superseded: "Replaced by newer information",
     created: "Added",
@@ -162,7 +162,7 @@ export default function CareContinuityIntegrityPanel({
         <div>
           <h2 style={{ fontSize: 19, margin: 0 }}>Record details</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 5 }}>
-            Review reported information, unresolved questions, changes and recorded outcomes. A report is not automatically a confirmed fact.
+            Review reported information, unresolved questions, changes and recorded outcomes. A report is not automatically a confirmed fact. A caregiver review does not mean a healthcare professional has verified it.
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => void load()} disabled={loading}>
@@ -186,7 +186,7 @@ export default function CareContinuityIntegrityPanel({
               Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Review: {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{caregiverSafeAssistantText(fresh.explanation) || 'No further explanation is available.'}</p>}
-            {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{caregiverSafeAssistantText(item.source_text) || 'The original wording is saved.'}</blockquote>}
+            {item.source_text && <><small>Original source wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{caregiverSafeAssistantText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
                 ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as checked by a caregiver</button>
