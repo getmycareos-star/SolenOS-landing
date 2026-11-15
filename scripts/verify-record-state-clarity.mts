@@ -21,12 +21,13 @@ assert.match(state, /aria-busy=\{isBusy \|\| undefined\}/);
 assert.match(state, /role=\{isError \? "alert" : "status"\}/);
 
 assert.match(lcr, /No care information recorded yet/);
+assert.match(lcr, /href="\/workspace\/daily-care"/);
 assert.doesNotMatch(lcr, /Missing information does not mean everything is fine/);
 assert.doesNotMatch(lcr, /This does not mean there are no care needs|This is not a statement that no care needs exist/);
 assert.match(lcr, /Not everything that happens is automatically recorded/);
 assert.match(lcr, /error && projection &&/);
 assert.doesNotMatch(lcr, /Your Care Record does not have any care information yet/);
-assert.match(lcr, /No saved care details to review yet/);
+assert.doesNotMatch(lcr, /No saved care details to review yet/);
 assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setChanges\(\[\]\)/);
 assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setPatterns\(\[\]\)/);
 assert.doesNotMatch(lcr, /catch \(cause\) \{\s*setAssessment\(null\)/);
