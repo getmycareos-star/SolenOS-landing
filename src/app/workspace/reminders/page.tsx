@@ -236,7 +236,7 @@ export default function CareRemindersPage() {
         <div className="care-reminders-list-head">
           <div>
             <h2 id="care-reminders-list-title">Saved reminders</h2>
-            <p>{reminders.length} saved {reminders.length === 1 ? "reminder" : "reminders"}</p>
+            {hasLoaded ? <p>{reminders.length} saved {reminders.length === 1 ? "reminder" : "reminders"}</p> : null}
           </div>
           <label className="care-reminders-filter">
             <span>Show</span>
