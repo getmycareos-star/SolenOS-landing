@@ -1141,7 +1141,7 @@ export function HistoryDrawer() {
                   <span className="history-category-icon"><CategoryIcon category={categoryFor(selectedRecord)} /></span>
                   {categoryLabel(categoryFor(selectedRecord), selectedRecord.event_type)}
                 </div>
-                <h2 className="history-detail-title">{selectedRecord.title}</h2>
+                <h2 className="history-detail-title">{caregiverSafeAssistantText(selectedRecord.title) || "Care update"}</h2>
                 <p className="history-detail-date">
                   {selectedRecord.display_date_label ? selectedRecord.display_date_label + " · " : ""}
                   {formatRecordDate(selectedRecord)}
@@ -1302,14 +1302,14 @@ export function HistoryDrawer() {
                                     type="button"
                                     className="history-event-open"
                                     onClick={() => setSelectedId(record.id)}
-                                    aria-label={"Open record: " + record.title}
+                                    aria-label={"Open record: " + (caregiverSafeAssistantText(record.title) || "Care update")}
                                   >
                                     <span className="history-event-topline">
                                       <span className="history-category-icon"><CategoryIcon category={category} /></span>
                                       <span className="history-event-category">{categoryLabel(category, record.event_type)}</span>
                                       <span className="history-event-time">{formatRecordDate(record)}</span>
                                     </span>
-                                    <strong>{record.title}</strong>
+                                    <strong>{caregiverSafeAssistantText(record.title) || "Care update"}</strong>
                                     {description && <span className="history-event-description">{description}</span>}
                                     {(record.follow_up_candidate || record.attention_candidate) && (
                                       <span className="history-event-flag">Flagged for follow-up</span>
