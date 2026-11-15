@@ -483,7 +483,7 @@ function displayCurrentCareTitle(item: CurrentCareItem): string {
     CURRENT_CARE_TITLE_LABELS[title] ||
     caregiverSafeAssistantText(item.title) ||
     caregiverLabel(item.kind) ||
-    "Care record item";
+    "Saved care detail";
 }
 
 function isMedicationObservation(attribute?: string | null): boolean {
