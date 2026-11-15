@@ -320,7 +320,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             aria-controls="solenos-navigation"
             onClick={() => setSidebarOpen((value) => !value)}
           >
-            <Menu size={21} />
+            {sidebarOpen ? <X size={19} /> : <Menu size={19} />}
+            <span className="solenos-sidebar-toggle-label">{sidebarOpen ? "Close" : "Menu"}</span>
           </button>
           <button
             type="button"
