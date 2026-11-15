@@ -166,6 +166,30 @@ const INFORMATION_LABELS: Readonly<Record<string, string>> = {
   missing: "Not recorded",
 };
 
+const CARE_FIELD_LABELS: Readonly<Record<string, string>> = {
+  medication_name: "Medication",
+  name: "Name as reported",
+  dose: "Dose as reported",
+  strength: "Strength as reported",
+  medication_status: "Medication status as reported",
+  status: "Status as reported",
+  vitamin_c: "Vitamin C",
+  poor_sleep: "Sleep",
+  sleep: "Sleep",
+  appetite: "Appetite",
+  mobility: "Movement",
+  pain: "Pain",
+  mood: "Mood",
+  hydration: "Fluid intake",
+  food_intake: "Food intake",
+};
+
+/** Human-readable labels for saved care fields; unknown keys are not prettified. */
+export function caregiverFieldLabel(value?: string | null): string | null {
+  if (!value) return null;
+  return CARE_FIELD_LABELS[value.trim().toLowerCase()] ?? null;
+}
+
 export function caregiverStatusLabel(value?: string | null): string | null {
   if (!value) return null;
   return STATUS_LABELS[value.trim().toLowerCase()] ?? null;
