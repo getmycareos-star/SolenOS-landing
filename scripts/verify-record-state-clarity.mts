@@ -66,6 +66,8 @@ assert.match(reminders, /RecordState kind="loading"/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
 assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
+assert.match(history, /error && records\.length > 0/);
+assert.match(history, /loading && !hasLoaded/);
 assert.doesNotMatch(read("src/components/mvp-workspace/ChangeIntelligencePanel.tsx"), /This does not mean nothing changed/);
 assert.doesNotMatch(read("src/app/workspace/open-loops/page.tsx"), /An empty section does not mean nothing needs attention/);
 assert.doesNotMatch(claimReview, /This does not mean there are no past reviews|This does not mean this review is current/);
