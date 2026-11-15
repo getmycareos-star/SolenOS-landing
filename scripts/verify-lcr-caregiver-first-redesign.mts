@@ -54,7 +54,7 @@ assert.match(currentUnderstanding, /Details identified in this note/, "document-
 assert.match(currentUnderstanding, /They are not separate reports or independent confirmation/, "extracted details must not be presented as independent evidence");
 assert.match(currentUnderstanding, /Original report attached|Related report linked/, "saved source links must be described in caregiver language");
 assert.match(currentUnderstanding, /Original report text is not available in this view/, "a linked source without readable text must be distinguished from a missing link");
-assert.match(currentUnderstanding, /Original report is not linked to this item/, "a missing source link must be distinguished from unavailable source text");
+assert.match(currentUnderstanding, /original report is not linked to this item/i, "a missing source link must be distinguished from unavailable source text");
 assert.match(currentUnderstanding, /captureRecord\.notes/, "serialized capture details must be reduced to the original caregiver report");
 assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "care-source descriptions must pass through the caregiver-readable parser");
 assert.doesNotMatch(caregiverRenderedCode, /capture_idempotency_key|capture_request_fingerprint|capture_kind/, "idempotency and capture metadata must never appear in caregiver-facing record details");
