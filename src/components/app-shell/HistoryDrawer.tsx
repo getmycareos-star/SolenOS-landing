@@ -881,11 +881,11 @@ export function HistoryDrawer() {
 
       const revisionResult = results[5];
       if (revisionResult.status === "fulfilled" && Array.isArray(revisionResult.value)) {
-        availableSources += 1;
+        // Keep internal audit revisions out of caregiver history. They are not a
+        // caregiver-history source and must not make an otherwise failed history
+        // load look successful.
         const revisions = (revisionResult.value as CareStateRevision[]).filter((item) => item && typeof item.id === "string" && shouldShowLcrRevision(item));
         nextRecords.push(...revisions.map(mapLcrRevision));
-      } else {
-        warnings.push("Living Care Record revision history could not be loaded.");
       }
 
       const decisionResult = results[6];
