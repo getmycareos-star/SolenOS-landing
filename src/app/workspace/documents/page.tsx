@@ -83,7 +83,7 @@ function asNumber(value: unknown): number | null {
 
 function toDocument(item: EvidenceRecord): DocumentItem {
   const meta = metadataOf(item.extra_metadata);
-  const title = asString(meta.filename) || "Untitled document";
+  const title = caregiverSafeAssistantText(asString(meta.filename)) || "Untitled document";
   return {
     id: item.id,
     title,
@@ -435,13 +435,13 @@ export default function DocumentsPage() {
     setPreviewError(null);
     try {
       const result = await deleteJSON("/upload/" + encodeURIComponent(selected.id)) as { deleted?: boolean };
-      if (!result.deleted) throw new Error("SolenOS did not confirm document deletion.");
+      if (!result.deleted) throw new Error("SolenOS could not confirm that the document was deleted.");
       closePreview();
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
       setUploadMessage({ kind: "success", text: "The document and its unreviewed details were deleted. If details from this document are already in your Care Record, review those details before deleting the original." });
     } catch (error) {
-      setPreviewError(error instanceof Error ? error.message : "SolenOS could not delete this document. No deletion was confirmed.");
+      setPreviewError("SolenOS could not delete this document. No deletion was confirmed. Try again.");
     } finally {
       setDeletingDocument(false);
     }
