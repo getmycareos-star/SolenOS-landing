@@ -14,6 +14,7 @@ const api = fs.readFileSync(path.join(root, "src/api/change-intelligence.ts"), "
 const historyPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CareChangeHistoryPanel.tsx"), "utf8");
 const lcr = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
 const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
+const caregiverLanguage = fs.readFileSync(path.join(root, "src/lib/caregiver-language.ts"), "utf8");
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -55,6 +56,9 @@ for (const contract of [
 assert(!/\bconfidence\b/i.test(panel), "uncalibrated model confidence must not be displayed in caregiver-facing change intelligence");
 assert(!/changes\.slice\(0,\s*8\)/.test(panel), "change history must not be silently truncated to eight rows");
 assert(!/patterns\.slice\(0,\s*8\)/.test(panel), "pattern history must not be silently truncated to eight rows");
+assert(/potential_worsening:\s*"May be getting worse"/.test(caregiverLanguage), "possible worsening must be described as a candidate, not a confirmed fact");
+assert(/potential_improvement:\s*"May be improving"/.test(caregiverLanguage), "possible improvement must be described as a candidate, not a confirmed fact");
+assert(/potential_resolution:\s*"May no longer be happening"/.test(caregiverLanguage), "possible resolution must retain uncertainty");
 
 const initialLoadStart = panel.indexOf("useEffect(() => {");
 const initialLoadEnd = panel.indexOf("  return (", initialLoadStart);
