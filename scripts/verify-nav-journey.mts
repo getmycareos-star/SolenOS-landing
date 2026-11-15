@@ -108,7 +108,7 @@ const routeContracts = [
 ];
 for (const [route, title] of routeContracts) {
   const source = fs.readFileSync(path.join(root, route), "utf8");
-  assert.match(source, new RegExp("<h1\\b[\\s\\S]{0,220}" + title.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") + "[\\s\\S]{0,40}<\\/h1>"),
+  assert.match(source, new RegExp("<h1[^>]*>[^<]*" + title + "[\\s\\S]*?<\\/h1>"),
     `${title} has a page-level heading that matches its navigation label`);
 }
 
