@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
@@ -341,7 +341,7 @@ function parseDescription(description?: string | null): string {
       lines.push(labels[String(quick.kind)] || "Caregiver check-in recorded");
       const areas = Array.isArray(quick.selected_areas)
         ? quick.selected_areas.filter((area): area is string => typeof area === "string")
-            .map((area) => area.replaceAll("_", " "))
+            .map((area) => caregiverFieldLabel(area) || caregiverStatusLabel(area) || caregiverInformationAreaLabel(area)).filter((area): area is string => Boolean(area))
         : [];
       if (areas.length) lines.push("Areas mentioned: " + areas.join(", "));
     }
@@ -411,9 +411,9 @@ function mapDocument(item: EvidenceRecord): HistoryRecord {
     source_details: detailFields([
       { label: "File name", value: filename },
       { label: "File type", value: mimeType },
-      { label: "Evidence status", value: status },
-      { label: "Source type", value: item.source_type || "" },
-      { label: "Upload time", value: uploadedAt ? formatDateTime(uploadedAt) : "Not recorded" },
+      { label: "Status", value: caregiverStatusLabel(status) || "Not available" },
+      
+      { label: "Date added", value: uploadedAt ? formatDateTime(uploadedAt) : "Not recorded" },
       
     ]),
   };
@@ -437,7 +437,7 @@ function appointmentDescription(payload: Record<string, unknown>): string {
   add("Changes recorded by caregiver", payload.changes);
   add("Symptoms recorded by caregiver", payload.symptoms);
   add("Caregiver report", payload.caregiverReport);
-  add("Clinician statements recorded by caregiver (not independently verified)", payload.clinicianFindings);
+  add("What the caregiver says the healthcare professional said (not confirmed by the professional)", payload.clinicianFindings);
   add("Decisions recorded", payload.decisions);
   add("Instructions recorded", payload.instructions);
   add("Unanswered questions", payload.unanswered);
@@ -648,8 +648,8 @@ function mapIncomingHandoff(item: HandoffInboxItem): HistoryRecord {
     display_date_label: "Received",
     title: "Handoff from " + sender,
     description: item.has_summary
-      ? "A caregiver-provided summary is available for review. Its contents are not independently verified by the handoff record."
-      : "The incoming handoff record does not report an attached summary.",
+      ? "A caregiver shared this summary. The details have not been confirmed by a healthcare professional."
+      : "No summary was attached to the handoff.",
     tags: ["handoff", "incoming"],
     source_kind: "handoff-in",
     source_details: detailFields([
@@ -680,7 +680,7 @@ function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
     title: "Outgoing care handoff" + recipientLabel,
     description: item.has_summary
       ? "A caregiver-reviewed summary was attached to this handoff. Sharing did not change the Care Record."
-      : "The outgoing handoff record does not report an attached summary.",
+      : "No summary was attached to the handoff.",
     tags: ["handoff", "outgoing"],
     source_kind: "handoff-out",
     source_details: detailFields([
@@ -1097,7 +1097,7 @@ export function HistoryDrawer() {
     : selectedRecord?.source_kind === "appointment"
       ? "Saved appointment information"
       : selectedRecord?.source_kind === "lcr-revision"
-        ? "Recorded LCR change"
+        ? "Care Record update"
         : selectedRecord?.source_kind === "decision"
           ? "Decision recorded"
           : selectedRecord?.source_kind === "outcome"
@@ -1172,19 +1172,19 @@ export function HistoryDrawer() {
                       <>
                         <dt>When it happened</dt><dd>{formatDateTime(selectedRecord.occurred_at)}{selectedRecord.occurred_at_timezone ? " (" + selectedRecord.occurred_at_timezone + ")" : ""}</dd>
                         <dt>When it was saved</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
-                        <dt>Status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
+                        <dt>Status</dt><dd>{caregiverStatusLabel(selectedRecord.status) || "Not available"}</dd>
                         <dt>Who shared it</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver" : "Not recorded"}</dd>
                         
                         <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? `${selectedRecord.evidence_ids.length} related item(s)` : "No related notes or documents attached"}</dd>
-                        <dt>Labels</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.join(", ") : "No tags recorded"}</dd>
+                        <dt>Labels</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.map((tag) => caregiverStatusLabel(tag) || caregiverInformationAreaLabel(tag) || (tag.includes("_") ? null : caregiverSafeAssistantText(tag))).filter(Boolean).join(", ") || "No labels available" : "No labels recorded"}</dd>
                         <dt>Last updated</dt><dd>{formatDateTime(selectedRecord.updated_at)}</dd>
                       </>
                     ) : (
                       <>
-                        <dt>Where it came from</dt><dd>{selectedRecord.source_kind === "document" ? "Saved document evidence" : selectedRecord.source_kind === "appointment" ? "Appointment workspace" : selectedRecord.source_kind === "handoff-in" ? "Incoming handoff" : selectedRecord.source_kind === "handoff-out" ? "Outgoing handoff" : selectedRecord.source_kind === "lcr-revision" ? "Care Record update" : selectedRecord.source_kind === "decision" ? "Persisted care decision" : "Persisted action outcome"}</dd>
+                        <dt>Where it came from</dt><dd>{selectedRecord.source_kind === "document" ? "Saved document" : selectedRecord.source_kind === "appointment" ? "Appointment notes" : selectedRecord.source_kind === "handoff-in" ? "Received from another caregiver" : selectedRecord.source_kind === "handoff-out" ? "Shared with another caregiver" : selectedRecord.source_kind === "lcr-revision" ? "Care Record update" : selectedRecord.source_kind === "decision" ? "Care decision" : "What happened after a care decision"}</dd>
                         <dt>When it was saved</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
-                        <dt>Status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
-                        {selectedRecord.evidence_ids?.length ? <><dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids.join(", ")}</dd></> : null}
+                        <dt>Status</dt><dd>{caregiverStatusLabel(selectedRecord.status) || "Not available"}</dd>
+                        {selectedRecord.evidence_ids?.length ? <><dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids.length} related {selectedRecord.evidence_ids.length === 1 ? "note or document" : "notes or documents"}</dd></> : null}
                         {(selectedRecord.source_details ?? []).map((field) => (
                           <ReactDetailField key={field.label} field={field} />
                         ))}
@@ -1192,7 +1192,7 @@ export function HistoryDrawer() {
                     )}
                   </dl>
                   {selectedRecord.significance_verdict && (
-                    <p className="history-detail-significance"><strong>Recorded significance:</strong> {selectedRecord.significance_verdict}</p>
+                    <p className="history-detail-significance"><strong>Why this may matter:</strong> {caregiverStatusLabel(selectedRecord.significance_verdict) || caregiverSafeAssistantText(selectedRecord.significance_verdict) || "No further explanation is available."}</p>
                   )}
                 </section>
 
@@ -1338,7 +1338,13 @@ export function HistoryDrawer() {
 }
 
 function ReactDetailField({ field }: { field: DetailField }) {
-  return <><dt>{field.label}</dt><dd>{field.value}</dd></>;
+  if (/\b(?:id|identifier|version|evidence|source type|scope|action type)\b/i.test(field.label)) return null;
+  const rawValue = caregiverSafeAssistantText(field.value);
+  const value = rawValue && rawValue.includes("_")
+    ? caregiverStatusLabel(rawValue) ?? caregiverInformationAreaLabel(rawValue)
+    : rawValue ?? caregiverStatusLabel(field.value) ?? caregiverInformationAreaLabel(field.value);
+  if (!value) return null;
+  return <><dt>{field.label}</dt><dd>{value}</dd></>;
 }
 
 function HistoryEmptyIcon() {
