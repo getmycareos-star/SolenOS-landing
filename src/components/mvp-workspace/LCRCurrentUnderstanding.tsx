@@ -1180,6 +1180,15 @@ export function LCRCurrentUnderstanding() {
         </button>
       </div>
 
+      {error && projection && (
+        <RecordState
+          kind="error"
+          title="We couldn’t refresh your care information."
+          description="Showing the last information that loaded. Try again to refresh."
+          action={<button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={refreshing}>Try again</button>}
+        />
+      )}
+
       <section className="lcr-first-screen-summary" aria-label="Care at a glance">
         <div className="lcr-first-screen-card">
           <h3>Where things stand</h3>
@@ -1899,14 +1908,6 @@ export function LCRCurrentUnderstanding() {
       {/* Detailed assessment diagnostics remain available to the care engine and audit services,
           but are intentionally not exposed as caregiver-facing copy. The record itself remains
           available through the timeline, source review and care-history controls. */}
-      {error && projection && (
-        <RecordState
-          kind="error"
-          title="We couldn’t refresh your care information."
-          description="Showing the last information that loaded. Try again to refresh."
-          action={<button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={refreshing}>Try again</button>}
-        />
-      )}
       {projection ? (
         <>
           {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
