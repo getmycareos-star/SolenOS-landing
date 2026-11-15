@@ -22,6 +22,9 @@ function assert(condition: unknown, message: string): asserts condition {
 for (const contract of [
   ["panel lists persisted changes", /listPersistedChanges\(\)/],
   ["panel lists persisted patterns", /listPersistedPatterns\(\)/],
+  ["panel loads persisted care situations", /listPersistedSituations\(\)/],
+  ["caregiver trajectory decisions are explicit and evidence-linked", /transitionSituationState\(situation\.id, targetState, reason, evidenceIds\)/],
+  ["caregiver-facing status controls and history are present", /Caregiver-reported status[\s\S]*Previous status updates/],
   ["older change assessments can be loaded", /Load earlier changes/],
   ["older patterns can be loaded", /Load earlier patterns/],
   ["panel offers an explicit saved-assessment refresh", /Refresh saved assessments/],
@@ -96,6 +99,14 @@ assert(
   "Pattern listings must be read from the authoritative backend API",
 );
 assert(
+  /getJSON\(\`\/change\/situations\/\$\{personId\}/.test(api),
+  "Care situations must be read from the authoritative backend API",
+);
+assert(
+  /postJSON\(\s*\`\/change\/situations\/\$\{personId\}\/\$\{encodeURIComponent\(situationId\)\}\/state\`/.test(api),
+  "Caregiver trajectory updates must use the person-scoped backend API",
+);
+assert(
   /postJSON\(\`\/change\/changes\/reassess\?person_id=\$\{personId\}/.test(api),
   "Reassessment must invoke the backend, not the local pattern mock",
 );
@@ -114,5 +125,5 @@ assert(
 );
 
 console.log("CHANGE_INTELLIGENCE_UI_CONTRACT=PASS");
-console.log("Scope=legacy change panel + persisted Delta history + primary LCR contract");
+console.log("Scope=persisted change/pattern/situation history + caregiver-confirmed trajectory + Delta history + primary LCR contract");
 console.log("Scope=source contract only; browser rendering and live production API remain separate gates");
