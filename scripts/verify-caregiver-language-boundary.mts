@@ -168,6 +168,7 @@ assert.match(persistedOrientation, /Your Care Record does not have any care info
 assert.match(workspaceNav, /label: "Care Record"/);
 assert.match(workspaceNav, /label: "Care Assistant"/);
 assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
+assert.match(informationStatus, /Known/);
 assert.match(informationStatus, /Not sure yet/);
 assert.match(informationStatus, /Not recorded/);
 assert.match(informationStatus, /Needs checking/);
