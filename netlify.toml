@@ -7,6 +7,9 @@
 [build]
   command = "npm test && npm run build"
   publish = ".next"
+  # Git-connected production deploys are fail-closed. The explicit release
+  # workflow sets SOLENOS_RELEASE_APPROVED only after all release gates pass.
+  ignore = "node ./scripts/netlify-ignore-production-build.mjs"
 
 [build.environment]
   NODE_VERSION = "20"
