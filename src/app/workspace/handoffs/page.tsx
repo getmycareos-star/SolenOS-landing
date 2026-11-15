@@ -35,9 +35,9 @@ export default function HandoffsPage() {
     <section className="mobile-screen workspace-handoffs-page" aria-labelledby="care-handoffs-title">
       <header className="workspace-handoffs-header">
         <div>
-          <p className="workspace-handoffs-eyebrow">CARE COORDINATION</p>
-          <h1 id="care-handoffs-title">Care Handoffs</h1>
-          <p>Prepare and review care handoffs, and manage incoming or outgoing care summaries for this record.</p>
+          <p className="workspace-handoffs-eyebrow">SHARE CARE INFORMATION</p>
+          <h1 id="care-handoffs-title">Share care information</h1>
+          <p>Prepare a care summary, check what will be shared, and manage summaries shared with you or by you.</p>
         </div>
 
       </header>
@@ -45,15 +45,14 @@ export default function HandoffsPage() {
       <aside className="workspace-handoffs-boundary" role="note">
         <ShieldCheck size={20} aria-hidden="true" />
         <p>
-          Handoffs require caregiver review. Preparing or reviewing a draft does not change the Living Care Record.
-          Sharing remains subject to saved consent, verified recipient access, and expiry.
+          Check every summary before sharing. Preparing a summary does not change your Care Record. Only people approved to access this Care Record can receive it. Shared links expire.
         </p>
       </aside>
 
       {draft && (
         <button type="button" className="workspace-handoffs-back" onClick={returnToHandoffs}>
           <ArrowLeft size={16} aria-hidden="true" />
-          Back to all handoffs
+          Back to summaries
         </button>
       )}
 
