@@ -41,7 +41,7 @@ assert(!/recordObservationCoverage|submitCoverage|Save observation coverage|lcr-
 
 for (const [source, pattern, label] of [
   [historyPanel, /care-delta\/runs/, "saved Delta history must come from the backend"],
-  [historyPanel, /offset=\\$\{runs\.length\}/, "older saved comparisons must be paginated from the backend"],
+  [historyPanel, /offset=\$\{runs\.length\}/, "older saved comparisons must be paginated from the backend"],
   [historyPanel, /Load earlier comparisons/, "caregivers must be able to retrieve older saved comparisons"],
   [historyPanel, /change\.certainty === "supported"/, "only supported changes may be promoted"],
   [historyPanel, /change\.evidence_supported === true/, "promoted changes require source evidence"],
