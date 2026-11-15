@@ -772,6 +772,7 @@ await record("06 Companion context and Qwen output", async () => {
     "Companion must preserve that the question is intended for a healthcare professional",
   );
 
+  const medicationAnswerStartedAt = Date.now();
   const medicationAnswer = await request("/api/v1/conversation/message", {
     token: identity.token,
     method: "POST",
@@ -781,6 +782,11 @@ await record("06 Companion context and Qwen output", async () => {
       client_turn_id: randomUUID(),
     },
   });
+  const medicationAnswerDurationMs = Date.now() - medicationAnswerStartedAt;
+  assert.ok(
+    medicationAnswerDurationMs < 60_000,
+    `Medication recall must return within 60 seconds, got ${medicationAnswerDurationMs}ms`,
+  );
   assert.equal(medicationAnswer.status, 200, JSON.stringify(medicationAnswer.payload));
   assert.equal(medicationAnswer.payload.written_to_lcr, false);
   assert.equal(
