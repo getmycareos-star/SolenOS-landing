@@ -188,8 +188,11 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
       <ol>
         {runs.map((run) => {
           const changes = run.delta?.computed_changes ?? [];
-          const confirmed = changes.filter(supported);
-          const needsReview = changes.filter((item) => !supported(item));
+          const stale = run.source_freshness?.status === "stale";
+          // A comparison whose source or care-record context changed afterwards
+          // must never be presented as a currently supported change.
+          const confirmed = stale ? [] : changes.filter(supported);
+          const needsReview = stale ? changes : changes.filter((item) => !supported(item));
           const conflicts = run.delta?.contradictions ?? [];
           return (
             <li key={run.id}>
