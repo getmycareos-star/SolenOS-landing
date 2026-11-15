@@ -86,7 +86,7 @@ assert.match(orientation, /Your Care Record does not have any care information y
 assert.match(orientation, /getJSON\("\/care-continuity\/current-care/);
 assert.match(orientation, /projection_type !== "bounded_evidence_derived_current_care"/);
 assert.match(orientation, /data\.read_only !== true/);
-assert.match(orientation, /Missing information does not mean that nothing happened/);
+assert.doesNotMatch(orientation, /Missing information does not mean that nothing happened/);
 assert.doesNotMatch(orientation, /situation-understanding\/reassess|postJSON|fetch\(\x60\/api\/situation/);
 assert.match(orientation, /Your care information isn't available right now\. Check your connection and try again\./);
 assert.doesNotMatch(orientation, /<p><\/p>/);
@@ -231,6 +231,6 @@ assert.match(lcrCurrent, /The latest care summary could not be refreshed\. The l
 assert.ok(dailyCarePage.includes('getJSON("/notifications?limit=100&offset=0")'), "Daily Care must check the existing notification feed for delivery failures");
 assert.ok(dailyCarePage.includes("Notification delivery needs attention"), "failed notification delivery must remain visible in Daily Care");
 assert.ok(dailyCarePage.includes('["failed", "expired"]'), "failed or expired push delivery must never be presented as successful delivery");
-assert.ok(dailyCarePage.includes("historyError ?"), "failed history retrieval must not be presented as an empty day");
+assert.ok(dailyCarePage.includes("historyError && !historyLoaded") && dailyCarePage.includes("historyError && <RecordState kind=\"error\""), "failed history retrieval must remain distinct from an empty day and preserve loaded history");
 assert.ok(dailyCarePage.includes("daily summary is unavailable"), "history processing failures must be visible to the caregiver");
 console.log("Caregiver UI contract checks passed.");
