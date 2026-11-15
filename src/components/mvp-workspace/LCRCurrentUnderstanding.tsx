@@ -1932,7 +1932,7 @@ export function LCRCurrentUnderstanding() {
         <summary>Earlier care history</summary>
         {careHistoryOpen ? (
           <>
-            <ChangeIntelligencePanel />
+            <ChangeIntelligencePanel personId={personId} />
             <CareChangeHistoryPanel personId={personId} />
           </>
         ) : null}
