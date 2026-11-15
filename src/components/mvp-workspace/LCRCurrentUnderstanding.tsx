@@ -997,6 +997,9 @@ export function LCRCurrentUnderstanding() {
   const needsAttentionNow = careAttention
     ? careAttention.needs_attention_now.map(findAttentionLoop).filter((item): item is (typeof openLoopItems)[number] => Boolean(item))
     : selectImmediatePriorities(openLoopItems);
+  const immediateCareDecisions = careAttention?.needs_attention_now ?? [];
+  const importantCareDecisions = careAttention?.important_to_address ?? [];
+  const clarificationCareDecisions = careAttention?.needs_clarification ?? [];
   const canWaitItems = careAttention
     ? careAttention.can_wait_with_documented_basis.map(findAttentionLoop).filter((item): item is (typeof openLoopItems)[number] => Boolean(item))
     : selectDeferredItems(openLoopItems);
@@ -1226,6 +1229,29 @@ export function LCRCurrentUnderstanding() {
             <p>Care priorities have not been checked yet.</p>
           ) : assessment.coverage.records_examined === 0 ? (
             <p>There isn’t enough recorded care information to assess priorities yet. This does not mean there are no care needs.</p>
+          ) : immediateCareDecisions.length > 0 ? (
+            <>
+              <ul className="lcr-first-screen-list">
+                {immediateCareDecisions.slice(0, 2).map((decision) => (
+                  <li key={decision.id || decision.source + ":" + decision.record_id}>
+                    <strong>{caregiverSafeAssistantText(decision.title) || "Care follow-up"}</strong>
+                    <p>{caregiverSafeAssistantText(decision.reason || decision.priority_basis?.join("; ")) || "The saved care assessment marked this for attention."}</p>
+                    {decision.due_at && <small>Due {formatWhen(decision.due_at)}</small>}
+                    {decision.records?.length ? (
+                      <details>
+                        <summary>See the saved records behind this</summary>
+                        {decision.records.map((record) => (
+                          <p key={record.source + ":" + record.record_id}>
+                            {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened {formatWhen(record.occurred_at)} · Saved {formatWhen(record.recorded_at)}
+                          </p>
+                        ))}
+                      </details>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {immediateCareDecisions.length > 2 && <p className="lcr-entry-status">{immediateCareDecisions.length - 2} more items need review in the detailed list.</p>}
+            </>
           ) : needsAttentionNow.length > 0 ? (
             <ul className="lcr-first-screen-list">
               {needsAttentionNow.slice(0, 2).map((item) => (
@@ -1236,8 +1262,13 @@ export function LCRCurrentUnderstanding() {
                 </li>
               ))}
             </ul>
-          ) : careAttention?.important_to_address.length ? (
-            <p>No items are marked for immediate attention in the information checked. {careAttention.important_to_address.length} important {careAttention.important_to_address.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review. This is not a statement that no care needs exist.</p>
+          ) : importantCareDecisions.length > 0 || clarificationCareDecisions.length > 0 ? (
+            <p>
+              No items are marked for immediate attention in the information checked.
+              {importantCareDecisions.length > 0 ? ` ${importantCareDecisions.length} important ${importantCareDecisions.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review.` : ""}
+              {clarificationCareDecisions.length > 0 ? ` ${clarificationCareDecisions.length} ${clarificationCareDecisions.length === 1 ? "detail needs" : "details need"} clarification.` : ""}
+              {" "}This is not a statement that no care needs exist.
+            </p>
           ) : (
             <p>No items are currently marked for immediate attention in the information checked. This is not a statement that no care needs exist.</p>
           )}
