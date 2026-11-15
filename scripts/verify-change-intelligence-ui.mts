@@ -50,7 +50,7 @@ for (const [source, pattern, label] of [
   [lcr, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the primary LCR"],
   [historyPanel, /if \(!personId\) return null/, "history must wait for a scoped care record"],
 ]) {
-  assert(pattern.test(source), \`Missing persisted care-change contract: \${label}\`);
+  assert(pattern.test(source), "Missing persisted care-change contract: " + label);
 }
 
 assert(
