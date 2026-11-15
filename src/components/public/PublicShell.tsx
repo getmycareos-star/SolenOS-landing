@@ -55,7 +55,7 @@ export function PublicFooter() {
               {item.label}
             </Link>
           ))}
-          <Link href="/workspace?enter=1">Living Care Record</Link>
+          <Link href="/workspace?enter=1">Care Record</Link>
         </nav>
         <p className="public-footer-emergency" role="note">
           {EMERGENCY_BOUNDARY}
