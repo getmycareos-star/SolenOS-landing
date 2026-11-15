@@ -799,6 +799,11 @@ await record("06 Companion context and Qwen output", async () => {
     /does not confirm the prescribed dose or current medication instructions/i,
     "the medication recall answer must disclose that a caregiver report does not verify the prescription",
   );
+  assert.match(
+    medicationAnswer.payload.safety_note || "",
+    /caregiver report/i,
+    "the medication recall answer must explicitly identify its source as a caregiver report",
+  );
   const medicationReply = String(medicationAnswer.payload.reply || "").toLowerCase();
   assert.match(
     medicationReply,
