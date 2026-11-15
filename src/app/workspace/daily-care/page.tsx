@@ -322,6 +322,8 @@ export default function DailyCarePage() {
   });
   const [contextLoading, setContextLoading] = useState(true);
   const [contextError, setContextError] = useState("");
+  const [careItemsLoaded, setCareItemsLoaded] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -346,6 +348,7 @@ export default function DailyCarePage() {
           const payload = careResult.value as { items?: unknown };
           if (Array.isArray(payload?.items)) {
             setCareItems(payload.items as CareItem[]);
+            setCareItemsLoaded(true);
             setContextError("");
           } else {
             setContextError("Current care information could not be loaded. Try refreshing the record.");
@@ -418,6 +421,7 @@ export default function DailyCarePage() {
             const records = payload.records as CareItem[];
             setHistoryError("");
             setHistoryItems(records);
+            setHistoryLoaded(true);
             setHistoryMayBeTruncated(Boolean(payload.page?.has_more));
 
           const personId = getPersonId();
@@ -561,9 +565,11 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-current-title" className="daily-care-context-panel">
             <h2 id="daily-care-current-title">Where things stand</h2>
             <p className="daily-care-muted">The latest information currently available in the care record.</p>
-            {contextLoading ? (
+            {contextLoading && careItemsLoaded && <RecordState kind="loading" title="Refreshing care information…" />}
+            {contextError && careItemsLoaded && <RecordState kind="error" title="Care information couldn’t be refreshed." description="Showing the last information that loaded. Try again to refresh." />}
+            {contextLoading && !careItemsLoaded ? (
               <RecordState kind="loading" title="Loading care information…" />
-            ) : contextError ? (
+            ) : contextError && !careItemsLoaded ? (
               <RecordState kind="error" title="Care information couldn’t be loaded." description="Try again to check the latest saved updates." />
             ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
               <ul className="daily-care-record-list">
@@ -734,9 +740,14 @@ export default function DailyCarePage() {
             <p className="daily-care-muted">
               This summary shows records added since your previous visit on this device.
             </p>
-            {historyError ? (
+            {historyError && !historyLoaded ? (
               <RecordState kind="error" title="Recent care history couldn’t be loaded." description="Try again to check what has been recorded since your last visit." />
-            ) : sinceLastOpenItems === null ? (
+            ) : !historyLoaded ? (
+              <RecordState kind="loading" title="Loading recent care history…" />
+            ) : (
+              <>
+                {historyError && <RecordState kind="error" title="Recent care history couldn’t be refreshed." description="Showing the last saved history. Try again to refresh." />}
+                {sinceLastOpenItems === null ? (
               <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
             ) : sinceLastOpenItems.length > 0 ? (
               <>
@@ -768,8 +779,10 @@ export default function DailyCarePage() {
                 </ul>
                 <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
               </>
-            ) : (
-              <RecordState kind="empty" title="No new records since your last visit." />
+                ) : (
+                  <RecordState kind="empty" title="No new records since your last visit." />
+                )}
+              </>
             )}
             {historyMayBeTruncated && <p className="daily-care-muted">The summary is based on the latest 200 history records. Open full history to check older entries.</p>}
           </section>
@@ -784,9 +797,9 @@ export default function DailyCarePage() {
                 <p>A medication change was reported, but the new dose has not been confirmed. Check the doctor’s instructions or contact the prescribing professional before relying on a different dose.</p>
               </div>
             )}
-            {historyError ? (
-              <p role="alert">{historyError}</p>
-            ) : todayItems.length ? (
+            {!historyLoaded && !historyError ? (
+              <RecordState kind="loading" title="Loading today’s care updates…" />
+            ) : historyLoaded && todayItems.length ? (
               todayPeriods.map((period) => {
                 const items = todayItems.filter((item) => dailyTimePeriod(item) === period.key);
                 if (!items.length) return null;
@@ -805,9 +818,9 @@ export default function DailyCarePage() {
                   </div>
                 );
               })
-            ) : (
+            ) : historyLoaded ? (
               <RecordState kind="empty" title="No updates recorded today." />
-            )}
+            ) : null}
           </section>
 
           <section aria-label="Care history" className="daily-care-context-panel">
