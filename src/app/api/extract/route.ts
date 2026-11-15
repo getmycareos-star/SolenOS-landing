@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     return failure(
       401,
       "authentication_required",
-      "A valid SolenOS care-record session is required to read this document.",
+      "We couldn’t confirm your access to SolenOS. Refresh the page and try again.",
     );
   }
 
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       return failure(
         backendResponse.status,
         "session_invalid",
-        "This care-record session is no longer valid. Reopen the workspace before retrying.",
+        "We couldn’t confirm your access to SolenOS. Reopen your Care Record and try again.",
       );
     }
     if (backendResponse.status === 413) {
