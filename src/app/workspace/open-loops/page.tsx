@@ -79,7 +79,7 @@ function dateLabel(value?: string | null): string {
 }
 
 function statusLabel(value: string): string {
-  return caregiverStatusLabel(value) || value.replaceAll("_", " ");
+  return caregiverStatusLabel(value) || "Update";
 }
 
 function decisionKey(item: AttentionDecision): string {
@@ -120,13 +120,13 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
     {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join(" · ")}</p>}
     <div className="followup-meta">
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
-      <span><FileText size={14} /> {evidenceIds.length} linked note(s) or document(s)</span>
-      {item.due_at && <span>Recorded due date: {dateLabel(item.due_at)}</span>}
+      <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
+      {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
     </div>
     {expanded && <div className="followup-detail">
       <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
-      <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? uniqueEvidenceIds(item).join(", ") : "No notes or documents are linked here."}</p>
+      <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
       {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Review requested" : "Next review date"}</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
     </div>}
@@ -283,12 +283,12 @@ export default function FollowUpsPage() {
     {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked. An empty section does not mean nothing needs attention.</p>}
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
-        <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Items with a clear reason to be addressed now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
+        <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
         {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
-        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "No items were marked as needing attention in the latest review." : "SolenOS could not check what needs attention. Saved follow-ups remain visible below."}</p>}
+        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention in the latest review." : "SolenOS could not check what needs attention. Your saved follow-ups remain visible below."}</p>}
       </section>
       <section className="followups-section">
-        <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Items that can wait based on the information available.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
+        <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
         {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
         {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, review_at: loop.review_at, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === loop.id} history={historyById[loop.id]} />)}
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">There are no other items to show from the information reviewed.</p>}
@@ -301,7 +301,7 @@ export default function FollowUpsPage() {
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items marked as completed or closed.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
         {loops.filter((loop) => loop.status === "closed").map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Closed · {statusLabel(loop.outcome_status)}</p><h3>{caregiverSafeAssistantText(loop.title) || "Follow-up"}</h3><p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p></article>)}
-        {loops.some((loop) => loop.status === "cancelled") && <p className="followups-empty-inline">{loops.filter((loop) => loop.status === "cancelled").length} stopped follow-up(s) are not treated as completed.</p>}
+        {loops.some((loop) => loop.status === "cancelled") && <p className="followups-empty-inline">{loops.filter((loop) => loop.status === "cancelled").length} stopped {loops.filter((loop) => loop.status === "cancelled").length === 1 ? "follow-up is" : "follow-ups are"} not marked as completed.</p>}
         {loops.filter((loop) => loop.status === "closed").length === 0 && <p className="followups-empty-inline">No closed follow-ups are recorded here.</p>}
       </section>
     </>}
