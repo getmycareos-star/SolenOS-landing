@@ -9,7 +9,7 @@ assert(!source.includes("review and correct its extracted text first"), "caregiv
 assert(!source.includes("page.reviewed") && !source.includes("page.text"), "the upload draft must not carry discarded client-side text or review flags");
 assert(!source.includes('apiUrl("/api/extract")'), "the Documents screen must not send the same original through a preflight extractor before saving");
 assert(!source.includes('Extracted text — review and correct before saving'), "caregivers must not correct client-side text that the upload API does not persist");
-assert.match(source, /SolenOS will read the text and prepare details for your review after upload/, "the caregiver must be told that server extraction starts after the original is saved");
+assert.match(source, /SolenOS will read it and prepare details for you to check after upload/, "the caregiver must be told that server extraction starts after the original is saved");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
 assert.equal((source.match(/Array\.from\(event\.currentTarget\.files \|\| \[\]\)/g) || []).length, 2, "both upload and camera inputs must copy FileList entries before clearing the input");
 assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
@@ -37,21 +37,21 @@ const captureFunction = attachmentSource.slice(attachmentSource.indexOf("export 
 assert(!captureFunction.includes("/extract"), "caregiver capture must not wait for synchronous document OCR");
 assert(!captureFunction.includes("/intelligence"), "caregiver capture must not wait for synchronous Qwen interpretation");
 assert.match(attachmentSource, /durably queues document extraction and understanding/, "the upload contract must hand off processing to the durable worker");
-assert.match(addRecordSource, /Saved — processing in background/, "saved documents must show truthful background-processing state");
-assert.match(addRecordSource, /Original saved — processing not started/, "a saved original must not be described as processing when the queue failed");
+assert.match(addRecordSource, /Saved — SolenOS is reading it in the background/, "saved documents must show truthful background-processing state");
+assert.match(addRecordSource, /Original saved — waiting for SolenOS to read it/, "a saved original must not be described as processing when the queue failed");
 assert.match(addRecordSource, /doc\.status === "saved" && !!doc\.errorNote/, "a saved original with a queue failure must offer a processing-only retry");
 
 assert.match(attachmentSource, /document\.entryMethod === "snap" && document\.evidenceId[\s\S]*?status: "saved"/, "retry must not send a saved care photo through document OCR");
-assert.match(addRecordSource, /Photo saved — not interpreted/, "caregivers must see that a Snap photo is saved but not interpreted");
-assert.match(addRecordSource, /Saved — processing in background/, "caregivers must see that saved documents are processing without blocking capture");
+assert.match(addRecordSource, /Photo saved — not read yet/, "caregivers must see that a Snap photo is saved but not interpreted");
+assert.match(addRecordSource, /Saved — SolenOS is reading it in the background/, "caregivers must see that saved documents are processing without blocking capture");
 assert.match(addRecordSource, /d\.status === "saved" && d\.evidenceId/, "saved document evidence must be eligible for care-entry submission");
-assert.match(workspaceSource, /server extraction and document understanding are processing in the background/, "the care entry must not claim document interpretation completed");
+assert.match(workspaceSource, /SolenOS is reading it in the background/, "the care entry must not claim document interpretation completed");
 assert.match(workspaceSource, /d\.status === "saved" && d\.evidenceId/, "saved evidence must remain eligible for care-entry submission");
 assert.match(workspaceSource, /evidence_id: d\.evidenceId/, "care-entry submission must reference the persisted evidence ID");
 assert.match(intelligenceReviewSource, /analysis.extraction_status === "partial"/, "incomplete documents must remain visibly partial");
-assert.match(intelligenceReviewSource, /SolenOS is retrying the pages that did not finish/, "transient page failures must be retried automatically");
+assert.match(intelligenceReviewSource, /SolenOS is trying to read the pages that did not finish/, "transient page failures must be retried automatically");
 assert.match(intelligenceReviewSource, /retry_exhausted_page_numbers/, "exhausted page retries must remain visible and distinct from unreadable pages");
-assert.match(intelligenceReviewSource, /SolenOS is processing this document in the background\. You do not need to stay on this screen\./, "caregivers must not supervise background processing");
+assert.match(intelligenceReviewSource, /SolenOS is reading this document in the background\. You do not need to stay on this screen\./, "caregivers must not supervise background processing");
 assert.match(intelligenceReviewSource, /processing_jobs\?/, "the review panel must read durable background job state");
 assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.evidence_id === analysis\.source_evidence_id/, "background processing status must be scoped to the document's persisted job");
 assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load\(\); \}, 3000\)/, "document review status must refresh while background processing is active");
@@ -62,7 +62,7 @@ assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
 assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "caregivers must be warned that names, dates and numbers can be misread");
 assert.match(intelligenceReviewSource, /Compare each suggested detail with the original document before accepting it/, "handwriting uncertainty must remain visible");
-assert.match(intelligenceReviewSource, /OCR reading confidence describes text-recognition quality; it is not a probability that the words are correct/, "OCR quality must not be presented as correctness probability");
+assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "OCR quality must not be presented as correctness probability");
 assert.match(intelligenceReviewSource, /model_provenance/, "document processing model provenance must be available to the review view");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
@@ -90,14 +90,14 @@ assert.match(source, /The document and its unreviewed details were deleted/, "th
 assert.match(source, /Link versions/, "caregivers must be able to explicitly link a corrected copy to its predecessor");
 assert.match(source, /selected\.possibleVersionOfEvidenceId && !selected\.evidence\.parent_evidence_id/, "corrected-version clarification must appear only when a possible predecessor is detected");
 assert.match(source, /version-comparison/, "the document view must retrieve source-grounded differences for corrected versions");
-assert.match(source, /These differences have not been clinically verified/, "version differences must not be presented as clinical truth");
+assert.match(source, /A healthcare professional has not confirmed these differences/, "version differences must not be presented as clinical truth");
 assert.match(dailyCare, /\/documents\/status\?limit=10/, "Daily Care must retrieve persisted document processing status");
 assert.match(dailyCare, /Recent documents/, "Daily Care must surface recent document activity");
 assert.match(dailyCare, /You do not need to stay on this screen/, "background processing must not require the caregiver to supervise it");
 assert.match(dailyCare, /could not be read/, "unreadable pages must be reported without treating missing text as empty content");
 assert.match(dailyCare, /Follow-up added to your existing follow-ups/, "accepted document recommendations must be surfaced through the existing follow-up record");
-assert.match(review, /SAVED AS UNCONFIRMED REPORT/, "medication candidates must not be presented as verified medication changes");
-assert.match(dailyCare, /Medication information was saved as an unconfirmed report/, "Daily Care must distinguish an unconfirmed medication report from a verified care-record change");
+assert.match(review, /Saved as a report — not confirmed by a healthcare professional/, "medication candidates must not be presented as verified medication changes");
+assert.match(dailyCare, /Medicine information was saved as a report, but it has not been confirmed/, "Daily Care must distinguish an unconfirmed medication report from a verified care-record change");
 assert.match(source, /let scanPageNumber = 0/, "scan page numbers must not be affected by other file types in the batch");
 
 console.log("✓ crop and straighten are applied to pixels before OCR");
