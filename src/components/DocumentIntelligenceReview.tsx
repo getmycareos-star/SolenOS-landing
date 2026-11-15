@@ -280,6 +280,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: 12, color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
             {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
               Some words may be misread, especially handwriting. Check the original document before accepting suggested details.
+              OCR confidence describes text-recognition quality; it is not a probability that a suggested care detail is correct.
             </p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
               {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: 12 }}>{caregiverSafeAssistantText(question) || "More information may be needed."}</p>)}
