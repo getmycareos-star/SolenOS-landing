@@ -24,7 +24,9 @@ permissions:
 
 concurrency:
   group: critical-care-journeys-main
-  cancel-in-progress: true
+  # These real-backend journeys download a model and exercise durable state.
+  # Do not cancel an in-flight acceptance run when another main commit lands.
+  cancel-in-progress: false
 
 jobs:
   critical-care-journeys:
