@@ -397,7 +397,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       </div> : <button type="button" onClick={() => setConfirmingCareReportId(msg.source_message_id || null)} disabled={Boolean(savingCareReportId)}>Save as a care note</button>}
                     </div>}
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
-                      <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
+                      <p>{msg.safety_note || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."}</p>
                     </section>}
                     {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
@@ -422,7 +422,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
-                          {claim.support_status === 'aggregate_count_mismatch' && <p role="note">The saved care updates do not support this number. The count check found {claim.aggregate_review?.count ?? 'an unconfirmed number'} distinct updates in the requested time window.</p>}
+                          {claim.support_status === 'aggregate_count_mismatch' && <p role="note">The saved care updates do not support this number. The saved information shows {claim.aggregate_review?.count ?? 'an unconfirmed number'} separate updates in the time period you asked about.</p>}
                           {claim.support_status === 'aggregate_not_validated' && <p role="note">{claim.aggregate_review?.interpretation_limit || 'This total could not be confirmed from the saved care updates. Check the reports before relying on a number.'}</p>}
                           {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
@@ -439,7 +439,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.correction_note && <p>{source.correction_note}</p>}
                                   {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
                                   {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
-                                  {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved item. It is not a separate report.</p>}
+                                  {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved note or document. It is not a separate report.</p>}
                                   {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                   {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
                                   {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
@@ -450,7 +450,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       <p>{item.label}</p>
                                       {item.reported_by && <p>Reported by: {item.reported_by}</p>}
                                       {item.entered_by && <p>Added by: {item.entered_by}</p>}
-                                      {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved item. It is not a separate report.</p>}
+                                      {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved note or document. It is not a separate report.</p>}
                                       {item.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                       {item.source_independence_status === 'not_assessed' && <p>We have not checked whether this note is separate from other reports.</p>}
                                       {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {item.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
@@ -483,7 +483,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             </div>
           )}
         </section>
-        <aside className="companion-side-note" aria-label="Companion guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Grounded, not guesswork</strong><p>The Companion can help organise observations and questions. It does not diagnose, replace a professional, or decide what becomes part of the care record.</p></div></aside>
+        <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>The Care Assistant can help organise notes and questions. It does not diagnose, replace a healthcare professional, or decide what is added to your Care Record.</p></div></aside>
       </div>
 
       {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice) && <section className="companion-care-updates" aria-label="Care suggestions to review">
