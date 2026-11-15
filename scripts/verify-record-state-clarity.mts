@@ -10,6 +10,7 @@ const lcr = read("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const orientation = read("src/components/mvp-workspace/PersistedCareOrientation.tsx");
 const overview = read("src/components/app-shell/CareRecordOverview.tsx");
 const daily = read("src/app/workspace/daily-care/page.tsx");
+const documents = read("src/app/workspace/documents/page.tsx");
 const reminders = read("src/app/workspace/reminders/page.tsx");
 const history = read("src/components/app-shell/HistoryDrawer.tsx");
 const claimReview = read("src/components/ClaimAssessmentPanel.tsx");
@@ -79,6 +80,10 @@ assert.doesNotMatch(followUps, /An empty section does not mean nothing needs att
 assert.doesNotMatch(followUps, /setLoops\(nextLoops \|\| \[\]\)/);
 assert.match(reminders, /RecordState kind="loading"/);
 assert.match(reminders, /void refresh\(\)\.catch\(\(\) => setError/);
+assert.match(documents, /hasLoadedDocumentsRef\.current = true/);
+assert.match(documents, /listError && !hasLoadedDocuments \? null : visibleDocuments\.length === 0/);
+assert.match(documents, /Saved documents couldn’t be refreshed/);
+assert.doesNotMatch(documents, /SolenOS will not make up a history/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
 assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
