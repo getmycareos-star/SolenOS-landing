@@ -60,7 +60,7 @@ for (const status of [
 assert(claimPanel.includes("/assessments"), "claim assessment UI must persist and retrieve assessment history");
 assert(claimPanel.includes("Exact words from the note or document"), "claim assessment UI must require a source passage workflow");
 assert(claimPanel.includes("superseded_by_claim_id"), "superseded claims must record a specific replacement claim");
-assert(claimPanel.includes("This does not mean there are no past reviews"), "failed history reads must not be presented as empty history");
+assert(claimPanel.includes("Past reviews could not be loaded. Try again."), "failed history reads must remain a distinct error state");
 console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
 assert(claimPanel.includes("/assessment-impact"), "claim assessment panel must retrieve persisted evidence-change/reassessment impact");
 assert(claimPanel.includes("changed_observation_ids"), "claim assessment panel must consume source-correction impact");
@@ -197,7 +197,7 @@ for (const route of [
 assert(!freshnessPanel.includes("Save new policy version"), "freshness policies are selected from persisted immutable versions rather than authored in the LCR review panel");
 assert(freshnessPanel.includes("Choose a saved review rule") && freshnessPanel.includes("Review this information"), "LCR must retain assessment against an existing saved freshness policy");
 assert(freshnessPanel.includes("There is no single time limit for every kind of information"), "freshness UI must reject an invented universal threshold");
-assert(freshnessPanel.toLowerCase().includes("this does not mean there are no past reviews"), "freshness history failure must not be displayed as an empty history");
+assert(freshnessPanel.includes("Past reviews couldn’t be loaded. Try again."), "freshness history failure must remain a distinct error state");
 assert(freshnessPanel.includes("A review does not prove that information is true or still applies today"), "freshness assessments must not be presented as truth verification");
 assert(freshnessPanel.includes("source_time_kind"), "freshness UI must show which timestamp dimension drove the assessment");
 console.log("PASS: saved freshness policy assessment and history are connected to the LCR with explicit limits.");
@@ -217,7 +217,7 @@ assert(companionPanel.includes("claim.source_references.map") && companionPanel.
 assert(companionPanel.includes("how recent these care details are"), "Companion must explain date-review limits in caregiver language");
 const appointmentWorkspace = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert(appointmentWorkspace.includes("How recent this information is"), "Appointment preparation must explain how recent information may be");
-assert(appointmentWorkspace.includes("This does not mean it is current"), "Appointment preparation must not treat absent review as currentness");
+assert(appointmentWorkspace.includes("No review of how recent the linked information is was found."), "Appointment preparation must distinguish a missing freshness review from a currentness assessment");
 assert(appointmentWorkspace.includes("We couldn’t check how recent this information is right now"), "Appointment preparation must explain when a date check is unavailable");
 assert(companionPanel.includes("We couldn’t check how recent these care details are"), "Companion must explain unavailable date checks without exposing storage details");
 
