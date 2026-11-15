@@ -576,11 +576,12 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
             {situations.map((situation) => {
               const evidenceIds = situationEvidenceIds(situation);
               const selectedState = situationStates[situation.id] ?? (situation.state as SituationTrajectoryState);
+              const situationDetail = situationDetails[situation.id];
               const allowedStates: SituationTrajectoryState[] = situation.state === "resolved"
                 ? ["active"]
                 : (["active", "worsening", "improving", "resolved", "unknown"] as SituationTrajectoryState[])
                     .filter((state) => state !== situation.state);
-              const savedStateHistory = situation.context?.state_history ?? situationDetails[situation.id]?.state_history;
+              const savedStateHistory = situation.context?.state_history ?? situationDetail?.state_history;
               const stateHistory = Array.isArray(savedStateHistory)
                 ? savedStateHistory as Array<Record<string, unknown>>
                 : [];
@@ -612,8 +613,8 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       <div className="lcr-evidence-list">
                         {situationDetailLoadingIds.includes(situation.id) ? (
                           <p className="panel-muted">Loading the saved source records…</p>
-                        ) : situationDetails[situation.id]?.source_records.length ? (
-                          situationDetails[situation.id].source_records.map((record) => (
+                        ) : situationDetail && situationDetail.source_records.length > 0 ? (
+                          situationDetail.source_records.map((record) => (
                             <article key={record.source_type + ":" + record.id} className="lcr-evidence-item">
                               <div className="lcr-entry-heading">
                                 <strong>{caregiverSafeAssistantText(record.title) ?? "Saved care record"}</strong>
