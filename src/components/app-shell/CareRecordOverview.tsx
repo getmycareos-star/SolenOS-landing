@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 
 type CareItem = {
   id: string;
@@ -35,7 +36,7 @@ function plainStatus(value?: string | null): string {
   const labels: Record<string, string> = {
     reported: "Reported",
     observed: "Observed",
-    confirmed: "Confirmed by a source",
+    confirmed: "Marked as confirmed",
     uncertain: "Still unclear",
     disputed: "Different accounts",
     needs_clarification: "Needs checking",
@@ -121,11 +122,11 @@ export function CareRecordOverview() {
                 {items.map((item) => (
                   <article key={item.id} style={{ padding: 12, border: "1px solid #e8eee6", borderRadius: 11, background: "#fbfdfb" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
-                      <strong style={{ fontSize: 14 }}>{item.title || item.kind || "Care update"}</strong>
+                      <strong style={{ fontSize: 14 }}>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                       <span style={{ padding: "3px 7px", borderRadius: 7, background: "#eef4ec", color: "#536e55", fontSize: 11 }}>{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
-                    {item.description && <p style={{ margin: "7px 0 0", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{item.description}</p>}
-                    <p style={{ margin: "8px 0 0", color: "#758276", fontSize: 11 }}>Shared by: {item.source_label || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
+                    {caregiverSafeAssistantText(item.description) && <p style={{ margin: "7px 0 0", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(item.description)}</p>}
+                    <p style={{ margin: "8px 0 0", color: "#758276", fontSize: 11 }}>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
                   </article>
                 ))}
               </div>
@@ -133,7 +134,7 @@ export function CareRecordOverview() {
           </section>
 
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
-            <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes over time</h3>
+            <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes in care over time</h3>
             {historyNote && <p role="status" style={{ color: "#805d3c", fontSize: 13 }}>{historyNote}</p>}
             {!historyNote && changes.length === 0 ? (
               <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No changes were found in the information available. SolenOS will not invent a change when there is no record of one.</p>
@@ -142,7 +143,7 @@ export function CareRecordOverview() {
                 {changes.map((change) => (
                   <article key={change.id} style={{ padding: 11, border: "1px solid #e8eee6", borderRadius: 10 }}>
                     <strong style={{ fontSize: 13 }}>{plainStatus(change.change_type)}{change.change_direction ? " · " + plainStatus(change.change_direction) : ""}</strong>
-                    <p style={{ margin: "5px 0 0", color: "#596b5d", fontSize: 13, lineHeight: 1.5 }}>{change.previous_state || "Earlier state not recorded"} → {change.current_state || "Latest state not recorded"}</p>
+                    <p style={{ margin: "5px 0 0", color: "#596b5d", fontSize: 13, lineHeight: 1.5 }}>{caregiverSafeAssistantText(change.previous_state) || "Earlier details not recorded"} → {caregiverSafeAssistantText(change.current_state) || "Latest details not recorded"}</p>
                     <small style={{ color: "#7b887d" }}>{when(change.created_at)}</small>
                   </article>
                 ))}
