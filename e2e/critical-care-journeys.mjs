@@ -1532,3 +1532,135 @@ await record("14 privacy deletion request remains pending until independent revi
 
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
+
+
+await record("15 synthetic privacy deletion erases the caregiver record and original document bytes", async () => {
+  const deletionSession = await newSession("verified privacy deletion");
+  const token = deletionSession.access_token;
+  const personId = deletionSession.person.id;
+  const caregiverId = deletionSession.caregiver.id;
+  const evidenceForm = new FormData();
+  evidenceForm.append("person_id", personId);
+  evidenceForm.append("caregiver_id", caregiverId);
+  evidenceForm.append("evidence_type", "document");
+  evidenceForm.append(
+    "file",
+    new Blob(["Synthetic deletion verification record. This file must be erased with the care record."], { type: "text/plain" }),
+    "synthetic-privacy-deletion.txt",
+  );
+  const uploaded = await request("/api/v1/upload", { token, method: "POST", form: evidenceForm });
+  assert.equal(uploaded.status, 201, JSON.stringify(uploaded.payload));
+  const evidenceId = uploaded.payload.evidence_id;
+  assert.ok(evidenceId, "the synthetic upload must have a persisted evidence identifier");
+
+  const submitted = await request("/api/v1/privacy/requests", {
+    token,
+    method: "POST",
+    body: {
+      request_type: "deletion",
+      authority_basis: "self",
+      authority_attested: true,
+      note: "Synthetic CI deletion verification; no real caregiver information is present.",
+    },
+  });
+  assert.equal(submitted.status, 201, JSON.stringify(submitted.payload));
+  const requestId = submitted.payload.id;
+  assert.equal(submitted.payload.request_status, "received_pending_authority_review");
+
+  const reviewerToken = process.env.SOLENOS_PRIVACY_REVIEWER_TOKEN;
+  const deletionReviewerToken = process.env.SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN;
+  assert.ok(reviewerToken && reviewerToken.length >= 32, "CI primary privacy reviewer must be configured");
+  assert.ok(deletionReviewerToken && deletionReviewerToken.length >= 32, "CI independent deletion reviewer must be configured");
+  assert.notEqual(reviewerToken, deletionReviewerToken);
+
+  const reviewed = await request(`/api/v1/privacy/requests/${requestId}/review`, {
+    method: "POST",
+    body: {
+      decision: "approve",
+      review_basis: "Synthetic test record; authority evidence checked for the CI-only session.",
+      authority_evidence_checked: "CI generated the record and verified its synthetic self-authority.",
+    },
+    extraHeaders: { "X-SolenOS-Privacy-Reviewer-Token": reviewerToken },
+  });
+  assert.equal(reviewed.status, 200, JSON.stringify(reviewed.payload));
+  assert.equal(reviewed.payload.status, "approved_pending_fulfilment_assessment");
+  assert.equal(reviewed.payload.fulfilment_started, false);
+
+  const fulfilled = await request(`/api/v1/privacy/requests/${requestId}/fulfil-deletion`, {
+    method: "POST",
+    body: {
+      backup_erasure_verified: true,
+      backup_retention_evidence: "The CI PostgreSQL service is ephemeral, isolated to this workflow, and destroyed at workflow completion; no external backup is configured.",
+    },
+    extraHeaders: { "X-SolenOS-Privacy-Deletion-Reviewer-Token": deletionReviewerToken },
+  });
+  assert.equal(fulfilled.status, 200, JSON.stringify(fulfilled.payload));
+  assert.equal(fulfilled.payload.status, "fulfilled");
+  assert.equal(fulfilled.payload.fulfilment.operation, "deletion");
+  assert.equal(fulfilled.payload.idempotent_replay, false);
+
+  const replay = await request(`/api/v1/privacy/requests/${requestId}/fulfil-deletion`, {
+    method: "POST",
+    body: {
+      backup_erasure_verified: true,
+      backup_retention_evidence: "The CI PostgreSQL service is ephemeral, isolated to this workflow, and destroyed at workflow completion; no external backup is configured.",
+    },
+    extraHeaders: { "X-SolenOS-Privacy-Deletion-Reviewer-Token": deletionReviewerToken },
+  });
+  assert.equal(replay.status, 200, JSON.stringify(replay.payload));
+  assert.equal(replay.payload.idempotent_replay, true);
+  assert.equal(replay.payload.fulfilment.receipt_id, fulfilled.payload.fulfilment.receipt_id);
+
+  const revoked = await request(`/api/v1/persons/${encodeURIComponent(personId)}`, { token });
+  assert.equal(revoked.status, 401, "the deleted caregiver session must no longer authenticate");
+
+  const verification = JSON.parse(execFileSync("python", ["-c", `
+import json, os
+from sqlalchemy import create_engine, text
+engine = create_engine(os.environ["DATABASE_URL"])
+params = {
+    "person_id": os.environ["SOLENOS_DELETE_TEST_PERSON_ID"],
+    "caregiver_id": os.environ["SOLENOS_DELETE_TEST_CAREGIVER_ID"],
+    "evidence_id": os.environ["SOLENOS_DELETE_TEST_EVIDENCE_ID"],
+    "request_id": os.environ["SOLENOS_DELETE_TEST_REQUEST_ID"],
+    "receipt_id": os.environ["SOLENOS_DELETE_TEST_RECEIPT_ID"],
+}
+with engine.connect() as connection:
+    row = connection.execute(text("""
+        SELECT
+          (SELECT COUNT(*) FROM persons WHERE id = :person_id) AS persons_remaining,
+          (SELECT COUNT(*) FROM caregivers WHERE id = :caregiver_id) AS caregivers_remaining,
+          (SELECT COUNT(*) FROM anonymous_sessions WHERE person_id = :person_id OR caregiver_id = :caregiver_id) AS sessions_remaining,
+          (SELECT COUNT(*) FROM care_events WHERE person_id = :person_id) AS events_remaining,
+          (SELECT COUNT(*) FROM evidence WHERE id = :evidence_id OR person_id = :person_id) AS evidence_remaining,
+          (SELECT COUNT(*) FROM evidence_uploads WHERE evidence_id = :evidence_id) AS upload_bytes_remaining,
+          (SELECT COUNT(*) FROM data_subject_requests
+             WHERE id = :request_id AND request_status = 'fulfilled'
+               AND person_id IS NULL AND caregiver_id IS NULL
+               AND record_metadata->'fulfilment'->>'operation' = 'deletion') AS redacted_receipts,
+          (SELECT COUNT(*) FROM audit_log_events
+             WHERE target_id = :receipt_id AND action = 'privacy_request.deletion_fulfilled') AS deletion_audit_receipts
+    """), params).mappings().one()
+    print(json.dumps(dict(row)))
+`], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      SOLENOS_DELETE_TEST_PERSON_ID: personId,
+      SOLENOS_DELETE_TEST_CAREGIVER_ID: caregiverId,
+      SOLENOS_DELETE_TEST_EVIDENCE_ID: evidenceId,
+      SOLENOS_DELETE_TEST_REQUEST_ID: requestId,
+      SOLENOS_DELETE_TEST_RECEIPT_ID: fulfilled.payload.fulfilment.receipt_id,
+    },
+  }));
+  for (const key of [
+    "persons_remaining",
+    "caregivers_remaining",
+    "sessions_remaining",
+    "events_remaining",
+    "evidence_remaining",
+    "upload_bytes_remaining",
+  ]) assert.equal(verification[key], 0, `privacy deletion left ${key}: ${JSON.stringify(verification)}`);
+  assert.equal(verification.redacted_receipts, 1, JSON.stringify(verification));
+  assert.equal(verification.deletion_audit_receipts, 1, JSON.stringify(verification));
+});
