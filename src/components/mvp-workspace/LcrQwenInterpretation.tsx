@@ -128,7 +128,7 @@ export function LcrQwenInterpretation({
         <>
           <p>{state.result.reply}</p>
           <p className="panel-muted">
-            AI-generated interpretation for caregiver review. The Living Care Record remains authoritative; this response did not change it.
+            Suggested explanation for you to review. Your Care Record has not changed. This suggestion has not been added to it.
           </p>
           {state.result.claim_provenance?.claims && state.result.claim_provenance.claims.length > 0 && (
             <section aria-label="What each statement is based on" className="lcr-qwen-claim-sources">
