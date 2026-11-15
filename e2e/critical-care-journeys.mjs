@@ -162,8 +162,9 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
   const viewFollowups = page.getByRole("button", { name: "View follow-ups", exact: true });
   await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
   await viewFollowups.click();
-  await page.getByRole("heading", { name: "Follow-ups and questions", exact: true })
-    .waitFor({ timeout: 20_000 });
+  await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
+  await page.getByRole("heading", { name: "Follow-ups", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
   await verifyMobile(page);
   await page.getByRole("button", { name: "Open navigation", exact: true }).click();
   await page.getByRole("link", { name: "Follow-ups", exact: true })
