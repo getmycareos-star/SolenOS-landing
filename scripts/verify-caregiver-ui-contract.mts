@@ -62,6 +62,11 @@ assert.doesNotMatch(companion, /refreshPendingCareUpdates|pendingCareUpdates/);
 assert.doesNotMatch(companion, /reviewCareUpdate|care_update_candidates|\/companion\/care-updates/);
 assert.match(deltaPanel, /if \(!showPanel\) return null/);
 assert.match(deltaPanel, /if \(!personId \|\| !showPanel\)/);
+assert.doesNotMatch(dailyCapture, /CareDeltaPanel|deltaAutoInput|care-delta\\/reconcile/,
+  "Daily Care must not launch a second browser-side Delta comparison; the persisted backend reconciliation is authoritative");
+assert.match(dailyCapture, /window\\.dispatchEvent\\(new Event\\('careRecordUpdated'\\)\\)/,
+  "a successful Daily Care save must refresh the existing persisted LCR projections");
+
 
 // The saved-care orientation must use the same authenticated, read-only
 // current-care projection as the main Care Continuity view.
