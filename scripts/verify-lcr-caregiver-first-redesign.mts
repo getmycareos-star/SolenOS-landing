@@ -50,6 +50,10 @@ assert.match(currentUnderstanding, /There isn’t enough recorded care informati
 assert.match(currentUnderstanding, /internalCaptureRecordTypes/, "capture wrapper records must be excluded from caregiver change summaries");
 assert.match(currentUnderstanding, /internalCaptureEventType/, "capture event identifiers embedded in technical explanations must also be excluded");
 assert.match(currentUnderstanding, /accepted: "Reviewed"/, "caregiver-facing review status must not say Accepted");
+assert.match(currentUnderstanding, /Details identified in this note/, "document-derived observations must use caregiver-readable language");
+assert.match(currentUnderstanding, /They are not separate reports or independent confirmation/, "extracted details must not be presented as independent evidence");
+assert.match(currentUnderstanding, /A source is linked, but its details are not available here/, "source-link and source-detail availability must be distinguished");
+assert.doesNotMatch(currentUnderstanding, /Source details: /, "technical source-availability fallback must not be exposed to caregivers");
 assert.match(integrityPanel, /INTERNAL_REVISION_TARGET_TYPES/, "internal assessment and baseline revisions must not be rendered as caregiver care-history changes");
 assert.match(integrityPanel, /caregiverVisibleRevisions/, "the caregiver record-history panel must use its filtered revision view");
 assert.match(currentUnderstanding, /structured_daily_capture.*daily_care_entry.*daily_capture/, "known capture wrapper types must not be presented as separate care changes");
