@@ -170,12 +170,12 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "delete": {
-        if (!window.confirm("Delete this workspace from this device? This clears local session and workspace data from this browser. It does NOT delete care information already stored on SolenOS servers. Continue?")) return;
+        if (!window.confirm("Delete this workspace from this device? This clears local session and workspace data from this browser. It does not delete care information already saved in SolenOS. Continue?")) return;
         try {
           if (getAnonymousAccessToken()) await revokeAnonymousSession();
           LOCAL_WORKSPACE_KEYS.forEach((key) => window.localStorage.removeItem(key));
         } catch {
-          window.alert("SolenOS could not revoke this device's server-issued session. Local workspace data was not cleared. Check your connection and try again.");
+          window.alert("We couldn't confirm your access to SolenOS, so nothing was cleared. Check your connection and try again.");
           return;
         }
         window.location.assign("/start");
