@@ -134,9 +134,15 @@ export function CareRecordOverview() {
 
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes over time</h3>
-            {historyNote && <p role="status" style={{ color: "#805d3c", fontSize: 13 }}>{historyNote}</p>}
+            {historyNote && (
+              <RecordState
+                kind="error"
+                title="Recent changes couldn’t be refreshed."
+                description="Showing the last saved changes, if available. Try again to refresh."
+              />
+            )}
             {!historyNote && changes.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No changes were found in the information available. SolenOS will not invent a change when there is no record of one.</p>
+              <RecordState kind="empty" title="No recent changes recorded." />
             ) : (
               <div style={{ display: "grid", gap: 9 }}>
                 {changes.map((change) => (
