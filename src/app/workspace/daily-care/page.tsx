@@ -536,7 +536,7 @@ export default function DailyCarePage() {
           onClick={() => router.push("/workspace")}
         >
           <ArrowLeft size={18} aria-hidden />
-          <span>Back</span>
+          <span>Care Record</span>
         </Button>
         <div>
           <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
