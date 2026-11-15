@@ -112,6 +112,7 @@ assert.match(appointmentWorkspace, /No appointment recorded in this summary/);
 assert.doesNotMatch(appointmentWorkspace, /This does not mean none exist|This does not mean that no appointment exists|SolenOS will not invent what happened|This does not mean it is current/);
 assert.doesNotMatch(detailedAppointmentWorkspace, /This does not mean there is no care history|This does not mean the information does not exist elsewhere|This does not mean it is current/);
 assert.doesNotMatch(companion, /This does not mean information missing from the record is known/);
+assert.match(companion, /messages\.length === 0 \? \(\s*requestError \? \(/);
 assert.match(companion, /The Care Assistant couldn’t respond/);
 assert.match(companion, /requestError && messages\.length > 0/);
 assert.match(companion, /setInput\(submittedText\)/);
