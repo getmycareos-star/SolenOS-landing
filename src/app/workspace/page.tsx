@@ -27,18 +27,19 @@ function WorkspaceHomeInner() {
 
   return (
     <main className="mobile-screen feature-page solenos-lcr-home">
-      <CaregiverHandoverInbox />
+      {/* The care situation is the first thing a returning caregiver sees. */}
       <LCRCurrentUnderstanding />
       <section aria-label="Ask SolenOS" style={{ display: "grid", gap: 10, padding: "18px 0" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 18 }}>Ask SolenOS</h2>
-          <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>Ask about saved care information, recent changes, appointments or anything that is still unclear.</p>
+          <h2 style={{ margin: 0, fontSize: 18 }}>What would you like to do?</h2>
+          <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>Record a new care update or ask SolenOS about information already saved.</p>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           <Link href="/workspace/companion" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 46, width: "fit-content", border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 16px", textDecoration: "none" }}>Ask SolenOS</Link>
           <Link href="/workspace/daily-care" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 46, width: "fit-content", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650, padding: "10px 16px", textDecoration: "none" }}>Add a care update</Link>
         </div>
       </section>
+      <CaregiverHandoverInbox />
     </main>
   );
 }
