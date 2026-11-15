@@ -629,7 +629,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
 
 await record("LCR care history shows the original caregiver report before source metadata", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
-  await history.page.getByRole("heading", { name: "Your Living Care Record" }).waitFor({ timeout: 20_000 });
+  await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
 
   const sourceSummary = history.page.getByText("Source details", { exact: true }).first();
