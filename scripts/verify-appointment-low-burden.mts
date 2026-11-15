@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs'
 
 const component = readFileSync('src/components/workflows/AppointmentWorkspace.tsx', 'utf8')
 assert.ok(component.includes('Your visit summary'), 'before stage must show the generated appointment brief')
+assert.ok(component.includes('living_care_record_context'), 'appointment preparation must consume shared Care Record coverage when the backend provides it')
+assert.ok(component.includes('retrieval_projection_complete !== true'), 'appointment preparation must disclose an incomplete shared Care Record projection')
+assert.ok(component.includes('Some parts of your Care Record could not be fully checked'), 'incomplete shared Care Record coverage must be explained in plain language')
 assert.ok(component.includes('You do not need to document while speaking with the professional.'), 'during stage must not require active documentation')
 assert.ok(component.includes('You can leave this empty and return later.'), 'during capture must be optional')
 assert.ok(component.includes("getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft')"), 'after stage must retrieve the persisted backend outcome draft')
