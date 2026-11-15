@@ -134,7 +134,7 @@ function displayHistorySource(item: CareItem): string {
   if (item.source_type === "professional" || item.source_type === "verified_professional") {
     return "Shared by a care professional";
   }
-  return "Source not recorded";
+  return "Who added this is not recorded";
 }
 
 function displayHistoryTime(item: CareItem): string {
