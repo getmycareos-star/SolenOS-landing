@@ -62,6 +62,43 @@ jobs:
       - name: Build Next.js production app
         run: npm run build
 
+      - name: Require successful backend release checks on current main
+        if: github.event_name == 'workflow_dispatch' && inputs.release_approved == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          backend_sha="$(curl -fsSL https://api.github.com/repos/getmycareos-star/SolenOS_backend/branches/main | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).commit.sha))')"
+          checks="$(curl -fsSL "https://api.github.com/repos/getmycareos-star/SolenOS_backend/commits/$backend_sha/check-runs")"
+          BACKEND_SHA="$backend_sha" CHECKS_JSON="$checks" node <<'NODE'
+          const payload = JSON.parse(process.env.CHECKS_JSON);
+          const required = [
+            "tests",
+            "container-build-smoke",
+            "postgres-migrations",
+            "postgres-migration",
+            "test",
+            "Care spine, documents, Daily Care and handoff on PostgreSQL",
+            "restore-and-verify",
+          ];
+          const failures = [];
+          for (const name of required) {
+            const matches = (payload.check_runs || []).filter((item) => item.name === name);
+            if (matches.length !== 1) {
+              failures.push(`${name}: expected exactly one check, found ${matches.length}`);
+              continue;
+            }
+            const check = matches[0];
+            if (check.status !== "completed" || check.conclusion !== "success") {
+              failures.push(`${name}: ${check.status}/${check.conclusion || "pending"}`);
+            }
+          }
+          if (failures.length) {
+            process.stderr.write(`Backend release checks failed for ${process.env.BACKEND_SHA}:\n${failures.join("\n")}\n`);
+            process.exit(1);
+          }
+          process.stdout.write(`All required backend release checks passed for ${process.env.BACKEND_SHA}.\n`);
+          NODE
+
   caregiver-acceptance:
     name: Verify all caregiver journeys against PostgreSQL and a real browser
     if: github.event_name == 'workflow_dispatch' && inputs.release_approved == true
