@@ -148,7 +148,13 @@
     "measurementRecords": "mesures enregistrées",
     "quickCheckIns": "points rapides",
     "careHandoffs": "transmissions de soins",
-    "otherCareUpdates": "autres mises à jour des soins"
+    "otherCareUpdates": "autres mises à jour des soins",
+    "openDocuments": "Ouvrir les documents",
+    "reviewDocument": "Consulter le document",
+    "viewFollowups": "Voir les suivis",
+    "notificationAttention": "La distribution des notifications nécessite votre attention",
+    "unresolved": "Non résolu",
+    "due": "Échéance"
   },
   "changeIntelligence": {
     "eyebrow": "COMPRÉHENSION DANS LA DURÉE",
