@@ -18,13 +18,13 @@ function medicationTranslation(med: MedicationInfo): string {
   parts.push(`${med.name} is mentioned in this document.`);
   switch (med.status) {
     case "new":
-      parts.push("It is marked as new — check whether to add it to the care routine.");
+      parts.push("The document marks it as new. This does not confirm the current instructions; check with the prescriber or pharmacist before changing the care routine.");
       break;
     case "discontinued":
-      parts.push("The document indicates it is discontinued — confirm before removing it from the routine.");
+      parts.push("The document says it was discontinued. This does not confirm the current instructions; check with the prescriber or pharmacist before changing the care routine.");
       break;
     case "dosage_changed":
-      parts.push("The dosage appears to have changed — confirm the new amount before updating the routine.");
+      parts.push("The document shows a dosage change. The current amount is not verified here; check with the prescriber or pharmacist before changing the care routine.");
       break;
     case "continuing":
       parts.push("It appears to be a continuing medication.");
@@ -35,19 +35,19 @@ function medicationTranslation(med: MedicationInfo): string {
   if (med.dose) parts.push(`Dose mentioned: ${med.dose}.`);
   if (med.frequency) parts.push(`Frequency mentioned: ${med.frequency}.`);
   if (med.duplicateDose) {
-    parts.push("A possible duplicate dose is mentioned — confirm the correct amount before the next dose.");
+    parts.push("A possible duplicate dose is reported. This document does not establish what should be taken next; contact the prescriber or pharmacist promptly for instructions.");
   }
   if (med.missedDose) {
-    parts.push("A missed dose is mentioned — check whether a make-up dose is needed.");
+    parts.push("A missed dose is reported. This document does not establish whether a make-up dose is appropriate; ask the prescriber or pharmacist for instructions.");
   }
   if (med.refillProblem) {
     parts.push("A refill problem is mentioned — resolve it before the medication runs out.");
   }
   if (med.unclearInstructions) {
-    parts.push("The instructions are unclear — confirm how it should be taken.");
+    parts.push("The instructions are unclear in this document. Check the original prescription or ask the prescriber or pharmacist before relying on a dose or schedule.");
   }
   if (med.uncertainty) {
-    parts.push("The current medication situation needs clarification — the name, dose, or purpose is not clear.");
+    parts.push("The current medication details are not established here. The name, dose, or purpose needs confirmation from the prescription, prescriber, or pharmacist.");
   }
   if (med.refill) parts.push("A refill is mentioned — plan to handle it before it runs out.");
   if (med.concern) parts.push("A concern (such as a side effect or interaction) is mentioned — worth noting.");
