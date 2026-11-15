@@ -174,7 +174,9 @@ assert(!companionSource.includes("SnapCameraCapture"), "Camera capture belongs i
 // Provenance status is displayed only when returned by the backend; no write is inferred.
 const dailyCaptureSource = fs.readFileSync(path.join(root, "src", "components", "workflows", "StructuredDailyCapture.tsx"), "utf8");
 assert(dailyCaptureSource.includes("qwen_extraction_status"), "Daily Capture must surface the backend Qwen extraction result");
-assert(dailyCaptureSource.includes("setDeltaAutoInput({"), "Daily Capture must trigger automatic care-delta reconciliation after a successful save");
+assert(!dailyCaptureSource.includes("setDeltaAutoInput("), "Daily Care must not launch a second browser-side Delta reconciliation");
+assert(!/care-delta\\/reconcile/.test(dailyCaptureSource), "Daily Care must not call the browser-side Delta reconciliation endpoint");
+assert(dailyCaptureSource.includes("window.dispatchEvent(new Event('careRecordUpdated'))"), "a successful Daily Care save must refresh persisted LCR projections");
 
 console.log("✓ LCR greetings and insults use the server-issued session and read-only LCR endpoint; they are not written as care evidence");
 
