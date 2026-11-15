@@ -146,7 +146,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
                   {reference.recorded_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it was recorded: {new Date(reference.recorded_at).toLocaleString()}</p>}
                   {reference.reported_by && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>Reported by: {caregiverSafeAssistantText(String(reference.reported_by)) || 'Not recorded'}</p>}
                   {reference.entered_by && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>Recorded by: {caregiverSafeAssistantText(String(reference.entered_by)) || 'Not recorded'}</p>}
-                  {reference.source_excerpt && <blockquote style={{ fontSize: 11, lineHeight: 1.5, margin: '5px 0 0', paddingLeft: 8, borderLeft: '2px solid var(--border)' }} >{caregiverSafeAssistantText(String(reference.source_excerpt)) || 'Source wording not available'}</blockquote>}
+                  {reference.source_excerpt && <blockquote style={{ fontSize: 11, lineHeight: 1.5, margin: '5px 0 0', paddingLeft: 8, borderLeft: '2px solid var(--border)' }} >{caregiverSafeAssistantText(String(reference.source_excerpt)) || 'Original wording not available'}</blockquote>}
                 </div>
               ))}
             </div>
