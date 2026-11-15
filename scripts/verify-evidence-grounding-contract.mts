@@ -113,7 +113,7 @@ assert(evidenceReview.includes("This does not establish that the evidence did no
 console.log("PASS: evidence review exposes persisted historical reconstruction with an explicit absence limitation.");
 
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
-assert(panel.includes("Each detail keeps the exact words from the original source"), "read-only observation history must retain the exact source passage");
+assert(panel.includes("Each detail keeps the exact words from the original note or document"), "read-only observation history must retain the exact source passage");
 assert(panel.includes("A report stays labelled as a report"), "observation UI must preserve report versus observation distinctions");
 assert(panel.includes("reviewStatusLabel(item.epistemic_status)"), "read-only observation history must retain the recorded information status");
 console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
