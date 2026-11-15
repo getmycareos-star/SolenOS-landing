@@ -134,7 +134,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
             {row.result_present === false ? 'Result not present in supplied record. ' : ''}
             {caregiverSafeAssistantText(String(row.next_question || row.why_conflicting || row.why_it_matters || '')) || ''}
           </p>
-          {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Source wording: “{row.evidence_excerpt}”</p>}
+          {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Original wording: “{row.evidence_excerpt}”</p>}
           {row.source_reference_status === 'not_matched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>We could not link this finding to a saved source. It should not be treated as supported.</p>}
           {Array.isArray(row.source_record_refs) && row.source_record_refs.length > 0 && (
             <div style={{ borderTop: '1px solid var(--border)', marginTop: 7, paddingTop: 7 }}>
@@ -152,7 +152,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
             </div>
           )}
           {row.claim_supported === false && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>The value could not be matched to the supplied event or current-state evidence. It was kept uncertain and was not saved as a supported current-state assertion.</p>}
-          {row.historical_only && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>Historical report only — not promoted to current state.</p>}
+          {row.historical_only && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>This was reported earlier. It has not been treated as current information.</p>}
           {row.promotion_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeAssistantText(String(row.promotion_warning)) || 'This item needs review before it is used.'}</p>}
           {row.provenance_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeAssistantText(String(row.provenance_warning)) || 'The source for this item needs review.'}</p>}
           {Array.isArray(row.reports) && <ul style={{ fontSize: 12, margin: '4px 0', paddingLeft: 18 }}>{row.reports.map((report: string, i: number) => <li key={i}>{report}</li>)}</ul>}
@@ -161,11 +161,11 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
     </section>
   }
 
-  return <section aria-label="SolenOS Delta Engine" style={panelStyle}>
+  return <section aria-label="Care changes over time" style={panelStyle}>
     <div>
       <h2 style={{ fontSize: 18, margin: 0 }}>Care changes over time</h2>
       <p style={{ color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.5, marginTop: 5 }}>
-        Compare a new note or document with existing source-attributed care reports. Results are review candidates—not diagnoses or verified clinical facts.
+        Compare a new note or document with earlier care updates. These are possible changes to review, not a diagnosis or confirmed medical fact.
       </p>
     </div>
     <form onSubmit={(event) => { event.preventDefault(); void reconcile({ content, source, eventDate }) }} style={{ display: 'grid', gap: 9, marginTop: 10 }}>
@@ -181,7 +181,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
         <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Paste the new event or use a text document above. Include source wording; avoid adding AI-generated conclusions as evidence." maxLength={100000} required />
       </label>
       <div><button type="submit" disabled={busy || !personId || !content.trim()} style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: busy ? 'var(--bg)' : 'var(--accent)', color: busy ? 'var(--text-secondary)' : 'white', fontSize: 12 }}>
-        {busy ? 'Comparing with existing care state…' : 'Reconcile against existing care record'}
+        {busy ? 'Comparing with saved care information…' : 'Compare with saved care information'}
       </button></div>
     </form>
     {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12, marginTop: 8 }}>{error}</p>}
@@ -198,7 +198,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       }} style={{ padding: "8px 12px", minHeight: 40, borderRadius: 8, border: "2px solid var(--solenos-slate, #173f4b)", background: "var(--solenos-slate, #173f4b)", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Try again</button>
     </div>}
     {history.length > 0 && <section style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 10 }}>
-      <h3 style={{ fontSize: 13, margin: '0 0 7px' }}>Previous reconciliations</h3>
+      <h3 style={{ fontSize: 13, margin: '0 0 7px' }}>Earlier comparisons</h3>
       <div style={{ display: 'grid', gap: 6 }}>
         {history.slice(0, 10).map((entry) => <button key={entry.id} type="button" onClick={() => entry.delta && setResult(entry.delta)} style={{ textAlign: 'left', border: '1px solid var(--border)', borderRadius: 7, padding: 8, background: 'var(--bg)', color: 'var(--text)', cursor: entry.delta ? 'pointer' : 'default' }}>
           <strong style={{ fontSize: 12 }}>{caregiverSafeAssistantText(entry.source) || 'Care update'}</strong>
@@ -208,13 +208,13 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       </div>
     </section>}
     {result && <div aria-live="polite" style={{ marginTop: 14 }}>
-      <h3 style={{ fontSize: 15, margin: 0 }}>Delta result</h3>
+      <h3 style={{ fontSize: 15, margin: 0 }}>What may have changed</h3>
       <p style={{ fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(result.caregiver_summary || result.event_summary) || 'The comparison is ready, but its summary is not available to display.'}</p>
       {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Some findings could not be linked to their own saved source. Review those items before relying on them.</p>}
       {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each listed finding is linked to the source wording used for its review. This does not establish clinical truth or independent corroboration.</p>}
       {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary') && (
         <section style={{ borderTop: '1px solid var(--border)', paddingTop: 9, marginTop: 9 }}>
-          <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Summary source check</h4>
+          <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Check the summary against saved information</h4>
           {result.claim_provenance?.claims?.filter((claim) => claim.claim_type === 'summary').map((claim) => (
             <article key={claim.claim_id} style={{ marginBottom: 8 }}>
               <p style={{ fontSize: 12, margin: '0 0 4px' }}>{caregiverSafeAssistantText(claim.text) || 'Summary wording is not available.'}</p>
@@ -227,12 +227,12 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
         </section>
       )}
       {result.computed_changes?.length ? <section style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-        <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Compared state</h4>
+        <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Changes to review</h4>
         {result.computed_changes.map((item, index) => <p key={index} style={{ fontSize: 12, margin: '5px 0' }}>
           <strong>{caregiverSafeAssistantText(String(item.name || 'Care information')) || 'Care information'}</strong> · {caregiverStatusLabel(String(item.change_type || 'uncertain')) || 'Not confirmed'} · {caregiverSafeAssistantText(String(item.previous ?? 'No prior value')) || 'Not available'} → {caregiverSafeAssistantText(String(item.current ?? 'No current value')) || 'Not available'} · {caregiverStatusLabel(String(item.certainty || 'uncertain')) || 'Not confirmed'}
         </p>)}
       </section> : null}
-      {renderRows('Medication reconciliation', result.medications)}
+      {renderRows('Medicine changes to review', result.medications)}
       {renderRows('Conditions and status changes', result.conditions)}
       {renderRows('Symptoms and trends', result.symptoms)}
       {renderRows('Ordered tests and results', result.tests)}
