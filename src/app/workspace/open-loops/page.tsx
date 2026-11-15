@@ -179,8 +179,8 @@ export default function FollowUpsPage() {
     const nextAssessment = nextAssessmentResponse?.assessment && nextAssessmentResponse.assessment.person_id === personId
       ? nextAssessmentResponse.assessment : null;
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
-    setLoops(nextLoops || []);
-    setAssessment(nextAssessment);
+    if (nextLoops) setLoops(nextLoops);
+    if (nextAssessment) setAssessment(nextAssessment);
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
     else if (!reassessmentFailed) setAttentionWarning("");
   }, []);
@@ -280,8 +280,8 @@ export default function FollowUpsPage() {
     {error && <p className="followups-alert" role="alert">{error}</p>}
     {notice && <p className="followups-notice" role="status">{notice}</p>}
     {attentionWarning && <p className="followups-limitation" role="note">{attentionWarning}</p>}
-    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked. An empty section does not mean nothing needs attention.</p>}
-    {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
+    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked.</p>}
+    {loading ? <RecordState kind="loading" title="Checking saved care information…" /> : error && loops.length === 0 && !assessment ? <RecordState kind="error" title="Saved care information is unavailable." description="Try again to check your follow-ups." /> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
         {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
