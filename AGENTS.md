@@ -18,3 +18,12 @@ Before any implementation, read `docs/SOLENOS_MASTER_VALUES.md`. It is binding f
 State: verified baseline; defect/evidence; files changed; data/security impact; tests actually run and results; deployment/config needs; remaining risks; status PASS, PARTIAL, BLOCKED or FAIL.
 
 A document or test name is not implementation. A compile/build is not proof of runtime correctness. Do not claim full acceptance while a mandatory gate is failed or blocked.
+
+
+## Product-scope freeze: language selection
+
+- **Language selection is explicitly disabled and out of scope until the product owner (David) gives written permission in a direct instruction.** English is the only active caregiver-interface language for the current MVP.
+- Do not add, restore, mount, expose, wire, or otherwise enable a language selector, locale switcher, translation provider, language preference setting, or Spanish/French UI support without that explicit permission.
+- Existing Spanish/French translation files and related scaffolding are dormant legacy assets only. Their presence is not authorization to activate or expand localization.
+- Do not interpret a request to simplify wording, translate AI output, or edit copy as permission to enable interface localization.
+- If localization appears necessary for a task, stop and ask for explicit approval before implementation. This freeze can only be changed by the product owner.
