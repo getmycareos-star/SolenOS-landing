@@ -123,7 +123,7 @@ function WorkspacePageInner() {
   }, []);
 
   if (!hydrated || !entryReady || !archiveStateLoaded) {
-    return <BrandLoading animate message="Opening your Living Care Record…" />;
+    return <BrandLoading animate message="Opening your Care Record…" />;
   }
 
   if (isArchived) {
@@ -210,7 +210,7 @@ function WorkspacePageInner() {
                     </div>
                     {situation.contextSummary && caregiverSafeAssistantText(situation.contextSummary) && <p>{caregiverSafeAssistantText(situation.contextSummary)}</p>}
                     {(situation.sourceStatements?.length ?? 0) > 0 && (
-                      <div className="lcr-source-statements" aria-label="Statements preserved from original sources">
+                      <div className="lcr-source-statements" aria-label="What was reported in the original notes and documents">
                         <p>What was reported</p>
                         {situation.sourceStatements!.map((statement) => (
                           <div key={statement.id} className="lcr-source-statement">
@@ -343,7 +343,7 @@ function WorkspacePageInner() {
 
 export default function WorkspacePage() {
   return (
-    <Suspense fallback={<BrandLoading animate message="Opening your Living Care Record…" />}>
+    <Suspense fallback={<BrandLoading animate message="Opening your Care Record…" />}>
       <WorkspacePageInner />
     </Suspense>
   );
