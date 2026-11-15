@@ -160,7 +160,7 @@ assert.match(appointmentWorkspace, /outcome-proposals\/' \+ encodeURIComponent\(
 assert.match(appointmentWorkspace, /Accept as caregiver report/, "caregiver acceptance must be explicit");
 assert.match(appointmentWorkspace, /Save correction/, "caregiver corrections must remain a separate decision");
 assert.match(appointmentWorkspace, /Reject/, "caregiver rejection must be available");
-assert.match(appointmentWorkspace, /A healthcare professional has not confirmed it/, "appointment assertions must not be presented as medically confirmed");
+assert.match(appointmentWorkspace, /A healthcare professional has not confirmed that the follow-up was completed/, "appointment assertions must not be presented as medically confirmed");
 assert.match(appointmentWorkspace, /refreshSavedWorkspace\(\)/, "guided appointment state must reload records saved through detailed controls");
 assert.match(appointmentWorkspace, /idempotency_key: requestKey/, "guided appointment notes must retry with a stable idempotency key");
 assert.match(detailedAppointmentWorkspace, /idempotency_key: requestKey/, "detailed appointment workspace writes must retry with a stable idempotency key");
