@@ -68,6 +68,7 @@ const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx")
 const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
 const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
 const careDelta = read("../src/components/CareDeltaPanel.tsx");
+const careChangeHistory = read("../src/components/mvp-workspace/CareChangeHistoryPanel.tsx");
 const humanValidation = read("../src/components/HumanValidationLoop.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
@@ -111,6 +112,10 @@ assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedTex
 assert.match(lcr, /displayDescription\(source\.description\)/);
 assert.match(lcr, /caregiverSafeChangeText\(change\.explanation\)/);
 assert.match(lcr, /caregiverSafeChangeText\(change\.previous_state\)/);
+assert.match(careChangeHistory, /readableSource\(run\.source\)/);
+assert.match(careChangeHistory, /readableChangeType\(item\.change_type\)/);
+assert.match(careChangeHistory, /displayChangeText\(item\.comparison_basis/);
+assert.doesNotMatch(careChangeHistory, /display\(run\.source/);
 assert.doesNotMatch(lcr, /<p>\{change\.explanation\}<\/p>/);
 assert.match(lcr, /caregiverSafeAssistantText\(source\.source_passage\)/);
 
