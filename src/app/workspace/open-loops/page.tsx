@@ -280,7 +280,7 @@ export default function FollowUpsPage() {
     {error && <p className="followups-alert" role="alert">{error}</p>}
     {notice && <p className="followups-notice" role="status">{notice}</p>}
     {attentionWarning && <p className="followups-limitation" role="note">{attentionWarning}</p>}
-    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or was not checked. An empty section does not mean nothing needs attention.</p>}
+    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information wasn’t available for this review.</p>}
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Items with a clear reason to be addressed now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
