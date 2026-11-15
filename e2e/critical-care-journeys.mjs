@@ -1518,7 +1518,7 @@ await record("14 privacy deletion request remains pending until independent revi
   });
   assert.equal(submitted.status, 201, JSON.stringify(submitted.payload));
   assert.equal(submitted.payload.request_type, "deletion");
-  assert.equal(submitted.payload.request_status, "received_pending_authority_review");
+  assert.equal(submitted.payload.status, "received_pending_authority_review");
   assert.equal(submitted.payload.authority_verified, false);
   assert.equal(submitted.payload.fulfilment_started, false);
 
@@ -1565,7 +1565,7 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
   });
   assert.equal(submitted.status, 201, JSON.stringify(submitted.payload));
   const requestId = submitted.payload.id;
-  assert.equal(submitted.payload.request_status, "received_pending_authority_review");
+  assert.equal(submitted.payload.status, "received_pending_authority_review");
 
   const reviewerToken = process.env.SOLENOS_PRIVACY_REVIEWER_TOKEN;
   const deletionReviewerToken = process.env.SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN;
