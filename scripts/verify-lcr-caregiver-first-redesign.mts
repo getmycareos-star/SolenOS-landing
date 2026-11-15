@@ -83,7 +83,7 @@ assert.match(currentUnderstanding, /There isn’t enough recorded care informati
 assert.match(currentUnderstanding, /internalCaptureRecordTypes/, "capture wrapper records must be excluded from caregiver change summaries");
 assert.match(currentUnderstanding, /internalCaptureEventType/, "capture event identifiers embedded in technical explanations must also be excluded");
 assert.match(currentUnderstanding, /accepted: "Reviewed"/, "caregiver-facing review status must not say Accepted");
-assert.match(currentUnderstanding, /Details identified in this note/, "document-derived observations must use caregiver-readable language");
+assert.match(currentUnderstanding, /Details found in this note/, "document-derived observations must use caregiver-readable language");
 assert.match(currentUnderstanding, /They are not separate reports or independent confirmation/, "extracted details must not be presented as independent evidence");
 assert.match(currentUnderstanding, /Original report attached|Related report linked/, "saved source links must be described in caregiver language");
 assert.match(currentUnderstanding, /Original report text is not available in this view/, "a linked source without readable text must be distinguished from a missing link");
