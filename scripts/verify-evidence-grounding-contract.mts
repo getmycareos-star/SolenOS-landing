@@ -204,7 +204,7 @@ console.log("PASS: saved freshness policy assessment and history are connected t
 const deltaPanel = fs.readFileSync(path.join(process.cwd(), "src/components/CareDeltaPanel.tsx"), "utf8");
 assert(deltaPanel.includes("claim_provenance"), "Delta UI must consume claim-level source checks");
 assert(deltaPanel.includes("source_record_refs"), "each Delta finding must display its own supporting records");
-assert(deltaPanel.includes("Summary source check"), "Delta summary statements must be checked separately against their sources");
+assert(deltaPanel.includes("Check the summary against saved information"), "Delta summary statements must be checked separately against their sources");
 assert(deltaPanel.includes("When it happened") && deltaPanel.includes("When it was recorded"), "Delta sources must show event and recording times");
 console.log("PASS: Delta findings and summaries display statement-specific source references.");
 
