@@ -212,7 +212,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       }) as { written_to_lcr?: boolean; source_record_ref?: { record_id?: string } | null };
       if (decision === "accept") {
         if (reviewResult.written_to_lcr !== true || !reviewResult.source_record_ref?.record_id) {
-          throw new Error("The backend did not confirm a persistent Living Care Record assertion.");
+          throw new Error("SolenOS could not confirm that this detail was saved to your Care Record.");
         }
         window.dispatchEvent(new Event("careRecordUpdated"));
       }
