@@ -555,7 +555,7 @@ export default function DailyCarePage() {
         <>
           <section aria-labelledby="daily-care-current-title" className="daily-care-context-panel">
             <h2 id="daily-care-current-title">Where things stand</h2>
-            <p className="daily-care-muted">The latest information currently available in the care record.</p>
+            <p className="daily-care-muted">The latest care information saved so far.</p>
             {contextLoading ? (
               <p>Loading care information…</p>
             ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
@@ -660,22 +660,22 @@ export default function DailyCarePage() {
 
           <section aria-labelledby="daily-care-documents-title" className="daily-care-context-panel">
             <h2 id="daily-care-documents-title">Recent documents</h2>
-            <p className="daily-care-muted">SolenOS keeps the original files and reports what actually happened during processing.</p>
+            <p className="daily-care-muted">SolenOS keeps the original files and shows what it could read from them.</p>
             {documentsError ? (
               <p role="alert">{documentsError}</p>
             ) : documents.length ? (
               <ul className="daily-care-record-list">
                 {documents.slice(0, 5).map((item) => {
                   const statusText: Record<string, string> = {
-                    uploaded: "Uploaded. Processing has not started yet.",
-                    queued: "SolenOS is processing this document. You do not need to stay on this screen.",
-                    processing: "SolenOS is processing this document. You do not need to stay on this screen.",
-                    processed: "Readable pages have been processed. Review status is shown below.",
-                    partially_processed: "Some pages or processing steps remain incomplete.",
-                    retry_required: "Document understanding could not be completed after automatic retries. The original document is still stored.",
-                    review_required: "Processing finished, but some information needs review before it can be added to the care record.",
-                    failed: "Processing could not be completed. The original document is still stored.",
-                    cancelled: "Document processing was stopped.",
+                    uploaded: "Uploaded. SolenOS has not started reading it yet.",
+                    queued: "SolenOS is reading this document. You do not need to stay on this screen.",
+                    processing: "SolenOS is reading this document. You do not need to stay on this screen.",
+                    processed: "SolenOS has read the pages it could. Check below to see whether anything needs your review.",
+                    partially_processed: "SolenOS could not finish reading every page.",
+                    retry_required: "SolenOS could not finish reading this document. The original file is still saved.",
+                    review_required: "SolenOS has finished reading it. Check the suggested details before adding them to your Care Record.",
+                    failed: "SolenOS could not read this document. The original file is still saved.",
+                    cancelled: "Reading this document was stopped.",
                   };
                   const unreadable = item.unreadable_page_numbers || [];
                   const unprocessed = item.unprocessed_page_numbers || [];
@@ -684,14 +684,14 @@ export default function DailyCarePage() {
                     <li key={item.evidence_id}>
                       <strong>{caregiverSafeAssistantText(item.document_name) || "Uploaded document"}</strong>
                       <p>{statusText[item.processing_status] || "Processing status is available in the document library."}</p>
-                      {typeof item.page_count === "number" && <span>{typeof item.processed_page_count === "number" ? item.processed_page_count : processed.length} of {item.page_count} readable pages processed</span>}
-                      {item.retry_scheduled && <p>SolenOS is retrying pages that did not finish. You do not need to stay on this screen.</p>}
-                      {(item.retry_exhausted_page_numbers || []).length > 0 && <p>SolenOS retried page{item.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {item.retry_exhausted_page_numbers!.join(", ")} but could not process them. The original is preserved and the document is still marked incomplete.</p>}
-                      {unreadable.length > 0 && <p>Page{unreadable.length === 1 ? "" : "s"} {unreadable.join(", ")} could not be read reliably. SolenOS has not treated missing text as proof that those pages contain nothing important.</p>}
-                      {unprocessed.length > 0 && <p>Page{unprocessed.length === 1 ? "" : "s"} {unprocessed.join(", ")} still need processing.</p>}
+                      {typeof item.page_count === "number" && <span>SolenOS read {typeof item.processed_page_count === "number" ? item.processed_page_count : processed.length} of {item.page_count} pages</span>}
+                      {item.retry_scheduled && <p>SolenOS is trying to read the unfinished pages again. You do not need to stay on this screen.</p>}
+                      {(item.retry_exhausted_page_numbers || []).length > 0 && <p>SolenOS retried page{item.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {item.retry_exhausted_page_numbers!.join(", ")} but could not read them. The original file is still saved, and the document is marked as incomplete.</p>}
+                      {unreadable.length > 0 && <p>Page{unreadable.length === 1 ? "" : "s"} {unreadable.join(", ")} could not be read clearly. SolenOS has not assumed that those pages contain nothing important.</p>}
+                      {unprocessed.length > 0 && <p>Page{unprocessed.length === 1 ? "" : "s"} {unprocessed.join(", ")} still need to be read.</p>}
                       {item.medication_conflict && <p role="status">The document appears to differ from the current medication record. The instruction is unconfirmed. Confirm the current instruction with the prescribing professional or pharmacist before acting on it.</p>}
-                      {item.medication_report_saved && <p>Medication information was saved as an unconfirmed report. The existing medication record was not changed.</p>}
-                      {item.written_to_lcr && !item.medication_report_saved && <span> · Reviewed information saved to your Care Record</span>}
+                      {item.medication_report_saved && <p>Medicine information was saved as a report, but it has not been confirmed. Your existing medicine list was not changed.</p>}
+                      {item.written_to_lcr && !item.medication_report_saved && <span> · Reviewed details saved to your Care Record</span>}
                       {(item.accepted_follow_up_ids || []).length > 0 && <span> · Follow-up added to your existing follow-ups</span>}
                       {item.review_required && <p><Link href="/workspace/documents">Review the document</Link></p>}
                     </li>
@@ -707,8 +707,8 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
             <h2 id="daily-care-follow-ups-title">Follow-ups</h2>
             <p className="daily-care-muted">
-              {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} needing a check.
-              Manage questions, decisions and unresolved matters in one place. Daily Care does not create a second copy of an existing follow-up.
+              {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} that may need checking.
+              Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, Daily Care will use it instead of creating a duplicate.
             </p>
             {followUpsError && <p role="alert">{followUpsError}</p>}
             {followUps.length > 0 && (
@@ -782,7 +782,7 @@ export default function DailyCarePage() {
             ) : (
               <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
             )}
-            {historyMayBeTruncated && <p className="daily-care-muted">The summary is based on the latest 200 history records. Open full history to check older entries.</p>}
+            {historyMayBeTruncated && <p className="daily-care-muted">This summary shows the latest 200 saved updates. Open full care history to see older ones.</p>}
           </section>
 
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
@@ -823,8 +823,8 @@ export default function DailyCarePage() {
 
           <section aria-label="Care history" className="daily-care-context-panel">
             <h2>Need to review an earlier update?</h2>
-            <p className="daily-care-muted">Daily Care is for recording new information. The Care Timeline contains the full history of saved updates and corrections.</p>
-            <Link href="/workspace/timeline" className="care-reminders-inline-link">Open Care Timeline</Link>
+            <p className="daily-care-muted">Use Daily Care to share new information. Care history shows all saved updates and corrections.</p>
+            <Link href="/workspace/timeline" className="care-reminders-inline-link">Open care history</Link>
           </section>
           {reviewAnalysisId && (
             <CaptureAnalysisReview
