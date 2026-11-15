@@ -920,7 +920,7 @@ export function HistoryDrawer() {
           fallbackEvents.length < Number(eventSource?.candidate_count ?? fallbackEvents.length)
         );
         if ((eventReadProblem || eventItems?.length === 0) && fallbackEvents.length > 0) {
-          warnings.push("The dedicated history read was unavailable or incomplete; saved care events were recovered from the LCR history.");
+          warnings.push("The main history view was unavailable or incomplete; saved care events were recovered from the saved care record.");
         }
         if (fallbackEvents.length > 0 && fallbackHistoryIncomplete) {
           warnings.push("Only part of the saved event history could be recovered. More records may be available; refresh to try again.");
