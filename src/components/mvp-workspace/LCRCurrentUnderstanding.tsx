@@ -514,7 +514,8 @@ function displayDescription(value?: string | null): string {
     }
     if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || "Saved care information";
   } catch {
-    // Plain text is preserved exactly as saved.
+    // Malformed serialized payloads are not caregiver-readable source text.
+    if (/^[\\s]*[\\[{]/.test(value)) return "Saved care information";
   }
   return caregiverSafeAssistantText(value) || "Saved care information";
 }
