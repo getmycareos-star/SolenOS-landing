@@ -3,7 +3,6 @@ import { postJSON, postFormData, getJSON, getPersonId, getCaregiverId } from '@/
 import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
-import CareDeltaPanel from '@/components/CareDeltaPanel';
 
 const VITAL_TYPES = ['blood_pressure', 'heart_rate', 'oxygen_sat', 'temperature', 'weight', 'blood_glucose', 'other'];
 const VITAL_LABELS: Record<string, string> = {
@@ -61,8 +60,6 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
   const [reviewingCandidate, setReviewingCandidate] = useState<number | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
-  const [deltaAutoInput, setDeltaAutoInput] = useState<{ personId: string; content: string; source: string; eventDate: string; token: number; evidenceIds?: string[]; sourceEventId?: string } | null>(null);
-  const [deltaToken, setDeltaToken] = useState(0);
   const [vitalError, setVitalError] = useState<string | null>(null);
   const [vitalFeedback, setVitalFeedback] = useState<string | null>(null);
   const [scaleError, setScaleError] = useState<string | null>(null);
@@ -895,42 +892,6 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       setSaved(true);
       // Refresh the shared LCR projection only after the backend confirms persistence.
       window.dispatchEvent(new Event('careRecordUpdated'));
-      // Once Daily Capture is persisted, reconcile the saved observations against the longitudinal LCR.
-      // Reconciliation failure is shown by the Delta panel and never rolls back a successfully saved capture.
-      // The durable Daily Care worker now owns extraction and Delta/LCR
-      // reconciliation for queued captures. Do not launch a second client-side
-      // reconciliation for the same event.
-      if (!data?.qwen_job_id) {
-        // Reconcile the exact normalized values persisted by mutationFn.
-        // The backend binds Delta input to the saved CareEvent JSON; sending
-        // pre-normalized Date values here can make a valid capture look unrelated.
-        const deltaContent = JSON.stringify({
-          medications: variables.medications.map((med) => ({
-            ...med,
-            scheduled_for: med.scheduled_for ? new Date(med.scheduled_for).toISOString() : null,
-            administered_at: med.administered_at ? new Date(med.administered_at).toISOString() : null,
-          })),
-          vitals: variables.vitals.map((vital) => ({
-            ...vital,
-            measured_at: new Date(vital.measured_at).toISOString(),
-          })),
-          scales: variables.scales.map((scale) => ({
-            ...scale,
-            observed_at: new Date(scale.observed_at).toISOString(),
-          })),
-          notes: variables.notes,
-        }, null, 2);
-        const nextDeltaToken = deltaToken + 1;
-        setDeltaToken(nextDeltaToken);
-        setDeltaAutoInput({
-          personId,
-          content: deltaContent,
-          source: 'SolenOS Daily Capture',
-          eventDate: new Date().toISOString(),
-          token: nextDeltaToken,
-          sourceEventId: typeof data?.id === 'string' ? data.id : undefined,
-        });
-      }
     },
     onError: async (error, variables, context) => {
       // On error, rollback to previous state
@@ -2252,7 +2213,6 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             {submittingMutation ? 'Saving…' : 'Save to care record'}
           </button>
         </div>
-      <CareDeltaPanel key={personId} personId={personId} autoInput={deltaAutoInput} showPanel={false} />
       </div>
     );
 }
