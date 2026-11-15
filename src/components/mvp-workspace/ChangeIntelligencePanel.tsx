@@ -657,7 +657,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                             }))}
                           >
                             <option value={situation.state}>
-                              {caregiverStatusLabel(situation.state) ?? "Current status"} (current)
+                              {caregiverSituationStateLabel(situation.state) ?? caregiverStatusLabel(situation.state) ?? "Current status"} (current)
                             </option>
                             {allowedStates.map((state) => (
                               <option key={state} value={state}>{caregiverSituationStateLabel(state) ?? caregiverStatusLabel(state) ?? state}</option>
