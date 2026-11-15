@@ -215,12 +215,11 @@ function WorkspacePageInner() {
                         {situation.sourceStatements!.map((statement) => (
                           <div key={statement.id} className="lcr-source-statement">
                             <p>
-                              <strong>{caregiverSafeAssistantText(statement.speaker_label) || "Name not recorded"}</strong>
-                              {statement.speaker_attribution_status === "explicit"
-                                ? " · name shown in the original note; not independently confirmed"
-                                : " · no name was included in the original note"}
+                              <strong>{statement.speaker_attribution_status === "explicit" && caregiverSafeAssistantText(statement.speaker_label)
+                                ? "Reported by " + caregiverSafeAssistantText(statement.speaker_label)
+                                : "Reported by a caregiver"}</strong>
                             </p>
-                            <p>{caregiverSafeAssistantText(statement.source_passage) || "The original wording is saved."}</p>
+                            <blockquote>{caregiverSafeAssistantText(statement.source_passage) || "The original wording is not available."}</blockquote>
                             {statement.supersedes_observation_id && (
                               <small>
                                 Corrects an earlier saved detail{" · "}{caregiverSafeAssistantText(statement.correction_rationale) || "No reason was recorded"}
@@ -231,61 +230,49 @@ function WorkspacePageInner() {
                                 Original wording preserved · updated in {statement.superseded_by_observation_ids.length} later saved detail(s)
                               </small>
                             )}
-                            <small>
-                              Saved source
-                              {" · "}
-                              {statement.occurred_at
-                                ? `Happened: ${formatLastUpdated(statement.occurred_at)}`
-                                : statement.observed_at
-                                  ? `Observed: ${formatLastUpdated(statement.observed_at)}`
-                                  : caregiverSafeAssistantText(statement.context) || "Time not stated"}
-                              {" · "}Shared by caregiver
-                              {" · "}Recorded {statement.reported_at ? formatLastUpdated(statement.reported_at) : "time unavailable"}
-                              {" · "}{caregiverInformationLabel(statement.epistemic_status) || "Caregiver report"}
-                            </small>
+                            <details className="lcr-entry-details">
+                              <summary>Source details</summary>
+                              <small>
+                                {statement.occurred_at
+                                  ? "Happened: " + formatLastUpdated(statement.occurred_at)
+                                  : statement.observed_at
+                                    ? "Observed: " + formatLastUpdated(statement.observed_at)
+                                    : caregiverSafeAssistantText(statement.context) || "Time not stated"}
+                                {" · "}Recorded {statement.reported_at ? formatLastUpdated(statement.reported_at) : "time unavailable"}
+                                {" · "}{caregiverInformationLabel(statement.epistemic_status) || "Caregiver report"}
+                                {" · "}{statement.speaker_attribution_status === "explicit"
+                                  ? "The name appears in the original note and has not been independently confirmed."
+                                  : "The original note did not identify the speaker."}
+                              </small>
+                            </details>
                           </div>
                         ))}
                       </div>
                     )}
                     {(situation.conflicts?.length ?? 0) > 0 && (
-                      <div aria-label="Unresolved conflicting reports">
-                        <p role="status">
-                          {situation.conflicts!.length} conflicting report{situation.conflicts!.length === 1 ? "" : "s"} remain unresolved. Both accounts are retained; no winner is selected.
-                        </p>
+                      <details className="lcr-entry-details" aria-label="Unresolved conflicting reports">
+                        <summary>{situation.conflicts!.length} reports differ and have not been reconciled</summary>
                         {situation.conflicts!.map((conflict) => (
                           <div key={conflict.id} className="lcr-source-statement">
-                            <p><strong>Care detail</strong></p>
                             <p>{caregiverSafeAssistantText(conflict.description) || "The saved reports differ."}</p>
                             <small>
-                              Review: {caregiverStatusLabel(conflict.resolution_status) || "Not recorded"}
-                              {" · "}Winner selected: no
-                              {" · "}Supporting information: {conflict.evidence_ids.length > 0
-                                ? conflict.evidence_ids.length + " saved item(s)"
-                                : "None linked"}
+                              {caregiverStatusLabel(conflict.resolution_status) || "Not reviewed"}
+                              {" · "}Both accounts remain saved; neither has been selected as correct.
                             </small>
                           </div>
                         ))}
-                      </div>
+                      </details>
                     )}
                     {(situation.informationGaps?.length ?? 0) > 0 && (
-                      <div aria-label="Outstanding evidence gaps">
-                        <p>
-                          {situation.informationGaps!.length} information gap{situation.informationGaps!.length === 1 ? "" : "s"} still need clarification.
-                        </p>
+                      <details className="lcr-entry-details" aria-label="Information still being clarified">
+                        <summary>Information still being clarified ({situation.informationGaps!.length})</summary>
                         {situation.informationGaps!.map((gap) => (
                           <div key={gap.id} className="lcr-source-statement">
-                            <p><strong>Care detail</strong></p>
                             {gap.description && <p>{caregiverSafeAssistantText(gap.description) || "More information may be needed."}</p>}
-                            <small>
-                              {caregiverSafeAssistantText(gap.gap_reason) || "Reason not recorded"}
-                              {" · "}Priority: {caregiverStatusLabel(gap.priority) || "Not assessed"}
-                              {" · "}Supporting information: {gap.evidence_ids.length > 0
-                                ? gap.evidence_ids.length + " saved item(s)"
-                                : "None linked"}
-                            </small>
+                            {gap.gap_reason && <small>{caregiverSafeAssistantText(gap.gap_reason)}</small>}
                           </div>
                         ))}
-                      </div>
+                      </details>
                     )}
 
                     <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? caregiverStatusLabel(situation.status) ?? "Status not available"}</span>
