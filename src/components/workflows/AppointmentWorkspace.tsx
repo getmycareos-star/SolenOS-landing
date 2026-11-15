@@ -248,7 +248,7 @@ export default function AppointmentWorkspace() {
         ? (result.written_to_lcr
             ? result.reconciliation?.stages?.reconciliation === 'committed'
               ? 'Accepted as a caregiver-reviewed care record detail, and the care record was reassessed. It is not clinically verified.'
-              : 'Added to your Care Record after your review. The original report still shows that you shared it.'
+              : 'Added to your Care Record as your report. A healthcare professional has not confirmed it.'
             : 'No care record detail was created.')
         : decision === 'correct'
           ? 'Your correction was saved for review. It will not change your Care Record until you approve it.'
