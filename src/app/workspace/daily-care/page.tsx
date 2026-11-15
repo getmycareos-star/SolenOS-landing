@@ -548,7 +548,7 @@ export default function DailyCarePage() {
       {error ? (
         <section className="daily-care-error" role="alert">
           <h2>Daily Care could not be opened</h2>
-          <p>{error}</p>
+          <p>{caregiverSafeAssistantText(error) || "Daily Care could not be opened. Check your connection and try again."}</p>
           <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
         </section>
       ) : ready ? (
@@ -565,7 +565,7 @@ export default function DailyCarePage() {
                     <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p className="daily-care-summary-detail">{displayHistoryText(item)}</p>}
                     {item.capture_processing?.message && (
-                      <p className="daily-care-muted">{item.capture_processing.message}</p>
+                      <p className="daily-care-muted">{caregiverSafeAssistantText(item.capture_processing.message)}</p>
                     )}
                     <span>{displayHistoryTime(item)}</span>
                     <span> · {displayHistorySource(item)}</span>
@@ -587,7 +587,7 @@ export default function DailyCarePage() {
             ) : (
               <p>No current care updates are available to show. This does not mean nothing happened.</p>
             )}
-            {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
+            {contextError && <p role="status" className="daily-care-muted">{caregiverSafeAssistantText(contextError) || "Some care information could not be loaded. Try again."}</p>}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
@@ -662,7 +662,7 @@ export default function DailyCarePage() {
             <h2 id="daily-care-documents-title">Recent documents</h2>
             <p className="daily-care-muted">SolenOS keeps the original files and shows what it could read from them.</p>
             {documentsError ? (
-              <p role="alert">{documentsError}</p>
+              <p role="alert">{caregiverSafeAssistantText(documentsError) || "Your documents could not be loaded. Try again."}</p>
             ) : documents.length ? (
               <ul className="daily-care-record-list">
                 {documents.slice(0, 5).map((item) => {
@@ -683,7 +683,7 @@ export default function DailyCarePage() {
                   return (
                     <li key={item.evidence_id}>
                       <strong>{caregiverSafeAssistantText(item.document_name) || "Uploaded document"}</strong>
-                      <p>{statusText[item.processing_status] || "Processing status is available in the document library."}</p>
+                      <p>{statusText[item.processing_status] || "Open Documents to see the latest update."}</p>
                       {typeof item.page_count === "number" && <span>SolenOS read {typeof item.processed_page_count === "number" ? item.processed_page_count : processed.length} of {item.page_count} pages</span>}
                       {item.retry_scheduled && <p>SolenOS is trying to read the unfinished pages again. You do not need to stay on this screen.</p>}
                       {(item.retry_exhausted_page_numbers || []).length > 0 && <p>SolenOS retried page{item.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {item.retry_exhausted_page_numbers!.join(", ")} but could not read them. The original file is still saved, and the document is marked as incomplete.</p>}
@@ -710,7 +710,7 @@ export default function DailyCarePage() {
               {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} that may need checking.
               Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, Daily Care will use it instead of creating a duplicate.
             </p>
-            {followUpsError && <p role="alert">{followUpsError}</p>}
+            {followUpsError && <p role="alert">{caregiverSafeAssistantText(followUpsError) || "Your follow-ups could not be loaded. Try again."}</p>}
             {followUps.length > 0 && (
               <ul aria-label="Saved follow-ups" className="daily-care-follow-up-list">
                 {followUps.slice(0, 4).map((item) => (
