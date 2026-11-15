@@ -5982,6 +5982,7 @@ html[data-solenos-theme="dark"] .solenos-sidebar-toggle:hover {
   color: #17251c !important;
 }
 
+:root[data-solenos-theme="dark"] .public-shell .solenos-sidebar-toggle-label,
 html[data-solenos-theme="dark"] .solenos-sidebar-toggle-label {
   color: #17251c !important;
   -webkit-text-fill-color: #17251c !important;
