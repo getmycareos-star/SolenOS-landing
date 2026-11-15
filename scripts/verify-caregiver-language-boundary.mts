@@ -332,3 +332,12 @@ assert.match(earlyAccessLanguage, /Open your Care Record/,
   "early-access entry must use the caregiver-facing Care Record name");
 assert.doesNotMatch(publicShellLanguage, /Living Care Record/,
   "public navigation and footer must use the same Care Record name as the workspace");
+
+
+const documentExtractionRouteLanguage = read("../src/app/api/extract/route.ts");
+assert.match(documentExtractionRouteLanguage, /We couldn’t confirm your access to SolenOS\. Refresh the page and try again\./,
+  "document extraction access failures must use plain caregiver-facing language");
+assert.match(documentExtractionRouteLanguage, /We couldn’t confirm your access to SolenOS\. Reopen your Care Record and try again\./,
+  "expired document access must explain the next step in plain English");
+assert.doesNotMatch(documentExtractionRouteLanguage, /A valid SolenOS care-record session is required|This care-record session is no longer valid/i,
+  "document extraction must not expose session implementation terminology to caregivers");
