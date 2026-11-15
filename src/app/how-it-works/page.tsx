@@ -85,12 +85,11 @@ export default function HowItWorksPage() {
         <h3 className="public-subsection-title">How they work together</h3>
         <p className="public-prose">
           Imagine you notice that a family member has been sleeping poorly.
-          Record what you observed in Daily Care. The recorded information can
-          become part of the Living Care Record according to the normal save and
-          review flow, preserving what was reported and when. Then use AI
-          Companion if you want help preparing questions for the next care
-          professional. The Companion can help organize those questions, but
-          its suggestions do not silently become facts in the care record.
+          Record what you observed in Daily Care. After you review the update,
+          it can be saved to your Care Record with what was reported and when.
+          Then use the Care Assistant if you want help preparing questions for
+          the next care professional. Its suggestions do not become care facts
+          unless they are reviewed and saved.
         </p>
         <p className="public-prose">
           You do not have to visit all three parts every time. Something
