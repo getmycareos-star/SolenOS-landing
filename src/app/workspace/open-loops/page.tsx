@@ -177,7 +177,7 @@ export default function FollowUpsPage() {
     }
     const nextAssessment = nextAssessmentResponse?.assessment && nextAssessmentResponse.assessment.person_id === personId
       ? nextAssessmentResponse.assessment : null;
-    if (!nextLoops && !nextAssessment) throw new Error("Neither saved follow-ups nor the care assessment could be loaded.");
+    if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
     setLoops(nextLoops || []);
     setAssessment(nextAssessment);
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
