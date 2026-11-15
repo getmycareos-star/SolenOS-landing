@@ -190,7 +190,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     try {
       await queueProcessing(document.id);
     } catch {
-      setError("Background processing could not be queued. The original file is still saved; retry without uploading it again.");
+      setError("SolenOS could not start reading this document. The original file is still saved. Try again without uploading it again.");
     } finally {
       setBusy(null);
     }
@@ -260,7 +260,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           <div style={{ display: "grid", gap: 3, minWidth: 0 }}>
             <span style={{ fontSize: 13, overflowWrap: "anywhere" }}>{document.title}</span>
             <span role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-              {active ? "Processing in the background. You can leave this page." : job?.status === "failed" ? "Background processing could not finish. The original is still saved." : "Saved original · waiting for SolenOS to read it"}
+              {active ? "SolenOS is reading this document in the background. You can leave this page." : job?.status === "failed" ? "SolenOS could not finish reading this document. The original file is still saved." : "Saved original · waiting for SolenOS to read it"}
             </span>
           </div>
           {!active && <button type="button" disabled={busy !== null} onClick={() => void extractAndAnalyze(document)} style={{ minHeight: 36, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>{job?.status === "failed" ? "Try reading again" : "Read document"}</button>}
@@ -273,7 +273,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {analysis.intelligence_status === "partial"
                 ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
                   ? `More details are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
-                  : `Some pages could not be read · ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · remaining pages are processing in the background" : ""}`
+                  : `Some pages could not be read · ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
                 : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "SolenOS has not finished reading this document"}
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read: ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · still being read: ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · can be tried again: ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · too large to read: ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · pages that could not be read: ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
@@ -295,12 +295,12 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                   : <p style={{ fontSize: 12 }}>No readable text was saved from this document.</p>}
           </details>
           {analysis.extraction_status === "partial" && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS could not read every page. Do not treat the suggested details as a complete account of this document.</p>}
-          {processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is processing this document in the background. You do not need to stay on this screen.</p>}
-          {(analysis.retryable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is retrying the pages that did not finish. The original document is preserved.</p>}
+          {processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is reading this document in the background. You do not need to stay on this screen.</p>}
+          {(analysis.retryable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS is trying to read those pages again. The original document is still saved.</p>}
           {(analysis.retry_exhausted_page_numbers?.length ?? 0) > 0 && <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS tried several times but could not read page{analysis.retry_exhausted_page_numbers!.length === 1 ? "" : "s"} {analysis.retry_exhausted_page_numbers!.join(", ")}. No care details were added from those pages.</p>}
           {(analysis.unreadable_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.unreadable_page_numbers!.length === 1 ? "" : "s"} {analysis.unreadable_page_numbers!.join(", ")} could not be read clearly. No care details were added from those pages.</p>}
-          {(analysis.blocked_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.blocked_page_numbers!.length === 1 ? "" : "s"} {analysis.blocked_page_numbers!.join(", ")} could not be read because of file size or a processing problem. The original document is still saved.</p>}
-          {analysis.intelligence_status !== "available" && analysis.extraction_status === "available" && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS has not finished checking this document. The original file and saved text are still available.</p>}
+          {(analysis.blocked_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Page{analysis.blocked_page_numbers!.length === 1 ? "" : "s"} {analysis.blocked_page_numbers!.join(", ")} could not be read because the file is too large or there was a reading problem. The original document is still saved.</p>}
+          {analysis.intelligence_status !== "available" && analysis.extraction_status === "available" && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>SolenOS has not finished reviewing this document. The original file and saved text are still available.</p>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>No care-related details were found in this document. Nothing was added to your Care Record.</p>}
           {analysis.extraction_status === "available" ? analysis.observations.map((candidate, index) => {
             const candidateIndex = typeof candidate.candidate_index === "number" ? candidate.candidate_index : index;
