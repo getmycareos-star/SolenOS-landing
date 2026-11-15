@@ -79,5 +79,5 @@ assert(
 );
 
 console.log("CHANGE_INTELLIGENCE_UI_CONTRACT=PASS");
-console.log("Assertions=14");
+console.log("Scope=legacy change panel + persisted Delta history + primary LCR contract");
 console.log("Scope=source contract only; browser rendering and live production API remain separate gates");
