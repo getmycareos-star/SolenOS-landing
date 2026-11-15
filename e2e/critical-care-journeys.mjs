@@ -433,7 +433,7 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
   assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
   await daily.page.reload({ waitUntil: "domcontentloaded" });
-  await daily.page.getByRole("heading", { name: "Existing follow-ups", exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByRole("heading", { name: "Follow-ups", exact: true }).waitFor({ timeout: 15_000 });
   await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
   const dailyCaptureJobs = [];
   for (const [index, report] of scenarioReports.entries()) {
