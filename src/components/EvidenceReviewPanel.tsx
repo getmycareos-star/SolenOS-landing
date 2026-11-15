@@ -726,7 +726,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
       </article>)}
     </details>
-    {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No saved source information was found for this care record.</p> : evidenceItems.length > 0 ? <>
+    {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No saved notes or documents were found for this Care Record.</p> : evidenceItems.length > 0 ? <>
       <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Original information
         <select style={field} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
           {evidenceItems.map(item => <option key={item.id} value={item.id}>{reviewStatusLabel(item.type)} · {item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : 'Date not recorded'}</option>)}
@@ -753,7 +753,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Original file or link</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_source_reference ? 'An original reference is saved' : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Related original note or document</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another source is linked' : 'None recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Related original note or document</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>How this note or document is connected to other information ({relationships.length})</summary>
@@ -768,7 +768,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             {item.source_independence_status === 'shared_origin' && (
               <p>These items came from the same original. They should not be counted as separate reports.</p>
             )}
-            {item.origin_group_key && <p>Shared source grouping is recorded.</p>}
+            {item.origin_group_key && <p>These entries came from the same original.</p>}
             <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
             <small>Reviewed by {item.reviewed_by_caregiver_id ? 'caregiver' : 'an unavailable identity'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
@@ -877,7 +877,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Check for similar wording:</strong> {sourceIntegrity.near_duplicate_comparison_status === 'complete' ? 'Finished' : sourceIntegrity.near_duplicate_comparison_status === 'not_run' ? 'Not checked' : 'Could not be completed'}</p>
             {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
               <p key={group.evidence_ids.join(':') + index}>
-                Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {caregiverSafeAssistantText(group.interpretation) || 'The relationship between these sources is not fully known.'}
+                Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {caregiverSafeAssistantText(group.interpretation) || 'We do not yet know how these notes or documents are related.'}
               </p>
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
