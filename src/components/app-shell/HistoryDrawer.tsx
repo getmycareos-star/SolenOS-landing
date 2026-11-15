@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
@@ -1257,19 +1258,25 @@ export function HistoryDrawer() {
                     </div>
                   )}
 
-                  {sourceWarnings.length > 0 && !loading && (
+                  {error && records.length > 0 && (
+                    <RecordState
+                      kind="error"
+                      title="Care history couldn’t be refreshed."
+                      description="Showing the last saved history. Try again to refresh."
+                      action={<button type="button" onClick={() => void loadHistory(true)} disabled={refreshing}>Try again</button>}
+                    />
+                  )}
+
+                  {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries we could retrieve are still shown. Other entries may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
+                      <span>Some entries couldn’t be loaded. Refresh to try again.</span>
                     </div>
                   )}
 
-                  {loading ? (
-                    <div className="history-state" role="status">
-                      <span className="history-loading-dot" />
-                      Loading saved care history…
-                    </div>
-                  ) : error ? (
+                  {loading && !hasLoaded ? (
+                    <RecordState kind="loading" title="Loading saved care history…" />
+                  ) : error && records.length === 0 ? (
                     <div className="history-error" role="alert">
                       <AlertCircle size={19} aria-hidden />
                       <div>
@@ -1281,8 +1288,8 @@ export function HistoryDrawer() {
                   ) : visibleRecords.length === 0 ? (
                     <div className="history-empty">
                       <HistoryEmptyIcon />
-                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not retrieve every source. This empty view is not evidence that no care was recorded. Refresh to try again." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
+                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Some care history is unavailable" : "Your care history starts with saved records"}</strong>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "Refresh to try again." : "Saved care entries will appear here."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
