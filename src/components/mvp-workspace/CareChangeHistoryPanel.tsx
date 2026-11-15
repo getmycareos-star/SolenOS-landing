@@ -188,11 +188,13 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
       <ol>
         {runs.map((run) => {
           const changes = run.delta?.computed_changes ?? [];
-          const stale = run.source_freshness?.status === "stale";
-          // A comparison whose source or care-record context changed afterwards
-          // must never be presented as a currently supported change.
-          const confirmed = stale ? [] : changes.filter(supported);
-          const needsReview = stale ? changes : changes.filter((item) => !supported(item));
+          const freshnessStatus = run.source_freshness?.status ?? "not_checked";
+          const comparisonCurrent = freshnessStatus === "current";
+          // Only a comparison whose complete source/context check succeeded may
+          // be presented as currently supported. Stale, missing, and unchecked
+          // freshness are all fail-closed review states.
+          const confirmed = comparisonCurrent ? changes.filter(supported) : [];
+          const needsReview = comparisonCurrent ? changes.filter((item) => !supported(item)) : changes;
           const conflicts = run.delta?.contradictions ?? [];
           return (
             <li key={run.id}>
@@ -251,10 +253,14 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                     </ul>
                   </div>
                 )}
-                {run.source_freshness?.status === "stale" && (
-                  <p role="note">The care record changed after this comparison. This result may need to be reviewed again.</p>
+                {!comparisonCurrent && (
+                  <p role="note">
+                    {freshnessStatus === "stale"
+                      ? "The care record changed after this comparison. Treat this result as unverified until it is reviewed again."
+                      : "SolenOS could not confirm that the source history for this comparison is current. Treat this result as unverified."}
+                  </p>
                 )}
-                {confirmed.length === 0 && needsReview.length === 0 && conflicts.length === 0 && (
+                {comparisonCurrent && confirmed.length === 0 && needsReview.length === 0 && conflicts.length === 0 && (
                   <p>No supported change was established by this comparison.</p>
                 )}
               </article>
