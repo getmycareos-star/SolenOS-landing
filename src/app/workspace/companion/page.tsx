@@ -20,7 +20,7 @@ function WorkspaceHomeInner() {
         .solenos-companion-home {
           display: flex;
           width: 100%;
-          height: calc(100dvh - 84px);
+          height: calc(100dvh - 120px);
           min-height: 420px;
           max-width: none;
           padding: 14px clamp(10px, 2.2vw, 28px) 18px;
@@ -57,7 +57,7 @@ function WorkspaceHomeInner() {
         }
         @media (max-width: 600px) {
           .solenos-companion-home {
-            height: calc(100dvh - 68px);
+            height: calc(100dvh - 104px);
             min-height: 360px;
             padding: 8px 8px 12px;
           }
