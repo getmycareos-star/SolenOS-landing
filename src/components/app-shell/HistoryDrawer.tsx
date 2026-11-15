@@ -1257,7 +1257,7 @@ export function HistoryDrawer() {
                     </div>
                   )}
 
-                  {sourceWarnings.length > 0 && !loading && (
+                  {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
                       <span>Some entries couldn’t be loaded. Refresh to try again.</span>
@@ -1282,7 +1282,7 @@ export function HistoryDrawer() {
                     <div className="history-empty">
                       <HistoryEmptyIcon />
                       <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Some care history is unavailable" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not retrieve every source. This empty view is not evidence that no care was recorded. Refresh to try again." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "Refresh to try again." : "Saved care entries will appear here."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
