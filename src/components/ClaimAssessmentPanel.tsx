@@ -87,13 +87,13 @@ const button: CSSProperties = {
 
 function simpleReviewStatus(value: string): string {
   return ({
-    supported: "Supported by the saved source",
+    supported: "Matches the saved note or document",
     partially_supported: "Some details are supported",
     contradicted: "Does not match other information",
     unverified: "Not confirmed",
     uncertain: "Still unclear",
     conflicting: "Reports do not match",
-    missing_evidence: "No source is attached",
+    missing_evidence: "No note or document is linked",
     stale: "May be out of date",
     superseded: "Replaced by newer information",
     withdrawn: "No longer being used",
@@ -107,8 +107,8 @@ function simpleReviewStatus(value: string): string {
     contradicts: "Does not match",
     neutral: "No clear link",
     review_required: "Needs another review",
-    source_observation_added_or_corrected_after_assessment: "A source detail was added or corrected after this review",
-    prerequisite_claim_source_or_assessment_changed: "A related care detail or its supporting information changed after this review",
+    source_observation_added_or_corrected_after_assessment: "A note or document was added or corrected after this review",
+    prerequisite_claim_source_or_assessment_changed: "A related care detail or note changed after this review",
     current: "Current",
     outdated: "May be out of date",
     unchanged: "No change found",
@@ -186,7 +186,7 @@ export default function ClaimAssessmentPanel() {
       setClaims([]);
       setEvidence([]);
       setSelectedClaimId("");
-      setError("Care details and sources could not be loaded. This does not mean the record is empty. Try again when connected.");
+      setError("Care details and related notes could not be loaded. This does not mean your Care Record is empty. Try again when you are connected.");
     } finally {
       setLoading(false);
     }
@@ -341,11 +341,11 @@ export default function ClaimAssessmentPanel() {
     }
     const completeLinks = links.filter((link) => link.evidence_id.trim());
     if (completeLinks.length !== links.length) {
-      setError("Choose a source for each row or remove the row.");
+      setError("Choose a note or document for each row, or remove the row.");
       return;
     }
     if (new Set(completeLinks.map((link) => link.evidence_id)).size !== completeLinks.length) {
-      setError("Use each source only once in this review.");
+      setError("Use each note or document only once in this review.");
       return;
     }
     setSaving(true);
@@ -371,7 +371,7 @@ export default function ClaimAssessmentPanel() {
       setNotice("Review saved as a new version. Repeated reports or this review result do not prove that something is true.");
       await loadHistory();
     } catch {
-      setError("The review could not be confirmed as saved. Check the selected sources and exact quoted words, then try again.");
+      setError("We could not confirm that your review was saved. Check the selected notes or documents and the exact words you copied, then try again.");
     } finally {
       setSaving(false);
     }
