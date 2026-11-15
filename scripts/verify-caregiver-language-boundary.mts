@@ -7,6 +7,7 @@ import {
   caregiverSafeChangeText,
   caregiverSafeErrorMessage,
   caregiverStatusLabel,
+  caregiverSituationStateLabel,
   isTechnicalDiagnosticText,
 } from "../src/lib/caregiver-language";
 
@@ -15,6 +16,10 @@ assert.equal(caregiverStatusLabel("completed"), "Completed");
 assert.equal(caregiverStatusLabel("awaiting_confirmation"), "Needs review");
 assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
 assert.equal(caregiverStatusLabel("unknown_internal_state"), null);
+assert.equal(caregiverSituationStateLabel("worsening"), "Caregiver reports worsening");
+assert.equal(caregiverSituationStateLabel("improving"), "Caregiver reports improvement");
+assert.equal(caregiverSituationStateLabel("resolved"), "Resolved");
+assert.equal(caregiverSituationStateLabel("unknown"), "Needs more information");
 assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
 assert.equal(caregiverFieldLabel("medication_name"), "Medication name as reported");
@@ -91,6 +96,7 @@ assert.match(settings, /caregiverSafeErrorMessage/);
 assert.match(lcr, /caregiverSafeAssistantText\(item\.interpretation_limit\)/);
 assert.doesNotMatch(lcr, /Extraction method:|Hedge \/ uncertainty marker|Near-duplicate review|algorithm version|policy version/i);
 assert.doesNotMatch(changeIntelligence, /replaceAll\("_"|not calibrated|Observation coverage: baseline|evidence references:/i);
+assert.match(changeIntelligence, /caregiverSituationStateLabel/);
 assert.match(changeIntelligence, /caregiverSafeErrorMessage/);
 assert.match(changeIntelligence, /caregiverInformationLabel/);
 assert.doesNotMatch(dailyCareIntelligence, /source\.source_id<\/code>|review_status\.replaceAll|sent .*records to Qwen/i);
