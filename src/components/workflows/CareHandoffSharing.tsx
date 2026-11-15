@@ -485,7 +485,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         expires_at: expiresAt,
       }, { "X-Request-ID": requestId }) as { id: string };
       if (!created?.id) throw new Error("The handoff could not be confirmed as shared.");
-      setNotice("The handoff was shared with the selected caregiver(s). The saved care information was checked; sharing did not change the Living Care Record. Access ends " + formatDate(expiresAt) + ".");
+      setNotice("The handoff was shared with the selected caregiver(s). The saved care information was checked; sharing did not change the Care Record. Access ends " + formatDate(expiresAt) + ".");
       setReviewConfirmed(false);
       setSelectedRecipients([]);
       setCaregiverNote("");
