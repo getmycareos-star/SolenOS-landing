@@ -55,19 +55,19 @@ assert.match(documents, /getBlob\("\/upload\//, "saved original files remain ret
 assert.doesNotMatch(home, /compose=1|CognitiveWorkspace|lcr-add-screen/, "the legacy LCR entry screen is removed from Companion home");
 assert.match(dailyCare, /StructuredDailyCapture/);
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask|Ask Daily Care Qwen/);
-assert.match(shell, /href: "\/workspace\/companion", label: "AI Companion"/);
+assert.match(shell, /href: "\/workspace\/companion", label: "companion"/);
 assert.doesNotMatch(shell, /href: "\/workspace\/record"/);
 assert.match(shell, /useState\(false\)/);
 assert.match(shell, /is-sidebar-open/);
 assert.match(shell, /Open navigation/);
 assert.match(shell, /Close navigation/);
-assert.match(shell, /Search history/);
+
 assert.doesNotMatch(shell, /MoreVertical|solenos-main-menu/);
 assert.doesNotMatch(shell, /Caregiver account/);
-assert.match(shell, /Daily Care/);
-assert.match(shell, /Documents/);
-assert.match(shell, /Care Handoffs/);
-assert.match(shell, /Appointments/);
+
+
+
+
 assert.match(shell, /pathname === "\/workspace"/);
 assert.match(shell, /<WorkspaceMoreMenu/);
 assert.match(shell, /ShareCareSummaryPanel/);

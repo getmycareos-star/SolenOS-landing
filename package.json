@@ -265,7 +265,8 @@
     "verify:appointment-low-burden": "tsx scripts/verify-appointment-low-burden.mts",
     "verify:appointment-save-partial-success": "tsx scripts/verify-appointment-save-partial-success.mts",
     "verify:workspace-performance": "tsx scripts/verify-workspace-performance.mts",
-    "verify:lcr-product-architecture": "tsx scripts/verify-lcr-product-architecture.mts"
+    "verify:lcr-product-architecture": "tsx scripts/verify-lcr-product-architecture.mts",
+    "verify:language-preference": "tsx scripts/verify-language-preference.mts"
   },
   "dependencies": {
     "@aws-sdk/client-polly": "^3.1100.0",

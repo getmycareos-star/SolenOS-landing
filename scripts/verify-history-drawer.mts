@@ -69,11 +69,12 @@ assert.match(drawer, /No saved care entries were found in the information curren
 assert.match(drawer, /will not make up a history/);
 assert.match(shell, /<HistoryDrawer \/>/);
 assert.match(shell, /solenos-chat-sidebar/);
-assert.match(shell, /Search history/);
-assert.match(shell, /Daily Care/);
-assert.match(shell, /Documents/);
-assert.match(shell, /Care Handoffs/);
-assert.match(shell, /Appointments/);
+assert.match(shell, /useSolenOSTranslations/);
+assert.match(shell, /t\("navigation\.searchHistory"\)/);
+assert.match(shell, /t\(`navigation\.\$\{label\}`\)/);
+assert.match(shell, /navigation\.settings/);
+assert.match(shell, /navigation\.recentHistory/);
+assert.match(shell, /navigation\.primary/);
 assert.doesNotMatch(shell, /Community/);
 assert.match(shell, /from "@\/components\/app-shell\/HistoryDrawer"/);
 assert.match(shell, /prefetch=\{false\}/, "secondary workspace routes must not be downloaded speculatively on first load");

@@ -7,6 +7,7 @@ import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
+import { coerceSolenOSUiLanguage } from '@/lib/language-preference'
 
 interface ClaimSourceReference {
   record_type: string
@@ -171,7 +172,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
     try {
       const session = await ensureAnonymousSession()
-      const isOrientationTurn = shouldUseLcrOrientationEndpoint(submittedText)
+      const selectedLanguage = coerceSolenOSUiLanguage(
+        window.localStorage.getItem("solenos_language_preference"),
+      )
+      // The orientation shortcut is currently English-only; route Spanish and
+      // French turns through the language-aware Companion endpoint instead.
+      const isOrientationTurn = selectedLanguage === "en" && shouldUseLcrOrientationEndpoint(submittedText)
       const response = isOrientationTurn
         ? await postJSON('/api/lcr/orientation', { raw_input: submittedText }) as any
         : await postJSON('/conversation/message', {
@@ -179,6 +185,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             text: submittedText,
             session_id: sessionId,
             client_turn_id: clientTurnId,
+            language: selectedLanguage,
           }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       const caregiverReply = caregiverSafeAssistantText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
