@@ -37,6 +37,13 @@ assert.match(careContinuity, /reports differ and have not been reconciled/, "unr
 assert.match(careContinuity, /Information still being clarified/, "information gaps remain accessible without being converted into a caregiver task list");
 assert.doesNotMatch(careContinuity, /Winner selected: no|Supporting information:/, "raw conflict evidence counts and audit flags are not shown in the default timeline");
 assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligencePanel/, "duplicate overview and standalone observation-coverage editor are not mounted on Care Continuity");
+assert.match(currentUnderstanding, /lcr-first-screen-summary/, "LCR opens with a concise three-question care summary");
+assert.match(currentUnderstanding, /Where things stand/, "first screen explains the recorded care picture");
+assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces only supported immediate priorities");
+assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
+assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed categories, actions and history are progressively disclosed");
+assert.match(currentUnderstanding, /Missing information does not mean everything is fine/, "empty care records are not presented as reassuring findings");
+assert.match(currentUnderstanding, /Do not assume there is nothing that needs attention/, "failed priority retrieval is not presented as an empty queue");
 assert.match(currentUnderstanding, /<EvidenceReviewPanel personId={personId} \/>/, "Care Continuity mounts the evidence panel in its review-only form");
 assert.match(currentUnderstanding, /<CareContinuityIntegrityPanel personId={personId} \/>/, "Care Continuity mounts the integrity panel for review");
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
