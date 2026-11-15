@@ -41,6 +41,8 @@ type CareEvent = {
   original_text?: string | null;
   corrected_text?: string | null;
   reason?: string | null;
+  processing_status?: string | null;
+  processing_attempts?: number;
   significance_verdict?: string | null;
   attention_candidate?: boolean | null;
   follow_up_candidate?: boolean | null;
@@ -120,6 +122,8 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
     original_text: originalText,
     corrected_text: correctedText,
     reason,
+    processing_status: typeof row.processing_status === "string" ? row.processing_status : null,
+    processing_attempts: typeof row.processing_attempts === "number" ? row.processing_attempts : 0,
     significance_verdict: typeof row.significance_verdict === "string" ? row.significance_verdict : null,
     attention_candidate: row.attention_candidate === true,
     follow_up_candidate: row.follow_up_candidate === true,
@@ -280,6 +284,9 @@ export default function TimelinePage() {
   const [correctionReason, setCorrectionReason] = useState("");
   const [correctionSaving, setCorrectionSaving] = useState(false);
   const [correctionMessage, setCorrectionMessage] = useState("");
+  const [correctionIdempotencyKey, setCorrectionIdempotencyKey] = useState<string | null>(null);
+  const [pendingCorrectionId, setPendingCorrectionId] = useState<string | null>(null);
+  const [retryingCorrection, setRetryingCorrection] = useState(false);
 
   const loadEvents = useCallback(async (manual = false, searchTerm = "") => {
     if (manual) setRefreshing(true);
@@ -378,6 +385,8 @@ export default function TimelinePage() {
       if (!session.person?.id || !session.access_token || !caregiverId) {
         throw new Error("A verified care session is required to save a correction.");
       }
+      const idempotencyKey = correctionIdempotencyKey || globalThis.crypto.randomUUID();
+      if (!correctionIdempotencyKey) setCorrectionIdempotencyKey(idempotencyKey);
       const result = await postJSON("/corrections", {
         person_id: session.person.id,
         caregiver_id: caregiverId,
@@ -386,24 +395,58 @@ export default function TimelinePage() {
         original_text: parseDescription(event.description) || event.title,
         corrected_text: correctionText.trim(),
         reason: correctionReason.trim() || undefined,
-      }) as { id?: string; care_continuity_execution?: { stages?: Record<string, string> } };
+        idempotency_key: idempotencyKey,
+      }) as {
+        id?: string;
+        processing_status?: string;
+        care_continuity_execution?: { stages?: Record<string, string> };
+      };
       if (!result?.id) {
         throw new Error("The server did not confirm that the correction was saved.");
       }
-      const reconciliation = result.care_continuity_execution?.stages?.reconciliation;
-      setCorrectionMessage(reconciliation === "committed"
-        ? "Correction saved. The original entry remains unchanged, and the care record was reassessed."
-        : "Correction saved as a separate record. The original entry remains unchanged; care-record reassessment is still pending.");
+      const completed = result.processing_status === "completed";
+      setPendingCorrectionId(completed ? null : result.id);
+      setCorrectionMessage(completed
+        ? "Correction saved. The original entry remains unchanged, and the Care Record was updated."
+        : "Correction saved. The original entry remains unchanged. The Care Record update is still being checked.");
       setCorrectionTargetId(null);
       setCorrectionText("");
       setCorrectionReason("");
+      setCorrectionIdempotencyKey(null);
       await loadEvents(true, appliedQuery);
-    } catch (cause) {
-      setCorrectionMessage("The correction could not be saved. The original entry is unchanged. Please try again.");
+    } catch {
+      // Keep the same key while the caregiver retries the unchanged correction.
+      setCorrectionMessage("We could not confirm the correction yet. Try saving again; SolenOS will check the same correction rather than create another one.");
     } finally {
       setCorrectionSaving(false);
     }
-  }, [correctionText, correctionReason, correctionSaving, loadEvents, appliedQuery]);
+  }, [correctionText, correctionReason, correctionSaving, correctionIdempotencyKey, loadEvents, appliedQuery]);
+
+  const retryPendingCorrection = useCallback(async () => {
+    if (!pendingCorrectionId || retryingCorrection) return;
+    setRetryingCorrection(true);
+    try {
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || !session.access_token) {
+        throw new Error("A verified care session is required.");
+      }
+      const result = await postJSON(
+        `/corrections/${encodeURIComponent(session.person.id)}/${encodeURIComponent(pendingCorrectionId)}/retry`,
+        {},
+      ) as { processing_status?: string };
+      if (result.processing_status === "completed") {
+        setPendingCorrectionId(null);
+        setCorrectionMessage("The Care Record has now been updated. The original entry remains available in your history.");
+      } else {
+        setCorrectionMessage("The correction is saved, but the Care Record update is still pending. You can try again.");
+      }
+      await loadEvents(true, appliedQuery);
+    } catch {
+      setCorrectionMessage("The correction remains saved. We could not complete the Care Record update yet.");
+    } finally {
+      setRetryingCorrection(false);
+    }
+  }, [pendingCorrectionId, retryingCorrection, loadEvents, appliedQuery]);
 
   const visibleEvents = useMemo(() => {
     const needle = appliedQuery.trim().toLowerCase();
@@ -601,6 +644,7 @@ export default function TimelinePage() {
                                   setCorrectionTargetId(correctionTargetId === event.id ? null : event.id);
                                   setCorrectionText("");
                                   setCorrectionReason("");
+                                  setCorrectionIdempotencyKey(null);
                                   setCorrectionMessage("");
                                 }}
                                 style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: "9px 12px", background: "var(--theme-panel-bg)", color: "inherit", font: "inherit", cursor: "pointer" }}
@@ -616,7 +660,7 @@ export default function TimelinePage() {
                                     What should be corrected?
                                     <textarea
                                       value={correctionText}
-                                      onChange={(inputEvent) => setCorrectionText(inputEvent.target.value)}
+                                      onChange={(inputEvent) => { setCorrectionText(inputEvent.target.value); setCorrectionIdempotencyKey(null); }}
                                       rows={4}
                                       maxLength={4000}
                                       required
@@ -628,7 +672,7 @@ export default function TimelinePage() {
                                     Reason (optional)
                                     <input
                                       value={correctionReason}
-                                      onChange={(inputEvent) => setCorrectionReason(inputEvent.target.value)}
+                                      onChange={(inputEvent) => { setCorrectionReason(inputEvent.target.value); setCorrectionIdempotencyKey(null); }}
                                       maxLength={1000}
                                       placeholder="Why is this correction needed?"
                                       style={{ width: "100%", border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, background: "var(--theme-panel-bg)", color: "inherit", font: "inherit" }}
@@ -654,9 +698,14 @@ export default function TimelinePage() {
       )}
 
       {correctionMessage && (
-        <p role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 13 }}>
-          {correctionMessage}
-        </p>
+        <div role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 13, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <span>{correctionMessage}</span>
+          {pendingCorrectionId && (
+            <Button variant="secondary" disabled={retryingCorrection} onClick={() => void retryPendingCorrection()}>
+              {retryingCorrection ? "Checking update…" : "Retry Care Record update"}
+            </Button>
+          )}
+        </div>
       )}
 
       {historyCoverage.hasMore && (
