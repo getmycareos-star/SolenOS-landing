@@ -87,6 +87,8 @@ for (const [source, pattern, label] of [
   [historyPanel, /readableChangeType\(item\.change_type, item\.classification\)/, "the caregiver view must display the qualified classification rather than a raw increase/decrease label"],
   [historyPanel, /change\.source_record_refs\.length > 0/, "promoted changes require linked source records"],
   [historyPanel, /What still needs checking/, "uncertain findings must remain visible as uncertain"],
+  [historyPanel, /Review available source details/, "review-only findings must expose their available source records"],
+  [historyPanel, /source_reference_status === "partial"/, "partial source matching must be disclosed to caregivers"],
   [historyPanel, /Reports that differ/, "conflicting reports must remain visible"],
   [historyPanel, /const comparisonCurrent = freshnessStatus === "current"/, "only explicitly current source history may be promoted"],
   [historyPanel, /const confirmed = comparisonCurrent \? changes\.filter\(supported\) : \[\]/, "stale or unchecked comparisons must not be presented as supported changes"],
