@@ -118,6 +118,7 @@ interface PendingCareUpdate {
 interface Message {
   role: 'user' | 'assistant'
   text: string
+  source_message_id?: string | null
   guard_verdict?: string | null
   safety_note?: string | null
   confidence?: number | null
@@ -155,6 +156,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
   const [careUpdateLoading, setCareUpdateLoading] = useState(false)
   const [reviewingCareUpdateId, setReviewingCareUpdateId] = useState<string | null>(null)
+  const [confirmingCareReportId, setConfirmingCareReportId] = useState<string | null>(null)
+  const [savingCareReportId, setSavingCareReportId] = useState<string | null>(null)
   const [careUpdateError, setCareUpdateError] = useState<string | null>(null)
   const [careUpdateNotice, setCareUpdateNotice] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -226,7 +229,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         persistence: response.persistence,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, assistantMsg])
+      setMessages(prev => [...prev.map(message => message === userMsg ? { ...message, source_message_id: response.source_message_id || null } : message), assistantMsg])
       void loadPendingCareUpdates()
 
 
@@ -250,6 +253,23 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setCareUpdateError('Care suggestions could not be loaded. Your conversation is still saved. Try refreshing these suggestions.')
     } finally {
       setCareUpdateLoading(false)
+    }
+  }
+
+  const createCareReport = async (messageId: string) => {
+    if (savingCareReportId) return
+    setSavingCareReportId(messageId)
+    setCareUpdateError(null)
+    setCareUpdateNotice(null)
+    try {
+      await postJSON('/companion/care-updates/from-message/' + encodeURIComponent(messageId), { confirm_care_report: true })
+      setConfirmingCareReportId(null)
+      setCareUpdateNotice('Saved for review. It will not enter your Care Record unless you accept it below.')
+      await loadPendingCareUpdates()
+    } catch {
+      setCareUpdateError('This message could not be saved for review. It has not been added to your Care Record.')
+    } finally {
+      setSavingCareReportId(null)
     }
   }
 
@@ -365,6 +385,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'Care Assistant'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
+                    {isUser && msg.source_message_id && <div className="companion-care-report-action">
+                      {confirmingCareReportId === msg.source_message_id ? <div className="companion-care-report-confirm" role="group" aria-label="Confirm this care report">
+                        <p>Only continue if this describes something that happened or something you were told — not a question, possibility or guess.</p>
+                        <button type="button" onClick={() => void createCareReport(msg.source_message_id!)} disabled={savingCareReportId === msg.source_message_id}>{savingCareReportId === msg.source_message_id ? 'Saving…' : 'Yes, save for review'}</button>
+                        <button type="button" className="is-secondary" onClick={() => setConfirmingCareReportId(null)} disabled={Boolean(savingCareReportId)}>Cancel</button>
+                      </div> : <button type="button" onClick={() => setConfirmingCareReportId(msg.source_message_id || null)} disabled={Boolean(savingCareReportId)}>Save as care report</button>}
+                    </div>}
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
                     </section>}
@@ -545,6 +572,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-handoff-status { flex:0 0 auto; padding:4px 7px; border-radius:8px; background:#edf2ec; color:#4d654f; font-size:10px; text-transform:capitalize; }
         .companion-handoff-status.status-unavailable,.companion-handoff-status.status-not_authorized { background:#f8eee5; color:#87552c; }
         .companion-handoff-status.status-empty { background:#f2f3ef; color:#687368; }
+        .companion-care-report-action { margin:7px 2px 0; }
+        .companion-care-report-action>button,.companion-care-report-confirm button { min-height:34px; padding:7px 10px; border:1px solid #d6e2d5; border-radius:9px; background:#fff; color:#49634c; font:inherit; font-size:10px; font-weight:700; cursor:pointer; }
+        .companion-care-report-confirm { display:flex; align-items:center; flex-wrap:wrap; gap:7px; max-width:520px; padding:10px; border:1px solid #e0e9df; border-radius:11px; background:#fbfdfb; }
+        .companion-care-report-confirm p { flex:1 1 100%; margin:0; color:#66756a; font-size:11px; line-height:1.5; }
+        .companion-care-report-confirm button:first-of-type { background:#e7f0e5; color:#203b27; border-color:#cbdcc9; }
+        .companion-care-report-confirm button.is-secondary { background:#fff; color:#526457; }
+        .companion-care-report-action button:disabled { opacity:.55; cursor:not-allowed; }
         .companion-care-updates { padding:16px; border:1px solid #dfe8e1; border-radius:16px; background:#fbfdfb; }
         .companion-care-updates-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
         .companion-care-updates-heading h3 { margin:0; color:#25372b; font-size:17px; }
