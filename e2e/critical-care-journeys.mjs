@@ -694,6 +694,13 @@ await record("06 Companion context and Qwen output", async () => {
       answer.payload.ai_generated === true || answer.payload.ai_generated === false,
       "Companion response must explicitly identify whether a model generated it",
     );
+    if (answer.payload.ai_generated === false) {
+      assert.match(
+        answer.payload.safety_note || "",
+        /saved caregiver entries/i,
+        "the no-model Companion fallback must disclose that it quotes saved caregiver entries",
+      );
+    }
   }
   const companionEventIds = new Set(answer.payload.source_event_ids || []);
   const companionEvidenceIds = new Set(answer.payload.source_evidence_ids || []);
