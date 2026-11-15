@@ -142,6 +142,12 @@ assert.doesNotMatch(shell, /MoreVertical|solenos-main-menu/);
 assert.match(record, /redirect\("\/workspace"\)/);
 assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/);
 assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
+assert.ok(lcrHome.includes('href="/workspace/daily-care"'), "Daily Care is directly reachable from the Care Record");
+assert.ok(lcrHome.includes('href="/workspace/open-loops"'), "Follow-ups is directly reachable from the Care Record");
+assert.ok(lcrHome.includes('href="/workspace/timeline"'), "the Care Timeline is directly reachable from the Care Record");
+assert.ok(lcrHome.includes('href="/workspace/documents"'), "Documents is directly reachable from the Care Record");
+assert.ok(lcrHome.includes('href="/workspace/companion"'), "AI Companion is directly reachable from the Care Record");
+assert.match(lcrHome, /see how recorded corrections affect the current Care Record/i, "the Timeline explains how corrections affect the current Care Record");
 assert.match(lcrHome, /LCRCurrentUnderstanding/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
