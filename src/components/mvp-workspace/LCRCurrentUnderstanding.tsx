@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
+import { RecordState } from "@/components/ui/RecordState";
 import { caregiverFieldLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
@@ -1213,7 +1214,7 @@ export function LCRCurrentUnderstanding() {
               {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open the full record below to review the rest.</p>}
             </>
           ) : projection ? (
-            <p>There isn’t enough saved care information to describe the current situation yet. Missing information does not mean everything is fine.</p>
+            <RecordState kind="empty" title="No care information recorded yet." description="This record reflects the information that has been added and confirmed." />
           ) : (
             <p>The current care picture is not available yet. SolenOS will not fill gaps with guesses.</p>
           )}
@@ -1222,11 +1223,11 @@ export function LCRCurrentUnderstanding() {
         <div className="lcr-first-screen-card">
           <h3>What needs attention</h3>
           {assessmentError ? (
-            <p role="status">We couldn’t check follow-ups just now. Do not assume there is nothing that needs attention.</p>
+            <RecordState kind="error" title="We couldn’t check follow-ups." description="Try again to refresh care priorities." />
           ) : !assessment ? (
             <p>Care priorities have not been checked yet.</p>
           ) : assessment.coverage.records_examined === 0 ? (
-            <p>There isn’t enough recorded care information to assess priorities yet. This does not mean there are no care needs.</p>
+            <RecordState kind="empty" title="Not enough recorded information to identify priorities yet." />
           ) : immediateCareDecisions.length > 0 ? (
             <>
               <ul className="lcr-first-screen-list">
@@ -1301,7 +1302,7 @@ export function LCRCurrentUnderstanding() {
           ) : activeWatchPatterns.length > 0 ? (
             <p>{activeWatchPatterns.length} repeated {activeWatchPatterns.length === 1 ? "change is" : "changes are"} recorded in the care history. Open the details to review the time period and supporting information.</p>
           ) : (
-            <p>There isn’t enough saved history to describe meaningful changes yet. Missing history does not mean nothing changed.</p>
+            <RecordState kind="empty" title="No recent changes recorded." />
           )}
         </div>
       </section>
@@ -1330,7 +1331,7 @@ export function LCRCurrentUnderstanding() {
           <p role="status">We couldn’t check what needs attention just now. Your saved care notes are still available below.</p>
         )}
         {!assessmentError && !assessment && !loading && !assessmentLoading && (
-          <p role="status">We don’t yet have enough information to identify priorities. This does not mean there are no care needs.</p>
+          <RecordState kind="empty" title="Care priorities aren’t available yet." description="More recorded information may be needed." />
         )}
         {assessment && !assessment.open_loops && (
           <p role="status">Some follow-up details are not available yet. No priority has been assumed.</p>
