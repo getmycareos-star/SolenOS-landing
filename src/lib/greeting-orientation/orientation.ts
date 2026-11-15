@@ -48,12 +48,7 @@ export async function buildGreetingOrientation(
   context: GreetingOrientationContext,
 ): Promise<GreetingOrientationOutput> {
   const input = context.raw_input.trim();
-  const isInteraction = Boolean(
-    context.is_casual_greeting ||
-    context.is_how_are_you ||
-    context.is_gratitude ||
-    isInsultOrFrustrationInput(input)
-  );
+  const isInteraction = shouldUseLcrOrientationEndpoint(input);
   if (!isInteraction) {
     return { orientation_line: null, should_orient: false, orientation_kind: "none" };
   }
