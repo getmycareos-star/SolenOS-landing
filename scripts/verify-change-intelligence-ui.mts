@@ -44,7 +44,7 @@ for (const contract of [
   ["inactive reviews remain in the care history", /Earlier review/],
   ["change explanations use the caregiver-safe change language filter", /caregiverSafeChangeText\(change\.explanation\)/],
   ["change source details are user-reviewable", /Review notes and documents/],
-  ["pattern source details are user-reviewable", /Review pattern sources/],
+  ["pattern source details are user-reviewable", /Review notes and updates/],
   ["missing earlier information is not proof an event did not happen", /Earlier care information may be missing\. That does not mean the event did not happen\./],
   ["failed loads are exposed as an error state", /role="alert"/],
   ["empty state does not claim no changes occurred", /This does not mean nothing changed/],
