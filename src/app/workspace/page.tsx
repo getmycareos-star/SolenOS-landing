@@ -26,8 +26,9 @@ function WorkspaceHomeInner() {
   }
 
   return (
-    <main className="mobile-screen feature-page solenos-lcr-home">
-      {/* Show the current care situation before inbox and detailed record content. */}
+    <div className="mobile-screen feature-page solenos-lcr-home">
+      <header className="solenos-workspace-page-heading"><h1>Care Record</h1></header>
+      {/* Show the current care situation before inbox and detailed record content. */
       <LCRCurrentUnderstanding />
       <section aria-label="Ask SolenOS" style={{ display: "grid", gap: 10, padding: "18px 0" }}>
         <div>
@@ -58,7 +59,7 @@ function WorkspaceHomeInner() {
         </Link>
       </nav>
       <CaregiverHandoverInbox />
-    </main>
+    </div>
   );
 }
 
