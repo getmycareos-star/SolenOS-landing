@@ -52,8 +52,14 @@ assert.match(daily, /contextError && !careItemsLoaded \? \([\s\S]*?RecordState k
 assert.match(daily, /if \(Array\.isArray\(payload\?\.items\)\) \{\s*setCareItems/);
 assert.match(daily, /const \[careItemsLoaded, setCareItemsLoaded\] = useState\(false\)/);
 assert.match(daily, /const \[historyLoaded, setHistoryLoaded\] = useState\(false\)/);
+assert.match(daily, /const \[followUpsLoaded, setFollowUpsLoaded\] = useState\(false\)/);
+assert.match(daily, /const \[documentsLoaded, setDocumentsLoaded\] = useState\(false\)/);
 assert.match(daily, /contextError && careItemsLoaded/);
 assert.match(daily, /historyError && !historyLoaded/);
+assert.match(daily, /followUpsError && !followUpsLoaded/);
+assert.match(daily, /documentsError && !documentsLoaded/);
+assert.match(daily, /No outstanding items recorded\./);
+assert.match(daily, /No documents added yet\./);
 assert.match(daily, /historyError && <RecordState kind="error" title="Recent care history couldn’t be refreshed\."/);
 assert.doesNotMatch(daily, /setCareItems\(Array\.isArray\(payload\?\.items\) \?/);
 assert.match(daily, /historyError && !historyLoaded \? \([\s\S]*?RecordState kind="error"/);
