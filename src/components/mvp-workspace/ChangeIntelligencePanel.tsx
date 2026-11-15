@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
 import {
   getPersistedChangeDetail,
@@ -57,7 +57,9 @@ function formatWindow(start: string | null, end: string | null): string {
 }
 
 /** Shows persisted backend assessments only; it never infers a care pattern from UI text. */
-export function ChangeIntelligencePanel() {
+export function ChangeIntelligencePanel({ personId }: { personId: string }) {
+  const personIdRef = useRef(personId);
+  personIdRef.current = personId;
   const [changes, setChanges] = useState<PersistedChange[]>([]);
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
   const [situations, setSituations] = useState<PersistedSituation[]>([]);
@@ -100,9 +102,9 @@ export function ChangeIntelligencePanel() {
         ...(detail?.assertions.map((item) => item.id) ?? []),
         ...(detail?.observations.map((item) => item.id) ?? []),
       ];
-      await transitionChangeConfirmation(changeId, status, reason, [...new Set(supportingIds)]);
+      await transitionChangeConfirmation(changeId, status, reason, [...new Set(supportingIds)], personId);
       const [changeRows, patternRows, situationRows] = await Promise.all([
-        listPersistedChanges(), listPersistedPatterns(), listPersistedSituations(),
+        listPersistedChanges(undefined, 100, 0, personId), listPersistedPatterns(undefined, 100, 0, personId), listPersistedSituations(personId),
       ]);
       setChanges(changeRows);
       setPatterns(patternRows);
@@ -113,7 +115,7 @@ export function ChangeIntelligencePanel() {
       setPatternOffset(0);
       setHasMoreChanges(changeRows.length === 100);
       setHasMorePatterns(patternRows.length === 100);
-      const refreshedDetail = await getPersistedChangeDetail(changeId);
+      const refreshedDetail = await getPersistedChangeDetail(changeId, personId);
       setDetails((current) => ({ ...current, [changeId]: refreshedDetail }));
       setConfirmationReasons((current) => ({ ...current, [changeId]: "" }));
     } catch (reason: unknown) {
@@ -131,7 +133,7 @@ export function ChangeIntelligencePanel() {
     setExpandedPatternId(patternId);
     if (patternDetails[patternId] || patternDetailErrors[patternId]) return;
     try {
-      const detail = await getPersistedPatternDetail(patternId);
+      const detail = await getPersistedPatternDetail(patternId, personId);
       setPatternDetails((current) => ({ ...current, [patternId]: detail }));
     } catch (reason: unknown) {
       setPatternDetailErrors((current) => ({
@@ -149,7 +151,7 @@ export function ChangeIntelligencePanel() {
     setExpandedChangeId(changeId);
     if (details[changeId] || detailErrors[changeId]) return;
     try {
-      const detail = await getPersistedChangeDetail(changeId);
+      const detail = await getPersistedChangeDetail(changeId, personId);
       setDetails((current) => ({ ...current, [changeId]: detail }));
     } catch (reason: unknown) {
       setDetailErrors((current) => ({
@@ -164,7 +166,7 @@ export function ChangeIntelligencePanel() {
     setLoadingMoreChanges(true);
     try {
       const nextOffset = changeOffset + 100;
-      const rows = await listPersistedChanges(undefined, 100, nextOffset);
+      const rows = await listPersistedChanges(undefined, 100, nextOffset, personId);
       setChanges((current) => {
         const known = new Set(current.map((item) => item.id));
         return [...current, ...rows.filter((item) => !known.has(item.id))];
@@ -183,7 +185,7 @@ export function ChangeIntelligencePanel() {
     setLoadingMorePatterns(true);
     try {
       const nextOffset = patternOffset + 100;
-      const rows = await listPersistedPatterns(undefined, 100, nextOffset);
+      const rows = await listPersistedPatterns(undefined, 100, nextOffset, personId);
       setPatterns((current) => {
         const known = new Set(current.map((item) => item.id));
         return [...current, ...rows.filter((item) => !known.has(item.id))];
@@ -202,9 +204,9 @@ export function ChangeIntelligencePanel() {
     setRefreshing(true);
     setWarning(null);
     try {
-      await reassessPersistedChangeIntelligence();
+      await reassessPersistedChangeIntelligence(personId);
       const [changeRows, patternRows, situationRows] = await Promise.all([
-        listPersistedChanges(), listPersistedPatterns(), listPersistedSituations(),
+        listPersistedChanges(undefined, 100, 0, personId), listPersistedPatterns(undefined, 100, 0, personId), listPersistedSituations(personId),
       ]);
       setChanges(changeRows);
       setPatterns(patternRows);
@@ -249,7 +251,7 @@ export function ChangeIntelligencePanel() {
     if (situationDetails[situationId]) return;
     setSituationDetailLoadingIds((current) => [...current, situationId]);
     try {
-      const detail = await getPersistedSituationDetail(situationId);
+      const detail = await getPersistedSituationDetail(situationId, personId);
       setSituationDetails((current) => ({ ...current, [situationId]: detail }));
     } catch {
       setWarning("The linked care records could not be loaded. The saved situation status has not changed.");
@@ -274,10 +276,10 @@ export function ChangeIntelligencePanel() {
     setSituationTransitioningIds((current) => [...current, situation.id]);
     setWarning(null);
     try {
-      await transitionSituationState(situation.id, targetState, reason, evidenceIds);
+      await transitionSituationState(situation.id, targetState, reason, evidenceIds, personId);
       const [refreshed, refreshedDetail] = await Promise.all([
-        listPersistedSituations(),
-        getPersistedSituationDetail(situation.id),
+        listPersistedSituations(personId),
+        getPersistedSituationDetail(situation.id, personId),
       ]);
       setSituations(refreshed);
       setSituationDetails((current) => ({ ...current, [situation.id]: refreshedDetail }));
@@ -300,7 +302,7 @@ export function ChangeIntelligencePanel() {
     async function load() {
       try {
         const [changeRows, patternRows, situationRows] = await Promise.all([
-        listPersistedChanges(), listPersistedPatterns(), listPersistedSituations(),
+        listPersistedChanges(undefined, 100, 0, personId), listPersistedPatterns(undefined, 100, 0, personId), listPersistedSituations(personId),
       ]);
         if (!active) return;
         setChanges(changeRows);
