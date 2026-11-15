@@ -296,3 +296,23 @@ assert.match(careDelta, /caregiverSafeAssistantText/);
 assert.doesNotMatch(careDelta, /Provider:|Model:|source-attributed assertions|replace\(\/_\/g/);
 assert.match(humanValidation, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(humanValidation, /data\.detail \?\? data\.error/);
+
+
+const appShellLanguage = read("../src/components/app-shell/AppShell.tsx");
+const restrictedRoleLanguage = read("../src/components/RestrictedRolePage.tsx");
+const situationRouteLanguage = read("../src/app/api/situation/route.ts");
+
+assert.doesNotMatch(appShellLanguage, /server-issued session|stored on SolenOS servers/i,
+  "workspace confirmation and error messages must not expose internal session or hosting details");
+assert.match(appShellLanguage, /care information already saved in SolenOS/,
+  "workspace deletion confirmation must explain in plain language what remains saved");
+assert.match(appShellLanguage, /We couldn't confirm your access to SolenOS, so nothing was cleared/,
+  "failed access revocation must clearly say that no local data was cleared");
+assert.doesNotMatch(restrictedRoleLanguage, /server-issued identity|permissions for this role|anonymous care session|unverified or demo dashboard/i,
+  "restricted-role page must not expose internal identity or authorization terminology");
+assert.match(restrictedRoleLanguage, /Your care information is protected/,
+  "restricted-role page must explain the restriction in caregiver language");
+assert.doesNotMatch(situationRouteLanguage, /anonymous session/i,
+  "caregiver-facing access errors must not expose session implementation details");
+assert.match(situationRouteLanguage, /Your access to SolenOS could not be confirmed/,
+  "missing access must have a plain-language explanation");
