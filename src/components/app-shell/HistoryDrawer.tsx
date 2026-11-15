@@ -169,7 +169,6 @@ const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "decision", label: "Decisions" },
   { id: "outcome", label: "Outcomes" },
   { id: "follow-up", label: "Follow-ups" },
-  { id: "lcr-update", label: "Living Care Record" },
 ];
 
 function safeDate(value?: string | null): Date | null {
@@ -918,7 +917,8 @@ export function HistoryDrawer() {
         return (safeDate(b.recorded_at)?.getTime() ?? 0) - (safeDate(a.recorded_at)?.getTime() ?? 0);
       });
 
-      setRecords(nextRecords);
+      // Internal persistence revisions remain in the backend audit history, not the caregiver timeline.
+      setRecords(nextRecords.filter((record) => record.source_kind !== "lcr-revision"));
       setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
