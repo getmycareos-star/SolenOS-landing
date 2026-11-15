@@ -793,3 +793,15 @@
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+
+
+:root[data-solenos-theme="dark"] .lcr-home .lcr-record-timeline-action {
+  background: #26342a !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 1px solid #647568 !important;
+}
+:root[data-solenos-theme="dark"] .lcr-home .lcr-record-timeline-action span {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
