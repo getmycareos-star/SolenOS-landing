@@ -40,6 +40,7 @@ export function WorkspaceNavigationAccessibility() {
     const trigger = document.querySelector<HTMLButtonElement>(".solenos-sidebar-toggle");
     if (!host || !sidebar || !workspace || !trigger) return;
 
+    sidebar.tabIndex = -1;
     const media = window.matchMedia("(max-width: 760px)");
     let wasOpen = false;
     let originalOverflow = "";
