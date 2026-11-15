@@ -1214,7 +1214,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       
       {saved && careContinuityExecution?.stages && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
-          Original note: {careContinuityExecution.stages.source_preservation === 'verified' ? 'saved' : 'not confirmed'}. 
+          Original information: {careContinuityExecution.stages.source_preservation === 'verified' ? 'saved' : 'not confirmed'}.  
           {' '}Related notes or documents: {careContinuityExecution.stages.evidence === 'verified' ? 'linked' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not needed' : 'not confirmed'}. 
           {' '}Care Record: {['committed', 'completed'].includes(careContinuityExecution.stages.reconciliation || '') ? 'updated' : 'not confirmed'}. 
         </p>
