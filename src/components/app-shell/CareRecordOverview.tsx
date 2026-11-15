@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type CareItem = {
   id: string;
@@ -57,10 +58,11 @@ export function CareRecordOverview() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyNote, setHistoryNote] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
-    else setLoading(true);
+    else if (!hasLoaded) setLoading(true);
     setError(null);
     setHistoryNote(null);
     try {
@@ -76,23 +78,21 @@ export function CareRecordOverview() {
         throw new Error("The saved care information could not be verified for this session.");
       }
       setItems(response.items);
+      setHasLoaded(true);
       try {
         const history = await getJSON("/change/changes/" + encodeURIComponent(personId));
         if (!Array.isArray(history)) throw new Error("History was unavailable.");
         setChanges(history as ChangeItem[]);
       } catch {
-        setChanges([]);
-        setHistoryNote("The saved change history could not be loaded. Other saved information is still shown.");
+        setHistoryNote("Recent changes couldn’t be loaded. Try again.");
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Saved care information could not be loaded.");
-      setItems([]);
-      setChanges([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [hasLoaded]);
 
   useEffect(() => { void load(); }, [load]);
 
