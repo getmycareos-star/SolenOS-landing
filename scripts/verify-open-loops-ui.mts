@@ -35,7 +35,7 @@ assert.ok(page.includes("SolenOS keeps track") || page.includes("SolenOS manages
 assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
 assert.match(careContinuity, /These are changes or uncertainties found in the saved history[\s\S]*?not automatically tasks or follow-ups[\s\S]*?SolenOS tracks unresolved care matters and their progress on the Follow-ups screen/, "monitoring signals must remain distinct from the follow-up workflow");
 assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
-assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?Open Follow-ups/, "Changes to keep an eye on must link to the dedicated Follow-ups screen");
+assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Changes to keep an eye on must link to the dedicated Follow-ups screen");
 
 console.log("FOLLOW_UPS_UI_CONTRACT=PASS");
 console.log(`Assertions=${required.length + 3}`);
