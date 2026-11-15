@@ -202,7 +202,7 @@ export async function reassessPersistedChangeIntelligence(): Promise<PersistedCh
   return await postJSON(`/change/changes/reassess?person_id=${personId}`, {}) as PersistedChange[];
 }
 
-export type ChangeConfirmationStatus = "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive";
+export type ChangeConfirmationStatus = "awaiting_confirmation" | "confirmed" | "rejected" | "inconclusive" | "resolved";
 
 export async function transitionChangeConfirmation(
   changeId: string,
