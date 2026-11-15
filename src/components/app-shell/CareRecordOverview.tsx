@@ -87,7 +87,7 @@ export function CareRecordOverview() {
         setHistoryNote("The saved change history could not be loaded. Other saved information is still shown.");
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Saved care information could not be loaded.");
+      setError("Check your connection and try again.");
       // Keep the last successfully loaded records visible if a refresh fails.
     } finally {
       setLoading(false);
@@ -110,7 +110,7 @@ export function CareRecordOverview() {
         </button>
       </header>
 
-      {error && <RecordState kind="error" title="Care information could not be refreshed." description={error} />}
+      {error && <RecordState kind="error" title="We couldn’t load your care information." description={hasLoaded ? "Showing the last information that loaded. Try again to refresh." : error} />}
       {loading && !hasLoaded ? <RecordState kind="loading" title="Loading saved care information…" /> : hasLoaded && (
         <>
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
