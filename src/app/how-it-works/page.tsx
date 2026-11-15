@@ -102,7 +102,7 @@ export default function HowItWorksPage() {
           Talk it through with the Care Assistant.
         </blockquote>
         <p className="public-prose">
-          The Care Record keeps saved care information together. Daily Care helps you add or correct information. The Care Assistant can help explain it, but it is not a medical professional or a separate source of truth. SolenOS should clearly show what was reported, what is not certain, and what information is missing.
+          The Care Record keeps saved care information together. Daily Care helps you add or correct information. The Care Assistant can help explain it, but it is not a healthcare professional and its suggestions do not automatically become part of the Care Record. SolenOS should clearly show what was reported, what is not certain, and what information is missing.
         </p>
       </section>
 
