@@ -249,8 +249,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               </span>
             </button>
 
-            <div className="solenos-chat-nav-group" aria-label="Care">
-              <p className="solenos-chat-nav-heading">CARE</p>
+            <div className="solenos-chat-nav-group" role="group" aria-labelledby="solenos-nav-care-heading">
+              <p id="solenos-nav-care-heading" className="solenos-chat-nav-heading">CARE</p>
               {WORKSPACE_NAVIGATION.care.map(({ id, href, label, description, icon: Icon }) => (
                 <Link
                   key={id}
@@ -272,8 +272,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               ))}
             </div>
 
-            <div className="solenos-chat-nav-group" aria-label="Support">
-              <p className="solenos-chat-nav-heading">SUPPORT</p>
+            <div className="solenos-chat-nav-group" role="group" aria-labelledby="solenos-nav-support-heading">
+              <p id="solenos-nav-support-heading" className="solenos-chat-nav-heading">SUPPORT</p>
               {WORKSPACE_NAVIGATION.support.map(({ id, href, label, description, icon: Icon }) => (
                 <Link
                   key={id}
