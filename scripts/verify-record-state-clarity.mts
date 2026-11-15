@@ -45,7 +45,8 @@ assert.match(reminders, /!hasLoaded && error \? null/);
 assert.match(reminders, /RecordState kind="loading"/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
-assert.doesNotMatch(history, /empty section does not mean nothing happened/);
+assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
+assert.doesNotMatch(read("src/components/mvp-workspace/ChangeIntelligencePanel.tsx"), /This does not mean nothing changed/);
 assert.doesNotMatch(read("src/app/workspace/open-loops/page.tsx"), /An empty section does not mean nothing needs attention/);
 
 console.log("Record-state clarity and failure-separation checks passed.");
