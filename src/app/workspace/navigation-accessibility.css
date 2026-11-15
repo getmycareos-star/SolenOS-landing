@@ -1,0 +1,88 @@
+.solenos-workspace-breadcrumbs {
+  width: min(100% - 32px, 1120px);
+  margin: 12px auto 8px;
+  color: var(--text-secondary, #536157);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.solenos-workspace-breadcrumbs ol {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.solenos-workspace-breadcrumbs a {
+  color: var(--text-secondary, #536157);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.solenos-workspace-breadcrumbs [aria-current="page"] {
+  color: var(--text, #263329);
+  font-weight: 700;
+}
+.solenos-workspace-breadcrumb-separator { color: var(--text-secondary, #68766e); }
+.solenos-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.solenos-chat-nav-item:focus-visible,
+.solenos-sidebar-icon-button:focus-visible,
+.solenos-chat-brand:focus-visible,
+.solenos-workspace-breadcrumbs a:focus-visible {
+  outline: 3px solid #267c78 !important;
+  outline-offset: 3px !important;
+  position: relative;
+  z-index: 1;
+}
+.solenos-chat-nav-item.is-active {
+  background: #e4eee6;
+  color: #173f2d;
+}
+.solenos-chat-nav-item.is-active .solenos-chat-nav-description {
+  color: #405c49;
+}
+.solenos-chat-nav-description,
+.solenos-chat-nav-heading {
+  color: #536158;
+}
+@media (max-width: 760px) {
+  .solenos-chat-sidebar {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .solenos-chat-primary-nav {
+    max-height: none;
+    overflow: visible;
+    flex: 0 0 auto;
+  }
+  .solenos-chat-history-section {
+    flex: 0 0 auto;
+    min-height: 120px;
+    max-height: 25dvh;
+  }
+  .solenos-chat-sidebar .history-list-scroll {
+    min-height: 60px;
+    overflow-y: auto;
+  }
+  .solenos-chat-mobile-scrim {
+    touch-action: manipulation;
+  }
+  .solenos-workspace-breadcrumbs {
+    width: calc(100% - 24px);
+    margin-top: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .solenos-chat-sidebar-host { transition: none !important; }
+}
