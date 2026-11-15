@@ -618,7 +618,7 @@ function AccountCard() {
       {message && <p className="mobile-settings-hint" role="status">{message}</p>}
       {recoveryCode && (
         <div className="mobile-settings-hint" role="alert" style={{ border: "1px solid var(--border, #d8ded8)", borderRadius: "0.75rem", padding: "0.8rem" }}>
-          <strong>Save this one-time recovery code now.</strong>
+          <strong>Save this recovery code now.</strong>
           <p>This code is shown only once. Store it somewhere private and separate from this device. Anyone with the code and your account email can reset the account password.</p>
           <code style={{ display: "block", overflowWrap: "anywhere", userSelect: "all", padding: "0.5rem 0" }}>{recoveryCode}</code>
           <Button type="button" variant="secondary" onClick={() => setRecoveryCode("")}>I have saved the code</Button>
