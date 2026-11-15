@@ -144,7 +144,7 @@ assert.match(dailyCarePage, /t\("dailyCare\.openMatters"\)/,
 assert.match(dailyCarePage, /t\("dailyCare\.sinceLastOpened"\)/,
   "returning caregivers get a summary of newly recorded information");
 for (const locale of ["en", "es", "fr"]) {
-  const translations = JSON.parse(readFileSync(`src/lib/i18n/locales/${locale}/translation.json`, "utf8"));
+  const translations = JSON.parse(fs.readFileSync(`${root}/src/lib/i18n/locales/${locale}/translation.json`, "utf8"));
   for (const key of ["openMatters", "openMattersDescription", "sinceLastOpened", "sinceLastOpenedDescription", "firstVisit", "newRecord", "newRecords", "noNewRecords", "historyLimit", "anythingDifferent", "shareSomething", "historyDescription", "viewAllHistory", "updatesSavedToday", "noUpdatesToday", "originalFiles", "noDocuments", "followupsDescription", "noFollowups", "openDocuments", "reviewDocument", "viewFollowups", "notificationAttention", "captureMedicine", "captureMeasurement", "quickCheckIn", "backToChoices"]) {
     assert.ok(translations.dailyCare?.[key], `${locale} must translate dailyCare.${key}`);
   }
