@@ -281,7 +281,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       return;
     }
     if (!evidenceIds.length) {
-      setWarning("This situation has no linked source records to support a status change.");
+      setWarning("This situation has no linked notes and documents to support a status change.");
       return;
     }
     if (targetState === situation.state) return;
@@ -447,7 +447,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
                   <h3>{caregiverChangeLabel(change)}</h3>
-                  <span>{change.is_active ? caregiverStatusLabel(change.confirmation_status) ?? "Needs review" : "Past assessment"}</span>
+                  <span>{change.is_active ? caregiverStatusLabel(change.confirmation_status) ?? "Needs review" : "Earlier review"}</span>
                   {change.significance_verdict ? <span>{caregiverStatusLabel(change.significance_verdict) ?? "Not yet assessed"}</span> : null}
                 </div>
                 {change.explanation ? <p>{caregiverSafeChangeText(change.explanation) ?? "A possible change was found in the saved care information. Review the linked records before drawing a conclusion."}</p> : <p>{caregiverSafeChangeText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
@@ -509,7 +509,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                         )}
                       </div>
                     ) : (
-                      <p className="panel-muted">This earlier assessment is kept for history and is no longer active.</p>
+                      <p className="panel-muted">This earlier review is kept in your care history and is no longer active.</p>
                     )}
                     {details[change.id].evidence.length === 0 && details[change.id].assertions.length === 0 && details[change.id].observations.length === 0 ? (
                       <p className="panel-muted">The notes or documents behind this change could not be loaded.</p>
@@ -579,13 +579,13 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                   </ul>
                 ) : null}
                 <button type="button" className="lcr-text-action" onClick={() => void togglePatternEvidence(pattern.id)} aria-expanded={expandedPatternId === pattern.id}>
-                  {expandedPatternId === pattern.id ? "Hide pattern sources" : "Review pattern sources"} <span aria-hidden="true">→</span>
+                  {expandedPatternId === pattern.id ? "Hide notes and updates" : "Review notes and updates"} <span aria-hidden="true">→</span>
                 </button>
                 {expandedPatternId === pattern.id && patternDetailErrors[pattern.id] ? <p role="alert" className="panel-muted">{patternDetailErrors[pattern.id]}</p> : null}
                 {expandedPatternId === pattern.id && patternDetails[pattern.id] ? (
                   <div>
                     <strong>Care updates used for this review</strong>
-                    {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No same-record source events could be resolved for this pattern.</p> : null}
+                    {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No matching care updates could be found for this pattern.</p> : null}
                     {patternDetails[pattern.id].events.map((source) => (
                       <article key={source.id}>
                         <strong>{caregiverSafeAssistantText(source.title) ?? "Saved care update"}</strong>
@@ -670,7 +670,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                                 <span>{caregiverStatusLabel(record.status) ?? "Recorded"}</span>
                               </div>
                               <p className="panel-muted">
-                                {record.source_label ?? "Saved source"}
+                                {record.source_label ?? "Saved note or document"}
                                 {record.occurred_at || record.recorded_at
                                   ? " · " + new Date(record.occurred_at ?? record.recorded_at ?? "").toLocaleString()
                                   : ""}
@@ -680,7 +680,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               ) : null}
                               {record.epistemic_status ? (
                                 <p className="panel-muted">
-                                  Information status: {caregiverStatusLabel(record.epistemic_status) ?? "Reported"}
+                                  What was reported: {caregiverStatusLabel(record.epistemic_status) ?? "Reported"}
                                 </p>
                               ) : null}
                               {record.negated ? <p className="panel-muted">Recorded as not present</p> : null}
