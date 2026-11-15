@@ -727,7 +727,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       </article>)}
     </details>
     {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No saved notes or documents were found for this Care Record.</p> : evidenceItems.length > 0 ? <>
-      <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Original information
+      <label style={{ display: 'block', fontSize: 12, marginBottom: 9 }}>Original note or document
         <select style={field} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
           {evidenceItems.map(item => <option key={item.id} value={item.id}>{reviewStatusLabel(item.type)} · {item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : 'Date not recorded'}</option>)}
         </select>
@@ -785,10 +785,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
             <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
             {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
-            {item.negated !== null && item.negated !== undefined && <div>Does the source say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
-            {item.hedge_marker && <div>Uncertain wording: {item.hedge_marker}</div>}
+            {item.negated !== null && item.negated !== undefined && <div>Does the original note or document say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
+            {item.hedge_marker && <div>Words that show uncertainty: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>What is unclear: {item.ambiguity_note}</div>}
-            {item.observer_label && <div>Observer: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
+            {item.observer_label && <div>Who noticed this: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
             <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
         </details>
@@ -833,7 +833,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               </details>
             ))}
             {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and other sources', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0) > 0 && (
-              <p>Other saved history and details: {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and other sources', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0)} saved item(s).</p>
+              <p>Other saved care details: {historicalSnapshotSections(recordHistory).filter(section => !['Saved care information', 'Caregiver reports', 'Daily care and other events', 'Documents and other sources', 'Care decisions', 'Caregiver observations', 'Items that still need checking', 'Reports that do not match', 'Decision results', 'Care history entries'].includes(section.label)).reduce((total, section) => total + section.count, 0)} saved item(s).</p>
             )}
             <p>This saved copy may not include every care update. Information added after this date is not shown.</p>
           </div>}
