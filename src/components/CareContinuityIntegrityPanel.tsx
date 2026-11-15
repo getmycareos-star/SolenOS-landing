@@ -171,7 +171,7 @@ export default function CareContinuityIntegrityPanel({
     }
   }
 
-  if (!personId) return <section style={cardStyle}><h2>Care continuity</h2><p>Select an authorized care record to view continuity details.</p></section>
+  if (!personId) return <section style={cardStyle}><h2>Care Record</h2><p>Choose a Care Record to see these details.</p></section>
 
   return (
     <section aria-label="Care record details" style={{ marginTop: 28 }}>
@@ -191,8 +191,8 @@ export default function CareContinuityIntegrityPanel({
       {notice && <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>{notice}</p>}
 
       <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, marginTop: 0 }}>Reported care information</h3>
-        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No reported care details are available in this record yet.</p> : data.assertions.map((item) => {
+        <h3 style={{ fontSize: 15, marginTop: 0 }}>Care details shared with SolenOS</h3>
+        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care details have been shared yet.</p> : data.assertions.map((item) => {
           const fresh = freshnessById.get(item.id)
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -220,18 +220,18 @@ export default function CareContinuityIntegrityPanel({
         {caregiverVisibleRevisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care changes are available to show here yet.</p> : caregiverVisibleRevisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
-            <p style={{ fontSize: 12, margin: '5px 0' }}>Change recorded {new Date(item.changed_at).toLocaleString()} · {simpleRecordLabel(item.change_kind)}</p>
-            <small>Previous and updated details remain preserved in the record history. Related information: {item.evidence_ids.length} item(s).</small>
+            <p style={{ fontSize: 12, margin: '5px 0' }}>Updated {new Date(item.changed_at).toLocaleString()} · {simpleRecordLabel(item.change_kind)}</p>
+            <small>Earlier and updated details are kept in your Care Record. Related notes or documents: {item.evidence_ids.length}.</small>
           </article>
         )}
       </div>
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>What happened next and corrections</h3>
-        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No recorded outcomes are available yet.</p> : data.outcomes.slice(0, 20).map((item) =>
+        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No updates about what happened next are available yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
             <strong>{simpleRecordLabel(item.outcome_status)}</strong> · {new Date(item.created_at).toLocaleString()}
-            {item.notes && <p>{caregiverSafeAssistantText(item.notes) || 'No further details are available.'}</p>}{item.correction_text && <p><strong>Recorded correction:</strong> {caregiverSafeAssistantText(item.correction_text) || 'A correction was recorded.'}</p>}
+            {item.notes && <p>{caregiverSafeAssistantText(item.notes) || 'No further details are available.'}</p>}{item.correction_text && <p><strong>Correction shared:</strong> {caregiverSafeAssistantText(item.correction_text) || 'A correction was recorded.'}</p>}
           </div>
         )}
       </div>
