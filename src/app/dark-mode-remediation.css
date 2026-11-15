@@ -780,3 +780,16 @@
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+
+
+/* LCR section-heading actions are compact text buttons, not sage-filled primary actions. */
+:root[data-solenos-theme="dark"] .lcr-home .lcr-record-section .lcr-section-heading .lcr-text-action {
+  background: #26342a !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #647568 !important;
+}
+:root[data-solenos-theme="dark"] .lcr-home .lcr-record-section .lcr-section-heading .lcr-text-action :is(span, svg) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
