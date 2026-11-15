@@ -937,8 +937,10 @@ export function LCRCurrentUnderstanding() {
   // Capture wrappers are source records, not changes in the person's care.
   // The original caregiver report remains available in care history.
   const internalCaptureRecordTypes = new Set(["structured_daily_capture", "daily_care_entry", "daily_capture"]);
+  const internalCaptureEventType = /\\b(?:structured_daily_capture|daily_care_entry|daily_capture)\\b/i;
   const watchChanges = selectWatchChanges(changes).filter((change) =>
-    !internalCaptureRecordTypes.has(change.subject_type.trim().toLowerCase())
+    !internalCaptureRecordTypes.has(change.subject_type.trim().toLowerCase()) &&
+    !internalCaptureEventType.test(change.explanation || "")
   );
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
   const isMedicationConflict = (item: (typeof watchUncertainties)[number]) => {
