@@ -172,7 +172,7 @@ export function CaregiverAccessPanel() {
       setNotice("Request to change the main caregiver sent. Your access and care tasks stay the same until the other caregiver accepts.");
       await load();
     } catch {
-      setError("We couldn't request this change. The current primary caregiver remains in place.");
+      setError("We couldn't request this change. The current main caregiver remains in place.");
     } finally {
       setBusy(false);
     }
@@ -186,7 +186,7 @@ export function CaregiverAccessPanel() {
       await postJSON("/caregiver-access/primary-transfers/" + encodeURIComponent(transfer.id) + "/" + decision, {});
       setNotice(decision === "accept"
         ? "You are now the main caregiver. The previous caregiver's access and past notes have been kept."
-        : "Primary caregiver transfer declined. The current primary caregiver remains in place.");
+        : "You declined the change. The current main caregiver remains in place.");
       await load();
     } catch {
       setError("We couldn't save your response. The current main caregiver has not changed.");
@@ -259,15 +259,15 @@ export function CaregiverAccessPanel() {
           <form onSubmit={(event) => void invite(event)} style={{ display: "grid", gap: "0.7rem", marginTop: "0.9rem" }}>
             <label className="mobile-settings-label" htmlFor="caregiver-invite-email">Email address</label>
             <input id="caregiver-invite-email" className="mobile-settings-input" type="email" autoComplete="email" required maxLength={320} value={email} onChange={(event) => setEmail(event.target.value)} />
-            <Button type="submit" variant="primary" disabled={busy || !email.trim()} loading={busy}><UserPlus size={16} aria-hidden /> Create invitation</Button>
+            <Button type="submit" variant="primary" disabled={busy || !email.trim()} loading={busy}><UserPlus size={16} aria-hidden /> Create invitation link</Button>
           </form>
 
           {invitation && (
             <div className="mobile-settings-hint" role="status" style={{ marginTop: "0.8rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "0.75rem", padding: "0.8rem" }}>
               <strong>Invitation for {invitation.email}</strong>
               <p>This invitation has not been sent. Share this one-time link privately. It expires {new Date(invitation.expires_at).toLocaleString()}.</p>
-              <code style={{ display: "block", overflowWrap: "anywhere", userSelect: "all" }}>{invitation.invitation_token}</code>
-              <Button type="button" variant="secondary" onClick={() => { const link = window.location.origin + "/invite/caregiver#token=" + encodeURIComponent(invitation.invitation_token); void navigator.clipboard?.writeText(link); }}>Copy secure invitation link</Button>
+              
+              <Button type="button" variant="secondary" onClick={() => { const link = window.location.origin + "/invite/caregiver#token=" + encodeURIComponent(invitation.invitation_token); void navigator.clipboard?.writeText(link); }}>Copy invitation link</Button>
             </div>
           )}
 
@@ -321,7 +321,7 @@ export function CaregiverAccessPanel() {
               <label className="mobile-settings-label" htmlFor="transfer-responsibility">Care task to hand over</label>
               <select id="transfer-responsibility" className="mobile-settings-input" required value={selectedResponsibility} onChange={(event) => setSelectedResponsibility(event.target.value)}>
                 <option value="">Choose a responsibility</option>
-                {responsibilities.map((item) => <option key={item.id} value={item.id}>{caregiverFieldLabel(item.responsibility_type) || caregiverStatusLabel(item.responsibility_type) || "Care task"} — {caregiverFieldLabel(item.scope) || caregiverStatusLabel(item.scope) || (item.scope.includes("_") ? "No additional detail" : caregiverSafeAssistantText(item.scope)) || "No additional detail"}</option>)}
+                {responsibilities.map((item) => <option key={item.id} value={item.id}>{caregiverFieldLabel(item.responsibility_type) || caregiverStatusLabel(item.responsibility_type) || "Care task"} — {caregiverFieldLabel(item.scope) || caregiverStatusLabel(item.scope) || ((item.scope || "").includes("_") ? "No additional detail" : caregiverSafeAssistantText(item.scope)) || "No additional detail"}</option>)}
               </select>
               <label className="mobile-settings-label" htmlFor="transfer-recipient">New caregiver</label>
               <select id="transfer-recipient" className="mobile-settings-input" required value={selectedRecipient} onChange={(event) => setSelectedRecipient(event.target.value)}>
