@@ -605,7 +605,7 @@ function AccountCard() {
           {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
           {mode === "login" && <p className="mobile-settings-hint">Sign in with the email and password linked to your existing care record.</p>}
 
-          {mode === "delete" && <p className="mobile-settings-hint">This deletes the email/password account, not the Living Care Record or its care history. Those remain under the current anonymous session.</p>}
+          {mode === "delete" && <p className="mobile-settings-hint">This deletes your email and password account, not your Care Record or care history. Those remain saved.</p>}
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <div className="mobile-settings-actions">
             <Button type="submit" variant={mode === "delete" ? "destructive" : "primary"} loading={busy} disabled={busy}>
