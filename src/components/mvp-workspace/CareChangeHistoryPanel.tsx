@@ -87,7 +87,7 @@ function readableChangeType(value?: string | null): string {
 function supported(change: ComputedChange): boolean {
   return change.certainty === "supported" &&
     change.evidence_supported === true &&
-    change.claim_supported !== false &&
+    change.claim_supported === true &&
     Array.isArray(change.source_record_refs) &&
     change.source_record_refs.length > 0 &&
     change.historical_only !== true;
