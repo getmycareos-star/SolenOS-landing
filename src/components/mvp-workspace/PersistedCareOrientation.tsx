@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type CurrentCareItem = {
   id: string;
@@ -48,10 +49,10 @@ function readableStatus(value?: string | null): string {
   if (!value?.trim()) return "Status not recorded";
   const labels: Record<string, string> = {
     reported: "Reported",
-    observed: "Observed",
-    confirmed: "Confirmed",
-    inferred: "Possible interpretation",
-    uncertain: "Still unclear",
+    observed: "Seen by a caregiver", 
+    confirmed: "Checked against a source", 
+    inferred: "Possible explanation", 
+    uncertain: "Not sure yet", 
     unverified: "Not confirmed",
     disputed: "Reports do not match",
     needs_clarification: "Needs checking",
@@ -65,7 +66,7 @@ function readableStatus(value?: string | null): string {
     not_specified: "Not specified",
     status_unknown: "Status not recorded",
   };
-  return labels[value] || value.replaceAll("_", " ");
+  return labels[value] || caregiverStatusLabel(value) || "Not available";
 }
 
 export function PersistedCareOrientation() {
@@ -139,10 +140,10 @@ export function PersistedCareOrientation() {
           <p>{projection.item_count} saved care detail{projection.item_count === 1 ? "" : "s"} shown.</p>
           {items.map((item) => (
             <article className="persisted-care-orientation-latest" key={item.source_collection + ":" + item.id}>
-              <strong>{item.title?.trim() || "Saved care detail"}</strong>
-              {item.description?.trim() && <p>{item.description}</p>}
+              <strong>{caregiverSafeAssistantText(item.title) || "Saved care detail"}</strong>
+              {caregiverSafeAssistantText(item.description) && <p>{caregiverSafeAssistantText(item.description)}</p>}
               <p>{readableStatus(item.epistemic_status)} · {readableStatus(item.status)}</p>
-              <p>{item.source_label || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
+              <p>{caregiverSafeAssistantText(item.source_label) || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
               {item.evidence_ids.length > 0 && (
                 <small>The original note or document is available to review.</small>
               )}
@@ -163,7 +164,7 @@ export function PersistedCareOrientation() {
           Some parts of the record may not be available in this view. Missing information does not mean that nothing happened.
         </p>
       )}
-      <p role="note">{projection.notice}</p>
+      {caregiverSafeAssistantText(projection.notice) && <p role="note">{caregiverSafeAssistantText(projection.notice)}</p>}
 
       <div className="persisted-care-orientation-links">
         <Link href="/workspace/timeline">View care history</Link>
