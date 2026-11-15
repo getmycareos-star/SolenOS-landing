@@ -245,8 +245,8 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
 export function caregiverSafeChangeText(value: unknown): string | null {
   const text = caregiverSafeAssistantText(value);
   if (!text) return null;
-  const containsInternalIdentifier = /\\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\\b/.test(text);
-  const containsEngineLanguage = /\\b(?:baseline observation coverage|observation window|comparable prior events|current observation window|not a claim about onset|event\\(s\\)|source record refs?)\\b/i.test(text);
+  const containsInternalIdentifier = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/.test(text);
+  const containsEngineLanguage = /\b(?:baseline observation coverage|observation window|comparable prior events|current observation window|not a claim about onset|event\(s\)|source record refs?)\b/i.test(text);
   return containsInternalIdentifier || containsEngineLanguage ? null : text;
 }
 
