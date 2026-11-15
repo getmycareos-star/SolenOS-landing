@@ -274,6 +274,7 @@ export default function TimelinePage() {
   const router = useRouter();
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [personId, setPersonId] = useState<string | null>(null);
+  const [changeHistoryOpen, setChangeHistoryOpen] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -775,10 +776,18 @@ export default function TimelinePage() {
 
       {personId && (
         <section aria-label="Care changes over time" style={{ marginTop: 24 }}>
-          <details className="timeline-history-details">
+          <details
+            className="timeline-history-details"
+            open={changeHistoryOpen}
+            onToggle={(event) => setChangeHistoryOpen(event.currentTarget.open)}
+          >
             <summary style={{ cursor: "pointer", fontWeight: 600, padding: "14px 0" }}>How the care picture has changed</summary>
-            <ChangeIntelligencePanel personId={personId} />
-            <CareChangeHistoryPanel personId={personId} />
+            {changeHistoryOpen && (
+              <>
+                <ChangeIntelligencePanel personId={personId} />
+                <CareChangeHistoryPanel personId={personId} />
+              </>
+            )}
           </details>
         </section>
       )}
