@@ -36,7 +36,8 @@ const qwenPanel = fs.readFileSync(path.join(root, "src/components/qwen/QwenAssis
 const workspaceComposer = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 
 // Errors must be event-driven, dismissible through correction/reset, and not stale.
-assert.match(companion, /\{requestError && <div className="companion-error" role="alert"/);
+assert.match(companion, /\{requestError && messages\.length > 0 && <div className="companion-error" role="alert"/);
+assert.match(companion, /The Care Assistant couldn’t respond/);
 assert.match(companion, /setRequestError\(null\)/);
 assert.match(companion, /const startNewSession = \(\) => \{[\s\S]*?setRequestError\(null\)/);
 assert.match(companion, /onChange=\{event => handleInput\(event\.target\.value\)\}/);
