@@ -47,8 +47,8 @@ type InstallPromptEvent = Event & {
 };
 
 const NAVIGATION = [
-  { href: "/workspace/companion", label: "AI Companion", icon: MessageCircle },
-  { href: "/workspace/care-continuity", label: "Care continuity", icon: ClipboardList },
+  { href: "/workspace/companion", label: "Care Assistant", icon: MessageCircle },
+  { href: "/workspace/care-continuity", label: "Care overview", icon: ClipboardList },
   { href: "/workspace/open-loops", label: "Follow-ups", icon: Clock3 },
   { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
   { href: "/workspace/documents", label: "Documents", icon: FileText },
@@ -355,7 +355,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             <section className="solenos-record-details-dialog" role="dialog" aria-modal="true" aria-labelledby="solenos-record-details-title">
               <header className="solenos-record-details-header">
                 <div>
-                  <p>YOUR LIVING CARE RECORD</p>
+                  <p>YOUR CARE RECORD</p>
                   <h2 id="solenos-record-details-title">Care record details</h2>
                   <span>Saved information, recorded changes, and what remains uncertain.</span>
                 </div>
