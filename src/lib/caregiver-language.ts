@@ -13,7 +13,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   contradiction_reconciled: "Different reports reviewed",
   outcome_reported: "Outcome reported",
   outcome_attested: "Outcome checked by caregiver",
-  outcome_corroborated: "Two sources reviewed together",
+  outcome_corroborated: "Two reports checked together",
   closure_verified: "Closure reviewed",
   reopened: "Reopened",
   reassessed: "Follow-up reviewed",
@@ -22,7 +22,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   completed: "Completed",
   cancelled: "Cancelled",
   deferred: "Waiting before deciding",
-  needs_clarification: "Needs clarification",
+  needs_clarification: "Needs checking",
   pending: "Waiting for review",
   open: "Open",
   unresolved: "Still needs review",
@@ -72,7 +72,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   divergence: "Different changes in different areas",
   meaningful_candidate: "May be important",
   not_meaningful: "No clear importance found",
-  insufficient_evidence: "Not enough information to judge",
+  insufficient_evidence: "Not enough information to tell",
   increasing: "Increasing",
   decreasing: "Decreasing",
   stable: "No change recorded",
@@ -120,8 +120,8 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   failed: "Could not be completed",
   partial: "Partly complete",
   independent: "Reported separately",
-  shared_origin: "From the same original source",
-  same_origin: "From the same original source",
+  shared_origin: "From the same original",
+  same_origin: "From the same original",
   needs_review: "Needs your review",
   awaiting_review: "Needs your review",
   in_review: "Under review",
@@ -137,7 +137,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   corrected_pending_approval: "Correction ready for review",
   generated: "Prepared",
   validated: "Ready to review",
-  exact_quote_reference_validation_passed: "Source wording checked",
+  exact_quote_reference_validation_passed: "Original wording checked",
   shared: "Shared",
   revoked: "Access removed",
   acknowledged: "Received",
@@ -183,6 +183,31 @@ const CARE_FIELD_LABELS: Readonly<Record<string, string>> = {
   hydration: "Fluid intake",
   food_intake: "Food intake",
 };
+
+const CARE_INFORMATION_AREA_LABELS: Readonly<Record<string, string>> = {
+  facts: "Saved care details",
+  care_facts: "Saved care details",
+  events: "Care updates",
+  care_events: "Care updates",
+  appointments: "Appointments",
+  assertions: "Caregiver reports",
+  care_assertions: "Caregiver reports",
+  open_questions: "Questions to answer",
+  contradictions: "Reports that do not match",
+  evidence_freshness_assessments: "Information dates",
+  medications_and_allergies: "Medicines and allergies",
+  documents: "Documents",
+  evidence: "Notes and documents",
+  caregiver_observations: "Caregiver observations",
+  caregiver_perspectives: "Caregiver views",
+  decisions: "Care decisions",
+  handoffs: "Care handoffs",
+};
+
+export function caregiverInformationAreaLabel(value?: string | null): string | null {
+  if (!value) return null;
+  return CARE_INFORMATION_AREA_LABELS[value.trim().toLowerCase()] ?? null;
+}
 
 /** Human-readable labels for saved care fields; unknown keys are not prettified. */
 export function caregiverFieldLabel(value?: string | null): string | null {
