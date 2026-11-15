@@ -5971,6 +5971,17 @@ html[data-solenos-theme="dark"] .solenos-shell [role="button"][style*="var(--tru
   color: #17251c !important;
 }
 
+html[data-solenos-theme="dark"] .solenos-sidebar-toggle {
+  background-color: #b9d5b5 !important;
+  border-color: #8eae8a !important;
+  color: #17251c !important;
+}
+
+html[data-solenos-theme="dark"] .solenos-sidebar-toggle:hover {
+  background-color: #a8c8a4 !important;
+  color: #17251c !important;
+}
+
 html[data-solenos-theme="dark"] .care-reminders-inline-link,
 html[data-solenos-theme="dark"] .care-reminders-back,
 html[data-solenos-theme="dark"] .care-reminders-settings-link {
