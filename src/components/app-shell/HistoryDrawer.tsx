@@ -760,7 +760,6 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
-        getJSON("/care-continuity/context?limit_per_source=50&include_all_history=true"),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
@@ -806,7 +805,20 @@ export function HistoryDrawer() {
       // its own authenticated route. Use it as a bounded fallback when the
       // dedicated event-history route fails or returns no event rows.
       {
-        const projectionResult = results[8];
+        let projectionResult: PromiseSettledResult<unknown> = {
+          status: "rejected",
+          reason: new Error("Full-history fallback was not requested"),
+        };
+        if (eventReadProblem || eventItems?.length === 0) {
+          try {
+            projectionResult = {
+              status: "fulfilled",
+              value: await getJSON("/care-continuity/context?limit_per_source=50&include_all_history=true"),
+            };
+          } catch (cause) {
+            projectionResult = { status: "rejected", reason: cause };
+          }
+        }
         const historyContext = projectionResult.status === "fulfilled" && projectionResult.value &&
           typeof projectionResult.value === "object"
           ? projectionResult.value as {
