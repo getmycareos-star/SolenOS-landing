@@ -1251,6 +1251,11 @@ export function LCRCurrentUnderstanding() {
                 ))}
               </ul>
               {immediateCareDecisions.length > 2 && <p className="lcr-entry-status">{immediateCareDecisions.length - 2} more items need review in the detailed list.</p>}
+              {(importantCareDecisions.length > 0 || clarificationCareDecisions.length > 0) && (
+                <p className="lcr-entry-status">
+                  Also: {importantCareDecisions.length} important {importantCareDecisions.length === 1 ? "follow-up" : "follow-ups"} to review · {clarificationCareDecisions.length} {clarificationCareDecisions.length === 1 ? "detail needs" : "details need"} clarification.
+                </p>
+              )}
             </>
           ) : needsAttentionNow.length > 0 ? (
             <ul className="lcr-first-screen-list">
