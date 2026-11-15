@@ -173,6 +173,7 @@
     "situations": "Situaciones de cuidado",
     "disclaimer": "El cuidador registra estas actualizaciones. No son conclusiones médicas.",
     "reportedStatus": "Estado comunicado por el cuidador",
-    "statusReason": "Motivo de este estado (obligatorio)"
+    "statusReason": "Motivo de este estado (obligatorio)",
+    "previousStatusUpdates": "Actualizaciones de estado anteriores"
   }
 }
