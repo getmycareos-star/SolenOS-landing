@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
+const careContinuity = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 
 const required: Array<[string, RegExp]> = [
   ["loads the persisted person-scoped follow-ups", /getJSON\("\/open-loops\?limit=100"\)/],
@@ -27,6 +28,12 @@ for (const [label, pattern] of required) {
 assert.doesNotMatch(page, /function createLoop|postJSON\("\/open-loops",/, "caregivers must report changes to existing care matters; SolenOS manages the unresolved follow-up lifecycle");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
 assert.ok(page.includes("SolenOS keeps track") || page.includes("SolenOS manages"), "caregiver copy must explain that SolenOS manages unresolved matters");
+
+
+assert.match(careContinuity, /A short view of what the saved care history may need attention[\s\S]*?tracks unresolved matters separately in Follow-ups/, "Care priorities must remain a current summary and point to the dedicated follow-up record");
+assert.match(careContinuity, /These are changes or uncertainties found in the saved history[\s\S]*?not automatically tasks or follow-ups/, "monitoring signals must not be conflated with unresolved follow-ups");
+assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?View all follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
+assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?Open Follow-ups/, "Changes to keep an eye on must link to the dedicated Follow-ups screen");
 
 console.log("FOLLOW_UPS_UI_CONTRACT=PASS");
 console.log(`Assertions=${required.length + 3}`);
