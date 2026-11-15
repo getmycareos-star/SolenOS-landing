@@ -8,15 +8,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BrandLoading } from "@/components/brand";
 
-const WORKSPACE_NAV = [
-  { href: "/workspace", label: "Care Record", icon: "◉" },
-  { href: "/workspace/companion", label: "Care Assistant", icon: "✦" },
-  { href: "/workspace/timeline", label: "Care Timeline", icon: "◷" },
-  { href: "/workspace/open-loops", label: "Follow-ups", icon: "↻" },
-  { href: "/workspace/documents", label: "Documents", icon: "📄" },
-  { href: "/workspace/settings", label: "Settings", icon: "⚙" },
-] as const;
-
 function formatUpdatedDate(iso: string | null): string {
   if (!iso) return "";
   try {
@@ -86,7 +77,6 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
         </div>
       }>
         <AppShell
-          navItems={WORKSPACE_NAV}
           brandHref="/workspace"
           careContext={<CareContextBar />}
         >
