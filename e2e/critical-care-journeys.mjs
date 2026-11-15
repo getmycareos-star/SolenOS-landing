@@ -1038,7 +1038,7 @@ await record("09 appointment summary persistence", async () => {
   assert.equal(preparationBrief.payload.living_care_record_context.retrieval_strategy, "person_scoped_full_source_scan");
   assert.equal(preparationBrief.payload.living_care_record_context.retrieval_scan_complete, true);
   assert.ok(
-    preparationBrief.payload.living_care_record_context.sources.events.items.some((item) => item.id === eventId),
+    preparationBrief.payload.living_care_record_context.sources.events.items.some((item) => item.id === dailyCaptureEventId),
     "appointment preparation must read the same persisted Daily Care event through the shared LCR projection",
   );
   assert.ok(
