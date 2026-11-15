@@ -389,6 +389,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
         setPatternDetails({});
         setPatternDetailErrors({});
         setSituationDetails({});
+        setSituationStates({});
+        setSituationReasons({});
+        setSituationDetailLoadingIds([]);
         setExpandedChangeId(null);
         setExpandedPatternId(null);
         setExpandedSituationIds([]);
