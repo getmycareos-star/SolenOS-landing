@@ -40,8 +40,8 @@ assert.match(source, /processing_status === "completed"/,
   "the UI only reports a completed correction after durable backend processing");
 assert.ok(source.includes('/corrections/${encodeURIComponent(session.person.id)}/${encodeURIComponent(correctionId)}/retry'),
   "a pending correction can be retried through its person-scoped backend receipt");
-assert.match(source, /processing_status !== "completed"/,
-  "pending correction state remains visible after the timeline is reloaded");
+assert.match(source, /\["pending", "processing"\]\.includes\(item\.processing_status \|\| ""\)/,
+  "only corrections awaiting processing remain eligible for retry after timeline reload");
 assert.match(source, /target_type: event\.source_type === "care_assertion" \? "care_assertion" : "care_event"/,
   "corrections target the original care event or LCR assertion without changing the source type");
 assert.match(source, /event\.source_type === "care_assertion"/,
