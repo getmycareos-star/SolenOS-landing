@@ -51,8 +51,10 @@ assert.match(checkIn, /window\.dispatchEvent\(new Event\("careRecordUpdated"\)\)
   "a confirmed save refreshes the existing care-record view");
 assert.match(lcr, /quickValue/,
   "the LCR renders structured quick check-in details");
-assert.match(lcr, /Caregiver reported:/,
-  "the LCR distinguishes caregiver report time from server-recorded time");
+assert.match(lcr, /Caregiver shared:/,
+  "the LCR labels when the caregiver shared the information");
+assert.match(lcr, /Saved to the care record:/,
+  "the LCR distinguishes caregiver-reported time from the saved record time");
 
 assert.match(detailedCapture, /capture_idempotency_key: captureIdempotencyKey/,
   "structured Daily Care submits a server-checked idempotency key");
