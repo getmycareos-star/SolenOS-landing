@@ -152,7 +152,7 @@ export function PersistedCareOrientation() {
         </>
       ) : (
         <div>
-          <p>Your Living Care Record does not have any care information available yet.</p>
+          <p>Your Care Record does not have any care information yet.</p>
           <p>When you share an update or document, it can be reviewed and added to this record.</p>
           <Link href="/workspace">Add a care update</Link>
         </div>
