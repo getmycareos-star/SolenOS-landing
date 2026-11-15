@@ -629,10 +629,10 @@ await record("Daily Care Scenario 01 saves immediately and projects all four rep
 
 await record("LCR care history shows the original caregiver report before source metadata", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
-  await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+  await history.page.getByRole("heading", { name: "Your Living Care Record" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
 
-  const sourceSummary = history.page.getByText("Where this information came from", { exact: true }).first();
+  const sourceSummary = history.page.getByText("Source details", { exact: true }).first();
   await sourceSummary.waitFor({ timeout: 15_000 });
   const sourceDetails = sourceSummary.locator("xpath=..");
   assert.equal(await sourceDetails.evaluate((element) => element.open), false,
@@ -1428,7 +1428,7 @@ finally:
     hasText: "Sleep changes",
   });
   await situationCard.waitFor({ state: "visible", timeout: 20_000 });
-  await situationCard.getByRole("button", { name: "Review linked records", exact: true }).click();
+  await situationCard.getByRole("button", { name: "Review related notes and documents", exact: true }).click();
   await situationCard.getByText("restless sleep and three overnight awakenings", { exact: false })
     .waitFor({ timeout: 15_000 });
 
