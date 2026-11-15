@@ -453,7 +453,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 {change.explanation ? <p>{caregiverSafeChangeText(change.explanation) ?? "A possible change was found in the saved care information. Review the linked records before drawing a conclusion."}</p> : <p>{caregiverSafeChangeText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
                 <p className="panel-muted">{formatWindow(change.comparison_window_start, change.comparison_window_end)}</p>
                 <p className="panel-muted">
-                  Based on {change.evidence_ids.length} saved item(s).
+                  Based on {change.evidence_ids.length} saved care {change.evidence_ids.length === 1 ? "detail" : "details"}.
                 </p>
                 <p className="panel-muted">Some earlier care information may be missing. That does not mean the event did not happen.</p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
@@ -600,7 +600,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                           <article key={change.id}>
                             <strong>{caregiverStatusLabel(change.change_type) ?? "Care change"} · {caregiverStatusLabel(change.change_direction) ?? "Direction not recorded"}</strong>
                             <p>{caregiverSafeAssistantText(change.explanation) ?? "A change was recorded in the care history."}</p>
-                            <p className="panel-muted">{caregiverStatusLabel(change.confirmation_status) ?? "Needs review"} · {change.evidence_ids.length} saved item(s)</p>
+                            <p className="panel-muted">{caregiverStatusLabel(change.confirmation_status) ?? "Needs review"} · {change.evidence_ids.length} saved care {change.evidence_ids.length === 1 ? "detail" : "details"}</p>
                           </article>
                         ))}
                       </>
@@ -753,7 +753,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               </p>
                               <p>{caregiverSafeChangeText(String(entry.reason ?? "")) ?? "A caregiver recorded a status update."}</p>
                               <p className="panel-muted">
-                                {Array.isArray(entry.evidence_ids) ? entry.evidence_ids.length : 0} linked note(s) or document(s)
+                                {Array.isArray(entry.evidence_ids) ? entry.evidence_ids.length : 0} related note(s) or document(s)
                               </p>
                             </li>
                           ))}
