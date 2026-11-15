@@ -11,6 +11,7 @@ const orientation = read("src/components/mvp-workspace/PersistedCareOrientation.
 const overview = read("src/components/app-shell/CareRecordOverview.tsx");
 const daily = read("src/app/workspace/daily-care/page.tsx");
 const documents = read("src/app/workspace/documents/page.tsx");
+const documentReview = read("src/components/DocumentIntelligenceReview.tsx");
 const reminders = read("src/app/workspace/reminders/page.tsx");
 const history = read("src/components/app-shell/HistoryDrawer.tsx");
 const claimReview = read("src/components/ClaimAssessmentPanel.tsx");
@@ -85,6 +86,9 @@ assert.match(documents, /hasLoadedDocuments && documents\.length > 0 && \(/);
 assert.match(documents, /listError && !hasLoadedDocuments \? null : visibleDocuments\.length === 0/);
 assert.match(documents, /Saved documents couldn’t be refreshed/);
 assert.doesNotMatch(documents, /SolenOS will not make up a history/);
+assert.match(documentReview, /Saved document reviews couldn’t be loaded/);
+assert.match(documentReview, /No document details are ready to review yet/);
+assert.doesNotMatch(documentReview, /No documents are ready to review yet/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
 assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
