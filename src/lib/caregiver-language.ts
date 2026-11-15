@@ -53,7 +53,6 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   potential_improvement: "May be improving",
   potential_resolution: "May no longer be happening",
   recurring: "Happening again",
-  uncertain: "Direction unclear",
   confirmed: "Reviewed and confirmed by a caregiver",
   inconclusive: "Could not be confirmed",
   accepted_by_caregiver: "Added to care record",
