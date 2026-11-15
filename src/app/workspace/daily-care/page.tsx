@@ -705,24 +705,12 @@ export default function DailyCarePage() {
           </section>
 
           <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
-            <h2 id="daily-care-follow-ups-title">Existing follow-ups</h2>
-            <p className="daily-care-muted">Open follow-ups stay in their existing record. Daily Care does not create a second copy.</p>
-            {followUpsError ? (
-              <p role="alert">{followUpsError}</p>
-            ) : followUps.length ? (
-              <ul className="daily-care-record-list">
-                {followUps.slice(0, 6).map((item) => (
-                  <li key={item.id}>
-                    <strong>{caregiverSafeAssistantText(item.title) || "Care follow-up"}</strong>
-                    {item.description && <p>{caregiverSafeAssistantText(item.description)}</p>}
-                    <span>{caregiverStatusLabel(item.status) || "Unresolved"}</span>
-                    {item.deadline_at && <span> · Due {displayCareTime(item.deadline_at)}</span>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No unresolved follow-ups are currently recorded. This does not confirm that no action is outstanding.</p>
-            )}
+            <h2 id="daily-care-follow-ups-title">Follow-ups</h2>
+            <p className="daily-care-muted">
+              {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} needing a check.
+              Manage questions, decisions and unresolved matters in one place.
+            </p>
+            {followUpsError && <p role="alert">{followUpsError}</p>}
             {deliveryIssues.length > 0 && (
               <div role="status" className="daily-care-medication-confirmation">
                 <strong>Notification delivery needs attention</strong>
@@ -732,28 +720,7 @@ export default function DailyCarePage() {
               </div>
             )}
             {deliveryStatusError && <p role="status">{deliveryStatusError}</p>}
-            <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>View follow-ups</Button>
-          </section>
-
-          <section aria-labelledby="daily-care-open-matters-title" className="daily-care-context-panel">
-            <h2 id="daily-care-open-matters-title">Things that need attention</h2>
-            <p className="daily-care-muted">Questions, missing details and information that does not match.</p>
-            {careItems.filter(isOpenMatter).length > 0 ? (
-              <ul className="daily-care-record-list">
-                {careItems.filter(isOpenMatter).slice(0, 8).map((item, index) => (
-                  <li key={item.id || `open-matter-${index}`}>
-                    <strong>{caregiverSafeAssistantText(item.title) || "Open care question"}</strong>
-                    {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
-                    <span>{displayHistoryTime(item)}</span>
-                    {item.source_label && <span> · {caregiverSafeAssistantText(item.source_label) || "Saved care record"}</span>}
-                    {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
-                    {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>Nothing is listed here right now. This does not mean there is nothing to follow up on.</p>
-            )}
+            <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>Open Follow-ups</Button>
           </section>
 
           <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
@@ -835,39 +802,10 @@ export default function DailyCarePage() {
             )}
           </section>
 
-          <section aria-labelledby="daily-care-history-title" className="daily-care-context-panel">
-            <div className="daily-care-history-heading">
-              <div>
-                <h2 id="daily-care-history-title">Recent care history</h2>
-                <p className="daily-care-muted">Care updates in date order. A day without an update does not mean nothing happened.</p>
-              </div>
-              <Link href="/workspace/timeline" className="care-reminders-inline-link">View all history</Link>
-            </div>
-            {historyItems.length > 0 ? (
-              <ul className="daily-care-record-list">
-                {[...new Map(
-                  [...historyItems.slice(0, 8), ...(sinceLastOpenItems || [])]
-                    .map((item, index) => [historyRecordId(item) || `history-item-${index}`, item] as const)
-                ).values()].map((item, index) => (
-                  <li
-                    id={historyRecordId(item) ? `daily-care-event-${historyRecordId(item)}` : undefined}
-                    key={historyRecordId(item) || `history-item-${index}`}
-                  >
-                    <strong>{item.title || "Care record entry"}</strong>
-                    {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
-                    {item.capture_processing?.message && (
-                      <p className="daily-care-muted">{item.capture_processing.message}</p>
-                    )}
-                    <span>{displayHistoryTime(item)}</span>
-                    {item.source_label && <span> · {caregiverSafeAssistantText(item.source_label) || "Saved care information"}</span>}
-                    {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
-                    {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No recent care entries are available. No record is not proof that no care took place.</p>
-            )}
+          <section aria-label="Care history" className="daily-care-context-panel">
+            <h2>Need to review an earlier update?</h2>
+            <p className="daily-care-muted">Daily Care is for recording new information. The Care Timeline contains the full history of saved updates and corrections.</p>
+            <Link href="/workspace/timeline" className="care-reminders-inline-link">Open Care Timeline</Link>
           </section>
           {reviewAnalysisId && (
             <CaptureAnalysisReview
