@@ -167,7 +167,7 @@ const INFORMATION_LABELS: Readonly<Record<string, string>> = {
 };
 
 const CARE_FIELD_LABELS: Readonly<Record<string, string>> = {
-  medication_name: "Medication",
+  medication_name: "Medication name as reported",
   name: "Name as reported",
   dose: "Dose as reported",
   strength: "Strength as reported",

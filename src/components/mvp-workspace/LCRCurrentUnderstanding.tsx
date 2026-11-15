@@ -487,6 +487,21 @@ function displayCurrentCareTitle(item: CurrentCareItem): string {
     "Care record item";
 }
 
+function isMedicationObservation(attribute?: string | null): boolean {
+  return /medication|drug|dose|strength/i.test(attribute || "");
+}
+
+function displayCurrentCareObservationValue(attribute?: string | null, rawValue?: unknown): string | null {
+  const value = caregiverSafeAssistantText(rawValue);
+  if (!value) return null;
+  if ((attribute || "").trim().toLowerCase() !== "medication_status") return value;
+  const normalized = value.trim().toLowerCase();
+  if (["active", "current", "currently active"].includes(normalized)) return "Reported as current";
+  if (["inactive", "discontinued", "stopped", "no longer taking"].includes(normalized)) return "Reported as no longer current";
+  if (["unknown", "uncertain", "not confirmed"].includes(normalized)) return "Not confirmed";
+  return `Reported status: ${value}`;
+}
+
 function displayCurrentCareDescription(item: CurrentCareItem): string | null {
   if (!item.description?.trim()) return null;
   const original = item.description.trim().toLowerCase();
@@ -1822,6 +1837,9 @@ export function LCRCurrentUnderstanding() {
                       <details className="lcr-entry-status">
                         <summary>Details identified in this note ({item.derived_observations.length})</summary>
                         <p>These details come from the same report. They are not separate reports or independent confirmation.</p>
+                        {item.derived_observations.some((observation) => isMedicationObservation(observation.attribute)) && (
+                          <p>Medication details are copied from saved reports. They do not confirm the current prescription or whether a dose was given. They are not instructions to start, stop, or change medicine.</p>
+                        )}
                         <ul>
                           {item.derived_observations.map((observation) => (
                             <li key={observation.id}>
@@ -1830,7 +1848,7 @@ export function LCRCurrentUnderstanding() {
                               {observation.observer_label && <small>Reported by: {caregiverSafeAssistantText(observation.observer_label) || "Not recorded"}</small>}
                               {observation.observation_method && <small>Observation method: {caregiverLabel(observation.observation_method)}</small>}
                               {typeof observation.context === "string" && caregiverSafeAssistantText(observation.context) && <p>Context: {caregiverSafeAssistantText(observation.context)}</p>}
-                              {observation.value_text && caregiverSafeAssistantText(observation.value_text) && <p>{caregiverSafeAssistantText(observation.value_text)}</p>}
+                              {displayCurrentCareObservationValue(observation.attribute, observation.value_text) && <p>{displayCurrentCareObservationValue(observation.attribute, observation.value_text)}</p>}
                               <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
                               {observation.source_passage && (
                                 <details>

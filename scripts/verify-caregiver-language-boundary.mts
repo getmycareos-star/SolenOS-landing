@@ -19,6 +19,7 @@ assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
 assert.equal(caregiverFieldLabel("medication_name"), "Medication");
 assert.equal(caregiverFieldLabel("dose"), "Dose as reported");
+assert.equal(caregiverFieldLabel("medication_name"), "Medication name as reported");
 assert.equal(caregiverFieldLabel("medication_status"), "Medication status as reported");
 assert.equal(caregiverFieldLabel("unknown_internal_field"), null);
 assert.equal(
