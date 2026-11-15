@@ -75,12 +75,12 @@ console.log("✓ classify new vs returning from memory depth");
   assert.ok(!containsFakeContinuity(changedNew));
 
   const confNew = composeNewCareRealityConfirmation({ subjectLabel: null });
-  assert.ok(/Beginning of the Living Care Record/i.test(confNew));
-  assert.ok(/reconstruct/i.test(confNew));
+  assert.ok(/Your Care Record starts here/i.test(confNew));
+  assert.ok(/piece them together/i.test(confNew));
 
   const confRet = composeReturningCareRealityConfirmation({ subjectLabel: null });
-  assert.ok(/Updated the Living Care Record/i.test(confRet));
-  assert.ok(/connected to what is already held/i.test(confRet));
+  assert.ok(/Your Care Record has been updated/i.test(confRet));
+  assert.ok(/new details and the earlier information/i.test(confRet));
   console.log("✓ orientation copy differs by state");
 }
 
@@ -149,7 +149,7 @@ console.log("✓ classify new vs returning from memory depth");
     latestRawText: t2,
     kind: classifyCareEventKind(t2),
   });
-  assert.ok(/Updated|connected|already held|Living Care Record/i.test(composed.confirmation),
+  assert.ok(/Updated|Care Record|earlier information/i.test(composed.confirmation),
     "returning continues care reality",
   );
   assert.ok(!/Beginning of/i.test(composed.confirmation), "not first-begin language");
@@ -236,7 +236,7 @@ console.log("✓ classify new vs returning from memory depth");
     kind: "general",
     latestRawText: "hi solenos first time here",
   });
-  assert.ok(/nothing about.*care is held yet/i.test(metaConf));
+  assert.ok(/no care details saved yet/i.test(metaConf));
   assert.ok(!containsCareStoryChrome(metaConf));
   console.log("✓ confirmation gate + note meta label");
 }
