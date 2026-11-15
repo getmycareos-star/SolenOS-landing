@@ -66,7 +66,9 @@ try {
       idempotency_key: crypto.randomUUID(),
     }),
   });
-  assert.equal(createResponse.status, 201, `system follow-up seed failed: ${await createResponse.text()}`);
+  if (!createResponse.ok) {
+    throw new Error(`system follow-up seed failed: HTTP ${createResponse.status} ${await createResponse.text()}`);
+  }
   const seededLoop = await createResponse.json();
   assert.ok(seededLoop.id, "the backend must return the persisted follow-up ID");
   assert.equal(seededLoop.status, "open");
