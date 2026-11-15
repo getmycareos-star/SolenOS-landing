@@ -22,7 +22,7 @@ The current FastAPI app mounts `/api/situation` plus `/api/v1/*`; those legacy p
 
 - Source files were re-fetched after the commits to confirm the session gate and bearer headers are present.
 - Backend capture → GET hydration → token refresh → GET rehydration tests were added.
-- Frontend Vite build/tests and backend pytest suite have **not** been executed. GitHub returned no backend workflow runs/statuses for the commits; the frontend status endpoint reported Vercel build-rate-limit failures. The current execution environment cannot resolve `github.com` to clone the repositories and run the suites locally.
+- Frontend Vite build/tests and backend pytest suite have **not** been executed. GitHub returned no backend workflow runs/statuses for the commits; the frontend status endpoint reported build-rate-limit failures. The current execution environment cannot resolve `github.com` to clone the repositories and run the suites locally.
 - Live Railway migration, deployed API behavior, and a browser-level capture/read/refresh run remain unverified.
 
 
