@@ -88,7 +88,7 @@ export function detectCareChanges(
         kind: "unclear",
         category: "medication",
         label: `Possible duplicate dose: ${med.name}`,
-        detail: `The document lists ${med.name} more than once — confirm the correct dose before the next dose is given.`,
+        detail: `The document reports ${med.name} more than once. It does not establish the correct amount or what should be taken next; contact the prescriber or pharmacist promptly.`,
         field: "duplicateDose",
       });
     }
@@ -97,7 +97,7 @@ export function detectCareChanges(
         kind: "changed",
         category: "medication",
         label: `Missed dose for ${med.name}`,
-        detail: `The document mentions a missed dose of ${med.name} — confirm whether a make-up dose is needed.`,
+        detail: `A missed dose of ${med.name} is reported. This record does not establish whether a make-up dose is appropriate; ask the prescriber or pharmacist for instructions.`,
         field: "missedDose",
       });
     }
@@ -115,7 +115,7 @@ export function detectCareChanges(
         kind: "unclear",
         category: "medication",
         label: `Unclear instructions: ${med.name}`,
-        detail: `The instructions for ${med.name} are not clear in this document — confirm how it should be taken.`,
+        detail: `The instructions for ${med.name} are not clear in this document. Check the original prescription or ask the prescriber or pharmacist before relying on a dose or schedule.`,
         field: "unclearInstructions",
       });
     }
@@ -124,7 +124,7 @@ export function detectCareChanges(
         kind: "unclear",
         category: "medication",
         label: `Medication uncertainty: ${med.name}`,
-        detail: `The current medication situation for ${med.name} is not clearly stated — confirm the name, dose, or purpose.`,
+        detail: `The current medication details for ${med.name} are not established here; confirm them against the prescription or with the prescriber or pharmacist.`,
         field: "uncertainty",
       });
     }
