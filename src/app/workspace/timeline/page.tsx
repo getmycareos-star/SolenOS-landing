@@ -652,8 +652,8 @@ export default function TimelinePage() {
                         <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 8 }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, background: "#e4ede5", borderRadius: 999, padding: "5px 9px" }}><Clock3 size={13} aria-hidden />{category}</span>
                           <span style={{ color: "var(--solenos-muted)", fontSize: 12 }}>{formatDateTime(event.occurred_at)}</span>
-                          {event.follow_up_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>Follow-up flagged</span>}
-                          {event.attention_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>Attention flagged</span>}
+                          {event.follow_up_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>May need follow-up</span>}
+                          {event.attention_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>May need attention</span>}
                           <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--solenos-muted)" }}>{expanded ? "Hide details" : "Details"} <ChevronDown size={16} aria-hidden style={{ transform: expanded ? "rotate(180deg)" : undefined }} /></span>
                         </span>
                         <strong style={{ display: "block", fontSize: 17, lineHeight: 1.4, marginBottom: 5 }}>{caregiverSafeAssistantText(event.title) || "Care update"}</strong>
@@ -661,14 +661,14 @@ export default function TimelinePage() {
                       </button>
                       {expanded && (
                         <div id={`timeline-details-${event.id}`} style={{ borderTop: "1px solid var(--solenos-hairline)", padding: 16, background: "#fbfcfc" }}>
-                          <h4 style={{ margin: "0 0 10px", fontSize: 14 }}>Record details</h4>
+                          <h4 style={{ margin: "0 0 10px", fontSize: 14 }}>More details</h4>
                           <dl style={{ display: "grid", gridTemplateColumns: "minmax(110px, 0.7fr) minmax(0, 1.3fr)", gap: "9px 12px", margin: 0, fontSize: 13 }}>
                             <dt style={{ color: "var(--solenos-muted)" }}>When it happened</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>When it was saved</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Review</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Information status</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>When it happened</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Who added it</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Type of care update</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type === "correction" ? "Correction" : event.source_type === "evidence" ? "Document" : event.source_type === "appointment" ? "Appointment" : event.source_type === "professional" ? "Healthcare professional" : event.created_by_caregiver_id ? "Caregiver" : "Care update"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Who shared it</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Type of update</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type === "correction" ? "Correction" : event.source_type === "evidence" ? "Document" : event.source_type === "appointment" ? "Appointment" : event.source_type === "professional" ? "Healthcare professional" : event.created_by_caregiver_id ? "Caregiver" : "Care update"}</dd>
                             {event.source_type === "correction" && event.target_id && (
                               <>
                                 <dt style={{ color: "var(--solenos-muted)" }}>Related update</dt>
@@ -684,7 +684,7 @@ export default function TimelinePage() {
                             )}
                             <dt style={{ color: "var(--solenos-muted)" }}>Related care topic</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id ? "Linked" : "Not linked"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Related notes or documents</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? `${event.evidence_ids.length} saved item(s)` : "None attached"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Related labels</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.map(tag => caregiverStatusLabel(tag) || "Care update").join(", ") : "None recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Labels</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.map(tag => caregiverStatusLabel(tag) || "Care update").join(", ") : "None recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
                           </dl>
                           {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Why this may matter:</strong> {caregiverSafeAssistantText(event.significance_verdict) || "No further explanation is available."}</p>}
