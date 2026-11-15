@@ -220,11 +220,11 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     for (const partial of draft.partial_sources ?? []) {
       lines.push("- " + readableSection(partial.source) + ": at least " + partial.returned_count + " saved items were read; additional records remain outside this draft.");
     }
-    lines.push("This handoff is not a complete history. Open the Care Record and check the listed notes and documents before sharing.");
+    lines.push("This summary does not include everything in your Care Record. Open the Care Record and check the notes and documents before sharing.");
   }
   lines.push("\n## What information was available");
   for (const [name, value] of Object.entries(draft.source_statuses)) {
-    const line = "- " + (caregiverSafeAssistantText(value.label) || readableSection(name)) + ": " + readableStatus(value.status) + (caregiverSafeAssistantText(value.reason) ? " (" + caregiverSafeAssistantText(value.reason) + ")" : "") + "; " + value.count + " saved item(s)";
+    const line = "- " + (caregiverSafeAssistantText(value.label) || readableSection(name)) + ": " + readableStatus(value.status) + (caregiverSafeAssistantText(value.reason) ? " (" + caregiverSafeAssistantText(value.reason) + ")" : "") + "; " + value.count + (value.count === 1 ? " saved detail" : " saved details");
     if (lines.join("\n").length + line.length > 17500) { truncated = true; break; }
     lines.push(line);
   }
@@ -381,7 +381,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         window_days: Number(prepareWindowDays),
       }, { "X-Request-ID": requestId }) as DraftPayload;
       if (!prepared?.draft_id || !Array.isArray(prepared.sections)) {
-        throw new Error("The saved handoff could not be confirmed.");
+        throw new Error("The saved summary could not be confirmed.");
       }
       setSavedDrafts(current => [
         prepared,
