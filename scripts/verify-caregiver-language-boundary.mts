@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   caregiverInformationLabel,
   caregiverSafeAssistantText,
+  caregiverSafeChangeText,
   caregiverSafeErrorMessage,
   caregiverStatusLabel,
   isTechnicalDiagnosticText,
@@ -15,6 +16,18 @@ assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
 assert.equal(caregiverStatusLabel("unknown_internal_state"), null);
 assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
+assert.equal(
+  caregiverSafeChangeText("daily_care_entry was first observed in the available records; this is not a claim about onset. 2 event(s) recorded in the current observation window."),
+  null,
+);
+assert.equal(
+  caregiverSafeChangeText("situation_understanding_assessment"),
+  null,
+);
+assert.equal(
+  caregiverSafeChangeText("Poor sleep was reported twice today."),
+  "Poor sleep was reported twice today.",
+);
 
 for (const diagnostic of [
   "Database schema unavailable",
