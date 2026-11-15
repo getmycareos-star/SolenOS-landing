@@ -30,7 +30,6 @@ import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
 
 const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 const CARE_SESSION_STORAGE_KEY = "solenos_care_session_id";
-const LANGUAGE_STORAGE_KEY = "solenos_language_preference";
 
 export type WorkspaceContextValue = {
   runtime: UiRuntimeState;
@@ -93,8 +92,8 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
     }
 
+    // Interface language selection is intentionally disabled for the MVP.
     setLanguage("en");
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, "en");
 
     const key = ensureClientDurableCareKey(previousKey);
     const sid = ensureClientInteractionSessionId(
