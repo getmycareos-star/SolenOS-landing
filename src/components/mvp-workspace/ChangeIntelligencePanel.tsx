@@ -480,6 +480,106 @@ export function ChangeIntelligencePanel() {
           {loadingMorePatterns ? "Loading earlier patterns…" : "Load earlier patterns"}
         </button>
       ) : null}
+      {situations.length > 0 ? (
+        <div className="lcr-subsection">
+          <h3>Care situations</h3>
+          <p className="panel-muted">These status updates are recorded by the caregiver. They are not medical conclusions.</p>
+          <div className="lcr-timeline">
+            {situations.map((situation) => {
+              const evidenceIds = situationEvidenceIds(situation);
+              const selectedState = situationStates[situation.id] ?? (situation.state as SituationTrajectoryState);
+              const allowedStates: SituationTrajectoryState[] = situation.state === "resolved"
+                ? ["active"]
+                : (["active", "worsening", "improving", "resolved", "unknown"] as SituationTrajectoryState[])
+                    .filter((state) => state !== situation.state);
+              const stateHistory = Array.isArray(situation.context?.state_history)
+                ? situation.context.state_history as Array<Record<string, unknown>>
+                : [];
+              return (
+                <article key={situation.id} className="lcr-timeline-item">
+                  <span className="lcr-timeline-marker" aria-hidden="true">◎</span>
+                  <div className="lcr-timeline-content">
+                    <div className="lcr-entry-heading">
+                      <h3>{caregiverSafeAssistantText(situation.title) ?? "Saved care situation"}</h3>
+                      <span>{caregiverStatusLabel(situation.state) ?? "Needs review"}</span>
+                    </div>
+                    <p>{caregiverSafeChangeText(situation.description ?? situation.explanation) ?? "This situation is based on saved care records."}</p>
+                    <p className="panel-muted">
+                      {formatWindow(situation.temporal_start, situation.temporal_end)} · {evidenceIds.length} linked source record(s)
+                    </p>
+                    {situation.is_active && situation.state !== "evolved" ? (
+                      <div>
+                        <label>
+                          <span>Caregiver-reported status</span>
+                          <select
+                            value={selectedState}
+                            onChange={(event) => setSituationStates((current) => ({
+                              ...current,
+                              [situation.id]: event.target.value as SituationTrajectoryState,
+                            }))}
+                          >
+                            <option value={situation.state}>
+                              {caregiverStatusLabel(situation.state) ?? "Current status"} (current)
+                            </option>
+                            {allowedStates.map((state) => (
+                              <option key={state} value={state}>{caregiverStatusLabel(state) ?? state}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Reason for this status (required)</span>
+                          <textarea
+                            value={situationReasons[situation.id] ?? ""}
+                            onChange={(event) => setSituationReasons((current) => ({
+                              ...current,
+                              [situation.id]: event.target.value,
+                            }))}
+                            rows={2}
+                            maxLength={1200}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={
+                            situationTransitioningIds.includes(situation.id) ||
+                            selectedState === situation.state ||
+                            !(situationReasons[situation.id] ?? "").trim() ||
+                            evidenceIds.length === 0
+                          }
+                          onClick={() => void saveSituationState(situation)}
+                        >
+                          {situationTransitioningIds.includes(situation.id) ? "Saving status…" : "Save status"}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="panel-muted">This earlier situation is kept for history and cannot be changed.</p>
+                    )}
+                    {stateHistory.length > 0 ? (
+                      <details>
+                        <summary>Previous status updates ({stateHistory.length})</summary>
+                        <ul>
+                          {stateHistory.map((entry, index) => (
+                            <li key={situation.id + "-state-" + index}>
+                              <strong>{caregiverStatusLabel(String(entry.new_state ?? "")) ?? "Status updated"}</strong>
+                              <p className="panel-muted">
+                                {entry.recorded_at ? new Date(String(entry.recorded_at)).toLocaleString() : "Time not recorded"}
+                              </p>
+                              <p>{caregiverSafeChangeText(String(entry.reason ?? "")) ?? "A caregiver recorded a status update."}</p>
+                              <p className="panel-muted">
+                                {Array.isArray(entry.evidence_ids) ? entry.evidence_ids.length : 0} linked source record(s)
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
