@@ -96,7 +96,7 @@ export function PersistedCareOrientation() {
       setState("ready");
     } catch {
       setProjection(null);
-      setError("Your care information isn't available right now. Check your connection and try again.");
+      setError("Check your connection and try again.");
       setState("unavailable");
     }
   }, []);
@@ -119,7 +119,7 @@ export function PersistedCareOrientation() {
         <div className="persisted-care-orientation-header">
           <div><h2>We couldn't load your care information</h2></div>
         </div>
-        <RecordState kind="error" title="We couldn’t load your care information." description="Check your connection and try again." />
+        <RecordState kind="error" title="We couldn’t load your care information." description={error || "Check your connection and try again."} />
         <button type="button" onClick={() => void load()}>Try again</button>
       </section>
     );
