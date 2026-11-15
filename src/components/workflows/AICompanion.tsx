@@ -277,7 +277,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
-        <main className="companion-conversation" aria-label="Conversation">
+        <section className="companion-conversation" aria-label="Conversation">
           {messages.length === 0 ? (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
@@ -403,7 +403,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               <div ref={bottomRef} />
             </div>
           )}
-        </main>
+        </section>
         <aside className="companion-side-note" aria-label="Companion guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Grounded, not guesswork</strong><p>The Companion can help organise observations and questions. It does not diagnose, replace a professional, or decide what becomes part of the care record.</p></div></aside>
       </div>
 
