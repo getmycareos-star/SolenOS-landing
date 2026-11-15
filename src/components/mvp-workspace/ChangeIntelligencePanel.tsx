@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSolenOSTranslations } from "@/components/providers/LanguageProvider";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverStatusLabel, caregiverSituationStateLabel } from "@/lib/caregiver-language";
 import {
   getPersistedChangeDetail,
@@ -58,6 +59,7 @@ function formatWindow(start: string | null, end: string | null): string {
 
 /** Shows persisted backend assessments only; it never infers a care pattern from UI text. */
 export function ChangeIntelligencePanel({ personId }: { personId: string }) {
+  const { t } = useSolenOSTranslations();
   const personIdRef = useRef(personId);
   personIdRef.current = personId;
   const [changes, setChanges] = useState<PersistedChange[]>([]);
@@ -362,9 +364,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     return () => { active = false; };
   }, [personId]);
 
-  // Daily Care dispatches this event only after its durable worker has finished
-  // persisting the capture and its backend change assessments. Refresh the saved
-  // projection here; do not trigger a second reconciliation from the browser.
+
+  // Daily Care emits this after its durable worker finishes. Reload the saved
+  // backend projection only; never trigger a second browser-side reconciliation.
   useEffect(() => {
     let active = true;
     async function refreshAfterSavedCareUpdate() {
@@ -415,8 +417,8 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     <section className="lcr-record-section" aria-labelledby="change-intelligence-heading">
       <div className="lcr-section-heading">
         <div>
-          <p className="lcr-eyebrow">LONGITUDINAL UNDERSTANDING</p>
-          <h2 id="change-intelligence-heading">Changes and patterns</h2>
+          <p className="lcr-eyebrow">{t("changeIntelligence.eyebrow")}</p>
+          <h2 id="change-intelligence-heading">{t("changeIntelligence.title")}</h2>
         </div>
         <button
           type="button"
@@ -455,7 +457,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 <p className="panel-muted">
                   Supporting saved information: {change.evidence_ids.length}.
                 </p>
-                <p className="panel-muted">Earlier care information may be missing. That does not mean the event did not happen.</p>
+                <p className="panel-muted">{t("changeIntelligence.historyMissing")}</p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
                   {expandedChangeId === change.id ? "Hide source evidence" : "Review source evidence"} <span aria-hidden="true">→</span>
                 </button>
@@ -491,9 +493,9 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                           </>
                         ) : (
                           <>
-                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
-                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
-                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>{t("changeIntelligence.confirm")}</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>{t("changeIntelligence.dispute")}</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>{t("changeIntelligence.inconclusive")}</button>
                             {["cessation", "disappearance"].includes(change.change_type) &&
                               change.baseline_coverage_status === "covered" &&
                               change.current_coverage_status === "covered" ? (
@@ -619,8 +621,8 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
       ) : null}
       {situations.length > 0 ? (
         <div className="lcr-subsection">
-          <h3>Care situations</h3>
-          <p className="panel-muted">These status updates are recorded by the caregiver. They are not medical conclusions.</p>
+          <h3>{t("changeIntelligence.situations")}</h3>
+          <p className="panel-muted">{t("changeIntelligence.disclaimer")}</p>
           <div className="lcr-timeline">
             {situations.map((situation) => {
               const evidenceIds = situationEvidenceIds(situation);
@@ -697,7 +699,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     {situation.is_active && situation.state !== "evolved" ? (
                       <div>
                         <label>
-                          <span>Caregiver-reported status</span>
+                          <span>{t("changeIntelligence.reportedStatus")}</span>
                           <select
                             value={selectedState}
                             onChange={(event) => setSituationStates((current) => ({
@@ -714,7 +716,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                           </select>
                         </label>
                         <label>
-                          <span>Reason for this status (required)</span>
+                          <span>{t("changeIntelligence.statusReason")}</span>
                           <textarea
                             value={situationReasons[situation.id] ?? ""}
                             onChange={(event) => setSituationReasons((current) => ({

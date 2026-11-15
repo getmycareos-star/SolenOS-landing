@@ -24,6 +24,7 @@ import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessTo
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 import { CaregiverAccessPanel } from "@/components/mvp-workspace/CaregiverAccessPanel";
+import { LanguagePreferenceSelect } from "@/components/language-selector/LanguagePreferenceSelect";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -872,6 +873,7 @@ export default function WorkspaceSettingsPage() {
       </div>
       <nav className="settings-section-nav" aria-label="Settings sections">
         <a href="#settings-profile">Profile</a>
+        <a href="#settings-language">Language</a>
         <a href="#settings-notifications">Notifications</a>
         <a href="#settings-account">Account</a>
         <a href="#settings-caregivers">Caregivers</a>
@@ -880,13 +882,14 @@ export default function WorkspaceSettingsPage() {
         <a href="#settings-help">Help</a>
       </nav>
       <div className="mobile-settings settings-page-grid">
-        <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>01</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
-        <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
-        <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>An account is optional. Anonymous care access remains available.</p></div></div><AccountCard /></div>
-        <div className="settings-section-wrap" id="settings-caregivers"><div className="settings-section-intro"><span>04</span><div><h2>Caregiver access</h2><p>Invite family members and manage who can access this care record.</p></div></div><CaregiverAccessPanel /></div>
-        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>05</span><div><h2>Devices and account access</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
-        <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>06</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
-        <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>07</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
+        <div className="settings-section-wrap" id="settings-language"><div className="settings-section-intro"><span>01</span><div><h2>Language</h2><p>Choose the language you want SolenOS to use. Your original care reports are kept unchanged.</p></div></div><section className="mobile-settings-card"><LanguagePreferenceSelect /></section></div>
+        <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>02</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
+        <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>03</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
+        <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>04</span><div><h2>Account access</h2><p>An account is optional. Anonymous care access remains available.</p></div></div><AccountCard /></div>
+        <div className="settings-section-wrap" id="settings-caregivers"><div className="settings-section-intro"><span>05</span><div><h2>Caregiver access</h2><p>Invite family members and manage who can access this care record.</p></div></div><CaregiverAccessPanel /></div>
+        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>06</span><div><h2>Devices and account access</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
+        <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>07</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
+        <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>08</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
       </div>
     </div>
   );

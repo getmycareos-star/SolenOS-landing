@@ -55,6 +55,8 @@ jobs:
         run: npm ci
       - name: TypeScript validation
         run: npm run typecheck
+      - name: Verify caregiver language preference persistence
+        run: npm run verify:language-preference
       - name: Verify Living Care Record product contract
         run: npm run verify:lcr-product-architecture
       - name: Verify canonical architecture and analyze boundary

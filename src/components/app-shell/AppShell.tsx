@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useSolenOSTranslations } from "@/components/providers/LanguageProvider";
 import {
   CalendarDays,
   ClipboardList,
@@ -47,13 +48,13 @@ type InstallPromptEvent = Event & {
 };
 
 const NAVIGATION = [
-  { href: "/workspace/companion", label: "AI Companion", icon: MessageCircle },
-  { href: "/workspace/care-continuity", label: "Care continuity", icon: ClipboardList },
-  { href: "/workspace/open-loops", label: "Follow-ups", icon: Clock3 },
-  { href: "/workspace/daily-care", label: "Daily Care", icon: CalendarDays },
-  { href: "/workspace/documents", label: "Documents", icon: FileText },
-  { href: "/workspace/handoffs", label: "Care Handoffs", icon: Handshake },
-  { href: "/workspace/appointments", label: "Appointments", icon: ShieldCheck },
+  { href: "/workspace/companion", label: "companion", icon: MessageCircle },
+  { href: "/workspace/care-continuity", label: "careRecord", icon: ClipboardList },
+  { href: "/workspace/open-loops", label: "followUps", icon: Clock3 },
+  { href: "/workspace/daily-care", label: "dailyCare", icon: CalendarDays },
+  { href: "/workspace/documents", label: "documents", icon: FileText },
+  { href: "/workspace/handoffs", label: "handoffs", icon: Handshake },
+  { href: "/workspace/appointments", label: "appointments", icon: ShieldCheck },
 ] as const;
 
 const LOCAL_WORKSPACE_KEYS = [
@@ -80,6 +81,7 @@ const LOCAL_WORKSPACE_KEYS = [
 export function AppShell({ children, careContext, brandHref = "/workspace" }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useSolenOSTranslations();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
@@ -261,14 +263,14 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             </button>
           </div>
 
-          <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
+          <nav className="solenos-chat-primary-nav" aria-label={t("navigation.primary")}>
             <button type="button" className="solenos-chat-nav-item" onClick={() => {
               const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
               input?.focus();
               input?.scrollIntoView({ block: "nearest" });
             }}>
               <span className="solenos-chat-nav-icon"><Search size={19} strokeWidth={1.8} /></span>
-              <span>Search history</span>
+              <span>{t("navigation.searchHistory")}</span>
             </button>
             {NAVIGATION.map(({ href, label, icon: Icon }) => (
               <Link
@@ -283,13 +285,13 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
               >
                 <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
-                <span>{label}</span>
+                <span>{t(`navigation.${label}`)}</span>
               </Link>
             ))}
           </nav>
 
           <div className="solenos-chat-history-section">
-            <div className="solenos-chat-history-heading">Recent history</div>
+            <div className="solenos-chat-history-heading">{t("navigation.recentHistory")}</div>
             <HistoryDrawer />
           </div>
 
@@ -304,7 +306,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
             >
               <span className="solenos-chat-nav-icon"><Settings size={19} /></span>
-              <span>Settings</span>
+              <span>{t("navigation.settings")}</span>
             </Link>
           </div>
         </aside>
@@ -315,13 +317,13 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           <button
             type="button"
             className="solenos-sidebar-icon-button solenos-sidebar-toggle"
-            aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
+            aria-label={sidebarOpen ? t("navigation.closeNavigation") : t("navigation.openNavigation")}
             aria-expanded={sidebarOpen}
             aria-controls="solenos-navigation"
             onClick={() => setSidebarOpen((value) => !value)}
           >
             {sidebarOpen ? <X size={19} /> : <Menu size={19} />}
-            <span className="solenos-sidebar-toggle-label">{sidebarOpen ? "Close" : "Menu"}</span>
+            <span className="solenos-sidebar-toggle-label">{sidebarOpen ? t("navigation.close") : t("navigation.menu")}</span>
           </button>
           <button
             type="button"
