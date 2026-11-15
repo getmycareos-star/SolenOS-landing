@@ -102,7 +102,8 @@
     "recentHistory": "Historial reciente de cuidados",
     "viewHistory": "Ver todo el historial",
     "noHistory": "No hay entradas recientes. La ausencia de un registro no demuestra que no se hayan prestado cuidados.",
-    "tagline": "El recorrido del cuidado, siempre presente."
+    "tagline": "El recorrido del cuidado, siempre presente.",
+    "longitudinalIncomplete": "Esta actualización se ha guardado, pero SolenOS no pudo completar la comparación con el historial anterior. La evaluación del cambio está incompleta."
   },
   "changeIntelligence": {
     "eyebrow": "COMPRENSIÓN A LO LARGO DEL TIEMPO",
