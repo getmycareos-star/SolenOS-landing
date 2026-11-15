@@ -264,11 +264,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   return (
-    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="SolenOS AI Companion">
+    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="Care Assistant">
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">AI Companion</h1></div>
+          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Care Assistant</h1></div>
         </div>
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
@@ -326,8 +326,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         ? 'This answer may not include all relevant saved care information. Some notes or documents were unavailable, more matching items remain, or not all information fit into the answer.'
                         : 'The available saved notes and documents were checked for this question. This does not mean information missing from the record is known.'}</p>
                     </section>}
-                    {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Saved information used">
-                      <strong>Saved information used</strong>
+                    {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Information used to answer">
+                      <strong>Information used to answer</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
                         <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
                           <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
