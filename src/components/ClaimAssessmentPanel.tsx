@@ -278,7 +278,7 @@ export default function ClaimAssessmentPanel() {
       } catch {
         if (!cancelled) {
           setDependencies([]);
-          setDependencyError("Claim dependency history is unavailable. A failed read is not an empty dependency graph.");
+          setDependencyError("Related care details could not be loaded. This does not mean there are no related details.");
         }
       } finally {
         if (!cancelled) setDependencyLoading(false);
@@ -291,7 +291,7 @@ export default function ClaimAssessmentPanel() {
   async function submitDependency() {
     if (!personId || !selectedClaim || !dependencyTargetId || dependencyTargetId === selectedClaim.id ||
       dependencyRationale.trim().length < 3) {
-      setDependencyError("Select a different care detail and provide a rationale for the relationship.");
+      setDependencyError("Choose a different care detail and explain how the two details are related.");
       return;
     }
     setDependencySaving(true);
@@ -306,7 +306,7 @@ export default function ClaimAssessmentPanel() {
         rationale: dependencyRationale.trim(),
       });
       setDependencyRationale("");
-      setDependencyNotice("Dependency relationship saved. It records a declared link; it does not prove that either claim is true.");
+      setDependencyNotice("The connection was saved. This records how the details are related; it does not prove that either detail is true.");
       const result = await getJSON(
         `/uncertainty/claims/${encodeURIComponent(selectedClaim.id)}/dependencies`,
       );
@@ -320,7 +320,7 @@ export default function ClaimAssessmentPanel() {
       }
       setDependencies(rows);
     } catch {
-      setDependencyError("This link could not be saved. It may already exist or conflict with another care detail. No change was made.");
+      setDependencyError("This connection could not be saved. It may already exist or conflict with another care detail. No change was made.");
     } finally {
       setDependencySaving(false);
     }
@@ -368,7 +368,7 @@ export default function ClaimAssessmentPanel() {
         },
       );
       setRationale("");
-      setNotice("Review saved as a new version. Repeated reports or this review result do not prove that something is true.");
+      setNotice("Your review was saved. Repeated reports or this review do not prove that something is true.");
       await loadHistory();
     } catch {
       setError("We could not confirm that your review was saved. Check the selected notes or documents and the exact words you copied, then try again.");
@@ -378,9 +378,9 @@ export default function ClaimAssessmentPanel() {
   }
 
   return <section style={panel} aria-label="Review saved care information">
-    <h3 style={{ fontSize: 15, marginTop: 0 }}>Review the information behind a care detail</h3>
+    <h3 style={{ fontSize: 15, marginTop: 0 }}>Check the information behind a care detail</h3>
     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-      Compare a care detail with the saved sources. Any quoted passage must match the source exactly. Each review is saved as a new version. The original report is kept, and a review does not prove a medical fact.
+      Compare a care detail with the saved notes or documents. Any quoted words must match the original exactly. Your review is saved, and the original report is kept. A review does not prove a medical fact.
     </p>
     {loading && <p role="status">Loading saved care details and related notes…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
