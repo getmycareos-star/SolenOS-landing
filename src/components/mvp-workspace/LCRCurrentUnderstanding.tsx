@@ -642,6 +642,8 @@ export function LCRCurrentUnderstanding() {
   const [actionHistoryErrors, setActionHistoryErrors] = useState<Record<string, string>>({});
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [advancedPanelsOpen, setAdvancedPanelsOpen] = useState(false);
+  const [careHistoryOpen, setCareHistoryOpen] = useState(false);
+  const [clarificationOpen, setClarificationOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1280,6 +1282,7 @@ export function LCRCurrentUnderstanding() {
                                     question: item.request_text?.trim() || item.description || item.title,
                                     evidenceIds: item.evidence_ids,
                                   });
+                                  setClarificationOpen(true);
                                   document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
                                 }}>
                                   Request clarification
@@ -1904,8 +1907,16 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{caregiverSafeAssistantText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
-      <CareChangeHistoryPanel personId={personId} />
-      <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
+      <details className="lcr-history-details" open={careHistoryOpen} onToggle={(event) => setCareHistoryOpen(event.currentTarget.open)}>
+        <summary>Earlier care history</summary>
+        {careHistoryOpen ? <CareChangeHistoryPanel personId={personId} /> : null}
+      </details>
+      <div id="lcr-clarification-workflow">
+        <details className="lcr-history-details" open={clarificationOpen} onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
+          <summary>Questions that may help clarify care</summary>
+          {clarificationOpen ? <ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /> : null}
+        </details>
+      </div>
       <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>

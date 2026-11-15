@@ -28,6 +28,8 @@ assert.doesNotMatch(caregiverRenderedCode, /persisted records examined|\bConfide
 assert.doesNotMatch(careContinuity, /Add an update|Add the first detail|Add update to this thread|compose=1|CognitiveWorkspace|AddSituationPanel/, "Care Continuity must not expose a second capture interface");
 assert.match(careContinuity, /Open AI Companion/, "empty record routes new capture through AI Companion");
 assert.match(careContinuity, /Share new information through AI Companion/, "AI Companion is the primary caregiver-facing capture route");
+assert.doesNotMatch(careContinuity, /Additional care details are saved\./, "timeline entries never substitute generic filler for a missing care summary");
+assert.doesNotMatch(careContinuity, /situation\.openQuestions\.map/, "care questions are not duplicated under every timeline thread");
 assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligencePanel/, "duplicate overview and standalone observation-coverage editor are not mounted on Care Continuity");
 assert.match(currentUnderstanding, /<EvidenceReviewPanel personId={personId} \/>/, "Care Continuity mounts the evidence panel in its review-only form");
 assert.match(currentUnderstanding, /<CareContinuityIntegrityPanel personId={personId} \/>/, "Care Continuity mounts the integrity panel for review");
@@ -44,7 +46,11 @@ assert.doesNotMatch(integrityPanel, /<form\b/, "Care Continuity integrity panel 
 assert.doesNotMatch(integrityPanel, /Review window in days|reviewWindows|setReviewWindows/, "review-window values cannot be independently entered from Care Continuity");
 assert.doesNotMatch(integrityPanel, /When information differs|Next questions|recordOutcome|loadResolutionHistory/, "legacy duplicate conflict and question workflows are removed from the integrity panel");
 assert.match(currentUnderstanding, /<ConflictResolutionPanel personId={personId} \/>/, "conflict review remains available in its dedicated section");
-assert.match(currentUnderstanding, /<ClarificationWorkflowPanel personId={personId}/, "clarification remains available in its dedicated section");
+assert.match(currentUnderstanding, /Questions that may help clarify care/, "care questions are discoverable without dominating the first LCR view");
+assert.match(currentUnderstanding, /clarificationOpen \? <ClarificationWorkflowPanel/, "the clarification workflow mounts only when a caregiver opens it");
+assert.match(currentUnderstanding, /setClarificationOpen\(true\)/, "an explicit request for clarification opens the workflow");
+assert.match(currentUnderstanding, /Earlier care history/, "detailed care history is progressively disclosed");
+assert.match(currentUnderstanding, /careHistoryOpen \? <CareChangeHistoryPanel/, "the history panel is not mounted until requested");
 assert.doesNotMatch(currentUnderstanding, /No immediate concerns were identified/, "an empty record must not be presented as having no immediate concerns");
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "empty record priority state explicitly communicates insufficient information");
 assert.match(currentUnderstanding, /internalCaptureRecordTypes/, "capture wrapper records must be excluded from caregiver change summaries");

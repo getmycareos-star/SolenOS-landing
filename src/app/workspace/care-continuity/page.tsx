@@ -208,7 +208,7 @@ function WorkspacePageInner() {
                       <h3>{caregiverSafeAssistantText(situation.title) || "Care update"}</h3>
                       <span>{formatLastUpdated(situation.updatedAt)}</span>
                     </div>
-                    {situation.contextSummary && <p>{caregiverSafeAssistantText(situation.contextSummary) || "Additional care details are saved."}</p>}
+                    {situation.contextSummary && caregiverSafeAssistantText(situation.contextSummary) && <p>{caregiverSafeAssistantText(situation.contextSummary)}</p>}
                     {(situation.sourceStatements?.length ?? 0) > 0 && (
                       <div className="lcr-source-statements" aria-label="Statements preserved from original sources">
                         <p>Statements from original sources</p>
@@ -287,9 +287,7 @@ function WorkspacePageInner() {
                         ))}
                       </div>
                     )}
-                    {situation.openQuestions.length > 0 && (
-                      <p>Still to clarify: {situation.openQuestions.map(caregiverSafeAssistantText).filter(Boolean).join(" · ")}</p>
-                    )}
+
                     <span className="lcr-entry-status">{STATUS_LABELS[situation.status] ?? caregiverStatusLabel(situation.status) ?? "Status not available"}</span>
                     {situation.persistedThread && situation.status !== "resolved" && resumableSituations.length > 1 && (
                       <div className="lcr-related-situation-control">
