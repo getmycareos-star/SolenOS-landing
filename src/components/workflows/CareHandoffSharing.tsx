@@ -218,7 +218,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
   if (draft.retrieval_complete === false) {
     lines.push("\n## Important: some saved information could not be included");
     for (const partial of draft.partial_sources ?? []) {
-      lines.push("- " + readableSection(partial.source) + ": at least " + partial.returned_count + " saved items were read; additional records remain outside this draft.");
+      lines.push("- " + readableSection(partial.source) + ": at least " + partial.returned_count + " saved details were included; more may be available.");
     }
     lines.push("This summary does not include everything in your Care Record. Open the Care Record and check the notes and documents before sharing.");
   }
@@ -799,7 +799,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                   <p style={{ fontSize: 11, margin: "5px 0" }}>This summary does not include everything in your Care Record. Check the full Care Record before relying on it.</p>
                   {(activeSnapshot.partial_sources ?? []).map(item => <p key={item.source} style={{ fontSize: 11, margin: "3px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were included; more may be available.</p>)}
                 </section>}
-                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>What is included and what is missing</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{caregiverSafeAssistantText(value.label) || readableSection(key)}: {readableStatus(value.status)}{caregiverSafeAssistantText(value.reason) ? " — " + caregiverSafeAssistantText(value.reason) : ""} · {value.count} saved detail(s)</p>)}</section>}
+                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>What is included and what is missing</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{caregiverSafeAssistantText(value.label) || readableSection(key)}: {readableStatus(value.status)}{caregiverSafeAssistantText(value.reason) ? " — " + caregiverSafeAssistantText(value.reason) : ""} · {value.count} {value.count === 1 ? "saved detail" : "saved details"}</p>)}</section>}
                 {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not included — {readableSection(item.source)}: {readableStatus(item.status)}{caregiverSafeAssistantText(item.reason) ? " (" + caregiverSafeAssistantText(item.reason) + ")" : ""}</p>)}
                 {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}{item.stale_warning ? " · older information — check before relying on it" : ""}{item.original_source_reference ? " · document source" : ""}{Array.isArray(item.page_references) && item.page_references.length ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
                 <p style={{ fontSize: 11 }}>Care Record check: This information is for this person. It does not confirm that every detail is accurate.</p>
