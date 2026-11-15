@@ -320,7 +320,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && msg.response_mode === 'deterministic_low_capacity_support_fallback' && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.safety_note || "I couldn't confirm a reliable answer from the care record, so this is only a brief supportive reply. Nothing was changed in the care record."}</p>
                     </section>}
-                    {!isUser && msg.ai_generated && coverage && <section className="companion-provenance" role="status" aria-label="Care history coverage">
+                    {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="Care history coverage">
                       <strong>How much of the saved care history was checked</strong>
                       <p>{coverageIsPartial
                         ? 'This answer may not include all relevant saved care information. Some sources were unavailable, more matching records remain, or not all retrieved information fit into the answer.'
