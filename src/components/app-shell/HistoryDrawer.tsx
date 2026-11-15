@@ -427,7 +427,7 @@ function appointmentDescription(payload: Record<string, unknown>): string {
   };
 
   add("Visit purpose", payload.visitPurpose);
-  add("Clinician", payload.clinician);
+  add("Healthcare professional", payload.clinician);
   add("Specialty", payload.specialty);
   add("Location", payload.location);
   if (Array.isArray(payload.topConcerns)) {
@@ -483,11 +483,11 @@ function mapAppointment(
     source_kind: "appointment",
     source_details: detailFields([
       { label: "Appointment date", value: appointmentDate || "Not recorded" },
-      { label: "Clinician", value: clinician },
-      { label: "Specialty", value: specialty },
+      { label: "Healthcare professional", value: clinician },
+      { label: "Area of care", value: specialty },
       { label: "Location", value: location },
-      { label: "Review status", value: asText(payload.reviewStatus) || status },
-      { label: "Workspace version", value: typeof record.version_number === "number" ? String(record.version_number) : "Not returned" },
+      { label: "Review status", value: caregiverStatusLabel(asText(payload.reviewStatus) || status) || "Not available" },
+      
       { label: "Saved in SolenOS", value: savedAt ? formatDateTime(savedAt) : "Not recorded" },
     ]),
   };
@@ -595,9 +595,9 @@ function mapDecision(item: CareDecision): HistoryRecord {
     tags: ["decision"],
     source_kind: "decision",
     source_details: detailFields([
-      { label: "Decision status", value: item.decision_status || "Not specified" },
-      { label: "Decided at", value: item.decided_at ? formatDateTime(item.decided_at) : "Not recorded" },
-      { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
+      { label: "Status", value: caregiverStatusLabel(item.decision_status) || "Not available" },
+      { label: "When the decision was made", value: item.decided_at ? formatDateTime(item.decided_at) : "Not recorded" },
+      { label: "When it was saved", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
       
       
     ]),
@@ -606,7 +606,7 @@ function mapDecision(item: CareDecision): HistoryRecord {
 
 function mapOutcome(item: CareOutcome): HistoryRecord {
   const createdAt = item.created_at || null;
-  const actionType = asText(item.action_type).replaceAll("_", " ") || "care action";
+  const actionType = caregiverStatusLabel(asText(item.action_type)) || "Care update";
   const status = item.outcome_status || "not specified";
   const description = [asText(item.notes), asText(item.correction_text) ? "Correction recorded: " + asText(item.correction_text) : ""]
     .filter(Boolean).join("\n\n");
@@ -618,17 +618,17 @@ function mapOutcome(item: CareOutcome): HistoryRecord {
     recorded_at: createdAt,
     display_date: createdAt,
     display_date_label: "Outcome recorded",
-    title: "Outcome · " + actionType,
-    description: description || "Outcome status recorded: " + status + ".",
+    title: "What happened after a care update · " + actionType,
+    description: description || "Status: " + (caregiverStatusLabel(status) || "Not available") + ".",
     evidence_ids: item.evidence_ids ?? [],
     created_by_caregiver_id: item.created_by_caregiver_id || null,
     tags: ["outcome", actionType],
     source_kind: "outcome",
     source_details: detailFields([
-      { label: "Action type", value: item.action_type || "Not recorded" },
-      { label: "Action ID", value: item.action_id || "Not recorded" },
-      { label: "Outcome status", value: status },
-      { label: "Recorded at", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
+      
+      
+      { label: "Status", value: caregiverStatusLabel(status) || "Not available" },
+      { label: "When it was saved", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
       
       
     ]),
@@ -1093,7 +1093,7 @@ export function HistoryDrawer() {
   const closeDrawer = () => setSelectedId(null);
 
   const selectedDescriptionHeading = selectedRecord?.source_kind === "document"
-    ? "Extracted text"
+    ? "Text read from the document"
     : selectedRecord?.source_kind === "appointment"
       ? "Saved appointment information"
       : selectedRecord?.source_kind === "lcr-revision"
@@ -1166,7 +1166,7 @@ export function HistoryDrawer() {
                 </section>
 
                 <section className="history-detail-section">
-                  <h3>Record details</h3>
+                  <h3>More details</h3>
                   <dl className="history-detail-list">
                     {selectedRecord.source_kind === "care-event" ? (
                       <>
@@ -1338,7 +1338,7 @@ export function HistoryDrawer() {
 }
 
 function ReactDetailField({ field }: { field: DetailField }) {
-  if (/\b(?:id|identifier|version|evidence|source type|scope|action type)\b/i.test(field.label)) return null;
+  if (/\b(?:id|identifier|version|evidence|source type|scope|action type|file type)\b/i.test(field.label)) return null;
   const rawValue = caregiverSafeAssistantText(field.value);
   const value = rawValue && rawValue.includes("_")
     ? caregiverStatusLabel(rawValue) ?? caregiverInformationAreaLabel(rawValue)
