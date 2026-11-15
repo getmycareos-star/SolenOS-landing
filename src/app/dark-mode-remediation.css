@@ -160,6 +160,9 @@
   color: #17251c !important;
   border-color: #a8c9a3 !important;
 }
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-text-action :is(span, svg) {
+  color: #17251c !important;
+}
 :root[data-solenos-theme="dark"] .lcr-record-section :is(.lcr-empty-state, .lcr-empty, [data-empty-state]) {
   background: var(--theme-panel-bg);
   color: var(--theme-panel-fg);
