@@ -105,7 +105,7 @@ assert.match(shell, /<CareRecordOverview \/>/);
 assert.match(shell, /CareRecordOverview/);
 assert.doesNotMatch(shell, /LCRCurrentUnderstanding/);
 assert.match(read("src/components/app-shell/CareRecordOverview.tsx"), /What is saved/);
-assert.match(read("src/components/app-shell/CareRecordOverview.tsx"), /Changes recorded over time/);
+assert.match(read("src/components/app-shell/CareRecordOverview.tsx"), /Changes in care over time/);
 assert.doesNotMatch(read("src/components/app-shell/CareRecordOverview.tsx"), /LONGITUDINAL RECORD/);
 assert.match(shell, /case "download_export"/);
 assert.match(shell, /intent={sharePanelIntent}/);
