@@ -17,7 +17,7 @@ assert.match(component, /Array\.isArray\(data\.items\)/);
 assert.match(component, /item\.source_collection/);
 assert.match(component, /item\.epistemic_status/);
 assert.match(component, /item\.evidence_ids/);
-assert.match(component, /Your Living Care Record does not have any care information available yet/);
+assert.match(component, /Your Care Record does not have any care information yet/);
 assert.match(component, /Add a care update/);
 assert.match(component, /Some parts of the record may not be available in this view/);
 assert.match(component, /Missing information does not mean that nothing happened/);
