@@ -119,7 +119,7 @@ export function IdentityDeviceRecoveryPanel() {
       // The recovery endpoint revokes every old session. Sign in immediately
       // with the new password to establish a fresh bearer on this device.
       await signInToAccount(email, newPassword);
-      setRecoveryMessage(body.message || "Account recovered. You are signed in on this device.");
+      setRecoveryMessage("Your account is ready. You are signed in on this device.");
       setReplacementRecoveryCode(body.recovery_code || "");
       setRecoveryCode("");
       setNewPassword("");
