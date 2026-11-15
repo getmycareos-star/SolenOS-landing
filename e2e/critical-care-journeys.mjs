@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { chromium } from "playwright";
+import { execFileSync } from "node:child_process";
 
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
@@ -1332,6 +1333,93 @@ await record("clarification questions are linked, answerable, skippable and dura
   await page.getByText(exactAnswer, { exact: true }).waitFor({ timeout: 15_000 });
   await page.getByText(exactProvenance, { exact: false }).waitFor({ timeout: 15_000 });
   await page.getByText("Earlier answers", { exact: true }).waitFor();
+  await verifyMobile(page);
+  await context.close();
+});
+
+await record("persisted situation evidence review and caregiver trajectory update", async () => {
+  assert.ok(dailyCaptureEventId, "situation review needs a persisted source event");
+  const situationId = unique("caregiver-situation");
+  const seed = String.raw`
+import sys
+from app.core.database import SessionLocal
+from app.models.care import CareEvent
+from app.models.change import Situation, SituationState, SituationType
+
+person_id, event_id, situation_id = sys.argv[1:4]
+db = SessionLocal()
+try:
+    event = db.query(CareEvent).filter(
+        CareEvent.id == event_id,
+        CareEvent.person_id == person_id,
+    ).first()
+    if event is None:
+        raise RuntimeError("The source care event was not found in the scoped care record")
+    situation = Situation(
+        id=situation_id,
+        person_id=person_id,
+        situation_type=SituationType.UNKNOWN,
+        state=SituationState.ACTIVE,
+        title="Sleep disruption follow-up",
+        description="A caregiver recorded restless sleep and overnight awakenings.",
+        signal_ids=[event.id],
+        signal_types=["care_event"],
+        temporal_start=event.occurred_at,
+        temporal_end=event.occurred_at,
+        pattern_ids=[],
+        change_ids=[],
+        confidence=None,
+        alternative_interpretations=[],
+        context={},
+        attention_candidate=False,
+        follow_up_candidate=False,
+        is_active=True,
+    )
+    db.add(situation)
+    db.commit()
+finally:
+    db.close()
+`;
+  execFileSync(
+    "python",
+    ["-c", seed, identity.personId, dailyCaptureEventId, situationId],
+    { cwd: "backend-service/backend", env: process.env, stdio: "pipe" },
+  );
+
+  const persisted = await request(
+    `/api/v1/change/situations/${identity.personId}`,
+    { token: identity.token },
+  );
+  assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
+  assert.ok(persisted.payload.some((row) => row.id === situationId));
+
+  const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
+  await page.getByText("Earlier care history", { exact: true }).click();
+  const situationCard = page.locator("article.lcr-timeline-item").filter({
+    hasText: "Sleep disruption follow-up",
+  });
+  await situationCard.waitFor({ state: "visible", timeout: 20_000 });
+  await situationCard.getByRole("button", { name: "Review linked records", exact: true }).click();
+  await situationCard.getByText("restless sleep and three overnight awakenings", { exact: false })
+    .waitFor({ timeout: 15_000 });
+
+  const reason = "The caregiver reports the sleep disruption is worse than the previous night.";
+  await situationCard.getByLabel("Caregiver-reported status").selectOption("worsening");
+  await situationCard.getByLabel("Reason for this status (required)").fill(reason);
+  await situationCard.getByRole("button", { name: "Save status", exact: true }).click();
+  await situationCard.getByText("Previous status updates (1)", { exact: true })
+    .waitFor({ timeout: 20_000 });
+  await situationCard.getByText("Worsening", { exact: true }).waitFor();
+  await situationCard.getByText(reason, { exact: true }).waitFor();
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("Earlier care history", { exact: true }).click();
+  const reloadedCard = page.locator("article.lcr-timeline-item").filter({
+    hasText: "Sleep disruption follow-up",
+  });
+  await reloadedCard.getByText("Previous status updates (1)", { exact: true })
+    .waitFor({ timeout: 20_000 });
+  await reloadedCard.getByText(reason, { exact: true }).waitFor();
   await verifyMobile(page);
   await context.close();
 });
