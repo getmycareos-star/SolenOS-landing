@@ -130,7 +130,7 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved evidence item(s)" : ""}</li>)}</ol>}</section>}
     </div>}
     {loop && !["closed", "cancelled"].includes(loop.status) && <div className="followup-update-area">
-      {showUpdate ? <form onSubmit={(event) => { event.preventDefault(); if (updateText.trim()) void onUpdate(loop, updateText.trim()).then(() => { setUpdateText(""); setShowUpdate(false); }); }}>
+      {showUpdate ? <form onSubmit={(event) => { event.preventDefault(); if (updateText.trim()) void onUpdate(loop, updateText.trim()).then(() => { setUpdateText(""); setShowUpdate(false); }).catch(() => { /* Keep the exact report text available for a safe retry. */ }); }}>
         <label htmlFor={"followup-update-" + loop.id}>Tell SolenOS what has changed. This will be saved as your report, not a verified outcome.</label>
         <textarea id={"followup-update-" + loop.id} rows={3} value={updateText} onChange={(event) => setUpdateText(event.target.value)} maxLength={12000} placeholder="Share an update in your own words…" />
         <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowUpdate(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !updateText.trim()}>{busy ? "Saving…" : "Share update"}</button></div>
@@ -239,9 +239,10 @@ export default function FollowUpsPage() {
       delete pendingUpdateKeys.current[loop.id];
       setNotice("Your update was saved as a caregiver report. SolenOS has not marked the matter resolved.");
     } catch {
-      // Retain the key while the result is uncertain. A retry of the same text
-      // must converge on the original write rather than append a duplicate.
+      // Retain the key and the caregiver's text while the result is uncertain.
+      // A retry must converge on the original write rather than append a duplicate.
       setError("The update could not be confirmed. Nothing has been marked resolved.");
+      throw new Error("Caregiver update was not confirmed; preserve the draft for retry.");
     } finally {
       setBusyId("");
     }
