@@ -2,18 +2,12 @@ name: Netlify production deployment
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "package.json"
-      - "package-lock.json"
-      - "netlify.toml"
-      - ".github/workflows/netlify-production-deploy.yml"
-      - ".github/workflows/frontend-checks.yml"
-      - ".github/workflows/anonymous-account-continuity-e2e.yml"
-      - ".github/workflows/open-loop-ui-e2e.yml"
-      - "scripts/**"
+    inputs:
+      release_approved:
+        description: "Explicitly approve production deployment after all release acceptance gates pass"
+        required: true
+        type: boolean
+        default: false
   pull_request:
     paths:
       - "src/**"
@@ -71,7 +65,7 @@ jobs:
   deploy:
     name: Deploy production to Netlify
     needs: verify
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !contains(github.event.head_commit.message, '[verify-only]')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.release_approved == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
