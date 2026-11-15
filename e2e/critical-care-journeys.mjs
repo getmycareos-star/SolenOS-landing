@@ -736,6 +736,17 @@ await record("06 Companion context and Qwen output", async () => {
   assert.equal(documentAnswer.status, 200, JSON.stringify(documentAnswer.payload));
   assert.equal(documentAnswer.payload.written_to_lcr, false);
   assert.ok(
+    documentAnswer.payload.ai_generated === true || documentAnswer.payload.ai_generated === false,
+    "Companion must identify whether a document answer came from Qwen or the verified source excerpt",
+  );
+  if (documentAnswer.payload.ai_generated === false) {
+    assert.match(
+      documentAnswer.payload.safety_note || "",
+      /quoted from the uploaded document/i,
+      "A deterministic document excerpt must disclose its source and verification limit",
+    );
+  }
+  assert.ok(
     Array.isArray(documentAnswer.payload.source_document_analysis_ids)
       && documentAnswer.payload.source_document_analysis_ids.length > 0,
     "Companion must return the exact verified document extraction IDs supplied to its answer",
