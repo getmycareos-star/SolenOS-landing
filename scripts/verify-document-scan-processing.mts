@@ -60,7 +60,7 @@ assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURICom
 assert.doesNotMatch(intelligenceReviewSource, /Retry background processing|Continue reading/, "caregivers must not be asked to supervise or manually resume document processing");
 assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial"/, "partial source extraction must be distinct from Qwen processing status");
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
-assert.match(intelligenceReviewSource, /Some words may be misread, especially handwriting/, "OCR confidence must not be represented as a correctness probability");
+assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "caregivers must be warned that names, dates and numbers can be misread");
 assert.match(intelligenceReviewSource, /Compare each suggested detail with the original document before accepting it/, "handwriting uncertainty must remain visible");
 assert.match(intelligenceReviewSource, /model_provenance/, "document processing model provenance must be available to the review view");
 
