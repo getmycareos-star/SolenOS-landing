@@ -1138,9 +1138,21 @@ await record("clarification questions are linked, answerable, skippable and dura
         subject_type: "person",
         subject_id: identity.personId,
         priority: "medium",
-        necessity: "not_assessed",
+        necessity: "necessary",
+        necessity_rationale: "The current care review depends on confirming this detail.",
+        intended_answerer_role: "reporting_caregiver",
         evidence_ids: [source.id],
-        context: [{ source_kind: "critical_care_journey", source_id: source.id }],
+        context: [{
+          source_kind: "caregiver_report",
+          source_id: source.id,
+          source_record_refs: [{ record_type: "evidence", record_id: source.id }],
+          necessity_assessment: {
+            necessity: "necessary",
+            necessity_rationale: "The current care review depends on confirming this detail.",
+            decision_dependency: "The current handoff cannot be completed accurately without this answer.",
+            evidence_ids: [source.id],
+          },
+        }],
       },
     });
     assert.equal(created.status, 200, JSON.stringify(created.payload));
