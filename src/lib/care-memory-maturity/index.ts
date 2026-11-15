@@ -193,8 +193,8 @@ export function resolveCareTurnConfirmation(params: {
   }
   if (params.turnClass === "record_question") {
     return named
-      ? `Using what is already held in ${named}'s Living Care Record.`
-      : "Using what is already held in the Living Care Record.";
+      ? `Using the care details saved for ${named}.`
+      : "Using the care details saved in your Care Record.";
   }
 
   // Locked: no care anchors yet — invite only; never care-story / LCR theater.
@@ -227,8 +227,8 @@ export function resolveCareTurnConfirmation(params: {
   ) {
     if (params.gatheringContext) {
       return named
-        ? `This is held in ${named}'s Living Care Record. A couple of details would help before deciding what matters.`
-        : "This is held. A couple of details would help before deciding what matters.";
+        ? `The details shared about ${named} are saved in the Care Record. A couple of details would help before deciding what matters.`
+        : "The care details shared so far are saved. A couple of details would help before deciding what matters.";
     }
     return named
       ? `What we understand about ${named}'s care continues — share what changed when you can.`
@@ -253,13 +253,13 @@ export function resolveCareTurnConfirmation(params: {
     params.priorObservationFactsCount > 0 &&
     !params.gatheringContext
   ) {
-    return "Here is what is already held — not a recommendation for what to choose.";
+    return "Here are the care details already saved. This is not a recommendation about what to choose.";
   }
 
   if (params.gatheringContext) {
     return named
-      ? `This is held in ${named}'s Living Care Record. A couple of details would help before deciding what matters.`
-      : "This is held. A couple of details would help before deciding what matters.";
+      ? `The details shared about ${named} are saved in the Care Record. A couple of details would help before deciding what matters.`
+      : "The care details shared so far are saved. A couple of details would help before deciding what matters.";
   }
 
   if (
@@ -324,14 +324,14 @@ export function composeMemoryAwareWhatChanged(params: {
     return params.baselineChangeNote.trim();
   }
   if (params.state === "new_care_reality") {
-    return "First care observations are held — unknowns stay open until clearer evidence arrives.";
+    return "Your first care updates are saved. Anything unclear will stay marked as not sure until more information is available.";
   }
   const prior = params.priorFact?.trim();
   const latest = params.latestFact?.trim();
   if (prior && latest && prior.toLowerCase() !== latest.toLowerCase()) {
-    return `New: ${latest.replace(/\.$/, "")}. Earlier held: ${prior.replace(/\.$/, "")}.`;
+    return `New: ${latest.replace(/\.$/, "")}. Earlier: ${prior.replace(/\.$/, "")}.`;
   }
-  return "This stays connected to what was already held — you do not have to reconstruct the thread.";
+  return "New updates stay with the earlier care details, so you do not have to piece everything together again.";
 }
 
 /**
