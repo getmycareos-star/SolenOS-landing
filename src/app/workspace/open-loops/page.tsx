@@ -273,14 +273,14 @@ export default function FollowUpsPage() {
       <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
       <p className="followups-kicker">CARE FOLLOW-UPS</p>
       <div className="followups-title-row">
-        <div><h1>Follow-ups</h1><p>SolenOS reviews saved care information and keeps things that still need attention visible. You only need to step in when we need your knowledge or action.</p></div>
+        <div><h1>Follow-ups</h1><p>SolenOS checks the care information you have saved and keeps follow-ups easy to find. You only need to step in when we need your knowledge or action.</p></div>
         <button type="button" className="followups-refresh" onClick={() => { setLoading(true); void refresh().catch(() => setError("Follow-ups could not be refreshed. Try again.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
       </div>
     </header>
     {error && <p className="followups-alert" role="alert">{error}</p>}
     {notice && <p className="followups-notice" role="status">{notice}</p>}
     {attentionWarning && <p className="followups-limitation" role="note">{attentionWarning}</p>}
-    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or was not checked. An empty section does not mean nothing needs attention.</p>}
+    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked. An empty section does not mean nothing needs attention.</p>}
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Items with a clear reason to be addressed now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
