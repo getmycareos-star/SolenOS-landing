@@ -91,7 +91,13 @@
     "measurementRecords": "measurement records",
     "quickCheckIns": "quick check-ins",
     "careHandoffs": "care handoffs",
-    "otherCareUpdates": "other care updates"
+    "otherCareUpdates": "other care updates",
+    "openDocuments": "Open documents",
+    "reviewDocument": "Review the document",
+    "viewFollowups": "View follow-ups",
+    "notificationAttention": "Notification delivery needs attention",
+    "unresolved": "Unresolved",
+    "due": "Due"
   },
   "changeIntelligence": {
     "eyebrow": "LONGITUDINAL UNDERSTANDING",
