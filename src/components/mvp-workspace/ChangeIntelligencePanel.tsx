@@ -542,7 +542,7 @@ export function ChangeIntelligencePanel() {
                 ? ["active"]
                 : (["active", "worsening", "improving", "resolved", "unknown"] as SituationTrajectoryState[])
                     .filter((state) => state !== situation.state);
-              const savedStateHistory = situationDetails[situation.id]?.state_history ?? situation.context?.state_history;
+              const savedStateHistory = situation.context?.state_history ?? situationDetails[situation.id]?.state_history;
               const stateHistory = Array.isArray(savedStateHistory)
                 ? savedStateHistory as Array<Record<string, unknown>>
                 : [];
