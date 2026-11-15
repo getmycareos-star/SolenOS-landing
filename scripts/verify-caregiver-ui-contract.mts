@@ -62,6 +62,11 @@ assert.match(companion, /pendingCareUpdates/, "Companion must load persisted, ca
 assert.match(companion, /getJSON\('\/companion\/care-updates'/, "Companion must use the existing authenticated review queue");
 assert.match(companion, /reviewCareUpdate/, "caregivers must be able to explicitly review a suggested update");
 assert.match(companion, /postJSON\('\/companion\/care-updates\//, "review decisions must use the persisted backend review endpoint");
+assert.match(companion, /source_message_id\?: string \| null/, "the Companion must retain the original persisted user-message ID");
+assert.match(companion, /from-message\//, "caregivers must be able to submit an exact original message for review");
+assert.match(companion, /confirm_care_report: true/, "creating a care report must require an explicit caregiver confirmation");
+assert.match(companion, /not a question, possibility or guess/, "the confirmation must distinguish reports from questions and hypotheticals");
+assert.match(companion, /Save as care report/, "the report action must be explicit and separate from ordinary chat");
 assert.match(companion, /Add to Care Record/, "adding a Companion report must require an explicit caregiver action");
 assert.match(companion, /Don’t add/, "caregivers must be able to decline a suggested update");
 assert.match(companion, /not been independently verified/, "accepted Companion reports must remain distinct from clinical verification");
