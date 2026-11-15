@@ -14,8 +14,6 @@ const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPan
 const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <p role="status">Loading saved care information…</p> });
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
 const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading information that may need checking…</p> });
-const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
-const ChangeIntelligencePanel = dynamic(() => import("@/components/mvp-workspace/ChangeIntelligencePanel").then((module) => module.ChangeIntelligencePanel), { ssr: false, loading: () => <p role="status">Loading care changes…</p> });
 
 let workspaceLoadSequence = 0;
 
@@ -671,7 +669,6 @@ export function LCRCurrentUnderstanding() {
   const [actionHistoryErrors, setActionHistoryErrors] = useState<Record<string, string>>({});
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [advancedPanelsOpen, setAdvancedPanelsOpen] = useState(false);
-  const [careHistoryOpen, setCareHistoryOpen] = useState(false);
   const [clarificationOpen, setClarificationOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -2065,15 +2062,6 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{caregiverSafeAssistantText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
-      <details className="lcr-history-details" open={careHistoryOpen} onToggle={(event) => setCareHistoryOpen(event.currentTarget.open)}>
-        <summary>Earlier care history</summary>
-        {careHistoryOpen ? (
-          <>
-            <ChangeIntelligencePanel personId={personId} />
-            <CareChangeHistoryPanel personId={personId} />
-          </>
-        ) : null}
-      </details>
       <div id="lcr-clarification-workflow">
         <details className="lcr-history-details" open={clarificationOpen} onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
           <summary>Questions that may help clarify care</summary>
