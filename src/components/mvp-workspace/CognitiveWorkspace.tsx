@@ -107,7 +107,7 @@ function buildSharedDisplayText(text: string, docs: AttachedDocument[]): string 
     } else if (d.evidenceId && d.entryMethod === "snap") {
       parts.push(`[Care photo attached: ${d.name}. Photo saved as evidence; image interpretation has not been completed.]`);
     } else if (d.evidenceId && d.status === "saved") {
-      parts.push(`[Document attached: ${d.name}. Original saved; server extraction and document understanding are processing in the background.]`);
+      parts.push(`[Document attached: ${d.name}. Original saved; SolenOS is reading it in the background.]`);
     }
   }
   return parts.join("\n\n");
