@@ -73,7 +73,7 @@ console.log("PASS: claim assessment impact is connected to the LCR with fail-saf
 assert(claimPanel.includes("/uncertainty/claims/dependencies"), "claim dependency UI must persist relationships through the authenticated backend API");
 assert(claimPanel.includes("/uncertainty/claims/"), "claim dependency UI must retrieve the persisted dependency graph");
 assert(claimPanel.includes("do not prove it is true"), "dependency links must not be presented as proof of claim truth");
-assert(claimPanel.includes("This link could not be saved"), "failed dependency writes must not be shown as successful");
+assert(claimPanel.includes("This connection could not be saved"), "failed dependency writes must not be shown as successful");
 console.log("PASS: claim dependency graph is connected to the LCR with failure-safe persistence messaging.");
 
 assert(panel.includes("/relationships"), "source-lineage UI must use the persisted relationship API");
