@@ -360,7 +360,21 @@ export function ChangeIntelligencePanel() {
                     {change.is_active ? (
                       <div className="lcr-inline-actions">
                         {["confirmed", "rejected", "inconclusive", "resolved"].includes(change.confirmation_status) ? (
-                          <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
+                          <>
+                            <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
+                            {change.confirmation_status === "confirmed" &&
+                              ["cessation", "disappearance"].includes(change.change_type) &&
+                              change.baseline_coverage_status === "covered" &&
+                              change.current_coverage_status === "covered" ? (
+                              <button
+                                type="button"
+                                disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)}
+                                onClick={() => void changeStatus(change.id, "resolved")}
+                              >
+                                Confirm resolved
+                              </button>
+                            ) : null}
+                          </>
                         ) : (
                           <>
                             <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
