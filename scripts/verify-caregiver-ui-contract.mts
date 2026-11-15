@@ -95,7 +95,7 @@ assert.match(dailyCapture, /medicationError && <p role="alert"/);
 assert.match(dailyCapture, /medicationFeedback && <p role="status"/);
 assert.doesNotMatch(dailyCapture, /alert\('Medication added successfully'\)/);
 assert.doesNotMatch(dailyCapture, /alert\('Scale added successfully'\)/);
-assert.match(dailyCapture, /showPanel=\{false\}/);
+assert.doesNotMatch(dailyCapture, /QwenWorkflowPanel|QwenAssistPanel|showPanel\s*=/, "Daily Capture must not render a separate workflow panel");
 assert.match(dailyCapture, /Added to this daily-care draft/);
 assert.doesNotMatch(dailyCapture, /Unverified extraction/);
 assert.doesNotMatch(dailyCapture, /Not returned by the extractor/);
