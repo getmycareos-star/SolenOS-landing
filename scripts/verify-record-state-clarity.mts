@@ -81,6 +81,7 @@ assert.doesNotMatch(followUps, /setLoops\(nextLoops \|\| \[\]\)/);
 assert.match(reminders, /RecordState kind="loading"/);
 assert.match(reminders, /void refresh\(\)\.catch\(\(\) => setError/);
 assert.match(documents, /hasLoadedDocumentsRef\.current = true/);
+assert.match(documents, /hasLoadedDocuments && documents\.length > 0 && \(/);
 assert.match(documents, /listError && !hasLoadedDocuments \? null : visibleDocuments\.length === 0/);
 assert.match(documents, /Saved documents couldn’t be refreshed/);
 assert.doesNotMatch(documents, /SolenOS will not make up a history/);
