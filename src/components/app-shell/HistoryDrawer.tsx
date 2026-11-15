@@ -1243,7 +1243,7 @@ export function HistoryDrawer() {
                 <div className="history-list-scroll">
                   <div className="history-list-summary">
                     <strong>Recent records</strong>
-                    <span>{loading ? "Loading…" : visibleRecords.length + (visibleRecords.length === 1 ? " record" : " records")}</span>
+                    <span>{loading && !hasLoaded ? "Loading…" : error && !hasLoaded ? "Unavailable" : sourceWarnings.length > 0 ? "Some records may be missing" : visibleRecords.length + (visibleRecords.length === 1 ? " record" : " records")}</span>
                     <button
                       type="button"
                       className="history-icon-button"
