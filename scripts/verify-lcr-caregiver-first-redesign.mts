@@ -32,7 +32,7 @@ assert.match(careContinuity, /Talk through a care update/, "AI Companion is the 
 assert.doesNotMatch(careContinuity, /Additional care details are saved\./, "timeline entries never substitute generic filler for a missing care summary");
 assert.doesNotMatch(careContinuity, /situation\.openQuestions\.map/, "care questions are not duplicated under every timeline thread");
 assert.match(careContinuity, /<blockquote>\{caregiverSafeAssistantText\(statement\.source_passage\)/, "timeline preserves the original caregiver wording as the event detail");
-assert.match(careContinuity, /<details className="lcr-entry-details">\\s*<summary>When and by whom it was reported<\\/summary>/, "speaker attribution and timestamps are disclosed only when requested");
+assert.match(careContinuity, /<details className="lcr-entry-details">\s*<summary>When and by whom it was reported<\/summary>/, "speaker attribution and timestamps are disclosed only when requested");
 assert.match(careContinuity, /reports do not match yet/, "unresolved conflicting reports remain visible without an audit dump");
 assert.match(careContinuity, /Information that still needs checking/, "information gaps remain accessible without being converted into a caregiver task list");
 assert.doesNotMatch(careContinuity, /Winner selected: no|Supporting information:/, "raw conflict evidence counts and audit flags are not shown in the default timeline");
