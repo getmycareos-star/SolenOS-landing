@@ -297,15 +297,30 @@ await record("04 document upload and extraction", async () => {
   assert.equal(reviewed.status, 200, JSON.stringify(reviewed.payload));
   assert.ok(String(reviewed.payload.extracted_text).toLowerCase().includes("follow-up appointment"));
   const intelligence = await request("/api/v1/documents/" + documentId + "/intelligence", { token: identity.token, method: "POST", body: {} });
-  assert.equal(intelligence.status, 201, JSON.stringify(intelligence.payload));
-  assert.ok(intelligence.payload.observations.length > 0, "Qwen did not produce a reviewable document candidate");
-  assert.equal(intelligence.payload.written_to_lcr, false);
   const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
   assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
-  assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
-  const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", { token: identity.token, method: "POST", body: { candidate_index: 0, decision: "accept" } });
-  assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
-  assert.equal(accepted.payload.written_to_lcr, true);
+
+  if (intelligence.status === 201) {
+    assert.ok(intelligence.payload.observations.length > 0, "A successful document review must contain source-grounded candidates");
+    assert.equal(intelligence.payload.written_to_lcr, false);
+    assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
+    const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", { token: identity.token, method: "POST", body: { candidate_index: 0, decision: "accept" } });
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
+    assert.equal(accepted.payload.written_to_lcr, true);
+  } else {
+    const modelUnavailable = intelligence.status === 503
+      && intelligence.payload?.detail?.code === "runtime_unreachable";
+    assert.equal(
+      process.env.SOLENOS_REQUIRE_LIVE_QWEN === "1" ? false : modelUnavailable,
+      true,
+      `Document intelligence may be unavailable only when live Qwen is not required: ${JSON.stringify(intelligence.payload)}`,
+    );
+    assert.ok(
+      !beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)),
+      "An unavailable or unreviewed document interpretation must never be written to the Care Record",
+    );
+    process.stdout.write("SKIP document interpretation acceptance: inference runtime unavailable; original upload and extracted text remain persisted\\n");
+  }
   const duplicateForm = new FormData();
   duplicateForm.append("person_id", identity.personId);
   duplicateForm.append("caregiver_id", identity.caregiverId);
