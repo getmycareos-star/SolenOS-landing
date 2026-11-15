@@ -415,7 +415,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
     <section className="lcr-record-section" aria-labelledby="change-intelligence-heading">
       <div className="lcr-section-heading">
         <div>
-          <p className="lcr-eyebrow">CARE CHANGES OVER TIME</p>
+          <p className="lcr-eyebrow">CHANGES IN CARE OVER TIME</p>
           <h2 id="change-intelligence-heading">Changes and patterns</h2>
         </div>
         <button
@@ -485,13 +485,13 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                                 disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)}
                                 onClick={() => void changeStatus(change.id, "resolved")}
                               >
-                                Confirm resolved
+                                Mark as no longer happening
                               </button>
                             ) : null}
                           </>
                         ) : (
                           <>
-                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm this change is correct</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>This change is correct</button>
                             <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>This change is not right</button>
                             <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>I can’t confirm this</button>
                             {["cessation", "disappearance"].includes(change.change_type) &&
@@ -502,7 +502,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                                 disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)}
                                 onClick={() => void changeStatus(change.id, "resolved")}
                               >
-                                Confirm resolved
+                                Mark as no longer happening
                               </button>
                             ) : null}
                           </>
@@ -525,14 +525,14 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       <article key={source.id}>
                         <strong>{caregiverSafeAssistantText(source.field) ?? "Care detail"}: {caregiverSafeAssistantText(source.asserted_value) ?? "Saved care detail"}</strong>
                         <p>{caregiverSafeAssistantText(source.source_text ?? source.source_label) ?? "The original report is saved."}</p>
-                        <p className="panel-muted">Information: {caregiverInformationLabel(source.epistemic_state) ?? "Caregiver report"} · Review: {caregiverStatusLabel(source.assertion_status) ?? "Not checked"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                        <p className="panel-muted">Information: {caregiverInformationLabel(source.epistemic_state) ?? "Caregiver report"} · Review: {caregiverStatusLabel(source.assertion_status) ?? "Not checked"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Time not recorded"}</p>
                       </article>
                     ))}
                     {details[change.id].observations.map((source) => (
                       <article key={source.id}>
                         <strong>{caregiverSafeAssistantText(source.subject_label) ?? "Care detail"} · {caregiverSafeAssistantText(source.attribute) ?? "Recorded detail"}: {caregiverSafeAssistantText(source.normalized_value ?? source.value_text) ?? "Value not recorded"}{source.units ? ` ${source.units}` : ""}</strong>
                         <p>{caregiverSafeAssistantText(source.source_passage) ?? "The original wording is saved."}</p>
-                        <p className="panel-muted">{caregiverInformationLabel(source.epistemic_status) ?? "Caregiver report"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Observation time unknown"}</p>
+                        <p className="panel-muted">{caregiverInformationLabel(source.epistemic_status) ?? "Caregiver report"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Time not recorded"}</p>
                         {source.negated || source.hedge_marker || source.ambiguity_note ? (
                           <p className="panel-muted">{source.negated ? "The original report says this did not happen. " : ""}{source.hedge_marker ? "The original report expressed uncertainty. " : ""}{caregiverSafeAssistantText(source.ambiguity_note) ?? ""}</p>
                         ) : null}
