@@ -11,7 +11,7 @@ import {
   isTechnicalDiagnosticText,
 } from "../src/lib/caregiver-language";
 
-assert.equal(caregiverStatusLabel("needs_clarification"), "Needs clarification");
+assert.equal(caregiverStatusLabel("needs_clarification"), "Needs checking");
 assert.equal(caregiverStatusLabel("completed"), "Completed");
 assert.equal(caregiverStatusLabel("awaiting_confirmation"), "Needs review");
 assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
