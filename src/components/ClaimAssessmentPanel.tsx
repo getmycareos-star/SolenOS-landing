@@ -448,7 +448,7 @@ export default function ClaimAssessmentPanel() {
       </label>}
       <div style={{ display: "grid", gap: 10 }}>
         {links.map((link, index) => <fieldset key={index} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, minWidth: 0 }}>
-          <legend style={{ fontSize: 12 }}>Source link {index + 1}</legend>
+          <legend style={{ fontSize: 12 }}>Note or document {index + 1}</legend>
           <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Choose a note or document
             <select style={field} value={link.evidence_id} onChange={(event) => updateLink(index, { evidence_id: event.target.value })}>
               <option value="">Choose a source</option>
@@ -488,7 +488,7 @@ export default function ClaimAssessmentPanel() {
             : <p style={{ fontSize: 12 }}>No reason to repeat this review was found in the information checked. This does not prove that the review is complete or correct.</p>}
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Notes or documents that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Notes or documents not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
-          {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Source details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
+          {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
           {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
           {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {simpleReviewStatus(item.field)}</strong><div>{caregiverSafeAssistantText(item.description) || "The saved reports do not match."}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
           <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>{caregiverSafeAssistantText(assessmentImpact.interpretation_limit) || "This check may not include every relevant detail."}</p>
@@ -503,7 +503,7 @@ export default function ClaimAssessmentPanel() {
         <div>{new Date(item.created_at).toLocaleString()} · Reviewed by a caregiver</div>
         <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
         <ul>{item.evidence_links.map((link, i) => <li key={i}>
-          {simpleReviewStatus(link.relationship)} · source information
+          {simpleReviewStatus(link.relationship)} · note or document
           {link.source_passage ? <blockquote style={{ margin: "5px 0", paddingLeft: 8, borderLeft: "2px solid var(--border)" }}>{link.source_passage}</blockquote> : null}
           {link.scope_note ? <div>What this does and does not show: {caregiverSafeAssistantText(link.scope_note) || "No further details are available."}</div> : null}
         </li>)}</ul>
