@@ -67,7 +67,7 @@ function simpleRecordLabel(value?: string | null): string {
     uncertain: "Still uncertain",
     conflicting: "Conflicting information",
     missing: "Missing information",
-    accepted: "Reviewed by caregiver",
+    accepted: "Reviewed",
     rejected: "Not accepted",
     superseded: "Replaced by newer information",
     created: "Added",
@@ -162,7 +162,7 @@ export default function CareContinuityIntegrityPanel({
         <div>
           <h2 style={{ fontSize: 19, margin: 0 }}>Record details</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 5 }}>
-            Review reported information, unresolved questions, changes and recorded outcomes. A report is not automatically a confirmed fact. A caregiver review does not mean a healthcare professional has verified it.
+            Review reported information, unresolved questions, changes and recorded outcomes. A review status records a review step; it does not by itself mean a healthcare professional has verified the information.
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => void load()} disabled={loading}>
