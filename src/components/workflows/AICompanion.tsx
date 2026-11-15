@@ -408,7 +408,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       <strong>What care information was checked</strong>
                       <p>{coverageIsPartial
                         ? 'This answer may not include all relevant saved care information. Some notes or documents were unavailable, more matching items remain, or not all information fit into the answer.'
-                        : 'The available saved notes and documents were checked for this question. This does not mean information missing from the record is known.'}</p>
+                        : 'The answer uses the saved notes and documents available for this question.'}</p>
                     </section>}
                     {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Information used to answer">
                       <strong>Information used to answer</strong>
