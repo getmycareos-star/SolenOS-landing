@@ -494,17 +494,17 @@ function AccountCard() {
         const result = await signInToAccount(email, password);
         setAccount(result.account);
         setSignedOut(false);
-        setMessage("Signed in. Your existing care record is available in this session.");
+        setMessage("Signed in. Your existing Care Record is available.");
         setMode("idle");
         setPassword("");
         show("Signed in to your care record.", "success");
       } else if (mode === "delete") {
         await deleteJSON("/accounts/me", { password });
         setAccount(null);
-        setMessage("Account deleted. Your care record remains available in this anonymous session; deleting the account does not erase care history.");
+        setMessage("Account deleted. Your Care Record and care history were not deleted.");
         setMode("idle");
         setPassword("");
-        show("Account deleted. Care history was retained.", "success");
+        show("Account deleted. Your Care Record was not deleted.", "success");
       }
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";
@@ -585,7 +585,7 @@ function AccountCard() {
         </div>
       )}
       {signedOut && !account && mode === "idle" && (
-        <p className="mobile-settings-hint">Your previous care record is protected. Sign in with the same account to access it again; creating a new account here would not recover that record.</p>
+        <p className="mobile-settings-hint">Your previous Care Record is still saved. Sign in with the same account to access it; creating a new account will not bring that record back.</p>
       )}
       {mode !== "idle" && (
         <form onSubmit={(event) => void submit(event)} style={{ display: "grid", gap: "0.8rem", marginTop: "0.8rem" }}>
@@ -605,7 +605,7 @@ function AccountCard() {
           {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
           {mode === "login" && <p className="mobile-settings-hint">Sign in with the email and password linked to your existing care record.</p>}
 
-          {mode === "delete" && <p className="mobile-settings-hint">This deletes your email and password account, not your Care Record or care history. Those remain saved.</p>}
+          {mode === "delete" && <p className="mobile-settings-hint">This deletes your account login. It does not delete your Care Record or care history.</p>}
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <div className="mobile-settings-actions">
             <Button type="submit" variant={mode === "delete" ? "destructive" : "primary"} loading={busy} disabled={busy}>
@@ -882,9 +882,9 @@ export default function WorkspaceSettingsPage() {
       <div className="mobile-settings settings-page-grid">
         <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>01</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
         <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
-        <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>An account is optional. Anonymous care access remains available.</p></div></div><AccountCard /></div>
+        <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>You can use SolenOS without creating an account.</p></div></div><AccountCard /></div>
         <div className="settings-section-wrap" id="settings-caregivers"><div className="settings-section-intro"><span>04</span><div><h2>Caregiver access</h2><p>Invite family members and manage who can access this care record.</p></div></div><CaregiverAccessPanel /></div>
-        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>05</span><div><h2>Devices and account access</h2><p>Review registered devices and request help recovering access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
+        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>05</span><div><h2>Devices and account access</h2><p>See which devices can access your account and get help if you lose access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
         <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>06</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
         <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>07</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
       </div>
