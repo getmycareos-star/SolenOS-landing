@@ -81,7 +81,7 @@ export function ChangeIntelligencePanel() {
       ];
       await transitionChangeConfirmation(changeId, status, reason, [...new Set(supportingIds)]);
       const [changeRows, patternRows] = await Promise.all([listPersistedChanges(), listPersistedPatterns()]);
-      setChanges(changeRows.filter((row) => row.is_active));
+      setChanges(changeRows);
       setPatterns(patternRows.filter((row) => row.is_active));
       setChangeOffset(0);
       setPatternOffset(0);
@@ -141,7 +141,7 @@ export function ChangeIntelligencePanel() {
       const rows = await listPersistedChanges(undefined, 100, nextOffset);
       setChanges((current) => {
         const known = new Set(current.map((item) => item.id));
-        return [...current, ...rows.filter((item) => item.is_active && !known.has(item.id))];
+        return [...current, ...rows.filter((item) => !known.has(item.id))];
       });
       setChangeOffset(nextOffset);
       setHasMoreChanges(rows.length === 100);
@@ -257,7 +257,7 @@ export function ChangeIntelligencePanel() {
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
                   <h3>{caregiverChangeLabel(change)}</h3>
-                  <span>{caregiverStatusLabel(change.confirmation_status) ?? "Needs review"}</span>
+                  <span>{change.is_active ? caregiverStatusLabel(change.confirmation_status) ?? "Needs review" : "Past assessment"}</span>
                   {change.significance_verdict ? <span>{caregiverStatusLabel(change.significance_verdict) ?? "Not yet assessed"}</span> : null}
                 </div>
                 {change.explanation ? <p>{caregiverSafeChangeText(change.explanation) ?? "A possible change was found in the saved care information. Review the linked records before drawing a conclusion."}</p> : <p>{caregiverSafeChangeText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
@@ -281,28 +281,32 @@ export function ChangeIntelligencePanel() {
                         maxLength={2000}
                       />
                     </label>
-                    <div className="lcr-inline-actions">
-                      {["confirmed", "rejected", "inconclusive", "resolved"].includes(change.confirmation_status) ? (
-                        <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
-                      ) : (
-                        <>
-                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
-                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
-                          <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
-                          {["cessation", "disappearance"].includes(change.change_type) &&
-                            change.baseline_coverage_status === "covered" &&
-                            change.current_coverage_status === "covered" ? (
-                            <button
-                              type="button"
-                              disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)}
-                              onClick={() => void changeStatus(change.id, "resolved")}
-                            >
-                              Confirm resolved
-                            </button>
-                          ) : null}
-                        </>
-                      )}
-                    </div>
+                    {change.is_active ? (
+                      <div className="lcr-inline-actions">
+                        {["confirmed", "rejected", "inconclusive", "resolved"].includes(change.confirmation_status) ? (
+                          <button type="button" disabled={transitioningIds.includes(change.id)} onClick={() => void changeStatus(change.id, "awaiting_confirmation")}>Reopen for review</button>
+                        ) : (
+                          <>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)} onClick={() => void changeStatus(change.id, "confirmed")}>Confirm supported</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "rejected")}>Dispute assessment</button>
+                            <button type="button" disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim()} onClick={() => void changeStatus(change.id, "inconclusive")}>Mark inconclusive</button>
+                            {["cessation", "disappearance"].includes(change.change_type) &&
+                              change.baseline_coverage_status === "covered" &&
+                              change.current_coverage_status === "covered" ? (
+                              <button
+                                type="button"
+                                disabled={transitioningIds.includes(change.id) || !(confirmationReasons[change.id] ?? "").trim() || (details[change.id].evidence.length + details[change.id].assertions.length + details[change.id].observations.length === 0)}
+                                onClick={() => void changeStatus(change.id, "resolved")}
+                              >
+                                Confirm resolved
+                              </button>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="panel-muted">This earlier assessment is kept for history and is no longer active.</p>
+                    )}
                     {details[change.id].evidence.length === 0 && details[change.id].assertions.length === 0 && details[change.id].observations.length === 0 ? (
                       <p className="panel-muted">No source records could be resolved for this assessment. Its evidence references should be reviewed.</p>
                     ) : null}
