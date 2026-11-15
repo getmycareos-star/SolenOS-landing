@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type CurrentCareItem = {
   id: string;
@@ -73,9 +74,10 @@ export function PersistedCareOrientation() {
   const [state, setState] = useState<LoadState>("loading");
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [error, setError] = useState("");
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(async () => {
-    setState("loading");
+    if (!hasLoadedRef.current) setState("loading");
     setError("");
     try {
       const session = await ensureAnonymousSession();
@@ -93,11 +95,11 @@ export function PersistedCareOrientation() {
         throw new Error("The current care record could not be verified for this session.");
       }
       setProjection(data as CurrentCareProjection);
+      hasLoadedRef.current = true;
       setState("ready");
     } catch {
-      setProjection(null);
-      setError("Your care information isn't available right now. Check your connection and try again.");
-      setState("unavailable");
+      setError("Your care information couldn’t be refreshed. Try again.");
+      if (!hasLoadedRef.current) setState("unavailable");
     }
   }, []);
 
@@ -105,7 +107,7 @@ export function PersistedCareOrientation() {
     void load();
   }, [load]);
 
-  if (state === "loading") {
+  if (state === "loading" && !hasLoadedRef.current) {
     return (
       <section className="persisted-care-orientation" aria-busy="true" aria-label="Saved care information">
         <h2>Loading your care information…</h2>
@@ -113,7 +115,7 @@ export function PersistedCareOrientation() {
     );
   }
 
-  if (state === "unavailable" || !projection) {
+  if ((state === "unavailable" || !projection) && !hasLoadedRef.current) {
     return (
       <section className="persisted-care-orientation" aria-label="Saved care information">
         <div className="persisted-care-orientation-header">
@@ -135,6 +137,8 @@ export function PersistedCareOrientation() {
         <div><h2>Your Care Record</h2></div>
       </div>
 
+      {error && <RecordState kind="error" title="Care information couldn’t be refreshed." description="Showing the last information that loaded. Try again to refresh." action={<button type="button" onClick={() => void load()}>Try again</button>} />}
+
       {items.length > 0 ? (
         <>
           <p>{projection.item_count} saved care detail{projection.item_count === 1 ? "" : "s"} shown.</p>
@@ -153,16 +157,14 @@ export function PersistedCareOrientation() {
         </>
       ) : (
         <div>
-          <p>Your Care Record does not have any care information yet.</p>
+          <p>Your care record is taking shape.</p>
           <p>When you share an update or document, it can be reviewed and added to this record.</p>
           <Link href="/workspace">Add a care update</Link>
         </div>
       )}
 
       {(hasRequiredSourceGaps || hasOptionalSourceGaps || projection.schema_status !== "complete") && (
-        <p role="note">
-          Some parts of the record may not be available in this view. Missing information does not mean that nothing happened.
-        </p>
+        <p role="note">Some parts of the record may not be available in this view.</p>
       )}
       {caregiverSafeAssistantText(projection.notice) && <p role="note">{caregiverSafeAssistantText(projection.notice)}</p>}
 
