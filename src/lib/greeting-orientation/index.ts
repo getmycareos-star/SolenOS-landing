@@ -14,6 +14,7 @@ export {
   isGratitudeInput,
   isInsultOrFrustrationInput,
   isChangeOrientedInput,
+  shouldUseLcrOrientationEndpoint,
   buildMemorySummary,
 } from "./orientation";
 export type {
