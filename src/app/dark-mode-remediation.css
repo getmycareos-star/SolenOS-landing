@@ -478,6 +478,13 @@
   color: #17251c !important;
 }
 
+/* Care Record home links sit outside the record sections; keep their green ink readable on dark surfaces. */
+:root[data-solenos-theme="dark"] .lcr-home > section > div > button.lcr-text-action,
+:root[data-solenos-theme="dark"] .lcr-home > section > div > button.lcr-text-action :is(span, svg) {
+  color: #b9d5b5 !important;
+  -webkit-text-fill-color: #b9d5b5 !important;
+}
+
 
 /* A consent gate is an informational state, not a failed history source. */
 .history-source-info {
