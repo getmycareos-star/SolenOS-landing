@@ -323,7 +323,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
                       <p>{coverageIsPartial
-                        ? 'This answer may not include all relevant saved care information. Some sources were unavailable, more matching records remain, or not all retrieved information fit into the answer.'
+                        ? 'This answer may not include all relevant saved care information. Some notes or documents were unavailable, more matching items remain, or not all information fit into the answer.'
                         : 'The available saved notes and documents were checked for this question. This does not mean information missing from the record is known.'}</p>
                     </section>}
                     {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Saved information used">
@@ -371,9 +371,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       <p>{item.label}</p>
                                       {item.reported_by && <p>Reported by: {item.reported_by}</p>}
                                       {item.entered_by && <p>Added by: {item.entered_by}</p>}
-                                      {item.source_independence_status === 'shared_origin' && <p>This note shares its original with another saved record. It is not a separate report.</p>}
+                                      {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved item. It is not a separate report.</p>}
                                       {item.source_independence_status === 'independent' && <p>A caregiver review marks this as a separate report.</p>}
-                                      {item.source_independence_status === 'not_assessed' && <p>Whether this note is separate from other reports has not been checked.</p>}
+                                      {item.source_independence_status === 'not_assessed' && <p>We have not checked whether this note is separate from other reports.</p>}
                                       {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {item.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
