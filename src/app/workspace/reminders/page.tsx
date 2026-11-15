@@ -220,7 +220,16 @@ export default function CareRemindersPage() {
         </Button>
       </form>
 
-      {error ? <p className="care-reminder-alert" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="care-reminder-alert" role="alert">
+          {error}
+          <button type="button" onClick={() => {
+            setLoading(true);
+            setError("");
+            void refresh().catch(() => setError("We couldn’t load your reminders. Check your connection and try again.")).finally(() => setLoading(false));
+          }}>Try again</button>
+        </p>
+      ) : null}
       {notice ? <p className="care-reminder-notice" role="status">{notice}</p> : null}
 
       <section className="care-reminders-list" aria-labelledby="care-reminders-list-title">
@@ -242,6 +251,8 @@ export default function CareRemindersPage() {
 
         {loading && !hasLoaded ? (
           <RecordState kind="loading" title="Loading saved reminders…" />
+        ) : loading && hasLoaded ? (
+          <RecordState kind="loading" title="Refreshing saved reminders…" />
         ) : !hasLoaded && error ? null : visibleReminders.length === 0 ? (
           <RecordState kind={filter === "open" ? "empty" : "no-results"} title={reminders.length === 0 ? "No reminders saved yet." : filter === "all" ? "No reminders to show." : `No ${filter} reminders.`} description={reminders.length === 0 ? "Add a reminder when something needs following up." : "Try another filter to view your saved reminders."} />
         ) : (
