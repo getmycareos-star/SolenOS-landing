@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
 const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <p role="status">Loading saved care information…</p> });
@@ -1607,9 +1607,9 @@ export function LCRCurrentUnderstanding() {
                   <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
                   <span>{change.significance_verdict ? caregiverLabel(change.significance_verdict) : "Not reviewed yet"}</span>
                 </div>
-                <p>{change.explanation || "No explanation was saved with this change review."}</p>
+                <p>{caregiverSafeChangeText(change.explanation) || "SolenOS found a change in the saved care information. Its importance has not yet been established."}</p>
                 <p className="lcr-entry-status">
-                  Previous: {change.previous_state ?? "Not recorded"} · Current: {change.current_state ?? "Not recorded"}
+                  Previous: {caregiverSafeChangeText(change.previous_state) || "Not enough earlier information to compare"} · Current: {caregiverSafeChangeText(change.current_state) || "Saved change details need a closer look"}
                 </p>
                 <p className="lcr-entry-status">
                   Review status: {caregiverLabel(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected")}
