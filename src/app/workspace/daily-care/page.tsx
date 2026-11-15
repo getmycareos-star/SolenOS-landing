@@ -367,10 +367,10 @@ export default function DailyCarePage() {
             setDocuments(payload.items as DailyCareDocumentStatus[]);
             setDocumentsError("");
           } else {
-            setDocumentsError("Document processing status could not be read. Check the document library before assuming processing is complete.");
+            setDocumentsError("We couldn't check whether your document has finished. Open Documents to see its latest update.");
           }
         } else {
-          setDocumentsError("Document processing status could not be checked. Check the document library before assuming processing is complete.");
+          setDocumentsError("We couldn't check the document's progress. Open Documents to see its latest update.");
         }
 
         if (notificationsResult.status === "fulfilled") {
