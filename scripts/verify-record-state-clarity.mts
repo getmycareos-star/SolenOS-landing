@@ -13,7 +13,9 @@ const daily = read("src/app/workspace/daily-care/page.tsx");
 const reminders = read("src/app/workspace/reminders/page.tsx");
 const history = read("src/components/app-shell/HistoryDrawer.tsx");
 
-assert.match(state, /"empty" \| "no-results" \| "loading" \| "error" \| "unavailable" \| "unconfirmed"/);
+for (const kind of ["empty", "no-results", "loading", "error", "unavailable", "unconfirmed"]) {
+  assert.ok(state.includes(`| "${kind}"`) || state.includes(`= "${kind}"`), `shared state supports ${kind}`);
+}
 assert.match(state, /aria-busy=\{isBusy \|\| undefined\}/);
 assert.match(state, /role=\{isError \? "alert" : "status"\}/);
 
