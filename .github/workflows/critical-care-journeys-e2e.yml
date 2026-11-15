@@ -114,6 +114,26 @@ jobs:
           print("::add-mask::" + private_key_b64)
           PY
 
+      - name: Configure ephemeral independent privacy reviewers for deletion acceptance
+        run: |
+          python - <<'PY'
+          import os
+          import secrets
+          primary = secrets.token_urlsafe(48)
+          deletion = secrets.token_urlsafe(48)
+          values = {
+              "SOLENOS_PRIVACY_REVIEWER_TOKEN": primary,
+              "SOLENOS_PRIVACY_REVIEWER_ID": "ci-primary-privacy-reviewer",
+              "SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN": deletion,
+              "SOLENOS_PRIVACY_DELETION_REVIEWER_ID": "ci-independent-deletion-reviewer",
+          }
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              for key, value in values.items():
+                  env.write(f"{key}={value}\\n")
+          print("::add-mask::" + primary)
+          print("::add-mask::" + deletion)
+          PY
+
       - name: Apply all PostgreSQL migrations
         working-directory: backend-service/backend
         run: python -m alembic upgrade head
@@ -122,7 +142,7 @@ jobs:
         working-directory: backend-service/backend
         run: |
           VAPID_PRIVATE_KEY="$(printf '%s' "$VAPID_PRIVATE_KEY_B64" | base64 --decode)"
-          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
+          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
           echo $! >/tmp/solenos-critical-backend.pid
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
