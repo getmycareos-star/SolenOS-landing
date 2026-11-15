@@ -28,6 +28,11 @@ assert(PRIVACY_POLICY.title.includes("Privacy"));
 assert(TERMS_OF_USE.title.includes("Terms"));
 assert(PRIVACY_POLICY.sections.length >= 3);
 assert(TERMS_OF_USE.sections.length >= 3);
+const privacyText = PRIVACY_POLICY.sections.flatMap((section) => section.body).join(" ");
+assert.match(privacyText, /only one linked caregiver/i);
+assert.match(privacyText, /separate reviewer/i);
+assert.match(privacyText, /does not itself erase backups/i);
+assert.match(privacyText, /shared care record is blocked/i);
 
 for (const route of TRUST_LEGAL_PUBLIC_ROUTES) {
   assert(fs.existsSync(path.join(root, "src", "app", route.slice(1), "page.tsx")), `legal route exists: ${route}`);
