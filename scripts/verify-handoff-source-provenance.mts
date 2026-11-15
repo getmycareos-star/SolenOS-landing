@@ -84,7 +84,7 @@ assert.doesNotMatch(sharingComponent, /item\.source_ref} ·/,
   "the caregiver review must not expose raw source identifiers");
 assert.doesNotMatch(sharingComponent, /Qwen quotations/,
   "the caregiver interface must not expose internal model terminology");
-assert.match(sharingComponent, /Saved source: /,
+assert.match(sharingComponent, /Saved information item: /,
   "the shared summary must use readable source labels instead of internal IDs");
 assert.match(sharingComponent, /caregiver_authored_unverified|caregiverNote/,
   "caregiver-added context must remain explicitly attributed and unverified");
@@ -102,7 +102,7 @@ assert.match(sharingComponent, /activeSnapshot\.source_coverage/,
   "recipients must see source coverage for the approved sharing scope");
 assert.match(sharingComponent, /activeSnapshot\.source_references/,
   "recipients must see source references, epistemic status, and event/recording times");
-assert.match(sharingComponent, /How the information was sourced/,
+assert.match(sharingComponent, /Where the information came from/,
   "caregivers must receive a plain-language explanation of source relationships");
 assert.match(sharingComponent, /handoffPurposeLabel\(saved\.purpose\)/,
   "saved draft purposes must use caregiver-readable labels");
@@ -128,7 +128,7 @@ assert.doesNotMatch(sharingComponent, /item\.original_source_reference \? " · d
   "recipient review must not expose internal document paths or references");
 assert.match(sharingComponent, /saved\.review_status \? readableStatus/,
   "saved draft review states must use caregiver-readable labels");
-assert.match(sharingComponent, /Saved source: /,
+assert.match(sharingComponent, /Saved information item: /,
   "shared summaries must label sources without exposing database identifiers");
 assert.doesNotMatch(sharingComponent, /Qwen/,
   "the caregiver-facing handoff component must not expose model names");
@@ -160,7 +160,7 @@ assert.match(appointmentWorkspace, /outcome-proposals\/' \+ encodeURIComponent\(
 assert.match(appointmentWorkspace, /Accept as caregiver report/, "caregiver acceptance must be explicit");
 assert.match(appointmentWorkspace, /Save correction/, "caregiver corrections must remain a separate decision");
 assert.match(appointmentWorkspace, /Reject/, "caregiver rejection must be available");
-assert.match(appointmentWorkspace, /not independently verified/, "appointment assertions must not be presented as clinically verified");
+assert.match(appointmentWorkspace, /A healthcare professional has not confirmed it/, "appointment assertions must not be presented as medically confirmed");
 assert.match(appointmentWorkspace, /refreshSavedWorkspace\(\)/, "guided appointment state must reload records saved through detailed controls");
 assert.match(appointmentWorkspace, /idempotency_key: requestKey/, "guided appointment notes must retry with a stable idempotency key");
 assert.match(detailedAppointmentWorkspace, /idempotency_key: requestKey/, "detailed appointment workspace writes must retry with a stable idempotency key");
