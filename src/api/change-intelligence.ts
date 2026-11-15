@@ -77,6 +77,7 @@ export type PersistedSituation = {
   state: string;
   title: string;
   description: string | null;
+  explanation: string | null;
   signal_ids: string[];
   signal_types: string[];
   temporal_start: string;
