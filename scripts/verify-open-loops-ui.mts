@@ -32,9 +32,9 @@ assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named ca
 assert.ok(page.includes("SolenOS keeps track") || page.includes("SolenOS manages"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
 
-assert.match(careContinuity, /A short view of what the saved care history may need attention[\s\S]*?tracks unresolved matters separately in Follow-ups/, "Care priorities must remain a current summary and point to the dedicated follow-up record");
-assert.match(careContinuity, /These are changes or uncertainties found in the saved history[\s\S]*?not automatically tasks or follow-ups/, "monitoring signals must not be conflated with unresolved follow-ups");
-assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?View all follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
+assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
+assert.match(careContinuity, /These are changes or uncertainties found in the saved history[\s\S]*?not automatically tasks or follow-ups[\s\S]*?SolenOS tracks unresolved care matters and their progress on the Follow-ups screen/, "monitoring signals must remain distinct from the follow-up workflow");
+assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
 assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?Open Follow-ups/, "Changes to keep an eye on must link to the dedicated Follow-ups screen");
 
 console.log("FOLLOW_UPS_UI_CONTRACT=PASS");
