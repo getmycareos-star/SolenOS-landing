@@ -68,7 +68,7 @@ requireText("src/app/workspace/page.tsx", [
   'import Link from "next/link";',
   'href="/workspace/companion"',
   "Ask SolenOS",
-  "Talk through the saved care history, recent changes, appointments or information that is still unclear.",
+  "Record a new care update or ask SolenOS about information already saved.",
 ]);
 assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
   "The caregiver home must route questions through the conversational Companion, not a separate care-management assistant panel.");
@@ -119,7 +119,7 @@ requireText("src/components/workflows/AICompanion.tsx", [
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
-assert(companion.includes("Companion conversations are not added to the care record."), "Companion must explain that conversation is not care capture.");
+assert(companion.includes("Chats with the Care Assistant are not added to your Care Record."), "Companion must explain that conversation is not care capture.");
 assert(companion.includes('href="/workspace/daily-care"') && companion.includes('href="/workspace/documents"'), "caregivers must be directed to the supported Daily Care and Documents capture workflows.");
 
 assert(!companion.includes("care_update_candidates"), "Companion must not generate or review LCR proposals.");
