@@ -748,6 +748,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>How this information was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || 'not_recorded')}</dd></div>
           
           <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0 }}>{selected.origin_device_ref ? 'Device recorded' : 'Not recorded'}</dd></div>
           
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date added</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
