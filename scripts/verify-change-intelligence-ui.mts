@@ -77,6 +77,7 @@ for (const [source, pattern, label] of [
   [historyPanel, /Load earlier comparisons/, "caregivers must be able to retrieve older saved comparisons"],
   [historyPanel, /change\.certainty === "supported"/, "only supported changes may be promoted"],
   [historyPanel, /change\.evidence_supported === true/, "promoted changes require source evidence"],
+  [historyPanel, /change\.claim_supported === true/, "promoted changes require affirmative backend claim support"],
   [historyPanel, /change\.source_record_refs\.length > 0/, "promoted changes require linked source records"],
   [historyPanel, /What still needs checking/, "uncertain findings must remain visible as uncertain"],
   [historyPanel, /Reports that differ/, "conflicting reports must remain visible"],
