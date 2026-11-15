@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   Activity,
@@ -17,6 +18,8 @@ import {
 import { Button } from "@/components/ui/Button";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
+const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
+const ChangeIntelligencePanel = dynamic(() => import("@/components/mvp-workspace/ChangeIntelligencePanel").then((module) => module.ChangeIntelligencePanel), { ssr: false, loading: () => <p role="status">Loading care changes…</p> });
 
 type CareEvent = {
   id: string;
@@ -270,6 +273,7 @@ function groupLabel(event: CareEvent): string {
 export default function TimelinePage() {
   const router = useRouter();
   const [events, setEvents] = useState<CareEvent[]>([]);
+  const [personId, setPersonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -299,6 +303,7 @@ export default function TimelinePage() {
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this record.");
       }
+      setPersonId(session.person.id);
       const searchParam = searchTerm.trim() ? `&query=${encodeURIComponent(searchTerm.trim())}` : "";
       const result = await getJSON(`/daily-care/intelligence/history?limit=200&offset=0${searchParam}`) as {
         records?: unknown;
@@ -766,6 +771,16 @@ export default function TimelinePage() {
             Showing {events.length} of {historyCoverage.total} matching care updates.
           </span>
         </div>
+      )}
+
+      {personId && (
+        <section aria-label="Care changes over time" style={{ marginTop: 24 }}>
+          <details className="timeline-history-details">
+            <summary style={{ cursor: "pointer", fontWeight: 600, padding: "14px 0" }}>How the care picture has changed</summary>
+            <ChangeIntelligencePanel personId={personId} />
+            <CareChangeHistoryPanel personId={personId} />
+          </details>
+        </section>
       )}
 
       <footer style={{ marginTop: 28, paddingTop: 14, borderTop: "1px solid var(--solenos-hairline)", color: "var(--solenos-muted)", fontSize: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
