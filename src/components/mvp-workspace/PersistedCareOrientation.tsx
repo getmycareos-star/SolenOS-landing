@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { RecordState } from "@/components/ui/RecordState";
 
@@ -73,10 +73,11 @@ export function PersistedCareOrientation() {
   const [state, setState] = useState<LoadState>("loading");
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    if (!hasLoaded) setState("loading");
+    if (!hasLoadedRef.current) setState("loading");
     setError("");
     try {
       const session = await ensureAnonymousSession();
@@ -94,16 +95,17 @@ export function PersistedCareOrientation() {
         throw new Error("The current care record could not be verified for this session.");
       }
       setProjection(data as CurrentCareProjection);
+      hasLoadedRef.current = true;
       setHasLoaded(true);
       setState("ready");
     } catch {
-      if (!hasLoaded) {
+      if (!hasLoadedRef.current) {
         setProjection(null);
         setState("unavailable");
       }
       setError("Check your connection and try again.");
     }
-  }, [hasLoaded]);
+  }, []);
 
   useEffect(() => {
     void load();
