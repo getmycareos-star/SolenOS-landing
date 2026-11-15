@@ -48,7 +48,7 @@ assert.ok(consent.includes("{copy.whatFirst}"));
 for (const locale of ["en", "es", "fr"]) {
   const translations = JSON.parse(fs.readFileSync(`src/lib/i18n/locales/${locale}/translation.json`, "utf8"));
 
-  for (const key of ["title", "tagline", "intro", "where", "latest", "noCurrent", "documents", "followups", "openMatters", "careToday", "needsConfirmation", "recentHistory", "viewHistory", "noHistory"]) {
+  for (const key of ["title", "tagline", "intro", "where", "latest", "noCurrent", "documents", "followups", "openMatters", "careToday", "needsConfirmation", "recentHistory", "viewHistory", "noHistory", "longitudinalIncomplete"]) {
     assert.ok(translations.dailyCare?.[key], locale + " dailyCare." + key + " must be translated");
   }
   for (const key of ["eyebrow", "title", "historyMissing", "confirm", "dispute", "inconclusive", "situations", "disclaimer", "reportedStatus", "statusReason"]) {
