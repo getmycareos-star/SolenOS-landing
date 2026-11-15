@@ -103,6 +103,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
     };
   }, [load]);
 
+  if (!personId) return null;
   if (loading) return <section aria-label="Care changes over time"><p>Loading saved care changes…</p></section>;
   if (error) return (
     <section aria-label="Care changes over time">
