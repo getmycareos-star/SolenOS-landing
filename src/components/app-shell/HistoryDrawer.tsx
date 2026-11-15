@@ -169,7 +169,6 @@ const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "decision", label: "Decisions" },
   { id: "outcome", label: "Outcomes" },
   { id: "follow-up", label: "Follow-ups" },
-  { id: "lcr-update", label: "Living Care Record" },
 ];
 
 function safeDate(value?: string | null): Date | null {
@@ -882,11 +881,9 @@ export function HistoryDrawer() {
 
       const revisionResult = results[5];
       if (revisionResult.status === "fulfilled" && Array.isArray(revisionResult.value)) {
-        availableSources += 1;
+        // Internal audit reads are not a caregiver-history source and must not make an otherwise failed history load look successful.
         const revisions = (revisionResult.value as CareStateRevision[]).filter((item) => item && typeof item.id === "string" && shouldShowLcrRevision(item));
         nextRecords.push(...revisions.map(mapLcrRevision));
-      } else {
-        warnings.push("Living Care Record revision history could not be loaded.");
       }
 
       const decisionResult = results[6];
@@ -918,7 +915,8 @@ export function HistoryDrawer() {
         return (safeDate(b.recorded_at)?.getTime() ?? 0) - (safeDate(a.recorded_at)?.getTime() ?? 0);
       });
 
-      setRecords(nextRecords);
+      // Internal persistence revisions remain in the backend audit history, not the caregiver timeline.
+      setRecords(nextRecords.filter((record) => record.source_kind !== "lcr-revision"));
       setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {

@@ -479,7 +479,11 @@ function displayDescription(value?: string | null): string {
     const parsed: unknown = JSON.parse(value);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const parsedRecord = parsed as Record<string, unknown>;
-      const quickValue = parsedRecord.quick_check_in;
+      const captureValue = parsedRecord.original_capture;
+      const captureRecord = captureValue && typeof captureValue === "object" && !Array.isArray(captureValue)
+        ? captureValue as Record<string, unknown>
+        : parsedRecord;
+      const quickValue = captureRecord.quick_check_in;
       if (quickValue && typeof quickValue === "object" && !Array.isArray(quickValue)) {
         const quick = quickValue as Record<string, unknown>;
         const kindLabels: Record<string, string> = {
@@ -493,22 +497,25 @@ function displayDescription(value?: string | null): string {
           ? quick.selected_areas.filter((item): item is string => typeof item === "string")
                .map(caregiverLabel)
           : [];
-        const summary = typeof parsedRecord.notes === "string" ? caregiverSafeAssistantText(parsedRecord.notes) || "" : "";
+        const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
+        .find((item): item is string => typeof item === "string" && item.trim().length > 0);
+      const safeSummary = summary ? caregiverSafeAssistantText(summary) || "" : "";
         return [
-          summary,
+          safeSummary,
           `Update type: ${kindLabels[String(quick.kind)] || "Caregiver check-in"}`,
           areas.length ? `Areas selected: ${areas.join(", ")}` : "",
           quick.scope === "selected_areas_only" ? "Scope: selected areas only" : "",
         ].filter(Boolean).join("\n");
       }
-      const summary = [parsedRecord.notes, parsedRecord.text, parsedRecord.description, parsedRecord.observation, parsedRecord.summary]
+      const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
         .find((item): item is string => typeof item === "string" && item.trim().length > 0);
       if (summary) return caregiverSafeAssistantText(summary) || "Saved care information";
       return "Saved care information";
     }
     if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || "Saved care information";
   } catch {
-    // Plain text is preserved exactly as saved.
+    // Malformed serialized payloads are not caregiver-readable source text.
+    if (/^[\\s]*[\\[{]/.test(value)) return "Saved care information";
   }
   return caregiverSafeAssistantText(value) || "Saved care information";
 }
@@ -566,6 +573,7 @@ const CAREGIVER_LABELS: Record<string, string> = {
   awaiting_confirmation: "Needs review",
   detected: "Found in saved information",
   inconclusive: "Could not be confirmed",
+  accepted: "Reviewed",
   rejected: "Not supported",
   superseded: "Replaced by a newer review",
   active: "Current",
@@ -934,7 +942,14 @@ export function LCRCurrentUnderstanding() {
   const canWaitItems = careAttention
     ? careAttention.can_wait_with_documented_basis.map(findAttentionLoop).filter((item): item is (typeof openLoopItems)[number] => Boolean(item))
     : selectDeferredItems(openLoopItems);
-  const watchChanges = selectWatchChanges(changes);
+  // Capture wrappers are source records, not changes in the person's care.
+  // The original caregiver report remains available in care history.
+  const internalCaptureRecordTypes = new Set(["structured_daily_capture", "daily_care_entry", "daily_capture"]);
+  const internalCaptureEventType = /\b(?:structured_daily_capture|daily_care_entry|daily_capture)\b/i;
+  const watchChanges = selectWatchChanges(changes).filter((change) =>
+    !internalCaptureRecordTypes.has(change.subject_type.trim().toLowerCase()) &&
+    !internalCaptureEventType.test(change.explanation || "")
+  );
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
   const isMedicationConflict = (item: (typeof watchUncertainties)[number]) => {
     const subjectType = item.subject_type?.trim().toLowerCase();
@@ -1310,7 +1325,7 @@ export function LCRCurrentUnderstanding() {
                   {canWaitItems.map((item) => (
                     <li key={item.source + ":" + item.id} className="lcr-current-fact">
                       <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
-                      <p>{item.description || "No extra details were saved."}</p>
+                      <p>{displayDescription(item.description)}</p>
                       <p className="lcr-entry-status">Why this was postponed: {caregiverSafeAssistantText(item.deferred_reason) || "No reason was recorded."}</p>
                       <p className="lcr-entry-status">Status: {caregiverLabel(item.recorded_status)} · Priority: {caregiverLabel(item.priority)} · How certain this is: {caregiverLabel(item.epistemic_status)}</p>
                       {item.request_text && <p>Follow-up request: {caregiverSafeAssistantText(item.request_text) || "A follow-up request was saved."}</p>}
@@ -1361,7 +1376,7 @@ export function LCRCurrentUnderstanding() {
                         <strong>Possible follow-up · {item.title}</strong>
                         <p>This item was marked for follow-up. That does not mean it needs attention right away.</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
-                        {source?.description && <p>{caregiverSafeAssistantText(source.description) || "Saved care information is available."}</p>}
+                        {source?.description && <p>{displayDescription(source.description)}</p>}
                         <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                         <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
                         <small>Where this came from: {caregiverLabel(item.source)}</small>
@@ -1373,7 +1388,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>Still needs follow-up · {item.title}</strong>
                       <p>The saved information does not say whether this needs attention now or can wait. No due date is assumed.</p>
                       <p className="lcr-entry-status">Status: {caregiverLabel(item.recorded_status)} · Priority: {caregiverLabel(item.priority)} · How certain this is: {caregiverLabel(item.epistemic_status)}</p>
-                      {item.description && <p>{caregiverSafeAssistantText(item.description) || "Saved care information is available."}</p>}
+                      {item.description && <p>{displayDescription(item.description)}</p>}
                       {item.owner && <small>Responsible person: {item.owner}</small>}
                       {item.due_at && <small>Due date: {formatWhen(item.due_at)}</small>}
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
@@ -1401,7 +1416,7 @@ export function LCRCurrentUnderstanding() {
                         <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
                         <p>{disputed ? "Reports do not match, and the difference has not been resolved. Neither report is treated as correct." : "This still needs to be checked."}</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · How certain this is: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
-                        {source?.description && <p>{caregiverSafeAssistantText(source.description) || "Saved care information is available."}</p>}
+                        {source?.description && <p>{displayDescription(source.description)}</p>}
                         {source?.source_passage && <details><summary>Read source passage</summary><blockquote>{caregiverSafeAssistantText(source.source_passage) || "The original note is saved."}</blockquote></details>}
                         <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                         <small>Sources: {item.evidence_ids.length > 0 ? item.evidence_ids.length + " saved item(s)" : "No source is attached"}</small>
@@ -1434,7 +1449,7 @@ export function LCRCurrentUnderstanding() {
                       {expandedChangeId === change.id && changeEvidence[change.id]?.evidence.map((source) => (
                         <article key={source.id}>
                           <strong>{source.title}</strong>
-                          <p>{source.description || "No source description was recorded."}</p>
+                          <p>{displayDescription(source.description)}</p>
                           <small>Event: {formatWhen(source.occurred_at)} · Recorded: {formatWhen(source.recorded_at)}</small>
                         </article>
                       ))}
@@ -1645,7 +1660,7 @@ export function LCRCurrentUnderstanding() {
                     {changeEvidence[change.id]?.evidence.map((item) => (
                       <article key={item.id} className="lcr-current-fact">
                         <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
-                        <p>{item.description || "No source description was recorded."}</p>
+                        <p>{displayDescription(item.description)}</p>
                         <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : caregiverLabel(item.event_type)} · {item.status === "recorded" ? "Saved" : caregiverLabel(item.status)}</small>
                         <small>Observed: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
                         <small>Recorded: {formatWhen(item.recorded_at)}</small>
@@ -1745,12 +1760,11 @@ export function LCRCurrentUnderstanding() {
                     <p style={{ whiteSpace: "pre-line" }}>{displayDescription(item.description)}</p>
                     <p className="lcr-entry-status">{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
                     <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · {item.occurred_at ? `Event: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
-                    {item.evidence_ids?.length > 0 && <small>Original caregiver report linked to this entry</small>}
-                    {item.evidence_link_validation && <small>{item.evidence_link_validation === "valid" ? "Source record linked" : "Source details: " + (caregiverStatusLabel(item.evidence_link_validation) || "Not available")}</small>}
+                    {(item.evidence_ids?.length > 0 || item.evidence_link_validation) && <small>{item.evidence_link_validation === "valid" ? "Original source linked" : item.evidence_ids?.length > 0 ? "A source is linked, but its details are not available here." : "Source details are not available for this entry."}</small>}
                     {item.derived_observations && item.derived_observations.length > 0 && (
                       <details className="lcr-entry-status">
-                        <summary>What was taken from this note ({item.derived_observations.length})</summary>
-                        <p>These are structured readings of the same source report, not independent corroborating reports.</p>
+                        <summary>Details identified in this note ({item.derived_observations.length})</summary>
+                        <p>These details come from the same report. They are not separate reports or independent confirmation.</p>
                         <ul>
                           {item.derived_observations.map((observation) => (
                             <li key={observation.id}>

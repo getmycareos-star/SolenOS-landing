@@ -51,6 +51,16 @@ type PanelData = {
 }
 
 const emptyData: PanelData = { assertions: [], freshness: [], revisions: [], outcomes: [] }
+const INTERNAL_REVISION_TARGET_TYPES = new Set([
+  "baselines",
+  "changes",
+  "uncertainty_assessments",
+  "patterns",
+  "significance_assessments",
+  "change_confirmations",
+  "care_attention_assessments",
+  "situation_assessments",
+])
 function simpleRecordLabel(value?: string | null): string {
   if (!value) return "Not recorded";
   return ({
@@ -67,7 +77,7 @@ function simpleRecordLabel(value?: string | null): string {
     uncertain: "Still uncertain",
     conflicting: "Conflicting information",
     missing: "Missing information",
-    accepted: "Accepted",
+    accepted: "Reviewed",
     rejected: "Not accepted",
     superseded: "Replaced by newer information",
     created: "Added",
@@ -137,6 +147,10 @@ export default function CareContinuityIntegrityPanel({
     [data.freshness],
   )
 
+  const caregiverVisibleRevisions = data.revisions.filter((item) =>
+    !INTERNAL_REVISION_TARGET_TYPES.has(item.target_type.trim().toLowerCase())
+  )
+
   async function markReviewed(assertion: Assertion) {
     setError('')
     setNotice('')
@@ -162,7 +176,7 @@ export default function CareContinuityIntegrityPanel({
         <div>
           <h2 style={{ fontSize: 19, margin: 0 }}>Record details</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 5 }}>
-            Review reported information, unresolved questions, changes and recorded outcomes. A report is not automatically a confirmed fact.
+            Review reported information, unresolved questions, changes and recorded outcomes. A review status records a review step; it does not by itself mean a healthcare professional has verified the information.
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => void load()} disabled={loading}>
@@ -186,7 +200,7 @@ export default function CareContinuityIntegrityPanel({
               Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Review: {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{caregiverSafeAssistantText(fresh.explanation) || 'No further explanation is available.'}</p>}
-            {item.source_text && <blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{caregiverSafeAssistantText(item.source_text) || 'The original wording is saved.'}</blockquote>}
+            {item.source_text && <><small>Original source wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{caregiverSafeAssistantText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
                 ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as checked by a caregiver</button>
@@ -200,7 +214,7 @@ export default function CareContinuityIntegrityPanel({
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Record history</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>A history of how recorded care information has changed over time.</p>
-        {data.revisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes to the saved care information are available yet.</p> : data.revisions.slice(0, 20).map((item) =>
+        {caregiverVisibleRevisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care changes are available to show here yet.</p> : caregiverVisibleRevisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
             <p style={{ fontSize: 12, margin: '5px 0' }}>Change recorded {new Date(item.changed_at).toLocaleString()} · {simpleRecordLabel(item.change_kind)}</p>

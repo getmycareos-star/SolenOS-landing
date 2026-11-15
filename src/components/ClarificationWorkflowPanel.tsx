@@ -202,6 +202,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [error, setError] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [notice, setNotice] = useState("");
+  const [recommendationUnavailable, setRecommendationUnavailable] = useState(false);
 
   const isCaregiverNecessaryQuestion = (item: Question) =>
     item.necessity === "necessary" && Boolean(item.necessity_rationale?.trim());
@@ -244,6 +245,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     setLoading(true);
     setError("");
     setNotice("");
+    setRecommendationUnavailable(false);
     try {
       const session = await ensureAnonymousSession();
       const sessionPersonId = session.person?.id;
@@ -273,7 +275,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
           eligible_question_ids: [],
           recommended_question_ids: [],
         };
-        setNotice("Care questions are temporarily unavailable. Your saved information has not changed.");
+        setRecommendationUnavailable(true);
       }
       assertScopedRows(claimRows, sessionPersonId, "claims");
       assertScopedRows(questionRows, sessionPersonId, "questions");
@@ -294,6 +296,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setClaims(loadedClaims);
       setQuestions(loadedQuestions);
       setEligibleQuestionIds(recommendation.eligible_question_ids as string[]);
+      setRecommendationUnavailable(false);
       setEvidence(loadedEvidence);
       setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
@@ -524,7 +527,8 @@ SolenOS only brings up a question when saved care information shows that an answ
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && <>
-      {caregiverOpenQuestions.length === 0 && <p>Nothing needs your input right now. SolenOS will ask when a care detail genuinely needs confirmation. You can talk through other questions with SolenOS Companion.</p>}
+      {recommendationUnavailable && <p role="status">We couldn’t check for care questions just now. Your saved care information has not changed. Try again later.</p>}
+      {caregiverOpenQuestions.length === 0 && !recommendationUnavailable && <p>There are no care questions for you to review right now. SolenOS will let you know when a detail needs your input.</p>}
       {caregiverOpenQuestions.length > visibleCaregiverQuestions.length && (
         <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
           Only a few questions are shown at once. Other saved questions can wait until you choose to review them.
