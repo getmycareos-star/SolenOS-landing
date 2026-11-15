@@ -23,7 +23,7 @@ permissions:
 
 concurrency:
   group: critical-care-journeys-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   critical-care-journeys:
