@@ -1345,20 +1345,19 @@ export function LCRCurrentUnderstanding() {
                   </ul>
                 )}
                 {careAttention.needs_clarification.length > 0 && (
-                  <>
-                    <h5>Needs clarification</h5>
-                    <p>Some details are missing or reports do not agree. SolenOS cannot determine the right next step until the information is checked.</p>
-                    <ul className="lcr-current-facts">
-                      {careAttention.needs_clarification.map((item) => (
-                        <li key={item.id || item.source + ":" + item.record_id} className="lcr-current-fact">
-                          <strong>{caregiverSafeAssistantText(item.title) || "Information needs checking"}</strong>
-                          <p>{caregiverSafeAssistantText(item.reason) || "The available information is not enough to determine the appropriate priority."}</p>
-                          <small>Source: {caregiverLabel(item.source)} · Happened: {formatWhen(item.occurred_at)} · Saved: {formatWhen(item.recorded_at)}</small>
-                          {item.evidence_ids && item.evidence_ids.length > 0 && <small>Linked sources: {item.evidence_ids.length}</small>}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
+                  <div role="status">
+                    <p>Some details may need checking. SolenOS keeps the most useful questions together so you do not have to review the same issue in several places.</p>
+                    <button
+                      type="button"
+                      className="lcr-text-action"
+                      onClick={() => {
+                        setClarificationOpen(true);
+                        document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                    >
+                      Review useful questions
+                    </button>
+                  </div>
                 )}
                 <small>Assessment uses saved records only. Missing history is not evidence that nothing happened, and grouped observations do not establish cause or diagnosis.</small>
               </section>
