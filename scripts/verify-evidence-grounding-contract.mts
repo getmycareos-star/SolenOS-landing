@@ -85,7 +85,7 @@ console.log("PASS: source-lineage UI persists explicit relationship assessments 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
 assert(companion.includes("claim_provenance: response.claim_provenance"), "Companion must consume claim-level source references from the backend");
 assert(companion.includes("Not matched to the wording in a saved record"), "Companion must visibly mark statements without a matching source");
-assert(companion.includes("What this answer is based on"), "Companion must show source details beside the specific statement they support");
+assert(companion.includes("Where this answer came from"), "Companion must show source details beside the specific statement they support");
 assert(companion.includes("does not prove that a report is true or that two records came from different people"), "Companion must not present source matching as proof of truth or source independence");
 assert(companion.includes("Supporting note or document"), "Matched care entries must expose their linked original notes and documents");
 assert(companion.includes("source_independence_status === 'shared_origin'"), "Companion must distinguish sources with a shared original");
@@ -101,9 +101,9 @@ assert(!companion.includes("Inspect source record references"), "caregivers must
 console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
 
 const appointment = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert(appointment.includes("How the sources are connected"), "Appointment preparation must render source lineage");
+assert(appointment.includes("How the notes and documents are related"), "Appointment preparation must render source lineage");
 assert(appointment.includes("scope_truncated"), "Appointment preparation must disclose bounded lineage retrieval");
-assert(appointment.includes("This does not mean they are separate"), "Appointment preparation must not infer independence from missing lineage");
+assert(appointment.includes("Do not assume they are separate"), "Appointment preparation must not infer independence from missing lineage");
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
 
 const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
