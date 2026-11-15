@@ -102,6 +102,24 @@ assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
 assert.match(dailyCare, /caregiverSafeAssistantText\(item\.original_text\)/);
 assert.match(dailyCare, /caregiverSafeAssistantText\(item\.corrected_text\)/);
+assert.doesNotMatch(dailyCare, /The latest information currently available in the care record|Processing has not started yet|Document understanding could not be completed|Document processing was stopped|Care Timeline|change and pattern assessments/);
+assert.match(dailyCare, /SolenOS has finished reading it/);
+assert.match(dailyCare, /Open care history/);
+assert.doesNotMatch(documentsPage, /AI interpretation|Document library|Server processing after upload|extracted statements|document understanding|upload ID|10 MiB/);
+assert.match(documentsPage, /Your original files are kept separate from suggested details/);
+assert.match(documentsPage, /No differences were found in the text SolenOS could read/);
+assert.doesNotMatch(appointment, /source completeness|Recorded observations and caregiver reports|item\(s\) shown|saved source\(s\)/);
+assert.match(appointment, /Saved care details/);
+assert.match(appointment, /Questions to ask the healthcare professional/);
+assert.doesNotMatch(detailedAppointment, /clinician findings|Consultation opening summary|clinical follow-up remains open|Closure status|stated rationale/);
+assert.doesNotMatch(policySettings, /Living Care Record|Companion conversations|eligible feedback|Direct identifiers|processing path|retention and handling rules|opt-in preference|opt-out preference/);
+assert.match(policySettings, /Your choice is saved/);
+assert.doesNotMatch(identityRecovery, /device registration|registered devices|one-time recovery code|revokes every existing session/);
+assert.doesNotMatch(caregiverAccess, /responsibility_type\.replaceAll|transfer responsibility|primary caregiver transfer declined|No change should be assumed|invitation_token}</);
+assert.match(caregiverAccess, /Copy invitation link/);
+assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Grounded, not guesswork|saved item\(s\)/);
+assert.match(companion, /Based on saved information/);
+
 assert.match(companion, /caregiverSafeAssistantText\(response\.reply\)/);
 assert.doesNotMatch(companion, /text: response\.reply/);
 assert.doesNotMatch(documentReview, /candidate\.review_status\.replaceAll/);
