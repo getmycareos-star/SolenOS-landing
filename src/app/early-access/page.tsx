@@ -6,7 +6,7 @@ import { OpsPageView } from "@/components/ops/OpsPageView";
 export const metadata: Metadata = {
   title: "Early Access — SolenOS",
   description:
-    "Start using the SolenOS Living Care Record. No early-version acknowledgement is required to enter the workspace.",
+    "Start using your SolenOS Care Record.",
 };
 
 export default function EarlyAccessPage() {
@@ -17,7 +17,7 @@ export default function EarlyAccessPage() {
         <p className="public-eyebrow">SolenOS</p>
         <h1 className="public-hero-title">Start with what you already have.</h1>
         <p className="public-hero-lede">
-          You do not need to organize years of caregiving first. Open your Living Care Record
+          You do not need to organize years of caregiving first. Open your Care Record
           and add information when you are ready.
         </p>
         <div className="public-cta-group">
