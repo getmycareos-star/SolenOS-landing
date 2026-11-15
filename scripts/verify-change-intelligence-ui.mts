@@ -25,6 +25,9 @@ for (const contract of [
   ["panel loads persisted care situations", /listPersistedSituations\(\)/],
   ["caregiver trajectory decisions are explicit and evidence-linked", /transitionSituationState\(situation\.id, targetState, reason, evidenceIds\)/],
   ["caregiver-facing status controls and history are present", /Caregiver-reported status[\s\S]*Previous status updates/],
+  ["care situation source details can be loaded", /getPersistedSituationDetail\(situationId\)/],
+  ["care situation linked records are reviewable", /Review linked records[\s\S]*source_records\.map/],
+  ["caregiver status history is visible", /state_history/],
   ["older change assessments can be loaded", /Load earlier changes/],
   ["older patterns can be loaded", /Load earlier patterns/],
   ["panel offers an explicit saved-assessment refresh", /Check for new changes/],
@@ -101,6 +104,10 @@ assert(
 assert(
   /getJSON\(\`\/change\/situations\/\$\{personId\}/.test(api),
   "Care situations must be read from the authoritative backend API",
+);
+assert(
+  /getJSON\(\`\/change\/situations\/\$\{personId\}\/\$\{encodeURIComponent\(situationId\)\}\/detail\`/.test(api),
+  "Situation evidence details must be read from the person-scoped backend API",
 );
 assert(
   /postJSON\(\s*\`\/change\/situations\/\$\{personId\}\/\$\{encodeURIComponent\(situationId\)\}\/state\`/.test(api),
