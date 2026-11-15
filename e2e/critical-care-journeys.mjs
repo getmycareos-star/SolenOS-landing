@@ -1530,8 +1530,6 @@ await record("14 privacy deletion request remains pending until independent revi
   assert.equal(stillPresent.status, 200, JSON.stringify(stillPresent.payload));
 });
 
-process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
-await browser.close();
 
 
 await record("15 synthetic privacy deletion erases the caregiver record and original document bytes", async () => {
@@ -1664,3 +1662,6 @@ with engine.connect() as connection:
   assert.equal(verification.redacted_receipts, 1, JSON.stringify(verification));
   assert.equal(verification.deletion_audit_receipts, 1, JSON.stringify(verification));
 });
+
+process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
+await browser.close();
