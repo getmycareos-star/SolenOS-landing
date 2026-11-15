@@ -111,20 +111,24 @@ export type SituationDetail = {
   source_records: SituationSourceRecord[];
   state_history: Array<Record<string, unknown>>;
 };
-function requirePersonId(): string {
-  const personId = getPersonId();
-  if (!personId) {
+function requirePersonId(requestedPersonId?: string): string {
+  const activePersonId = getPersonId();
+  if (!activePersonId) {
     throw new Error("A server-issued SolenOS care session is required before loading change intelligence.");
   }
-  return personId;
+  if (requestedPersonId && requestedPersonId !== activePersonId) {
+    throw new Error("The requested care record does not match the active caregiver session.");
+  }
+  return requestedPersonId ?? activePersonId;
 }
 
 export async function listPersistedChanges(
   subjectType?: string,
   limit = 100,
   offset = 0,
+  requestedPersonId?: string,
 ): Promise<PersistedChange[]> {
-  const personId = encodeURIComponent(requirePersonId());
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (subjectType) query.set("subject_type", subjectType);
   return await getJSON(`/change/changes/${personId}?${query.toString()}`) as PersistedChange[];
@@ -134,20 +138,21 @@ export async function listPersistedPatterns(
   subjectType?: string,
   limit = 100,
   offset = 0,
+  requestedPersonId?: string,
 ): Promise<PersistedPattern[]> {
-  const personId = encodeURIComponent(requirePersonId());
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (subjectType) query.set("subject_type", subjectType);
   return await getJSON(`/change/patterns/${personId}?${query.toString()}`) as PersistedPattern[];
 }
 
-export async function listPersistedSituations(): Promise<PersistedSituation[]> {
-  const personId = encodeURIComponent(requirePersonId());
+export async function listPersistedSituations(requestedPersonId?: string): Promise<PersistedSituation[]> {
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   return await getJSON(`/change/situations/${personId}`) as PersistedSituation[];
 }
 
-export async function getPersistedSituationDetail(situationId: string): Promise<SituationDetail> {
-  const personId = encodeURIComponent(requirePersonId());
+export async function getPersistedSituationDetail(situationId: string, requestedPersonId?: string): Promise<SituationDetail> {
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   return await getJSON(`/change/situations/${personId}/${encodeURIComponent(situationId)}/detail`) as SituationDetail;
 }
 
@@ -156,8 +161,9 @@ export async function transitionSituationState(
   state: SituationTrajectoryState,
   reason: string,
   evidenceIds: string[],
+  requestedPersonId?: string,
 ): Promise<{ situation: PersistedSituation; previous_state: string; new_state: string }> {
-  const personId = encodeURIComponent(requirePersonId());
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   return await postJSON(
     `/change/situations/${personId}/${encodeURIComponent(situationId)}/state`,
     { state, reason, evidence_ids: evidenceIds },
@@ -255,14 +261,14 @@ export type ChangeDetail = {
   }>;
 };
 
-export async function getPersistedChangeDetail(changeId: string): Promise<ChangeDetail> {
-  const personId = encodeURIComponent(requirePersonId());
+export async function getPersistedChangeDetail(changeId: string, requestedPersonId?: string): Promise<ChangeDetail> {
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   return await getJSON(`/change/changes/${personId}/${encodeURIComponent(changeId)}`) as ChangeDetail;
 }
 
 /** Recompute persisted change/pattern assessments from the care record's actual stored events. */
-export async function reassessPersistedChangeIntelligence(): Promise<PersistedChange[]> {
-  const personId = encodeURIComponent(requirePersonId());
+export async function reassessPersistedChangeIntelligence(requestedPersonId?: string): Promise<PersistedChange[]> {
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   return await postJSON(`/change/changes/reassess?person_id=${personId}`, {}) as PersistedChange[];
 }
 
@@ -273,8 +279,9 @@ export async function transitionChangeConfirmation(
   status: ChangeConfirmationStatus,
   reason?: string,
   evidence_ids: string[] = [],
+  requestedPersonId?: string,
 ): Promise<{ change: PersistedChange; transition_id: string; previous_status: string; new_status: string }> {
-  const personId = encodeURIComponent(requirePersonId());
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   return await postJSON(
     `/change/changes/${personId}/${encodeURIComponent(changeId)}/confirmation`,
     { status, reason: reason?.trim() || null, evidence_ids },
@@ -307,8 +314,8 @@ export type PatternDetail = {
   }>;
 };
 
-export async function getPersistedPatternDetail(patternId: string): Promise<PatternDetail> {
-  const personId = encodeURIComponent(requirePersonId());
+export async function getPersistedPatternDetail(patternId: string, requestedPersonId?: string): Promise<PatternDetail> {
+  const personId = encodeURIComponent(requirePersonId(requestedPersonId));
   return await getJSON(
     `/change/patterns/${personId}/${encodeURIComponent(patternId)}`,
   ) as PatternDetail;
