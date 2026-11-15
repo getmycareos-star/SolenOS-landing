@@ -189,7 +189,7 @@ export function CaregiverAccessPanel() {
         : "Primary caregiver transfer declined. The current primary caregiver remains in place.");
       await load();
     } catch {
-      setError("We couldn't record your response. No change in primary caregiver authority should be assumed.");
+      setError("We couldn't save your response. The current main caregiver has not changed.");
     } finally {
       setBusy(false);
     }
@@ -202,8 +202,8 @@ export function CaregiverAccessPanel() {
     try {
       await postJSON("/caregiver-access/responsibility-transfers/" + encodeURIComponent(transfer.id) + "/" + decision, {});
       setNotice(decision === "accept"
-        ? "Responsibility accepted. The previous assignment remains in the history."
-        : "Transfer declined. The previous assignment remains in place.");
+        ? "This care task is now assigned to you. The earlier assignment is kept in the Care Record."
+         : "You declined this handover. The current caregiver remains responsible.");
       await load();
     } catch {
       setError("We couldn't save your response. No change has been made.");
@@ -321,7 +321,7 @@ export function CaregiverAccessPanel() {
               <label className="mobile-settings-label" htmlFor="transfer-responsibility">Care task to hand over</label>
               <select id="transfer-responsibility" className="mobile-settings-input" required value={selectedResponsibility} onChange={(event) => setSelectedResponsibility(event.target.value)}>
                 <option value="">Choose a responsibility</option>
-                {responsibilities.map((item) => <option key={item.id} value={item.id}>{caregiverFieldLabel(item.responsibility_type) || caregiverStatusLabel(item.responsibility_type) || "Care task"} — {caregiverSafeAssistantText(item.scope) || "No additional detail"}</option>)}
+                {responsibilities.map((item) => <option key={item.id} value={item.id}>{caregiverFieldLabel(item.responsibility_type) || caregiverStatusLabel(item.responsibility_type) || "Care task"} — {caregiverFieldLabel(item.scope) || caregiverStatusLabel(item.scope) || (item.scope.includes("_") ? "No additional detail" : caregiverSafeAssistantText(item.scope)) || "No additional detail"}</option>)}
               </select>
               <label className="mobile-settings-label" htmlFor="transfer-recipient">New caregiver</label>
               <select id="transfer-recipient" className="mobile-settings-input" required value={selectedRecipient} onChange={(event) => setSelectedRecipient(event.target.value)}>
