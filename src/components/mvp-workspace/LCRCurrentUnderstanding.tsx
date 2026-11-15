@@ -2005,7 +2005,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{caregiverSafeAssistantText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
-      <details className="lcr-history-details" open={careHistoryOpen} onToggle={(event) => setCareHistoryOpen(event.currentTarget.open)}>
+      <details id="lcr-care-history" className="lcr-history-details" open={careHistoryOpen} onToggle={(event) => setCareHistoryOpen(event.currentTarget.open)}>
         <summary>Earlier care history</summary>
         {careHistoryOpen ? (
           <>
