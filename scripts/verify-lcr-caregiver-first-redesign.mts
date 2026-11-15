@@ -53,6 +53,9 @@ assert.match(currentUnderstanding, /accepted: "Reviewed"/, "caregiver-facing rev
 assert.match(currentUnderstanding, /Details identified in this note/, "document-derived observations must use caregiver-readable language");
 assert.match(currentUnderstanding, /They are not separate reports or independent confirmation/, "extracted details must not be presented as independent evidence");
 assert.match(currentUnderstanding, /A source is linked, but its details are not available here/, "source-link and source-detail availability must be distinguished");
+assert.match(currentUnderstanding, /captureRecord\.notes/, "serialized capture details must be reduced to the original caregiver report");
+assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "care-source descriptions must pass through the caregiver-readable parser");
+assert.doesNotMatch(caregiverRenderedCode, /capture_idempotency_key|capture_request_fingerprint|capture_kind/, "idempotency and capture metadata must never appear in caregiver-facing record details");
 assert.doesNotMatch(currentUnderstanding, /Source details: /, "technical source-availability fallback must not be exposed to caregivers");
 assert.match(integrityPanel, /INTERNAL_REVISION_TARGET_TYPES/, "internal assessment and baseline revisions must not be rendered as caregiver care-history changes");
 assert.match(integrityPanel, /caregiverVisibleRevisions/, "the caregiver record-history panel must use its filtered revision view");
