@@ -129,7 +129,7 @@ jobs:
           }
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
               for key, value in values.items():
-                  env.write(f"{key}={value}\\n")
+                  env.write(f"{key}={value}\n")
           print("::add-mask::" + primary)
           print("::add-mask::" + deletion)
           PY
