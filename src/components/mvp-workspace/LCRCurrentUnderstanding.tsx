@@ -1184,6 +1184,73 @@ export function LCRCurrentUnderstanding() {
         </button>
       </div>
 
+      <section className="lcr-first-screen-summary" aria-label="Care at a glance">
+        <article className="lcr-first-screen-card">
+          <h3>Where things stand</h3>
+          {loading ? <p role="status">Loading saved care information…</p> : error ? (
+            <p role="status">We couldn’t load the current care picture. Try again before relying on this summary.</p>
+          ) : projection?.items?.length ? (
+            <>
+              <p>{projection.schema_status !== "complete" || projection.missing_required_sources.length > 0
+                ? "This picture may be incomplete because some information is not available."
+                : "This is what has been recorded about care. It is not a medical assessment."}
+                {projection.as_of ? ` Updated ${formatWhen(projection.as_of)}.` : ""}</p>
+              <ul className="lcr-first-screen-list">
+                {projection.items.slice(0, 2).map((item) => (
+                  <li key={item.source_collection + ":" + item.id}>
+                    <strong>{displayCurrentCareTitle(item)}</strong>
+                    {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
+                    <small>{caregiverLabel(item.epistemic_status)} · Shared by {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    <a className="lcr-text-action" href={`#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View saved record</a>
+                  </li>
+                ))}
+              </ul>
+              {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved details. Review the full Care Record below.</p>}
+            </>
+          ) : <p>There isn’t enough saved care information to describe the current situation yet. Missing information does not mean everything is fine.</p>}
+        </article>
+        <article className="lcr-first-screen-card">
+          <h3>What needs attention</h3>
+          {assessmentError ? <p role="status">We couldn’t check priorities just now. Do not assume there is nothing that needs attention.</p>
+            : !assessment ? <p>Care priorities have not been checked yet.</p>
+            : assessment.coverage.records_examined === 0 ? <p>There isn’t enough recorded care information to assess priorities yet. This does not mean there are no care needs.</p>
+            : careAttention?.needs_attention_now?.length ? (
+              <ul className="lcr-first-screen-list">
+                {careAttention.needs_attention_now.slice(0, 2).map((decision) => (
+                  <li key={decision.id || (decision.source || "priority") + ":" + (decision.record_id || decision.title)}>
+                    <strong>{caregiverSafeAssistantText(decision.title) || "Care follow-up"}</strong>
+                    <p>{caregiverSafeAssistantText(decision.reason || decision.priority_basis?.join("; ")) || "The saved care assessment marked this for attention."}</p>
+                    {decision.due_at && <small>Due {formatWhen(decision.due_at)}</small>}
+                    {decision.records?.length ? <details><summary>See the saved records behind this</summary>
+                      {decision.records.map((record) => <p key={record.source + ":" + record.record_id}>{caregiverSafeAssistantText(record.title) || "Saved care record"} · Saved {formatWhen(record.recorded_at)}</p>)}
+                    </details> : null}
+                  </li>
+                ))}
+                {careAttention.needs_attention_now.length > 2 && <p className="lcr-entry-status">{careAttention.needs_attention_now.length - 2} more items need review below.</p>}
+              </ul>
+            ) : <p>No items are marked for immediate attention in the information checked. This is not a statement that no care needs exist.</p>}
+          {(careAttention?.important_to_address?.length || careAttention?.needs_clarification?.length) ? <p className="lcr-entry-status">
+            Also recorded: {careAttention.important_to_address.length} important follow-ups · {careAttention.needs_clarification.length} details needing clarification.
+          </p> : null}
+          <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups</Link>
+        </article>
+        <article className="lcr-first-screen-card">
+          <h3>What has changed</h3>
+          {changesError || patternsError ? <p role="status">We couldn’t check the full change history. This does not mean nothing has changed.</p>
+            : watchChanges.length ? (
+              <ul className="lcr-first-screen-list">
+                {watchChanges.slice(0, 2).map((change) => <li key={change.id}>
+                  <strong>{caregiverLabel(change.change_type)}</strong>
+                  <p>{caregiverSafeAssistantText(change.explanation) || "A saved change is available for review."}</p>
+                  <small>{change.comparison_window_start ? `Compared from ${formatWhen(change.comparison_window_start)} to ${formatWhen(change.comparison_window_end)}` : `Saved ${formatWhen(change.created_at)}`}</small>
+                </li>)}
+              </ul>
+            ) : activeWatchPatterns.length ? <p>{activeWatchPatterns.length} repeated pattern(s) are recorded in the care history.</p>
+            : <p>There isn’t enough saved history to describe changes yet. This does not mean nothing has changed.</p>}
+          <a className="lcr-text-action" href="#lcr-care-history">Review care history</a>
+        </article>
+      </section>
+
       <section className="lcr-situation-assessment" aria-labelledby="lcr-attention-now-heading">
         <div className="lcr-entry-heading">
           <div>
@@ -1815,7 +1882,7 @@ export function LCRCurrentUnderstanding() {
             <div className="lcr-current-facts">
               <ul>
                 {projection.items.map((item) => (
-                  <li key={item.source_collection + ":" + item.id} className="lcr-current-fact">
+                  <li key={item.source_collection + ":" + item.id} id={`lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`} className="lcr-current-fact">
                     <div className="lcr-entry-heading">
                       <strong>{displayCurrentCareTitle(item)}</strong>
                       <span>{caregiverLabel(item.epistemic_status)}</span>
