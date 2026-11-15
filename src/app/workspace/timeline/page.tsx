@@ -539,7 +539,7 @@ export default function TimelinePage() {
   const latestEvent = events[0] ?? null;
 
   return (
-    <main className="mobile-screen timeline-workspace" style={{ maxWidth: 920, margin: "0 auto", paddingBottom: 48 }}>
+    <div className="mobile-screen timeline-workspace" style={{ maxWidth: 920, margin: "0 auto", paddingBottom: 48 }}>
       <header className="mobile-page-head" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
           <p style={{ margin: "0 0 6px", color: "var(--solenos-muted)", fontSize: 13, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>Care Record</p>
@@ -796,6 +796,6 @@ export default function TimelinePage() {
         <ShieldCheck size={16} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
         <span>Updates are shown by when they happened, while keeping the date they were saved. A suggested interpretation is not treated as confirmed, and timing alone does not prove cause.{loadedAt ? ` Last loaded ${formatDateTime(loadedAt)}.` : ""}</span>
       </footer>
-    </main>
+    </div>
   );
 }
