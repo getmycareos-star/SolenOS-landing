@@ -1194,20 +1194,22 @@ export function LCRCurrentUnderstanding() {
           ) : projection?.items.length ? (
             <>
               <p>
-                {projection.item_count} saved {projection.item_count === 1 ? "care detail is" : "care details are"} available in this view.
                 {projection.schema_status !== "complete" || projection.missing_required_sources.length > 0
-                  ? " This picture is incomplete because some information could not be checked."
-                  : " This is a summary of recorded information, not a medical assessment."}
+                  ? "This picture is based on the information currently available and may be incomplete."
+                  : "This is what has been recorded about care. It is not a medical assessment."}
+                {projection.as_of ? ` Updated ${formatWhen(projection.as_of)}.` : ""}
               </p>
               <ul className="lcr-first-screen-list">
                 {projection.items.slice(0, 2).map((item) => (
                   <li key={item.source_collection + ":" + item.id}>
                     <strong>{displayCurrentCareTitle(item)}</strong>
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
-                    <small>{caregiverLabel(item.epistemic_status)} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    <small>{caregiverLabel(item.epistemic_status)} · Shared by {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    <a className="lcr-text-action" href={`#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View saved record</a>
                   </li>
                 ))}
               </ul>
+              {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open the full record below to review the rest.</p>}
             </>
           ) : projection ? (
             <p>There isn’t enough saved care information to describe the current situation yet. Missing information does not mean everything is fine.</p>
@@ -1253,6 +1255,17 @@ export function LCRCurrentUnderstanding() {
                   <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
                   <p>{caregiverSafeChangeText(change.explanation) || "A possible change was saved. Its importance has not been established."}</p>
                   <small>Compared {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
+                  <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
+                    {evidenceLoadingId === change.id ? "Loading supporting records…" : expandedChangeId === change.id ? "Hide supporting records" : "Review supporting records"}
+                  </button>
+                  {expandedChangeId === change.id && changeEvidence[change.id]?.error && <p role="status">{changeEvidence[change.id]?.error}</p>}
+                  {expandedChangeId === change.id && changeEvidence[change.id]?.evidence.map((source) => (
+                    <article key={source.id}>
+                      <strong>{caregiverSafeAssistantText(source.title) || "Saved care record"}</strong>
+                      {displayDescription(source.description) && <p>{displayDescription(source.description)}</p>}
+                      <small>Happened {formatWhen(source.occurred_at)} · Saved {formatWhen(source.recorded_at)}</small>
+                    </article>
+                  ))}
                 </li>
               ))}
             </ul>
@@ -1897,7 +1910,7 @@ export function LCRCurrentUnderstanding() {
             <div className="lcr-current-facts">
               <ul>
                 {projection.items.map((item) => (
-                  <li key={item.source_collection + ":" + item.id} className="lcr-current-fact">
+                  <li id={`lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`} key={item.source_collection + ":" + item.id} className="lcr-current-fact">
                     <div className="lcr-entry-heading">
                       <strong>{displayCurrentCareTitle(item)}</strong>
                       <span>{caregiverLabel(item.epistemic_status)}</span>
