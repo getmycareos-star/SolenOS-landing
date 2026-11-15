@@ -540,8 +540,8 @@ export default function DailyCarePage() {
         </Button>
         <div>
           <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
-          <h1>Your care journey, remembered.</h1>
-          <p>See what has been recorded. Add something only when it would help.</p>
+          <h1>Daily Care</h1>
+          <p>Your care journey, remembered. See what has been recorded and add something only when it would help.</p>
         </div>
       </div>
 
