@@ -13,6 +13,7 @@ import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDa
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { useSolenOSTranslations } from "@/components/providers/LanguageProvider";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -293,6 +294,7 @@ function isUnconfirmedMedicationChange(text: string): boolean {
 }
 
 export default function DailyCarePage() {
+  const { t } = useSolenOSTranslations();
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
@@ -534,9 +536,9 @@ export default function DailyCarePage() {
           <ArrowLeft size={20} aria-hidden />
         </Button>
         <div>
-          <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
-          <h1>Your care journey, remembered.</h1>
-          <p>See what has been recorded. Add something only when it would help.</p>
+          <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> {t("dailyCare.title")}</p>
+          <h1>{t("dailyCare.tagline")}</h1>
+          <p>{t("dailyCare.intro")}</p>
         </div>
       </div>
 
@@ -549,8 +551,8 @@ export default function DailyCarePage() {
       ) : ready ? (
         <>
           <section aria-labelledby="daily-care-current-title" className="daily-care-context-panel">
-            <h2 id="daily-care-current-title">Where things stand</h2>
-            <p className="daily-care-muted">The latest information currently available in the care record.</p>
+            <h2 id="daily-care-current-title">{t("dailyCare.where")}</h2>
+            <p className="daily-care-muted">{t("dailyCare.latest")}</p>
             {contextLoading ? (
               <p>Loading care information…</p>
             ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
@@ -580,13 +582,13 @@ export default function DailyCarePage() {
                 ))}
               </ul>
             ) : (
-              <p>No current care updates are available to show. This does not mean nothing happened.</p>
+              <p>{t("dailyCare.noCurrent")}</p>
             )}
             {contextError && <p role="status" className="daily-care-muted">{contextError}</p>}
           </section>
 
           <section aria-labelledby="daily-care-documents-title" className="daily-care-context-panel">
-            <h2 id="daily-care-documents-title">Recent documents</h2>
+            <h2 id="daily-care-documents-title">{t("dailyCare.documents")}</h2>
             <p className="daily-care-muted">SolenOS keeps the original files and reports what actually happened during processing.</p>
             {documentsError ? (
               <p role="alert">{documentsError}</p>
@@ -663,7 +665,7 @@ export default function DailyCarePage() {
           </section>
 
           <section aria-labelledby="daily-care-open-matters-title" className="daily-care-context-panel">
-            <h2 id="daily-care-open-matters-title">Open matters</h2>
+            <h2 id="daily-care-open-matters-title">{t("dailyCare.openMatters")}</h2>
             <p className="daily-care-muted">Questions, missing information and disagreements that have not been marked as resolved.</p>
             {careItems.filter(isOpenMatter).length > 0 ? (
               <ul className="daily-care-record-list">
@@ -727,11 +729,11 @@ export default function DailyCarePage() {
           </section>
 
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
-            <h2 id="daily-care-today-title">Care today</h2>
+            <h2 id="daily-care-today-title">{t("dailyCare.careToday")}</h2>
             <p className="daily-care-muted">Updates saved today, in time order. No daily entry is required.</p>
             {medicationConcern && (
               <div role="status" className="daily-care-medication-confirmation">
-                <strong>Needs confirmation</strong>
+                <strong>{t("dailyCare.needsConfirmation")}</strong>
                 <p>{displayHistoryText(medicationConcern)}</p>
                 <p>A medication change was reported, but the new dose has not been confirmed. Check the doctor’s instructions or contact the prescribing professional before relying on a different dose.</p>
               </div>
@@ -833,7 +835,7 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-history-title" className="daily-care-context-panel">
             <div className="daily-care-history-heading">
               <div>
-                <h2 id="daily-care-history-title">Recent care history</h2>
+                <h2 id="daily-care-history-title">{t("dailyCare.recentHistory")}</h2>
                 <p className="daily-care-muted">Recorded events, in time order. Missing days do not mean nothing happened.</p>
               </div>
               <Link href="/workspace/timeline" className="care-reminders-inline-link">View all history</Link>
@@ -861,7 +863,7 @@ export default function DailyCarePage() {
                 ))}
               </ul>
             ) : (
-              <p>No recent care entries are available. No record is not proof that no care took place.</p>
+              <p>{t("dailyCare.noHistory")}</p>
             )}
           </section>
           {reviewAnalysisId && (

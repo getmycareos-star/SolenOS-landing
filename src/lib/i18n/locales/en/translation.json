@@ -16,5 +16,48 @@
     "return_to_dashboard": "Return to Dashboard",
     "loading_executive_overview": "Loading executive overview...",
     "executive_overview": "Executive Overview"
+  },
+  "navigation": {
+    "companion": "AI Companion",
+    "careRecord": "Care record",
+    "followUps": "Follow-ups",
+    "dailyCare": "Daily Care",
+    "documents": "Documents",
+    "handoffs": "Care Handoffs",
+    "appointments": "Appointments",
+    "searchHistory": "Search history",
+    "settings": "Settings",
+    "primary": "Primary navigation",
+    "recentHistory": "Recent history"
+  },
+  "dailyCare": {
+    "title": "DAILY CARE",
+    "intro": "See what has been recorded. Add something only when it would help.",
+    "where": "Where things stand",
+    "latest": "The latest information currently available in the care record.",
+    "loading": "Loading care information…",
+    "noCurrent": "No current care updates are available to show. This does not mean nothing happened.",
+    "documents": "Recent documents",
+    "followups": "Existing follow-ups",
+    "openMatters": "Open matters",
+    "careToday": "Care today",
+    "needsConfirmation": "Needs confirmation",
+    "recentHistory": "Recent care history",
+    "viewHistory": "View all history",
+    "noHistory": "No recent care entries are available. No record is not proof that no care took place.",
+    "tagline": "Your care journey, remembered."
+  },
+  "changeIntelligence": {
+    "eyebrow": "LONGITUDINAL UNDERSTANDING",
+    "title": "Changes and patterns",
+    "loading": "Loading saved care changes…",
+    "historyMissing": "Earlier care information may be missing. That does not mean the event did not happen.",
+    "confirm": "Confirm supported",
+    "dispute": "Dispute assessment",
+    "inconclusive": "Mark inconclusive",
+    "situations": "Care situations",
+    "disclaimer": "These status updates are recorded by the caregiver. They are not medical conclusions.",
+    "reportedStatus": "Caregiver-reported status",
+    "statusReason": "Reason for this status (required)"
   }
 }

@@ -4,6 +4,7 @@ import "./mobile-app.css";
 import "./accessibility-overrides.css";
 import "./dark-mode-remediation.css";
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_PROMISE } from "@/lib/brand";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://solenosai.netlify.app"),
@@ -30,7 +31,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="solenos-font-fallbacks">
-      <body>{children}</body>
+      <body><LanguageProvider>{children}</LanguageProvider></body>
     </html>
   );
 }
