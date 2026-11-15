@@ -309,8 +309,10 @@ export default function DailyCarePage() {
   const [historyError, setHistoryError] = useState("");
   const [followUps, setFollowUps] = useState<DailyCareFollowUp[]>([]);
   const [followUpsError, setFollowUpsError] = useState("");
+  const [followUpsLoaded, setFollowUpsLoaded] = useState(false);
   const [documents, setDocuments] = useState<DailyCareDocumentStatus[]>([]);
   const [documentsError, setDocumentsError] = useState("");
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [deliveryIssues, setDeliveryIssues] = useState<DailyCareDeliveryIssue[]>([]);
   const [deliveryStatusError, setDeliveryStatusError] = useState("");
   const [sinceLastOpenItems, setSinceLastOpenItems] = useState<CareItem[] | null>(null);
@@ -330,6 +332,8 @@ export default function DailyCarePage() {
     setContextLoading(true);
     setContextError("");
     setHistoryError("");
+    setFollowUpsError("");
+    setDocumentsError("");
     void ensureAnonymousSession()
       .then(async () => {
         // Do not make caregivers wait for current-care and history reads before
@@ -362,24 +366,26 @@ export default function DailyCarePage() {
           if (Array.isArray(payload?.items)) {
             const items = payload.items as DailyCareFollowUp[];
             setFollowUps(items.filter((item) => !["closed", "cancelled"].includes(item.status)));
+            setFollowUpsLoaded(true);
             setFollowUpsError("");
           } else {
-            setFollowUpsError("The saved follow-up list could not be read. Check it before assuming nothing is outstanding.");
+            setFollowUpsError("Saved follow-ups couldn’t be read. Try again.");
           }
         } else {
-          setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
+          setFollowUpsError("Saved follow-ups couldn’t be loaded. Try again.");
         }
 
         if (documentsResult.status === "fulfilled") {
           const payload = documentsResult.value as { items?: unknown };
           if (Array.isArray(payload?.items)) {
             setDocuments(payload.items as DailyCareDocumentStatus[]);
+            setDocumentsLoaded(true);
             setDocumentsError("");
           } else {
-            setDocumentsError("We couldn't check whether your document has finished. Open Documents to see its latest update.");
+            setDocumentsError("Recent documents couldn’t be read. Try again.");
           }
         } else {
-          setDocumentsError("We couldn't check the document's progress. Open Documents to see its latest update.");
+          setDocumentsError("Recent documents couldn’t be loaded. Try again.");
         }
 
         if (notificationsResult.status === "fulfilled") {
