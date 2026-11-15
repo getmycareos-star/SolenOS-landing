@@ -11,6 +11,8 @@ import path from "node:path";
 const root = process.cwd();
 const panel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/ChangeIntelligencePanel.tsx"), "utf8");
 const api = fs.readFileSync(path.join(root, "src/api/change-intelligence.ts"), "utf8");
+const historyPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CareChangeHistoryPanel.tsx"), "utf8");
+const lcr = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -36,6 +38,20 @@ assert(!/changes\.slice\(0,\s*8\)/.test(panel), "change history must not be sile
 assert(!/patterns\.slice\(0,\s*8\)/.test(panel), "pattern history must not be silently truncated to eight rows");
 
 assert(!/recordObservationCoverage|submitCoverage|Save observation coverage|lcr-coverage-editor|<form\b/.test(panel), "observation coverage cannot be independently submitted from this panel");
+
+for (const [source, pattern, label] of [
+  [historyPanel, /care-delta\\/runs/, "saved Delta history must come from the backend"],
+  [historyPanel, /change\\.certainty === "supported"/, "only supported changes may be promoted"],
+  [historyPanel, /change\\.evidence_supported === true/, "promoted changes require source evidence"],
+  [historyPanel, /change\\.source_record_refs\\.length > 0/, "promoted changes require linked source records"],
+  [historyPanel, /What still needs checking/, "uncertain findings must remain visible as uncertain"],
+  [historyPanel, /Reports that differ/, "conflicting reports must remain visible"],
+  [historyPanel, /source_freshness\\?\\.status === "stale"/, "stale comparisons must be disclosed"],
+  [lcr, /<CareChangeHistoryPanel personId=\\{personId\\} \\/>/, "saved comparisons must appear in the primary LCR"],
+  [historyPanel, /if \\(!personId\\) return null/, "history must wait for a scoped care record"],
+]) {
+  assert(pattern.test(source), `Missing persisted care-change contract: ${label}`);
+}
 
 assert(
   /function requirePersonId\(\)[\s\S]*?getPersonId\(\)[\s\S]*?server-issued SolenOS care session is required/.test(api),
