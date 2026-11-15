@@ -48,7 +48,7 @@ export const WORKSPACE_NAVIGATION = {
     {
       id: "care-timeline",
       href: "/workspace/timeline",
-      label: "Care Timeline",
+      label: "Care history",
       description: "See how care has changed",
       icon: History,
     },
