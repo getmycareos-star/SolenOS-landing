@@ -54,6 +54,7 @@ assert.match(currentUnderstanding, /Details identified in this note/, "document-
 assert.match(currentUnderstanding, /They are not separate reports or independent confirmation/, "extracted details must not be presented as independent evidence");
 assert.match(currentUnderstanding, /Original report attached|Related report linked/, "saved source links must be described in caregiver language");
 assert.match(currentUnderstanding, /Original report text is not available in this view/, "a linked source without readable text must be distinguished from a missing link");
+assert.match(currentUnderstanding, /We couldn’t check whether this care summary is up to date/, "a failed freshness check must preserve the saved summary and warn that it may be out of date");
 assert.match(currentUnderstanding, /original report is not linked to this item/i, "a missing source link must be distinguished from unavailable source text");
 assert.match(currentUnderstanding, /captureRecord\.notes/, "serialized capture details must be reduced to the original caregiver report");
 assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "care-source descriptions must pass through the caregiver-readable parser");
