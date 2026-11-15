@@ -200,6 +200,18 @@ assert.match(historyDrawer, /Your saved care history, in date order/);
 assert.match(historyDrawer, /What was saved and where it came from/);
 assert.doesNotMatch(careRecordOverview, /Your Living Care Record|Living Care Record|AI Companion/);
 assert.doesNotMatch(handoff, /Living Care Record|Qwen quotations|Evidence IDs:|Origin groups:/);
+assert.match(careRecordOverview, /caregiverSafeAssistantText/);
+assert.doesNotMatch(careRecordOverview, /Confirmed by a source|item\.kind \|\|/);
+assert.doesNotMatch(followUps, /evidenceIds\.join|uniqueEvidenceIds\(item\)\.join/);
+assert.match(followUps, /related \$\{evidenceIds\.length === 1/);
+assert.match(timeline, /<h1 style=\{\{ marginBottom: 8 \}\}>Care history<\/h1>/);
+assert.doesNotMatch(timeline, /Care Timeline|Follow-ups & open items/);
+assert.match(handoff, /Check what will be shared/);
+assert.doesNotMatch(handoff, /Saved information item:|Caregiver-added note \(not independently verified\)|Sharing reviewed handoff/);
+assert.match(sourceReview, /How often should this information be checked/);
+assert.doesNotMatch(sourceReview, /Choose a review rule set by the caregiver|Device used|Original file or link/);
+assert.doesNotMatch(careOverviewPage, /currently understood about care/);
+
 console.log("Caregiver language boundary checks passed.");
 
 assert.match(careDelta, /caregiverStatusLabel/);
