@@ -199,7 +199,7 @@ for (const route of [
   assert(freshnessPanel.includes(route), `LCR freshness UI must connect to persisted route ${route}`);
 }
 assert(!freshnessPanel.includes("Save new policy version"), "freshness policies are selected from persisted immutable versions rather than authored in the LCR review panel");
-assert(freshnessPanel.includes("Choose a saved review rule") && freshnessPanel.includes("Review this information"), "LCR must retain assessment against an existing saved freshness policy");
+assert(freshnessPanel.includes("Choose a review rule") && freshnessPanel.includes("freshnessPolicies.map") && freshnessPanel.includes("Review this information"), "LCR must assess against persisted freshness policies loaded from the backend");
 assert(freshnessPanel.includes("There is no single time limit for every kind of information"), "freshness UI must reject an invented universal threshold");
 assert(freshnessPanel.toLowerCase().includes("this does not mean there are no past reviews"), "freshness history failure must not be displayed as an empty history");
 assert(freshnessPanel.includes("A review does not prove that information is true or still applies today"), "freshness assessments must not be presented as truth verification");
