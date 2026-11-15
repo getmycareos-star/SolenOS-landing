@@ -1,3 +1,4 @@
+// These assertions track the current caregiver-facing source and review language.
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -57,16 +58,16 @@ for (const status of [
   assert(claimPanel.includes(`"${status}"`), `claim assessment UI must expose ${status}`);
 }
 assert(claimPanel.includes("/assessments"), "claim assessment UI must persist and retrieve assessment history");
-assert(claimPanel.includes("Exact words from the source"), "claim assessment UI must require a source passage workflow");
+assert(claimPanel.includes("Exact words from the note or document"), "claim assessment UI must require a source passage workflow");
 assert(claimPanel.includes("superseded_by_claim_id"), "superseded claims must record a specific replacement claim");
 assert(claimPanel.includes("This does not mean there are no past reviews"), "failed history reads must not be presented as empty history");
 console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact passages, and persisted history.");
 assert(claimPanel.includes("/assessment-impact"), "claim assessment panel must retrieve persisted evidence-change/reassessment impact");
 assert(claimPanel.includes("changed_observation_ids"), "claim assessment panel must consume source-correction impact");
-assert(claimPanel.includes("A source detail was added or corrected after this review"), "claim assessment panel must explain source correction impact in plain English");
+assert(claimPanel.includes("A note or document was added or corrected after this review"), "claim assessment panel must explain source correction impact in plain English");
 assert(claimPanel.includes("Related care details that need another review"), "claim assessment panel must explain downstream dependency reassessment");
 assert(claimPanel.includes("New information could not be checked"), "failed assessment-impact reads must not imply that the assessment is current");
-assert(claimPanel.includes("No reason to repeat this review was found"), "assessment-impact UI must state the bounded nature of a no-trigger result");
+assert(claimPanel.includes("No new information was found that requires another review in the information checked"), "assessment-impact UI must state the bounded nature of a no-trigger result");
 assert(claimPanel.includes("does not prove that the information is true or complete"), "assessment-impact UI must disclose that deterministic triggers do not establish truth or completeness");
 console.log("PASS: claim assessment impact is connected to the LCR with fail-safe error messaging and explicit interpretation limits.");
 assert(claimPanel.includes("/uncertainty/claims/dependencies"), "claim dependency UI must persist relationships through the authenticated backend API");
@@ -85,7 +86,7 @@ console.log("PASS: source-lineage UI persists explicit relationship assessments 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
 assert(companion.includes("claim_provenance: response.claim_provenance"), "Companion must consume claim-level source references from the backend");
 assert(companion.includes("Not matched to the wording in a saved record"), "Companion must visibly mark statements without a matching source");
-assert(companion.includes("What this answer is based on"), "Companion must show source details beside the specific statement they support");
+assert(companion.includes("Where this answer came from"), "Companion must show source details beside the specific statement they support");
 assert(companion.includes("does not prove that a report is true or that two records came from different people"), "Companion must not present source matching as proof of truth or source independence");
 assert(companion.includes("Supporting note or document"), "Matched care entries must expose their linked original notes and documents");
 assert(companion.includes("source_independence_status === 'shared_origin'"), "Companion must distinguish sources with a shared original");
@@ -101,9 +102,9 @@ assert(!companion.includes("Inspect source record references"), "caregivers must
 console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
 
 const appointment = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert(appointment.includes("How the sources are connected"), "Appointment preparation must render source lineage");
+assert(appointment.includes("How the notes and documents are related"), "Appointment preparation must render source lineage");
 assert(appointment.includes("scope_truncated"), "Appointment preparation must disclose bounded lineage retrieval");
-assert(appointment.includes("This does not mean they are separate"), "Appointment preparation must not infer independence from missing lineage");
+assert(appointment.includes("Do not assume they are separate"), "Appointment preparation must not infer independence from missing lineage");
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
 
 const evidenceReview = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
@@ -113,7 +114,7 @@ assert(evidenceReview.includes("This does not establish that the evidence did no
 console.log("PASS: evidence review exposes persisted historical reconstruction with an explicit absence limitation.");
 
 assert(panel.includes("/observations"), "evidence UI must use the persisted source-grounded observation API");
-assert(panel.includes("Each detail keeps the exact words from the original source"), "read-only observation history must retain the exact source passage");
+assert(panel.includes("Each detail keeps the exact words from the original note or document"), "read-only observation history must retain the exact source passage");
 assert(panel.includes("A report stays labelled as a report"), "observation UI must preserve report versus observation distinctions");
 assert(panel.includes("reviewStatusLabel(item.epistemic_status)"), "read-only observation history must retain the recorded information status");
 console.log("PASS: source-grounded observation UI preserves exact source spans and epistemic distinctions.");
@@ -204,7 +205,7 @@ console.log("PASS: saved freshness policy assessment and history are connected t
 const deltaPanel = fs.readFileSync(path.join(process.cwd(), "src/components/CareDeltaPanel.tsx"), "utf8");
 assert(deltaPanel.includes("claim_provenance"), "Delta UI must consume claim-level source checks");
 assert(deltaPanel.includes("source_record_refs"), "each Delta finding must display its own supporting records");
-assert(deltaPanel.includes("Summary source check"), "Delta summary statements must be checked separately against their sources");
+assert(deltaPanel.includes("Check the summary against saved information"), "Delta summary statements must be checked separately against their sources");
 assert(deltaPanel.includes("When it happened") && deltaPanel.includes("When it was recorded"), "Delta sources must show event and recording times");
 console.log("PASS: Delta findings and summaries display statement-specific source references.");
 

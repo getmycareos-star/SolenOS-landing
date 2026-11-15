@@ -48,7 +48,7 @@ assert.match(documents, /saveReviewedPages/, "the library retains original-file 
 assert.match(documents, /Save your files/);
 assert.match(documents, /server processing continues even if you leave/, "saving confirms that processing continues after the original upload is complete");
 assert.match(documentReview, /analysis\.extraction_status === "available" \? analysis\.observations\.map/, "document candidates must remain hidden until every page has completed extraction");
-assert.match(documentReview, /No statements are available for review because not every page could be read/, "caregivers must be told why incomplete documents cannot be reviewed");
+assert.match(documentReview, /We couldn\'t read every page, so there are no details to review yet/, "caregivers must be told why incomplete documents cannot be reviewed");
 assert.match(documents, /saveReviewedPages/);
 assert.match(documents, /getJSON\("\/evidence\//, "saved document records remain readable");
 assert.match(documents, /getBlob\("\/upload\//, "saved original files remain retrievable");
