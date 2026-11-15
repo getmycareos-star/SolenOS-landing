@@ -51,7 +51,7 @@ assert.doesNotMatch(companion, /Guard: \{msg\.guard_verdict\}/);
 assert.doesNotMatch(companion, /Confidence: \{Math\.round/);
 assert.doesNotMatch(companion, /Evidence: \{msg\.evidence_ids/);
 assert.match(companion, /deterministic_low_capacity_support_fallback/);
-assert.match(companion, /I couldn't confirm a reliable answer from the care record/);
+assert.match(companion, /I couldn't find enough information in your Care Record to give a reliable answer/);
 assert.match(companion, /msg\.safety_note/);
 assert.doesNotMatch(companion, /Replies may be unavailable sometimes/);
 assert.doesNotMatch(companion, /The safety engine flagged this exchange/);
@@ -66,10 +66,10 @@ assert.match(companion, /source_message_id\?: string \| null/, "the Companion mu
 assert.match(companion, /from-message\//, "caregivers must be able to submit an exact original message for review");
 assert.match(companion, /confirm_care_report: true/, "creating a care report must require an explicit caregiver confirmation");
 assert.match(companion, /not a question, possibility or guess/, "the confirmation must distinguish reports from questions and hypotheticals");
-assert.match(companion, /Save as care report/, "the report action must be explicit and separate from ordinary chat");
+assert.match(companion, /Save as a care note/, "the report action must be explicit and separate from ordinary chat");
 assert.match(companion, /Add to Care Record/, "adding a Companion report must require an explicit caregiver action");
 assert.match(companion, /Don’t add/, "caregivers must be able to decline a suggested update");
-assert.match(companion, /not been independently verified/, "accepted Companion reports must remain distinct from clinical verification");
+assert.match(companion, /A healthcare professional has not confirmed it/, "accepted Companion reports must remain distinct from clinical verification");
 assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
   "Delta comparison must not support hidden automatic reconciliation");
 assert.match(deltaPanel, /onSubmit=\{\(event\) => \{ event\.preventDefault\(\); void reconcile\(/,
@@ -193,7 +193,7 @@ assert.ok(captureReview.includes("Accept and add to care record"), "caregiver ap
 assert.ok(dailyCapture.includes("qwen_job_id"), "structured Daily Care must retain the durable background job ID");
 assert.ok(dailyCapture.includes('getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`)'), "structured Daily Care must poll the durable extraction job after confirming the save");
 assert.ok(dailyCapture.includes("/capture/analyses/"), "structured Daily Care must load persisted review candidates after background extraction");
-assert.ok(dailyCapture.includes("Your care entry is saved. SolenOS is checking it against the rest of the care record in the background."), "the UI must distinguish a saved record from unfinished downstream reconciliation");
+assert.ok(dailyCapture.includes("Your update is saved. SolenOS is checking it against earlier care information."), "the UI must distinguish a saved record from unfinished downstream reconciliation");
 assert.ok(dailyCapture.includes("jobId: typeof data?.qwen_job_id === 'string' ? data.qwen_job_id : null"), "the saved receipt must retain the durable worker job ID");
 assert.ok(naturalDailyUpdate.includes('postJSON("/daily-care/entries"'), "natural-language updates must use the existing persisted Daily Care endpoint");
 assert.ok(naturalDailyUpdate.includes("notes: report"), "the exact caregiver wording must be submitted as the source report");
