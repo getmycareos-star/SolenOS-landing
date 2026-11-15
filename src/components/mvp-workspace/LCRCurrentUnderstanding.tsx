@@ -1184,6 +1184,86 @@ export function LCRCurrentUnderstanding() {
         </button>
       </div>
 
+      <section className="lcr-first-screen-summary" aria-label="Care at a glance">
+        <div className="lcr-first-screen-card">
+          <h3>Where things stand</h3>
+          {loading ? (
+            <p role="status">Loading saved care information…</p>
+          ) : error ? (
+            <p role="status">We couldn’t load the current care picture. Check your connection and try again.</p>
+          ) : projection?.items.length ? (
+            <>
+              <p>
+                {projection.item_count} saved {projection.item_count === 1 ? "care detail is" : "care details are"} available in this view.
+                {projection.schema_status !== "complete" || projection.missing_required_sources.length > 0
+                  ? " This picture is incomplete because some information could not be checked."
+                  : " This is a summary of recorded information, not a medical assessment."}
+              </p>
+              <ul className="lcr-first-screen-list">
+                {projection.items.slice(0, 2).map((item) => (
+                  <li key={item.source_collection + ":" + item.id}>
+                    <strong>{displayCurrentCareTitle(item)}</strong>
+                    {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
+                    <small>{caregiverLabel(item.epistemic_status)} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : projection ? (
+            <p>There isn’t enough saved care information to describe the current situation yet. Missing information does not mean everything is fine.</p>
+          ) : (
+            <p>The current care picture is not available yet. SolenOS will not fill gaps with guesses.</p>
+          )}
+        </div>
+
+        <div className="lcr-first-screen-card">
+          <h3>What needs attention</h3>
+          {assessmentError ? (
+            <p role="status">We couldn’t check follow-ups just now. Do not assume there is nothing that needs attention.</p>
+          ) : !assessment ? (
+            <p>Care priorities have not been checked yet.</p>
+          ) : assessment.coverage.records_examined === 0 ? (
+            <p>There isn’t enough recorded care information to assess priorities yet. This does not mean there are no care needs.</p>
+          ) : needsAttentionNow.length > 0 ? (
+            <ul className="lcr-first-screen-list">
+              {needsAttentionNow.slice(0, 2).map((item) => (
+                <li key={item.source + ":" + item.id}>
+                  <strong>{caregiverSafeAssistantText(item.title) || "Care follow-up"}</strong>
+                  <p>{caregiverSafeAssistantText(item.description || item.request_text) || "A saved care matter was marked for attention."}</p>
+                  {item.due_at && <small>Due {formatWhen(item.due_at)}</small>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No items are currently marked for immediate attention in the information checked. This is not a statement that no care needs exist.</p>
+          )}
+          <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
+        </div>
+
+        <div className="lcr-first-screen-card">
+          <h3>What has changed</h3>
+          {changesError || patternsError ? (
+            <p role="status">Some saved changes could not be checked. This view may be incomplete.</p>
+          ) : watchChanges.length > 0 ? (
+            <ul className="lcr-first-screen-list">
+              {watchChanges.slice(0, 2).map((change) => (
+                <li key={change.id}>
+                  <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
+                  <p>{caregiverSafeChangeText(change.explanation) || "A possible change was saved. Its importance has not been established."}</p>
+                  <small>Compared {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
+                </li>
+              ))}
+            </ul>
+          ) : activeWatchPatterns.length > 0 ? (
+            <p>{activeWatchPatterns.length} repeated {activeWatchPatterns.length === 1 ? "change is" : "changes are"} recorded in the care history. Open the details to review the time period and supporting information.</p>
+          ) : (
+            <p>There isn’t enough saved history to describe meaningful changes yet. Missing history does not mean nothing changed.</p>
+          )}
+        </div>
+      </section>
+
+      <details className="lcr-history-details lcr-progressive-disclosure">
+        <summary>More about this care record — actions, details and history</summary>
       <section className="lcr-situation-assessment" aria-labelledby="lcr-attention-now-heading">
         <div className="lcr-entry-heading">
           <div>
@@ -1972,6 +2052,7 @@ export function LCRCurrentUnderstanding() {
           <summary>Reported information and record history</summary>
           {advancedPanelsOpen ? <CareContinuityIntegrityPanel personId={personId} /> : null}
         </details>
+      </details>
       </details>
     </section>
   );
