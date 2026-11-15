@@ -136,6 +136,11 @@ assert(
   /window\.dispatchEvent\(new Event\('careRecordUpdated'\)\)/.test(dailyCapture),
   "a confirmed Daily Care save must refresh the existing persisted LCR projections",
 );
+assert(
+  /deltaCompleted = \["completed", "not_applicable"\]\.includes\(execution\.delta_reconciliation \|\| ""\)/.test(dailyCapture)
+    && /longitudinalProcessingCompleted = \["completed", "not_applicable"\]\.includes\(execution\.longitudinal_processing \|\| ""\)/.test(dailyCapture),
+  "change intelligence must remain unavailable until Delta and longitudinal processing are complete",
+);
 
 console.log("CHANGE_INTELLIGENCE_UI_CONTRACT=PASS");
 console.log("Scope=persisted change/pattern/situation history + caregiver-confirmed trajectory + archived Delta history + single Daily Care reconciliation + primary LCR contract");
