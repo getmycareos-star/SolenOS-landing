@@ -1794,7 +1794,7 @@ export function LCRCurrentUnderstanding() {
                       <summary>Record details</summary>
                       <p>{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
                       <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"}</small>
-                      <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Shared: ${formatWhen(item.reported_at)} · ` : ""}Saved: {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                      <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                       {item.evidence_ids?.length > 0 ? (
                         <div>
                           <small>{item.evidence_link_validation === "valid" ? "Original report attached" : "Related report linked"}</small>
