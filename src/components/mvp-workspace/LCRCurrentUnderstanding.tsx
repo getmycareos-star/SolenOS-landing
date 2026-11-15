@@ -12,6 +12,7 @@ const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPan
 const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <p role="status">Loading saved care information…</p> });
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
 const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading information that may need checking…</p> });
+const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
 
 let workspaceLoadSequence = 0;
 
@@ -1854,6 +1855,7 @@ export function LCRCurrentUnderstanding() {
           <p className="lcr-footer-note">{caregiverSafeAssistantText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
+      <CareChangeHistoryPanel personId={personId} />
       <div id="lcr-clarification-workflow"><ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /></div>
       <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
         <summary>Where this information came from</summary>
