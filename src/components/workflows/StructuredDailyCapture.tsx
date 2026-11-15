@@ -736,16 +736,16 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           const visibleInLcr = Array.isArray(projection?.items) &&
             projection.items.some(item => item.id === result.assertion_id);
           setReviewFeedback(visibleInLcr
-            ? 'Accepted observation is now available in the Living Care Record.'
-            : 'Acceptance was saved. The LCR projection did not return the assertion yet; refresh the Living Care Record before relying on its display.');
+            ? 'Your accepted detail is now in your Care Record.'
+            : 'Your choice was saved, but the detail is not showing in your Care Record yet. Refresh before relying on it.');
         } catch {
-          setReviewFeedback('Acceptance was saved. The LCR could not be refreshed just now; reopen the Living Care Record to verify the accepted entry.');
+          setReviewFeedback('Your choice was saved, but SolenOS could not refresh your Care Record. Reopen it to check that the detail appears.');
         }
       } else {
         setReviewFeedback(result.message || (
           decision === 'correct'
-            ? 'Correction saved. It remains pending approval and is not an LCR fact.'
-            : 'Suggestion rejected. No LCR assertion was created.'
+            ? 'Your correction was saved and is waiting for approval. It has not been added to your Care Record.'
+            : 'You chose not to add this suggestion.'
         ));
       }
     } catch (reason) {
@@ -1214,29 +1214,29 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       
       {saved && careContinuityExecution?.stages && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
-          Source saved: {careContinuityExecution.stages.source_preservation === 'verified' ? 'confirmed' : 'not confirmed'}.
-          {' '}Evidence: {careContinuityExecution.stages.evidence === 'verified' ? 'linked and confirmed' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not required' : 'not confirmed'}.
-          {' '}Care-record reconciliation: {['committed', 'completed'].includes(careContinuityExecution.stages.reconciliation || '') ? 'saved' : 'not confirmed'}.
+          Original note: {careContinuityExecution.stages.source_preservation === 'verified' ? 'saved' : 'not confirmed'}. 
+          {' '}Related notes or documents: {careContinuityExecution.stages.evidence === 'verified' ? 'linked' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not needed' : 'not confirmed'}. 
+          {' '}Care Record: {['committed', 'completed'].includes(careContinuityExecution.stages.reconciliation || '') ? 'updated' : 'not confirmed'}. 
         </p>
       )}
       {saved && changeIntelligenceStatus === 'available' && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
-          Change and pattern assessments were recalculated from the saved care record.
+          SolenOS checked this update against earlier care information.
         </p>
       )}
       {saved && changeIntelligenceStatus === 'unavailable' && (
         <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
-          Your care entry was saved, but change and pattern assessments could not be refreshed. Do not submit the entry again; reopen change intelligence and retry reassessment.
+          Your update was saved, but SolenOS could not check it against earlier care information. Do not submit it again. Open Changes in care over time and try again.
         </p>
       )}
       {saved && changeIntelligenceStatus === 'pending' && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
-          Your care entry is saved. SolenOS is checking it against the rest of the care record in the background.
+          Your update is saved. SolenOS is checking it against earlier care information.
         </p>
       )}
       {saved && changeIntelligenceStatus === 'not_reported' && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
-          The server did not report whether change and pattern assessments were refreshed.
+          We could not confirm whether your update was checked against earlier care information.
         </p>
       )}
 
@@ -1247,7 +1247,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         }}>
           <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Review suggested details</h2>
           <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            These suggestions are not yet part of your care record. Check or correct them before using them to compare care updates.
+            These suggested details have not been added to your Care Record. Check or correct them before you use them.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
@@ -1262,13 +1262,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <li key={index} style={{ fontSize: '12px', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
                     <strong>Suggested detail {index + 1}</strong>
                     <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
-                      {reviewStatus === 'pending_review' ? 'Awaiting caregiver review' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Corrected — awaiting explicit approval' : reviewStatus === 'accepted_by_caregiver' ? 'Accepted — added to the Living Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Rejected — not included in the Living Care Record' : 'Review status unavailable'}
+                      {reviewStatus === 'pending_review' ? 'Waiting for your review' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Correction saved — waiting for your approval' : reviewStatus === 'accepted_by_caregiver' ? 'Added to your Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Not added to your Care Record' : 'Review status unavailable'}
                     </p>
                     <div style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                      <div><strong>Original suggestion:</strong> {candidate.subject ? `${candidate.subject}: ` : ''}{candidate.observation || 'No generated observation text.'}</div>
+                      <div><strong>Original suggestion:</strong> {candidate.subject ? `${candidate.subject}: ` : ''}{candidate.observation || 'No suggested detail is available.'}</div>
                       {candidate.corrected_observation !== undefined && (
                         <div style={{ marginTop: '4px' }}>
-                          <strong>Caregiver correction:</strong> {candidate.corrected_subject ? `${candidate.corrected_subject}: ` : ''}{candidate.corrected_observation}
+                          <strong>Your correction:</strong> {candidate.corrected_subject ? `${candidate.corrected_subject}: ` : ''}{candidate.corrected_observation}
                         </div>
                       )}
                     </div>
@@ -1284,7 +1284,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       />
                     </label>
                     <label style={{ display: 'block', marginBottom: '8px' }}>
-                      What was observed?
+                      What happened?
                       <textarea
                         aria-label={`Corrected observation ${index + 1}`}
                         value={draft.observation}
@@ -1302,7 +1302,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     )}
                     {!alreadyReviewed && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Accept and add to LCR</button>
+                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Add to Care Record</button>
                         <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
                         <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Dismiss suggestion</button>
                       </div>
@@ -1314,18 +1314,18 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               {['queued', 'processing'].includes(qwenAnalysis.processingStatus)
-                ? 'Your entry is saved. SolenOS is organizing the details in the background.'
+                ? 'Your update is saved. SolenOS is organizing the details in the background.'
                 : qwenAnalysis.processingStatus === 'unavailable'
-                  ? 'Your original entry is saved, but SolenOS could not finish organizing its details. You can still use the saved report.'
+                  ? 'Your original update is saved, but SolenOS could not finish organizing the details. You can still use the saved note.'
                   : qwenAnalysis.status === 'pending_review'
                     ? 'No additional details stood out in this update. Your original entry is saved.'
-                    : 'No additional observations are available. Your saved entry remains recorded.'}
+                    : 'No other details are available. Your update is still saved.'}
             </p>
           )}
           {reviewFeedback && <p role="status" style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '10px' }}>
-              <strong style={{ fontSize: '12px' }}>Questions to clarify</strong>
+              <strong style={{ fontSize: '12px' }}>Questions to answer</strong>
               <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
                 {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
                   <li key={index} style={{ fontSize: '12px', marginBottom: '4px' }}>{question}</li>
