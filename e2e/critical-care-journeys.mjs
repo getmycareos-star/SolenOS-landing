@@ -1000,6 +1000,12 @@ await record("07 change detection and supporting evidence", async () => {
     }
   }
   assert.ok(Array.isArray(delta.computed_changes), "the persisted comparison must expose computed change candidates");
+  const evidenceBackedChanges = dailyRuns.flatMap((run) => run.delta?.computed_changes || [])
+    .filter((change) => Array.isArray(change.source_record_refs) && change.source_record_refs.length > 0);
+  assert.ok(
+    evidenceBackedChanges.length > 0,
+    "at least one persisted change comparison must link to the original care evidence",
+  );
   for (const change of delta.computed_changes) {
     assert.ok(Array.isArray(change.source_record_refs), "each computed change must retain its source records");
     if (change.certainty === "supported") {
