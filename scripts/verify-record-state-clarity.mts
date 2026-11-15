@@ -55,6 +55,7 @@ assert.match(daily, /historyError && !historyLoaded/);
 assert.match(daily, /historyError && <RecordState kind="error" title="Recent care history couldn’t be refreshed\."/);
 assert.doesNotMatch(daily, /setCareItems\(Array\.isArray\(payload\?\.items\) \?/);
 assert.match(daily, /historyError && !historyLoaded \? \([\s\S]*?RecordState kind="error"/);
+assert.match(daily, /action=\{<button type="button" onClick=\{\(\) => setRefreshVersion/);
 assert.doesNotMatch(daily, /This does not mean nothing happened|That does not mean nothing happened/);
 assert.doesNotMatch(daily, /No new care records have been added since your last visit/);
 assert.doesNotMatch(daily, /No updates have been saved today/);
@@ -77,6 +78,7 @@ assert.match(followUps, /import \{ RecordState \} from "@\/components\/ui\/Recor
 assert.doesNotMatch(followUps, /An empty section does not mean nothing needs attention/);
 assert.doesNotMatch(followUps, /setLoops\(nextLoops \|\| \[\]\)/);
 assert.match(reminders, /RecordState kind="loading"/);
+assert.match(reminders, /void refresh\(\)\.catch\(\(\) => setError/);
 assert.doesNotMatch(reminders, /SolenOS does not invent sample reminders/);
 
 assert.doesNotMatch(history, /empty view is not evidence that no care was recorded/);
