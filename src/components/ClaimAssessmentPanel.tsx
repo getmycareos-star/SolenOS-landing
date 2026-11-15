@@ -336,7 +336,7 @@ export default function ClaimAssessmentPanel() {
       return;
     }
     if (status === "superseded" && (!supersededByClaimId || supersededByClaimId === selectedClaim.id)) {
-      setError("Select a different care detail in this same care record as the supersession target.");
+      setError("Choose another care detail to show that this one has been replaced.");
       return;
     }
     const completeLinks = links.filter((link) => link.evidence_id.trim());
