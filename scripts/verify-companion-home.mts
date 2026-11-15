@@ -67,7 +67,7 @@ assert.doesNotMatch(shell, /MoreVertical|solenos-main-menu/);
 assert.doesNotMatch(shell, /Caregiver account/);
 assert.match(navigation, /href: "\/workspace\/daily-care"[\s\S]*?label: "Daily Care"/);
 assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/);
-assert.match(navigation, /href: "\/workspace\/handoffs"[\s\S]*?label: "Care Handoffs"/);
+assert.match(navigation, /href: "\/workspace\/handoffs"[\s\S]*?label: "Share care information"/);
 assert.match(navigation, /href: "\/workspace\/appointments"[\s\S]*?label: "Appointments"/);
 assert.match(shell, /pathname === "\/workspace"/);
 assert.match(shell, /<WorkspaceMoreMenu/);
@@ -137,7 +137,7 @@ assert.match(shellStyles, /\.solenos-chat-topbar\{position:relative;z-index:80/)
 assert.match(shellStyles, /\.workspace-more-menu \{[^}]*pointer-events: auto/s);
 assert.match(shellStyles, /\.workspace-more-menu-trigger \{[^}]*touch-action: manipulation/s);
 assert.match(shell, /finally \{\s*setInstallPrompt\(null\)/);
-assert.doesNotMatch(moreMenu, /Daily Care|Documents|Care Handoffs|Appointments|Settings/);
+assert.doesNotMatch(moreMenu, /Daily Care|Documents|Share care information|Appointments|Settings/);
 assert.doesNotMatch(shell, /MoreVertical|solenos-main-menu/);
 assert.match(record, /redirect\("\/workspace"\)/);
 assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/);
