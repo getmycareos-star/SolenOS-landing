@@ -13,6 +13,7 @@ const panel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/Chan
 const api = fs.readFileSync(path.join(root, "src/api/change-intelligence.ts"), "utf8");
 const historyPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CareChangeHistoryPanel.tsx"), "utf8");
 const lcr = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
+const timeline = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
 const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -84,8 +85,9 @@ for (const [source, pattern, label] of [
   [historyPanel, /const confirmed = comparisonCurrent \? changes\.filter\(supported\) : \[\]/, "stale or unchecked comparisons must not be presented as supported changes"],
   [historyPanel, /const needsReview = comparisonCurrent \? changes\.filter/, "all findings from stale or unchecked comparisons must remain review-only"],
   [historyPanel, /SolenOS could not confirm that the source history for this comparison is current/, "unchecked source freshness must be disclosed to caregivers"],
-  [lcr, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the primary LCR"],
-  [lcr, /careHistoryOpen \? \([\s\S]*?<ChangeIntelligencePanel personId=\{personId\} \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>/, "persisted change intelligence and Delta history must appear together in earlier care history"],
+  [timeline, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the dedicated Care Timeline"],
+  [timeline, /<ChangeIntelligencePanel personId=\{personId\} \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>/, "persisted change intelligence and Delta history must appear together in the historical view"],
+  [lcr, /<LCRCurrentUnderstanding/, "the Care Record remains the current-understanding view"],
   [historyPanel, /if \(!personId\) return null/, "history must wait for a scoped care record"],
 ]) {
   assert(pattern.test(source), "Missing persisted care-change contract: " + label);
