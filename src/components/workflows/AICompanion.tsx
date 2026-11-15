@@ -453,7 +453,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved note or document. It is not a separate report.</p>}
                                       {item.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                       {item.source_independence_status === 'not_assessed' && <p>We have not checked whether this note is separate from other reports.</p>}
-                                      {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same wording appears in {item.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
+                                      {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {item.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
                                       {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
