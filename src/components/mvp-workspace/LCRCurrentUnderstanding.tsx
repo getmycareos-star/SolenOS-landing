@@ -1224,7 +1224,7 @@ export function LCRCurrentUnderstanding() {
           {assessmentError ? (
             <p role="status">We couldn’t check follow-ups just now. Do not assume there is nothing that needs attention.</p>
           ) : !assessment ? (
-            <p>Care priorities have not been checked yet.</p>
+            <p>Care information has not been checked for follow-ups yet.</p>
           ) : assessment.coverage.records_examined === 0 ? (
             <p>There isn’t enough recorded care information to assess priorities yet. This does not mean there are no care needs.</p>
           ) : immediateCareDecisions.length > 0 ? (
@@ -1233,11 +1233,11 @@ export function LCRCurrentUnderstanding() {
                 {immediateCareDecisions.slice(0, 2).map((decision) => (
                   <li key={decision.id || decision.source + ":" + decision.record_id}>
                     <strong>{caregiverSafeAssistantText(decision.title) || "Care follow-up"}</strong>
-                    <p>{caregiverSafeAssistantText(decision.reason || decision.priority_basis?.join("; ")) || "The saved care assessment marked this for attention."}</p>
+                    <p>{caregiverSafeAssistantText(decision.reason || decision.priority_basis?.join("; ")) || "This was marked for attention in the latest review."}</p>
                     {decision.due_at && <small>Due {formatWhen(decision.due_at)}</small>}
                     {decision.records?.length ? (
                       <details>
-                        <summary>See the saved records behind this</summary>
+                        <summary>See the notes and documents behind this</summary>
                         {decision.records.map((record) => (
                           <p key={record.source + ":" + record.record_id}>
                             {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened {formatWhen(record.occurred_at)} · Saved {formatWhen(record.recorded_at)}
@@ -1248,27 +1248,27 @@ export function LCRCurrentUnderstanding() {
                   </li>
                 ))}
               </ul>
-              {immediateCareDecisions.length > 2 && <p className="lcr-entry-status">{immediateCareDecisions.length - 2} more items need review in the detailed list.</p>}
+              {immediateCareDecisions.length > 2 && <p className="lcr-entry-status">{immediateCareDecisions.length - 2} more items may need attention. Open follow-ups to review them.</p>}
             </>
           ) : needsAttentionNow.length > 0 ? (
             <ul className="lcr-first-screen-list">
               {needsAttentionNow.slice(0, 2).map((item) => (
                 <li key={item.source + ":" + item.id}>
                   <strong>{caregiverSafeAssistantText(item.title) || "Care follow-up"}</strong>
-                  <p>{caregiverSafeAssistantText(item.description || item.request_text) || "A saved care matter was marked for attention."}</p>
+                  <p>{caregiverSafeAssistantText(item.description || item.request_text) || "This was marked for attention in the latest review."}</p>
                   {item.due_at && <small>Due {formatWhen(item.due_at)}</small>}
                 </li>
               ))}
             </ul>
           ) : importantCareDecisions.length > 0 || clarificationCareDecisions.length > 0 ? (
             <p>
-              No items are marked for immediate attention in the information checked.
+              Nothing in the information checked is marked for immediate attention.
               {importantCareDecisions.length > 0 ? ` ${importantCareDecisions.length} important ${importantCareDecisions.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review.` : ""}
               {clarificationCareDecisions.length > 0 ? ` ${clarificationCareDecisions.length} ${clarificationCareDecisions.length === 1 ? "detail needs" : "details need"} clarification.` : ""}
               {" "}This is not a statement that no care needs exist.
             </p>
           ) : (
-            <p>No items are currently marked for immediate attention in the information checked. This is not a statement that no care needs exist.</p>
+            <p>Nothing in the information checked is marked for immediate attention. This is not a statement that no care needs exist.</p>
           )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
         </div>
@@ -1285,7 +1285,7 @@ export function LCRCurrentUnderstanding() {
                   <p>{caregiverSafeChangeText(change.explanation) || "A possible change was saved. Its importance has not been established."}</p>
                   <small>Compared {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
                   <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
-                    {evidenceLoadingId === change.id ? "Loading supporting records…" : expandedChangeId === change.id ? "Hide supporting records" : "Review supporting records"}
+                    {evidenceLoadingId === change.id ? "Loading notes and documents…" : expandedChangeId === change.id ? "Hide notes and documents" : "Review the notes and documents"}
                   </button>
                   {expandedChangeId === change.id && changeEvidence[change.id]?.error && <p role="status">{changeEvidence[change.id]?.error}</p>}
                   {expandedChangeId === change.id && changeEvidence[change.id]?.evidence.map((source) => (
@@ -1301,7 +1301,7 @@ export function LCRCurrentUnderstanding() {
           ) : activeWatchPatterns.length > 0 ? (
             <p>{activeWatchPatterns.length} repeated {activeWatchPatterns.length === 1 ? "change is" : "changes are"} recorded in the care history. Open the details to review the time period and supporting information.</p>
           ) : (
-            <p>There isn’t enough saved history to describe meaningful changes yet. Missing history does not mean nothing changed.</p>
+            <p>There isn’t enough saved care history to describe changes yet. Missing information does not mean nothing changed.</p>
           )}
         </div>
       </section>
@@ -1629,7 +1629,7 @@ export function LCRCurrentUnderstanding() {
                       <small>Dates compared: {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
                       <small>From: {change.evidence_ids.length} saved item(s)</small>
                       <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
-                        {expandedChangeId === change.id ? "Hide supporting records" : "View supporting records"}
+                        {expandedChangeId === change.id ? "Hide notes and documents" : "View supporting records"}
                       </button>
                       {expandedChangeId === change.id && changeEvidence[change.id]?.error && <p role="status">{changeEvidence[change.id]?.error}</p>}
                       {expandedChangeId === change.id && changeEvidence[change.id]?.evidence.map((source) => (
