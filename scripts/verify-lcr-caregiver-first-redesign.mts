@@ -42,6 +42,11 @@ assert.match(currentUnderstanding, /lcr-first-screen-summary/, "LCR opens with a
 assert.match(currentUnderstanding, /Where things stand/, "first screen explains the recorded care picture");
 assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces only supported immediate priorities");
 assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
+assert.match(currentUnderstanding, /View saved record/, "current-care summary items link directly to their full saved records");
+assert.match(currentUnderstanding, /source_label/, "current-care summary identifies who shared the information when recorded");
+assert.match(currentUnderstanding, /Review supporting records/, "change summaries expose a direct supporting-record review action");
+assert.match(currentUnderstanding, /loadChangeEvidence\(change\)/, "supporting records are loaded through the existing person-scoped evidence retrieval");
+assert.match(currentUnderstanding, /Showing 2 of \{projection\.item_count\}/, "the first screen limits detail while making the remaining record count discoverable");
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed categories, actions and history are progressively disclosed");
 assert.match(currentUnderstanding, /Missing information does not mean everything is fine/, "empty care records are not presented as reassuring findings");
 assert.match(currentUnderstanding, /Do not assume there is nothing that needs attention/, "failed priority retrieval is not presented as an empty queue");
