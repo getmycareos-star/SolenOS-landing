@@ -1,0 +1,38 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { WORKSPACE_NAVIGATION } from "@/lib/workspace-navigation";
+
+const items = [
+  ...WORKSPACE_NAVIGATION.care,
+  ...WORKSPACE_NAVIGATION.support,
+  ...WORKSPACE_NAVIGATION.settings,
+];
+
+export function WorkspaceRouteBreadcrumbs() {
+  const pathname = usePathname();
+  const current = [...items]
+    .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
+    .sort((left, right) => right.href.length - left.href.length)[0];
+
+  const label = current?.label || "Care Record";
+  const isHome = !current || current.href === "/workspace";
+
+  return (
+    <nav className="solenos-workspace-breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        {isHome ? (
+          <li aria-current="page"><span>Care Record</span></li>
+        ) : (
+          <>
+            <li><Link href="/workspace">Care Record</Link></li>
+            <li aria-hidden="true" className="solenos-workspace-breadcrumb-separator">/</li>
+            <li aria-current="page"><span>{label}</span></li>
+          </>
+        )}
+      </ol>
+      <span className="solenos-visually-hidden" aria-live="polite" aria-atomic="true">{label} page</span>
+    </nav>
+  );
+}
