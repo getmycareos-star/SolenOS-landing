@@ -182,11 +182,7 @@ export default function ClaimAssessmentPanel() {
           : claimRows[0]?.id ?? "",
       );
     } catch {
-      setPersonId("");
-      setClaims([]);
-      setEvidence([]);
-      setSelectedClaimId("");
-      setError("Care details and related notes could not be loaded. This does not mean your Care Record is empty. Try again when you are connected.");
+      setError("Care details and related notes couldn’t be loaded. Try again when you’re connected.");
     } finally {
       setLoading(false);
     }
