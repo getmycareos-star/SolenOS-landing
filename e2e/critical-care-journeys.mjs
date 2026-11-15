@@ -1269,8 +1269,8 @@ await record("clarification questions are linked, answerable, skippable and dura
   await page.getByText(answerQuestionText, { exact: true }).first().click();
   const exactAnswer = "I observed this on " + tag + ".";
   const exactProvenance = "I was present and recorded it in the care note.";
-  await page.getByLabel("Your answer").fill(exactAnswer);
-  await page.getByLabel("Who provided this answer, and how do they know?").fill(exactProvenance);
+  await page.getByLabel("What did you observe or report?").fill(exactAnswer);
+  await page.getByLabel("When did you observe this?").fill(exactProvenance);
   await page.getByRole("button", { name: "Save answer", exact: true }).click();
   await page.getByText("Your answer has been saved.", { exact: false }).waitFor({ timeout: 20_000 });
 
