@@ -86,6 +86,7 @@ assert.match(followUps, /import \{ RecordState \} from "@\/components\/ui\/Recor
 assert.doesNotMatch(followUps, /An empty section does not mean nothing needs attention/);
 assert.doesNotMatch(followUps, /setLoops\(nextLoops \|\| \[\]\)/);
 assert.match(reminders, /RecordState kind="loading"/);
+assert.match(reminders, /hasLoaded \? <p>\{reminders\.length\}/);
 assert.match(reminders, /void refresh\(\)\.catch\(\(\) => setError/);
 assert.match(documents, /hasLoadedDocumentsRef\.current = true/);
 assert.match(documents, /hasLoadedDocuments && documents\.length > 0 && \(/);
