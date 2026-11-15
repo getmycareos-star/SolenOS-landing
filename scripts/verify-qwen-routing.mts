@@ -110,11 +110,11 @@ requireText("src/components/workflows/AICompanion.tsx", [
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
 assert(!companion.includes("QwenAssistPanel"), "Companion must not render a second AI assistance input above its primary conversation composer.");
-assert.equal((companion.match(/aria-label="Send a message to Companion"/g) ?? []).length, 1, "Companion must render exactly one message form.");
+assert.equal((companion.match(/aria-label="Send a message to the Care Assistant"/g) ?? []).length, 1, "Companion must render exactly one message form.");
 assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1, "Companion must render exactly one message textarea.");
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
-  'placeholder="Ask about the saved care history, a recent change or something that is unclear…"',
+  'placeholder="Ask about saved care information, a recent change, or something that is unclear…"',
   "aria-label=\"Send a message to Companion\"",
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
@@ -142,7 +142,7 @@ requireText("src/app/workspace/documents/page.tsx", [
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
 assert(documentPage.includes('postFormData("/upload"'), "Reviewed original uploads must persist through the backend.");
-assert(documentPage.includes("Original file is ready. SolenOS will extract and process it after the upload is saved."), "Original-first upload must preserve the source before extraction.");
+assert(documentPage.includes("Your original file is ready. SolenOS will read it and prepare details for you to check after upload."), "Original-first upload must preserve the source before extraction.");
 assert(!documentPage.includes("/api/extract") && !documentPage.includes("extractText("), "Document intake must not duplicate server extraction in the browser.");
 assert(!documentPage.includes('form.append("extracted_text"'), "Browser-extracted text must not be sent as source evidence.");
 assert(!documentPage.includes("Extracted text — review and correct before saving"), "Caregivers must not be forced to review extracted text before saving the original.");
@@ -150,8 +150,8 @@ assert(documentPage.includes("Suggested details will not be added to your Care R
 assert(documentPage.includes(".eml") && documentPage.includes(".msg"), "Supported email files must be selectable in Documents.");
 assert(!documentPage.includes("runtime.situations"), "Document library must not be derived only from local situation state.");
 requireText("src/components/mvp-workspace/SituationResponsePanel.tsx", [
-  "Entry saved to the Living Care Record",
-  "Your entry was saved, but the full care view could not be refreshed.",
+  "Your update was saved to your Care Record",
+  "Your update was saved, but SolenOS could not refresh your Care Record.",
   "We won’t ask you to submit the same entry again.",
 ]);
 assert(!read("src/components/mvp-workspace/SituationResponsePanel.tsx").includes("The backend confirmed"));
@@ -171,8 +171,8 @@ requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
   "result.review_required !== true",
   "result.written_to_lcr !== false",
   'result.persistence !== "read_only_assistance"',
-  "AI-generated interpretation for caregiver review.",
-  "The Living Care Record remains authoritative; this response did not change it.",
+  "Suggested explanation for you to review.",
+  "Your Care Record has not changed. This suggestion has not been added to it.",
 ]);
 const lcrInterpretation = read("src/components/mvp-workspace/LcrQwenInterpretation.tsx");
 assert(!/reply\s*:\s*["'`]/.test(lcrInterpretation), "LCR interpretation must not include canned reply text.");
@@ -198,7 +198,8 @@ assert(accountCard.includes('setSignedOut(true)'), "After sign-out, account sett
 assert(accountCard.includes('!signedOut && <Button'), "A signed-out caregiver must not be offered account creation as a substitute for restoring the existing record.");
 assert(accountCard.includes('Sign out'), "Account settings must expose a caregiver-facing sign-out control.");
 assert(accountCard.includes("We couldn’t confirm whether account creation completed."), "Ambiguous registration failures must direct caregivers to sign in rather than blindly retrying signup.");
-assert(accountSettings.includes("An account is optional. Anonymous care access remains available."), "Account creation and sign-in must remain optional; anonymous care access must not be gated.");
+const identityDeviceRecovery = read("src/components/mvp-workspace/IdentityDeviceRecoveryPanel.tsx");
+assert(identityDeviceRecovery.includes("You can use your Care Record without creating an account."), "Caregivers must be able to use their Care Record without creating an account.");
 assert(accountCard.includes('if (!getAnonymousAccessToken())'), "Opening account settings must not create or require a new care record.");
 assert(!read("src/app/workspace/settings/page.tsx").includes("multi-factor authentication"), "Settings must not show technical account capability messaging.");
 requireText("src/api/client.ts", [
