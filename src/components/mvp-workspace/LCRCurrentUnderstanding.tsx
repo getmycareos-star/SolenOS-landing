@@ -1146,7 +1146,7 @@ export function LCRCurrentUnderstanding() {
         <div>
           <p className="lcr-eyebrow">CURRENT CARE SUMMARY</p>
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
-          <p>What has been shared, what may need attention, and what is still unclear.</p>
+          <p>The latest care information, what needs attention, and what is still unknown.</p>
         </div>
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh care summary">
           <RefreshCw size={16} aria-hidden="true" /> Refresh care summary
@@ -1157,8 +1157,8 @@ export function LCRCurrentUnderstanding() {
         <div className="lcr-entry-heading">
           <div>
             <h3 id="lcr-attention-now-heading">Care priorities</h3>
-            <p>A short view of what the saved care history may need attention. A flag is not a diagnosis or medical judgement. SolenOS tracks unresolved matters separately in Follow-ups.</p>
-            <Link href="/workspace/open-loops" className="lcr-text-action">View all follow-ups <span aria-hidden="true">→</span></Link>
+            <p>Only items that may need your attention appear here. This is not a diagnosis.</p>
+            <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
           </div>
         </div>
         {sourceFreshness?.reassessment_recommended && (
@@ -1170,7 +1170,7 @@ export function LCRCurrentUnderstanding() {
           </div>
         )}
         {assessmentError && (
-          <p role="status">We couldn’t check which items may need attention. Try refreshing. The information shown may be incomplete.</p>
+          <p role="status">We couldn’t check what needs attention just now. Your saved care notes are still available below.</p>
         )}
         {!assessmentError && !assessment && !loading && !assessmentLoading && (
           <p role="status">We don’t yet have enough information to identify priorities. This does not mean there are no care needs.</p>
@@ -1788,23 +1788,27 @@ export function LCRCurrentUnderstanding() {
                       <span>{caregiverLabel(item.epistemic_status)}</span>
                     </div>
                     {displayCurrentCareDescription(item) && <p style={{ whiteSpace: "pre-line" }}>{displayCurrentCareDescription(item)}</p>}
-                    <p className="lcr-entry-status">{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
-                    <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · {item.occurred_at ? `Event: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver reported: ${formatWhen(item.reported_at)} · ` : ""}Recorded: {formatWhen(item.recorded_at || item.occurred_at)}</small>
-                    {item.evidence_ids?.length > 0 ? (
-                      <div>
-                        <small>{item.evidence_link_validation === "valid" ? "Original report attached" : "Related report linked"}</small>
-                        {item.source_passage ? (
-                          <details>
-                            <summary>Read original report</summary>
-                            <blockquote>{caregiverSafeAssistantText(item.source_passage) || "The original wording is saved."}</blockquote>
-                          </details>
-                        ) : (
-                          <small>Original report text is not available in this view.</small>
-                        )}
-                      </div>
-                    ) : (
-                      <small>Original report is not linked to this item.</small>
-                    )}
+                    <details className="lcr-entry-status">
+                      <summary>Record details</summary>
+                      <p>{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
+                      <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"}</small>
+                      <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Shared: ${formatWhen(item.reported_at)} · ` : ""}Saved: {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                      {item.evidence_ids?.length > 0 ? (
+                        <div>
+                          <small>{item.evidence_link_validation === "valid" ? "Original report attached" : "Related report linked"}</small>
+                          {item.source_passage ? (
+                            <details>
+                              <summary>Read original report</summary>
+                              <blockquote>{caregiverSafeAssistantText(item.source_passage) || "The original wording is saved."}</blockquote>
+                            </details>
+                          ) : (
+                            <small>Original report text is not available in this view.</small>
+                          )}
+                        </div>
+                      ) : (
+                        <small>The original report is not linked to this item yet.</small>
+                      )}
+                    </details>
                     {item.derived_observations && item.derived_observations.length > 0 && (
                       <details className="lcr-entry-status">
                         <summary>Details identified in this note ({item.derived_observations.length})</summary>
