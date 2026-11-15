@@ -1257,6 +1257,15 @@ export function HistoryDrawer() {
                     </div>
                   )}
 
+                  {error && records.length > 0 && (
+                    <RecordState
+                      kind="error"
+                      title="Care history couldn’t be refreshed."
+                      description="Showing the last saved history. Try again to refresh."
+                      action={<button type="button" onClick={() => void loadHistory(true)} disabled={refreshing}>Try again</button>}
+                    />
+                  )}
+
                   {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
@@ -1264,12 +1273,9 @@ export function HistoryDrawer() {
                     </div>
                   )}
 
-                  {loading ? (
-                    <div className="history-state" role="status">
-                      <span className="history-loading-dot" />
-                      Loading saved care history…
-                    </div>
-                  ) : error ? (
+                  {loading && !hasLoaded ? (
+                    <RecordState kind="loading" title="Loading saved care history…" />
+                  ) : error && records.length === 0 ? (
                     <div className="history-error" role="alert">
                       <AlertCircle size={19} aria-hidden />
                       <div>
