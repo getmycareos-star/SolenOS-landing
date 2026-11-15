@@ -131,3 +131,17 @@ For substantial work report: task/outcome; existing behavior verified; defects w
 SolenOS preserves what is known, exposes what is uncertain, explains what changed, protects people represented in the record and helps caregivers determine what deserves attention next. No feature, model, agent, shortcut, generated answer, interface or engineering convenience may silently override this purpose.
 
 **Truth over fluency. Evidence over speculation. Continuity over collection. Privacy over convenience. Human agency over automation. Verified behavior over claimed completion.**
+
+
+## Product-scope decision — interface language selection paused
+
+**Decision owner:** Product owner (David)  
+**Status:** FROZEN / DISABLED  
+**Effective:** 2026-11-15  
+**Scope:** Caregiver-facing interface language selection and localization activation.
+
+English is the only active caregiver-interface language for the current MVP. Language selection, locale switching, translation-provider wiring, and Spanish/French interface activation are paused. Existing translation JSON files and i18n scaffolding are dormant legacy assets; they must not be treated as an approved feature or implementation invitation.
+
+No AI agent, contributor, automated coding workflow, or feature task may add, restore, mount, expose, or activate language selection or interface localization unless David explicitly authorizes that work in a direct instruction. Requests to improve plain-language copy do not constitute localization approval. If another task appears to require localization, leave it unchanged and ask David first.
+
+This is a product-scope lock, not a claim that Spanish/French localization is complete. Reopening requires explicit product-owner approval and a separately scoped implementation task.
