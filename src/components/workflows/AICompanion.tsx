@@ -285,7 +285,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     try {
       const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as { written_to_lcr?: boolean }
       setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
-      setCareUpdateNotice(decision === 'accept' && response?.written_to_lcr
+      if (decision === 'accept' && response?.written_to_lcr !== true) {
+        setCareUpdateNotice(null)
+        setCareUpdateError('Your review was saved, but we could not confirm that this report is active in your Care Record. Check your Care Record before trying again.')
+        return
+      }
+      setCareUpdateNotice(decision === 'accept'
         ? 'Your report was added to the Care Record. A healthcare professional has not confirmed it.'
         : 'This suggestion was declined. Nothing was added to the Care Record.')
     } catch {
