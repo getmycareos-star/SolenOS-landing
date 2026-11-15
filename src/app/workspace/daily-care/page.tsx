@@ -560,7 +560,7 @@ export default function DailyCarePage() {
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 2).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
                     <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
-                    {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
+                    {displayHistoryText(item) && <p className="daily-care-summary-detail">{displayHistoryText(item)}</p>}
                     {item.capture_processing?.message && (
                       <p className="daily-care-muted">{item.capture_processing.message}</p>
                     )}
@@ -935,6 +935,13 @@ export default function DailyCarePage() {
           color: var(--theme-panel-muted);
           line-height: 1.55;
           margin: 0 0 .8rem;
+        }
+        .daily-care-summary-detail {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          overflow: hidden;
+          line-height: 1.45;
         }
         .daily-care-record-list {
           list-style: none;
