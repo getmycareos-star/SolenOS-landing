@@ -316,3 +316,19 @@ assert.doesNotMatch(situationRouteLanguage, /anonymous session/i,
   "caregiver-facing access errors must not expose session implementation details");
 assert.match(situationRouteLanguage, /Your access to SolenOS could not be confirmed/,
   "missing access must have a plain-language explanation");
+
+
+const shareHelpLanguage = read("../src/app/share/page.tsx");
+const earlyAccessLanguage = read("../src/app/early-access/page.tsx");
+const publicShellLanguage = read("../src/components/public/PublicShell.tsx");
+
+assert.doesNotMatch(shareHelpLanguage, /Living Care Record|care understanding path|provide evidence/i,
+  "share instructions and metadata must use everyday caregiver language");
+assert.match(shareHelpLanguage, /Open your Care Record/,
+  "share help must link to the Care Record using its caregiver-facing name");
+assert.doesNotMatch(earlyAccessLanguage, /Living Care Record|care-continuity capabilities|early-version acknowledgement/i,
+  "early-access copy and metadata must not expose internal product terminology");
+assert.match(earlyAccessLanguage, /Open your Care Record/,
+  "early-access entry must use the caregiver-facing Care Record name");
+assert.doesNotMatch(publicShellLanguage, /Living Care Record/,
+  "public navigation and footer must use the same Care Record name as the workspace");
