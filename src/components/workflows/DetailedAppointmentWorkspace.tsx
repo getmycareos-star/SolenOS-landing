@@ -249,7 +249,7 @@ export default function DetailedAppointmentWorkspace() {
           synced[index] = { ...item, open_loop_id: loopId }
           if (item.status === 'Done' && !item.reported_done_at) {
             await postJSON('/open-loops/' + encodeURIComponent(loopId) + '/outcomes', {
-              text: 'Caregiver marked this appointment follow-up as done in the appointment workspace. This is a caregiver-reported outcome, not independently verified.',
+              text: 'A caregiver marked this follow-up as done. This does not mean a healthcare professional has confirmed it.',
               evidence: [],
               idempotency_key: 'appointment-follow-up-done:' + savedRecordId + ':' + item.id,
             })
@@ -281,7 +281,7 @@ export default function DetailedAppointmentWorkspace() {
         setSaveError('Your appointment notes were saved, but a follow-up could not be updated. Please try again.')
         setSaveMessage('Your appointment information was saved, but a follow-up could not be updated. Please try again.')
       } else {
-        setSaveMessage('Your appointment information and follow-up actions were saved. A caregiver-reported completion has not been independently confirmed.')
+        setSaveMessage('Your appointment notes and follow-ups were saved. A healthcare professional has not confirmed that the follow-up was completed.')
       }
     } catch (error) {
       setSaveError('Your changes could not be saved. Check whether they appear before trying again.')
