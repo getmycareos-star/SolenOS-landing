@@ -369,8 +369,8 @@ export default function DetailedAppointmentWorkspace() {
           </section>
           <div className="appointment-fields appointment-fields-two">
             <label>Visit purpose<textarea value={visitPurpose} onChange={event => setVisitPurpose(event.target.value)} rows={2} placeholder="What does the family want help understanding?" /></label>
-            <label>Clinician name<input value={clinician} onChange={event => setClinician(event.target.value)} placeholder="Name, if known" /></label>
-            <label>Specialty<input value={specialty} onChange={event => setSpecialty(event.target.value)} placeholder="Specialty, if known" /></label>
+            <label>Healthcare professional's name<input value={clinician} onChange={event => setClinician(event.target.value)} placeholder="Name, if known" /></label>
+            <label>Area of care<input value={specialty} onChange={event => setSpecialty(event.target.value)} placeholder="Specialty, if known" /></label>
             <label>Date and time<input type="datetime-local" value={visitDate} onChange={event => setVisitDate(event.target.value)} /></label>
             <label>Location<input value={location} onChange={event => setLocation(event.target.value)} placeholder="Clinic or appointment location" /></label>
             <label>Who is attending?<input value={attendees} onChange={event => setAttendees(event.target.value)} placeholder="Person receiving care and support people" /></label>
@@ -378,14 +378,14 @@ export default function DetailedAppointmentWorkspace() {
           <h5>The three most important things to discuss</h5>
           <div className="appointment-fields">{topConcerns.map((value, index) => <label key={index}>Priority {index + 1}<input value={value} onChange={event => updateConcern(index, event.target.value)} placeholder={index === 0 ? 'Most important concern' : 'Additional concern'} /></label>)}</div>
           <div className="appointment-fields appointment-fields-two">
-            <label>What has changed since the last visit?<textarea value={changes} onChange={event => setChanges(event.target.value)} rows={4} placeholder="What changed, when first noticed, frequency, context, daily-life impact, and who observed it." /></label>
-            <label>Current concerns and symptoms<textarea value={symptoms} onChange={event => setSymptoms(event.target.value)} rows={4} placeholder="Reported onset, pattern, severity as reported, what helps or worsens it." /></label>
-            <label>Medication and treatment questions<textarea value={medicationQuestions} onChange={event => setMedicationQuestions(event.target.value)} rows={3} placeholder="Questions, missed doses, side effects, or discrepancies to clarify. Do not invent a medication list." /></label>
-            <label>Relevant history and open questions<textarea value={historyQuestions} onChange={event => setHistoryQuestions(event.target.value)} rows={3} placeholder="Relevant documented history, pending tests/results, prior visit outcomes, and questions." /></label>
-            <label>Practical arrangements<textarea value={practicalNotes} onChange={event => setPracticalNotes(event.target.value)} rows={3} placeholder="Transport, mobility assistance, interpreter, documents to bring, and consent/attendees." /></label>
+            <label>What has changed since the last visit?<textarea value={changes} onChange={event => setChanges(event.target.value)} rows={4} placeholder="What changed, when it was first noticed, how often it happens, how it affects daily life, and who noticed it." /></label>
+            <label>Current concerns and symptoms<textarea value={symptoms} onChange={event => setSymptoms(event.target.value)} rows={4} placeholder="When it started, how often it happens, how serious it seems, and what helps or makes it worse." /></label>
+            <label>Medication and treatment questions<textarea value={medicationQuestions} onChange={event => setMedicationQuestions(event.target.value)} rows={3} placeholder="Questions about medicines, missed doses, side effects, or differences between reports. Do not guess which medicines are being taken." /></label>
+            <label>Relevant history and open questions<textarea value={historyQuestions} onChange={event => setHistoryQuestions(event.target.value)} rows={3} placeholder="Earlier care details, tests or results still expected, what happened at previous visits, and questions." /></label>
+            <label>Practical arrangements<textarea value={practicalNotes} onChange={event => setPracticalNotes(event.target.value)} rows={3} placeholder="Transport, help getting around, an interpreter, documents to bring, and who will attend." /></label>
           </div>
           <div className="appointment-summary">
-            <h5>Consultation opening summary</h5>
+            <h5>Summary to start the visit</h5>
             <p><strong>Purpose:</strong> {visitPurpose.trim() || 'Not recorded'}</p>
             <ol>{topConcerns.filter(value => value.trim()).map((value, index) => <li key={index}>{value}</li>)}</ol>
             <p><strong>Changes:</strong> {changes.trim() || 'Not recorded'}</p>
@@ -398,36 +398,36 @@ export default function DetailedAppointmentWorkspace() {
           <p className="appointment-stage-intro">Write down what you remember or what is in a document. Do not present a caregiver’s memory as something a healthcare professional confirmed.</p>
           <div className="appointment-fields appointment-fields-two">
             <label>Concerns discussed<textarea value={concernsDiscussed} onChange={event => setConcernsDiscussed(event.target.value)} rows={3} placeholder="Which concerns were raised, addressed, deferred, or referred?" /></label>
-            <label>What the person or caregiver reported<textarea value={caregiverReport} onChange={event => setCaregiverReport(event.target.value)} rows={4} placeholder="Keep this separate from clinician findings." /></label>
+            <label>What the person or caregiver reported<textarea value={caregiverReport} onChange={event => setCaregiverReport(event.target.value)} rows={4} placeholder="Keep this separate from what the healthcare professional said." /></label>
             <label>What the healthcare professional said (if known)<textarea value={clinicianFindings} onChange={event => setClinicianFindings(event.target.value)} rows={4} placeholder="Record exact communicated findings or state that none were provided." /></label>
-            <label>Decisions and stated rationale<textarea value={decisions} onChange={event => setDecisions(event.target.value)} rows={4} placeholder="Decision, reason given, alternatives, preferences, and agreed/deferred/declined/clarification status." /></label>
-            <label>Instructions and follow-up plan<textarea value={instructions} onChange={event => setInstructions(event.target.value)} rows={4} placeholder="Capture clinician-provided instructions accurately; do not infer a medication change." /></label>
+            <label>Decisions and reasons given<textarea value={decisions} onChange={event => setDecisions(event.target.value)} rows={4} placeholder="What was agreed, put off, declined, or left unclear, and why." /></label>
+            <label>Instructions and follow-up plan<textarea value={instructions} onChange={event => setInstructions(event.target.value)} rows={4} placeholder="Write down the instructions exactly as given. Do not guess whether a medicine should be changed." /></label>
             <label>Questions left unanswered<textarea value={unanswered} onChange={event => setUnanswered(event.target.value)} rows={3} placeholder="What remains uncertain or needs clarification?" /></label>
           </div>
         </div>}
 
         {stage === 'after' && <div className="appointment-stage-panel">
           <h4>After the appointment</h4>
-          <p className="appointment-stage-intro">A visit can be finished while clinical follow-up remains open. Mark work done only when completion is supported.</p>
+          <p className="appointment-stage-intro">A visit can end while some follow-ups are still open. Mark a follow-up as done only when it has actually been completed.</p>
           <div className="appointment-fields appointment-fields-two">
             <label>Medicine changes or questions<textarea value={medicationReconciliation} onChange={event => setMedicationReconciliation(event.target.value)} rows={4} placeholder="Write exactly what the healthcare professional said, when it should take effect, and what is still unclear. Do not guess whether a medicine should be started, stopped, or changed." /></label>
             <label>Pending tests, results, or referrals<textarea value={pendingResults} onChange={event => setPendingResults(event.target.value)} rows={4} placeholder="What was ordered, when results are expected if stated, and who will follow up." /></label>
             <label>What the family needs to know<textarea value={familySummary} onChange={event => setFamilySummary(event.target.value)} rows={4} placeholder="What changes in everyday care, what remains the same, what to monitor, when to contact whom, and what remains uncertain." /></label>
           </div>
-          <div className="appointment-followups-heading"><h5>Follow-up actions</h5><button type="button" className="appointment-secondary" onClick={addFollowUp}><ListChecks size={15} /> Add action</button></div>
+          <div className="appointment-followups-heading"><h5>Follow-ups</h5><button type="button" className="appointment-secondary" onClick={addFollowUp}><ListChecks size={15} /> Add follow-up</button></div>
           {followUps.map((item, index) => <div className="appointment-followup" key={index}>
-            <label>Action<input maxLength={240} value={item.action} onChange={event => updateFollowUp(index, 'action', event.target.value)} placeholder="Book follow-up, complete test, obtain result…" /></label>
-            <label>Owner<input value={item.owner} onChange={event => updateFollowUp(index, 'owner', event.target.value)} placeholder="Named person or service" /></label>
+            <label>What needs to happen<input maxLength={240} value={item.action} onChange={event => updateFollowUp(index, 'action', event.target.value)} placeholder="Book follow-up, complete test, obtain result…" /></label>
+            <label>Who will do it<input value={item.owner} onChange={event => updateFollowUp(index, 'owner', event.target.value)} placeholder="Named person or service" /></label>
             <label>Due date<input type="date" value={item.due} onChange={event => updateFollowUp(index, 'due', event.target.value)} /></label>
             <label>Status<select value={item.status} onChange={event => updateFollowUp(index, 'status', event.target.value)}><option>Open</option><option>In progress</option><option>Done</option><option>Needs clarification</option></select></label>
           </div>)}
-          <label className="appointment-review-status">Closure status<select value={reviewStatus} onChange={event => setReviewStatus(event.target.value as typeof reviewStatus)}><option>Awaiting documentation</option><option>Follow-up pending</option><option>Ready for review</option><option>Closed with documented outstanding items</option></select></label>
+          <label className="appointment-review-status">Visit status<select value={reviewStatus} onChange={event => setReviewStatus(event.target.value as typeof reviewStatus)}><option value="Awaiting documentation">Waiting for notes</option><option value="Follow-up pending">Follow-ups still open</option><option value="Ready for review">Ready to check</option><option value="Closed with documented outstanding items">Visit finished; some follow-ups remain</option></select></label>
           <p className="appointment-save-boundary"><FileCheck2 size={16} aria-hidden="true" /> Appointment notes stay separate from your Care Record. Follow-ups are saved for the family to track. Marking one as done records what a caregiver reported; it does not confirm that the task was completed.</p>
         </div>}
 
         <div className="appointment-save-controls">
           <div className="appointment-save-status" role="status" aria-live="polite">
-            {loadingRecord ? 'Loading saved appointment information…' : saveMessage}
+            {loadingRecord ? 'Loading saved appointment notes…' : saveMessage}
             {saveError && <span className="appointment-error">{saveError}</span>}
           </div>
           <button type="button" className="appointment-primary" onClick={() => void saveWorkspace()} disabled={savingRecord || loadingRecord}>
