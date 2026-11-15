@@ -8,7 +8,7 @@ const apiClient = await readFile(new URL("../src/api/client.ts", import.meta.url
 
 assert.match(handoffPage, /CareHandoffSharing/,
   "Care Handoffs route must render the persisted handoff workspace");
-assert.match(handoffPage, /Care Handoffs/,
+assert.match(handoffPage, /Share care information/,
   "the handoff route must have its own visible page heading");
 assert.match(handoffPage, /onResumeDraft=\{resumeDraft\}/,
   "caregivers must be able to resume a persisted draft from the Handoffs workspace");
@@ -22,7 +22,7 @@ assert.match(companionPage, /postJSON\('\/conversation\/message'/,
 assert.doesNotMatch(companionPage, /handoff-drafts|Create care handoff|AppointmentWorkspace|ScanDocumentCapture|SnapCameraCapture/,
   "AI Companion must not own handoff, appointment, or document-intake workflows");
 
-for (const label of ["Prepare a care handoff", "Family caregiver", "Healthcare professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
+for (const label of ["Prepare a care summary to share", "Family caregiver", "Healthcare professional", "Taking over today", "Doctor’s appointment", "Full care overview"]) {
   assert.ok(sharingComponent.includes(label), `Care Handoffs must expose ${label}`);
 }
 assert.match(sharingComponent, /postJSON\("\/handoff-drafts\/prepare"/,
@@ -33,7 +33,7 @@ assert.match(sharingComponent, /retrieval_complete/,
   "handoff review must disclose when the LCR source projection is incomplete");
 assert.match(sharingComponent, /partial_sources/,
   "handoff review must identify source collections truncated by the retrieval bound");
-assert.match(sharingComponent, /additional records remain outside this draft/,
+assert.match(sharingComponent, /This summary does not include everything in your Care Record/,
   "caregivers must be told when additional saved history was not included");
 assert.match(sharingComponent, /generation_status/,
   "the persisted draft response must retain actual generation status");
@@ -41,7 +41,7 @@ assert.match(sharingComponent, /validation_status/,
   "the persisted draft response must retain backend grounding validation status");
 assert.match(sharingComponent, /source_references/,
   "draft review must expose backend source references");
-assert.match(sharingComponent, /Information included and availability/,
+assert.match(sharingComponent, /What is included and what is missing/,
   "draft review must expose source availability and missing information");
 assert.match(sharingComponent, /onResumeDraft/,
   "caregivers must be able to resume persisted drafts");
@@ -62,7 +62,7 @@ assert.match(sharingComponent, /postJSON\("\/handoffs"/,
   "sharing must use the existing handoffs API");
 assert.match(sharingComponent, /draft_id: draft\.draft_id/,
   "the existing sharing workflow must attach the approved persisted draft identity");
-assert.match(sharingComponent, /Information to share/,
+assert.match(sharingComponent, /What to share/,
   "caregivers must explicitly select the information categories included in the handoff");
 assert.match(sharingComponent, /setSelectedScope\(\[\]\)/,
   "handoff information categories must start unselected and require caregiver choice");
@@ -76,23 +76,23 @@ assert.match(sharingComponent, /revisionHistory\.map/,
   "caregivers must be able to inspect persisted revision history");
 assert.match(sharingComponent, /setEditedSections/,
   "caregivers must be able to edit or remove source-grounded sections");
-assert.match(sharingComponent, /If something is old or needs correcting, explain that in the caregiver note below/,
+assert.match(sharingComponent, /If something is old or needs correcting, explain it in your note below/,
   "caregivers must be able to flag outdated or incorrect information without rewriting sourced evidence");
-assert.match(sharingComponent, /Each statement stays connected to the saved care information/,
+assert.match(sharingComponent, /Each detail stays linked to the information it came from/,
   "the UI must explain why sourced wording is not freely rewritten");
 assert.doesNotMatch(sharingComponent, /item\.source_ref} ·/,
   "the caregiver review must not expose raw source identifiers");
 assert.doesNotMatch(sharingComponent, /Qwen quotations/,
   "the caregiver interface must not expose internal model terminology");
-assert.match(sharingComponent, /Saved information item: /,
+assert.match(sharingComponent, /Related care detail: /,
   "the shared summary must use readable source labels instead of internal IDs");
 assert.match(sharingComponent, /caregiver_authored_unverified|caregiverNote/,
   "caregiver-added context must remain explicitly attributed and unverified");
-assert.match(sharingComponent, /Share reviewed handoff/,
+assert.match(sharingComponent, /Share with selected caregivers/,
   "family sharing requires caregiver review");
-assert.match(sharingComponent, /Professional identity and role cannot yet be verified/,
+assert.match(sharingComponent, /We have not confirmed this person's identity or professional role/,
   "professional sharing must fail closed until recipient identity and role are verified");
-assert.match(sharingComponent, /Accept and mark as received/,
+assert.match(sharingComponent, /Confirm you received this summary/,
   "receiving caregivers must explicitly accept and acknowledge");
 assert.match(sharingComponent, /activeSnapshot\.retrieval_complete === false/,
   "receiving caregivers must be warned when the shared LCR history is incomplete");
@@ -110,13 +110,13 @@ assert.doesNotMatch(sharingComponent, /Evidence IDs:/,
   "caregiver review must not expose internal evidence identifiers");
 assert.doesNotMatch(sharingComponent, /Origin groups:/,
   "caregiver review must not expose internal lineage keys");
-assert.match(sharingComponent, /Confirm exactly what will be shared/,
+assert.match(sharingComponent, /Check what will be shared/,
   "final approval must restate the full sharing decision");
-assert.match(sharingComponent, /Recipient\(s\):/,
+assert.match(sharingComponent, /Who will receive it:/,
   "final approval must identify selected recipients");
-assert.match(sharingComponent, /Information included:/,
+assert.match(sharingComponent, /What will be shared:/,
   "final approval must identify selected information scope");
-assert.match(sharingComponent, /Access ends:/,
+assert.match(sharingComponent, /Link expires:/,
   "final approval must restate the expiry");
 assert.match(sharingComponent, /activeSnapshot\.purpose && <p style=\{\{ fontSize: 12 \}\}>Purpose: \{handoffPurposeLabel/,
   "incoming handoff must show a caregiver-readable purpose");
@@ -128,7 +128,7 @@ assert.doesNotMatch(sharingComponent, /item\.original_source_reference \? " · d
   "recipient review must not expose internal document paths or references");
 assert.match(sharingComponent, /saved\.review_status \? readableStatus/,
   "saved draft review states must use caregiver-readable labels");
-assert.match(sharingComponent, /Saved information item: /,
+assert.match(sharingComponent, /Related care detail: /,
   "shared summaries must label sources without exposing database identifiers");
 assert.doesNotMatch(sharingComponent, /Qwen/,
   "the caregiver-facing handoff component must not expose model names");
@@ -144,8 +144,8 @@ assert.match(apiClient, /postJSON\(path: string, body: unknown, extraHeaders: Re
 const appointmentWorkspace = await readFile(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
 const detailedAppointmentWorkspace = await readFile(new URL("../src/components/workflows/DetailedAppointmentWorkspace.tsx", import.meta.url), "utf8");
 assert.ok(appointmentWorkspace.includes("source_completeness"), "appointment preparation must receive source-level retrieval completeness");
-assert.ok(appointmentWorkspace.includes("Some saved information was not fully included"), "appointment preparation must warn caregivers when its LCR projection is bounded");
-assert.ok(appointmentWorkspace.includes("More questions may be waiting in the care record"), "appointment preparation must disclose when additional priority-filtered questions were not displayed");
+assert.ok(appointmentWorkspace.includes("This summary does not show all saved care information"), "appointment preparation must warn caregivers when its LCR projection is bounded");
+assert.ok(appointmentWorkspace.includes("There may be more questions in your Care Record"), "appointment preparation must disclose when additional priority-filtered questions were not displayed");
 assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-brief?window_days=90"), "appointment preparation must request a bounded source-linked LCR brief");
 assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
 assert.ok(appointmentWorkspace.includes("No recent care updates are available for this summary.") && appointmentWorkspace.includes("This does not mean that no appointment exists."), "appointment preparation must distinguish empty results from confirmed absence");
@@ -172,6 +172,6 @@ assert.match(detailedAppointmentWorkspace, /source_type: 'appointment_workspace'
 assert.match(detailedAppointmentWorkspace, /deadline_timezone: item\.due \? Intl\.DateTimeFormat\(\)\.resolvedOptions\(\)\.timeZone/, "appointment follow-up deadlines must retain the caregiver local timezone");
 assert.match(detailedAppointmentWorkspace, /appointment-follow-up:/, "follow-up creation must use a stable idempotency key");
 assert.match(detailedAppointmentWorkspace, /\/outcomes/, "marking a follow-up done must record an attributed outcome event");
-assert.match(detailedAppointmentWorkspace, /caregiver-reported outcome, not independently verified/, "caregiver-reported completion must not be treated as verified closure");
+assert.match(detailedAppointmentWorkspace, /A healthcare professional has not confirmed it/, "caregiver-reported completion must not be treated as verified closure");
 
 console.log("PASS: handoff preparation, saved-draft retrieval, revision, approval, source freshness, existing sharing, acknowledgement, and revocation use the backend as the sole source of truth.");
