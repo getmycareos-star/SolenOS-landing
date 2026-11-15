@@ -1608,11 +1608,12 @@ export function LCRCurrentUnderstanding() {
                 )}
                 {pattern.direction && <p className="lcr-entry-status">Change noted: {caregiverLabel(pattern.direction)}</p>}
                 {pattern.confidence == null && <p className="lcr-entry-status">There is not enough information to know how reliable this repeated change is.</p>}
-                {pattern.alternative_interpretations?.map((item, index) => (
-                  <p className="lcr-entry-status" key={index}>
-                    {caregiverSafeAssistantText(item) || "Additional details are saved."}
-                  </p>
-                ))}
+                {pattern.alternative_interpretations?.map((item, index) => {
+                  const safeInterpretation = caregiverSafeAssistantText(item);
+                  return safeInterpretation
+                    ? <p className="lcr-entry-status" key={index}>{safeInterpretation}</p>
+                    : null;
+                })}
                 <small>Saved events: {pattern.event_ids.length}</small>
               </li>
             ))}
@@ -1828,8 +1829,8 @@ export function LCRCurrentUnderstanding() {
                               {observation.subject_label && <small>About: {caregiverSafeAssistantText(observation.subject_label) || "Person receiving care"}</small>}
                               {observation.observer_label && <small>Reported by: {caregiverSafeAssistantText(observation.observer_label) || "Not recorded"}</small>}
                               {observation.observation_method && <small>Observation method: {caregiverLabel(observation.observation_method)}</small>}
-                              {observation.context != null && <p>Context: {typeof observation.context === "string" ? caregiverSafeAssistantText(observation.context) || "Additional details are saved." : "Additional details are saved."}</p>}
-                              {observation.value_text && <p>{caregiverSafeAssistantText(observation.value_text) || "A recorded detail is available in the original note."}</p>}
+                              {typeof observation.context === "string" && caregiverSafeAssistantText(observation.context) && <p>Context: {caregiverSafeAssistantText(observation.context)}</p>}
+                              {observation.value_text && caregiverSafeAssistantText(observation.value_text) && <p>{caregiverSafeAssistantText(observation.value_text)}</p>}
                               <small>Observed: {formatWhen(observation.observed_at)} · Recorded: {formatWhen(observation.recorded_at)}</small>
                               {observation.source_passage && (
                                 <details>
