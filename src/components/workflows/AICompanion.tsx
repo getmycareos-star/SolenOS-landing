@@ -6,7 +6,7 @@ import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus
 import { ensureAnonymousSession, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
-import { isCasualGreetingInput, isHowAreYouInput, isGratitudeInput, isInsultOrFrustrationInput } from '@/lib/greeting-orientation'
+import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
 
 interface ClaimSourceReference {
   record_type: string
@@ -170,11 +170,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
     try {
       const session = await ensureAnonymousSession()
-      const isOrientationTurn =
-        isCasualGreetingInput(submittedText) ||
-        isHowAreYouInput(submittedText) ||
-        isGratitudeInput(submittedText) ||
-        isInsultOrFrustrationInput(submittedText)
+      const isOrientationTurn = shouldUseLcrOrientationEndpoint(submittedText)
       const response = isOrientationTurn
         ? await postJSON('/api/lcr/orientation', { raw_input: submittedText }) as any
         : await postJSON('/conversation/message', {
