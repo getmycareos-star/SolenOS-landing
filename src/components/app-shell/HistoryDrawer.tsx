@@ -1174,8 +1174,8 @@ export function HistoryDrawer() {
                         <dt>When it was saved</dt><dd>{formatDateTime(selectedRecord.recorded_at)}</dd>
                         <dt>Status</dt><dd>{selectedRecord.status || "Not specified"}</dd>
                         <dt>Who shared it</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver" : "Not recorded"}</dd>
-                        <dt>How the date was recorded</dt><dd>{selectedRecord.time_provenance || "Not recorded"}</dd>
-                        <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? selectedRecord.evidence_ids.join(", ") : "No related notes or documents attached"}</dd>
+                        
+                        <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? `${selectedRecord.evidence_ids.length} related item(s)` : "No related notes or documents attached"}</dd>
                         <dt>Labels</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.join(", ") : "No tags recorded"}</dd>
                         <dt>Last updated</dt><dd>{formatDateTime(selectedRecord.updated_at)}</dd>
                       </>
@@ -1260,7 +1260,7 @@ export function HistoryDrawer() {
                   {sourceWarnings.length > 0 && !loading && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries we could retrieve are still shown. Other entries may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
+                      <span>The entries that loaded are still shown. Some others may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
                     </div>
                   )}
 
@@ -1282,7 +1282,7 @@ export function HistoryDrawer() {
                     <div className="history-empty">
                       <HistoryEmptyIcon />
                       <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not retrieve every source. This empty view is not evidence that no care was recorded. Refresh to try again." : "No saved care entries were found in the information currently available. SolenOS will not make up a history."}</p>
+                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not load every part of your care history. An empty view does not mean nothing was recorded. Try refreshing." : "No saved care updates were found in the information available. SolenOS will not make up a history."}</p>
                       {(query || filter !== "all") && (
                         <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
                       )}
