@@ -73,11 +73,11 @@ export function SituationResponsePanel({
     if (persistedEvent) {
       const sourceEventId = persistedSourceEventId(response);
       return (
-        <section className="panel panel-output situation-response" aria-label="Living Care Record" role="status">
+        <section className="panel panel-output situation-response" aria-label="Care Record" role="status">
           <div className="workspace-panel-inner lcr-side">
-            <h3>Entry saved to the Living Care Record</h3>
+            <h3>Your update was saved to your Care Record</h3>
             <p>
-              Your entry was saved, but the full care view could not be refreshed. We won’t ask you to submit the same entry again.
+              Your update was saved, but SolenOS could not refresh your Care Record. We won’t ask you to submit the same information again.
             </p>
             {savedTitle && <p className="saved-entry-receipt">{savedTitle}</p>}
             {receipt.care_event_id && (
@@ -100,7 +100,7 @@ export function SituationResponsePanel({
     }
 
     return (
-      <section className="panel panel-output situation-response" aria-label="Living Care Record" role="status">
+      <section className="panel panel-output situation-response" aria-label="Care Record" role="status">
         <div className="workspace-panel-inner lcr-side">
           <h3>Saved status could not be confirmed</h3>
           <p>
@@ -128,7 +128,7 @@ export function SituationResponsePanel({
   const sourceEventId = persistedSourceEventId(response);
 
   return (
-    <section className="panel panel-output situation-response" aria-label="Living Care Record">
+    <section className="panel panel-output situation-response" aria-label="Care Record">
       {isReconstructedProjection && (
         <p className="workspace-status-warning" role="status">
           This view is reconstructed from saved evidence and events. A separate situation-reasoning state has not been persisted.
