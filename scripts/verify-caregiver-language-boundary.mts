@@ -16,6 +16,10 @@ assert.equal(caregiverStatusLabel("needs_clarification"), "Needs checking");
 assert.equal(caregiverStatusLabel("completed"), "Completed");
 assert.equal(caregiverStatusLabel("awaiting_confirmation"), "Needs review");
 assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
+assert.equal(caregiverStatusLabel("verified"), "Checked against a source");
+assert.equal(caregiverStatusLabel("uncertain"), "Not sure yet");
+assert.equal(caregiverStatusLabel("unresolved"), "Still needs attention");
+assert.equal(caregiverInformationLabel("observed"), "Seen by a caregiver");
 assert.equal(caregiverStatusLabel("unknown_internal_state"), null);
 assert.equal(caregiverSituationStateLabel("worsening"), "Caregiver reports worsening");
 assert.equal(caregiverSituationStateLabel("improving"), "Caregiver reports improvement");
@@ -61,6 +65,9 @@ assert.equal(caregiverSafeAssistantText('"Caregiver note"'), "Caregiver note");
 assert.equal(caregiverSafeAssistantText("123"), "123");
 assert.equal(caregiverSafeAssistantText("true"), null);
 assert.equal(isTechnicalDiagnosticText("Database schema unavailable"), true);
+assert.equal(isTechnicalDiagnosticText("The LCR Delta Engine completed"), true);
+assert.equal(isTechnicalDiagnosticText("Qwen inference is unavailable"), true);
+assert.equal(isTechnicalDiagnosticText("The reconciliation assertion is incomplete"), true);
 assert.equal(
   caregiverSafeAssistantText("Your message has been saved. We do not know what caused the change yet."),
   "Your message has been saved. We do not know what caused the change yet.",
