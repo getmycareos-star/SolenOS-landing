@@ -7,6 +7,7 @@ import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/cl
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
+import { RecordState } from '@/components/ui/RecordState'
 
 interface ClaimSourceReference {
   record_type: string
@@ -350,12 +351,20 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
 
-      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
         <section className="companion-conversation" aria-label="Conversation">
           {messages.length === 0 ? (
+            requestError ? (
+              <RecordState
+                kind="unavailable"
+                title="The Care Assistant couldn’t respond."
+                description="Your message is still in the box below. Try again."
+                action={<button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button>}
+              />
+            ) : (
             <div className="companion-empty">
               <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
               <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
@@ -371,6 +380,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               </div>
               <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
             </div>
+            )
           ) : (
             <div className="companion-message-list">
               <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
