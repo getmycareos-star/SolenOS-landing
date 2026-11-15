@@ -139,8 +139,16 @@ for (const action of ["something", "medicine", "measurement", "photo", "checkin"
 }
 assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
   "capture opens within the Daily Care screen");
-assert.match(dailyCarePage, /Things that need attention/,
-  "unresolved questions and conflicts have a distinct current-care section");
+assert.match(dailyCarePage, /<h2 id="daily-care-follow-ups-title">Follow-ups<\/h2>/,
+  "Daily Care shows a compact route to the dedicated Follow-ups screen");
+assert.match(dailyCarePage, /Open Follow-ups/,
+  "unresolved matters are managed in the dedicated Follow-ups screen");
+assert.doesNotMatch(dailyCarePage, /followUps\.slice\(0, 6\)|careItems\.filter\(isOpenMatter\)\.slice/,
+  "Daily Care must not duplicate the full Follow-ups list");
+assert.doesNotMatch(dailyCarePage, /Recent care history/,
+  "the full chronological history belongs to the Care Timeline");
+assert.match(dailyCarePage, /Open Care Timeline/,
+  "Daily Care links to the dedicated historical view");
 assert.match(dailyCarePage, /Since you last opened Daily Care/,
   "returning caregivers get a summary of newly recorded information");
 assert.match(dailyCarePage, /visitBaselineRef/,
