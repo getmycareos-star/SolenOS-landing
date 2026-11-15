@@ -95,7 +95,9 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
     id: idValue,
     person_id: typeof row.person_id === "string" ? row.person_id : personId,
     event_type: eventType,
-    status: typeof row.status === "string" ? row.status
+    status: sourceType === "correction" && typeof row.processing_status === "string"
+      ? row.processing_status
+      : typeof row.status === "string" ? row.status
       : typeof row.assertion_status === "string" ? row.assertion_status
         : typeof row.epistemic_status === "string" ? row.epistemic_status : "Not specified",
     occurred_at: typeof row.occurred_at === "string" ? row.occurred_at
@@ -423,7 +425,10 @@ export default function TimelinePage() {
   }, [correctionText, correctionReason, correctionSaving, correctionIdempotencyKey, loadEvents, appliedQuery]);
 
   const retryPendingCorrection = useCallback(async () => {
-    if (!pendingCorrectionId || retryingCorrection) return;
+    const correctionId = pendingCorrectionId || events.find(
+      (item) => item.source_type === "correction" && item.processing_status !== "completed",
+    )?.id;
+    if (!correctionId || retryingCorrection) return;
     setRetryingCorrection(true);
     try {
       const session = await ensureAnonymousSession();
@@ -431,7 +436,7 @@ export default function TimelinePage() {
         throw new Error("A verified care session is required.");
       }
       const result = await postJSON(
-        `/corrections/${encodeURIComponent(session.person.id)}/${encodeURIComponent(pendingCorrectionId)}/retry`,
+        `/corrections/${encodeURIComponent(session.person.id)}/${encodeURIComponent(correctionId)}/retry`,
         {},
       ) as { processing_status?: string };
       if (result.processing_status === "completed") {
@@ -446,7 +451,7 @@ export default function TimelinePage() {
     } finally {
       setRetryingCorrection(false);
     }
-  }, [pendingCorrectionId, retryingCorrection, loadEvents, appliedQuery]);
+  }, [pendingCorrectionId, events, retryingCorrection, loadEvents, appliedQuery]);
 
   const visibleEvents = useMemo(() => {
     const needle = appliedQuery.trim().toLowerCase();
@@ -700,7 +705,7 @@ export default function TimelinePage() {
       {correctionMessage && (
         <div role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 13, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <span>{correctionMessage}</span>
-          {pendingCorrectionId && (
+          {(pendingCorrectionId || events.some((item) => item.source_type === "correction" && item.processing_status !== "completed")) && (
             <Button variant="secondary" disabled={retryingCorrection} onClick={() => void retryPendingCorrection()}>
               {retryingCorrection ? "Checking update…" : "Retry Care Record update"}
             </Button>
