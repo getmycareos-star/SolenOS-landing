@@ -62,6 +62,7 @@ assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
 assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "caregivers must be warned that names, dates and numbers can be misread");
 assert.match(intelligenceReviewSource, /Compare each suggested detail with the original document before accepting it/, "handwriting uncertainty must remain visible");
+assert.match(intelligenceReviewSource, /OCR reading confidence describes text-recognition quality; it is not a probability that the words are correct/, "OCR quality must not be presented as correctness probability");
 assert.match(intelligenceReviewSource, /model_provenance/, "document processing model provenance must be available to the review view");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
