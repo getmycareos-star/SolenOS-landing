@@ -91,6 +91,8 @@ assert.match(documents, /hasLoadedDocumentsRef\.current = true/);
 assert.match(documents, /hasLoadedDocuments && documents\.length > 0 && \(/);
 assert.match(documents, /listError && !hasLoadedDocuments \? null : visibleDocuments\.length === 0/);
 assert.match(documents, /Saved documents couldn’t be refreshed/);
+assert.match(documents, /RecordState/);
+assert.match(documents, /kind=\{documents\.length === 0 \? "empty" : "no-results"\}/);
 assert.doesNotMatch(documents, /SolenOS will not make up a history/);
 assert.match(documentReview, /Saved document reviews couldn’t be loaded/);
 assert.match(documentReview, /No document details are ready to review yet/);
