@@ -99,5 +99,8 @@ try {
   console.log("PASS: caregiver-reported update remains unverified and does not close the follow-up");
   console.log("PASS: unresolved follow-up remains visible after reload");
 } finally {
+  // Remove the API proxy while the browser context is still alive so an
+  // in-flight request cannot outlive the Playwright route context.
+  await page.unrouteAll({ behavior: "ignoreErrors" });
   await browser.close();
 }
