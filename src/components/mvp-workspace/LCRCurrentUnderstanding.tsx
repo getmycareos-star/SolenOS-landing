@@ -1307,7 +1307,7 @@ export function LCRCurrentUnderstanding() {
           ) : activeWatchPatterns.length > 0 ? (
             <p>{activeWatchPatterns.length} repeated {activeWatchPatterns.length === 1 ? "change is" : "changes are"} recorded in the care history. Open the details to review the time period and supporting information.</p>
           ) : (
-            <p>There isn’t enough saved care history to describe changes yet. Missing information does not mean nothing changed.</p>
+            <p>Not enough saved care history to show changes yet.</p>
           )}
         </div>
       </section>
