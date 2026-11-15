@@ -34,6 +34,14 @@ assert.match(source, /Load older care records/,
   "the full history can be paginated beyond the first 200 records");
 assert.match(source, /postJSON\("\/corrections"/,
   "care-history corrections use the existing persisted correction endpoint");
+assert.match(source, /idempotency_key: idempotencyKey/,
+  "a correction retry reuses a stable idempotency key");
+assert.match(source, /processing_status === "completed"/,
+  "the UI only reports a completed correction after durable backend processing");
+assert.match(source, /corrections\\/\$\{encodeURIComponent\(session\.person\.id\)\}\\/\$\{encodeURIComponent\(correctionId\)\}\\/retry/,
+  "a pending correction can be retried through its person-scoped backend receipt");
+assert.match(source, /processing_status !== "completed"/,
+  "pending correction state remains visible after the timeline is reloaded");
 assert.match(source, /target_type: event\.source_type === "care_assertion" \? "care_assertion" : "care_event"/,
   "corrections target the original care event or LCR assertion without changing the source type");
 assert.match(source, /event\.source_type === "care_assertion"/,
