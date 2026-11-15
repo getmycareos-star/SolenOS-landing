@@ -84,7 +84,14 @@
     "followupsDescription": "Open follow-ups stay in their existing record. Daily Care does not create a second copy.",
     "noFollowups": "No unresolved follow-ups are currently recorded. This does not confirm that no action is outstanding.",
     "originalFiles": "SolenOS keeps the original files and reports what actually happened during processing.",
-    "noDocuments": "No documents have been uploaded from this account yet."
+    "noDocuments": "No documents have been uploaded from this account yet.",
+    "previousVisit": "your previous visit",
+    "observationRecords": "observation records",
+    "medicationEventRecords": "medication event records",
+    "measurementRecords": "measurement records",
+    "quickCheckIns": "quick check-ins",
+    "careHandoffs": "care handoffs",
+    "otherCareUpdates": "other care updates"
   },
   "changeIntelligence": {
     "eyebrow": "LONGITUDINAL UNDERSTANDING",
