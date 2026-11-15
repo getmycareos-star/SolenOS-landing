@@ -6,15 +6,15 @@
  */
 
 const STATUS_LABELS: Readonly<Record<string, string>> = {
-  created: "Follow-up created",
+  created: "Follow-up added",
   updated: "Follow-up updated",
   response_recorded: "Response recorded",
   action_recorded: "Action recorded",
   contradiction_reconciled: "Different reports reviewed",
   outcome_reported: "Outcome reported",
   outcome_attested: "Outcome checked by caregiver",
-  outcome_corroborated: "Two reports checked together",
-  closure_verified: "Closure reviewed",
+  outcome_corroborated: "Compared with another report",
+  closure_verified: "Marked as complete",
   reopened: "Reopened",
   reassessed: "Follow-up reviewed",
   active: "Active",
@@ -25,17 +25,17 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   needs_clarification: "Needs checking",
   pending: "Waiting for review",
   open: "Open",
-  unresolved: "Still needs review",
-  partially_resolved: "Partly reviewed",
-  qualified: "Reviewed with limits",
+  unresolved: "Still needs attention",
+  partially_resolved: "Partly complete",
+  qualified: "Reviewed, but some details are unclear",
   resolved: "Resolved",
   closed: "Closed after review",
   reported: "Reported by caregiver",
   observed: "Observed",
-  verified: "Verified",
-  inferred: "Possible interpretation",
-  uncertain: "Not confirmed",
-  conflicting: "Reports differ",
+  verified: "Checked against a source",
+  inferred: "Possible explanation",
+  uncertain: "Not sure yet",
+  conflicting: "Reports do not match",
   missing: "Not recorded",
   not_recorded: "Not recorded",
   given: "Reported as given",
@@ -119,7 +119,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   outcome_verified: "Outcome checked",
   failed: "Could not be completed",
   partial: "Partly complete",
-  independent: "Reported separately",
+  independent: "Reported separately", 
   shared_origin: "From the same original",
   same_origin: "From the same original",
   needs_review: "Needs your review",
@@ -158,11 +158,11 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
 
 const INFORMATION_LABELS: Readonly<Record<string, string>> = {
   reported: "Caregiver report",
-  observed: "Direct observation",
-  verified: "Verified",
+  observed: "Seen by a caregiver",
+  verified: "Checked against a source",
   inferred: "Not yet confirmed",
   uncertain: "Unclear",
-  conflicting: "Reports differ",
+  conflicting: "Reports do not match",
   missing: "Not recorded",
 };
 
@@ -271,6 +271,8 @@ export function caregiverRoleLabel(value?: string | null): string | null {
 }
 
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
+  /\\b(?:LCR|Delta Engine|AI Companion|Qwen)\\b/i,
+  /\\b(?:evidence|provenance|reconciliation|assertion|epistemic|lineage|retrieval|schema|OCR|extraction|assessment coverage)\\b/i,
   /database schema/i,
   /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint)\b/i,
   /\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\b/i,
