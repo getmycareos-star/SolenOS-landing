@@ -486,7 +486,7 @@ function AccountCard() {
         const result = await createAccount(email, password);
         setAccount(result.account ?? null);
         setRecoveryCode(result.recovery_code);
-        setMessage("Account created and linked to this care record.");
+        setMessage("Account created and linked to your Care Record.");
         setMode("idle");
         setPassword("");
         show("Account created.", "success");
@@ -546,11 +546,11 @@ function AccountCard() {
       setMode("idle");
       setEmail("");
       setPassword("");
-      setMessage("Signed out securely. Your care record remains on SolenOS. Sign in again to restore access on this browser.");
+      setMessage("Signed out securely. Your Care Record is still saved. Sign in again on this device to access it.");
       show("Signed out securely.", "success");
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";
-      setError("We couldn’t complete sign-out. Your current session is still available. Check your connection and try again.");
+      setError("We couldn’t sign you out. You are still signed in. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -581,7 +581,7 @@ function AccountCard() {
           <Button variant="secondary" onClick={() => { setMode("login"); setError(""); setMessage(""); }}>
             Sign in to an existing account
           </Button>
-          {loadFailed && <Button variant="secondary" onClick={() => void refreshAccount()} disabled={busy}>Retry account status</Button>}
+          {loadFailed && <Button variant="secondary" onClick={() => void refreshAccount()} disabled={busy}>Check again</Button>}
         </div>
       )}
       {signedOut && !account && mode === "idle" && (
@@ -694,7 +694,7 @@ function PrivacyCard() {
         /* ignore */
       }
     });
-    show("Local data cleared", "success");
+    show("Saved information on this device was cleared", "success");
     setConfirmClear(false);
     setTimeout(() => {
       window.location.href = "/start";
@@ -709,7 +709,7 @@ function PrivacyCard() {
 
       <PolicySettingsPanel />
 
-      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes saved information and sign-in credentials from this browser. If you have no other recovery method, you may not be able to reopen this care record on this device. It does not delete the server-held care history.</p>}
+      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes saved information and sign-in details from this browser. If you have no other way to sign in, you may not be able to open your Care Record on this device. It does not delete your Care Record from SolenOS.</p>}
       <div className="mobile-settings-buttons">
         {confirmClear ? (
           <div className="mobile-settings-actions">
@@ -725,7 +725,7 @@ function PrivacyCard() {
             variant="destructive"
             onClick={() => setConfirmClear(true)}
           >
-            Clear local data
+            Clear saved information from this device
           </Button>
         )}
         <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
@@ -885,7 +885,7 @@ export default function WorkspaceSettingsPage() {
         <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>You can use SolenOS without creating an account.</p></div></div><AccountCard /></div>
         <div className="settings-section-wrap" id="settings-caregivers"><div className="settings-section-intro"><span>04</span><div><h2>Caregiver access</h2><p>Invite family members and manage who can access this care record.</p></div></div><CaregiverAccessPanel /></div>
         <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>05</span><div><h2>Devices and account access</h2><p>See which devices can access your account and get help if you lose access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
-        <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>06</span><div><h2>Privacy &amp; data</h2><p>Manage optional improvement consent and local information.</p></div></div><PrivacyCard /></div>
+        <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>06</span><div><h2>Privacy &amp; data</h2><p>Choose whether to share information that helps improve SolenOS and manage what is saved on this device.</p></div></div><PrivacyCard /></div>
         <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>07</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
       </div>
     </div>
