@@ -448,7 +448,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 <div className="lcr-entry-heading">
                   <h3>{caregiverChangeLabel(change)}</h3>
                   <span>{change.is_active ? caregiverStatusLabel(change.confirmation_status) ?? "Needs review" : "Earlier review"}</span>
-                  {change.significance_verdict ? <span>{caregiverStatusLabel(change.significance_verdict) ?? "Not yet assessed"}</span> : null}
+                  {change.significance_verdict ? <span>{caregiverStatusLabel(change.significance_verdict) ?? "Not reviewed"}</span> : null}
                 </div>
                 {change.explanation ? <p>{caregiverSafeChangeText(change.explanation) ?? "A possible change was found in the saved care information. Review the linked records before drawing a conclusion."}</p> : <p>{caregiverSafeChangeText(change.current_state) ?? "A possible change was found in the saved care information."}</p>}
                 <p className="panel-muted">{formatWindow(change.comparison_window_start, change.comparison_window_end)}</p>
@@ -540,7 +540,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     ))}
                     {details[change.id].confirmation_history.length > 0 ? (
                       <div>
-                        <strong>Confirmation history</strong>
+                        <strong>Review history</strong>
                         <ul>{details[change.id].confirmation_history.map((entry) => <li key={entry.id}>{caregiverStatusLabel(entry.previous_status) ?? "Previous review"} → {caregiverStatusLabel(entry.new_status) ?? "Updated review"}: {caregiverSafeAssistantText(entry.reason) ?? "No explanation recorded"} ({new Date(entry.created_at).toLocaleString()})</li>)}</ul>
                       </div>
                     ) : null}
@@ -564,7 +564,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
               <div className="lcr-timeline-content">
                 <div className="lcr-entry-heading">
                   <h3>{caregiverStatusLabel(pattern.pattern_type) ?? "Repeated care change"}</h3>
-                  <span>{pattern.is_active ? caregiverStatusLabel(pattern.pattern_strength) ?? "Pattern not rated" : "Earlier pattern"}</span>
+                  <span>{pattern.is_active ? caregiverStatusLabel(pattern.pattern_strength) ?? "Not rated yet" : "Earlier pattern"}</span>
                 </div>
                 <p>Dates covered: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
                 <p className="panel-muted">
