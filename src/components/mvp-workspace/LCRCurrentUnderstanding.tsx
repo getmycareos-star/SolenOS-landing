@@ -1907,16 +1907,7 @@ export function LCRCurrentUnderstanding() {
           action={<button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={refreshing}>Try again</button>}
         />
       )}
-      {loading && !projection ? (
-        <RecordState kind="loading" title="Loading saved care information…" />
-      ) : error && !projection ? (
-        <RecordState
-          kind="error"
-          title="We couldn’t load your care information."
-          description="Check your connection and try again."
-          action={<button type="button" className="lcr-text-action" onClick={() => void load(true)}>Try again</button>}
-        />
-      ) : projection ? (
+      {projection ? (
         <>
           {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
             <RecordState
