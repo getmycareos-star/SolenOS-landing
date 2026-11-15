@@ -23,7 +23,7 @@ type ComputedChange = {
   current?: string | null;
   certainty?: string;
   evidence_supported?: boolean;
-  claim_supported?: boolean;
+  claim_supported?: boolean | null;
   source_record_refs?: SourceReference[];
   comparison_basis?: string;
   historical_only?: boolean;
