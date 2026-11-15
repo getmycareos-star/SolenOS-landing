@@ -109,6 +109,9 @@ assert.match(historyDrawer, /Earlier care details are saved/);
 assert.match(documentsPage, /caregiverSafeAssistantText\(selected\.extractedText\)/);
 assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedText\)/);
 assert.match(lcr, /displayDescription\(source\.description\)/);
+assert.match(lcr, /caregiverSafeChangeText\(change\.explanation\)/);
+assert.match(lcr, /caregiverSafeChangeText\(change\.previous_state\)/);
+assert.doesNotMatch(lcr, /<p>\{change\.explanation\}<\/p>/);
 assert.match(lcr, /caregiverSafeAssistantText\(source\.source_passage\)/);
 
 console.log("Caregiver language boundary checks passed.");
