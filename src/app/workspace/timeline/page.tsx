@@ -57,10 +57,10 @@ type FilterKey = "all" | "observations" | "decisions" | "documents" | "open";
 
 const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "all", label: "All updates" },
-  { id: "observations", label: "Observations" },
+  { id: "observations", label: "What caregivers noticed" },
   { id: "decisions", label: "Decisions" },
   { id: "documents", label: "Documents" },
-  { id: "open", label: "Follow-ups & open items" },
+  { id: "open", label: "Follow-ups" },
 ];
 
 function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
@@ -543,7 +543,7 @@ export default function TimelinePage() {
       <header className="mobile-page-head" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
           <p style={{ margin: "0 0 6px", color: "var(--solenos-muted)", fontSize: 13, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>Care Record</p>
-          <h1 style={{ marginBottom: 8 }}>Care Timeline</h1>
+          <h1 style={{ marginBottom: 8 }}>Care history</h1>
           <p style={{ marginTop: 0, maxWidth: 620 }}>A history of saved care updates. Older reports remain separate from the latest care summary.</p>
         </div>
         <Button variant="icon" aria-label="Refresh timeline" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
@@ -554,7 +554,7 @@ export default function TimelinePage() {
       <section aria-label="Latest recorded update" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "var(--theme-panel-bg)", padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
           <History size={19} aria-hidden />
-          <h2 style={{ fontSize: 18, margin: 0 }}>Latest recorded update</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Latest care update</h2>
         </div>
         {loading ? (
           <p aria-live="polite" style={{ margin: 0, color: "var(--solenos-muted)" }}>Loading saved care updates…</p>
@@ -624,17 +624,17 @@ export default function TimelinePage() {
       ) : !error && visibleEvents.length === 0 ? (
         <section className="mobile-empty" style={{ padding: 28 }}>
           <div className="mobile-empty-icon" aria-hidden="true"><Activity size={36} /></div>
-          <h2 className="mobile-empty-title">{events.length ? "No matching events" : "Your timeline starts with real records"}</h2>
+          <h2 className="mobile-empty-title">{events.length ? "No matching updates" : "Your care history starts here"}</h2>
           <p className="mobile-empty-body">{events.length ? "Try another filter or search term. No records were removed." : "SolenOS will show care updates here after they have been saved. This screen never adds example care history."}</p>
           <div className="mobile-empty-actions" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            <Button variant="primary" onClick={() => router.push("/workspace?compose=1")}><Plus size={18} aria-hidden /> Add a care record</Button>
+            <Button variant="primary" onClick={() => router.push("/workspace?compose=1")}><Plus size={18} aria-hidden /> Add a care update</Button>
             {(query || filter !== "all") && <Button variant="secondary" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</Button>}
           </div>
         </section>
       ) : (
-        <section aria-label="Chronological care events">
+        <section aria-label="Care history in date order">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-            <h2 style={{ fontSize: 19, margin: 0 }}>History</h2>
+            <h2 style={{ fontSize: 19, margin: 0 }}>Earlier care updates</h2>
             <span style={{ color: "var(--solenos-muted)", fontSize: 13 }}>{visibleEvents.length} {visibleEvents.length === 1 ? "event" : "events"}</span>
           </div>
           {groupedEvents.map((group) => (
@@ -665,8 +665,8 @@ export default function TimelinePage() {
                           <dl style={{ display: "grid", gridTemplateColumns: "minmax(110px, 0.7fr) minmax(0, 1.3fr)", gap: "9px 12px", margin: 0, fontSize: 13 }}>
                             <dt style={{ color: "var(--solenos-muted)" }}>When it happened</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>When it was saved</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Information status</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>When it happened</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>What is known</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>How the date was described</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Who shared it</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Type of update</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type === "correction" ? "Correction" : event.source_type === "evidence" ? "Document" : event.source_type === "appointment" ? "Appointment" : event.source_type === "professional" ? "Healthcare professional" : event.created_by_caregiver_id ? "Caregiver" : "Care update"}</dd>
                             {event.source_type === "correction" && event.target_id && (
@@ -682,7 +682,7 @@ export default function TimelinePage() {
                                 </dd>
                               </>
                             )}
-                            <dt style={{ color: "var(--solenos-muted)" }}>Related care topic</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id ? "Linked" : "Not linked"}</dd>
+                            <dt style={{ color: "var(--solenos-muted)" }}>Related care topic</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id ? "Available" : "Not recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Related notes or documents</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? `${event.evidence_ids.length} saved item(s)` : "None attached"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Labels</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.map(tag => caregiverStatusLabel(tag) || "Care update").join(", ") : "None recorded"}</dd>
                             <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
