@@ -5,7 +5,7 @@ import { PublicShell } from "@/components/public/PublicShell";
 export const metadata: Metadata = {
   title: "Share into SolenOS",
   description:
-    "Send WhatsApp messages, email, photos, and PDFs into SolenOS — same care understanding path.",
+    "Send WhatsApp messages, emails, photos, and PDFs to your Care Record.",
 };
 
 export default function ShareHelpPage() {
@@ -16,7 +16,7 @@ export default function ShareHelpPage() {
         <h1 className="public-hero-title">Send care details from other apps</h1>
         <p className="public-hero-lede">
           From WhatsApp, Email, Photos, or Files — choose Share → SolenOS when the app is installed.
-          Shared content enters the same Living Care Record as Scan, Snap, Upload, and typed notes.
+          Shared content is added to your Care Record alongside scans, photos, uploads, and notes.
         </p>
       </section>
       <section className="public-section">
@@ -25,7 +25,7 @@ export default function ShareHelpPage() {
           separate workflow for each app.
         </p>
         <p className="public-prose">
-          <Link href="/workspace?enter=1">Open Living Care Record</Link>
+          <Link href="/workspace?enter=1">Open your Care Record</Link>
           {" · "}
           <Link href="/how-it-works">How it works</Link>
         </p>
