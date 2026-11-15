@@ -165,7 +165,7 @@ assert.match(howItWorksCopy, /healthcare professional/);
 assert.match(howItWorksCopy, /what is not clear yet/);
 assert.doesNotMatch(howItWorksCopy, /Living Care Record|AI Companion|natural inputs|clinician/);
 assert.match(careOverviewPage, /Your Care Record/);
-assert.match(careOverviewPage, /Open Care Assistant/);
+assert.match(careOverviewPage, /Open Daily Care/);
 assert.doesNotMatch(careOverviewPage, /Your Living Care Record|AI Companion/);
 assert.match(changeIntelligence, /CARE CHANGES OVER TIME/);
 assert.match(changeIntelligence, /Review notes and documents/);
