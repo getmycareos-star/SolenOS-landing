@@ -1157,7 +1157,7 @@ export function LCRCurrentUnderstanding() {
         <div className="lcr-entry-heading">
           <div>
             <h3 id="lcr-attention-now-heading">Care priorities</h3>
-            <p>Only items that may need your attention appear here. This is not a diagnosis.</p>
+            <p>Only items that may need your attention appear here. This is not a diagnosis or medical advice.</p>
             <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
           </div>
         </div>
