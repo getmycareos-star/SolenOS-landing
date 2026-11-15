@@ -934,7 +934,12 @@ export function LCRCurrentUnderstanding() {
   const canWaitItems = careAttention
     ? careAttention.can_wait_with_documented_basis.map(findAttentionLoop).filter((item): item is (typeof openLoopItems)[number] => Boolean(item))
     : selectDeferredItems(openLoopItems);
-  const watchChanges = selectWatchChanges(changes);
+  // Capture wrappers are source records, not changes in the person's care.
+  // The original caregiver report remains available in care history.
+  const internalCaptureRecordTypes = new Set(["structured_daily_capture", "daily_care_entry", "daily_capture"]);
+  const watchChanges = selectWatchChanges(changes).filter((change) =>
+    !internalCaptureRecordTypes.has(change.subject_type.trim().toLowerCase())
+  );
   const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
   const isMedicationConflict = (item: (typeof watchUncertainties)[number]) => {
     const subjectType = item.subject_type?.trim().toLowerCase();
