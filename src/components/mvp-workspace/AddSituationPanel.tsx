@@ -185,6 +185,27 @@ export function AddSituationPanel({
       <div className="composer-shell">
 
 
+        <textarea
+          className="brain-dump composer-textarea"
+          value={value}
+          onChange={(e) => handleTextChange(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder={
+            mode === "update"
+              ? "What changed since last time?"
+              : "For example: Breakfast has been harder to remember this week."
+          }
+          rows={6}
+          disabled={busy}
+          aria-label="Describe your situation"
+          autoFocus
+        />
+
         <div className="composer-toolbar" role="group" aria-label="Evidence entry">
           <div className="composer-actions">
             <button
@@ -249,6 +270,7 @@ export function AddSituationPanel({
             )}
           </button>
         </div>
+
 
 
         <p className="panel-muted upload-privacy-notice" role="note">
@@ -509,26 +531,7 @@ export function AddSituationPanel({
           <Link href="/privacy">Learn more about privacy</Link>.
         </p>
 
-        <textarea
-          className="brain-dump composer-textarea"
-          value={value}
-          onChange={(e) => handleTextChange(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-              e.preventDefault();
-              handleSubmit();
-            }
-          }}
-          placeholder={
-            mode === "update"
-              ? "What changed since last time?"
-              : "For example: Breakfast has been harder to remember this week."
-          }
-          rows={6}
-          disabled={busy}
-          aria-label="Describe your situation"
-          autoFocus
-        />
+
       </div>
 
       {(localHint || displayError) && (
