@@ -15,7 +15,7 @@ assert.match(router, /\(data\.total_events \?\? 0\) > 0/);
 assert.match(router, /setState\(hasSavedCare \? "returning" : "first_visit"\)/);
 assert.match(router, /setState\("unavailable"\)/);
 assert.match(router, /We won’t treat an unavailable record as a new one/);
-assert.match(router, /<CognitiveWorkspace \/>/);
+assert.match(router, /<CognitiveWorkspace onSituationComplete=\{\(\) => setFirstCaptureComplete\(true\)\}/);
 assert.match(router, /Your care journey starts here/);
 assert.match(router, /Here’s what we know so far/);
 assert.match(router, /onSituationComplete=\{\(\) => setFirstCaptureComplete\(true\)\}/);
