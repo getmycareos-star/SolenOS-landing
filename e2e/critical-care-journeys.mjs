@@ -955,38 +955,32 @@ await record("Daily Care saves and retrieves original reports without relying on
 
 });
 
-await record("LCR care history shows the original caregiver report with source details on demand", async () => {
+await record("Care history opens the original caregiver report and its source details", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
-  const reportText = history.page.getByText(scenarioReports[0], { exact: false }).first();
-  await reportText.waitFor({ timeout: 20_000 });
-  const reportDom = await reportText.evaluate((element) => {
-    const ancestors = [];
-    for (let node = element; node && ancestors.length < 8; node = node.parentElement) {
-      ancestors.push({ tag: node.tagName.toLowerCase(), className: String(node.className || ""), text: (node.innerText || "").slice(0, 240), hasDetails: Boolean(node.querySelector("details")) });
-    }
-    return ancestors;
-  });
-  console.log("LCR_REPORT_DOM", JSON.stringify(reportDom));
-  console.log("LCR_PAGE_API", JSON.stringify(history.observed.filter((item) => item.path.includes("current-care") || item.path.includes("situation"))));
 
-  const reportCard = history.page.locator(".lcr-current-fact:visible")
+  const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
-  const sourceSummary = reportCard.locator("summary")
-    .filter({ hasText: "Care details" }).first();
-  await sourceSummary.waitFor({ state: "visible", timeout: 15_000 });
-  const sourceDetails = sourceSummary.locator("xpath=..");
-  assert.equal(await sourceDetails.evaluate((element) => element.open), false,
-    "source metadata must stay collapsed in the default care history");
-  await sourceSummary.click();
-  assert.equal(await sourceDetails.evaluate((element) => element.open), true,
-    "caregivers must be able to open the original source details on demand");
-  const careDetailText = await sourceDetails.innerText();
-  assert.match(careDetailText, /Shared by: Caregiver/,
-    "the Care Record must identify who shared the saved information");
-  assert.match(careDetailText, /Caregiver shared:/,
-    "the Care Record must show when the caregiver shared the information");
+  await reportCard.getByRole("button", { name: /Open record: Daily care entry/ }).click();
+
+  await history.page.getByRole("heading", { name: "Care record", exact: true }).waitFor({ timeout: 15_000 });
+  await history.page.getByRole("heading", { name: "Original record", exact: true }).waitFor({ timeout: 15_000 });
+  const originalText = history.page.locator(".history-original-text");
+  await originalText.waitFor({ state: "visible", timeout: 15_000 });
+  assert.ok((await originalText.innerText()).includes(scenarioReports[0]),
+    "the history detail must show the exact original caregiver wording");
+
+  await history.page.getByRole("heading", { name: "More details", exact: true }).waitFor({ timeout: 10_000 });
+  const sourceDetails = await history.page.locator(".history-detail-list").innerText();
+  assert.match(sourceDetails, /When it happened/,
+    "the history detail must show when the caregiver says the event happened");
+  assert.match(sourceDetails, /When it was saved/,
+    "the history detail must distinguish the saved time");
+  assert.match(sourceDetails, /Who shared it\s+Caregiver/,
+    "the history detail must identify the caregiver as the source");
+  assert.match(sourceDetails, /Related notes or documents\s+1 related item/,
+    "the history detail must show its linked source record");
 
   const evidenceList = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, {
     token: identity.token,
@@ -1002,13 +996,8 @@ await record("LCR care history shows the original caregiver report with source d
     "the exact original caregiver wording must remain inside the saved source text",
   );
 
-  await history.page.getByText("Where this information came from", { exact: true }).click();
-  await history.page.getByText("Notes and documents behind this information", { exact: true }).click();
-  const sourceSelect = history.page.getByLabel("Original note or document");
-  await sourceSelect.waitFor({ state: "visible", timeout: 15_000 });
-  await sourceSelect.selectOption(originalEvidence.id);
-  await history.page.locator("blockquote")
-    .filter({ hasText: scenarioReports[0] }).waitFor({ state: "visible", timeout: 15_000 });
+  await history.page.getByRole("button", { name: "Back to care history", exact: true }).click();
+  await reportCard.waitFor({ state: "visible", timeout: 10_000 });
   await verifyMobile(history.page);
   await history.context.close();
 });
