@@ -186,6 +186,91 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
   await context.close();
 });
 
+await record("01c workspace links, browser back, More menu and account form validation", async () => {
+  const { context, page } = await createBrowserPage(
+    session,
+    "/workspace",
+    { width: 390, height: 844 },
+  );
+  await page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 20_000 });
+  await verifyMobile(page);
+
+  const moreTrigger = page.getByRole("button", { name: "More care record actions", exact: true });
+  await moreTrigger.click();
+  const menu = page.getByRole("menu", { name: "Care record actions", exact: true });
+  await menu.waitFor({ state: "visible", timeout: 5_000 });
+  const menuBounds = await menu.boundingBox();
+  const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+  assert.ok(menuBounds, "More menu must have a visible position");
+  assert.ok(menuBounds.x >= 0 && menuBounds.y >= 0 &&
+    menuBounds.x + menuBounds.width <= viewport.width &&
+    menuBounds.y + menuBounds.height <= viewport.height,
+    `More menu must remain inside the mobile viewport: ${JSON.stringify({ menuBounds, viewport })}`);
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("role")), "menuitem",
+    "opening More menu must move keyboard focus into the menu");
+  await page.keyboard.press("Escape");
+  assert.equal(await moreTrigger.getAttribute("aria-expanded"), "false",
+    "Escape must close the More menu");
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("aria-label")),
+    "More care record actions", "closing More menu must restore focus to its trigger");
+
+  const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
+  await navToggle.click();
+  const navigation = page.locator("#solenos-navigation");
+  const links = await navigation.getByRole("link").evaluateAll((items) =>
+    items.map((item) => item.getAttribute("href")).filter(Boolean),
+  );
+  const expectedRoutes = [
+    "/workspace",
+    "/workspace/daily-care",
+    "/workspace/open-loops",
+    "/workspace/timeline",
+    "/workspace/documents",
+    "/workspace/appointments",
+    "/workspace/handoffs",
+    "/workspace/companion",
+    "/workspace/settings",
+  ];
+  for (const route of expectedRoutes) {
+    assert.ok(links.includes(route), `primary navigation is missing ${route}`);
+  }
+  await navigation.getByRole("link", { name: "Documents", exact: true }).click();
+  await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
+  await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
+  await page.goBack({ waitUntil: "domcontentloaded" });
+  await page.waitForURL("**/workspace", { timeout: 15_000 });
+  await page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 15_000 });
+  await verifyMobile(page);
+
+  await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Account", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  const email = page.locator("#account-email");
+  const password = page.locator("#account-password");
+  const accountForm = email.locator("xpath=ancestor::form");
+  const accountPosts = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/accounts") {
+      accountPosts.push(request.url());
+    }
+  });
+  await email.fill("not-an-email");
+  await password.fill("short");
+  assert.equal(await email.evaluate((element) => element.validity.typeMismatch), true,
+    "account form must reject an invalid email address");
+  assert.equal(await password.evaluate((element) => element.validity.tooShort), true,
+    "account form must reject passwords shorter than 12 characters");
+  assert.equal(await accountForm.evaluate((form) => form.checkValidity()), false,
+    "invalid account details must not pass browser form validation");
+  await accountForm.getByRole("button", { name: "Create account", exact: true }).click();
+  assert.equal(accountPosts.length, 0, "invalid account details must not be submitted to the backend");
+  await email.fill("browser-form-validation@example.test");
+  await password.fill("valid-test-passphrase-2026");
+  assert.equal(await accountForm.evaluate((form) => form.checkValidity()), true,
+    "a correctly formatted email and 12+ character password must pass browser validation");
+  await context.close();
+});
+
 // 2. Daily Capture: write, idempotent replay, invalid payload, expired bearer, then retrieve.
 let dailyCaptureEventId;
 await record("02 Daily Capture", async () => {
