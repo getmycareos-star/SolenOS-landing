@@ -114,9 +114,8 @@ try {
   assert.ok(evidence?.id, "the actual browser upload must create a persisted original document");
   const evidenceId = evidence.id;
 
-  // Queue real background OCR/extraction and real Ollama/Qwen interpretation.
-  await page.getByRole("button", { name: "Read document", exact: true }).waitFor({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Read document", exact: true }).click();
+  // The upload endpoint queues reading automatically; verify the UI confirms that queue.
+  await page.getByText(/It is reading the documents now/).waitFor({ timeout: 30_000 });
   const analysis = await pollDocument(session, evidenceId);
   assert.equal(analysis.extraction_status, "available");
   assert.equal(analysis.intelligence_status, "available");
