@@ -70,3 +70,6 @@ assert(reminders.includes("error && !hasLoadedRef.current ? null"), "an initial 
 assert(reminders.includes("onAction={() => { setError(\"\")"), "reminder errors must expose a retry action");
 assert(reminders.includes("loading && !hasLoadedRef.current"), "only an initial reminder load should replace the list with a loading state");
 console.log("PASS: reminder loading, empty and failed states are separate, and retries preserve previously loaded reminders.");
+
+assert(reminders.includes('kind={reminders.length === 0 ? "first-empty" : "no-results"}'), "reminder filters with no matches must not be presented as an empty reminder list");
+assert(reminders.includes('onAction={reminders.length > 0 ? () => setFilter("all") : undefined}'), "the no-results reminder action must clear the filter");
