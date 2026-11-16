@@ -574,9 +574,8 @@ export function linkDecisionOutcome(params: {
   nowIso?: string;
 }): DecisionMemoryEntry | null {
   const outcome = params.outcomeText.trim().slice(0, 240);
-  if (!outcome || !params.decisionId) return null;
-
   const decisionId = params.decisionId;
+  if (!outcome || !decisionId) return null;
   const store = load(params.careKey);
   const target = store.entries.find((entry) => entry.id === decisionId || entry.extraction_ids?.includes(decisionId));
   // A missing or cross-context decision reference is not permission to guess.
