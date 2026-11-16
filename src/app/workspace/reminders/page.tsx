@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Check, Clock3, Plus, X } from "lucide-react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
-import { BrandLoading } from "@/components/brand";
+import { RecordState } from "@/components/ui/RecordState";
 
 type ReminderStatus = "open" | "completed" | "cancelled";
 
@@ -61,6 +61,7 @@ export default function CareRemindersPage() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const hasLoadedRef = useRef(false);
 
   const refresh = useCallback(async (knownPersonId?: string) => {
     const session = await ensureAnonymousSession();
@@ -70,6 +71,7 @@ export default function CareRemindersPage() {
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
     const items = data as CareReminder[];
     setReminders(items);
+    hasLoadedRef.current = true;
     setSnoozeSupported(items.length > 0 && items.every((item) => typeof item.snooze_count === "number"));
   }, []);
 
@@ -170,13 +172,13 @@ export default function CareRemindersPage() {
     <div className="mobile-screen care-reminders-page">
       <div className="care-reminders-header">
         <Link href="/workspace" className="care-reminders-back">
-          <ArrowLeft size={18} aria-hidden /> Back to Care Record
+          <ArrowLeft size={18} aria-hidden /> Back to Living Care Record
         </Link>
-        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> REMINDERS</p>
+        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> CARE CONTINUITY</p>
         <h1>Care reminders</h1>
-        <p>Save a reminder here. SolenOS will show you a notification when it’s due.</p>
+        <p>Save a follow-up once. SolenOS records an in-app notification when it is due.</p>
         <p className="care-reminders-delivery">
-          You’ll see a notification in SolenOS when it’s due. Browser notifications are optional. We don’t send email alerts.
+          In-app notification feed · optional browser push · no email alerts.
         </p>
       </div>
 
@@ -217,7 +219,7 @@ export default function CareRemindersPage() {
         </Button>
       </form>
 
-      {error ? <p className="care-reminder-alert" role="alert">{error}</p> : null}
+      {error ? <RecordState kind="error" description={error} onAction={() => { setError(""); if (!hasLoadedRef.current) setLoading(true); void refresh(personId || undefined).catch(() => setError("We couldn’t load your reminders. Check your connection and try again.")).finally(() => setLoading(false)); }} /> : null}
       {notice ? <p className="care-reminder-notice" role="status">{notice}</p> : null}
 
       <section className="care-reminders-list" aria-labelledby="care-reminders-list-title">
@@ -237,13 +239,13 @@ export default function CareRemindersPage() {
           </label>
         </div>
 
-        {loading ? (
-          <BrandLoading animate message="Loading saved reminders…" />
-        ) : visibleReminders.length === 0 ? (
+        {loading && !hasLoadedRef.current ? (
+          <RecordState kind="loading" title="Loading saved reminders" />
+        ) : error && !hasLoadedRef.current ? null : visibleReminders.length === 0 ? (
           <div className="care-reminders-empty">
             <Clock3 size={24} aria-hidden />
             <h3>No {filter === "all" ? "" : filter + " "}reminders saved</h3>
-            <p>Reminders you add will appear here.</p>
+            <p>Reminders you create will appear here. SolenOS does not invent sample reminders.</p>
           </div>
         ) : (
           <ul className="care-reminders-items">
@@ -279,7 +281,7 @@ export default function CareRemindersPage() {
                       </Button>
                     </div>
                   ) : null}
-                  <p className="care-reminder-footnote">Saved in your Care Record · a notification will appear in SolenOS when it’s due</p>
+                  <p className="care-reminder-footnote">Saved in this care record · an in-app notification is recorded when due</p>
                 </li>
               );
             })}
