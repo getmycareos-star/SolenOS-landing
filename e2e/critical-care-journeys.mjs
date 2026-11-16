@@ -173,7 +173,8 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.waitForFunction(() => Boolean(
     document.querySelector(".care-card-note") ||
     document.querySelector(".workspace-error") ||
-    document.querySelector(".workspace-status-warning")
+    document.querySelector(".workspace-status-warning") ||
+    document.body.innerText.toLowerCase().includes("workspace encountered an error")
   ), undefined, { timeout: 30_000 });
   console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator(".solenos-chat-main").innerText());
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
