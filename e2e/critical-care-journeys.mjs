@@ -1374,6 +1374,16 @@ await record("07 change detection and supporting evidence", async () => {
   const deltaDurationMs = Math.round(performance.now() - deltaStartedAt);
   assert.equal(reconciled.status, 200, JSON.stringify(reconciled.payload));
   assert.ok(deltaDurationMs < 150_000, `Delta Engine exceeded the 150-second inference budget: ${deltaDurationMs}ms`);
+  assert.equal(
+    reconciled.payload?.interpretation_evaluation?.version,
+    "longitudinal-interpretation-evaluator-v1",
+    "the default caregiver-facing Delta API path must run the independent interpretation evaluator",
+  );
+  assert.equal(
+    reconciled.payload.interpretation_evaluation.source_evidence_mutated,
+    false,
+    "the evaluator must not mutate original source evidence",
+  );
   assert.ok(reconciled.payload?.claim_provenance && Array.isArray(reconciled.payload.claim_provenance.claims), "Delta Engine must return claim-specific source references");
   for (const claim of reconciled.payload.claim_provenance.claims) {
     assert.ok(typeof claim.text === "string" && Array.isArray(claim.source_references), "each Delta claim must expose its own source references");
@@ -1393,7 +1403,10 @@ await record("07 change detection and supporting evidence", async () => {
   assert.equal(invalid.status, 422);
   const runs = await request(`/api/v1/care-delta/runs/${identity.personId}`, { token: identity.token });
   assert.equal(runs.status, 200);
-  assert.ok(runs.payload.some((run) => run.evidence_ids?.includes(evidenceId)));
+  assert.ok(runs.payload.some((run) =>
+    run.evidence_ids?.includes(evidenceId) &&
+    run.delta?.interpretation_evaluation?.version === "longitudinal-interpretation-evaluator-v1"
+  ), "retrieved persisted Delta run must retain the evaluator result");
 });
 
 // 8. Community: currently disabled; prove it cannot contaminate the authoritative LCR.
