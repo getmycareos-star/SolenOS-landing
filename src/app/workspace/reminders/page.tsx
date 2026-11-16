@@ -174,11 +174,11 @@ export default function CareRemindersPage() {
         <Link href="/workspace" className="care-reminders-back">
           <ArrowLeft size={18} aria-hidden /> Back to Care Record
         </Link>
-        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> CARE CONTINUITY</p>
+        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> FOLLOW-UP</p>
         <h1>Care reminders</h1>
-        <p>Save a follow-up once. SolenOS records an in-app notification when it is due.</p>
+        <p>Save a reminder here so you can come back to it when it is due.</p>
         <p className="care-reminders-delivery">
-          In-app notification feed · optional browser push · no email alerts.
+          SolenOS can show a notification here when a reminder is due. Email alerts are not sent.
         </p>
       </div>
 
@@ -282,7 +282,7 @@ export default function CareRemindersPage() {
                       </Button>
                     </div>
                   ) : null}
-                  <p className="care-reminder-footnote">Saved in this care record · an in-app notification is recorded when due</p>
+                  <p className="care-reminder-footnote">Saved in this care record</p>
                 </li>
               );
             })}
