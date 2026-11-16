@@ -256,6 +256,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [directoryError, setDirectoryError] = useState(false);
   const [consentRequired, setConsentRequired] = useState(false);
   const [historyError, setHistoryError] = useState(false);
+  const [draftsError, setDraftsError] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
@@ -280,6 +281,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     setLoading(true);
     setDirectoryError(false);
     setHistoryError(false);
+    setDraftsError(false);
     try {
       await ensureAnonymousSession();
       // Handoff inbox and recipient discovery require the caregiver's persisted
@@ -307,10 +309,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       if (outboxResult.status === "fulfilled" && Array.isArray(outboxResult.value.items)) setOutbox(outboxResult.value.items);
       else setHistoryError(true);
       if (draftsResult.status === "fulfilled" && Array.isArray(draftsResult.value.items)) setSavedDrafts(draftsResult.value.items);
-      else setHistoryError(true);
+      else setDraftsError(true);
     } catch {
       setDirectoryError(true);
       setHistoryError(true);
+      setDraftsError(true);
     } finally {
       setLoading(false);
     }
@@ -640,9 +643,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           ))}
         </section>
       )}
-      {loading && savedDrafts.length === 0 && !historyError && <RecordState kind="loading" title="Loading saved summaries" />}
-      {historyError && savedDrafts.length === 0 && !loading && <RecordState kind="error" title="Saved summaries could not be loaded" description="Your saved summaries may be incomplete. Please try again." onAction={() => void load()} />}
-      {savedDrafts.length === 0 && !loading && !historyError && (
+      {loading && savedDrafts.length === 0 && !draftsError && <RecordState kind="loading" title="Loading saved summaries" />}
+      {draftsError && savedDrafts.length === 0 && !loading && <RecordState kind="error" title="Saved summaries could not be loaded" description="Your saved summaries may be incomplete. Please try again." onAction={() => void load()} />}
+      {draftsError && savedDrafts.length > 0 && <RecordState kind="error" title="Saved summaries could not be refreshed" description="Previously loaded summaries are still shown. Please try again." onAction={() => void load()} />}
+      {savedDrafts.length === 0 && !loading && !draftsError && (
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved summaries">
           <h4 style={{ marginTop: 0 }}>Saved summaries</h4>
           <p style={{ fontSize: 13, color: "#667267", marginBottom: 0 }}>
