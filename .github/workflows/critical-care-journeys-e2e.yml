@@ -20,6 +20,7 @@ on:
       - "scripts/verify-handoff-source-provenance.mts"
       - "scripts/verify-appointment-low-burden.mts"
       - "scripts/verify-record-state-communication.mts"
+      - "scripts/verify-caregiver-language-boundary.mts"
       - "src/components/workflows/**"
       - "src/components/mvp-workspace/**"
       - "src/components/DocumentIntelligenceReview.tsx"
