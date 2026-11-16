@@ -12,7 +12,7 @@ import { RecordState } from "@/components/ui/RecordState";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
 const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <RecordState kind="loading" title="Loading your care information" /> });
-const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <p role="status">Loading saved care information…</p> });
+const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <RecordState kind="loading" title="Loading your care information" /> });
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
 const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel"), { ssr: false, loading: () => <p role="status">Loading information that may need checking…</p> });
 
@@ -1191,7 +1191,7 @@ export function LCRCurrentUnderstanding() {
         <div className="lcr-first-screen-card">
           <h3>Where things stand</h3>
           {loading ? (
-            <p role="status">Loading saved care information…</p>
+            <RecordState kind="loading" title="Loading your care information" />
           ) : error ? (
             <RecordState kind="error" description="We couldn’t load your care information. Please try again." onAction={() => void load(true)} />
           ) : projection?.items.length ? (
@@ -1267,7 +1267,7 @@ export function LCRCurrentUnderstanding() {
               Nothing in the information checked is marked for immediate attention.
               {importantCareDecisions.length > 0 ? ` ${importantCareDecisions.length} important ${importantCareDecisions.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review.` : ""}
               {clarificationCareDecisions.length > 0 ? ` ${clarificationCareDecisions.length} ${clarificationCareDecisions.length === 1 ? "detail needs" : "details need"} clarification.` : ""}
-              {" "}This is not a statement that no care needs exist.
+
             </p>
           ) : (
             <RecordState kind="period-empty" title="No immediate follow-ups recorded" description="The information reviewed does not currently show an immediate follow-up." />
@@ -1907,7 +1907,7 @@ export function LCRCurrentUnderstanding() {
           but are intentionally not exposed as caregiver-facing copy. The record itself remains
           available through the timeline, source review and care-history controls. */}
       {loading ? (
-        <p role="status">Loading saved care information…</p>
+        <RecordState kind="loading" title="Loading your care information" />
       ) : error ? (
         <div role="alert" className="lcr-empty-state">
           <AlertCircle size={20} aria-hidden="true" />
