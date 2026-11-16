@@ -424,9 +424,16 @@ await record("01c workspace links, browser back, More menu and account form vali
     token: localStorage.getItem("solenos_anonymous_access_token"),
     personId: localStorage.getItem("solenos_backend_person_id"),
     caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+    expiresAt: localStorage.getItem("solenos_anonymous_session_expires_at"),
+    legacyPersonId: localStorage.getItem("solenos_person_id"),
   }));
-  assert.deepEqual(clearedLocalData, { token: null, personId: null, caregiverId: null },
-    "workspace deletion must clear the local browser identity");
+  assert.deepEqual(clearedLocalData, {
+    token: null,
+    personId: null,
+    caregiverId: null,
+    expiresAt: null,
+    legacyPersonId: null,
+  }, "workspace deletion must clear current and legacy browser identity data");
   assert.equal(deletionRequests.length, 0,
     "workspace deletion must not call an endpoint that deletes saved care information");
   const revokedSession = await request(
