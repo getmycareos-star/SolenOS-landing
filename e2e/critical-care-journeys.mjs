@@ -72,24 +72,33 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   const observed = [];
   page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
   await page.route("**/api/**", async (route) => {
-    const source = new URL(route.request().url());
-    const target = new URL(source.pathname + source.search, backend);
-    const headers = { ...route.request().headers() };
-    delete headers.origin;
-    let response;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
-        break;
-      } catch (error) {
-        const message = String(error?.message || error);
-        const transientConnectionFailure = /ECONNRESET|ECONNREFUSED|socket hang up/i.test(message);
-        if (!transientConnectionFailure || attempt === 2) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+    try {
+      const source = new URL(route.request().url());
+      const target = new URL(source.pathname + source.search, backend);
+      const headers = { ...route.request().headers() };
+      delete headers.origin;
+      let response;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
+          break;
+        } catch (error) {
+          const message = String(error?.message || error);
+          const transientConnectionFailure = /ECONNRESET|ECONNREFUSED|socket hang up/i.test(message);
+          if (!transientConnectionFailure || attempt === 2) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+        }
       }
+      if (!response) throw new Error("Backend proxy did not return a response after transient retries");
+      await route.fulfill({ response });
+    } catch (error) {
+      // Closing a test context may cancel API requests before Playwright reports
+      // page.isClosed(). Ignore only that explicit target-closed teardown error.
+      const message = String(error?.message || error);
+      const targetClosedDuringTeardown = /Target page, context or browser has been closed|TargetClosedError/.test(message);
+      if (page.isClosed() || context.pages().length === 0 || targetClosedDuringTeardown) return;
+      throw error;
     }
-    if (!response) throw new Error("Backend proxy did not return a response after transient retries");
-    await route.fulfill({ response });
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
   return { context, page, observed };
@@ -727,28 +736,30 @@ await record("04 document upload and extraction", async () => {
   assert.equal(reviewed.status, 200, JSON.stringify(reviewed.payload));
   assert.ok(String(reviewed.payload.extracted_text).toLowerCase().includes("follow-up appointment"));
   const intelligence = await request("/api/v1/documents/" + documentId + "/intelligence", { token: identity.token, method: "POST", body: {} });
-  const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
-  assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
 
   if (intelligence.status === 201) {
-    assert.ok(intelligence.payload.observations.length > 0, "A successful document review must contain source-grounded candidates");
+    // Live model output must remain review-only until the caregiver explicitly accepts it.
+    assert.ok(intelligence.payload.observations.length > 0, "successful live intelligence must return reviewable document candidates");
     assert.equal(intelligence.payload.written_to_lcr, false);
+    const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+    assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
     assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
     const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", { token: identity.token, method: "POST", body: { candidate_index: 0, decision: "accept" } });
     assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
     assert.equal(accepted.payload.written_to_lcr, true);
   } else {
-    const modelUnavailable = intelligence.status === 503
-      && intelligence.payload?.detail?.code === "runtime_unreachable";
+    // Missing inference is an explicit unavailable result, never mocked success.
+    assert.equal(intelligence.status, 503, JSON.stringify(intelligence.payload));
+    assert.equal(intelligence.payload.detail?.code, "runtime_unreachable", JSON.stringify(intelligence.payload));
+    assert.match(intelligence.payload.detail?.message ?? "", /AI assistance is unavailable/i);
     assert.equal(
-      process.env.SOLENOS_REQUIRE_LIVE_QWEN === "1" ? false : modelUnavailable,
-      true,
-      `Document intelligence may be unavailable only when live Qwen is not required: ${JSON.stringify(intelligence.payload)}`,
+      process.env.SOLENOS_REQUIRE_LIVE_QWEN === "1",
+      false,
+      "This run requires live Qwen, but the document-intelligence runtime is unavailable",
     );
-    assert.ok(
-      !beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)),
-      "An unavailable or unreviewed document interpretation must never be written to the Care Record",
-    );
+    const unchanged = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+    assert.equal(unchanged.status, 200, JSON.stringify(unchanged.payload));
+    assert.ok(!unchanged.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unavailable AI processing must not write document-derived facts to the LCR");
     process.stdout.write("SKIP document interpretation acceptance: inference runtime unavailable; original upload and extracted text remain persisted\\n");
   }
   const duplicateForm = new FormData();
@@ -962,7 +973,22 @@ await record("Care history opens the original caregiver report and its source de
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
-  await reportCard.locator("button.history-event-open").click();
+  const historyList = history.page.locator(".history-list-scroll");
+  await historyList.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await reportCard.evaluate((element) => element.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" }));
+  const reportGeometry = await reportCard.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const list = element.closest(".history-list-scroll");
+    return {
+      card: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right },
+      viewport: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
+      list: list ? { scrollTop: list.scrollTop, scrollHeight: list.scrollHeight, clientHeight: list.clientHeight } : null,
+    };
+  });
+  process.stdout.write(`HISTORY_CARD_GEOMETRY ${JSON.stringify(reportGeometry)}\\n`);
+  const openRecordButton = reportCard.locator("button.history-event-open");
+  await openRecordButton.scrollIntoViewIfNeeded();
+  await openRecordButton.click();
 
   await history.page.locator(".history-drawer-heading strong").filter({ hasText: "Care record" }).waitFor({ state: "visible", timeout: 15_000 });
   await history.page.getByRole("heading", { name: "Original record", exact: true }).waitFor({ timeout: 15_000 });
