@@ -296,6 +296,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await actionMenu.getByRole("menuitem", { name: "Download / Export", exact: true }).click();
   await page.getByRole("heading", { name: "Download / Export care summary", exact: true }).waitFor({ timeout: 10_000 });
   const exportPanel = page.locator(".share-care-summary-panel");
+  const limitedReadiness = exportPanel.getByRole("button", { name: "Continue anyway", exact: true });
   const audiencePrompt = exportPanel.getByText("Who should this summary be prepared for?", { exact: true });
   const readinessState = await Promise.race([
     limitedReadiness.waitFor({ state: "visible", timeout: 10_000 }).then(() => "limited"),
