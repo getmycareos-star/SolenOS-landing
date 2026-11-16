@@ -1,0 +1,109 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+
+const state = fs.readFileSync("src/components/ui/RecordState.tsx", "utf8");
+const overview = fs.readFileSync("src/components/app-shell/CareRecordOverview.tsx", "utf8");
+
+for (const kind of [
+  "first-empty",
+  "period-empty",
+  "no-results",
+  "loading",
+  "error",
+  "forbidden",
+  "unavailable",
+  "incomplete",
+]) {
+  assert(state.includes(`"${kind}"`), `shared record states must define ${kind}`);
+}
+
+assert(overview.includes("response.person_id !== personId"), "care record response must match the authenticated person");
+assert(overview.includes("hasLoadedRef.current = true"), "a successful primary record read must be remembered");
+assert(overview.includes("setItems(response.items)"), "successful reads must replace the visible record");
+assert(overview.includes("onAction={() => void load(true)}"), "record retrieval errors must retry the failed read");
+assert(overview.includes('router.push("/workspace/daily-care")'), "the first-record action must open the existing Daily Care workflow");
+assert(overview.includes("historyLoading ? <RecordState kind=\"loading\""), "pending change history must not render as an empty result");
+assert(overview.includes("!historyLoading && !historyNote && changes.length === 0"), "only a completed successful history read may render an empty state");
+assert(overview.includes("loadedPersonIdRef.current !== personId"), "cached records must not cross person/account identity changes");
+
+const catchStart = overview.indexOf("} catch (cause) {");
+const catchEnd = overview.indexOf("} finally {", catchStart);
+assert(catchStart >= 0 && catchEnd > catchStart, "primary record request must have an explicit failure path");
+const catchBody = overview.slice(catchStart, catchEnd);
+assert(!catchBody.includes("setItems([])"), "a failed refresh must not erase previously loaded care information");
+assert(!catchBody.includes("setChanges([])"), "a failed refresh must not erase previously loaded change history");
+
+console.log("PASS: shared information states distinguish empty, loading, error, access and incomplete states.");
+console.log("PASS: failed refresh preserves same-person saved data and cannot show it across account identities.");
+console.log("PASS: pending history is not shown as empty; retry and Daily Care actions are connected.");
+
+const documents = fs.readFileSync("src/app/workspace/documents/page.tsx", "utf8");
+assert(documents.includes("listError && documents.length === 0 ? null"), "a failed initial document read must not render a genuine empty state");
+assert(documents.includes("listError && <RecordState kind=\"error\""), "document read failures must have a distinct retryable state");
+assert(documents.includes("loadDocuments(documents.length > 0)"), "retrying a document refresh must preserve already visible documents");
+assert(documents.includes('kind={documents.length === 0 ? "first-empty" : "no-results"}'), "document empty and filtered-result states must remain distinct");
+assert(documents.includes("uploadInputRef.current?.click()"), "the empty document action must open the existing upload workflow");
+assert(documents.includes("() => setQuery(\"\")"), "the no-results action must clear the search");
+console.log("PASS: document retrieval failures cannot masquerade as an empty library; empty and search states have working actions.");
+
+const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
+assert(dailyCare.includes("hasContextLoadedRef.current"), "Daily Care must retain the last successful load across refreshes");
+assert(dailyCare.includes("if (!hasContextLoadedRef.current) setContextLoading(true)"), "refreshing existing Daily Care data must not hide it behind an initial loading screen");
+assert(dailyCare.includes("contextError && careItems.filter((item) => !isOpenMatter(item)).length === 0"), "a failed current-care read with no cached records must show an error, not an empty state");
+assert(dailyCare.includes("contextError && careItems.length > 0"), "a failed refresh with cached care information must retain the information and show a warning");
+const historyFailureStart = dailyCare.indexOf('if (!Array.isArray(payload?.records))');
+const historyFailureEnd = dailyCare.indexOf('} else {', historyFailureStart);
+assert(historyFailureStart >= 0 && historyFailureEnd > historyFailureStart, "Daily Care history response must be validated");
+assert(!dailyCare.slice(historyFailureStart, historyFailureEnd).includes("setHistoryItems([])"), "a failed history read must not erase previously loaded care history");
+assert(dailyCare.includes("historyError ? null : (") && dailyCare.includes("No new care updates recorded"), "a failed history read must not appear as no new updates");
+console.log("PASS: Daily Care preserves previously loaded care and history when a refresh fails.");
+
+const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
+assert(followUps.includes("if (nextLoops !== null) setLoops(nextLoops)"), "a failed follow-up read must not clear previously loaded follow-ups");
+assert(followUps.includes("if (nextAssessment !== null) setAssessment(nextAssessment)"), "a failed attention review must not clear the previous review");
+assert(followUps.includes("Your previously saved information remains visible"), "follow-up refresh errors must explain that saved information remains visible");
+console.log("PASS: partial follow-up refresh failures preserve the last successfully loaded information.");
+
+const reminders = fs.readFileSync("src/app/workspace/reminders/page.tsx", "utf8");
+assert(reminders.includes("hasLoadedRef.current = true"), "reminders must remember a successful list read");
+assert(reminders.includes("error && !hasLoadedRef.current ? null"), "an initial reminder read failure must not render a false empty list");
+assert(reminders.includes("onAction={() => { setError(\"\")"), "reminder errors must expose a retry action");
+assert(reminders.includes("loading && !hasLoadedRef.current"), "only an initial reminder load should replace the list with a loading state");
+console.log("PASS: reminder loading, empty and failed states are separate, and retries preserve previously loaded reminders.");
+
+assert(reminders.includes('kind={reminders.length === 0 ? "first-empty" : "no-results"}'), "reminder filters with no matches must not be presented as an empty reminder list");
+assert(reminders.includes('onAction={reminders.length > 0 ? () => setFilter("all") : undefined}'), "the no-results reminder action must clear the filter");
+
+assert(documents.includes('actionLabel={documents.length === 0 ? "Add a document" : "Clear search"}'), "document empty-state actions must use accurate caregiver-facing labels");
+
+const lcr = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+assert(lcr.includes("SolenOS brings together the care information you and your care team record"), "the Care Record must explain once what its information represents");
+assert(lcr.includes('<RecordState kind="first-empty" title="No care updates recorded yet"'), "the Care Record must distinguish a genuine first-time empty state");
+assert(lcr.includes('<RecordState kind="incomplete"'), "insufficient information must remain distinct from an empty record");
+assert(lcr.includes('<RecordState kind="period-empty" title="No recent changes recorded"'), "recent changes must have a distinct empty state");
+assert(!lcr.includes("Missing information does not mean"), "repeated defensive empty-state disclaimers must be removed from the Care Record");
+assert(!lcr.includes("This is not a statement that no care needs exist"), "care-priority empty states must not repeat defensive disclaimers");
+console.log("PASS: the Care Record has one contextual introduction and concise, distinct empty/incomplete/error states.");
+
+const history = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
+assert(history.includes("error && records.length > 0 && <RecordState"), "a failed history refresh must keep previously loaded records visible");
+assert(history.includes("error && records.length === 0"), "an initial history failure must not be shown as an empty history");
+assert(history.includes('<RecordState kind="loading" title="Loading saved care history"'), "history loading must remain distinct from empty");
+assert(history.includes('<RecordState kind="incomplete" title="Your care history is incomplete"'), "partial history retrieval must be distinct from an empty history");
+assert(history.includes('<RecordState kind="no-results" title="No matching records"'), "filtered history with zero matches must be distinct from a genuinely empty history");
+assert(!history.includes("an empty section does not mean nothing happened"), "the history view must not repeat defensive empty-state disclaimers");
+console.log("PASS: care history preserves loaded records and separates empty, filtered, incomplete, loading and failure states.");
+
+const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
+assert(companion.includes("getJSON('/assistant/status')"), "Companion must check the backend readiness signal before presenting its welcome state");
+assert(companion.includes("status.operational === true"), "Companion must require confirmed inference operation before showing starter prompts");
+assert(companion.includes("availability === 'checking'"), "Companion readiness checks must have a loading state");
+assert(companion.includes("availability === 'unavailable'"), "unavailable inference must not display the normal welcome state");
+assert(companion.includes("availability === 'unverified'"), "unverified inference must not be presented as ready");
+assert(companion.includes("availability !== \"available\""), "the message composer must remain disabled until inference is confirmed");
+assert(companion.includes("Your Care Record, Daily Care and Documents remain available"), "Companion unavailability must direct caregivers to working care-record areas");
+console.log("PASS: Companion welcome and message composer are gated on confirmed inference readiness.");
+
+assert(history.includes("sourceWarnings.length > 0 && !loading && records.length > 0"), "partial history warnings must not be duplicated with the incomplete empty state");
+
+assert(companion.includes("void checkAvailability().then(() => loadPendingCareUpdates())"), "Companion must reuse one bootstrapped session for readiness and pending-update reads");
