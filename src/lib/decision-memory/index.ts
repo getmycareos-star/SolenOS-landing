@@ -176,6 +176,7 @@ function migrateEntry(raw: LegacyEntry, careKey: string): DecisionMemoryEntry | 
     id: raw.id ?? `dm_${Date.now().toString(36)}`,
     extraction_ids: Array.isArray(raw.extraction_ids) ? raw.extraction_ids.filter((v): v is string => typeof v === "string") : [],
     client_reference_id: typeof raw.client_reference_id === "string" ? raw.client_reference_id : undefined,
+    outcome_client_reference_id: typeof raw.outcome_client_reference_id === "string" ? raw.outcome_client_reference_id : undefined,
     care_key: raw.care_key ?? careKey,
     what,
     decision: what,
