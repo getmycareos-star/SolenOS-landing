@@ -270,6 +270,31 @@ export function caregiverRoleLabel(value?: string | null): string | null {
   return ROLE_LABELS[value.trim().toLowerCase()] ?? null;
 }
 
+const CAREGIVER_PRODUCT_TERMS: Readonly<Record<string, string>> = {
+  "living care record": "Care Record",
+  lcr: "Care Record",
+  "care continuity": "Keeping care information together",
+  reconciliation: "Comparing saved care information",
+  provenance: "Where the information came from",
+  evidence: "Notes and documents",
+  "delta engine": "Changes since your last visit",
+  retrieval: "Finding past care information",
+  "open loops": "Things that still need attention",
+  open_loops: "Things that still need attention",
+  "longitudinal history": "Care history over time",
+  longitudinal_history: "Care history over time",
+  "ai companion": "Care Assistant",
+  ai_companion: "Care Assistant",
+  "epistemic status": "What is known, not sure yet, or not recorded",
+  assessment_coverage: "What information was checked",
+  "source attribution": "Who reported it and where it came from",
+};
+
+/** Approved caregiver wording for internal product and care-system terms. */
+export function caregiverProductTermLabel(value?: string | null): string | null {
+  if (!value) return null;
+  return CAREGIVER_PRODUCT_TERMS[value.trim().toLowerCase()] ?? null;
+}
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
   /\b(?:LCR|Delta Engine|AI Companion|Qwen)\b/i,
   /database schema/i,
