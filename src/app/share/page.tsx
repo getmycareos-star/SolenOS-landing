@@ -21,8 +21,7 @@ export default function ShareHelpPage() {
       </section>
       <section className="public-section">
         <p className="public-prose">
-          You choose the easiest way to provide evidence. SolenOS builds understanding — without a
-          separate workflow for each app.
+          You choose the easiest way to share care information. SolenOS keeps it together in one place.
         </p>
         <p className="public-prose">
           <Link href="/workspace?enter=1">Open your Care Record</Link>
