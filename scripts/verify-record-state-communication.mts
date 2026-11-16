@@ -73,3 +73,5 @@ console.log("PASS: reminder loading, empty and failed states are separate, and r
 
 assert(reminders.includes('kind={reminders.length === 0 ? "first-empty" : "no-results"}'), "reminder filters with no matches must not be presented as an empty reminder list");
 assert(reminders.includes('onAction={reminders.length > 0 ? () => setFilter("all") : undefined}'), "the no-results reminder action must clear the filter");
+
+assert(documents.includes('actionLabel={documents.length === 0 ? "Add a document" : "Clear search"}'), "document empty-state actions must use accurate caregiver-facing labels");
