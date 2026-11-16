@@ -16,6 +16,7 @@ import {
   clearDurableDirectory,
 } from "../living-care-record-persistence/fs-store";
 import { resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
+import { getJSON, postJSON } from "../../api/client";
 
 export const DECISION_MEMORY_PURPOSE =
   "Preserve why care decisions existed — answer record questions from held evidence, never advice.";
@@ -63,6 +64,8 @@ export type DecisionMemoryEntry = {
   evidence_texts: string[];
   recorded_at: string;
   content_tokens: string[];
+  /** Canonical PostgreSQL record ID once server persistence succeeds. */
+  postgres_id?: string;
 };
 
 type Store = {
@@ -202,6 +205,98 @@ function save(store: Store): void {
 export function listDecisionMemory(careKey: string): DecisionMemoryEntry[] {
   return [...load(careKey).entries];
 }
+
+/**
+ * Rehydrate the decision cache from the authenticated PostgreSQL care record.
+ * Local JSON is a cache only; the API remains the durable source of truth.
+ */
+export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promise<void> {
+  const rows = await getJSON("/care-continuity/decisions") as Array<Record<string, unknown>>;
+  const store = load(careKey);
+  const existingById = new Map(store.entries.map((entry) => [entry.postgres_id ?? entry.id, entry]));
+  const hydrated: DecisionMemoryEntry[] = rows
+    .filter((row) => typeof row.id === "string" && typeof row.decision_text === "string")
+    .map((row) => {
+      let context: Record<string, unknown> = {};
+      if (typeof row.context === "string") {
+        try {
+          const parsed = JSON.parse(row.context);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) context = parsed;
+        } catch {
+          context = { context_summary: row.context };
+        }
+      }
+      const id = String(row.id);
+      const previous = existingById.get(id);
+      const what = String(row.decision_text);
+      const when = String(row.decided_at ?? row.recorded_at ?? row.created_at ?? new Date().toISOString());
+      const evidenceIds = Array.isArray(row.evidence_ids) ? row.evidence_ids.filter((v): v is string => typeof v === "string") : [];
+      const evidenceText = typeof context.evidence_text === "string" ? context.evidence_text : what;
+      return {
+        id,
+        postgres_id: id,
+        care_key: storeKey(careKey),
+        what,
+        decision: what,
+        when,
+        who: previous?.who ?? (typeof row.created_by_caregiver_id === "string" ? [row.created_by_caregiver_id] : []),
+        context_situation_id: typeof context.situation_id === "string" ? context.situation_id : null,
+        context_summary: typeof context.context_summary === "string" ? context.context_summary : null,
+        evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { event_id: evidenceIds[0] } : {}) }],
+        alternatives: Array.isArray(context.alternatives) ? context.alternatives.filter((v): v is string => typeof v === "string") : [],
+        reason: typeof context.reason === "string" ? context.reason : null,
+        outcome: previous?.outcome ?? null,
+        outcome_event_ids: previous?.outcome_event_ids ?? [],
+        status: row.decision_status === "pending" ? "pending" : previous?.status ?? "active",
+        evidence_texts: [evidenceText],
+        recorded_at: String(row.recorded_at ?? row.created_at ?? when),
+        content_tokens: tokens(what),
+      };
+    });
+  const byId = new Map(hydrated.map((entry) => [entry.id, entry]));
+  // Preserve local-only entries temporarily; the sync step below attempts to persist them.
+  for (const entry of store.entries) {
+    if (!entry.postgres_id && !byId.has(entry.id)) byId.set(entry.id, entry);
+  }
+  save({ care_key: storeKey(careKey), entries: [...byId.values()].slice(-100), updated_at: new Date().toISOString() });
+}
+
+/** Persist any newly captured decisions and replace temporary IDs with server IDs. */
+export async function syncDecisionMemoryToPostgres(careKey: string): Promise<void> {
+  const store = load(careKey);
+  const entries = [...store.entries];
+  for (const entry of entries) {
+    if (entry.postgres_id) continue;
+    const saved = await postJSON("/care-continuity/decisions", {
+      title: entry.what.slice(0, 240),
+      decision_text: entry.what,
+      decision_status: entry.status === "pending" ? "pending" : "recorded",
+      decided_at: entry.when,
+      context: JSON.stringify({
+        reason: entry.reason,
+        alternatives: entry.alternatives,
+        situation_id: entry.context_situation_id,
+        context_summary: entry.context_summary,
+        evidence_text: entry.evidence[0]?.text ?? entry.what,
+      }),
+      evidence_ids: [],
+    }) as Record<string, unknown>;
+    if (typeof saved.id !== "string" || !saved.id) {
+      throw new Error("PostgreSQL did not return a canonical decision ID");
+    }
+    const current = load(careKey);
+    save({
+      care_key: storeKey(careKey),
+      entries: current.entries.map((candidate) =>
+        candidate.id === entry.id
+          ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string }
+          : candidate,
+      ),
+      updated_at: new Date().toISOString(),
+    });
+  }
+}
+
 
 /**
  * Extract a decision candidate from caregiver / document language.
