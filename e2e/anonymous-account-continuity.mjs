@@ -119,6 +119,52 @@ try {
   }
   assert.equal(evidenceIds.length, 20, "the continuity fixture must contain exactly 20 persisted care events");
 
+  // A completely separate anonymous browser must not read or write the first
+  // browser's care record, even when it supplies the first browser's person and
+  // caregiver IDs directly to the API.
+  const isolatedContext = await browser.newContext();
+  const isolatedPage = await isolatedContext.newPage();
+  await connectRealBackend(isolatedPage);
+  await isolatedPage.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await isolatedPage.getByRole("heading", { name: "Account", exact: true }).waitFor();
+  await isolatedPage.waitForFunction(() => Boolean(
+    localStorage.getItem("solenos_anonymous_access_token") &&
+    localStorage.getItem("solenos_backend_person_id") &&
+    localStorage.getItem("solenos_backend_caregiver_id")
+  ), { timeout: 20_000 });
+  const isolatedIdentity = await isolatedPage.evaluate(() => ({
+    token: localStorage.getItem("solenos_anonymous_access_token"),
+    personId: localStorage.getItem("solenos_backend_person_id"),
+    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+  }));
+  assert.ok(isolatedIdentity.token && isolatedIdentity.personId && isolatedIdentity.caregiverId,
+    "the isolated browser must receive its own server-issued identity");
+  assert.notEqual(isolatedIdentity.personId, original.personId,
+    "a fresh anonymous browser must receive a different care-record identity");
+  const crossRecordRead = await backendRequest(`/api/v1/evidence/${encodeURIComponent(original.personId)}`, {
+    token: isolatedIdentity.token,
+  });
+  assert.equal(crossRecordRead.response.status, 403,
+    "a different anonymous identity must not read another care record");
+  const crossRecordWrite = await backendRequest("/api/v1/evidence", {
+    token: isolatedIdentity.token,
+    method: "POST",
+    body: {
+      person_id: original.personId,
+      uploaded_by_caregiver_id: original.caregiverId,
+      type: "note",
+      evidence_kind: "caregiver_report",
+      epistemic_status: "unverified",
+      source_text: "Cross-record isolation probe; this must never be saved.",
+      source_type: "browser_cross_record_isolation_e2e",
+      ingestion_key: `cross-record-isolation-${randomUUID()}`,
+    },
+  });
+  assert.equal(crossRecordWrite.response.status, 403,
+    "a different anonymous identity must not write into another care record");
+  await isolatedPage.unrouteAll({ behavior: "ignoreErrors" });
+  await isolatedContext.close();
+
   // Preserve a source-linked observation and an explicit correction so the
   // second browser verifies lineage, not just a flat count of evidence rows.
   const sourceStart = 0;
