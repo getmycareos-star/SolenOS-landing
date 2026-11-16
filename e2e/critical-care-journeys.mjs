@@ -623,12 +623,12 @@ await record("Daily Care saves and retrieves original reports without relying on
 
 });
 
-await record("LCR care history shows the original caregiver report before source metadata", async () => {
+await record("LCR care history shows the original caregiver report with source details on demand", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
-  await history.page.getByRole("heading", { name: "Your care, at a glance" }).waitFor({ timeout: 20_000 });
+  await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
 
-  const sourceSummary = history.page.getByText("When and by whom it was reported", { exact: true }).first();
+  const sourceSummary = history.page.getByText("Care details", { exact: true }).first();
   await sourceSummary.waitFor({ timeout: 15_000 });
   const sourceDetails = sourceSummary.locator("xpath=..");
   assert.equal(await sourceDetails.evaluate((element) => element.open), false,
@@ -636,6 +636,9 @@ await record("LCR care history shows the original caregiver report before source
   await sourceSummary.click();
   assert.equal(await sourceDetails.evaluate((element) => element.open), true,
     "caregivers must be able to open the original source details on demand");
+  await history.page.getByText("Shared by:", { exact: false }).first().waitFor({ timeout: 10_000 });
+  await history.page.getByText("Saved to the care record:", { exact: false }).first().waitFor({ timeout: 10_000 });
+  await history.page.getByText("Read original report", { exact: true }).first().waitFor({ timeout: 10_000 });
   await verifyMobile(history.page);
   await history.context.close();
 });
