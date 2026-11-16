@@ -265,6 +265,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   if (await limitedReadiness.isVisible().catch(() => false)) {
     await limitedReadiness.click();
   }
+  await exportPanel.getByText("Who should this summary be prepared for?", { exact: true })
+    .waitFor({ timeout: 10_000 });
   await exportPanel.getByRole("radio", { name: /Doctor \/ clinician/ }).click();
   await exportPanel.getByText("Prepared for: Doctor / clinician", { exact: true }).waitFor({ timeout: 10_000 });
   await exportPanel.getByRole("button", { name: "Continue", exact: true }).click();
