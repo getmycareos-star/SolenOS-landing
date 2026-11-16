@@ -402,7 +402,7 @@ export function detectConflicts(response: SituationResponse): DetectedConflict[]
   const medDoses = new Map<string, string[]>();
   for (const event of events) {
     const raw = getShareEventText(event);
-    const doseMatch = raw.match(/(\\d+(?:\\.\\d+)?)\\s*(mg|mcg|g|ml|units)/i);
+    const doseMatch = raw.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|g|ml|units)/i);
     if (doseMatch) {
       const medName = raw.toLowerCase().split(doseMatch[0])[0].trim().slice(-30);
       const key = medName || "unknown_medication";
