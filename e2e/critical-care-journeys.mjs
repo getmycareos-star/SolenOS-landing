@@ -1031,7 +1031,7 @@ await record("Care history opens the original caregiver report and its source de
   // Open it before interacting with the history controls; do not force a click
   // on an inert element inside the closed sidebar.
   await history.page.getByRole("button", { name: "Open navigation" }).click();
-  await history.page.getByRole("button", { name: "Close navigation" }).waitFor({ state: "visible", timeout: 5_000 });
+  await history.page.getByRole("button", { name: "Close navigation" }).first().waitFor({ state: "visible", timeout: 5_000 });
 
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
