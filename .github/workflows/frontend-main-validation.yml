@@ -1,0 +1,58 @@
+name: Frontend main validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "next.config.*"
+      - ".github/workflows/frontend-main-validation.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "next.config.*"
+      - ".github/workflows/frontend-main-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-main-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Type-check frontend
+        run: npm run typecheck
+
+      - name: Verify decision and outcome continuity
+        run: npm run verify:continuity-core-tier1
+
+      - name: Run frontend regression suite
+        run: npm test
+
+      - name: Build production frontend
+        run: npm run build
