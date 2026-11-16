@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
-  AlertCircle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
