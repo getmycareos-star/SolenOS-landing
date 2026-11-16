@@ -121,3 +121,7 @@ console.log("PASS: handoff lists validate their payloads and preserve loaded his
 assert(handoffs.includes("const [draftsError, setDraftsError]"), "saved-summary retrieval errors must be tracked separately from inbox/outbox errors");
 assert(handoffs.includes("draftsError && savedDrafts.length > 0"), "failed summary refreshes must preserve and display previously loaded drafts");
 assert(handoffs.includes("savedDrafts.length === 0 && !loading && !draftsError"), "only a successful empty saved-draft read may show the no-summaries state");
+
+assert(history.includes("loadedPersonIdRef.current !== requestPersonId"), "history cache must be cleared when the authenticated person changes");
+assert(history.includes("if (!requestPersonId || accessDenied ||"), "history cache must be cleared when access is denied or the active session cannot be confirmed");
+console.log("PASS: care history cannot remain visible across account changes or denied access.");
