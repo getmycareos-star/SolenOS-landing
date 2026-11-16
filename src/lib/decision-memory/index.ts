@@ -250,6 +250,8 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
       return {
         id,
         postgres_id: id,
+        postgres_snapshot: what,
+        extraction_ids: previous?.extraction_ids ?? [],
         ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id, postgres_outcome_snapshot: String(persistedOutcome.description ?? "") } : {}),
         care_key: storeKey(careKey),
         what,
