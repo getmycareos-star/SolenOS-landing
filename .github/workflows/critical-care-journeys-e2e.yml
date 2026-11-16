@@ -2,6 +2,13 @@ name: Critical care journeys — real backend and browser
 
 on:
   workflow_call:
+  pull_request:
+    branches: [main]
+    paths:
+      - "e2e/critical-care-journeys.mjs"
+      - "src/components/workflows/**"
+      - "src/app/workspace/**"
+      - ".github/workflows/critical-care-journeys-e2e.yml"
   push:
     branches: [main]
     paths:
