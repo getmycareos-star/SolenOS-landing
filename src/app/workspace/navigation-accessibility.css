@@ -103,3 +103,17 @@
 @media (max-width: 760px) {
   .solenos-workspace-page-heading { width: calc(100% - 24px); }
 }
+
+
+/* First visit is a focused capture surface, not a navigation dashboard. */
+html.solenos-first-visit-mode .solenos-chat-topbar {
+  display: none !important;
+}
+html.solenos-first-visit-mode .solenos-chat-main {
+  padding-top: 0;
+}
+html.solenos-first-visit-mode .solenos-first-visit {
+  width: min(100%, 760px);
+  margin-inline: auto;
+  padding-top: clamp(1.25rem, 4vh, 2.5rem);
+}
