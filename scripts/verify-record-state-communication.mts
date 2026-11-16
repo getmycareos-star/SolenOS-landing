@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const state = fs.readFileSync("src/components/ui/RecordState.tsx", "utf8");
 const overview = fs.readFileSync("src/components/app-shell/CareRecordOverview.tsx", "utf8");
+const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 
 for (const kind of [
   "first-empty",
@@ -32,6 +33,17 @@ assert(catchStart >= 0 && catchEnd > catchStart, "primary record request must ha
 const catchBody = overview.slice(catchStart, catchEnd);
 assert(!catchBody.includes("setItems([])"), "a failed refresh must not erase previously loaded care information");
 assert(!catchBody.includes("setChanges([])"), "a failed refresh must not erase previously loaded change history");
+
+
+assert(currentUnderstanding.includes("personIdRef.current !== scopedPersonId"), "cached care information must be cleared when the authenticated person changes");
+assert.match(currentUnderstanding, /catch \{\s*setChangesError/);
+assert.match(currentUnderstanding, /catch \{\s*setPatternsError/);
+assert.doesNotMatch(currentUnderstanding, /catch \{\s*setChanges\(\[\]\)/, "failed change-history refresh must preserve the last successful history");
+assert.doesNotMatch(currentUnderstanding, /catch \{\s*setPatterns\(\[\]\)/, "failed repeated-change refresh must preserve the last successful history");
+assert.match(currentUnderstanding, /changesError && <RecordState kind="error"/);
+assert.match(currentUnderstanding, /patternsError && <RecordState kind="error"/);
+assert.doesNotMatch(currentUnderstanding, /Missing records do not mean nothing changed/);
+assert.doesNotMatch(currentUnderstanding, /This does not mean nothing is repeating/);
 
 console.log("PASS: shared information states distinguish empty, loading, error, access and incomplete states.");
 console.log("PASS: failed refresh preserves same-person saved data and cannot show it across account identities.");
