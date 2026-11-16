@@ -349,6 +349,29 @@ console.log("=== Continuity core Tier 1 (G3–G6 / G12–G13 / G16) ===\n");
   console.log("✓ G13d explicit extracted outcome ID — no inferred completion");
 }
 
+// ——— G13e — revised extraction updates the same decision instead of duplicating it ———
+{
+  resetAll();
+  const careKey = "cg_g13e";
+  recordDecisionFromText({
+    careKey,
+    id: "stable-decision-reference",
+    rawText: "We agreed to trial evening support.",
+    forceFromRelationshipEngine: true,
+  });
+  recordDecisionFromText({
+    careKey,
+    id: "stable-decision-reference",
+    rawText: "We agreed to trial evening support three nights each week.",
+    forceFromRelationshipEngine: true,
+  });
+  const entries = listDecisionMemory(careKey);
+  assert.equal(entries.length, 1, "G13e stable extraction identity replaces the prior decision");
+  assert.match(entries[0]!.what, /three nights each week/, "G13e revised decision text retained");
+  assert.deepEqual(entries[0]!.extraction_ids, ["stable-decision-reference"], "G13e extraction identity retained");
+  console.log("✓ G13e revised extraction updates one decision without stale duplicate");
+}
+
 // ——— G13c — unified decision signal: SRE + Decision Memory + composer why-path ———
 {
   resetAll();
