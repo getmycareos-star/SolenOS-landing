@@ -1756,8 +1756,12 @@ await record("clarification questions are linked, answerable, skippable and dura
   const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
   // Clarification sits inside the secondary care-record details disclosure.
   // Open that container first; keep the first-screen summary compact.
-  await page.getByText("More about this care record — actions, details and history", { exact: true }).click();
-  await page.getByText("Questions that may help clarify care", { exact: true }).click();
+  const careDetails = page.locator("details.lcr-history-details.lcr-progressive-disclosure").first();
+  await careDetails.locator(":scope > summary").click();
+  await page.waitForFunction(() => document.querySelector("details.lcr-history-details.lcr-progressive-disclosure")?.open === true);
+  const clarificationDetails = page.locator("#lcr-clarification-workflow > details");
+  await clarificationDetails.locator(":scope > summary").click();
+  await page.waitForFunction(() => document.querySelector("#lcr-clarification-workflow > details")?.open === true);
   await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().click();
