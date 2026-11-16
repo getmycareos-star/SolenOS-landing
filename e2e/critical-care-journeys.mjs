@@ -141,6 +141,11 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     .waitFor({ state: "visible", timeout: 10_000 });
   await page.waitForFunction(() => document.documentElement.classList.contains("solenos-first-visit-mode"), undefined, { timeout: 5_000 });
   assert.equal(
+    await page.locator(".solenos-workspace-breadcrumbs").isVisible(),
+    false,
+    "first visit should not show a workspace breadcrumb before the caregiver has started",
+  );
+  assert.equal(
     await page.locator(".solenos-chat-topbar").isVisible(),
     false,
     "first visit should focus on the care entry instead of showing workspace navigation",
