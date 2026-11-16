@@ -741,7 +741,7 @@ function PrivacyCard() {
           <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
             "SolenOS data deletion request",
           )}`}>
-            Request data deletion
+            Email to request care-record erasure
           </a>
         </Button>
         <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
