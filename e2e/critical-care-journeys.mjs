@@ -275,6 +275,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await actionMenu.getByRole("menuitem", { name: "Add to Home", exact: true }).click();
   assert.equal(await page.evaluate(() => window.__solenosInstallPromptCalled), true,
     "Add to Home must invoke the browser install prompt when one is available");
+  await page.waitForTimeout(100);
 
   const fallbackDialogPromise = page.waitForEvent("dialog");
   actionMenu = await openMoreMenu();
