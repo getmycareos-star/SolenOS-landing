@@ -7,7 +7,7 @@ const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const timeoutMs = Number(process.env.DOCUMENT_QWEN_TIMEOUT_MS ?? 360_000);
 const browser = await chromium.launch({ headless: true });
 const sourceText = [
-  "Synthetic CI discharge note. This is fictional test content, not a real person's record.",
+  "Discharge note.",
   "Patient walked 20 metres with a frame on 12 October during the physiotherapy session.",
   "The patient ate half of lunch during the observation period.",
   "The caregiver reported that the patient slept poorly last night.",
