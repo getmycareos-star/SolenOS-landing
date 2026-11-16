@@ -538,7 +538,7 @@ await record("01d secondary routes and reminder actions persist through reload",
   );
 
   for (const [route, expectedPath, expectedHash] of [
-    ["/workspace/community", "/workspace/record", ""],
+    ["/workspace/community", "/workspace", ""],
     ["/workspace/continuity", "/workspace", ""],
     ["/workspace/record", "/workspace", ""],
     ["/workspace/notifications", "/workspace/settings", "#settings-notifications"],
