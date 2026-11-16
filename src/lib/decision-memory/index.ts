@@ -71,6 +71,7 @@ export type DecisionMemoryEntry = {
   postgres_outcome_snapshot?: string;
   postgres_snapshot?: string;
   extraction_ids?: string[];
+  client_reference_id?: string;
 };
 
 type Store = {
@@ -155,6 +156,7 @@ function migrateEntry(raw: LegacyEntry, careKey: string): DecisionMemoryEntry | 
   return {
     id: raw.id ?? `dm_${Date.now().toString(36)}`,
     extraction_ids: Array.isArray(raw.extraction_ids) ? raw.extraction_ids.filter((v): v is string => typeof v === "string") : [],
+    client_reference_id: typeof raw.client_reference_id === "string" ? raw.client_reference_id : undefined,
     care_key: raw.care_key ?? careKey,
     what,
     decision: what,
@@ -252,6 +254,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         postgres_id: id,
         postgres_snapshot: what,
         extraction_ids: previous?.extraction_ids ?? [],
+        client_reference_id: typeof row.client_reference_id === "string" ? row.client_reference_id : previous?.client_reference_id,
         ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id, postgres_outcome_snapshot: String(persistedOutcome.description ?? "") } : {}),
         care_key: storeKey(careKey),
         what,
@@ -274,9 +277,25 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
       };
     });
   const byId = new Map(hydrated.map((entry) => [entry.id, entry]));
-  // Preserve local-only entries temporarily; the sync step below attempts to persist them.
+  const hydratedByReference = new Map(
+    hydrated.filter((entry) => entry.client_reference_id).map((entry) => [entry.client_reference_id!, entry]),
+  );
+  // Reconcile an ambiguous prior POST response by its stable person-scoped client reference.
   for (const entry of store.entries) {
-    if (!entry.postgres_id && !byId.has(entry.id)) byId.set(entry.id, entry);
+    if (entry.postgres_id || byId.has(entry.id)) continue;
+    const matched = entry.client_reference_id ? hydratedByReference.get(entry.client_reference_id) : undefined;
+    if (matched) {
+      byId.set(matched.id, {
+        ...matched,
+        ...entry,
+        id: matched.id,
+        postgres_id: matched.id,
+        postgres_snapshot: matched.what,
+        client_reference_id: matched.client_reference_id,
+      });
+    } else {
+      byId.set(entry.id, entry);
+    }
   }
   save({ care_key: storeKey(careKey), entries: [...byId.values()].slice(-100), updated_at: new Date().toISOString() });
 }
@@ -315,6 +334,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
     const saved = await postJSON("/care-continuity/decisions", {
       title: entry.what.slice(0, 240),
       decision_text: entry.what,
+      client_reference_id: entry.client_reference_id ?? entry.extraction_ids?.[0] ?? entry.id,
       decision_status: entry.status === "active" ? "recorded" : entry.status,
       decided_at: entry.when,
       context: JSON.stringify({
@@ -335,7 +355,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       care_key: storeKey(careKey),
       entries: current.entries.map((candidate) =>
         candidate.id === entry.id
-          ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string, postgres_snapshot: candidate.what }
+          ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string, postgres_snapshot: String(saved.decision_text ?? candidate.what), client_reference_id: entry.client_reference_id ?? entry.extraction_ids?.[0] ?? entry.id }
           : candidate,
       ),
       updated_at: new Date().toISOString(),
@@ -466,6 +486,7 @@ export function recordDecisionFromText(params: {
   const entry: DecisionMemoryEntry = {
     id: params.id ?? `dm_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     extraction_ids: params.id ? [params.id] : [],
+    client_reference_id: params.id ?? undefined,
     care_key: careKey,
     what,
     decision: what,
@@ -495,6 +516,7 @@ export function recordDecisionFromText(params: {
         outcome: params.outcome !== undefined ? entry.outcome : prior.outcome,
         outcome_event_ids: prior.outcome_event_ids,
         extraction_ids: [...new Set([...(prior.extraction_ids ?? []), ...(params.id ? [params.id] : [])])],
+        client_reference_id: prior.client_reference_id ?? params.id,
         ...(prior.postgres_outcome_id ? { postgres_outcome_id: prior.postgres_outcome_id } : {}),
         ...(prior.postgres_outcome_snapshot ? { postgres_outcome_snapshot: prior.postgres_outcome_snapshot } : {}),
       }
