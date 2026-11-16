@@ -224,7 +224,8 @@ export function caregiverInformationAreaLabel(value?: string | null): string | n
 /** Human-readable labels for saved care fields; unknown keys are not prettified. */
 export function caregiverFieldLabel(value?: string | null): string | null {
   if (!value) return null;
-  return CARE_FIELD_LABELS[value.trim().toLowerCase()] ?? null;
+  const key = value.trim().toLowerCase();
+  return CARE_FIELD_LABELS[key] ?? caregiverProductTermLabel(key);
 }
 
 export function caregiverStatusLabel(value?: string | null): string | null {
