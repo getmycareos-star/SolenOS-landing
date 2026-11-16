@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type CareItem = {
   id: string;
@@ -57,10 +58,12 @@ export function CareRecordOverview() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyNote, setHistoryNote] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
-    else setLoading(true);
+    else if (!hasLoadedRef.current) setLoading(true);
     setError(null);
     setHistoryNote(null);
     try {
@@ -81,13 +84,12 @@ export function CareRecordOverview() {
         if (!Array.isArray(history)) throw new Error("History was unavailable.");
         setChanges(history as ChangeItem[]);
       } catch {
-        setChanges([]);
         setHistoryNote("The saved change history could not be loaded. Other saved information is still shown.");
       }
+      hasLoadedRef.current = true;
+      setHasLoaded(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Saved care information could not be loaded.");
-      setItems([]);
-      setChanges([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -109,14 +111,14 @@ export function CareRecordOverview() {
         </button>
       </header>
 
-      {error && <p role="alert" style={{ margin: 0, padding: 13, borderRadius: 10, background: "#fff7f2", color: "#80523b", lineHeight: 1.55 }}>{error}</p>}
-      {loading ? <p role="status" style={{ color: "#69796c" }}>Loading saved care information…</p> : !error && (
+      {error && <RecordState kind={/\\b(401|403|unauthori[sz]ed|forbidden)\\b/i.test(error) ? "forbidden" : /\\b(502|503|504|network|fetch failed)\\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
+      {loading && !hasLoaded ? <RecordState kind="loading" /> : (hasLoaded || !error) && (
         <>
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>What is saved</h3>
             <p style={{ margin: "0 0 12px", color: "#758276", fontSize: 12 }}>These are saved care details. A report is not automatically a confirmed fact.</p>
             {items.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No care information is available in this view yet. This does not mean there are no care needs or concerns.</p>
+              <RecordState kind="first-empty" title="No care information recorded yet" description="Add a care update to begin building this record." />
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {items.map((item) => (
@@ -135,9 +137,9 @@ export function CareRecordOverview() {
 
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes in care over time</h3>
-            {historyNote && <p role="status" style={{ color: "#805d3c", fontSize: 13 }}>{historyNote}</p>}
+            {historyNote && <RecordState kind="error" title="Change history could not be loaded" description={historyNote} />}
             {!historyNote && changes.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No changes were found in the information available. SolenOS will not invent a change when there is no record of one.</p>
+              <RecordState kind="period-empty" title="No changes recorded" description="Recorded changes will appear here when they are available." />
             ) : (
               <div style={{ display: "grid", gap: 9 }}>
                 {changes.map((change) => (
