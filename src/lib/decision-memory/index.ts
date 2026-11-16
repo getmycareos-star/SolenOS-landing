@@ -68,6 +68,8 @@ export type DecisionMemoryEntry = {
   /** Canonical PostgreSQL record ID once server persistence succeeds. */
   postgres_id?: string;
   postgres_outcome_id?: string;
+  postgres_outcome_snapshot?: string;
+  postgres_snapshot?: string;
 };
 
 type Store = {
@@ -246,7 +248,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
       return {
         id,
         postgres_id: id,
-        ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id } : {}),
+        ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id, postgres_outcome_snapshot: String(persistedOutcome.description ?? "") } : {}),
         care_key: storeKey(careKey),
         what,
         decision: what,
@@ -278,7 +280,30 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
   const store = load(careKey);
   const entries = [...store.entries];
   for (const entry of entries) {
-    if (entry.postgres_id) continue;
+    if (entry.postgres_id) {
+      if (entry.postgres_snapshot !== entry.what) {
+        await (await import("../../api/client")).patchJSON(`/care-continuity/decisions/${entry.postgres_id}`, {
+          title: entry.what.slice(0, 240),
+          decision_text: entry.what,
+          context: JSON.stringify({
+            reason: entry.reason,
+            alternatives: entry.alternatives,
+            situation_id: entry.context_situation_id,
+            context_summary: entry.context_summary,
+            evidence_text: entry.evidence[0]?.text ?? entry.what,
+          }),
+        });
+        const current = load(careKey);
+        save({
+          care_key: storeKey(careKey),
+          entries: current.entries.map((candidate) =>
+            candidate.postgres_id === entry.postgres_id ? { ...candidate, postgres_snapshot: candidate.what } : candidate,
+          ),
+          updated_at: new Date().toISOString(),
+        });
+      }
+      continue;
+    }
     const saved = await postJSON("/care-continuity/decisions", {
       title: entry.what.slice(0, 240),
       decision_text: entry.what,
@@ -301,7 +326,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       care_key: storeKey(careKey),
       entries: current.entries.map((candidate) =>
         candidate.id === entry.id
-          ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string }
+          ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string, postgres_snapshot: candidate.what }
           : candidate,
       ),
       updated_at: new Date().toISOString(),
@@ -310,7 +335,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
 
   // Outcome rows are written only after their decision has a server-issued ID.
   for (const entry of load(careKey).entries) {
-    if (!entry.postgres_id || !entry.outcome || entry.postgres_outcome_id) continue;
+    if (!entry.postgres_id || !entry.outcome || entry.postgres_outcome_snapshot === entry.outcome) continue;
     const outcome = await postJSON("/care-continuity/decision-outcomes", {
       decision_id: entry.postgres_id,
       outcome_status: "observed",
@@ -327,7 +352,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       care_key: storeKey(careKey),
       entries: current.entries.map((candidate) =>
         candidate.postgres_id === entry.postgres_id
-          ? { ...candidate, postgres_outcome_id: outcome.id as string }
+          ? { ...candidate, postgres_outcome_id: outcome.id as string, postgres_outcome_snapshot: candidate.outcome ?? "" }
           : candidate,
       ),
       updated_at: new Date().toISOString(),
@@ -450,12 +475,23 @@ export function recordDecisionFromText(params: {
   };
 
   const store = load(careKey);
+  const prior = store.entries.find((e) => e.what === entry.what || e.decision === entry.what);
+  const persistedEntry = prior?.postgres_id
+    ? {
+        ...entry,
+        id: prior.id,
+        postgres_id: prior.postgres_id,
+        postgres_snapshot: prior.postgres_snapshot ?? prior.what,
+        ...(prior.postgres_outcome_id ? { postgres_outcome_id: prior.postgres_outcome_id } : {}),
+        ...(prior.postgres_outcome_snapshot ? { postgres_outcome_snapshot: prior.postgres_outcome_snapshot } : {}),
+      }
+    : entry;
   const next = [
     ...store.entries.filter((e) => e.what !== entry.what && e.decision !== entry.what),
-    entry,
+    persistedEntry,
   ].slice(-24);
   save({ care_key: careKey, entries: next, updated_at: now });
-  return entry;
+  return persistedEntry;
 }
 
 /**
