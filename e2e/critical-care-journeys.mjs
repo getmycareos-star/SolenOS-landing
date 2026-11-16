@@ -973,6 +973,8 @@ await record("Care history opens the original caregiver report and its source de
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
+  const historyList = history.page.locator(".history-list-scroll");
+  await historyList.evaluate((element) => { element.scrollTop = element.scrollHeight; });
   await reportCard.evaluate((element) => element.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" }));
   const reportGeometry = await reportCard.evaluate((element) => {
     const rect = element.getBoundingClientRect();
