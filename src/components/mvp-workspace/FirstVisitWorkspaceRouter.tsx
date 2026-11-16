@@ -60,6 +60,12 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
     void load();
   }, [load, attempt]);
 
+  useEffect(() => {
+    const className = "solenos-first-visit-mode";
+    document.documentElement.classList.toggle(className, state === "first_visit");
+    return () => document.documentElement.classList.remove(className);
+  }, [state]);
+
   if (state === "loading") {
     return <main className="workspace-route-loading" role="status" aria-live="polite">Preparing your care record…</main>;
   }
