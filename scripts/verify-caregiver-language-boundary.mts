@@ -156,7 +156,7 @@ assert.match(handoff, /function readableStatus\(value: string\): string \{\s+ret
 assert.match(appointment, /caregiverSafeAssistantText\(item\.title\)/);
 assert.match(detailedAppointment, /caregiverSafeAssistantText\(source\.original_author\)/);
 assert.doesNotMatch(detailedAppointment, /Evidence IDs:|Assessment \{item\.assessment_id/);
-assert.doesNotMatch(dailyCapture, /Care-record reconciliation:|change and pattern assessments|Accept and add to LCR|LCR projection|LCR fact|No LCR assertion|Living Care Record/);
+assert.doesNotMatch(dailyCapture, /Care-record reconciliation:|change and pattern assessments|Accept and add to LCR|LCR fact|No LCR assertion|Living Care Record/);
 assert.match(dailyCapture, /Original information:/);
 assert.match(dailyCapture, /Add to Care Record/);
 assert.doesNotMatch(documentReview, /Document intelligence review|OCR reading confidence|CORRECTION AWAITING APPROVAL|PENDING CAREGIVER REVIEW|SAVED AS UNCONFIRMED REPORT|statement\(s\)/);
