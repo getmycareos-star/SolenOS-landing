@@ -50,7 +50,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: critical-care-journeys-main
+  group: critical-care-journeys-${{ github.event.pull_request.number || github.ref }}
   # These real-backend journeys exercise durable state and the Companion's safe no-model fallback.
   # Do not cancel an in-flight acceptance run when another main commit lands.
   cancel-in-progress: false
