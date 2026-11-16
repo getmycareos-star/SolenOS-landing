@@ -673,7 +673,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             </div>) : <p style={{ fontSize: 12, marginBottom: 0 }}>We could not check whether some information came from the same original. Do not assume similar reports are separate.</p>}
             <p style={{ fontSize: 12, marginBottom: 0, color: "#667267" }}>{caregiverSafeAssistantText(draft.evidence_lineage.interpretation_limit) ?? "A connection between reports does not prove they are true or came from different people."}</p>
           </details>}
-          {directoryError && <p role="alert">SolenOS couldn't check who can receive this summary. Refresh before sharing.</p>}
+          {directoryError && <RecordState kind="error" title="Recipient access could not be checked" description="Refresh before sharing this summary." onAction={() => void load()} />}
           {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No caregiver on this Care Record can receive the summary right now. SolenOS will not share it outside this Care Record.</p>}
           {eligibleRecipients.map(recipient => (
             <label key={recipient.caregiver_id} style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "10px 0", lineHeight: 1.4 }}>
