@@ -964,7 +964,7 @@ await record("Care history opens the original caregiver report and its source de
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
   await reportCard.getByRole("button", { name: /Open record: Daily care entry/ }).click();
 
-  await history.page.getByRole("heading", { name: "Care record", exact: true }).waitFor({ timeout: 15_000 });
+  await history.page.locator(".history-drawer-heading strong").filter({ hasText: "Care record" }).waitFor({ state: "visible", timeout: 15_000 });
   await history.page.getByRole("heading", { name: "Original record", exact: true }).waitFor({ timeout: 15_000 });
   const originalText = history.page.locator(".history-original-text");
   await originalText.waitFor({ state: "visible", timeout: 15_000 });
