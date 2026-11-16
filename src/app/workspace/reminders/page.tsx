@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Check, Clock3, Plus, X } from "lucide-react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
+import { RecordState } from "@/components/ui/RecordState";
 
 type ReminderStatus = "open" | "completed" | "cancelled";
 
@@ -61,6 +62,7 @@ export default function CareRemindersPage() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const hasLoadedRef = useRef(false);
 
   const refresh = useCallback(async (knownPersonId?: string) => {
     const session = await ensureAnonymousSession();
@@ -70,6 +72,7 @@ export default function CareRemindersPage() {
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
     const items = data as CareReminder[];
     setReminders(items);
+    hasLoadedRef.current = true;
     setSnoozeSupported(items.length > 0 && items.every((item) => typeof item.snooze_count === "number"));
   }, []);
 
@@ -217,7 +220,7 @@ export default function CareRemindersPage() {
         </Button>
       </form>
 
-      {error ? <p className="care-reminder-alert" role="alert">{error}</p> : null}
+      {error ? <RecordState kind="error" description={error} onAction={() => { setError(""); if (!hasLoadedRef.current) setLoading(true); void refresh(personId || undefined).catch(() => setError("We couldn’t load your reminders. Check your connection and try again.")).finally(() => setLoading(false)); }} /> : null}
       {notice ? <p className="care-reminder-notice" role="status">{notice}</p> : null}
 
       <section className="care-reminders-list" aria-labelledby="care-reminders-list-title">
@@ -237,9 +240,9 @@ export default function CareRemindersPage() {
           </label>
         </div>
 
-        {loading ? (
-          <BrandLoading animate message="Loading saved reminders…" />
-        ) : visibleReminders.length === 0 ? (
+        {loading && !hasLoadedRef.current ? (
+          <RecordState kind="loading" title="Loading saved reminders" />
+        ) : error && !hasLoadedRef.current ? null : visibleReminders.length === 0 ? (
           <div className="care-reminders-empty">
             <Clock3 size={24} aria-hidden />
             <h3>No {filter === "all" ? "" : filter + " "}reminders saved</h3>
