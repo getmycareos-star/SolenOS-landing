@@ -1539,7 +1539,7 @@ export function LCRCurrentUnderstanding() {
               <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
               {(changesError || patternsError) && <RecordState kind="error" title="Some care changes could not be loaded" description="This view may be incomplete. Your saved information remains visible." onAction={() => void load(true)} />}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
-                {(changesError || patternsError) ? null : <RecordState kind="period-empty" title="No recent changes recorded" description="Recorded changes will appear here as information is added." />}
+                (changesError || patternsError) ? null : <RecordState kind="period-empty" title="No recent changes recorded" description="Recorded changes will appear here as information is added." />
               ) : (
                 <ul className="lcr-current-facts">
                   {baselineItems.map((item) => (
