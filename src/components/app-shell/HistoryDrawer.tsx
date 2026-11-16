@@ -1337,6 +1337,3 @@ function ReactDetailField({ field }: { field: DetailField }) {
   return <><dt>{field.label}</dt><dd>{value}</dd></>;
 }
 
-function HistoryEmptyIcon() {
-  return <span className="history-empty-icon"><Clock3 size={27} aria-hidden /></span>;
-}
