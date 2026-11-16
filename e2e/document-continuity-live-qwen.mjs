@@ -6,6 +6,15 @@ const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const timeoutMs = Number(process.env.DOCUMENT_QWEN_TIMEOUT_MS ?? 360_000);
 const browser = await chromium.launch({ headless: true });
+const activeContexts = new Set();
+
+async function closeContext(context) {
+  for (const page of context.pages()) {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  }
+  await context.close().catch(() => {});
+  activeContexts.delete(context);
+}
 const sourceText = [
   "Discharge note.",
   "Patient walked 20 metres with a frame on 12 October during the physiotherapy session.",
@@ -39,6 +48,7 @@ async function newSession() {
 
 async function openDocuments(session) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  activeContexts.add(context);
   await context.addInitScript((identity) => {
     localStorage.setItem("solenos_anonymous_access_token", identity.token);
     localStorage.setItem("solenos_backend_person_id", identity.personId);
@@ -192,7 +202,7 @@ try {
   assert.equal(original.payload, sourceText, "the original document bytes must remain unchanged");
 
   // A new browser context proves that the decision survives beyond the upload/review page state.
-  await context.close();
+  await closeContext(context);
   const reopened = await openDocuments(session);
   await reopened.page.getByText("Added to Care Record", { exact: true }).waitFor({ timeout: 30_000 });
   const reloadedHistory = await request(
@@ -204,8 +214,9 @@ try {
     item.decision === "accept" && item.resulting_assertion_id === acceptedEvent.resulting_assertion_id,
   ), "the accepted decision must still be present after a fresh browser session");
 
-  await reopened.context.close();
+  await closeContext(reopened.context);
   process.stdout.write("PASS real Qwen extraction, browser caregiver acceptance, PostgreSQL LCR persistence, and original-source retrieval\n");
 } finally {
+  for (const context of [...activeContexts]) await closeContext(context);
   await browser.close();
 }
