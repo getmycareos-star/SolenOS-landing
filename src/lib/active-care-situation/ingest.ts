@@ -1020,6 +1020,7 @@ export function ingestActiveCareObservation(params: {
     for (const d of extracted.decisions) {
       recordDecisionFromText({
         careKey: careRecipientId,
+        id: d.id,
         rawText: d.description,
         nowIso,
         who: d.who,
