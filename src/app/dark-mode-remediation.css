@@ -805,3 +805,16 @@
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+
+/* Shared RecordState uses inline light-theme defaults. Override the component
+   boundary and its text explicitly so dark mode never renders white text on
+   pale empty/error surfaces. */
+:root[data-solenos-theme="dark"] .record-state {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .record-state > strong,
+:root[data-solenos-theme="dark"] .record-state > p {
+  color: var(--theme-panel-fg) !important;
+}
