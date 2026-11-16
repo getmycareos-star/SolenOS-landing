@@ -558,6 +558,7 @@ export default function DocumentsPage() {
             kind={documents.length === 0 ? "first-empty" : "no-results"}
             title={documents.length === 0 ? "No documents added yet" : "No matching documents"}
             description={documents.length === 0 ? "Add a document to keep it with the care information in this record." : "Try another search term or clear your search."}
+            actionLabel={documents.length === 0 ? "Add a document" : "Clear search"}
             onAction={documents.length === 0 ? () => uploadInputRef.current?.click() : () => setQuery("")}
           />
         ) : (
