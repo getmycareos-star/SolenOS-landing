@@ -25,6 +25,17 @@ type OpenLoop = {
   created_at: string;
   updated_at: string;
   review_at: string | null;
+  source_type?: string | null;
+  source_id?: string | null;
+  owner_label?: string | null;
+  deadline_at?: string | null;
+};
+
+type DecisionOption = {
+  id: string;
+  title: string;
+  decision_text: string;
+  decision_status?: string | null;
 };
 
 type AttentionDecision = {
@@ -155,17 +166,30 @@ export default function FollowUpsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [attentionWarning, setAttentionWarning] = useState("");
+  const [decisions, setDecisions] = useState<DecisionOption[]>([]);
+  const [selectedDecisionId, setSelectedDecisionId] = useState("");
+  const [newFollowUpTitle, setNewFollowUpTitle] = useState("");
+  const [newFollowUpDescription, setNewFollowUpDescription] = useState("");
+  const [newFollowUpOwner, setNewFollowUpOwner] = useState("");
+  const [newFollowUpDueAt, setNewFollowUpDueAt] = useState("");
+  const [newFollowUpVerification, setNewFollowUpVerification] = useState("");
+  const [creatingFollowUp, setCreatingFollowUp] = useState(false);
+  const pendingCreateKey = useRef<{ signature: string; key: string } | null>(null);
 
   const refresh = useCallback(async () => {
     const session = await ensureAnonymousSession();
     const personId = session.person?.id;
     if (!personId) throw new Error("The active care record could not be confirmed.");
-    const [loopResult, assessmentResult] = await Promise.allSettled([
+    const [loopResult, assessmentResult, decisionResult] = await Promise.allSettled([
       getJSON("/open-loops?limit=100"),
       getJSON("/care-continuity/situation-understanding"),
+      getJSON("/care-continuity/decisions"),
     ]);
     const nextLoops = loopResult.status === "fulfilled" && Array.isArray((loopResult.value as { items?: unknown }).items)
       ? (loopResult.value as { items: OpenLoop[] }).items : null;
+    const nextDecisions = decisionResult.status === "fulfilled" && Array.isArray(decisionResult.value)
+      ? (decisionResult.value as DecisionOption[]).filter((row) => typeof row.id === "string" && typeof row.decision_text === "string")
+      : null;
     let nextAssessmentResponse = assessmentResult.status === "fulfilled" ? assessmentResult.value as SituationAssessmentResponse : null;
     let reassessmentFailed = false;
     if (nextAssessmentResponse && (nextAssessmentResponse.status === "not_assessed" || nextAssessmentResponse.source_freshness?.reassessment_recommended === true)) {
@@ -181,9 +205,15 @@ export default function FollowUpsPage() {
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
     if (nextLoops !== null) setLoops(nextLoops);
     if (nextAssessment !== null) setAssessment(nextAssessment);
+    if (nextDecisions !== null) {
+      setDecisions(nextDecisions);
+      if (!selectedDecisionId || !nextDecisions.some((decision) => decision.id === selectedDecisionId)) {
+        setSelectedDecisionId(nextDecisions[0]?.id ?? "");
+      }
+    }
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
     else if (!reassessmentFailed) setAttentionWarning("");
-  }, []);
+  }, [selectedDecisionId]);
 
   useEffect(() => {
     let active = true;
@@ -221,6 +251,67 @@ export default function FollowUpsPage() {
     assessment.history_coverage !== "complete" || assessment.schema_status !== "complete"
     || assessment.open_loops?.has_more || assessment.care_attention?.limitations?.length
   ));
+
+  async function createDecisionFollowUp() {
+    const decision = decisions.find((item) => item.id === selectedDecisionId);
+    const title = newFollowUpTitle.trim();
+    const description = newFollowUpDescription.trim();
+    const verificationRule = newFollowUpVerification.trim();
+    if (!decision || !title || !description || !verificationRule) {
+      setError("Choose a saved decision and describe the follow-up and how its outcome will be checked.");
+      return;
+    }
+    const signature = JSON.stringify({
+      decisionId: decision.id,
+      title,
+      description,
+      owner: newFollowUpOwner.trim(),
+      dueAt: newFollowUpDueAt,
+      verificationRule,
+    });
+    const pending = pendingCreateKey.current;
+    const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
+    pendingCreateKey.current = { signature, key: idempotencyKey };
+    setCreatingFollowUp(true);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/open-loops", {
+        loop_type: "follow_up",
+        title,
+        description,
+        source_type: "decision",
+        source_id: decision.id,
+        evidence: [{
+          kind: "linked_decision",
+          text: decision.decision_text,
+          source_type: "decision",
+          source_id: decision.id,
+        }],
+        owner_role: newFollowUpOwner.trim() ? "caregiver" : null,
+        owner_label: newFollowUpOwner.trim() || null,
+        ...(newFollowUpDueAt ? {
+          deadline_at: new Date(newFollowUpDueAt).toISOString(),
+          deadline_source: "explicit_user",
+          deadline_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        } : {}),
+        verification_rule: verificationRule,
+        idempotency_key: idempotencyKey,
+      });
+      pendingCreateKey.current = null;
+      setNewFollowUpTitle("");
+      setNewFollowUpDescription("");
+      setNewFollowUpOwner("");
+      setNewFollowUpDueAt("");
+      setNewFollowUpVerification("");
+      await refresh();
+      setNotice("The follow-up was saved and linked to the selected decision.");
+    } catch {
+      setError("The follow-up could not be confirmed as saved. Your details are retained; retrying will not create a duplicate.");
+    } finally {
+      setCreatingFollowUp(false);
+    }
+  }
 
   async function shareUpdate(loop: OpenLoop, text: string) {
     setBusyId(loop.id);
@@ -281,6 +372,34 @@ export default function FollowUpsPage() {
     {notice && <p className="followups-notice" role="status">{notice}</p>}
     {attentionWarning && <p className="followups-limitation" role="note">{attentionWarning}</p>}
     {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked. An empty section does not mean nothing needs attention.</p>}
+    <section className="followups-create-card" aria-labelledby="create-followup-heading">
+      <div><h2 id="create-followup-heading">Add a follow-up to a saved decision</h2><p>Record who will follow up, when it is due and what will count as evidence that it is complete.</p></div>
+      {decisions.length === 0 ? <p className="followups-empty-inline">No saved decisions are available to link yet. Record a decision first; SolenOS will not create an unlinked obligation.</p> : <form onSubmit={(event) => { event.preventDefault(); void createDecisionFollowUp(); }}>
+        <label>Decision
+          <select value={selectedDecisionId} onChange={(event) => setSelectedDecisionId(event.target.value)} required>
+            {decisions.map((decision) => <option key={decision.id} value={decision.id}>{decision.title || decision.decision_text}</option>)}
+          </select>
+        </label>
+        <label>Follow-up
+          <input value={newFollowUpTitle} onChange={(event) => setNewFollowUpTitle(event.target.value)} maxLength={240} required placeholder="What needs to happen?" />
+        </label>
+        <label>Details
+          <textarea value={newFollowUpDescription} onChange={(event) => setNewFollowUpDescription(event.target.value)} maxLength={12000} required rows={3} placeholder="Describe the next step in plain language." />
+        </label>
+        <div className="followups-create-grid">
+          <label>Person responsible (if known)
+            <input value={newFollowUpOwner} onChange={(event) => setNewFollowUpOwner(event.target.value)} maxLength={200} placeholder="Name or role" />
+          </label>
+          <label>Due date (if agreed)
+            <input type="datetime-local" value={newFollowUpDueAt} onChange={(event) => setNewFollowUpDueAt(event.target.value)} />
+          </label>
+        </div>
+        <label>How will you know this is complete?
+          <textarea value={newFollowUpVerification} onChange={(event) => setNewFollowUpVerification(event.target.value)} maxLength={4000} required rows={2} placeholder="Describe the evidence or confirmation to look for." />
+        </label>
+        <button type="submit" className="followups-primary-button" disabled={creatingFollowUp || !newFollowUpTitle.trim() || !newFollowUpDescription.trim() || !newFollowUpVerification.trim()}>{creatingFollowUp ? "Saving…" : "Save follow-up"}</button>
+      </form>}
+    </section>
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
@@ -312,13 +431,20 @@ export default function FollowUpsPage() {
       .followups-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-top:8px}.followups-title-row h1{margin:0;font-size:clamp(32px,6vw,42px);line-height:1.1;letter-spacing:-.035em}.followups-title-row p{max-width:650px;margin:9px 0 0;color:var(--text-secondary,#5b665d);line-height:1.6}
       .followups-refresh{flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--border,#d9dfd8);border-radius:12px;background:var(--surface,#fff);color:var(--text,#1f2a22)}
       .followups-alert,.followups-notice,.followups-limitation{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;margin:0 0 16px}.followups-alert{border:1px solid #c78d78;background:#fff8f5;color:#713d2b}.followups-notice{border:1px solid #a8c1a5;background:#f4f8f2;color:#29452d}.followups-limitation{border:1px solid var(--border,#d9dfd8);background:var(--surface-muted,#f6f8f5);color:var(--text-secondary,#5b665d)}
+      .followups-create-card{display:grid;gap:14px;margin:18px 0 26px;padding:16px;border:1px solid var(--border,#d9dfd8);border-radius:15px;background:var(--surface,#fff)}
+      .followups-create-card h2{margin:0;font-size:18px}.followups-create-card p{margin:5px 0 0;color:var(--text-secondary,#647067);font-size:13px;line-height:1.5}
+      .followups-create-card form{display:grid;gap:11px}.followups-create-card label{display:grid;gap:6px;color:var(--text-secondary,#5b665d);font-size:12px;line-height:1.4}
+      .followups-create-card input,.followups-create-card select,.followups-create-card textarea{width:100%;min-height:42px;box-sizing:border-box;border:1px solid var(--border,#cfd8cf);border-radius:9px;padding:10px;background:var(--surface,#fff);color:var(--text,#1f2a22);font:inherit;font-size:14px}
+      .followups-create-card textarea{resize:vertical}.followups-create-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .followups-primary-button{min-height:42px;border:1px solid #8eae8a;background:#b9d5b5;color:#17251c;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer}
+      .followups-primary-button:disabled{opacity:.55;cursor:not-allowed}
       .followups-section{display:grid;gap:12px;margin-top:28px}.followups-section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px}.followups-section-heading h2{margin:0;font-size:20px}.followups-section-heading p{margin:4px 0 0;color:var(--text-secondary,#647067);font-size:13px;line-height:1.45}.followups-section-heading>span{display:grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:var(--surface-muted,#edf2eb);font-size:13px;font-weight:700}
       .followup-card{border:1px solid var(--border,#d9dfd8);border-radius:15px;background:var(--surface,#fff);padding:16px;display:grid;gap:10px}.followup-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.followup-eyebrow{margin:0 0 5px;color:var(--text-secondary,#667269);font-size:11px;text-transform:uppercase;letter-spacing:.055em}.followup-card h3{margin:0;font-size:17px;line-height:1.35}.followup-status{flex:0 0 auto;max-width:145px;padding:5px 8px;border-radius:999px;background:var(--surface-muted,#edf2eb);color:var(--text-secondary,#4f5d51);font-size:11px;font-weight:700;text-align:center}
       .followup-meta{display:flex;flex-wrap:wrap;gap:12px;color:var(--text-secondary,#647067);font-size:12px}.followup-meta span,.followup-reason{display:inline-flex;align-items:center;gap:6px}.followup-reason{margin:0;color:#81502f;font-size:13px;line-height:1.45}.followup-detail{border-top:1px solid var(--border,#e1e5df);padding-top:10px;display:grid;gap:8px}.followup-detail p{margin:0;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.followup-history{border-top:1px solid var(--border,#e1e5df);padding-top:9px;font-size:13px}.followup-history ol{padding-left:20px;line-height:1.6}
       .followup-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}.followup-text-button,.followup-secondary-button,.followup-primary-button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:650;cursor:pointer;text-decoration:none}.followup-text-button{border:0;background:transparent;color:var(--text,#263329)}.followup-secondary-button{border:1px solid var(--border,#d9dfd8);background:var(--surface,#fff);color:var(--text,#263329)}.followup-primary-button{border:1px solid #8eae8a;background:#b9d5b5;color:#17251c}.followup-primary-button:disabled{opacity:.55;cursor:not-allowed}
       .followup-update-area{border-top:1px solid var(--border,#e1e5df);padding-top:12px}.followup-update-area form{display:grid;gap:9px}.followup-update-area label{font-size:12px;color:var(--text-secondary,#5b665d);line-height:1.5}.followup-update-area textarea{width:100%;box-sizing:border-box;border:1px solid var(--border,#cfd8cf);border-radius:9px;padding:10px;background:var(--surface,#fff);color:var(--text,#1f2a22);font:inherit;resize:vertical}
       .followups-empty,.followups-empty-inline{border:1px dashed var(--border,#d9dfd8);border-radius:13px;padding:20px;color:var(--text-secondary,#647067);line-height:1.55}.followups-empty{display:grid;justify-items:start;gap:8px}.followups-empty h2{margin:0;color:var(--text,#263329);font-size:18px}.followups-empty p{margin:0 0 6px}.followups-empty-inline{margin:0;font-size:13px;padding:14px}
-      @media(max-width:560px){.followups-page{padding:18px 13px 48px}.followup-card{padding:13px}.followup-card-heading{display:grid}.followup-status{justify-self:start}}
+      @media(max-width:560px){.followups-page{padding:18px 13px 48px}.followup-card{padding:13px}.followup-card-heading{display:grid}.followup-status{justify-self:start}.followups-create-grid{grid-template-columns:1fr}}
     `}</style>
   </div>;
 }
