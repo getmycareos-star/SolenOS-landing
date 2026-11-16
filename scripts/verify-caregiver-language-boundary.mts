@@ -340,6 +340,8 @@ assert.doesNotMatch(publicShellLanguage, /Living Care Record/,
 
 
 const documentExtractionRouteLanguage = read("../src/app/api/extract/route.ts");
+const shareSummaryLanguage = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
+const shareSummaryData = read("../src/lib/share-summary.ts");
 assert.match(documentExtractionRouteLanguage, /We couldn’t confirm your access to SolenOS\. Refresh the page and try again\./,
   "document extraction access failures must use plain caregiver-facing language");
 assert.match(documentExtractionRouteLanguage, /We couldn’t confirm your access to SolenOS\. Reopen your Care Record and try again\./,
@@ -355,3 +357,16 @@ assert.doesNotMatch(reminders, /CARE CONTINUITY|Living Care Record|in-app notifi
   "reminders must not expose internal continuity or delivery terminology");
 assert.match(reminders, /Reminders you add will appear here/,
   "reminders empty state must explain what the caregiver will see");
+
+assert.doesNotMatch(shareSummaryLanguage, /server-issued care session|anonymous session|API error/i,
+  "share-summary errors must not expose internal access or API terminology");
+assert.match(shareSummaryLanguage, /sanitizeCaregiverErrorMessage/,
+  "share-summary failures must pass through caregiver-safe error wording");
+assert.match(shareSummaryData, /function getShareEvents/,
+  "share summaries must read the current persisted event response");
+assert.match(shareSummaryData, /current\.events/,
+  "share summaries must support the current Care Record event field");
+assert.match(shareSummaryData, /events_created/,
+  "share summaries must remain compatible with the earlier response shape");
+assert.match(shareSummaryData, /function getShareEventText/,
+  "share summaries must preserve caregiver-entered wording when reading saved events");
