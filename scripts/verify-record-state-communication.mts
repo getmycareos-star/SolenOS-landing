@@ -32,11 +32,11 @@ const catchEnd = overview.indexOf("} finally {", catchStart);
 assert(catchStart >= 0 && catchEnd > catchStart, "primary record request must have an explicit failure path");
 const catchBody = overview.slice(catchStart, catchEnd);
 const accessDeniedStart = catchBody.indexOf("if (accessDenied) {");
-const accessDeniedEnd = catchBody.indexOf("}", accessDeniedStart);
+const accessDeniedEnd = catchBody.indexOf("\n      }\n      setError", accessDeniedStart);
 assert(accessDeniedStart >= 0 && accessDeniedEnd > accessDeniedStart, "access-denied handling must be explicit");
 const accessDeniedBody = catchBody.slice(accessDeniedStart, accessDeniedEnd);
 assert(accessDeniedBody.includes("setItems([])") && accessDeniedBody.includes("setChanges([])"), "care information must be cleared when access is denied");
-const nonAccessDeniedBody = catchBody.slice(0, accessDeniedStart) + catchBody.slice(accessDeniedEnd + 1);
+const nonAccessDeniedBody = catchBody.slice(0, accessDeniedStart) + catchBody.slice(accessDeniedEnd + "\n      }".length);
 assert(!nonAccessDeniedBody.includes("setItems([])"), "a transient refresh failure must not erase previously loaded care information");
 assert(!nonAccessDeniedBody.includes("setChanges([])"), "a transient refresh failure must not erase previously loaded change history");
 
