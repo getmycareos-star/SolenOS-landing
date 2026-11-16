@@ -116,8 +116,10 @@ try {
   const analysis = await pollDocument(session, evidenceId);
   assert.equal(analysis.extraction_status, "available");
   assert.equal(analysis.intelligence_status, "available");
-  assert.ok(analysis.model_provenance?.model_tag, "the saved analysis must identify the model that generated it");
-  assert.ok(analysis.model_provenance?.provider, "the saved analysis must identify its inference provider");
+  assert.equal(analysis.review_required, true, "new model candidates must require caregiver review");
+  assert.equal(analysis.written_to_lcr, false, "model output must not write care facts before caregiver acceptance");
+  assert.equal(analysis.model_provenance?.provider, "private_ollama", "the saved analysis must identify the real private Ollama provider");
+  assert.equal(analysis.model_provenance?.model_tag, process.env.OLLAMA_MODEL ?? "qwen3.5:4b", "the saved analysis must identify the configured Qwen model");
   assert.ok(Array.isArray(analysis.observations) && analysis.observations.length > 0,
     "real Qwen inference must produce at least one reviewable source-grounded candidate");
 
@@ -139,7 +141,9 @@ try {
 
   // The candidate is now shown by the real review component. Accept it through the browser.
   await page.getByText(candidate.source_quote, { exact: true }).first().waitFor({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Add to Care Record", exact: true }).first().click();
+  const candidateIndex = analysis.observations.indexOf(candidate);
+  assert.ok(candidateIndex >= 0, "the selected source-grounded candidate must retain its analysis index");
+  await page.getByRole("button", { name: "Add to Care Record", exact: true }).nth(candidateIndex).click();
   await page.getByText("Added to Care Record", { exact: true }).waitFor({ timeout: 30_000 });
 
   const history = await request(
