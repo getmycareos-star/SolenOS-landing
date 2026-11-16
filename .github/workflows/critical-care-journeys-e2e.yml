@@ -9,6 +9,8 @@ on:
       - "e2e/web-push-delivery.mjs"
       - "e2e/dark-mode-audit.mjs"
       - "src/api/client.ts"
+      - "src/lib/share-summary.ts"
+      - "src/lib/situation-entry/**"
       - "src/app/workspace/**"
       - "src/app/globals.css"
       - "src/app/dark-mode-remediation.css"
