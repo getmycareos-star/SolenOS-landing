@@ -220,6 +220,7 @@ export async function processSituationInput(
       await hydrateDecisionMemoryFromPostgres(input.care_recipient_id ?? caregiverId);
     } catch (error) {
       console.error("[SolenOS] Decision history could not be refreshed from PostgreSQL", error);
+      throw error;
     }
   }
 
@@ -1172,6 +1173,7 @@ acsTurn =
       await syncDecisionMemoryToPostgres(finalized.context.care_recipient_id ?? caregiverId);
     } catch (error) {
       console.error("[SolenOS] Decision capture was not persisted to PostgreSQL", error);
+      throw error;
     }
   }
 
