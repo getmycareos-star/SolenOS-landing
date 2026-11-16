@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   INPUT_ENTRY_CONTRACT_PURPOSE,
   INPUT_ENTRY_ACTION_CONTRACT,
@@ -15,7 +16,7 @@ import {
   MVP_COMPOSER_ENTRY_ACTIONS,
 } from "../src/lib/input-entry-contract";
 
-const root = process.cwd();
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 console.log("=== Input Entry Contract ===\n");
 console.log(INPUT_ENTRY_CONTRACT_PURPOSE);
@@ -205,5 +206,5 @@ assert(settingsPage.includes('getJSON("/notifications/unread-count")'));
 assert(settingsPage.includes('patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {})'));
 assert(settingsPage.includes("Notification inbox"));
 const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "notifications", "page.tsx"), "utf8");
-assert(notificationPage.includes('redirect("/workspace/settings#settings-notifications")'));
+assert(notificationPage.includes('router.replace("/workspace/settings#settings-notifications")'), "Legacy notifications route must navigate to the Settings inbox.");
 console.log("✓ Notification inbox and preferences live inside Settings; old notification URL redirects there");
