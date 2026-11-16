@@ -308,6 +308,8 @@ await record("01c workspace links, browser back, More menu and account form vali
     observations: Array.isArray(situationDiagnostic.payload?.active_care_situation?.observations)
       ? situationDiagnostic.payload.active_care_situation.observations.length : null,
   }));
+  assert.ok((situationDiagnostic.payload?.total_events ?? situationDiagnostic.payload?.events?.length ?? 0) > 0,
+    "the seeded caregiver report must be visible to the share-summary readiness check");
   console.log("SHARE_EXPORT_PANEL_TEXT", (await exportPanel.innerText()).slice(0, 1200));
   console.log("SHARE_NETWORK_REQUESTS", JSON.stringify(observed.filter((item) => item.path.includes("situation"))));
   await exportPanel.getByRole("radio", { name: /Doctor \/ clinician/ }).click();
