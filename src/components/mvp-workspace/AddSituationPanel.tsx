@@ -198,7 +198,7 @@ export function AddSituationPanel({
               ? "What changed since last time?"
               : "For example: Breakfast has been harder to remember this week."
           }
-          rows={6}
+          rows={isFirstCapture ? 3 : 6}
           disabled={busy}
           aria-label="Describe your situation"
           autoFocus
