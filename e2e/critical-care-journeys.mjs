@@ -127,6 +127,52 @@ async function record(name, work) {
   process.stdout.write(`PASS ${name}\n`);
 }
 
+// 0. First-time caregiver: focused welcome, first capture, durable save, then returning record.
+const firstVisitSession = await newSession("first visit capture");
+await record("00 first-time caregiver capture and persisted return", async () => {
+  const { context, page } = await createBrowserPage(
+    firstVisitSession,
+    "/workspace",
+    { width: 390, height: 844 },
+  );
+  await page.getByRole("heading", { name: "Your care journey starts here.", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByRole("heading", { name: "What’s been happening?", exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(
+    await page.locator(".solenos-chat-topbar").isVisible(),
+    false,
+    "first visit should focus on the care entry instead of showing workspace navigation",
+  );
+  const firstNote = "Mum has been forgetting whether she has eaten breakfast.";
+  await page.getByRole("textbox", { name: "Describe your situation", exact: true }).fill(firstNote);
+  await page.getByRole("button", { name: "Add to record", exact: true }).click();
+  await page.getByText("Caregiver note", { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+  await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+
+  const careSessionId = await page.evaluate(() => localStorage.getItem("solenos_care_session_id"));
+  assert.ok(careSessionId, "first capture must retain the interaction session identity");
+  const persisted = await request(
+    `/api/situation?care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`,
+    { token: firstVisitSession.access_token },
+  );
+  assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
+  assert.equal(persisted.payload?.has_context_root, true, "first capture must create durable care context");
+  assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Care Record", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.waitForFunction(() => !document.documentElement.classList.contains("solenos-first-visit-mode"));
+  assert.equal(
+    await page.getByRole("heading", { name: "Your care journey starts here.", exact: true }).count(),
+    0,
+    "a returning caregiver must not be sent through first-visit welcome again",
+  );
+  await verifyMobile(page);
+  await context.close();
+});
+
 // 1. First caregiver session: the browser, not a seeded fixture, creates the identity.
 await record("01 first caregiver session", async () => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
