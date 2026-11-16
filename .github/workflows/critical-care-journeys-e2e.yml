@@ -58,8 +58,15 @@ jobs:
       DATABASE_URL: postgresql+psycopg2://solenos_ci:solenos_ci@localhost:5432/solenos_critical_journeys
       SOLENOS_REQUIRE_LIVE_QWEN: "0"
     steps:
-      - name: Check out frontend main
+      - name: Check out triggering frontend commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Record frontend revision under test
+        run: |
+          git rev-parse HEAD
+          git log -1 --oneline
 
       - name: Check out backend main
         uses: actions/checkout@v4
