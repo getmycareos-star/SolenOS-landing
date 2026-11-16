@@ -216,6 +216,12 @@ await record("01c workspace links, browser back, More menu and account form vali
 
   const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navToggle.click();
+  await page.waitForFunction(() =>
+    document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
+    document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true,
+    undefined,
+    { timeout: 5_000 },
+  );
   const navigation = page.locator("#solenos-navigation");
   const links = await navigation.getByRole("link").evaluateAll((items) =>
     items.map((item) => item.getAttribute("href")).filter(Boolean),
@@ -234,7 +240,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   for (const route of expectedRoutes) {
     assert.ok(links.includes(route), `primary navigation is missing ${route}`);
   }
-  await navigation.getByRole("link", { name: "Documents", exact: true }).click();
+  await navigation.getByRole("link", { name: /Documents/ }).click();
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
   await page.goBack({ waitUntil: "domcontentloaded" });
