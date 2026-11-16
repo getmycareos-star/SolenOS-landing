@@ -191,9 +191,24 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
   await context.close();
 });
 
+const shareSession = await newSession("share summary export");
+const shareIdentity = auth(shareSession);
+const shareSeed = await request("/api/v1/daily/log", {
+  token: shareIdentity.token,
+  method: "POST",
+  body: {
+    person_id: shareIdentity.personId,
+    caregiver_id: shareIdentity.caregiverId,
+    capture_idempotency_key: unique("share-summary-seed"),
+    observation: "Caregiver reports that Mum slept poorly last night and seemed unsettled this morning.",
+    source: "critical_care_journey_share_seed",
+  },
+});
+assert.ok([200, 201].includes(shareSeed.status), JSON.stringify(shareSeed.payload));
+
 await record("01c workspace links, browser back, More menu and account form validation", async () => {
   const { context, page, observed } = await createBrowserPage(
-    session,
+    shareSession,
     "/workspace",
     { width: 390, height: 844 },
   );
@@ -277,8 +292,8 @@ await record("01c workspace links, browser back, More menu and account form vali
     careSessionId: localStorage.getItem("solenos_care_session_id"),
   }));
   const situationDiagnostic = await request(
-    `/api/situation?caregiver_id=${encodeURIComponent(session.caregiver.id)}&care_session_id=${encodeURIComponent(shareContextDiagnostic.careSessionId ?? "e2e-share")}`,
-    { token: session.access_token },
+    `/api/situation?caregiver_id=${encodeURIComponent(shareSession.caregiver.id)}&care_session_id=${encodeURIComponent(shareContextDiagnostic.careSessionId ?? "e2e-share")}`,
+    { token: shareSession.access_token },
   );
   console.log("SHARE_EXPORT_DIAGNOSTIC", JSON.stringify({
     tokenPresent: shareContextDiagnostic.tokenPresent,
