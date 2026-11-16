@@ -86,6 +86,7 @@ export function CareRecordOverview() {
         setChanges([]);
         hasLoadedRef.current = false;
         setHasLoaded(false);
+        setLoading(true);
       }
       loadedPersonIdRef.current = personId;
       const response = await getJSON("/care-continuity/current-care?limit_per_source=12") as {
