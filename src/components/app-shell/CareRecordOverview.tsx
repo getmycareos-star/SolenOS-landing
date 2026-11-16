@@ -157,8 +157,8 @@ export function CareRecordOverview() {
 
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes in care over time</h3>
-            {historyNote && <RecordState kind="error" title="Change history could not be loaded" description={historyNote} />}
-            {!historyNote && changes.length === 0 ? (
+            {historyLoading ? <RecordState kind="loading" title="Loading change history" /> : historyNote ? <RecordState kind="error" title="Change history could not be loaded" description={historyNote} /> : null}
+            {!historyLoading && !historyNote && changes.length === 0 ? (
               <RecordState kind="period-empty" title="No changes recorded" description="Recorded changes will appear here when they are available." />
             ) : (
               <div style={{ display: "grid", gap: 9 }}>
