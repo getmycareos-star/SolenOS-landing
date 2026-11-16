@@ -22,6 +22,7 @@ import { deleteJSON, ensureAnonymousSession, getBlob, getJSON, postFormData, pos
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type EvidenceRecord = {
   id: string;
@@ -545,19 +546,21 @@ export default function DocumentsPage() {
         </section>}
         {uploading && <div style={{ margin: "12px 0 0" }}><LivingArchiveMark size="sm" label="Saving the original document…" /><p style={{ margin: "6px 0 0", fontSize: 13 }}>Keep this page open until your files are saved. After that, SolenOS will keep reading them even if you leave.</p></div>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
-        {listError && <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14 }}><p style={{ margin: "0 0 10px" }}>{listError}</p><button type="button" onClick={() => void loadDocuments()} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Try again</button></div>}
+        {listError && <RecordState kind="error" description={listError} onAction={() => void loadDocuments(documents.length > 0)} />}
 
         <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border)", borderRadius: 9, padding: "0 12px", minHeight: 44 }}>
           <Search size={17} aria-hidden="true" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search document names and available text" aria-label="Search documents" style={{ width: "100%", minWidth: 0, border: 0, outline: 0, background: "transparent", color: "var(--text)", fontSize: 15, minHeight: 42 }} />
         </div>
 
-        {loading ? <div role="status" style={{ padding: 24, textAlign: "center", color: "var(--text-secondary)" }}><LivingArchiveMark size="sm" label="Loading saved documents…" /></div> : visibleDocuments.length === 0 ? (
-          <div style={{ padding: "26px 12px", textAlign: "center" }}>
-            <FileText size={34} style={{ margin: "0 auto 10px", color: "var(--text-secondary)" }} />
-            <h3 style={{ margin: 0, fontSize: 16 }}>{documents.length === 0 ? "No saved documents yet" : "No matching documents"}</h3>
-            <p style={{ margin: "8px 0 0", color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}>{documents.length === 0 ? "Upload a care document to keep its original file and make available text searchable." : "Try another filename or word from the document."}</p>
-          </div>
+        {loading ? <RecordState kind="loading" title="Loading saved documents" /> : listError && documents.length === 0 ? null : visibleDocuments.length === 0 ? (
+          <RecordState
+            kind={documents.length === 0 ? "first-empty" : "no-results"}
+            title={documents.length === 0 ? "No documents added yet" : "No matching documents"}
+            description={documents.length === 0 ? "Add a document to keep it with the care information in this record." : "Try another search term or clear your search."}
+            actionLabel={documents.length === 0 ? "Add a document" : "Clear search"}
+            onAction={documents.length === 0 ? () => uploadInputRef.current?.click() : () => setQuery("")}
+          />
         ) : (
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
             {visibleDocuments.map((doc) => (

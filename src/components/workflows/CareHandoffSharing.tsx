@@ -5,6 +5,7 @@ import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type HandoffDraftPurpose = "family_transition" | "return_to_care" | "professional_appointment" | "hospital_discharge" | "period_summary";
 
@@ -256,6 +257,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [directoryError, setDirectoryError] = useState(false);
   const [consentRequired, setConsentRequired] = useState(false);
   const [historyError, setHistoryError] = useState(false);
+  const [draftsError, setDraftsError] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
@@ -265,6 +267,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [selectedScope, setSelectedScope] = useState<string[]>([]);
   const [editedSections, setEditedSections] = useState<NonNullable<DraftPayload["generation"]>["sections"]>([]);
   const [revisionHistory, setRevisionHistory] = useState<DraftRevision[]>([]);
+  const loadedPersonIdRef = useRef<string | null>(null);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
@@ -280,8 +283,21 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     setLoading(true);
     setDirectoryError(false);
     setHistoryError(false);
+    setDraftsError(false);
+    let requestPersonId: string | null = null;
     try {
-      await ensureAnonymousSession();
+      const session = await ensureAnonymousSession();
+      requestPersonId = session.person?.id ?? null;
+      if (!requestPersonId) throw new Error("A valid Care Record session is required.");
+      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId) {
+        setDirectory([]);
+        setInbox([]);
+        setOutbox([]);
+        setSavedDrafts([]);
+        setSelectedRecipients([]);
+        setSelectedScope([]);
+      }
+      loadedPersonIdRef.current = requestPersonId;
       // Handoff inbox and recipient discovery require the caregiver's persisted
       // privacy/multi-caregiver acknowledgements. Read that state first so a
       // normal first-use session does not generate avoidable 403 responses.
@@ -300,17 +316,29 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           : Promise.resolve({ items: [] as OutboxItem[] }),
         getJSON("/handoff-drafts?limit=10") as Promise<{ items?: Array<DraftPayload & { updated_at?: string }> }>,
       ]);
-      if (directoryResult.status === "fulfilled") setDirectory(directoryResult.value.items ?? []);
+      if (directoryResult.status === "fulfilled" && Array.isArray(directoryResult.value.items)) setDirectory(directoryResult.value.items);
       else setDirectoryError(true);
-      if (inboxResult.status === "fulfilled") setInbox(inboxResult.value.items ?? []);
+      if (inboxResult.status === "fulfilled" && Array.isArray(inboxResult.value.items)) setInbox(inboxResult.value.items);
       else setHistoryError(true);
-      if (outboxResult.status === "fulfilled") setOutbox(outboxResult.value.items ?? []);
+      if (outboxResult.status === "fulfilled" && Array.isArray(outboxResult.value.items)) setOutbox(outboxResult.value.items);
       else setHistoryError(true);
-      if (draftsResult.status === "fulfilled") setSavedDrafts(draftsResult.value.items ?? []);
-      else setHistoryError(true);
-    } catch {
+      if (draftsResult.status === "fulfilled" && Array.isArray(draftsResult.value.items)) setSavedDrafts(draftsResult.value.items);
+      else setDraftsError(true);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "";
+      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
+      if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
+        setDirectory([]);
+        setInbox([]);
+        setOutbox([]);
+        setSavedDrafts([]);
+        setSelectedRecipients([]);
+        setSelectedScope([]);
+        loadedPersonIdRef.current = null;
+      }
       setDirectoryError(true);
       setHistoryError(true);
+      setDraftsError(true);
     } finally {
       setLoading(false);
     }
@@ -640,7 +668,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           ))}
         </section>
       )}
-      {savedDrafts.length === 0 && !loading && !historyError && (
+      {loading && savedDrafts.length === 0 && !draftsError && <RecordState kind="loading" title="Loading saved summaries" />}
+      {draftsError && savedDrafts.length === 0 && !loading && <RecordState kind="error" title="Saved summaries could not be loaded" description="Your saved summaries may be incomplete. Please try again." onAction={() => void load()} />}
+      {draftsError && savedDrafts.length > 0 && <RecordState kind="error" title="Saved summaries could not be refreshed" description="Previously loaded summaries are still shown. Please try again." onAction={() => void load()} />}
+      {savedDrafts.length === 0 && !loading && !draftsError && (
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved summaries">
           <h4 style={{ marginTop: 0 }}>Saved summaries</h4>
           <p style={{ fontSize: 13, color: "#667267", marginBottom: 0 }}>
@@ -671,7 +702,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             </div>) : <p style={{ fontSize: 12, marginBottom: 0 }}>We could not check whether some information came from the same original. Do not assume similar reports are separate.</p>}
             <p style={{ fontSize: 12, marginBottom: 0, color: "#667267" }}>{caregiverSafeAssistantText(draft.evidence_lineage.interpretation_limit) ?? "A connection between reports does not prove they are true or came from different people."}</p>
           </details>}
-          {directoryError && <p role="alert">SolenOS couldn't check who can receive this summary. Refresh before sharing.</p>}
+          {directoryError && <RecordState kind="error" title="Recipient access could not be checked" description="Refresh before sharing this summary." onAction={() => void load()} />}
           {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No caregiver on this Care Record can receive the summary right now. SolenOS will not share it outside this Care Record.</p>}
           {eligibleRecipients.map(recipient => (
             <label key={recipient.caregiver_id} style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "10px 0", lineHeight: 1.4 }}>
@@ -771,8 +802,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         {showHistory && (
           <div style={{ marginTop: 12 }}>
             {consentRequired && <p role="status">Summaries shared with you or by you are hidden until you save the required privacy and shared-care choices. <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Review Settings → Privacy</Link>.</p>}
-            {historyError && <p role="alert">Sharing history could not be loaded. Check your connection and try again.</p>}
-            {!historyError && !loading && inbox.length === 0 && outbox.length === 0 && <p>Nothing has been shared with or from this Care Record yet.</p>}
+            {historyError && (inbox.length > 0 || outbox.length > 0) && <RecordState kind="error" title="Some sharing history could not be loaded" description="Previously loaded sharing records are still shown. Refresh to check for updates." onAction={() => void load()} />}
+            {loading && inbox.length === 0 && outbox.length === 0 ? <RecordState kind="loading" title="Loading sharing history" /> : historyError && inbox.length === 0 && outbox.length === 0 ? <RecordState kind="error" title="Sharing history could not be loaded" description="Please refresh to try again." onAction={() => void load()} /> : !consentRequired && !historyError && !loading && inbox.length === 0 && outbox.length === 0 ? <RecordState kind="first-empty" title="No handoffs recorded yet" description="Summaries shared with you or by you will appear here." /> : null}
             <h5 style={{ margin: "12px 0 6px" }}>Shared with you</h5>
             {inbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>

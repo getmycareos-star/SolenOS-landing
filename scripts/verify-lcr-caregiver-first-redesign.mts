@@ -41,8 +41,9 @@ assert.match(currentUnderstanding, /Where things stand/, "first screen explains 
 assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces supported care priorities");
 assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed care information is progressively disclosed");
-assert.match(currentUnderstanding, /Missing information does not mean everything is fine/, "empty records are not presented as reassuring findings");
-assert.match(currentUnderstanding, /Do not assume there is nothing that needs attention/, "failed priority retrieval is not presented as an empty queue");
+assert.doesNotMatch(currentUnderstanding, /Missing information does not mean everything is fine|Do not assume there is nothing that needs attention/, "obsolete defensive disclaimers are removed from caregiver-facing copy");
+assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "an empty care record is described as insufficient information, not a reassuring finding");
+assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) => void load\(true\)\}/s, "failed current-care retrieval renders an actionable error state with a real retry");
 assert.ok(
   workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf("What would you like to do?") &&
   workspaceHome.indexOf("What would you like to do?") < workspaceHome.indexOf("<CaregiverHandoverInbox />"),

@@ -24,8 +24,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: solenos-netlify-production
-  cancel-in-progress: true
+  # Isolate pull-request verification so unrelated previews cannot cancel one
+  # another. Production release runs share a protected group and are never
+  # cancelled by a newer preview or workflow dispatch.
+  group: ${{ github.event_name == 'pull_request' && format('solenos-netlify-pr-{0}', github.event.pull_request.number) || 'solenos-netlify-production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -74,6 +77,7 @@ jobs:
           const required = [
             "tests",
             "container-build-smoke",
+            "deployed-smoke",
             "postgres-migrations",
             "postgres-migration",
             "test",

@@ -40,8 +40,10 @@ assert.match(component, /formatWhen\(item\.occurred_at\).*formatWhen\(item\.reco
 assert.match(component, /View supporting information/);
 assert.match(component, /Review state:/);
 assert.match(component, /assessmentError/);
-assert.match(component, /changesError.*This does not mean nothing has changed/s);
-assert.match(component, /patternsError.*This does not mean nothing is repeating/s);
+assert.match(component, /changesError && <RecordState kind="error"/);
+assert.match(component, /patternsError && <RecordState kind="error"/);
+assert.doesNotMatch(component, /Missing records do not mean nothing changed/);
+assert.doesNotMatch(component, /This does not mean nothing is repeating/);
 assert.match(component, /assessment\.open_loops\.has_more/);
 assert.match(component, /assessment\?\.care_attention/);
 assert.match(component, /careAttention\.important_to_address/);

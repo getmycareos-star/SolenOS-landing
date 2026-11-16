@@ -13,6 +13,7 @@ import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDa
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
@@ -321,10 +322,11 @@ export default function DailyCarePage() {
   });
   const [contextLoading, setContextLoading] = useState(true);
   const [contextError, setContextError] = useState("");
+  const hasContextLoadedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
-    setContextLoading(true);
+    if (!hasContextLoadedRef.current) setContextLoading(true);
     setContextError("");
     void ensureAnonymousSession()
       .then(async () => {
@@ -343,7 +345,12 @@ export default function DailyCarePage() {
 
         if (careResult.status === "fulfilled") {
           const payload = careResult.value as { items?: unknown };
-          setCareItems(Array.isArray(payload?.items) ? payload.items as CareItem[] : []);
+          if (Array.isArray(payload?.items)) {
+            setCareItems(payload.items as CareItem[]);
+            hasContextLoadedRef.current = true;
+          } else {
+            setContextError("Saved care information could not be read. Your existing information is still shown.");
+          }
         } else {
           setContextError("Current care information could not be loaded. Try refreshing the record.");
         }
@@ -407,8 +414,6 @@ export default function DailyCarePage() {
           };
           if (!Array.isArray(payload?.records)) {
             setHistoryError("Recent care history could not be read. The daily summary is unavailable.");
-            setHistoryItems([]);
-            setHistoryMayBeTruncated(false);
           } else {
             const records = payload.records as CareItem[];
             setHistoryError("");
@@ -557,7 +562,9 @@ export default function DailyCarePage() {
             <h2 id="daily-care-current-title">Where things stand</h2>
             <p className="daily-care-muted">The latest care information saved so far.</p>
             {contextLoading ? (
-              <p>Loading care information…</p>
+              <RecordState kind="loading" title="Loading care information" />
+            ) : contextError && careItems.filter((item) => !isOpenMatter(item)).length === 0 ? (
+              <RecordState kind="error" description={contextError} onAction={() => setRefreshVersion((value) => value + 1)} />
             ) : careItems.filter((item) => !isOpenMatter(item)).length > 0 ? (
               <ul className="daily-care-record-list">
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 2).map((item, index) => (
@@ -585,9 +592,9 @@ export default function DailyCarePage() {
                 ))}
               </ul>
             ) : (
-              <p>No current care updates are available to show. This does not mean nothing happened.</p>
+              <RecordState kind="first-empty" title="No care updates recorded yet" description="Recorded care updates will appear here when they are added." onAction={() => setCaptureOpen(true)} />
             )}
-            {contextError && <p role="status" className="daily-care-muted">{caregiverSafeAssistantText(contextError) || "Some care information could not be loaded. Try again."}</p>}
+            {contextError && careItems.length > 0 && <p role="status" className="daily-care-muted">{caregiverSafeAssistantText(contextError) || "Some care information could not be loaded. Your previously saved information is still shown."}</p>}
           </section>
 
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
@@ -745,10 +752,11 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
             <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
             <p className="daily-care-muted">
-              This summary uses records added since your previous visit on this device. It does not describe unrecorded care.
+              Shows care updates added since your previous visit on this device.
             </p>
+            {historyError && <p role="status" className="daily-care-muted">This summary could not be refreshed. Previously saved care information remains available below.</p>}
             {sinceLastOpenItems === null ? (
-              <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
+              historyError ? null : <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
             ) : sinceLastOpenItems.length > 0 ? (
               <>
                 <p><strong>{sinceLastOpenItems.length}</strong> new care record{sinceLastOpenItems.length === 1 ? "" : "s"} added since {lastOpenedAt ? displayCareTime(lastOpenedAt) : "your previous visit"}.</p>
@@ -779,8 +787,8 @@ export default function DailyCarePage() {
                 </ul>
                 <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
               </>
-            ) : (
-              <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
+            ) : historyError ? null : (
+              <RecordState kind="period-empty" title="No new care updates recorded" description="Care updates added since your last visit will appear here." />
             )}
             {historyMayBeTruncated && <p className="daily-care-muted">This summary shows the latest 200 saved updates. Open full care history to see older ones.</p>}
           </section>
@@ -796,7 +804,7 @@ export default function DailyCarePage() {
               </div>
             )}
             {historyError ? (
-              <p role="alert">{historyError}</p>
+              <RecordState kind="error" description={historyError} onAction={() => setRefreshVersion((value) => value + 1)} />
             ) : todayItems.length ? (
               todayPeriods.map((period) => {
                 const items = todayItems.filter((item) => dailyTimePeriod(item) === period.key);
