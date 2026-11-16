@@ -378,7 +378,7 @@ export default function AppointmentWorkspace() {
                   brief.living_care_record_context.retrieval_scan_complete !== true ||
                   brief.living_care_record_context.retrieval_projection_complete !== true
                 ))) && <section className="guided-muted" role="status" style={{ gridColumn: "1 / -1" }}>
-                <h5>This summary does not show all saved care information</h5>
+                <h5>Some parts of your Care Record could not be fully checked</h5>
                 <p>This appointment summary shows only some saved care information. Check your full Care Record before relying on it as the complete history.</p>
                 {brief.living_care_record_context?.schema_status === "failed" && <p>We could not check the full Care Record just now. Refresh or open the Care Record before relying on this visit summary.</p>}
                 {brief.living_care_record_context?.missing_required_sources?.length ? <p>Sources that could not be checked: {brief.living_care_record_context.missing_required_sources.map(source => caregiverInformationAreaLabel(source) || "Other care information").join(", ")}.</p> : null}
