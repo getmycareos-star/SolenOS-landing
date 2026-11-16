@@ -204,7 +204,7 @@ const CARE_INFORMATION_AREA_LABELS: Readonly<Record<string, string>> = {
   evidence_freshness_assessments: "Information dates",
   medications_and_allergies: "Medicines and allergies",
   documents: "Documents",
-  evidence: "What was recorded and where it came from",
+  evidence: "Notes and documents",
   document_evidence: "Documents",
   caregiver_observations: "Caregiver observations",
   caregiver_reports: "Caregiver reports",
@@ -217,7 +217,8 @@ const CARE_INFORMATION_AREA_LABELS: Readonly<Record<string, string>> = {
 
 export function caregiverInformationAreaLabel(value?: string | null): string | null {
   if (!value) return null;
-  return CARE_INFORMATION_AREA_LABELS[value.trim().toLowerCase()] ?? null;
+  const key = value.trim().toLowerCase();
+  return CARE_INFORMATION_AREA_LABELS[key] ?? caregiverProductTermLabel(key);
 }
 
 /** Human-readable labels for saved care fields; unknown keys are not prettified. */
@@ -276,7 +277,7 @@ const CAREGIVER_PRODUCT_TERMS: Readonly<Record<string, string>> = {
   "care continuity": "Keeping care information together",
   reconciliation: "Updating your care information",
   provenance: "What was recorded and where it came from",
-  evidence: "Notes and documents",
+  evidence: "What was recorded and where it came from",
   "delta engine": "Changes since your last visit",
   retrieval: "Finding past care information",
   "open loops": "Things that still need attention",
