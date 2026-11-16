@@ -175,7 +175,7 @@ try {
     token: session.access_token,
   });
   assert.equal(original.status, 200, "the original uploaded document must remain retrievable");
-  assert.equal(await original.response.text(), sourceText, "the original document bytes must remain unchanged");
+  assert.equal(original.payload, sourceText, "the original document bytes must remain unchanged");
 
   // A new browser context proves that the decision survives beyond the upload/review page state.
   await context.close();
