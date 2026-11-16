@@ -972,6 +972,20 @@ await record("LCR care history shows a recent caregiver report with source detai
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(visibleScenarioReport, { exact: false }).first().waitFor({ timeout: 20_000 });
+  const selectedCurrentCareItem = currentCareForUi.payload.items.find((item) =>
+    String(item.title ?? "").includes(visibleScenarioReport) || String(item.description ?? "").includes(visibleScenarioReport)
+  );
+  console.log("LCR_SELECTED_ITEM_DIAGNOSTIC", JSON.stringify({
+    source_collection: selectedCurrentCareItem?.source_collection,
+    id: selectedCurrentCareItem?.id,
+    title: selectedCurrentCareItem?.title,
+    description: selectedCurrentCareItem?.description,
+    source_passage: selectedCurrentCareItem?.source_passage,
+  }));
+  console.log("LCR_CURRENT_FACT_DIAGNOSTIC", JSON.stringify(
+    (await history.page.locator(".lcr-current-fact:visible").allInnerTexts()).map((value) => value.slice(0, 500))
+  ));
+  console.log("LCR_REPORT_MATCH_COUNT", await history.page.getByText(visibleScenarioReport, { exact: false }).count());
 
   const reportCard = history.page.locator(".lcr-current-fact:visible")
     .filter({ hasText: visibleScenarioReport }).first();
