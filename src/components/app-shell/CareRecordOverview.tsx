@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type CareItem = {
   id: string;
@@ -51,22 +53,42 @@ function plainStatus(value?: string | null): string {
 }
 
 export function CareRecordOverview() {
+  const router = useRouter();
   const [items, setItems] = useState<CareItem[]>([]);
   const [changes, setChanges] = useState<ChangeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyNote, setHistoryNote] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
+  const loadedPersonIdRef = useRef<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
-    else setLoading(true);
+    else if (!hasLoadedRef.current) setLoading(true);
     setError(null);
     setHistoryNote(null);
     try {
       const session = await ensureAnonymousSession();
       const personId = session.person?.id;
-      if (!personId) throw new Error("The care record could not be opened.");
+      if (!personId) {
+        setItems([]);
+        setChanges([]);
+        hasLoadedRef.current = false;
+        setHasLoaded(false);
+        loadedPersonIdRef.current = null;
+        throw new Error("The care record could not be opened.");
+      }
+      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== personId) {
+        setItems([]);
+        setChanges([]);
+        hasLoadedRef.current = false;
+        setHasLoaded(false);
+        setLoading(true);
+      }
+      loadedPersonIdRef.current = personId;
       const response = await getJSON("/care-continuity/current-care?limit_per_source=12") as {
         person_id?: string;
         items?: CareItem[];
@@ -76,19 +98,20 @@ export function CareRecordOverview() {
         throw new Error("The saved care information could not be verified for this session.");
       }
       setItems(response.items);
+      hasLoadedRef.current = true;
+      setHasLoaded(true);
+      setHistoryLoading(true);
       try {
         const history = await getJSON("/change/changes/" + encodeURIComponent(personId));
         if (!Array.isArray(history)) throw new Error("History was unavailable.");
         setChanges(history as ChangeItem[]);
       } catch {
-        setChanges([]);
         setHistoryNote("The saved change history could not be loaded. Other saved information is still shown.");
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Saved care information could not be loaded.");
-      setItems([]);
-      setChanges([]);
     } finally {
+      setHistoryLoading(false);
       setLoading(false);
       setRefreshing(false);
     }
@@ -109,14 +132,14 @@ export function CareRecordOverview() {
         </button>
       </header>
 
-      {error && <p role="alert" style={{ margin: 0, padding: 13, borderRadius: 10, background: "#fff7f2", color: "#80523b", lineHeight: 1.55 }}>{error}</p>}
-      {loading ? <p role="status" style={{ color: "#69796c" }}>Loading saved care information…</p> : !error && (
+      {error && <RecordState kind={/\b(401|403|unauthori[sz]ed|forbidden|not authenticated|access denied|permission)\b/i.test(error) ? "forbidden" : /\b(502|503|504|network|fetch failed)\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
+      {loading && !hasLoaded ? <RecordState kind="loading" /> : (hasLoaded || !error) && (
         <>
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>What is saved</h3>
             <p style={{ margin: "0 0 12px", color: "#758276", fontSize: 12 }}>These are saved care details. A report is not automatically a confirmed fact.</p>
             {items.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No care information is available in this view yet. This does not mean there are no care needs or concerns.</p>
+              <RecordState kind="first-empty" title="No care information recorded yet" description="Add a care update to begin building this record." onAction={() => router.push("/workspace/daily-care")} />
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {items.map((item) => (
@@ -135,9 +158,9 @@ export function CareRecordOverview() {
 
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes in care over time</h3>
-            {historyNote && <p role="status" style={{ color: "#805d3c", fontSize: 13 }}>{historyNote}</p>}
-            {!historyNote && changes.length === 0 ? (
-              <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>No changes were found in the information available. SolenOS will not invent a change when there is no record of one.</p>
+            {historyLoading ? <RecordState kind="loading" title="Loading change history" /> : historyNote ? <RecordState kind="error" title="Change history could not be loaded" description={historyNote} /> : null}
+            {!historyLoading && !historyNote && changes.length === 0 ? (
+              <RecordState kind="period-empty" title="No changes recorded" description="Recorded changes will appear here when they are available." />
             ) : (
               <div style={{ display: "grid", gap: 9 }}>
                 {changes.map((change) => (
