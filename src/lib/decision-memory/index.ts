@@ -492,6 +492,8 @@ export function recordDecisionFromText(params: {
         id: prior.id,
         postgres_id: prior.postgres_id,
         postgres_snapshot: prior.postgres_snapshot ?? prior.what,
+        outcome: params.outcome !== undefined ? entry.outcome : prior.outcome,
+        outcome_event_ids: prior.outcome_event_ids,
         extraction_ids: [...new Set([...(prior.extraction_ids ?? []), ...(params.id ? [params.id] : [])])],
         ...(prior.postgres_outcome_id ? { postgres_outcome_id: prior.postgres_outcome_id } : {}),
         ...(prior.postgres_outcome_snapshot ? { postgres_outcome_snapshot: prior.postgres_outcome_snapshot } : {}),
