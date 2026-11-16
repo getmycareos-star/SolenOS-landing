@@ -84,7 +84,7 @@ console.log("=== Continuity core Tier 1 (G3–G6 / G12–G13 / G16) ===\n");
     kind: classifyCareEventKind("I am exhausted."),
   });
   assertComposedResponseProfessional(composed);
-  assert(/Living Care Record|held|context/i.test(composed.confirmation), "G5 acknowledge");
+  assert(/no care details saved|share what is happening/i.test(composed.confirmation), "G5 acknowledges the caregiver without claiming care evidence that has not been shared");
   assert(composed.show_clarity === false, "G5 no therapy Clarity dump");
   assert(
     !/burnout score|confidence %|how does that make you feel|i'?m sorry you'?re going through/i.test(
