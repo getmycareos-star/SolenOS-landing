@@ -81,6 +81,17 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
   const [opsMode, setOpsMode] = useState(false);
 
   useEffect(() => {
+    // The start screen is the boundary after a local workspace deletion. It
+    // must not silently mint a replacement anonymous identity before the
+    // person chooses to begin a new care record.
+    if (window.location.pathname === "/start") {
+      setLanguage("en");
+      setRuntime(createEmptyUiRuntimeState());
+      setHydrated(true);
+      setEntryReady(true);
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const freshEnter = params.get(ENTER_CARE_QUERY) === "1";
     const previousKey = window.localStorage.getItem(DURABLE_CARE_KEY_STORAGE);
