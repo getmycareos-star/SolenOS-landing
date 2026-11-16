@@ -26,15 +26,22 @@ const filename = `synthetic-document-continuity-${randomUUID()}.txt`;
 async function request(path, { token, method = "GET", body, form } = {}) {
   const headers = token ? { authorization: `Bearer ${token}` } : {};
   if (body !== undefined) headers["content-type"] = "application/json";
-  const response = await fetch(new URL(path, backend), {
-    method,
-    headers,
-    body: form ?? (body === undefined ? undefined : JSON.stringify(body)),
-  });
-  const raw = await response.text();
-  let payload = null;
-  try { payload = raw ? JSON.parse(raw) : null; } catch { payload = raw; }
-  return { status: response.status, payload, response };
+  const attempts = method === "GET" ? 5 : 1;
+  let result = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const response = await fetch(new URL(path, backend), {
+      method,
+      headers,
+      body: form ?? (body === undefined ? undefined : JSON.stringify(body)),
+    });
+    const raw = await response.text();
+    let payload = null;
+    try { payload = raw ? JSON.parse(raw) : null; } catch { payload = raw; }
+    result = { status: response.status, payload, response };
+    if (![429, 502, 503, 504].includes(response.status) || attempt === attempts) return result;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(1_000 * attempt, 5_000)));
+  }
+  return result;
 }
 
 async function newSession() {
@@ -86,6 +93,11 @@ async function pollDocument(session, evidenceId) {
   let last = null;
   while (Date.now() - started < timeoutMs) {
     const result = await request("/api/v1/documents/intelligence", { token: session.access_token });
+    if ([429, 502, 503, 504].includes(result.status)) {
+      last = result.payload;
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      continue;
+    }
     assert.equal(result.status, 200, JSON.stringify(result.payload));
     last = result.payload;
     const analysis = (last.items || []).find((item) => item.source_evidence_id === evidenceId);
@@ -118,6 +130,10 @@ try {
     const listed = await request(`/api/v1/evidence/${encodeURIComponent(session.person.id)}`, {
       token: session.access_token,
     });
+    if ([429, 502, 503, 504].includes(listed.status)) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      continue;
+    }
     assert.equal(listed.status, 200, JSON.stringify(listed.payload));
     evidence = listed.payload.find((item) => {
       let metadata = item.extra_metadata;
