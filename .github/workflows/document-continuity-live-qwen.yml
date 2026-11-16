@@ -1,0 +1,66 @@
+name: Live document continuity — real Qwen and caregiver acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "e2e/document-continuity-live-qwen.mjs"
+      - "src/components/DocumentIntelligenceReview.tsx"
+      - ".github/workflows/document-continuity-live-qwen.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-document-continuity-qwen
+  cancel-in-progress: false
+
+jobs:
+  live-document-continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FRONTEND_URL: http://127.0.0.1:3000
+      BACKEND_URL: https://solenosbackend-production.up.railway.app
+      OLLAMA_MODEL: qwen3.5:4b
+      DOCUMENT_QWEN_TIMEOUT_MS: "900000"
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install application and browser dependencies
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+
+      - name: Verify live backend is reachable
+        run: |
+          curl --fail --silent --show-error "$BACKEND_URL/health"
+
+      - name: Build the actual frontend from main
+        run: npm run build
+
+      - name: Start the actual frontend
+        run: |
+          nohup npm run start -- --hostname 127.0.0.1 >/tmp/solenos-live-document-frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/workspace/documents >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/solenos-live-document-frontend.log
+          exit 1
+
+      - name: Prove real Qwen extraction, caregiver UI acceptance, durable LCR persistence and original evidence
+        run: node e2e/document-continuity-live-qwen.mjs
+
+      - name: Print frontend logs on failure
+        if: failure()
+        run: cat /tmp/solenos-live-document-frontend.log || true
