@@ -330,41 +330,21 @@ export function linkDecisionOutcome(params: {
   careKey: string;
   outcomeText: string;
   eventId?: string;
-  decisionId?: string;
-  matchTokens?: readonly string[];
+  /** Required: outcomes must never be guessed onto the latest or a fuzzy-matched decision. */
+  decisionId: string;
   status?: DecisionMemoryStatus;
   nowIso?: string;
 }): DecisionMemoryEntry | null {
-  const store = load(params.careKey);
-  if (store.entries.length === 0) return null;
-
   const outcome = params.outcomeText.trim().slice(0, 240);
-  if (!outcome) return null;
+  if (!outcome || !params.decisionId) return null;
 
-  let target: DecisionMemoryEntry | null = null;
-  if (params.decisionId) {
-    target = store.entries.find((e) => e.id === params.decisionId) ?? null;
-  }
-  if (!target) {
-    const qTokens =
-      params.matchTokens && params.matchTokens.length > 0
-        ? [...params.matchTokens]
-        : tokens(outcome);
-    let bestScore = 0;
-    for (const e of store.entries) {
-      if (e.status === "completed") continue;
-      const score = overlap(e.content_tokens, qTokens);
-      if (score > bestScore) {
-        bestScore = score;
-        target = e;
-      }
-    }
-    if (bestScore < 1) target = store.entries[store.entries.length - 1] ?? null;
-  }
+  const store = load(params.careKey);
+  const target = store.entries.find((entry) => entry.id === params.decisionId);
+  // A missing or cross-context decision reference is not permission to guess.
   if (!target) return null;
 
   const changed =
-    /\b(instead|changed (?:to|from)|switched|no longer|reversed)\b/i.test(outcome);
+    /\\b(instead|changed (?:to|from)|switched|no longer|reversed)\\b/i.test(outcome);
   const nextStatus: DecisionMemoryStatus =
     params.status ?? (changed ? "changed" : "completed");
 
@@ -378,7 +358,9 @@ export function linkDecisionOutcome(params: {
   };
 
   const now = params.nowIso ?? new Date().toISOString();
-  const entries = store.entries.map((e) => (e.id === updated.id ? updated : e));
+  const entries = store.entries.map((entry) =>
+    entry.id === updated.id ? updated : entry,
+  );
   save({ care_key: params.careKey, entries, updated_at: now });
   return updated;
 }
