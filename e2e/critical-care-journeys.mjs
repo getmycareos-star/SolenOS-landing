@@ -214,6 +214,61 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("aria-label")),
     "More care record actions", "closing More menu must restore focus to its trigger");
 
+  const openMoreMenu = async () => {
+    await moreTrigger.click();
+    const opened = page.getByRole("menu", { name: "Care record actions", exact: true });
+    await opened.waitFor({ state: "visible", timeout: 5_000 });
+    return opened;
+  };
+
+  let actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Pin", exact: true }).click();
+  assert.equal(await page.evaluate(() => localStorage.getItem("solenos_workspace_pinned")), "1",
+    "Pin must persist on this device");
+  actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Unpin", exact: true }).click();
+  assert.equal(await page.evaluate(() => localStorage.getItem("solenos_workspace_pinned")), "0",
+    "Unpin must clear the saved device preference");
+
+  actionMenu = await openMoreMenu();
+  page.once("dialog", (dialog) => { void dialog.accept(); });
+  await actionMenu.getByRole("menuitem", { name: "Archive", exact: true }).click();
+  await page.getByRole("heading", { name: "Workspace archived", exact: true }).waitFor({ timeout: 10_000 });
+  actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Restore", exact: true }).click();
+  await page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 10_000 });
+
+  actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "View record details", exact: true }).click();
+  const detailsDialog = page.getByRole("dialog");
+  await detailsDialog.getByRole("heading", { name: "Care record details", exact: true }).waitFor({ timeout: 10_000 });
+  await detailsDialog.getByRole("button", { name: "Close care record details", exact: true }).click();
+  await detailsDialog.waitFor({ state: "detached", timeout: 10_000 });
+
+  actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Edit record", exact: true }).click();
+  await page.waitForURL("**/workspace/daily-care", { timeout: 15_000 });
+  await page.goBack({ waitUntil: "domcontentloaded" });
+  await page.waitForURL("**/workspace", { timeout: 15_000 });
+
+  actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Share care summary", exact: true }).click();
+  await page.getByRole("heading", { name: "Share care summary", exact: true }).waitFor({ timeout: 10_000 });
+  await page.locator(".share-panel-close").click();
+
+  actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Download / Export", exact: true }).click();
+  await page.getByRole("heading", { name: "Download / Export care summary", exact: true }).waitFor({ timeout: 10_000 });
+  await page.locator(".share-panel-close").click();
+
+  actionMenu = await openMoreMenu();
+  const installAlertPromise = page.waitForEvent("dialog");
+  await actionMenu.getByRole("menuitem", { name: "Add to Home", exact: true }).click();
+  const installAlert = await installAlertPromise;
+  assert.match(installAlert.message(), /iPhone or iPad|Android|Desktop/,
+    "Add to Home must explain the supported browser installation steps");
+  await installAlert.accept();
+
   const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navToggle.click();
   await page.waitForFunction(() =>
@@ -275,6 +330,49 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(await accountForm.evaluate((form) => form.checkValidity()), true,
     "a correctly formatted email and 12+ character password must pass browser validation");
   await context.close();
+
+  // Test local workspace deletion with a disposable identity, never the shared
+  // caregiver fixture used by the remaining acceptance journeys.
+  const disposableSession = await newSession("more-menu local deletion");
+  const disposableIdentity = auth(disposableSession);
+  const disposable = await createBrowserPage(
+    disposableSession,
+    "/workspace",
+    { width: 390, height: 844 },
+  );
+  const deletionRequests = [];
+  disposable.page.on("request", (request) => {
+    if (request.url().includes("/api/v1/") && request.method() === "DELETE") {
+      deletionRequests.push(request.url());
+    }
+  });
+  const deleteMenu = await disposable.page.getByRole("button", {
+    name: "More care record actions", exact: true,
+  }).click().then(() => disposable.page.getByRole("menu", { name: "Care record actions", exact: true }));
+  await deleteMenu.waitFor({ state: "visible", timeout: 5_000 });
+  const deleteDialogPromise = disposable.page.waitForEvent("dialog");
+  await deleteMenu.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  const deleteDialog = await deleteDialogPromise;
+  assert.match(deleteDialog.message(), /does not delete care information already saved in SolenOS/i,
+    "workspace deletion must distinguish local browser data from saved care information");
+  await deleteDialog.accept();
+  await disposable.page.waitForURL("**/start", { timeout: 15_000 });
+  const clearedLocalData = await disposable.page.evaluate(() => ({
+    token: localStorage.getItem("solenos_anonymous_access_token"),
+    personId: localStorage.getItem("solenos_backend_person_id"),
+    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+  }));
+  assert.deepEqual(clearedLocalData, { token: null, personId: null, caregiverId: null },
+    "workspace deletion must clear the local browser identity");
+  assert.equal(deletionRequests.length, 0,
+    "workspace deletion must not call an endpoint that deletes saved care information");
+  const revokedSession = await request(
+    `/api/v1/persons/${encodeURIComponent(disposableIdentity.personId)}`,
+    { token: disposableIdentity.token },
+  );
+  assert.equal(revokedSession.status, 401,
+    "the anonymous browser session must be revoked after local workspace deletion");
+  await disposable.context.close();
 });
 
 await record("01d secondary routes and reminder actions persist through reload", async () => {
