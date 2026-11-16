@@ -784,38 +784,6 @@ await record("04 document upload and extraction", async () => {
     assert.equal(intelligence.payload.written_to_lcr, false);
     assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
     documentReviewCandidate = intelligence.payload.observations[0];
-
-    // Exercise the caregiver's actual browser decision, not only the review API.
-    const documentPage = await createBrowserPage(session, "/workspace/documents");
-    await documentPage.page.getByRole("heading", { name: "Review document details", exact: true }).waitFor({ timeout: 20_000 });
-    await documentPage.page.getByText(documentReviewCandidate.source_quote, { exact: true }).waitFor({ timeout: 20_000 });
-    await documentPage.page.getByRole("button", { name: "Add to Care Record", exact: true }).first().click();
-    await documentPage.page.locator('[aria-label="Added to Care Record"]').first().waitFor({ timeout: 20_000 });
-    await documentPage.page.getByText("You approved this detail. It was added to your Care Record with a link to the original document.", { exact: false }).waitFor({ timeout: 20_000 });
-
-    // Reload from the server, open the append-only review history, and verify source access.
-    await documentPage.page.reload({ waitUntil: "domcontentloaded" });
-    await documentPage.page.locator('[aria-label="Added to Care Record"]').first().waitFor({ timeout: 20_000 });
-    await documentPage.page.locator("summary").filter({ hasText: "Review history" }).first().click();
-    await documentPage.page.getByText("Added to Care Record", { exact: false }).last().waitFor({ timeout: 10_000 });
-    const originalDocumentRow = documentPage.page.getByRole("button").filter({ hasText: "journey-discharge-note.txt" }).last();
-    await originalDocumentRow.waitFor({ state: "visible", timeout: 15_000 });
-    await originalDocumentRow.click();
-    const originalDialog = documentPage.page.getByRole("dialog", { name: "journey-discharge-note.txt" });
-    await originalDialog.waitFor({ state: "visible", timeout: 15_000 });
-    await documentPage.page.getByRole("button", { name: "Download original document", exact: true }).waitFor({ state: "visible" });
-    const originalBytes = await request("/api/v1/upload/" + encodeURIComponent(documentId), { token: identity.token });
-    assert.equal(originalBytes.status, 200, JSON.stringify(originalBytes.payload));
-    await verifyMobile(documentPage.page);
-    await documentPage.context.close();
-
-    const afterAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
-    assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
-    assert.ok(afterAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "accepted LCR record lost its source document reference");
-    const history = await request("/api/v1/documents/intelligence/" + documentAnalysisId + "/review-history", { token: identity.token });
-    assert.equal(history.status, 200, JSON.stringify(history.payload));
-    assert.ok(history.payload.items.some((item) => item.decision === "accept" && item.resulting_assertion_id), "caregiver acceptance was not durably recorded");
-    documentAcceptanceVerified = true;
   } else {
     const modelUnavailable = intelligence.status === 503
       && intelligence.payload?.detail?.code === "runtime_unreachable";
@@ -828,8 +796,139 @@ await record("04 document upload and extraction", async () => {
       !beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)),
       "An unavailable or unreviewed document interpretation must never be written to the Care Record",
     );
-    process.stdout.write("SKIP document interpretation acceptance: inference runtime unavailable; original upload and extracted text remain persisted\\n");
+
+    // In isolated CI only, seed a source-span-verified review candidate after
+    // the real upload and extraction have completed. This tests the caregiver
+    // review UI without pretending a missing inference runtime generated it.
+    const fixtureQuote = "Discharge instruction: Follow-up appointment requested in two weeks.";
+    const fixtureScript = String.raw`
+import hashlib
+import os
+import sys
+from datetime import datetime, timezone
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.models.capture_analysis import CaptureAnalysis
+
+analysis_id, person_id, caregiver_id, evidence_id, quote = sys.argv[1:]
+engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
+Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+try:
+    with Session() as db:
+        analysis = db.query(CaptureAnalysis).filter_by(
+            id=analysis_id, person_id=person_id, caregiver_id=caregiver_id,
+            source_evidence_id=evidence_id,
+        ).one()
+        source_text = analysis.source_text or ""
+        start = source_text.index(quote)
+        extracted_at = datetime.now(timezone.utc).isoformat()
+        digest = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
+        candidate = {
+            "subject": "Discharge instruction",
+            "observation": quote,
+            "source_quote": quote,
+            "review_status": "pending_review",
+            "page_number": 1,
+            "field_type": "observation",
+            "event_date": None,
+            "recorded_date": None,
+            "extracted_at": extracted_at,
+            "confidence": 1.0,
+            "warnings": [],
+            "canonical_candidate": {
+                "candidate_id": "ci-document-review-fixture",
+                "document_id": evidence_id,
+                "page_number": 1,
+                "source_excerpt": quote,
+                "source_span_start": start,
+                "source_span_end": start + len(quote),
+                "field_type": "observation",
+                "extracted_value": quote,
+                "event_date": None,
+                "recorded_date": None,
+                "extracted_at": extracted_at,
+                "confidence": 1.0,
+                "review_status": "pending_review",
+                "warnings": [],
+            },
+        }
+        metadata = dict(analysis.candidates or {})
+        assert metadata.get("kind") == "document_extraction_v1"
+        intelligence = {
+            "version": 1,
+            "model_provenance": {
+                "provider": "deterministic_ci_review_fixture",
+                "processing_version": "document_intelligence_v1",
+                "prompt_version": "source_grounded_review_candidates_v1",
+                "extraction_source": "persisted_server_extraction",
+                "source_evidence_id": evidence_id,
+                "source_text_sha256": digest,
+                "model_authority": "review_only",
+            },
+            "processing_history": [],
+            "observations": [candidate],
+            "open_questions": [],
+            "visible_candidate_indexes": [0],
+            "next_candidate_offset": 1,
+            "candidate_overflow": False,
+            "status": "available",
+            "model_authority": "review_only",
+            "source_text_sha256": digest,
+        }
+        metadata["document_intelligence"] = intelligence
+        analysis.candidates = metadata
+        db.add(analysis)
+        db.commit()
+finally:
+    engine.dispose()
+`;
+    execFileSync("python", [
+      "-c", fixtureScript,
+      documentAnalysisId,
+      identity.personId,
+      identity.caregiverId,
+      documentId,
+      fixtureQuote,
+    ], { cwd: "backend-service/backend", env: process.env, stdio: "pipe" });
+    const seeded = await request("/api/v1/documents/intelligence", { token: identity.token });
+    assert.equal(seeded.status, 200, JSON.stringify(seeded.payload));
+    const seededAnalysis = seeded.payload.items?.find((item) => item.analysis_id === documentAnalysisId);
+    assert.ok(seededAnalysis?.observations?.length, "The isolated review fixture must be visible through the real document review API");
+    documentReviewCandidate = seededAnalysis.observations[0];
   }
+
+  assert.ok(documentReviewCandidate?.source_quote, "The caregiver review screen needs a persisted source quotation");
+  // Exercise the caregiver's actual browser decision, not only the review API.
+  const documentPage = await createBrowserPage(session, "/workspace/documents");
+  await documentPage.page.getByRole("heading", { name: "Review document details", exact: true }).waitFor({ timeout: 20_000 });
+  await documentPage.page.getByText(documentReviewCandidate.source_quote, { exact: true }).waitFor({ timeout: 20_000 });
+  await documentPage.page.getByRole("button", { name: "Add to Care Record", exact: true }).first().click();
+  await documentPage.page.locator('[aria-label="Added to Care Record"]').first().waitFor({ timeout: 20_000 });
+  await documentPage.page.getByText("You approved this detail. It was added to your Care Record with a link to the original document.", { exact: false }).waitFor({ timeout: 20_000 });
+
+  // Reload from the server, open the append-only review history, and verify source access.
+  await documentPage.page.reload({ waitUntil: "domcontentloaded" });
+  await documentPage.page.locator('[aria-label="Added to Care Record"]').first().waitFor({ timeout: 20_000 });
+  await documentPage.page.locator("summary").filter({ hasText: "Review history" }).first().click();
+  await documentPage.page.getByText("Added to Care Record", { exact: false }).last().waitFor({ timeout: 10_000 });
+  const originalDocumentRow = documentPage.page.getByRole("button").filter({ hasText: "journey-discharge-note.txt" }).last();
+  await originalDocumentRow.waitFor({ state: "visible", timeout: 15_000 });
+  await originalDocumentRow.click();
+  const originalDialog = documentPage.page.getByRole("dialog", { name: "journey-discharge-note.txt" });
+  await originalDialog.waitFor({ state: "visible", timeout: 15_000 });
+  await documentPage.page.getByRole("button", { name: "Download original document", exact: true }).waitFor({ state: "visible" });
+  const originalBytes = await request("/api/v1/upload/" + encodeURIComponent(documentId), { token: identity.token });
+  assert.equal(originalBytes.status, 200, JSON.stringify(originalBytes.payload));
+  await verifyMobile(documentPage.page);
+  await documentPage.context.close();
+
+  const afterAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+  assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
+  assert.ok(afterAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "accepted LCR record lost its source document reference");
+  const history = await request("/api/v1/documents/intelligence/" + documentAnalysisId + "/review-history", { token: identity.token });
+  assert.equal(history.status, 200, JSON.stringify(history.payload));
+  assert.ok(history.payload.items.some((item) => item.decision === "accept" && item.resulting_assertion_id), "caregiver acceptance was not durably recorded");
+  documentAcceptanceVerified = true;
   const duplicateForm = new FormData();
   duplicateForm.append("person_id", identity.personId);
   duplicateForm.append("caregiver_id", identity.caregiverId);
