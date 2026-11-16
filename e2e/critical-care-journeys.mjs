@@ -89,7 +89,15 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
       }
     }
     if (!response) throw new Error("Backend proxy did not return a response after transient retries");
-    await route.fulfill({ response });
+    // A page may be closed while a slow backend request is still in flight.
+    // Do not turn normal teardown into an unhandled Playwright TargetClosedError.
+    if (page.isClosed()) return;
+    try {
+      await route.fulfill({ response });
+    } catch (error) {
+      if (page.isClosed()) return;
+      throw error;
+    }
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
   return { context, page, observed };
@@ -127,11 +135,14 @@ await record("01 first caregiver session", async () => {
     const target = new URL(source.pathname + source.search, backend);
     const headers = { ...route.request().headers() };
     delete headers.origin;
-    const response = await route.fetch({ url: target.toString(), headers, timeout: 210000 }).catch((error) => {
-      if (page.isClosed()) return null;
+    try {
+      const response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
+      if (page.isClosed()) return;
+      await route.fulfill({ response });
+    } catch (error) {
+      if (page.isClosed()) return;
       throw error;
-    });
-    if (response) await route.fulfill({ response });
+    }
   });
   await page.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(
