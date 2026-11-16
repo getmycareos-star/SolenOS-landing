@@ -273,7 +273,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   const summaryDownloadPromise = page.waitForEvent("download");
   await exportPanel.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
   const summaryDownload = await summaryDownloadPromise;
-  assert.match(summaryDownload.suggestedFilename(), /^care-summary-\\d{4}-\\d{2}-\\d{2}\\.txt$/,
+  assert.match(summaryDownload.suggestedFilename(), /^care-summary-\d{4}-\d{2}-\d{2}\.txt$/,
     "the export action must create a dated care summary file");
   const summaryPath = await summaryDownload.path();
   const summaryText = await readFile(summaryPath, "utf8");
