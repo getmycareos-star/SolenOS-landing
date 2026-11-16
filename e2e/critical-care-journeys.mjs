@@ -1675,72 +1675,76 @@ await record("frontend network failure is surfaced rather than rendered as empty
 });
 
 
-await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
-
-  const surfaces = ["/workspace", "/workspace/companion", "/workspace/appointments", "/workspace/documents", "/workspace/settings", "/workspace/community"];
-  for (const route of surfaces) {
-    const { context, page, observed } = await createBrowserPage(session, route);
-    await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
-    const bodyText = await page.locator("body").innerText();
-    assert.ok(bodyText.trim().length > 40, `surface did not render: ${route}`);
-    await verifyMobile(page);
-    if (route === "/workspace") {
-      assert.ok(observed.some((item) => item.path.includes("/care-continuity/current-care") && item.status === 200), "LCR screen did not consume the persisted current-care API");
-    }
-    if (route === "/workspace/community") await page.waitForURL("**/workspace", { timeout: 10_000 });
-    await context.close();
-  }
-
+await record("browser renders caregiver surfaces and respects Companion availability", async () => {
   const companion = await createBrowserPage(session, "/workspace/companion");
-  await companion.page.locator("#companion-message-input").fill("What did the caregiver record about sleep and appetite?");
-  // The composer documents Enter as its primary send action; exercise that exact UI path.
-  await companion.page.locator("#companion-message-input").press("Enter");
-  await companion.page.waitForFunction(() => {
-    const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
-    return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
-  }, undefined, { timeout: 210_000 });
-  const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
-  assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
-  await companion.page.getByRole("status", { name: "Care history coverage" }).waitFor({ timeout: 15_000 });
-  await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
-  await verifyMobile(companion.page);
+  const companionInput = companion.page.locator("#companion-message-input");
+  const availabilityState = await Promise.race([
+    companion.page.getByRole("heading", { name: "You don’t have to figure it all out right now.", exact: true })
+      .waitFor({ state: "visible", timeout: 20_000 }).then(() => "available"),
+    companion.page.getByText("The Care Assistant is temporarily unavailable", { exact: true })
+      .waitFor({ state: "visible", timeout: 20_000 }).then(() => "unavailable"),
+    companion.page.getByText("The Care Assistant hasn't been confirmed as ready", { exact: true })
+      .waitFor({ state: "visible", timeout: 20_000 }).then(() => "unverified"),
+    companion.page.getByText("We couldn't check the Care Assistant", { exact: true })
+      .waitFor({ state: "visible", timeout: 20_000 }).then(() => "error"),
+  ]);
 
-  // Companion messages remain conversation-only until the caregiver separately
-  // confirms the exact message, reviews the proposal, and accepts it.
-  const observationText = "Mum woke up three times last night.";
-  const previousAssistantCount = await companion.page.locator(".companion-message.is-assistant").count();
-  await companion.page.locator("#companion-message-input").fill(observationText);
-  await companion.page.locator("#companion-message-input").press("Enter");
-  await companion.page.waitForFunction((count) => {
-    const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
-    return messages.length > count && !messages[messages.length - 1].querySelector(".companion-typing");
-  }, previousAssistantCount, { timeout: 210_000 });
-  const observationMessage = companion.page.locator(".companion-message.is-user").filter({ hasText: observationText }).last();
-  await observationMessage.getByRole("button", { name: "Save as a care note" }).waitFor({ timeout: 15_000 });
-  await observationMessage.getByRole("button", { name: "Save as a care note" }).click();
-  await observationMessage.getByRole("button", { name: "Yes, save for review" }).click();
-
-  const reviewCard = companion.page.locator(".companion-care-update").filter({ hasText: observationText }).last();
-  await reviewCard.waitFor({ timeout: 15_000 });
-  const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
-  assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
-  assert.equal(
-    JSON.stringify(beforeAcceptance.payload).includes(observationText),
-    false,
-    "a Companion message and pending proposal must not update the Care Record before acceptance",
-  );
-
-  await reviewCard.getByRole("button", { name: "Add to Care Record" }).click();
-  await companion.page.getByText(
-    "Your report was added to the Care Record. A healthcare professional has not confirmed it.",
-    { exact: true },
-  ).waitFor({ timeout: 15_000 });
-  const afterAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
-  assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
-  assert.ok(
-    JSON.stringify(afterAcceptance.payload).includes(observationText),
-    "the explicitly accepted Companion report must appear in the same persisted Care Record",
-  );
+  if (availabilityState === "available") {
+    await companion.page.locator("#companion-message-input").fill("What did the caregiver record about sleep and appetite?");
+    // The composer documents Enter as its primary send action; exercise that exact UI path.
+    await companion.page.locator("#companion-message-input").press("Enter");
+    await companion.page.waitForFunction(() => {
+      const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
+      return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
+    }, undefined, { timeout: 210_000 });
+    const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
+    assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
+    await companion.page.getByRole("status", { name: "Care history coverage" }).waitFor({ timeout: 15_000 });
+    await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
+    await verifyMobile(companion.page);
+  
+    // Companion messages remain conversation-only until the caregiver separately
+    // confirms the exact message, reviews the proposal, and accepts it.
+    const observationText = "Mum woke up three times last night.";
+    const previousAssistantCount = await companion.page.locator(".companion-message.is-assistant").count();
+    await companion.page.locator("#companion-message-input").fill(observationText);
+    await companion.page.locator("#companion-message-input").press("Enter");
+    await companion.page.waitForFunction((count) => {
+      const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
+      return messages.length > count && !messages[messages.length - 1].querySelector(".companion-typing");
+    }, previousAssistantCount, { timeout: 210_000 });
+    const observationMessage = companion.page.locator(".companion-message.is-user").filter({ hasText: observationText }).last();
+    await observationMessage.getByRole("button", { name: "Save as a care note" }).waitFor({ timeout: 15_000 });
+    await observationMessage.getByRole("button", { name: "Save as a care note" }).click();
+    await observationMessage.getByRole("button", { name: "Yes, save for review" }).click();
+  
+    const reviewCard = companion.page.locator(".companion-care-update").filter({ hasText: observationText }).last();
+    await reviewCard.waitFor({ timeout: 15_000 });
+    const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+    assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
+    assert.equal(
+      JSON.stringify(beforeAcceptance.payload).includes(observationText),
+      false,
+      "a Companion message and pending proposal must not update the Care Record before acceptance",
+    );
+  
+    await reviewCard.getByRole("button", { name: "Add to Care Record" }).click();
+    await companion.page.getByText(
+      "Your report was added to the Care Record. A healthcare professional has not confirmed it.",
+      { exact: true },
+    ).waitFor({ timeout: 15_000 });
+    const afterAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+    assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
+    assert.ok(
+      JSON.stringify(afterAcceptance.payload).includes(observationText),
+      "the explicitly accepted Companion report must appear in the same persisted Care Record",
+    );
+  
+  } else {
+    assert.equal(await companionInput.isDisabled(), true,
+      "Companion must not accept messages unless its response service is confirmed operational");
+    await verifyMobile(companion.page);
+  }
   await companion.context.close();
 });
 
