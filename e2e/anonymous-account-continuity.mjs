@@ -309,8 +309,8 @@ try {
   await pageB.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
   const deviceBSession = await pageB.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
   assert.ok(deviceBSession, "device B did not receive an authenticated session");
-  await pageB.getByRole("button", { name: "Register this device", exact: true }).click();
-  await pageB.getByText("This device is registered and verified for the signed-in account.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageB.getByRole("button", { name: "Add this device", exact: true }).click();
+  await pageB.getByText("This device is linked to your account.", { exact: true }).waitFor({ timeout: 20_000 });
   const devicesOnB = await backendRequest("/api/v1/identity/devices", { token: deviceBSession });
   assert.equal(devicesOnB.response.status, 200, "device B could not list registered devices");
   assert.equal(devicesOnB.payload?.devices?.length, 2, "both devices should be registered");
