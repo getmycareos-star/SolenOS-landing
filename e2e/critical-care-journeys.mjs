@@ -139,6 +139,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "What’s been happening?", exact: true })
     .waitFor({ state: "visible", timeout: 10_000 });
+  await page.waitForFunction(() => document.documentElement.classList.contains("solenos-first-visit-mode"), undefined, { timeout: 5_000 });
   assert.equal(
     await page.locator(".solenos-chat-topbar").isVisible(),
     false,
