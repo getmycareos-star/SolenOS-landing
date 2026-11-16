@@ -192,7 +192,7 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
 });
 
 await record("01c workspace links, browser back, More menu and account form validation", async () => {
-  const { context, page } = await createBrowserPage(
+  const { context, page, observed } = await createBrowserPage(
     session,
     "/workspace",
     { width: 390, height: 844 },
@@ -294,6 +294,7 @@ await record("01c workspace links, browser back, More menu and account form vali
       ? situationDiagnostic.payload.active_care_situation.observations.length : null,
   }));
   console.log("SHARE_EXPORT_PANEL_TEXT", (await exportPanel.innerText()).slice(0, 1200));
+  console.log("SHARE_NETWORK_REQUESTS", JSON.stringify(observed.filter((item) => item.path.includes("situation"))));
   await exportPanel.getByRole("radio", { name: /Doctor \/ clinician/ }).click();
   await exportPanel.getByText("Prepared for: Doctor / clinician", { exact: true }).waitFor({ timeout: 10_000 });
   await exportPanel.getByRole("button", { name: "Continue", exact: true }).click();
