@@ -63,6 +63,7 @@ export function CareRecordOverview() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const hasLoadedRef = useRef(false);
+  const loadedPersonIdRef = useRef<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -72,7 +73,21 @@ export function CareRecordOverview() {
     try {
       const session = await ensureAnonymousSession();
       const personId = session.person?.id;
-      if (!personId) throw new Error("The care record could not be opened.");
+      if (!personId) {
+        setItems([]);
+        setChanges([]);
+        hasLoadedRef.current = false;
+        setHasLoaded(false);
+        loadedPersonIdRef.current = null;
+        throw new Error("The care record could not be opened.");
+      }
+      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== personId) {
+        setItems([]);
+        setChanges([]);
+        hasLoadedRef.current = false;
+        setHasLoaded(false);
+      }
+      loadedPersonIdRef.current = personId;
       const response = await getJSON("/care-continuity/current-care?limit_per_source=12") as {
         person_id?: string;
         items?: CareItem[];
