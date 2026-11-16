@@ -285,6 +285,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
         await patchJSON(`/care-continuity/decisions/${entry.postgres_id}`, {
           title: entry.what.slice(0, 240),
           decision_text: entry.what,
+          decision_status: entry.status === "active" ? "recorded" : entry.status,
           context: JSON.stringify({
             reason: entry.reason,
             alternatives: entry.alternatives,
