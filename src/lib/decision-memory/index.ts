@@ -242,6 +242,8 @@ function inferStatus(text: string): DecisionMemoryStatus {
 export function recordDecisionFromText(params: {
   careKey: string;
   rawText: string;
+  /** Preserve the extraction-layer identity so linked outcomes reference this exact decision. */
+  id?: string;
   nowIso?: string;
   who?: string[];
   situationId?: string | null;
@@ -295,7 +297,7 @@ export function recordDecisionFromText(params: {
   }
 
   const entry: DecisionMemoryEntry = {
-    id: `dm_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    id: params.id ?? `dm_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     care_key: careKey,
     what,
     decision: what,
