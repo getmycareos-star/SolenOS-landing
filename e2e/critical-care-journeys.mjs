@@ -276,6 +276,15 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(await page.evaluate(() => window.__solenosInstallPromptCalled), true,
     "Add to Home must invoke the browser install prompt when one is available");
 
+  const fallbackDialogPromise = page.waitForEvent("dialog");
+  actionMenu = await openMoreMenu();
+  const fallbackClick = actionMenu.getByRole("menuitem", { name: "Add to Home", exact: true }).click();
+  const fallbackDialog = await fallbackDialogPromise;
+  assert.match(fallbackDialog.message(), /iPhone or iPad|Android|Desktop/,
+    "Add to Home must explain the manual steps when the browser has no install prompt");
+  await fallbackDialog.accept();
+  await fallbackClick;
+
   const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navToggle.click();
   await page.waitForFunction(() =>
