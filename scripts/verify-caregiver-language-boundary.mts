@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   caregiverFieldLabel,
+  caregiverProductTermLabel,
   caregiverInformationAreaLabel,
   caregiverInformationLabel,
   caregiverSafeAssistantText,
@@ -370,3 +371,23 @@ assert.match(shareSummaryData, /events_created/,
   "share summaries must remain compatible with the earlier response shape");
 assert.match(shareSummaryData, /function getShareEventText/,
   "share summaries must preserve caregiver-entered wording when reading saved events");
+
+for (const [term, expected] of [
+  ["Living Care Record", "Care Record"], ["LCR", "Care Record"],
+  ["Care continuity", "Keeping care information together"],
+  ["reconciliation", "Updating your care information"],
+  ["provenance", "What was recorded and where it came from"],
+  ["evidence", "What was recorded and where it came from"],
+  ["Delta Engine", "Changes since your last visit"], ["delta_engine", "Changes since your last visit"],
+  ["retrieval", "Finding past care information"],
+  ["open loops", "Things that still need attention"],
+  ["longitudinal history", "Care history over time"],
+  ["AI Companion", "Care Assistant"],
+  ["epistemic status", "What is known, not sure yet, or not recorded"],
+  ["assessment_coverage", "What information was checked"],
+  ["source attribution", "Who reported it and where it came from"],
+] as const) {
+  assert.equal(caregiverProductTermLabel(term), expected, "caregiver wording for " + term);
+}
+assert.equal(caregiverInformationAreaLabel("delta_engine"), "Changes since your last visit");
+assert.equal(caregiverProductTermLabel("unapproved_internal_term"), null);
