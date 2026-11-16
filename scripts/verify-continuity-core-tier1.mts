@@ -280,6 +280,14 @@ console.log("=== Continuity core Tier 1 (G3–G6 / G12–G13 / G16) ===\n");
   );
   assert(entries[0]!.reason == null, "G13b reason unknown is first-class");
 
+  // An outcome without an explicit decision identity must remain unlinked.
+  const ambiguous = linkDecisionOutcome({
+    careKey: rk,
+    outcomeText: "Walking confidence is still reduced after rehabilitation.",
+    nowIso: "2026-07-14T10:00:00.000Z",
+  });
+  assert(ambiguous == null, "G13b ambiguous outcome is not guessed onto a decision");
+
   linkDecisionOutcome({
     careKey: rk,
     decisionId: entries[0]!.id,
