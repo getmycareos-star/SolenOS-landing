@@ -265,7 +265,9 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         reason: typeof context.reason === "string" ? context.reason : null,
         outcome: typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
         outcome_event_ids: previous?.outcome_event_ids ?? [],
-        status: row.decision_status === "pending" ? "pending" : previous?.status ?? "active",
+        status: ["pending", "changed", "completed", "reversed", "uncertain", "needs_review"].includes(String(row.decision_status))
+          ? row.decision_status as DecisionMemoryStatus
+          : previous?.status ?? "active",
         evidence_texts: [evidenceText],
         recorded_at: String(row.recorded_at ?? row.created_at ?? when),
         content_tokens: tokens(what),
