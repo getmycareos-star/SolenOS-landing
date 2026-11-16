@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
-  AlertCircle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
 type HistoryCategory =
@@ -717,6 +717,7 @@ function CategoryIcon({ category }: { category: HistoryCategory }) {
 export function HistoryDrawer() {
   const open = true;
   const [records, setRecords] = useState<HistoryRecord[]>([]);
+  const loadedPersonIdRef = useRef<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -733,12 +734,19 @@ export function HistoryDrawer() {
     setError(null);
     setSourceWarnings([]);
     setHandoffConsentRequired(false);
+    let requestPersonId: string | null = null;
 
     try {
       const session = await ensureAnonymousSession();
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this history.");
       }
+      requestPersonId = session.person.id;
+      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId) {
+        setRecords([]);
+        setSelectedId(null);
+      }
+      loadedPersonIdRef.current = requestPersonId;
 
       const personPath = encodeURIComponent(session.person.id);
       let canUseHandoffs = false;
@@ -1041,7 +1049,16 @@ export function HistoryDrawer() {
       setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Care history could not be loaded.");
+      const message = cause instanceof Error ? cause.message : "";
+      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
+      if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
+        setRecords([]);
+        setSelectedId(null);
+        loadedPersonIdRef.current = null;
+      }
+      setError(accessDenied
+        ? "You may not have access to this care history. Check your account and try again."
+        : "We couldn’t load care history. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1198,7 +1215,7 @@ export function HistoryDrawer() {
 
                 <section className="history-integrity-note">
                   <ShieldCheck size={16} aria-hidden />
-                  <span>Original information is shown separately from details about when it was saved. A missing detail does not mean something did not happen. Related events are not assumed to have the same cause.</span>
+                  <span>Original information is shown separately from details about when it was saved. Related events are not assumed to have the same cause.</span>
                 </section>
 
               </div>
@@ -1257,36 +1274,26 @@ export function HistoryDrawer() {
                     </div>
                   )}
 
-                  {sourceWarnings.length > 0 && !loading && (
+                  {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries that loaded are still shown. Some others may be missing, so an empty section does not mean nothing happened. Try refreshing later.</span>
+                      <span>The entries that loaded are still shown. Some others may be missing. Try refreshing later.</span>
                     </div>
                   )}
 
+                  {error && records.length > 0 && <RecordState kind="error" title="Some care history could not be refreshed" description="Your previously loaded records are still shown. Please try again." onAction={() => void loadHistory(true)} />}
                   {loading ? (
-                    <div className="history-state" role="status">
-                      <span className="history-loading-dot" />
-                      Loading saved care history…
-                    </div>
-                  ) : error ? (
-                    <div className="history-error" role="alert">
-                      <AlertCircle size={19} aria-hidden />
-                      <div>
-                        <strong>History could not be loaded</strong>
-                        <p>{error}</p>
-                        <button type="button" onClick={() => void loadHistory(true)} disabled={refreshing}>Try again</button>
-                      </div>
-                    </div>
+                    <RecordState kind="loading" title="Loading saved care history" />
+                  ) : error && records.length === 0 ? (
+                    <RecordState kind={/may not have access|401|403|unauthori[sz]ed|forbidden/i.test(error) ? "forbidden" : "error"} title="History could not be loaded" description={error} onAction={() => void loadHistory(true)} />
                   ) : visibleRecords.length === 0 ? (
-                    <div className="history-empty">
-                      <HistoryEmptyIcon />
-                      <strong>{records.length ? "No matching records" : sourceWarnings.length ? "Your care history is incomplete" : "Your care history starts with saved records"}</strong>
-                      <p>{records.length ? "Try a different search or filter. No records were changed." : sourceWarnings.length ? "SolenOS could not load every part of your care history. An empty view does not mean nothing was recorded. Try refreshing." : "No saved care updates were found in the information available. SolenOS will not make up a history."}</p>
-                      {(query || filter !== "all") && (
-                        <button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button>
-                      )}
-                    </div>
+                    records.length > 0 ? (
+                      <RecordState kind="no-results" title="No matching records" description="Try a different search or filter." actionLabel="Clear search and filters" onAction={() => { setQuery(""); setFilter("all"); }} />
+                    ) : sourceWarnings.length > 0 ? (
+                      <RecordState kind="incomplete" title="Your care history is incomplete" description="Some saved care information could not be loaded. Refresh before relying on this view." onAction={() => void loadHistory(true)} />
+                    ) : (
+                      <RecordState kind="first-empty" title="No saved care history yet" description="Care updates, documents and other saved information will appear here when they are added." />
+                    )
                   ) : (
                     <div className="history-groups">
                       {groupedRecords.map((group) => (
@@ -1347,6 +1354,3 @@ function ReactDetailField({ field }: { field: DetailField }) {
   return <><dt>{field.label}</dt><dd>{value}</dd></>;
 }
 
-function HistoryEmptyIcon() {
-  return <span className="history-empty-icon"><Clock3 size={27} aria-hidden /></span>;
-}
