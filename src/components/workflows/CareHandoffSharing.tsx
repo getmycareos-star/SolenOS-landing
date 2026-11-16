@@ -300,13 +300,13 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           : Promise.resolve({ items: [] as OutboxItem[] }),
         getJSON("/handoff-drafts?limit=10") as Promise<{ items?: Array<DraftPayload & { updated_at?: string }> }>,
       ]);
-      if (directoryResult.status === "fulfilled") setDirectory(directoryResult.value.items ?? []);
+      if (directoryResult.status === "fulfilled" && Array.isArray(directoryResult.value.items)) setDirectory(directoryResult.value.items);
       else setDirectoryError(true);
-      if (inboxResult.status === "fulfilled") setInbox(inboxResult.value.items ?? []);
+      if (inboxResult.status === "fulfilled" && Array.isArray(inboxResult.value.items)) setInbox(inboxResult.value.items);
       else setHistoryError(true);
-      if (outboxResult.status === "fulfilled") setOutbox(outboxResult.value.items ?? []);
+      if (outboxResult.status === "fulfilled" && Array.isArray(outboxResult.value.items)) setOutbox(outboxResult.value.items);
       else setHistoryError(true);
-      if (draftsResult.status === "fulfilled") setSavedDrafts(draftsResult.value.items ?? []);
+      if (draftsResult.status === "fulfilled" && Array.isArray(draftsResult.value.items)) setSavedDrafts(draftsResult.value.items);
       else setHistoryError(true);
     } catch {
       setDirectoryError(true);
@@ -640,6 +640,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           ))}
         </section>
       )}
+      {loading && savedDrafts.length === 0 && !historyError && <RecordState kind="loading" title="Loading saved summaries" />}
+      {historyError && savedDrafts.length === 0 && !loading && <RecordState kind="error" title="Saved summaries could not be loaded" description="Your saved summaries may be incomplete. Please try again." onAction={() => void load()} />}
       {savedDrafts.length === 0 && !loading && !historyError && (
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved summaries">
           <h4 style={{ marginTop: 0 }}>Saved summaries</h4>
@@ -771,8 +773,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         {showHistory && (
           <div style={{ marginTop: 12 }}>
             {consentRequired && <p role="status">Summaries shared with you or by you are hidden until you save the required privacy and shared-care choices. <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Review Settings → Privacy</Link>.</p>}
-            {historyError && <p role="alert">Sharing history could not be loaded. Check your connection and try again.</p>}
-            {!historyError && !loading && inbox.length === 0 && outbox.length === 0 && <p>Nothing has been shared with or from this Care Record yet.</p>}
+            {historyError && (inbox.length > 0 || outbox.length > 0) && <RecordState kind="error" title="Some sharing history could not be loaded" description="Previously loaded sharing records are still shown. Refresh to check for updates." onAction={() => void load()} />}
+            {loading && inbox.length === 0 && outbox.length === 0 ? <RecordState kind="loading" title="Loading sharing history" /> : historyError && inbox.length === 0 && outbox.length === 0 ? <RecordState kind="error" title="Sharing history could not be loaded" description="Please refresh to try again." onAction={() => void load()} /> : !consentRequired && !historyError && !loading && inbox.length === 0 && outbox.length === 0 ? <RecordState kind="first-empty" title="No handoffs recorded yet" description="Summaries shared with you or by you will appear here." /> : null}
             <h5 style={{ margin: "12px 0 6px" }}>Shared with you</h5>
             {inbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
