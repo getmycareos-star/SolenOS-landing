@@ -1684,18 +1684,29 @@ await record("browser renders caregiver surfaces and submits Companion through t
   }
 
   const companion = await createBrowserPage(session, "/workspace/companion");
-  await companion.page.locator("#companion-message-input").fill("What did the caregiver record about sleep and appetite?");
-  // The composer documents Enter as its primary send action; exercise that exact UI path.
-  await companion.page.locator("#companion-message-input").press("Enter");
-  await companion.page.waitForFunction(() => {
-    const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
-    return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
-  }, undefined, { timeout: 210_000 });
-  const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
-  assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
-  await companion.page.getByRole("status", { name: "Care history coverage" }).waitFor({ timeout: 15_000 });
-  await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
-  await verifyMobile(companion.page);
+  const companionInput = companion.page.locator("#companion-message-input");
+  if (await companionInput.isDisabled()) {
+    assert.notEqual(
+      process.env.SOLENOS_REQUIRE_LIVE_QWEN,
+      "1",
+      "Companion must be interactive when live Qwen is explicitly required",
+    );
+    await companion.page.getByText(/Responses are not available right now/).waitFor({ timeout: 10_000 });
+    await verifyMobile(companion.page);
+  } else {
+    // The composer documents Enter as its primary send action; exercise that exact UI path.
+    await companionInput.fill("What did the caregiver record about sleep and appetite?");
+    await companionInput.press("Enter");
+    await companion.page.waitForFunction(() => {
+      const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
+      return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
+    }, undefined, { timeout: 210_000 });
+    const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
+    assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
+    await companion.page.getByRole("status", { name: "Care history coverage" }).waitFor({ timeout: 15_000 });
+    await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
+    await verifyMobile(companion.page);
+  }
   await companion.context.close();
 });
 
