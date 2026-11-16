@@ -235,7 +235,9 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
               ? 'The information behind this comparison may be out of date. It is not presented as the current care situation.'
               : result.interpretation_evaluation.overall_status === 'partially_supported'
                 ? 'Some saved information supports this comparison, but parts remain uncertain and need review.'
-                : 'There is not enough verified information to establish a care change.'
+                : result.interpretation_evaluation.overall_status === 'no_change_detected'
+                  ? 'The available records did not establish a meaningful change for this update.'
+                  : 'There is not enough verified information to establish a care change.'
           : caregiverSafeAssistantText(result.caregiver_summary || result.event_summary) || 'The comparison is ready, but its summary is not available to show.'}
       </p>
       {result.interpretation_evaluation && <p role="status" style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
@@ -247,7 +249,9 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
               ? 'The information behind this comparison may be out of date, so it is not presented as current.'
               : result.interpretation_evaluation.overall_status === 'partially_supported'
                 ? 'Some information supports this comparison, but parts remain uncertain. Review the linked records before relying on it.'
-                : 'There is not enough verified information to present a care change as established.'}
+                : result.interpretation_evaluation.overall_status === 'no_change_detected'
+                  ? 'The available records did not establish a meaningful change for this update.'
+                  : 'There is not enough verified information to present a care change as established.'}
       </p>}
       {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>We could not find the notes or documents behind some of these possible changes. Check them before relying on them.</p>}
       {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each finding is linked to the words in a saved note or document. This does not prove the information is medically correct or came from a different report.</p>}
