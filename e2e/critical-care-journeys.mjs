@@ -1635,7 +1635,7 @@ await record("frontend loading and empty states", async () => {
 
   const emptySession = await newSession("empty documents state");
   const emptyPage = await createBrowserPage(emptySession, "/workspace/documents");
-  await emptyPage.page.getByText("No saved documents yet", { exact: true }).waitFor({ timeout: 15_000 });
+  await emptyPage.page.getByText("No documents added yet", { exact: true }).waitFor({ timeout: 15_000 });
   await verifyMobile(emptyPage.page);
   await emptyPage.context.close();
 });
