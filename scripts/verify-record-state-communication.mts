@@ -57,3 +57,16 @@ assert(historyFailureStart >= 0 && historyFailureEnd > historyFailureStart, "Dai
 assert(!dailyCare.slice(historyFailureStart, historyFailureEnd).includes("setHistoryItems([])"), "a failed history read must not erase previously loaded care history");
 assert(dailyCare.includes("historyError ? null : (") && dailyCare.includes("No new care updates recorded"), "a failed history read must not appear as no new updates");
 console.log("PASS: Daily Care preserves previously loaded care and history when a refresh fails.");
+
+const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
+assert(followUps.includes("if (nextLoops !== null) setLoops(nextLoops)"), "a failed follow-up read must not clear previously loaded follow-ups");
+assert(followUps.includes("if (nextAssessment !== null) setAssessment(nextAssessment)"), "a failed attention review must not clear the previous review");
+assert(followUps.includes("Your previously saved information remains visible"), "follow-up refresh errors must explain that saved information remains visible");
+console.log("PASS: partial follow-up refresh failures preserve the last successfully loaded information.");
+
+const reminders = fs.readFileSync("src/app/workspace/reminders/page.tsx", "utf8");
+assert(reminders.includes("hasLoadedRef.current = true"), "reminders must remember a successful list read");
+assert(reminders.includes("error && !hasLoadedRef.current ? null"), "an initial reminder read failure must not render a false empty list");
+assert(reminders.includes("onAction={() => { setError(\"\")"), "reminder errors must expose a retry action");
+assert(reminders.includes("loading && !hasLoadedRef.current"), "only an initial reminder load should replace the list with a loading state");
+console.log("PASS: reminder loading, empty and failed states are separate, and retries preserve previously loaded reminders.");
