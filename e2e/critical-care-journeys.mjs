@@ -511,7 +511,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(revokedSession.status, 401,
     "the anonymous browser session must be revoked after local workspace deletion");
 
-  await disposable.page.getByRole("link", { name: "Care Record", exact: true }).click();
+  await disposable.page.locator("header.public-nav").getByRole("link", { name: "Care Record", exact: true }).click();
   await disposable.page.waitForURL("**/workspace?enter=1", { timeout: 15_000 });
   await disposable.page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 20_000 });
   const restartedIdentity = await disposable.page.evaluate(() => ({
