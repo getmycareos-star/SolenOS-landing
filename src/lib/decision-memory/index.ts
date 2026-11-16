@@ -82,6 +82,7 @@ export type DecisionMemoryEntry = {
   outcome_client_reference_id?: string;
   postgres_snapshot?: string;
   postgres_status_snapshot?: string;
+  postgres_context_snapshot?: string;
   extraction_ids?: string[];
   client_reference_id?: string;
   revisions?: DecisionMemoryRevision[];
@@ -132,6 +133,17 @@ const STOP = new Set([
   "taking",
   "take",
 ]);
+
+function decisionContextForPostgres(entry: DecisionMemoryEntry): string {
+  return JSON.stringify({
+    reason: entry.reason,
+    alternatives: entry.alternatives,
+    situation_id: entry.context_situation_id,
+    context_summary: entry.context_summary,
+    evidence_text: entry.evidence[0]?.text ?? entry.what,
+    event_id: entry.evidence[0]?.event_id ?? null,
+  });
+}
 
 function decisionStatusForPostgres(status: DecisionMemoryStatus): string {
   return status === "active" ? "recorded" : status;
@@ -302,6 +314,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         postgres_id: id,
         postgres_snapshot: serverWhat,
         postgres_status_snapshot: typeof row.decision_status === "string" ? row.decision_status : previous?.postgres_status_snapshot,
+        postgres_context_snapshot: typeof row.context === "string" ? row.context : previous?.postgres_context_snapshot,
         extraction_ids: previous?.extraction_ids ?? [],
         client_reference_id: typeof row.client_reference_id === "string" ? row.client_reference_id : previous?.client_reference_id,
         revisions: (revisionsByDecision.get(id) ?? []).sort((a, b) => a.revision_number - b.revision_number),
@@ -362,22 +375,17 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
   const entries = [...store.entries];
   for (const entry of entries) {
     if (entry.postgres_id) {
+      const contextPayload = decisionContextForPostgres(entry);
       if (
         entry.postgres_snapshot !== entry.what ||
-        entry.postgres_status_snapshot !== decisionStatusForPostgres(entry.status)
+        entry.postgres_status_snapshot !== decisionStatusForPostgres(entry.status) ||
+        entry.postgres_context_snapshot !== contextPayload
       ) {
         await patchJSON(`/care-continuity/decisions/${entry.postgres_id}`, {
           title: entry.what.slice(0, 240),
           decision_text: entry.what,
           decision_status: entry.status === "active" ? "recorded" : entry.status,
-          context: JSON.stringify({
-            reason: entry.reason,
-            alternatives: entry.alternatives,
-            situation_id: entry.context_situation_id,
-            context_summary: entry.context_summary,
-            evidence_text: entry.evidence[0]?.text ?? entry.what,
-            event_id: entry.evidence[0]?.event_id ?? null,
-          }),
+          context: contextPayload,
         });
         const current = load(careKey);
         save({
@@ -387,6 +395,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
               ...candidate,
               postgres_snapshot: candidate.what,
               postgres_status_snapshot: decisionStatusForPostgres(candidate.status),
+              postgres_context_snapshot: contextPayload,
             } : candidate,
           ),
           updated_at: new Date().toISOString(),
@@ -400,14 +409,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       client_reference_id: entry.client_reference_id ?? entry.extraction_ids?.[0] ?? entry.id,
       decision_status: entry.status === "active" ? "recorded" : entry.status,
       decided_at: entry.when,
-      context: JSON.stringify({
-        reason: entry.reason,
-        alternatives: entry.alternatives,
-        situation_id: entry.context_situation_id,
-        context_summary: entry.context_summary,
-        evidence_text: entry.evidence[0]?.text ?? entry.what,
-        event_id: entry.evidence[0]?.event_id ?? null,
-      }),
+      context: decisionContextForPostgres(entry),
       evidence_ids: [],
     }) as Record<string, unknown>;
     if (typeof saved.id !== "string" || !saved.id) {
@@ -424,6 +426,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
               postgres_id: saved.id as string,
               postgres_snapshot: String(saved.decision_text ?? candidate.what),
               postgres_status_snapshot: String(saved.decision_status ?? decisionStatusForPostgres(candidate.status)),
+              postgres_context_snapshot: decisionContextForPostgres(candidate),
               client_reference_id: entry.client_reference_id ?? entry.extraction_ids?.[0] ?? entry.id,
             }
           : candidate,
