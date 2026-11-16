@@ -218,7 +218,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
   ]);
   const outcomesByDecision = new Map<string, Record<string, unknown>>();
   for (const outcome of outcomeRows) {
-    if (typeof outcome.decision_id === "string") outcomesByDecision.set(outcome.decision_id, outcome);
+    if (typeof outcome.decision_id === "string" && !outcomesByDecision.has(outcome.decision_id)) outcomesByDecision.set(outcome.decision_id, outcome);
   }
   const store = load(careKey);
   const existingById = new Map(store.entries.map((entry) => [entry.postgres_id ?? entry.id, entry]));
