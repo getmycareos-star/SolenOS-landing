@@ -297,6 +297,7 @@ export default function ClaimAssessmentPanel() {
     setDependencySaving(true);
     setDependencyError("");
     setDependencyNotice("");
+    let writeCompleted = false;
     try {
       await postJSON("/uncertainty/claims/dependencies", {
         person_id: personId,
@@ -305,8 +306,7 @@ export default function ClaimAssessmentPanel() {
         dependency_type: dependencyType,
         rationale: dependencyRationale.trim(),
       });
-      setDependencyRationale("");
-      setDependencyNotice("The connection was saved. This records how the details are related; it does not prove that either detail is true.");
+      writeCompleted = true;
       const result = await getJSON(
         `/uncertainty/claims/${encodeURIComponent(selectedClaim.id)}/dependencies`,
       );
@@ -319,8 +319,13 @@ export default function ClaimAssessmentPanel() {
         throw new Error("Dependency graph escaped the authenticated care record");
       }
       setDependencies(rows);
+      setDependencyRationale("");
+      setDependencyNotice("The connection was saved. This records how the details are related; it does not prove that either detail is true.");
     } catch {
-      setDependencyError("This connection could not be saved. It may already exist or conflict with another care detail. No change was made.");
+      setDependencyNotice("");
+      setDependencyError(writeCompleted
+        ? "The connection may have been saved, but the updated details could not be loaded. Refresh this page before trying again."
+        : "We couldn't confirm that this connection was saved. Check your connection and refresh before trying again.");
     } finally {
       setDependencySaving(false);
     }
