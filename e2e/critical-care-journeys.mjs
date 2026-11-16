@@ -277,6 +277,113 @@ await record("01c workspace links, browser back, More menu and account form vali
   await context.close();
 });
 
+await record("01d secondary routes and reminder actions persist through reload", async () => {
+  const { context, page } = await createBrowserPage(
+    session,
+    "/workspace/reminders",
+    { width: 390, height: 844 },
+  );
+
+  for (const [route, expectedPath, expectedHash] of [
+    ["/workspace/community", "/workspace", ""],
+    ["/workspace/continuity", "/workspace", ""],
+    ["/workspace/record", "/workspace", ""],
+    ["/workspace/notifications", "/workspace/settings", "#settings-notifications"],
+  ]) {
+    await page.goto(new URL(route, frontend).toString(), { waitUntil: "domcontentloaded" });
+    await page.waitForURL((url) =>
+      url.pathname === expectedPath && url.hash === expectedHash,
+      { timeout: 15_000 },
+    );
+  }
+
+  await page.goto(new URL("/workspace/reminders", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Care reminders", exact: true }).waitFor({ timeout: 15_000 });
+  await verifyMobile(page);
+
+  const form = page.locator("form.care-reminder-form");
+  const titleInput = form.getByLabel("What needs following up?");
+  const dueInput = form.getByLabel("Due date and time");
+  const noteInput = form.getByLabel("Context (optional)");
+  const saveButton = form.getByRole("button", { name: "Save reminder", exact: true });
+  assert.equal(await titleInput.inputValue(), "");
+  assert.equal(await saveButton.isDisabled(), true,
+    "an empty reminder must not be submitted");
+
+  const firstTitle = unique("Browser reminder — appointment follow-up");
+  await titleInput.fill(firstTitle);
+  await noteInput.fill("Check the clinic's appointment confirmation.");
+  assert.ok(await dueInput.inputValue(),
+    "the reminder form must provide a valid default due date");
+  await saveButton.click();
+  await page.getByRole("status").filter({ hasText: "Reminder saved." }).waitFor({ timeout: 15_000 });
+  let firstItem = page.locator(".care-reminder-item").filter({ hasText: firstTitle });
+  await firstItem.waitFor({ timeout: 15_000 });
+
+  const persistedAfterCreate = await request(
+    `/api/v1/reminders/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(persistedAfterCreate.status, 200, JSON.stringify(persistedAfterCreate.payload));
+  let firstSaved = persistedAfterCreate.payload.find((item) => item.title === firstTitle);
+  assert.ok(firstSaved, "the reminder must be saved by the backend");
+  assert.equal(firstSaved.status, "open");
+  assert.equal(firstSaved.note, "Check the clinic's appointment confirmation.");
+  assert.equal(firstSaved.snooze_count, 0);
+
+  await firstItem.getByRole("button", { name: "Snooze 1 hour", exact: true }).click();
+  await page.getByRole("status").filter({ hasText: "Reminder moved one hour later." }).waitFor({ timeout: 15_000 });
+  const persistedAfterSnooze = await request(
+    `/api/v1/reminders/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(persistedAfterSnooze.status, 200, JSON.stringify(persistedAfterSnooze.payload));
+  firstSaved = persistedAfterSnooze.payload.find((item) => item.id === firstSaved.id);
+  assert.equal(firstSaved.status, "open", "snoozing must not complete a reminder");
+  assert.equal(firstSaved.snooze_count, 1, "snooze count must be persisted");
+  assert.ok(firstSaved.snoozed_at, "snooze time must be persisted");
+
+  firstItem = page.locator(".care-reminder-item").filter({ hasText: firstTitle });
+  await firstItem.getByRole("button", { name: "Mark complete", exact: true }).click();
+  await page.getByRole("status").filter({ hasText: "Reminder marked complete." }).waitFor({ timeout: 15_000 });
+  await page.getByLabel("Show").selectOption("completed");
+  firstItem = page.locator(".care-reminder-item").filter({ hasText: firstTitle });
+  await firstItem.waitFor({ timeout: 15_000 });
+  const completed = await request(
+    `/api/v1/reminders/${encodeURIComponent(identity.personId)}?status=completed`,
+    { token: identity.token },
+  );
+  assert.equal(completed.status, 200, JSON.stringify(completed.payload));
+  assert.equal(completed.payload.find((item) => item.id === firstSaved.id)?.status, "completed");
+
+  await page.getByLabel("Show").selectOption("open");
+  const secondTitle = unique("Browser reminder — cancel test");
+  await titleInput.fill(secondTitle);
+  await noteInput.fill("This reminder will be cancelled in the test.");
+  await saveButton.click();
+  await page.getByRole("status").filter({ hasText: "Reminder saved." }).waitFor({ timeout: 15_000 });
+  const secondItem = page.locator(".care-reminder-item").filter({ hasText: secondTitle });
+  await secondItem.waitFor({ timeout: 15_000 });
+  await secondItem.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("status").filter({ hasText: "Reminder cancelled." }).waitFor({ timeout: 15_000 });
+  await page.getByLabel("Show").selectOption("cancelled");
+  await page.locator(".care-reminder-item").filter({ hasText: secondTitle }).waitFor({ timeout: 15_000 });
+  const cancelled = await request(
+    `/api/v1/reminders/${encodeURIComponent(identity.personId)}?status=cancelled`,
+    { token: identity.token },
+  );
+  assert.equal(cancelled.status, 200, JSON.stringify(cancelled.payload));
+  assert.ok(cancelled.payload.some((item) => item.title === secondTitle && item.status === "cancelled"));
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Care reminders", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByLabel("Show").selectOption("cancelled");
+  await page.locator(".care-reminder-item").filter({ hasText: secondTitle }).waitFor({ timeout: 15_000 });
+  await page.getByRole("link", { name: "Back to Care Record", exact: true }).click();
+  await page.waitForURL("**/workspace", { timeout: 15_000 });
+  await context.close();
+});
+
 // 2. Daily Capture: write, idempotent replay, invalid payload, expired bearer, then retrieve.
 let dailyCaptureEventId;
 await record("02 Daily Capture", async () => {
