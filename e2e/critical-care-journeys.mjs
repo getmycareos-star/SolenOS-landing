@@ -505,8 +505,32 @@ await record("01c workspace links, browser back, More menu and account form vali
         caregiverId: values.solenos_backend_caregiver_id,
         expiresAt: values.solenos_anonymous_session_expires_at,
         legacyPersonId: values.solenos_person_id,
+        beforeUnload: JSON.parse(
+          window.sessionStorage.getItem("__solenos_workspace_delete_beforeunload") || "null",
+        ),
       };
     }
+  });
+  await disposable.page.evaluate(() => {
+    const keys = [
+      "solenos_anonymous_access_token",
+      "solenos_backend_person_id",
+      "solenos_backend_caregiver_id",
+      "solenos_anonymous_session_expires_at",
+      "solenos_person_id",
+    ];
+    window.addEventListener("beforeunload", () => {
+      const values = Object.fromEntries(
+        keys.map((key) => [key, window.localStorage.getItem(key)]),
+      );
+      window.sessionStorage.setItem("__solenos_workspace_delete_beforeunload", JSON.stringify({
+        token: values.solenos_anonymous_access_token,
+        personId: values.solenos_backend_person_id,
+        caregiverId: values.solenos_backend_caregiver_id,
+        expiresAt: values.solenos_anonymous_session_expires_at,
+        legacyPersonId: values.solenos_person_id,
+      }));
+    }, { once: true });
   });
   const deleteMenu = await disposable.page.getByRole("button", {
     name: "More care record actions", exact: true,
@@ -524,7 +548,20 @@ await record("01c workspace links, browser back, More menu and account form vali
     window.__solenosWorkspaceDeleteSnapshot ?? null
   );
   assert.ok(clearedLocalData, "the /start document must capture local identity before application bootstrap");
-  assert.deepEqual(clearedLocalData, {
+  assert.deepEqual(clearedLocalData.beforeUnload, {
+    token: null,
+    personId: null,
+    caregiverId: null,
+    expiresAt: null,
+    legacyPersonId: null,
+  }, "workspace deletion must clear identity before the browser leaves the workspace");
+  assert.deepEqual({
+    token: clearedLocalData.token,
+    personId: clearedLocalData.personId,
+    caregiverId: clearedLocalData.caregiverId,
+    expiresAt: clearedLocalData.expiresAt,
+    legacyPersonId: clearedLocalData.legacyPersonId,
+  }, {
     token: null,
     personId: null,
     caregiverId: null,
