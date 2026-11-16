@@ -283,6 +283,28 @@ await record("01c workspace links, browser back, More menu and account form vali
   await exportPanel.getByText("Summary downloaded.", { exact: true }).waitFor({ timeout: 10_000 });
   await page.locator(".share-panel-close").click();
 
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: frontend });
+  actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Share care summary", exact: true }).click();
+  const sharePanel = page.locator(".share-care-summary-panel");
+  await sharePanel.getByRole("heading", { name: "Share care summary", exact: true }).waitFor({ timeout: 10_000 });
+  const shareLimitedReadiness = sharePanel.getByRole("button", { name: "Continue anyway", exact: true });
+  if (await shareLimitedReadiness.isVisible().catch(() => false)) {
+    await shareLimitedReadiness.click();
+  }
+  await sharePanel.getByRole("radio", { name: /^Family/ }).click();
+  await sharePanel.getByText("Prepared for: Family", { exact: true }).waitFor({ timeout: 10_000 });
+  await sharePanel.getByRole("button", { name: "Continue", exact: true }).click();
+  await sharePanel.getByRole("button", { name: "Copy text", exact: true }).click();
+  await sharePanel.getByRole("button", { name: "Share", exact: true }).click();
+  await sharePanel.getByText("Summary copied to clipboard.", { exact: true }).waitFor({ timeout: 10_000 });
+  const copiedSummary = await page.evaluate(() => navigator.clipboard.readText());
+  assert.match(copiedSummary, /Prepared for: Family/,
+    "the share action must place the reviewed family summary on the clipboard");
+  assert.ok(copiedSummary.length > 100,
+    "the copied summary must contain actual care information");
+  await page.locator(".share-panel-close").click();
+
   await page.evaluate(() => {
     const installEvent = new Event("beforeinstallprompt", { cancelable: true });
     Object.defineProperty(window, "__solenosInstallPromptCalled", { configurable: true, value: false, writable: true });
