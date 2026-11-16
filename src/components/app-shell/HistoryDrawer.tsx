@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   ArrowLeft,
@@ -717,6 +717,7 @@ function CategoryIcon({ category }: { category: HistoryCategory }) {
 export function HistoryDrawer() {
   const open = true;
   const [records, setRecords] = useState<HistoryRecord[]>([]);
+  const loadedPersonIdRef = useRef<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -733,12 +734,19 @@ export function HistoryDrawer() {
     setError(null);
     setSourceWarnings([]);
     setHandoffConsentRequired(false);
+    let requestPersonId: string | null = null;
 
     try {
       const session = await ensureAnonymousSession();
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this history.");
       }
+      requestPersonId = session.person.id;
+      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId) {
+        setRecords([]);
+        setSelectedId(null);
+      }
+      loadedPersonIdRef.current = requestPersonId;
 
       const personPath = encodeURIComponent(session.person.id);
       let canUseHandoffs = false;
@@ -1041,7 +1049,15 @@ export function HistoryDrawer() {
       setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Care history could not be loaded.");
+      const message = cause instanceof Error ? cause.message : "";
+      if (!requestPersonId || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
+        setRecords([]);
+        setSelectedId(null);
+        loadedPersonIdRef.current = null;
+      }
+      setError(/401|403|unauthori[sz]ed|forbidden|access denied/i.test(message)
+        ? "You may not have access to this care history. Check your account and try again."
+        : "We couldn’t load care history. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
