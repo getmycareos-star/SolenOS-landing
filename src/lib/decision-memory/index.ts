@@ -346,7 +346,7 @@ export function linkDecisionOutcome(params: {
   if (!target) return null;
 
   const changed =
-    /\\b(instead|changed (?:to|from)|switched|no longer|reversed)\\b/i.test(outcome);
+    /\b(instead|changed (?:to|from)|switched|no longer|reversed)\b/i.test(outcome);
   const nextStatus: DecisionMemoryStatus =
     params.status ?? (changed ? "changed" : "completed");
 
