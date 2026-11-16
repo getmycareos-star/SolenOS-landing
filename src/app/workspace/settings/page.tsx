@@ -657,6 +657,31 @@ function LegalCard() {
 function PrivacyCard() {
   const { show, render } = useToast();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [erasureAuthority, setErasureAuthority] = useState<"self" | "parent_or_guardian" | "legal_representative" | "authorized_caregiver" | "other">("self");
+  const [erasureAttested, setErasureAttested] = useState(false);
+  const [erasureSubmitting, setErasureSubmitting] = useState(false);
+  const [erasureRequest, setErasureRequest] = useState<{ id: string; status: string; message: string } | null>(null);
+  const [erasureError, setErasureError] = useState("");
+
+  const submitCareRecordErasureRequest = async () => {
+    if (!erasureAttested || erasureSubmitting) return;
+    setErasureSubmitting(true);
+    setErasureError("");
+    try {
+      const result = await postJSON("/privacy/requests", {
+        request_type: "deletion",
+        authority_basis: erasureAuthority,
+        authority_attested: true,
+      }) as { id: string; status: string; message: string };
+      setErasureRequest(result);
+      show("Your care-record erasure request was received.", "success");
+    } catch {
+      setErasureError("We couldn't submit your request. Your care record has not been erased. Check your connection and try again.");
+      show("Your erasure request wasn't submitted.", "error");
+    } finally {
+      setErasureSubmitting(false);
+    }
+  };
 
   const clearLocalData = () => {
     const keys = [
@@ -737,13 +762,36 @@ function PrivacyCard() {
             Clear saved information from this device
           </Button>
         )}
-        <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
-          <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-            "SolenOS data deletion request",
-          )}`}>
-            Email to request care-record erasure
-          </a>
-        </Button>
+        <div className="mobile-settings-hint" style={{ display: "grid", gap: "0.65rem" }}>
+          <strong>Request erasure of your care record</strong>
+          {erasureRequest ? (
+            <>
+              <p role="status">Request received. Reference: {erasureRequest.id}. Status: {erasureRequest.status.replaceAll("_", " ")}.</p>
+              <p>{erasureRequest.message}</p>
+              <p>This is a request only. Your care record remains in place unless and until an authorized review and separate fulfilment are completed.</p>
+            </>
+          ) : (
+            <>
+              <label className="mobile-settings-label" htmlFor="erasure-authority">Your authority for this care record</label>
+              <select id="erasure-authority" className="mobile-settings-input" value={erasureAuthority} disabled={erasureSubmitting} onChange={(event) => setErasureAuthority(event.target.value as typeof erasureAuthority)}>
+                <option value="self">I am the person the care record is about</option>
+                <option value="parent_or_guardian">I am their parent or legal guardian</option>
+                <option value="legal_representative">I am their legal representative</option>
+                <option value="authorized_caregiver">I am an authorized caregiver</option>
+                <option value="other">Other authority</option>
+              </select>
+              <label className="mobile-settings-label" style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+                <input type="checkbox" checked={erasureAttested} disabled={erasureSubmitting} onChange={(event) => setErasureAttested(event.target.checked)} />
+                I confirm that the authority information above is accurate and that I am entitled to submit this request.
+              </label>
+              {erasureError && <p role="alert">{erasureError}</p>}
+              <Button variant="secondary" onClick={() => void submitCareRecordErasureRequest()} disabled={!erasureAttested || erasureSubmitting} loading={erasureSubmitting}>
+                {erasureSubmitting ? "Submitting request…" : "Submit care-record erasure request"}
+              </Button>
+              <p>Submitting creates a private request for review. It does not immediately delete data. SolenOS must verify identity and authority, assess shared-record and legal-hold restrictions, and complete a separate erasure process where eligible.</p>
+            </>
+          )}
+        </div>
         <Button variant="secondary" className="mobile-fab-sheet-item" asChild>
           <a href={`mailto:${SUPPORT_EMAIL}`}>Contact support</a>
         </Button>
