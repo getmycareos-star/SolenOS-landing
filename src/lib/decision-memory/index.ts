@@ -34,6 +34,7 @@ export type DecisionMemoryEvidence = {
   source?: string;
   text: string;
   event_id?: string;
+  evidence_id?: string;
 };
 
 export type DecisionMemoryEntry = {
@@ -140,6 +141,7 @@ function migrateEntry(raw: LegacyEntry, careKey: string): DecisionMemoryEntry | 
           source: e.source,
           text: e.text,
           event_id: e.event_id,
+          evidence_id: e.evidence_id,
         }))
       : (raw.evidence_texts ?? []).map((text) => ({ text }));
   const evidence_texts =
@@ -252,7 +254,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         who: previous?.who ?? (typeof row.created_by_caregiver_id === "string" ? [row.created_by_caregiver_id] : []),
         context_situation_id: typeof context.situation_id === "string" ? context.situation_id : null,
         context_summary: typeof context.context_summary === "string" ? context.context_summary : null,
-        evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { event_id: evidenceIds[0] } : {}) }],
+        evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { evidence_id: evidenceIds[0] } : {}) }],
         alternatives: Array.isArray(context.alternatives) ? context.alternatives.filter((v): v is string => typeof v === "string") : [],
         reason: typeof context.reason === "string" ? context.reason : null,
         outcome: typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
