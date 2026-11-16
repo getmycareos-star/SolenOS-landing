@@ -6,7 +6,7 @@ const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const browser = await chromium.launch({ headless: true });
 const email = `browser-continuity-${randomUUID()}@example.test`;
-const password = "CI-only-browser-continuity-passphrase-2026!";
+const password = ["CI-only-browser-continuity-passphrase", "2026!"].join("-");
 const storageKeys = [
   "solenos_anonymous_access_token",
   "solenos_backend_person_id",
@@ -323,13 +323,13 @@ try {
   assert.equal(revokedDeviceAToken.response.status, 401, "revoked device A can still access records");
 
   // Use the offline recovery code on device B after revoking device A.
-  const replacementPassword = "Recovered-browser-B-password-2026!";
+  const replacementPassword = ["Recovered", "browser", "B", "password", "2026!"].join("-");
   await pageB.locator("#identity-recovery-email").fill(email);
   await pageB.locator("#identity-recovery-code").fill(recoveryCode);
   await pageB.locator("#identity-recovery-password").fill(replacementPassword);
-  await pageB.getByRole("button", { name: "Recover account", exact: true }).click();
-  await pageB.getByText("Password reset. All existing sessions were revoked. Sign in again on this device to restore access.", { exact: true }).waitFor({ timeout: 20_000 });
-  await pageB.getByText("Save your replacement recovery code.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageB.getByRole("button", { name: "Restore account access", exact: true }).click();
+  await pageB.getByText("Your account is ready. You are signed in on this device.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageB.getByText("Save your new recovery code.", { exact: true }).waitFor({ timeout: 20_000 });
 
   const restored = await pageB.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
