@@ -144,7 +144,7 @@ assert.match(apiClient, /postJSON\(path: string, body: unknown, extraHeaders: Re
 const appointmentWorkspace = await readFile(new URL("../src/components/workflows/AppointmentWorkspace.tsx", import.meta.url), "utf8");
 const detailedAppointmentWorkspace = await readFile(new URL("../src/components/workflows/DetailedAppointmentWorkspace.tsx", import.meta.url), "utf8");
 assert.ok(appointmentWorkspace.includes("source_completeness"), "appointment preparation must receive source-level retrieval completeness");
-assert.ok(appointmentWorkspace.includes("This summary does not show all saved care information"), "appointment preparation must warn caregivers when its LCR projection is bounded");
+assert.ok(appointmentWorkspace.includes("Some parts of your Care Record could not be fully checked"), "appointment preparation must warn caregivers when its shared Care Record projection is incomplete");
 assert.ok(appointmentWorkspace.includes("There may be more questions in your Care Record"), "appointment preparation must disclose when additional priority-filtered questions were not displayed");
 assert.ok(appointmentWorkspace.includes("/appointment-workspaces/preparation-brief?window_days=90"), "appointment preparation must request a bounded source-linked LCR brief");
 assert.ok(appointmentWorkspace.includes("source_id") && appointmentWorkspace.includes("epistemic_status"), "appointment preparation must display source IDs and epistemic status");
