@@ -1257,7 +1257,7 @@ export function HistoryDrawer() {
                     </div>
                   )}
 
-                  {sourceWarnings.length > 0 && !loading && (
+                  {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
                       <span>The entries that loaded are still shown. Some others may be missing. Try refreshing later.</span>
