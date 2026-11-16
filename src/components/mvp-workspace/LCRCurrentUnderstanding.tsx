@@ -1537,12 +1537,9 @@ export function LCRCurrentUnderstanding() {
               <h4 id="lcr-attention-watch-heading">Changes to watch</h4>
               <p>These are changes or things that are still unclear in the saved care history. They are not automatically tasks. You can see items that need follow-up on the Follow-ups screen.</p>
               <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
-              {changesError && <p role="status">We couldn’t check the saved change history. This does not mean nothing has changed.</p>}
-              {patternsError && <p role="status">We couldn’t check whether any changes are repeating. This does not mean nothing is repeating.</p>}
+              {(changesError || patternsError) && <RecordState kind="error" title="Some care changes could not be loaded" description="This view may be incomplete. Your saved information remains visible." onAction={() => void load(true)} />}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
-                <p>{changesError || patternsError
-                  ? "Some care history could not be checked. Changes may be missing from this view."
-                  : "There isn’t enough saved history to describe changes yet."}</p>
+                {(changesError || patternsError) ? null : <RecordState kind="period-empty" title="No recent changes recorded" description="Recorded changes will appear here as information is added." />}
               ) : (
                 <ul className="lcr-current-facts">
                   {baselineItems.map((item) => (
