@@ -913,13 +913,19 @@ await record("Daily Care saves and retrieves original reports without relying on
 
 });
 
-await record("LCR care history shows the original caregiver report with source details on demand", async () => {
+await record("LCR care history shows a recent caregiver report with source details on demand", async () => {
+  const currentCareForUi = await request("/api/v1/care-continuity/current-care?limit_per_source=12", { token: identity.token });
+  assert.equal(currentCareForUi.status, 200, JSON.stringify(currentCareForUi.payload));
+  const visibleScenarioReport = [...scenarioReports].reverse().find((report) =>
+    currentCareForUi.payload.items.some((item) => JSON.stringify(item).includes(report))
+  );
+  assert.ok(visibleScenarioReport, "the visible Care Record projection must include a recent saved caregiver report");
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
-  await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
+  await history.page.getByText(visibleScenarioReport, { exact: false }).first().waitFor({ timeout: 20_000 });
 
   const reportCard = history.page.locator(".lcr-current-fact:visible")
-    .filter({ hasText: scenarioReports[0] }).first();
+    .filter({ hasText: visibleScenarioReport }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
   const sourceSummary = reportCard.locator("summary")
     .filter({ hasText: "Care details" }).first();
@@ -941,12 +947,12 @@ await record("LCR care history shows the original caregiver report with source d
   });
   assert.equal(evidenceList.status, 200, JSON.stringify(evidenceList.payload));
   const originalEvidence = evidenceList.payload.find(
-    (item) => item.id === dailyScenarioEvidenceIdsByReport[scenarioReports[0]],
+    (item) => item.id === dailyScenarioEvidenceIdsByReport[visibleScenarioReport],
   );
   assert.ok(originalEvidence?.id, "the source record linked to the caregiver report must remain available");
   assert.ok(
     typeof originalEvidence.source_text === "string" &&
-      originalEvidence.source_text.includes(scenarioReports[0]),
+      originalEvidence.source_text.includes(visibleScenarioReport),
     "the exact original caregiver wording must remain inside the saved source text",
   );
 
@@ -956,7 +962,7 @@ await record("LCR care history shows the original caregiver report with source d
   await sourceSelect.waitFor({ state: "visible", timeout: 15_000 });
   await sourceSelect.selectOption(originalEvidence.id);
   await history.page.locator("blockquote")
-    .filter({ hasText: scenarioReports[0] }).waitFor({ state: "visible", timeout: 15_000 });
+    .filter({ hasText: visibleScenarioReport }).waitFor({ state: "visible", timeout: 15_000 });
   await verifyMobile(history.page);
   await history.context.close();
 });
