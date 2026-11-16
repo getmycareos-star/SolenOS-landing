@@ -136,6 +136,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     { width: 390, height: 844 },
   );
   page.on("pageerror", (error) => console.log("FIRST_VISIT_PAGE_ERROR", error.message));
+  page.on("console", (message) => { if (message.type() === "error") console.log("FIRST_VISIT_CONSOLE_ERROR", message.text()); });
   await page.getByRole("heading", { name: "Your care journey starts here.", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "What’s been happening?", exact: true })
@@ -170,13 +171,9 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     active_care_situation: Boolean(capturePayload?.active_care_situation),
     active_care_situation_turn: Boolean(capturePayload?.active_care_situation_turn),
   }));
-  await page.waitForFunction(() => Boolean(
-    document.querySelector(".care-card-note") ||
-    document.querySelector(".workspace-error") ||
-    document.querySelector(".workspace-status-warning") ||
-    document.body.innerText.toLowerCase().includes("workspace encountered an error")
-  ), undefined, { timeout: 30_000 });
-  console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator(".solenos-chat-main").innerText());
+  await page.waitForTimeout(2_000);
+  console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator("body").innerText());
+  console.log("FIRST_VISIT_CAPTURE_STATE", await page.locator(".cognitive-workspace").getAttribute("class").catch(() => null));
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
 
