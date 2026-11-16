@@ -98,7 +98,30 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ./backend-service/backend
 
-      - name: Start Ollama and install the production-default Qwen model
+      - name: Check deployed Qwen runtime and installed model
+        run: |
+          curl --fail --show-error --silent --max-time 15 \
+            https://solenosbackend-production.up.railway.app/api/v1/assistant/status \
+            -o /tmp/solenos-production-qwen-status.json
+          python - <<'PY'
+          import json
+          with open("/tmp/solenos-production-qwen-status.json", encoding="utf-8") as handle:
+              status = json.load(handle)
+          print(json.dumps({
+              key: status.get(key)
+              for key in (
+                  "available", "operational", "runtime_available",
+                  "model_installed", "inference_verified", "inference_status",
+                  "model", "error_category", "failure_reason",
+              )
+          }, sort_keys=True))
+          assert status.get("runtime_available") is True, "Production Ollama runtime is unreachable"
+          assert status.get("model_installed") is True, "Production Qwen model is not installed"
+          assert status.get("available") is True, "Production Qwen is unavailable"
+          # This inventory endpoint intentionally does not run inference.
+          PY
+
+      - name: Start Ollama and install Qwen 3.5 4B for real inference tests
         run: |
           docker run --detach --name solenos-ci-ollama --publish 11434:11434 ollama/ollama:latest
           ready=0
