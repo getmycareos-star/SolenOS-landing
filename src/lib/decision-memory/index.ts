@@ -70,6 +70,7 @@ export type DecisionMemoryEntry = {
   postgres_outcome_id?: string;
   postgres_outcome_snapshot?: string;
   postgres_snapshot?: string;
+  extraction_ids?: string[];
 };
 
 type Store = {
@@ -153,6 +154,7 @@ function migrateEntry(raw: LegacyEntry, careKey: string): DecisionMemoryEntry | 
 
   return {
     id: raw.id ?? `dm_${Date.now().toString(36)}`,
+    extraction_ids: Array.isArray(raw.extraction_ids) ? raw.extraction_ids.filter((v): v is string => typeof v === "string") : [],
     care_key: raw.care_key ?? careKey,
     what,
     decision: what,
@@ -292,6 +294,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
             situation_id: entry.context_situation_id,
             context_summary: entry.context_summary,
             evidence_text: entry.evidence[0]?.text ?? entry.what,
+            event_id: entry.evidence[0]?.event_id ?? null,
           }),
         });
         const current = load(careKey);
@@ -458,6 +461,7 @@ export function recordDecisionFromText(params: {
 
   const entry: DecisionMemoryEntry = {
     id: params.id ?? `dm_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    extraction_ids: params.id ? [params.id] : [],
     care_key: careKey,
     what,
     decision: what,
@@ -484,6 +488,7 @@ export function recordDecisionFromText(params: {
         id: prior.id,
         postgres_id: prior.postgres_id,
         postgres_snapshot: prior.postgres_snapshot ?? prior.what,
+        extraction_ids: [...new Set([...(prior.extraction_ids ?? []), ...(params.id ? [params.id] : [])])],
         ...(prior.postgres_outcome_id ? { postgres_outcome_id: prior.postgres_outcome_id } : {}),
         ...(prior.postgres_outcome_snapshot ? { postgres_outcome_snapshot: prior.postgres_outcome_snapshot } : {}),
       }
@@ -512,7 +517,7 @@ export function linkDecisionOutcome(params: {
   if (!outcome || !params.decisionId) return null;
 
   const store = load(params.careKey);
-  const target = store.entries.find((entry) => entry.id === params.decisionId);
+  const target = store.entries.find((entry) => entry.id === params.decisionId || entry.extraction_ids?.includes(params.decisionId));
   // A missing or cross-context decision reference is not permission to guess.
   if (!target) return null;
 
