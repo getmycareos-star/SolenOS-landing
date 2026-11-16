@@ -32,6 +32,13 @@ type InstallPromptEvent = Event & {
 };
 
 const LOCAL_WORKSPACE_KEYS = [
+  // Current and legacy browser identity credentials. Deleting this workspace
+  // must revoke the token and remove every local identifier and expiry value.
+  "solenos_anonymous_access_token",
+  "solenos_backend_person_id",
+  "solenos_backend_caregiver_id",
+  "solenos_anonymous_session_expires_at",
+  "solenos_person_id",
   "solenos_durable_care_key",
   "solenos_care_session_id",
   "solenos_telemetry_user_id",
