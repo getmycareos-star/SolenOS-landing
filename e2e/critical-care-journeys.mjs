@@ -72,24 +72,31 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   const observed = [];
   page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
   await page.route("**/api/**", async (route) => {
-    const source = new URL(route.request().url());
-    const target = new URL(source.pathname + source.search, backend);
-    const headers = { ...route.request().headers() };
-    delete headers.origin;
-    let response;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
-        break;
-      } catch (error) {
-        const message = String(error?.message || error);
-        const transientConnectionFailure = /ECONNRESET|ECONNREFUSED|socket hang up/i.test(message);
-        if (!transientConnectionFailure || attempt === 2) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+    try {
+      const source = new URL(route.request().url());
+      const target = new URL(source.pathname + source.search, backend);
+      const headers = { ...route.request().headers() };
+      delete headers.origin;
+      let response;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
+          break;
+        } catch (error) {
+          const message = String(error?.message || error);
+          const transientConnectionFailure = /ECONNRESET|ECONNREFUSED|socket hang up/i.test(message);
+          if (!transientConnectionFailure || attempt === 2) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+        }
       }
+      if (!response) throw new Error("Backend proxy did not return a response after transient retries");
+      await route.fulfill({ response });
+    } catch (error) {
+      // Closing a test context may cancel API requests still in flight. Ignore
+      // only that teardown race; failures from a live page must still fail E2E.
+      if (page.isClosed()) return;
+      throw error;
     }
-    if (!response) throw new Error("Backend proxy did not return a response after transient retries");
-    await route.fulfill({ response });
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
   return { context, page, observed };
