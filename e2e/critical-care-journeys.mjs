@@ -833,8 +833,12 @@ await record("LCR care history shows the original caregiver report with source d
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
 
-  const sourceSummary = history.page.getByText("Care details", { exact: true }).first();
-  await sourceSummary.waitFor({ timeout: 15_000 });
+  const reportCard = history.page.locator(".lcr-current-fact")
+    .filter({ hasText: scenarioReports[0] }).first();
+  await reportCard.waitFor({ state: "visible", timeout: 15_000 });
+  const sourceSummary = reportCard.locator("summary")
+    .filter({ hasText: "Care details" }).first();
+  await sourceSummary.waitFor({ state: "visible", timeout: 15_000 });
   const sourceDetails = sourceSummary.locator("xpath=..");
   assert.equal(await sourceDetails.evaluate((element) => element.open), false,
     "source metadata must stay collapsed in the default care history");
