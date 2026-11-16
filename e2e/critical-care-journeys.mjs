@@ -745,6 +745,9 @@ await record("03b source-backed caregiver question routing", async () => {
 
 // 4. Document upload: original bytes -> server extraction -> persisted extraction read.
 let documentId;
+let documentAnalysisId;
+let documentReviewCandidate;
+let documentAcceptanceVerified = false;
 await record("04 document upload and extraction", async () => {
   const form = new FormData();
   form.append("person_id", identity.personId);
@@ -757,6 +760,7 @@ await record("04 document upload and extraction", async () => {
   assert.equal(uploaded.payload.persisted, true);
   const extracted = await request(`/api/v1/documents/${documentId}/extract`, { token: identity.token, method: "POST", body: {} });
   assert.equal(extracted.status, 201, JSON.stringify(extracted.payload));
+  documentAnalysisId = extracted.payload.analysis_id;
   const reviewed = await request(`/api/v1/documents/analyses/${extracted.payload.analysis_id}`, { token: identity.token });
   assert.equal(reviewed.status, 200, JSON.stringify(reviewed.payload));
   assert.ok(String(reviewed.payload.extracted_text).toLowerCase().includes("follow-up appointment"));
@@ -768,9 +772,39 @@ await record("04 document upload and extraction", async () => {
     assert.ok(intelligence.payload.observations.length > 0, "A successful document review must contain source-grounded candidates");
     assert.equal(intelligence.payload.written_to_lcr, false);
     assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
-    const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", { token: identity.token, method: "POST", body: { candidate_index: 0, decision: "accept" } });
-    assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
-    assert.equal(accepted.payload.written_to_lcr, true);
+    documentReviewCandidate = intelligence.payload.observations[0];
+
+    // Exercise the caregiver's actual browser decision, not only the review API.
+    const documentPage = await createBrowserPage(session, "/workspace/documents");
+    await documentPage.page.getByRole("heading", { name: "Review document details", exact: true }).waitFor({ timeout: 20_000 });
+    await documentPage.page.getByText(documentReviewCandidate.source_quote, { exact: true }).waitFor({ timeout: 20_000 });
+    await documentPage.page.getByRole("button", { name: "Add to Care Record", exact: true }).first().click();
+    await documentPage.page.getByLabel("Added to Care Record").first().waitFor({ timeout: 20_000 });
+    await documentPage.page.getByText("You approved this detail. It was added to your Care Record with a link to the original document.", { exact: true }).waitFor({ timeout: 20_000 });
+
+    // Reload from the server, open the append-only review history, and verify source access.
+    await documentPage.page.reload({ waitUntil: "domcontentloaded" });
+    await documentPage.page.getByLabel("Added to Care Record").first().waitFor({ timeout: 20_000 });
+    await documentPage.page.locator("summary").filter({ hasText: "Review history" }).first().click();
+    await documentPage.page.getByText("Added to Care Record", { exact: false }).last().waitFor({ timeout: 10_000 });
+    const originalDocumentRow = documentPage.page.getByRole("button").filter({ hasText: "journey-discharge-note.txt" }).last();
+    await originalDocumentRow.waitFor({ state: "visible", timeout: 15_000 });
+    await originalDocumentRow.click();
+    const originalDialog = documentPage.page.getByRole("dialog", { name: "journey-discharge-note.txt" });
+    await originalDialog.waitFor({ state: "visible", timeout: 15_000 });
+    await documentPage.page.getByRole("button", { name: "Download original document", exact: true }).waitFor({ state: "visible" });
+    const originalBytes = await request("/api/v1/upload/" + encodeURIComponent(documentId), { token: identity.token });
+    assert.equal(originalBytes.status, 200, JSON.stringify(originalBytes.payload));
+    await verifyMobile(documentPage.page);
+    await documentPage.context.close();
+
+    const afterAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+    assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
+    assert.ok(afterAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "accepted LCR record lost its source document reference");
+    const history = await request("/api/v1/documents/intelligence/" + documentAnalysisId + "/review-history", { token: identity.token });
+    assert.equal(history.status, 200, JSON.stringify(history.payload));
+    assert.ok(history.payload.items.some((item) => item.decision === "accept" && item.resulting_assertion_id), "caregiver acceptance was not durably recorded");
+    documentAcceptanceVerified = true;
   } else {
     const modelUnavailable = intelligence.status === 503
       && intelligence.payload?.detail?.code === "runtime_unreachable";
