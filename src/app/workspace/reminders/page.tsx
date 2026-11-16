@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { ArrowLeft, Check, Clock3, Plus, X } from "lucide-react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
-import { BrandLoading } from "@/components/brand";
 import { RecordState } from "@/components/ui/RecordState";
 
 type ReminderStatus = "open" | "completed" | "cancelled";
