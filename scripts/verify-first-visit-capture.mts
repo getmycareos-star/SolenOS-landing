@@ -18,6 +18,7 @@ assert.match(router, /We won’t treat an unavailable record as a new one/);
 assert.match(router, /<CognitiveWorkspace \/>/);
 assert.match(router, /Your care journey starts here/);
 assert.match(router, /solenos-first-visit-mode/);
+assert.match(capture, /const isFirstCapture/);
 assert.match(capture, /What’s been happening\?/);
 assert.match(workspace, /Start with one thing you want to remember/);
 assert.match(capture, /Add to my care record/);
