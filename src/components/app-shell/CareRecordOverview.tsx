@@ -131,7 +131,7 @@ export function CareRecordOverview() {
         </button>
       </header>
 
-      {error && <RecordState kind={/\b(401|403|unauthori[sz]ed|forbidden|not authenticated|access denied|permission)\b/i.test(error) ? "forbidden" : /\\b(502|503|504|network|fetch failed)\\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
+      {error && <RecordState kind={/\b(401|403|unauthori[sz]ed|forbidden|not authenticated|access denied|permission)\b/i.test(error) ? "forbidden" : /\b(502|503|504|network|fetch failed)\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
       {loading && !hasLoaded ? <RecordState kind="loading" /> : (hasLoaded || !error) && (
         <>
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
