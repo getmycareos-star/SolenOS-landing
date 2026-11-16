@@ -805,3 +805,42 @@
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+
+/* Shared empty, loading and error states must not keep their light-theme inline
+   surfaces when the workspace is in dark mode. */
+:root[data-solenos-theme="dark"] .record-state {
+  background-color: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .record-state > strong {
+  color: var(--theme-panel-fg) !important;
+  -webkit-text-fill-color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .record-state > p {
+  color: var(--theme-panel-muted) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
+:root[data-solenos-theme="dark"] .record-state > button {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  -webkit-text-fill-color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .record-state:is(
+  .record-state--error,
+  .record-state--forbidden,
+  .record-state--unavailable
+) {
+  background-color: var(--theme-warning-bg) !important;
+  color: var(--theme-warning-fg) !important;
+  border-color: var(--theme-warning-border) !important;
+}
+:root[data-solenos-theme="dark"] .record-state:is(
+  .record-state--error,
+  .record-state--forbidden,
+  .record-state--unavailable
+) > :is(strong, p) {
+  color: var(--theme-warning-fg) !important;
+  -webkit-text-fill-color: var(--theme-warning-fg) !important;
+}
