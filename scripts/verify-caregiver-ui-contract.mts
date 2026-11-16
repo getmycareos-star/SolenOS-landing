@@ -159,7 +159,7 @@ assert.ok(themeOverrides.includes(".continuity-prompt-form"));
 assert.ok(themeOverrides.includes("[data-solenos-error-surface]"));
 
 const settingsPage = fs.readFileSync(path.join(root, "src/app/workspace/settings/page.tsx"), "utf8");
-assert.match(notifications, /redirect\("\/workspace\/settings#settings-notifications"\)/,
+assert.match(notifications, /router\.replace\("\/workspace\/settings#settings-notifications"\)/,
   "notification access must remain consolidated inside Settings");
 assert.match(settingsPage, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
   "care updates must load from the authenticated notification feed");
