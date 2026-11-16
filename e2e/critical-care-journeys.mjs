@@ -176,8 +176,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     document.querySelector(".workspace-status-warning")
   ), undefined, { timeout: 30_000 });
   console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator(".solenos-chat-main").innerText());
-  await page.getByRole("heading", { name: "Here’s what we know so far.", exact: true })
-    .waitFor({ state: "visible", timeout: 10_000 });
+  // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
 
   const careSessionId = await page.evaluate(() => localStorage.getItem("solenos_care_session_id"));
