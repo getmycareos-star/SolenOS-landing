@@ -66,6 +66,7 @@ export type DecisionMemoryEntry = {
   content_tokens: string[];
   /** Canonical PostgreSQL record ID once server persistence succeeds. */
   postgres_id?: string;
+  postgres_outcome_id?: string;
 };
 
 type Store = {
@@ -211,7 +212,14 @@ export function listDecisionMemory(careKey: string): DecisionMemoryEntry[] {
  * Local JSON is a cache only; the API remains the durable source of truth.
  */
 export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promise<void> {
-  const rows = await getJSON("/care-continuity/decisions") as Array<Record<string, unknown>>;
+  const [rows, outcomeRows] = await Promise.all([
+    getJSON("/care-continuity/decisions") as Promise<Array<Record<string, unknown>>>,
+    getJSON("/care-continuity/decision-outcomes") as Promise<Array<Record<string, unknown>>>,
+  ]);
+  const outcomesByDecision = new Map<string, Record<string, unknown>>();
+  for (const outcome of outcomeRows) {
+    if (typeof outcome.decision_id === "string") outcomesByDecision.set(outcome.decision_id, outcome);
+  }
   const store = load(careKey);
   const existingById = new Map(store.entries.map((entry) => [entry.postgres_id ?? entry.id, entry]));
   const hydrated: DecisionMemoryEntry[] = rows
@@ -232,9 +240,11 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
       const when = String(row.decided_at ?? row.recorded_at ?? row.created_at ?? new Date().toISOString());
       const evidenceIds = Array.isArray(row.evidence_ids) ? row.evidence_ids.filter((v): v is string => typeof v === "string") : [];
       const evidenceText = typeof context.evidence_text === "string" ? context.evidence_text : what;
+      const persistedOutcome = outcomesByDecision.get(id);
       return {
         id,
         postgres_id: id,
+        ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id } : {}),
         care_key: storeKey(careKey),
         what,
         decision: what,
@@ -245,7 +255,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { event_id: evidenceIds[0] } : {}) }],
         alternatives: Array.isArray(context.alternatives) ? context.alternatives.filter((v): v is string => typeof v === "string") : [],
         reason: typeof context.reason === "string" ? context.reason : null,
-        outcome: previous?.outcome ?? null,
+        outcome: typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
         outcome_event_ids: previous?.outcome_event_ids ?? [],
         status: row.decision_status === "pending" ? "pending" : previous?.status ?? "active",
         evidence_texts: [evidenceText],
@@ -290,6 +300,32 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       entries: current.entries.map((candidate) =>
         candidate.id === entry.id
           ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string }
+          : candidate,
+      ),
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  // Outcome rows are written only after their decision has a server-issued ID.
+  for (const entry of load(careKey).entries) {
+    if (!entry.postgres_id || !entry.outcome || entry.postgres_outcome_id) continue;
+    const outcome = await postJSON("/care-continuity/decision-outcomes", {
+      decision_id: entry.postgres_id,
+      outcome_status: "observed",
+      observed_at: new Date().toISOString(),
+      description: entry.outcome,
+      evidence_ids: [],
+      is_intended_outcome: false,
+    }) as Record<string, unknown>;
+    if (typeof outcome.id !== "string" || !outcome.id) {
+      throw new Error("PostgreSQL did not return a persisted decision outcome ID");
+    }
+    const current = load(careKey);
+    save({
+      care_key: storeKey(careKey),
+      entries: current.entries.map((candidate) =>
+        candidate.postgres_id === entry.postgres_id
+          ? { ...candidate, postgres_outcome_id: outcome.id as string }
           : candidate,
       ),
       updated_at: new Date().toISOString(),
@@ -459,6 +495,35 @@ export function linkDecisionOutcome(params: {
     entry.id === updated.id ? updated : entry,
   );
   save({ care_key: params.careKey, entries, updated_at: now });
+  return updated;
+}
+
+/** Attach an extracted outcome only through its explicit same-extraction decision ID. */
+export function recordDecisionOutcomeObservation(params: {
+  careKey: string;
+  decisionId: string;
+  outcomeText: string;
+  eventId?: string;
+  nowIso?: string;
+}): DecisionMemoryEntry | null {
+  const outcome = params.outcomeText.trim().slice(0, 1000);
+  if (!outcome || !params.decisionId) return null;
+  const store = load(params.careKey);
+  const target = store.entries.find((entry) => entry.id === params.decisionId);
+  if (!target) return null;
+  const updated: DecisionMemoryEntry = {
+    ...target,
+    outcome,
+    outcome_event_ids: params.eventId
+      ? [...new Set([...target.outcome_event_ids, params.eventId])]
+      : target.outcome_event_ids,
+  };
+  const now = params.nowIso ?? new Date().toISOString();
+  save({
+    care_key: storeKey(params.careKey),
+    entries: store.entries.map((entry) => entry.id === updated.id ? updated : entry),
+    updated_at: now,
+  });
   return updated;
 }
 
