@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
-import { ensureAnonymousSession, getJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, getPersonId } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
@@ -66,6 +66,14 @@ export function CareRecordOverview() {
   const loadedPersonIdRef = useRef<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
+    const storedPersonId = getPersonId();
+    if (loadedPersonIdRef.current && loadedPersonIdRef.current !== storedPersonId) {
+      setItems([]);
+      setChanges([]);
+      hasLoadedRef.current = false;
+      setHasLoaded(false);
+      loadedPersonIdRef.current = null;
+    }
     if (manual) setRefreshing(true);
     else if (!hasLoadedRef.current) setLoading(true);
     setError(null);
@@ -109,7 +117,18 @@ export function CareRecordOverview() {
         setHistoryNote("The saved change history could not be loaded. Other saved information is still shown.");
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Saved care information could not be loaded.");
+      const message = cause instanceof Error ? cause.message : "";
+      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied/i.test(message);
+      if (accessDenied) {
+        setItems([]);
+        setChanges([]);
+        hasLoadedRef.current = false;
+        setHasLoaded(false);
+        loadedPersonIdRef.current = null;
+      }
+      setError(accessDenied
+        ? "You may not have access to this care information. Check your account and try again."
+        : "We couldn’t load your saved care information. Please try again.");
     } finally {
       setHistoryLoading(false);
       setLoading(false);
