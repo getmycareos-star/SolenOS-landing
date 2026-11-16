@@ -210,13 +210,21 @@ export function selectContentForAudience(
   otherRecipient?: string,
 ): SelectedContent {
   const observations = response.active_care_situation?.observations ?? [];
+  const observationTexts = observations.map((item) => item.raw_text?.trim()).filter(Boolean) as string[];
   const understood = response.what_i_understood ?? [];
   const changes = response.what_changed ?? [];
   const uncertainty = response.what_is_uncertain ?? [];
   const clarifications = response.what_needs_clarification ?? [];
   const tracked = response.what_will_be_tracked ?? [];
   const events = getShareEvents(response);
-  const eventTexts = events.map(getShareEventText).filter(Boolean);
+  const eventTexts = events
+    .map(getShareEventText)
+    .filter(Boolean)
+    .filter((eventText) => !observationTexts.some((observationText) =>
+      eventText === observationText ||
+      eventText.includes(observationText) ||
+      observationText.includes(eventText)
+    ));
   const priorityTop = response.priority_layer?.top_events ?? [];
 
   const extractMedications = (): string[] => {
@@ -287,7 +295,6 @@ export function selectContentForAudience(
   const conditions = extractConditions();
   const allergies = extractAllergies();
 
-  const observationTexts = observations.map((o) => o.raw_text?.trim()).filter(Boolean) as string[];
   const understoodTexts = understood.map((u) => u.label).filter(Boolean);
   const changeTexts = changes.map((c) => c).filter(Boolean);
   const uncertaintyTexts = uncertainty.map((u) => u).filter(Boolean);
