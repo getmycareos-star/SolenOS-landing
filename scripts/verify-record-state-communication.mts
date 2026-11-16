@@ -7,7 +7,7 @@ const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCu
 const darkModeStyles = fs.readFileSync("src/app/dark-mode-remediation.css", "utf8");
 const caregiverJourney = fs.readFileSync("e2e/critical-care-journeys.mjs", "utf8");
 const companionSource = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
-assert.ok(companionSource.includes("disabled={loading || availability !== 'available'}"),
+assert.ok(companionSource.includes('disabled={loading || availability !== "available"}'),
   "Companion must stay disabled until response availability is confirmed");
 assert.ok(companionSource.includes('title="The Care Assistant is temporarily unavailable"'),
   "Companion must explain when responses are unavailable instead of accepting messages");
