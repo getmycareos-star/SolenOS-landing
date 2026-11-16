@@ -251,7 +251,8 @@ export function resolveCaregiverWords(
       typeof event.attributes?.source_situation_text === "string"
         ? event.attributes.source_situation_text.trim()
         : "";
-    const candidate = sanitizeCaregiverDisplayText(fromAttr || event.raw_input);
+    const rawInput = typeof event.raw_input === "string" ? event.raw_input : "";
+    const candidate = sanitizeCaregiverDisplayText(fromAttr || rawInput);
     if (candidate.length >= 3 && !isGenericSignalText(candidate)) {
       return candidate.slice(0, 400);
     }
