@@ -135,6 +135,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     "/workspace",
     { width: 390, height: 844 },
   );
+  page.on("pageerror", (error) => console.log("FIRST_VISIT_PAGE_ERROR", error.message));
   await page.getByRole("heading", { name: "Your care journey starts here.", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "What’s been happening?", exact: true })
@@ -152,7 +153,29 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   );
   const firstNote = "Mum has been forgetting whether she has eaten breakfast.";
   await page.getByRole("textbox", { name: "Describe your situation", exact: true }).fill(firstNote);
+  const captureResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/situation" &&
+    response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
   await page.getByRole("button", { name: "Add to record", exact: true }).click();
+  const captureResponse = await captureResponsePromise;
+  const capturePayload = await captureResponse.json().catch(() => null);
+  console.log("FIRST_VISIT_CAPTURE_RESPONSE", JSON.stringify({
+    status: captureResponse.status(),
+    keys: Object.keys(capturePayload ?? {}),
+    ok: capturePayload?.ok,
+    care_event_id: capturePayload?.care_event_id,
+    has_context_root: capturePayload?.has_context_root,
+    active_care_situation: Boolean(capturePayload?.active_care_situation),
+    active_care_situation_turn: Boolean(capturePayload?.active_care_situation_turn),
+  }));
+  await page.waitForFunction(() => Boolean(
+    document.querySelector(".care-card-note") ||
+    document.querySelector(".workspace-error") ||
+    document.querySelector(".workspace-status-warning")
+  ), undefined, { timeout: 30_000 });
+  console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator(".solenos-chat-main").innerText());
   await page.getByRole("heading", { name: "Here’s what we know so far.", exact: true })
     .waitFor({ state: "visible", timeout: 10_000 });
   await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
