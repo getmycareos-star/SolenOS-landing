@@ -37,6 +37,16 @@ export type DecisionMemoryEvidence = {
   evidence_id?: string;
 };
 
+export type DecisionMemoryRevision = {
+  id: string;
+  revision_number: number;
+  previous_payload: unknown;
+  current_payload: unknown;
+  revision_reason: string | null;
+  changed_by_caregiver_id: string | null;
+  changed_at: string | null;
+};
+
 export type DecisionMemoryEntry = {
   id: string;
   care_key: string;
@@ -72,6 +82,7 @@ export type DecisionMemoryEntry = {
   postgres_snapshot?: string;
   extraction_ids?: string[];
   client_reference_id?: string;
+  revisions?: DecisionMemoryRevision[];
 };
 
 type Store = {
@@ -220,10 +231,26 @@ export function listDecisionMemory(careKey: string): DecisionMemoryEntry[] {
  * Local JSON is a cache only; the API remains the durable source of truth.
  */
 export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promise<void> {
-  const [rows, outcomeRows] = await Promise.all([
+  const [rows, outcomeRows, revisionRows] = await Promise.all([
     getJSON("/care-continuity/decisions") as Promise<Array<Record<string, unknown>>>,
     getJSON("/care-continuity/decision-outcomes") as Promise<Array<Record<string, unknown>>>,
+    getJSON("/care-continuity/decision-revisions") as Promise<Array<Record<string, unknown>>>,
   ]);
+  const revisionsByDecision = new Map<string, DecisionMemoryRevision[]>();
+  for (const revision of revisionRows) {
+    if (typeof revision.decision_id !== "string" || typeof revision.id !== "string") continue;
+    const list = revisionsByDecision.get(revision.decision_id) ?? [];
+    list.push({
+      id: revision.id,
+      revision_number: Number(revision.revision_number ?? 0),
+      previous_payload: revision.previous_payload ?? null,
+      current_payload: revision.current_payload ?? null,
+      revision_reason: typeof revision.revision_reason === "string" ? revision.revision_reason : null,
+      changed_by_caregiver_id: typeof revision.changed_by_caregiver_id === "string" ? revision.changed_by_caregiver_id : null,
+      changed_at: typeof revision.changed_at === "string" ? revision.changed_at : null,
+    });
+    revisionsByDecision.set(revision.decision_id, list);
+  }
   const outcomesByDecision = new Map<string, Record<string, unknown>>();
   for (const outcome of outcomeRows) {
     if (typeof outcome.decision_id === "string" && !outcomesByDecision.has(outcome.decision_id)) outcomesByDecision.set(outcome.decision_id, outcome);
@@ -256,6 +283,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         postgres_snapshot: serverWhat,
         extraction_ids: previous?.extraction_ids ?? [],
         client_reference_id: typeof row.client_reference_id === "string" ? row.client_reference_id : previous?.client_reference_id,
+        revisions: (revisionsByDecision.get(id) ?? []).sort((a, b) => a.revision_number - b.revision_number),
         ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id, postgres_outcome_snapshot: String(persistedOutcome.description ?? "") } : {}),
         care_key: storeKey(careKey),
         what,
