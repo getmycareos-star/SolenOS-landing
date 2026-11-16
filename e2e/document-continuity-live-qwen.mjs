@@ -157,9 +157,11 @@ try {
 
   // The candidate is now shown by the real review component. Accept it through the browser.
   await page.getByText(candidate.source_quote, { exact: true }).first().waitFor({ timeout: 30_000 });
-  const candidateIndex = analysis.observations.indexOf(candidate);
-  assert.ok(candidateIndex >= 0, "the selected source-grounded candidate must retain its analysis index");
-  await page.getByRole("button", { name: "Add to Care Record", exact: true }).nth(candidateIndex).click();
+  const candidateIndex = typeof candidate.candidate_index === "number"
+    ? candidate.candidate_index
+    : analysis.observations.indexOf(candidate);
+  assert.ok(candidateIndex >= 0, "the selected source-grounded candidate must retain its persisted candidate index");
+  await page.getByTestId(`accept-document-candidate-${candidateIndex}`).click();
   await page.getByText("Added to Care Record", { exact: true }).waitFor({ timeout: 30_000 });
 
   const history = await request(
