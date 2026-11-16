@@ -845,9 +845,26 @@ await record("LCR care history shows the original caregiver report with source d
   await sourceSummary.click();
   assert.equal(await sourceDetails.evaluate((element) => element.open), true,
     "caregivers must be able to open the original source details on demand");
-  await history.page.getByText("Shared by:", { exact: false }).first().waitFor({ timeout: 10_000 });
-  await history.page.getByText("Saved to the care record:", { exact: false }).first().waitFor({ timeout: 10_000 });
-  await history.page.getByText("Read original report", { exact: true }).first().waitFor({ timeout: 10_000 });
+  const careDetailText = await sourceDetails.innerText();
+  assert.match(careDetailText, /Shared by: Caregiver/,
+    "the Care Record must identify who shared the saved information");
+  assert.match(careDetailText, /Caregiver shared:/,
+    "the Care Record must show when the caregiver shared the information");
+
+  const evidenceList = await request("/api/v1/care-continuity/evidence?limit=100", {
+    token: identity.token,
+  });
+  assert.equal(evidenceList.status, 200, JSON.stringify(evidenceList.payload));
+  const originalEvidence = evidenceList.payload.find((item) => item.source_text === scenarioReports[0]);
+  assert.ok(originalEvidence?.id, "the exact original report must remain available in saved source records");
+
+  await history.page.getByText("Where this information came from", { exact: true }).click();
+  await history.page.getByText("Notes and documents behind this information", { exact: true }).click();
+  const sourceSelect = history.page.getByLabel("Original note or document");
+  await sourceSelect.waitFor({ state: "visible", timeout: 15_000 });
+  await sourceSelect.selectOption(originalEvidence.id);
+  await history.page.locator("blockquote")
+    .filter({ hasText: scenarioReports[0] }).waitFor({ state: "visible", timeout: 15_000 });
   await verifyMobile(history.page);
   await history.context.close();
 });
