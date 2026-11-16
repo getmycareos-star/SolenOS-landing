@@ -835,7 +835,7 @@ await record("LCR care history shows the original caregiver report with source d
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
 
-  const reportCard = history.page.locator(".lcr-current-fact")
+  const reportCard = history.page.locator(".lcr-current-fact:visible")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
   const sourceSummary = reportCard.locator("summary")
@@ -853,7 +853,7 @@ await record("LCR care history shows the original caregiver report with source d
   assert.match(careDetailText, /Caregiver shared:/,
     "the Care Record must show when the caregiver shared the information");
 
-  const evidenceList = await request("/api/v1/care-continuity/evidence?limit=100", {
+  const evidenceList = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, {
     token: identity.token,
   });
   assert.equal(evidenceList.status, 200, JSON.stringify(evidenceList.payload));
