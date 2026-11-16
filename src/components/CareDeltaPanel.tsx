@@ -126,11 +126,15 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
 
   function renderRows(title: string, rows?: Array<Record<string, any>>) {
     if (!rows?.length || !result?.interpretation_evaluation) return null
+    // These model-generated sections are not individually graded by the
+    // longitudinal evaluator. Fail closed: absent flags are not evidence.
     const visibleRows = rows.filter((row) =>
-      row.claim_supported !== false &&
-      row.evidence_supported !== false &&
+      row.claim_supported === true &&
+      row.evidence_supported === true &&
       row.historical_only !== true &&
-      row.source_reference_status !== 'not_matched'
+      row.source_reference_status === 'matched' &&
+      Array.isArray(row.source_record_refs) &&
+      row.source_record_refs.length > 0
     )
     const withheldCount = rows.length - visibleRows.length
     return <section style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
