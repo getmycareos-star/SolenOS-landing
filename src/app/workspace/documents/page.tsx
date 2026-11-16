@@ -546,7 +546,7 @@ export default function DocumentsPage() {
         </section>}
         {uploading && <div style={{ margin: "12px 0 0" }}><LivingArchiveMark size="sm" label="Saving the original document…" /><p style={{ margin: "6px 0 0", fontSize: 13 }}>Keep this page open until your files are saved. After that, SolenOS will keep reading them even if you leave.</p></div>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
-        {listError && <RecordState kind="error" description={listError} onAction={() => void loadDocuments()} />}
+        {listError && <RecordState kind="error" description={listError} onAction={() => void loadDocuments(documents.length > 0)} />}
 
         <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border)", borderRadius: 9, padding: "0 12px", minHeight: 44 }}>
           <Search size={17} aria-hidden="true" />
