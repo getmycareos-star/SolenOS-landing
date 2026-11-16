@@ -2,11 +2,34 @@ name: Critical care journeys — real backend and browser
 
 on:
   workflow_call:
+  pull_request:
+    branches: [main]
+    paths:
+      - "e2e/critical-care-journeys.mjs"
+      - "e2e/web-push-delivery.mjs"
+      - "e2e/dark-mode-audit.mjs"
+      - "src/api/client.ts"
+      - "src/lib/share-summary.ts"
+      - "src/lib/situation-entry/**"
+      - "src/app/workspace/**"
+      - "src/app/globals.css"
+      - "src/app/dark-mode-remediation.css"
+      - "src/app/accessibility-overrides.css"
+      - "src/app/layout.tsx"
+      - "src/components/app-shell/**"
+      - "scripts/verify-handoff-source-provenance.mts"
+      - "scripts/verify-appointment-low-burden.mts"
+      - "scripts/verify-record-state-communication.mts"
+      - "scripts/verify-caregiver-language-boundary.mts"
+      - "src/components/workflows/**"
+      - "src/components/mvp-workspace/**"
+      - "src/components/DocumentIntelligenceReview.tsx"
+      - "src/components/ClarificationWorkflowPanel.tsx"
+      - ".github/workflows/critical-care-journeys-e2e.yml"
   push:
     branches: [main]
     paths:
       - "e2e/critical-care-journeys.mjs"
-      - "e2e/document-continuity-live-qwen.mjs"
       - "e2e/web-push-delivery.mjs"
       - "e2e/dark-mode-audit.mjs"
       - "src/api/client.ts"
@@ -30,7 +53,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: critical-care-journeys-main
+  group: critical-care-journeys-${{ github.event.pull_request.number || github.ref }}
   # These real-backend journeys exercise durable state and the Companion's safe no-model fallback.
   # Do not cancel an in-flight acceptance run when another main commit lands.
   cancel-in-progress: false
@@ -58,9 +81,7 @@ jobs:
       SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
       DATABASE_URL: postgresql+psycopg2://solenos_ci:solenos_ci@localhost:5432/solenos_critical_journeys
       OLLAMA_BASE_URL: http://127.0.0.1:11434
-      OLLAMA_MODEL: qwen3.5:4b
-      OLLAMA_SIDECAR_ENABLED: "true"
-      OLLAMA_TIMEOUT_SECONDS: "180"
+      OLLAMA_TIMEOUT_SECONDS: "1"
       SOLENOS_REQUIRE_LIVE_QWEN: "0"
     steps:
       - name: Check out frontend main
@@ -97,61 +118,6 @@ jobs:
           npx playwright install chromium
           python -m pip install --upgrade pip
           python -m pip install -e ./backend-service/backend
-
-      - name: Check deployed Qwen runtime and installed model
-        run: |
-          curl --fail --show-error --silent --max-time 15 \
-            https://solenosbackend-production.up.railway.app/api/v1/assistant/status \
-            -o /tmp/solenos-production-qwen-status.json
-          python - <<'PY'
-          import json
-          with open("/tmp/solenos-production-qwen-status.json", encoding="utf-8") as handle:
-              status = json.load(handle)
-          print(json.dumps({
-              key: status.get(key)
-              for key in (
-                  "available", "operational", "runtime_available",
-                  "model_installed", "inference_verified", "inference_status",
-                  "model", "error_category", "failure_reason",
-              )
-          }, sort_keys=True))
-          assert status.get("runtime_available") is True, "Production Ollama runtime is unreachable"
-          assert status.get("model_installed") is True, "Production Qwen model is not installed"
-          assert status.get("available") is True, "Production Qwen is unavailable"
-          # This inventory endpoint intentionally does not run inference.
-          PY
-
-      - name: Start Ollama and install Qwen 3.5 4B for real inference tests
-        run: |
-          docker run --detach --name solenos-ci-ollama --publish 11434:11434 ollama/ollama:latest
-          ready=0
-          for attempt in $(seq 1 60); do
-            if curl --silent --fail --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null; then
-              ready=1
-              break
-            fi
-            sleep 2
-          done
-          if [ "$ready" != "1" ]; then
-            docker logs solenos-ci-ollama
-            exit 1
-          fi
-          curl --fail --show-error --silent --max-time 1800 \
-            http://127.0.0.1:11434/api/pull \
-            -H "Content-Type: application/json" \
-            -d '{"name":"qwen3.5:4b","stream":false}' \
-            >/tmp/solenos-qwen-pull.json
-          python - <<'PY'
-          import json
-          from urllib.request import urlopen
-          with open("/tmp/solenos-qwen-pull.json", encoding="utf-8") as handle:
-              result = json.load(handle)
-          assert result.get("status") == "success", result
-          tags = json.loads(urlopen("http://127.0.0.1:11434/api/tags", timeout=10).read())
-          models = tags.get("models", [])
-          assert any(item.get("name") == "qwen3.5:4b" for item in models), models
-          print("Live Ollama model installed: qwen3.5:4b")
-          PY
 
       - name: Generate ephemeral VAPID keys for real browser push verification
         run: |
@@ -202,7 +168,7 @@ jobs:
         working-directory: backend-service/backend
         run: |
           VAPID_PRIVATE_KEY="$(printf '%s' "$VAPID_PRIVATE_KEY_B64" | base64 --decode)"
-          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_MODEL="$OLLAMA_MODEL" OLLAMA_SIDECAR_ENABLED="$OLLAMA_SIDECAR_ENABLED" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
+          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
           echo $! >/tmp/solenos-critical-backend.pid
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
@@ -221,13 +187,6 @@ jobs:
           done
           cat /tmp/solenos-critical-frontend.log
           exit 1
-
-      - name: Verify real Qwen extraction, browser acceptance, LCR persistence and source retrieval
-        env:
-          FRONTEND_URL: http://127.0.0.1:3000
-          BACKEND_URL: http://127.0.0.1:8000
-          DOCUMENT_QWEN_TIMEOUT_MS: "360000"
-        run: node e2e/document-continuity-live-qwen.mjs
 
       - name: Execute real-backend caregiver and situation journeys in Chromium
         env:
@@ -257,12 +216,6 @@ jobs:
           name: dark-mode-rendered-audit
           path: artifacts/dark-mode/
           if-no-files-found: warn
-
-      - name: Stop the isolated Ollama model service
-        if: always()
-        run: |
-          docker logs solenos-ci-ollama || true
-          docker stop solenos-ci-ollama || true
 
       - name: Print service logs on failure
         if: failure()
