@@ -125,3 +125,6 @@ assert(handoffs.includes("savedDrafts.length === 0 && !loading && !draftsError")
 assert(history.includes("loadedPersonIdRef.current !== requestPersonId"), "history cache must be cleared when the authenticated person changes");
 assert(history.includes("if (!requestPersonId || accessDenied ||"), "history cache must be cleared when access is denied or the active session cannot be confirmed");
 console.log("PASS: care history cannot remain visible across account changes or denied access.");
+
+assert(overview.includes("const storedPersonId = getPersonId()"), "the Care Record must detect a cleared or changed browser identity before refreshing");
+assert(overview.includes("if (accessDenied)"), "the Care Record must not keep cached details visible after access is denied");
