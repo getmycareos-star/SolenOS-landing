@@ -168,8 +168,22 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     ok: capturePayload?.ok,
     care_event_id: capturePayload?.care_event_id,
     has_context_root: capturePayload?.has_context_root,
-    active_care_situation: Boolean(capturePayload?.active_care_situation),
-    active_care_situation_turn: Boolean(capturePayload?.active_care_situation_turn),
+    active_care_situation: capturePayload?.active_care_situation ? {
+      keys: Object.keys(capturePayload.active_care_situation),
+      subject_label: capturePayload.active_care_situation.subject_label,
+      theme: capturePayload.active_care_situation.theme,
+      understanding_stage: capturePayload.active_care_situation.understanding_stage,
+      observations_count: capturePayload.active_care_situation.observations?.length,
+      first_observation_keys: Object.keys(capturePayload.active_care_situation.observations?.[0] ?? {}),
+      first_raw_text_type: typeof capturePayload.active_care_situation.observations?.[0]?.raw_text,
+      first_human_fact_type: typeof capturePayload.active_care_situation.observations?.[0]?.human_fact,
+    } : null,
+    active_care_situation_turn: capturePayload?.active_care_situation_turn ? {
+      keys: Object.keys(capturePayload.active_care_situation_turn),
+      relation: capturePayload.active_care_situation_turn.relation,
+      situation_keys: Object.keys(capturePayload.active_care_situation_turn.situation ?? {}),
+      what_needs_context: capturePayload.active_care_situation_turn.what_needs_context,
+    } : null,
   }));
   await page.waitForTimeout(2_000);
   console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator("body").innerText());
