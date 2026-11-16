@@ -252,6 +252,22 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.goBack({ waitUntil: "domcontentloaded" });
   await page.waitForURL("**/workspace", { timeout: 15_000 });
 
+  // Give the summary flow one real, caregiver-authored care entry. Without
+  // this, the correct empty-record state prevents recipient selection/export.
+  const summarySeed = await request("/api/v1/daily/log", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      caregiver_id: identity.caregiverId,
+      capture_idempotency_key: unique("summary-seed"),
+      observation: "Caregiver reports a restless night and reduced breakfast appetite.",
+      source: "critical_care_journey_e2e",
+    },
+  });
+  assert.ok([200, 201].includes(summarySeed.status), JSON.stringify(summarySeed.payload));
+  assert.ok(summarySeed.payload.id, "summary seed must be persisted before export");
+
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Share care summary", exact: true }).click();
   await page.getByRole("heading", { name: "Share care summary", exact: true }).waitFor({ timeout: 10_000 });
