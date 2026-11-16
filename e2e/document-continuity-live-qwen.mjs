@@ -103,7 +103,11 @@ try {
       token: session.access_token,
     });
     assert.equal(listed.status, 200, JSON.stringify(listed.payload));
-    evidence = listed.payload.find((item) => {\n      let metadata = item.extra_metadata;\n      if (typeof metadata === "string") { try { metadata = JSON.parse(metadata); } catch { metadata = {}; } }\n      return metadata?.filename === filename;\n    });
+    evidence = listed.payload.find((item) => {
+      let metadata = item.extra_metadata;
+      if (typeof metadata === "string") { try { metadata = JSON.parse(metadata); } catch { metadata = {}; } }
+      return metadata?.filename === filename;
+    });
     if (evidence?.id) break;
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
