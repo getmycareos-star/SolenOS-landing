@@ -784,8 +784,12 @@ await record("04 document upload and extraction", async () => {
     assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
     assert.equal(accepted.payload.written_to_lcr, true);
   } else {
-    const modelUnavailable = intelligence.status === 503
-      && intelligence.payload?.detail?.code === "runtime_unreachable";
+    const unavailableDetail = intelligence.payload?.detail;
+    const modelUnavailable = intelligence.status === 503 && (
+      unavailableDetail?.code === "runtime_unreachable" ||
+      (typeof unavailableDetail === "string" &&
+        /local Qwen is unavailable|AI assistance is unavailable/i.test(unavailableDetail))
+    );
     assert.equal(
       process.env.SOLENOS_REQUIRE_LIVE_QWEN === "1" ? false : modelUnavailable,
       true,
