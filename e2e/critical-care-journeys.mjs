@@ -72,24 +72,33 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   const observed = [];
   page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
   await page.route("**/api/**", async (route) => {
-    const source = new URL(route.request().url());
-    const target = new URL(source.pathname + source.search, backend);
-    const headers = { ...route.request().headers() };
-    delete headers.origin;
-    let response;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
-        break;
-      } catch (error) {
-        const message = String(error?.message || error);
-        const transientConnectionFailure = /ECONNRESET|ECONNREFUSED|socket hang up/i.test(message);
-        if (!transientConnectionFailure || attempt === 2) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+    try {
+      const source = new URL(route.request().url());
+      const target = new URL(source.pathname + source.search, backend);
+      const headers = { ...route.request().headers() };
+      delete headers.origin;
+      let response;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
+          break;
+        } catch (error) {
+          const message = String(error?.message || error);
+          const transientConnectionFailure = /ECONNRESET|ECONNREFUSED|socket hang up/i.test(message);
+          if (!transientConnectionFailure || attempt === 2) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+        }
       }
+      if (!response) throw new Error("Backend proxy did not return a response after transient retries");
+      await route.fulfill({ response });
+    } catch (error) {
+      // Closing a test context may cancel API requests before Playwright reports
+      // page.isClosed(). Ignore only that explicit target-closed teardown error.
+      const message = String(error?.message || error);
+      const targetClosedDuringTeardown = /Target page, context or browser has been closed|TargetClosedError/.test(message);
+      if (page.isClosed() || context.pages().length === 0 || targetClosedDuringTeardown) return;
+      throw error;
     }
-    if (!response) throw new Error("Backend proxy did not return a response after transient retries");
-    await route.fulfill({ response });
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
   return { context, page, observed };
@@ -127,11 +136,14 @@ await record("01 first caregiver session", async () => {
     const target = new URL(source.pathname + source.search, backend);
     const headers = { ...route.request().headers() };
     delete headers.origin;
-    const response = await route.fetch({ url: target.toString(), headers, timeout: 210000 }).catch((error) => {
-      if (page.isClosed()) return null;
+    try {
+      const response = await route.fetch({ url: target.toString(), headers, timeout: 210000 });
+      if (page.isClosed()) return;
+      await route.fulfill({ response });
+    } catch (error) {
+      if (page.isClosed()) return;
       throw error;
-    });
-    if (response) await route.fulfill({ response });
+    }
   });
   await page.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(
@@ -465,6 +477,31 @@ await record("01c workspace links, browser back, More menu and account form vali
       deletionRequests.push(request.url());
     }
   });
+  // Capture storage at the first /start document script boundary. The start
+  // route may legitimately create a fresh anonymous session after deletion;
+  // inspecting storage after hydration would observe that new session rather
+  // than the cleared state produced by the delete action.
+  await disposable.page.addInitScript(() => {
+    if (window.location.pathname === "/start") {
+      const keys = [
+        "solenos_anonymous_access_token",
+        "solenos_backend_person_id",
+        "solenos_backend_caregiver_id",
+        "solenos_anonymous_session_expires_at",
+        "solenos_person_id",
+      ];
+      const values = Object.fromEntries(
+        keys.map((key) => [key, window.localStorage.getItem(key)]),
+      );
+      window.__solenosWorkspaceDeleteSnapshot = {
+        token: values.solenos_anonymous_access_token,
+        personId: values.solenos_backend_person_id,
+        caregiverId: values.solenos_backend_caregiver_id,
+        expiresAt: values.solenos_anonymous_session_expires_at,
+        legacyPersonId: values.solenos_person_id,
+      };
+    }
+  });
   const deleteMenu = await disposable.page.getByRole("button", {
     name: "More care record actions", exact: true,
   }).click().then(() => disposable.page.getByRole("menu", { name: "Care record actions", exact: true }));
@@ -477,13 +514,10 @@ await record("01c workspace links, browser back, More menu and account form vali
   await deleteDialog.accept();
   await deleteClick;
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
-  const clearedLocalData = await disposable.page.evaluate(() => ({
-    token: localStorage.getItem("solenos_anonymous_access_token"),
-    personId: localStorage.getItem("solenos_backend_person_id"),
-    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
-    expiresAt: localStorage.getItem("solenos_anonymous_session_expires_at"),
-    legacyPersonId: localStorage.getItem("solenos_person_id"),
-  }));
+  const clearedLocalData = await disposable.page.evaluate(() =>
+    window.__solenosWorkspaceDeleteSnapshot ?? null
+  );
+  assert.ok(clearedLocalData, "the /start document must capture local identity before application bootstrap");
   assert.deepEqual(clearedLocalData, {
     token: null,
     personId: null,
@@ -958,6 +992,12 @@ await record("Daily Care saves and retrieves original reports without relying on
 await record("Care history opens the original caregiver report and its source details", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+
+  // Recent history lives inside the collapsible workspace navigation sidebar.
+  // Open it before interacting with the history controls; do not force a click
+  // on an inert element inside the closed sidebar.
+  await history.page.getByRole("button", { name: "Open navigation" }).click();
+  await history.page.getByRole("button", { name: "Close navigation" }).waitFor({ state: "visible", timeout: 5_000 });
 
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
