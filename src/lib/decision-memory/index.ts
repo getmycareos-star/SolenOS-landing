@@ -576,8 +576,9 @@ export function linkDecisionOutcome(params: {
   const outcome = params.outcomeText.trim().slice(0, 240);
   if (!outcome || !params.decisionId) return null;
 
+  const decisionId = params.decisionId;
   const store = load(params.careKey);
-  const target = store.entries.find((entry) => entry.id === params.decisionId || entry.extraction_ids?.includes(params.decisionId));
+  const target = store.entries.find((entry) => entry.id === decisionId || entry.extraction_ids?.includes(decisionId));
   // A missing or cross-context decision reference is not permission to guess.
   if (!target) return null;
 
