@@ -5,6 +5,7 @@ import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { RecordState } from "@/components/ui/RecordState";
 
 type HandoffDraftPurpose = "family_transition" | "return_to_care" | "professional_appointment" | "hospital_discharge" | "period_summary";
 
