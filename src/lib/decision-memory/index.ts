@@ -307,7 +307,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
     const saved = await postJSON("/care-continuity/decisions", {
       title: entry.what.slice(0, 240),
       decision_text: entry.what,
-      decision_status: entry.status === "pending" ? "pending" : "recorded",
+      decision_status: entry.status === "active" ? "recorded" : entry.status,
       decided_at: entry.when,
       context: JSON.stringify({
         reason: entry.reason,
