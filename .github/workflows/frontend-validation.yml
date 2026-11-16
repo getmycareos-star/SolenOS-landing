@@ -11,21 +11,155 @@ permissions:
 
 jobs:
   build-and-test:
-    timeout-minutes: 20
-    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: solenos_ci
+          POSTGRES_PASSWORD: solenos_ci
+          POSTGRES_DB: solenos_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U solenos_ci -d solenos_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      APP_ENV: ci
+      DATABASE_URL: postgresql+psycopg2://solenos_ci:solenos_ci@127.0.0.1:5432/solenos_ci
+      SECRET_KEY: ci-only-secret-key-not-for-production-2026
+      OLLAMA_BASE_URL: http://127.0.0.1:9
+      OLLAMA_HOST: 127.0.0.1:9
+      OLLAMA_SIDECAR_ENABLED: "false"
+      SOLENOS_REQUIRE_LIVE_QWEN: "0"
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: getmycareos-star/SolenOS_backend
+          ref: main
+          path: backend-service
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Install locked dependencies
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends antiword tesseract-ocr tesseract-ocr-eng
+      - name: Install locked frontend dependencies
         run: npm ci
+      - name: Install backend dependencies
+        working-directory: backend-service/backend
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+      - name: Generate isolated CI privacy reviewer credentials
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import secrets
+          values = {
+              "SOLENOS_PRIVACY_REVIEWER_TOKEN": secrets.token_urlsafe(48),
+              "SOLENOS_PRIVACY_REVIEWER_ID": "ci-primary-privacy-reviewer",
+              "SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN": secrets.token_urlsafe(48),
+              "SOLENOS_PRIVACY_DELETION_REVIEWER_ID": "ci-independent-deletion-reviewer",
+          }
+          assert values["SOLENOS_PRIVACY_REVIEWER_TOKEN"] != values["SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN"]
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              for key, value in values.items():
+                  if key.endswith("_TOKEN"):
+                      print(f"::add-mask::{value}")
+                  env_file.write(f"{key}={value}\n")
+          PY
+      - name: Confirm isolated PostgreSQL is ready
+        run: |
+          for attempt in $(seq 1 30); do
+            if pg_isready -h 127.0.0.1 -p 5432 -U solenos_ci -d solenos_ci; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+      - name: Apply backend Alembic migrations to PostgreSQL
+        working-directory: backend-service/backend
+        run: alembic -c alembic.ini upgrade head
+      - name: Record exact backend source revision used by E2E
+        run: git -C backend-service rev-parse HEAD
       - name: Type-check and production build
         run: npm run typecheck && npm run build
       - name: Verify document intake, review and incomplete-page safeguards
         run: npm run verify:document-scan-processing && npm run verify:document-review-history && npm run verify:companion-home
+      - name: Validate critical caregiver E2E test syntax
+        run: node --check e2e/critical-care-journeys.mjs
+      - name: Install pinned Playwright runner and Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start FastAPI against migrated PostgreSQL
+        working-directory: backend-service/backend
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-backend-e2e.log 2>&1 &
+          echo $! >/tmp/solenos-backend-e2e.pid
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail --max-time 3 http://127.0.0.1:8000/health >/dev/null &&
+               curl --silent --fail --max-time 5 http://127.0.0.1:8000/ready >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != "1" ]; then
+            cat /tmp/solenos-backend-e2e.log
+            exit 1
+          fi
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, text
+          engine = create_engine(os.environ["DATABASE_URL"])
+          with engine.connect() as connection:
+              database, user = connection.execute(text("SELECT current_database(), current_user")).one()
+              migration_head = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+          print(f"PostgreSQL database={database} user={user} alembic_head={migration_head}")
+          assert database == "solenos_ci"
+          PY
+      - name: Start production-built Next.js frontend
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          nohup npm run start -- --hostname 127.0.0.1 >/tmp/solenos-frontend-e2e.log 2>&1 &
+          echo $! >/tmp/solenos-frontend-e2e.pid
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail --max-time 3 http://127.0.0.1:3000 >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != "1" ]; then
+            cat /tmp/solenos-frontend-e2e.log
+            exit 1
+          fi
+      - name: Run critical caregiver browser journeys against PostgreSQL-backed FastAPI
+        run: FRONTEND_URL=http://127.0.0.1:3000 BACKEND_URL=http://127.0.0.1:8000 node e2e/critical-care-journeys.mjs
       - name: Run continuity and production-safety checks
         run: npm test
       - name: Verify caregiver-facing language boundary
         run: npm run verify:caregiver-language-boundary
+      - name: Stop isolated application processes and retain failure logs
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/solenos-frontend-e2e.pid ]; then kill "$(cat /tmp/solenos-frontend-e2e.pid)" 2>/dev/null || true; fi
+          if [ -f /tmp/solenos-backend-e2e.pid ]; then kill "$(cat /tmp/solenos-backend-e2e.pid)" 2>/dev/null || true; fi
+          if [ -f /tmp/solenos-backend-e2e.log ]; then tail -n 120 /tmp/solenos-backend-e2e.log; fi
+          if [ -f /tmp/solenos-frontend-e2e.log ]; then tail -n 120 /tmp/solenos-frontend-e2e.log; fi
