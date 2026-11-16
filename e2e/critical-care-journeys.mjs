@@ -959,6 +959,12 @@ await record("Care history opens the original caregiver report and its source de
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
 
+  // Recent history is inside the collapsible workspace navigation sidebar.
+  // Open that navigation before interacting with its history controls.
+  const openNavigation = history.page.getByRole("button", { name: "Open navigation" });
+  await openNavigation.click();
+  await history.page.getByRole("button", { name: "Close navigation" }).waitFor({ state: "visible", timeout: 5_000 });
+
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
