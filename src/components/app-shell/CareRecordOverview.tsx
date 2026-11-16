@@ -118,7 +118,7 @@ export function CareRecordOverview() {
       }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
-      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied/i.test(message);
+      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
       if (accessDenied) {
         setItems([]);
         setChanges([]);
