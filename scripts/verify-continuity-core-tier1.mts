@@ -166,12 +166,12 @@ console.log("=== Continuity core Tier 1 (G3–G6 / G12–G13 / G16) ===\n");
   assert(unit.has_conflict === true, "G12 unit detects conflict");
   assert(unit.both_retained === true, "G12 both retained");
   assert(
-    unit.priority_for_orientation === "prior",
-    "G12 clinical/document orients over later memory note",
+    unit.priority_for_orientation === "neither",
+    "G12 conflict must not select a winner from source type or recency",
   );
   assert(
-    /clinical or document|both are held/i.test(unit.note ?? ""),
-    "G12 note prefers clinical source language",
+    /both are held for review|neither account is selected as correct/i.test(unit.note ?? ""),
+    "G12 explicitly preserves both conflicting accounts without choosing a winner",
   );
 
   const careKey = "cg_g12";
@@ -199,7 +199,7 @@ console.log("=== Continuity core Tier 1 (G3–G6 / G12–G13 / G16) ===\n");
     kind: classifyCareEventKind("She refused dinner and barely ate tonight."),
   });
   assertComposedResponseProfessional(composed);
-  console.log("✓ G12 source conflict — keep both, flag, clinical/document orients");
+  console.log("✓ G12 source conflict — keep both, flag, neither account selected");
 }
 
 // ——— G13 — record question → decision memory ———
