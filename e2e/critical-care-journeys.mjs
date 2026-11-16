@@ -295,6 +295,16 @@ await record("01c workspace links, browser back, More menu and account form vali
   }));
   console.log("SHARE_EXPORT_PANEL_TEXT", (await exportPanel.innerText()).slice(0, 1200));
   console.log("SHARE_NETWORK_REQUESTS", JSON.stringify(observed.filter((item) => item.path.includes("situation"))));
+  const limitedReadiness = exportPanel.getByRole("button", { name: "Continue anyway", exact: true });
+  const audiencePrompt = exportPanel.getByText("Who should this summary be prepared for?", { exact: true });
+  const readinessState = await Promise.race([
+    limitedReadiness.waitFor({ state: "visible", timeout: 10_000 }).then(() => "limited"),
+    audiencePrompt.waitFor({ state: "visible", timeout: 10_000 }).then(() => "audience"),
+  ]);
+  if (readinessState === "limited") {
+    await limitedReadiness.click();
+    await audiencePrompt.waitFor({ timeout: 10_000 });
+  }
   await exportPanel.getByRole("radio", { name: /Doctor \/ clinician/ }).click();
   await exportPanel.getByText("Prepared for: Doctor / clinician", { exact: true }).waitFor({ timeout: 10_000 });
   await exportPanel.getByRole("button", { name: "Continue", exact: true }).click();
@@ -1611,6 +1621,42 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await companion.page.getByRole("status", { name: "Care history coverage" }).waitFor({ timeout: 15_000 });
   await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
   await verifyMobile(companion.page);
+  // Companion messages remain conversation-only until the caregiver separately
+  // confirms the exact message, reviews the proposal, and accepts it.
+  const observationText = "Mum woke up three times last night.";
+  const previousAssistantCount = await companion.page.locator(".companion-message.is-assistant").count();
+  await companion.page.locator("#companion-message-input").fill(observationText);
+  await companion.page.locator("#companion-message-input").press("Enter");
+  await companion.page.waitForFunction((count) => {
+    const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
+    return messages.length > count && !messages[messages.length - 1].querySelector(".companion-typing");
+  }, previousAssistantCount, { timeout: 210_000 });
+  const observationMessage = companion.page.locator(".companion-message.is-user").filter({ hasText: observationText }).last();
+  await observationMessage.getByRole("button", { name: "Save as a care note" }).waitFor({ timeout: 15_000 });
+  await observationMessage.getByRole("button", { name: "Save as a care note" }).click();
+  await observationMessage.getByRole("button", { name: "Yes, save for review" }).click();
+
+  const reviewCard = companion.page.locator(".companion-care-update").filter({ hasText: observationText }).last();
+  await reviewCard.waitFor({ timeout: 15_000 });
+  const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+  assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
+  assert.equal(
+    JSON.stringify(beforeAcceptance.payload).includes(observationText),
+    false,
+    "a Companion message and pending proposal must not update the Care Record before acceptance",
+  );
+
+  await reviewCard.getByRole("button", { name: "Add to Care Record" }).click();
+  await companion.page.getByText(
+    "Your report was added to the Care Record. A healthcare professional has not confirmed it.",
+    { exact: true },
+  ).waitFor({ timeout: 15_000 });
+  const afterAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+  assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
+  assert.ok(
+    JSON.stringify(afterAcceptance.payload).includes(observationText),
+    "the explicitly accepted Companion report must appear in the same persisted Care Record",
+  );
   await companion.context.close();
 });
 
