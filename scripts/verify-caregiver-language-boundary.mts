@@ -194,8 +194,8 @@ assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedTex
 assert.match(lcr, /displayDescription\(source\.description\)/);
 assert.match(lcr, /displayCurrentCareDescription\(item\)/);
 assert.match(lcr, /<details className="lcr-entry-status">/);
-assert.match(lcr, /<summary>Care details<\/summary>/);
-assert.match(lcr, /Your saved care notes are still available below/);
+assert.match(lcr, /<summary>More about this item<\/summary>/, "record-level details must remain available through progressive disclosure");
+assert.match(lcr, /No care updates recorded yet/, "a genuinely empty record must use the current honest empty-state copy");
 assert.doesNotMatch(lcr, /We couldn’t check which items may need attention\. Try refreshing\./);
 assert.match(lcr, /CURRENT_CARE_TITLE_LABELS/);
 assert.match(lcr, /Original report text is not available in this view/);
