@@ -810,8 +810,7 @@ export function LCRCurrentUnderstanding() {
             }
             setRegisteredActions(savedActions as RegisteredAction[]);
             setRegisteredActionsError(null);
-          } catch (cause) {
-            setRegisteredActions([]);
+          } catch {
             setRegisteredActionsError("Agreed actions could not be loaded. Please try again.");
           }
         })(),
@@ -825,8 +824,7 @@ export function LCRCurrentUnderstanding() {
           try {
             setChanges(validateChanges(await getJSON(changePath)));
             setChangesError(null);
-          } catch (cause) {
-            setChanges([]);
+          } catch {
             setChangesError("Saved care changes could not be loaded. Please try again.");
           }
         })(),
@@ -838,8 +836,7 @@ export function LCRCurrentUnderstanding() {
             }
             setPatterns(persistedPatterns as PersistedPattern[]);
             setPatternsError(null);
-          } catch (cause) {
-            setPatterns([]);
+          } catch {
             setPatternsError("Repeated changes could not be loaded. Please try again.");
           }
         })(),
@@ -1735,9 +1732,9 @@ export function LCRCurrentUnderstanding() {
           <h3 id="lcr-pattern-history-heading">Changes that have happened more than once</h3>
           <span>{patterns.filter((pattern) => pattern.is_active && !pattern.superseded_by_pattern_id).length} repeated changes in the saved history</span>
         </div>
-        {patternsError && <p role="status">Saved repeated-change history could not be loaded: {patternsError}</p>}
+        {patternsError && <RecordState kind="error" title="Repeated changes could not be loaded" description="Your saved information is still available. Please try again." onAction={() => void load(true)} />}
         {!patternsError && patterns.length === 0 && (
-          <p>There is not enough saved history to tell whether something repeats yet.</p>
+          <RecordState kind="period-empty" title="No repeated changes recorded" description="Repeated changes will appear here when they have been recorded and reviewed." />
         )}
         {patterns.length > 0 && (
           <ul className="lcr-current-facts">
@@ -1775,9 +1772,9 @@ export function LCRCurrentUnderstanding() {
           <h3 id="lcr-change-history-heading">Care changes over time</h3>
           <span>{changes.length} saved change reviews</span>
         </div>
-        {changesError && <p role="status">Saved change history could not be loaded: {changesError}</p>}
+        {changesError && <RecordState kind="error" title="Care changes could not be loaded" description="Your saved information is still available. Please try again." onAction={() => void load(true)} />}
         {!changesError && changes.length === 0 && (
-          <p>There is not enough saved information to describe changes yet. Missing records do not mean nothing changed.</p>
+          <RecordState kind="period-empty" title="No care changes recorded" description="Recorded care changes will appear here as they are reviewed." />
         )}
         {changes.length > 0 && (
           <ul className="lcr-current-facts">
