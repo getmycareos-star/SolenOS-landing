@@ -4,6 +4,7 @@ import fs from "node:fs";
 const router = fs.readFileSync("src/components/mvp-workspace/FirstVisitWorkspaceRouter.tsx", "utf8");
 const page = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const capture = fs.readFileSync("src/components/mvp-workspace/AddSituationPanel.tsx", "utf8");
+const workspace = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 
 assert.match(page, /FirstVisitWorkspaceRouter/);
 assert.match(router, /ensureAnonymousSession/);
@@ -17,6 +18,7 @@ assert.match(router, /<CognitiveWorkspace \/>/);
 assert.match(router, /Your care journey starts here/);
 assert.match(router, /solenos-first-visit-mode/);
 assert.match(capture, /What’s been happening\?/);
+assert.match(workspace, /Start with one thing you want to remember/);
 assert.match(capture, /Add to my care record/);
 assert.match(capture, /rows=\{isFirstCapture \? 3 : 6\}/);
 assert.ok(
