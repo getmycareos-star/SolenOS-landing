@@ -38,11 +38,17 @@ async function request(path, { token, method = "GET", body, form } = {}) {
 }
 
 async function newSession() {
-  const created = await request("/api/v1/sessions/anonymous", {
-    method: "POST",
-    body: { caregiver_name: "Synthetic document continuity browser test" },
-  });
-  assert.equal(created.status, 201, JSON.stringify(created.payload));
+  let created = null;
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    created = await request("/api/v1/sessions/anonymous", {
+      method: "POST",
+      body: { caregiver_name: "Synthetic document continuity browser test" },
+    });
+    if (created.status === 201) return created.payload;
+    if (![429, 502, 503, 504].includes(created.status) || attempt === 6) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(2_000 * attempt, 10_000)));
+  }
+  assert.equal(created?.status, 201, JSON.stringify(created?.payload));
   return created.payload;
 }
 
