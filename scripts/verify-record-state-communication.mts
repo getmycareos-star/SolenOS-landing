@@ -40,6 +40,7 @@ console.log("PASS: pending history is not shown as empty; retry and Daily Care a
 const documents = fs.readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 assert(documents.includes("listError && documents.length === 0 ? null"), "a failed initial document read must not render a genuine empty state");
 assert(documents.includes("listError && <RecordState kind=\"error\""), "document read failures must have a distinct retryable state");
+assert(documents.includes("loadDocuments(documents.length > 0)"), "retrying a document refresh must preserve already visible documents");
 assert(documents.includes('kind={documents.length === 0 ? "first-empty" : "no-results"}'), "document empty and filtered-result states must remain distinct");
 assert(documents.includes("uploadInputRef.current?.click()"), "the empty document action must open the existing upload workflow");
 assert(documents.includes("() => setQuery(\"\")"), "the no-results action must clear the search");
