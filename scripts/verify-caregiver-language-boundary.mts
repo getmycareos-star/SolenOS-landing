@@ -38,6 +38,8 @@ assert.equal(caregiverFieldLabel("dose"), "Dose as reported");
 assert.equal(caregiverFieldLabel("medication_name"), "Medication name as reported");
 assert.equal(caregiverFieldLabel("medication_status"), "Medication status as reported");
 assert.equal(caregiverFieldLabel("unknown_internal_field"), null);
+assert.equal(caregiverFieldLabel("reconciliation"), "Updating your care information");
+assert.equal(caregiverFieldLabel("delta_engine"), "Changes since your last visit");
 assert.equal(
   caregiverSafeChangeText("daily_care_entry was first observed in the available records; this is not a claim about onset. 2 event(s) recorded in the current observation window."),
   null,
