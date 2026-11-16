@@ -179,8 +179,8 @@ export default function FollowUpsPage() {
     const nextAssessment = nextAssessmentResponse?.assessment && nextAssessmentResponse.assessment.person_id === personId
       ? nextAssessmentResponse.assessment : null;
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
-    setLoops(nextLoops || []);
-    setAssessment(nextAssessment);
+    if (nextLoops !== null) setLoops(nextLoops);
+    if (nextAssessment !== null) setAssessment(nextAssessment);
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
     else if (!reassessmentFailed) setAttentionWarning("");
   }, []);
@@ -274,7 +274,7 @@ export default function FollowUpsPage() {
       <p className="followups-kicker">CARE FOLLOW-UPS</p>
       <div className="followups-title-row">
         <div><h1>Follow-ups</h1><p>SolenOS checks the care information you have saved and keeps follow-ups easy to find. You only need to step in when we need your knowledge or action.</p></div>
-        <button type="button" className="followups-refresh" onClick={() => { setLoading(true); void refresh().catch(() => setError("Follow-ups could not be refreshed. Try again.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
+        <button type="button" className="followups-refresh" onClick={() => { setLoading(loops.length === 0 && !assessment); void refresh().catch(() => setError("Follow-ups could not be refreshed. Your previously saved information remains visible.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
       </div>
     </header>
     {error && <p className="followups-alert" role="alert">{error}</p>}
