@@ -45,3 +45,15 @@ assert(documents.includes('kind={documents.length === 0 ? "first-empty" : "no-re
 assert(documents.includes("uploadInputRef.current?.click()"), "the empty document action must open the existing upload workflow");
 assert(documents.includes("() => setQuery(\"\")"), "the no-results action must clear the search");
 console.log("PASS: document retrieval failures cannot masquerade as an empty library; empty and search states have working actions.");
+
+const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
+assert(dailyCare.includes("hasContextLoadedRef.current"), "Daily Care must retain the last successful load across refreshes");
+assert(dailyCare.includes("if (!hasContextLoadedRef.current) setContextLoading(true)"), "refreshing existing Daily Care data must not hide it behind an initial loading screen");
+assert(dailyCare.includes("contextError && careItems.filter((item) => !isOpenMatter(item)).length === 0"), "a failed current-care read with no cached records must show an error, not an empty state");
+assert(dailyCare.includes("contextError && careItems.length > 0"), "a failed refresh with cached care information must retain the information and show a warning");
+const historyFailureStart = dailyCare.indexOf('if (!Array.isArray(payload?.records))');
+const historyFailureEnd = dailyCare.indexOf('} else {', historyFailureStart);
+assert(historyFailureStart >= 0 && historyFailureEnd > historyFailureStart, "Daily Care history response must be validated");
+assert(!dailyCare.slice(historyFailureStart, historyFailureEnd).includes("setHistoryItems([])"), "a failed history read must not erase previously loaded care history");
+assert(dailyCare.includes("historyError ? null : (") && dailyCare.includes("No new care updates recorded"), "a failed history read must not appear as no new updates");
+console.log("PASS: Daily Care preserves previously loaded care and history when a refresh fails.");
