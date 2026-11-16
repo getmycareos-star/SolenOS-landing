@@ -477,30 +477,36 @@ await record("01c workspace links, browser back, More menu and account form vali
       deletionRequests.push(request.url());
     }
   });
-  // Capture storage at the first /start document script boundary. The start
-  // route may legitimately create a fresh anonymous session after deletion;
-  // inspecting storage after hydration would observe that new session rather
-  // than the cleared state produced by the delete action.
+  // Capture the deletion boundary itself. /start may legitimately create
+  // a fresh anonymous session after navigation, so a document-start snapshot
+  // can race with app bootstrap. Observe the actual localStorage removals and
+  // freeze the snapshot as soon as every identity key has been cleared.
   await disposable.page.addInitScript(() => {
-    if (window.location.pathname === "/start") {
-      const keys = [
-        "solenos_anonymous_access_token",
-        "solenos_backend_person_id",
-        "solenos_backend_caregiver_id",
-        "solenos_anonymous_session_expires_at",
-        "solenos_person_id",
-      ];
-      const values = Object.fromEntries(
-        keys.map((key) => [key, window.localStorage.getItem(key)]),
-      );
-      window.__solenosWorkspaceDeleteSnapshot = {
-        token: values.solenos_anonymous_access_token,
-        personId: values.solenos_backend_person_id,
-        caregiverId: values.solenos_backend_caregiver_id,
-        expiresAt: values.solenos_anonymous_session_expires_at,
-        legacyPersonId: values.solenos_person_id,
-      };
-    }
+    const identityKeys = [
+      "solenos_anonymous_access_token",
+      "solenos_backend_person_id",
+      "solenos_backend_caregiver_id",
+      "solenos_anonymous_session_expires_at",
+      "solenos_person_id",
+    ];
+    const originalRemoveItem = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function (key) {
+      const result = originalRemoveItem.call(this, key);
+      if (
+        this === window.localStorage &&
+        !window.__solenosWorkspaceDeleteSnapshot &&
+        identityKeys.every((identityKey) => window.localStorage.getItem(identityKey) === null)
+      ) {
+        window.__solenosWorkspaceDeleteSnapshot = {
+          token: null,
+          personId: null,
+          caregiverId: null,
+          expiresAt: null,
+          legacyPersonId: null,
+        };
+      }
+      return result;
+    };
   });
   const deleteMenu = await disposable.page.getByRole("button", {
     name: "More care record actions", exact: true,
