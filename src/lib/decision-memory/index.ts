@@ -244,7 +244,8 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
       }
       const id = String(row.id);
       const previous = existingById.get(id);
-      const what = String(row.decision_text);
+      const serverWhat = String(row.decision_text);
+      const what = previous?.postgres_snapshot !== undefined && previous.postgres_snapshot !== serverWhat ? previous.what : serverWhat;
       const when = String(row.decided_at ?? row.recorded_at ?? row.created_at ?? new Date().toISOString());
       const evidenceIds = Array.isArray(row.evidence_ids) ? row.evidence_ids.filter((v): v is string => typeof v === "string") : [];
       const evidenceText = typeof context.evidence_text === "string" ? context.evidence_text : what;
@@ -252,7 +253,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
       return {
         id,
         postgres_id: id,
-        postgres_snapshot: what,
+        postgres_snapshot: serverWhat,
         extraction_ids: previous?.extraction_ids ?? [],
         client_reference_id: typeof row.client_reference_id === "string" ? row.client_reference_id : previous?.client_reference_id,
         ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id, postgres_outcome_snapshot: String(persistedOutcome.description ?? "") } : {}),
@@ -266,7 +267,9 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { evidence_id: evidenceIds[0] } : {}), ...(typeof context.event_id === "string" ? { event_id: context.event_id } : {}) }],
         alternatives: Array.isArray(context.alternatives) ? context.alternatives.filter((v): v is string => typeof v === "string") : [],
         reason: typeof context.reason === "string" ? context.reason : null,
-        outcome: typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
+        outcome: previous && previous.postgres_outcome_snapshot !== undefined && previous.postgres_outcome_snapshot !== previous.outcome
+          ? previous.outcome
+          : typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
         outcome_event_ids: previous?.outcome_event_ids ?? [],
         status: ["pending", "changed", "completed", "reversed", "uncertain", "needs_review"].includes(String(row.decision_status))
           ? row.decision_status as DecisionMemoryStatus
