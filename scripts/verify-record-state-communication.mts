@@ -117,3 +117,7 @@ assert(handoffs.includes('title="No handoffs recorded yet"'), "only a successful
 assert(handoffs.includes('title="Sharing history could not be loaded"'), "failed handoff history must be distinct from an empty history");
 assert(handoffs.includes('title="Recipient access could not be checked"'), "failed recipient discovery must have a distinct retryable state");
 console.log("PASS: handoff lists validate their payloads and preserve loaded history across retrieval failures.");
+
+assert(handoffs.includes("const [draftsError, setDraftsError]"), "saved-summary retrieval errors must be tracked separately from inbox/outbox errors");
+assert(handoffs.includes("draftsError && savedDrafts.length > 0"), "failed summary refreshes must preserve and display previously loaded drafts");
+assert(handoffs.includes("savedDrafts.length === 0 && !loading && !draftsError"), "only a successful empty saved-draft read may show the no-summaries state");
