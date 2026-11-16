@@ -399,7 +399,9 @@ function scrubList(items: readonly string[], max: number, asFacts = true): strin
 /** Present held facts without archival "Earlier:" voice when orienting. */
 function plainHeldFacts(items: readonly string[], max: number): string[] {
   return scrubList(
-    items.map((line) => line.replace(/^Earlier:\s*/i, "").trim()),
+    items
+      .filter((line): line is string => typeof line === "string")
+      .map((line) => line.replace(/^Earlier:\s*/i, "").trim()),
     max,
   );
 }
@@ -1279,7 +1281,7 @@ export function composeCaregiverResponse(params: {
     const eventTexts = [
       ...situation.observations.map((o) => o.raw_text),
       latestRawText,
-    ].filter((t) => t.trim().length >= 4);
+    ].filter((t): t is string => typeof t === "string" && t.trim().length >= 4);
     const profileInfluence = caregiverAsksFromClinicalProfile({
       eventTexts,
       clinicalProfileId,
@@ -1592,12 +1594,12 @@ if (improvement) {
   const revisionSummaries =
     crsCtx.understandingRevisions.length > 0
       ? crsCtx.understandingRevisions
-          .map((r) => r.summary.trim())
+          .map((r) => (typeof r.summary === "string" ? r.summary.trim() : ""))
           .filter(Boolean)
           .slice(-3)
       : facets.evidence_maturity >= 10
         ? (crs?.understanding_revisions ?? [])
-            .map((r) => r.summary.trim())
+            .map((r) => (typeof r.summary === "string" ? r.summary.trim() : ""))
             .filter(Boolean)
             .slice(-3)
         : [];
@@ -1966,9 +1968,11 @@ if (show_clarity && !pushback && what_matters_now) {
       ...modelOrientation.still_unclear,
     ].filter((q, i, arr) => arr.indexOf(q) === i);
     // Only caregiver-facing asks reach the panel
-    const facing = asks.filter((q) =>
-      /^(when|what|whether|who|how|before|has anything)/i.test(q.trim()) ||
-      /medication changed|reason for the change|normal day/i.test(q),
+    const facing = asks.filter((q): q is string =>
+      typeof q === "string" && (
+        /^(when|what|whether|who|how|before|has anything)/i.test(q.trim()) ||
+        /medication changed|reason for the change|normal day/i.test(q)
+      ),
     );
     if (facing.length > 0) {
       still_unclear = facing.slice(0, Math.min(3, facets.max_asks || 3));
@@ -2172,7 +2176,8 @@ connection_note = scrubPasteField(connection_note);
     if (profileMattersLate) what_matters_now = profileMattersLate;
   }
   for (let i = 0; i < follow_up_items.length; i++) {
-    const scrubbed = scrubPasteField(follow_up_items[i]!);
+    const item = follow_up_items[i];
+    const scrubbed = typeof item === "string" ? scrubPasteField(item) : null;
     follow_up_items[i] = scrubbed ?? "Notice whether this continues and what else connects";
   }
   // Drop follow-ups that still quote near-raw focus after scrub.
