@@ -281,10 +281,6 @@ await record("01c workspace links, browser back, More menu and account form vali
   await actionMenu.getByRole("menuitem", { name: "Download / Export", exact: true }).click();
   await page.getByRole("heading", { name: "Download / Export care summary", exact: true }).waitFor({ timeout: 10_000 });
   const exportPanel = page.locator(".share-care-summary-panel");
-  const limitedReadiness = exportPanel.getByRole("button", { name: "Continue anyway", exact: true });
-  if (await limitedReadiness.isVisible().catch(() => false)) {
-    await limitedReadiness.click();
-  }
   const shareContextDiagnostic = await page.evaluate(() => ({
     tokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
     personPresent: Boolean(localStorage.getItem("solenos_backend_person_id")),
