@@ -114,8 +114,21 @@ try {
   assert.ok(evidence?.id, "the actual browser upload must create a persisted original document");
   const evidenceId = evidence.id;
 
-  // The upload endpoint queues reading automatically; verify the UI confirms that queue.
-  await page.getByText(/It is reading the documents now/).waitFor({ timeout: 30_000 });
+  // Reload so the Documents page and review panel receive the persisted upload.
+  // The backend may already have queued background reading; otherwise the caregiver
+  // starts it from the review panel. Both are valid real-user paths.
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: /documents/i }).first().waitFor();
+  await page.getByText(filename, { exact: true }).first().waitFor({ timeout: 30_000 });
+
+  const readButton = page.getByRole("button", { name: "Read document", exact: true });
+  const readButtonVisible = await readButton.isVisible().catch(() => false);
+  if (readButtonVisible) {
+    await readButton.click();
+  } else {
+    await page.getByText(/SolenOS is reading this document in the background/).waitFor({ timeout: 30_000 });
+  }
+
   const analysis = await pollDocument(session, evidenceId);
   assert.equal(analysis.extraction_status, "available");
   assert.equal(analysis.intelligence_status, "available");
