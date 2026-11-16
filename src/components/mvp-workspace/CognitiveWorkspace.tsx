@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
 import {
   type AccessibilityPrefs,
   type AttachedDocument,
@@ -1036,25 +1037,35 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                 </section>
               )
             ) : (
-              <SituationResponsePanel
-                response={situationResponse}
-                rawInput={lastSharedDisplay || rawInput}
-                careKey={caregiverId}
-                entryIntent={
-                  (situationResponse.active_care_situation?.observations?.length ?? 0) > 1
-                    ? "update"
-                    : "initial"
+              <ErrorBoundary
+                name="Care Record summary"
+                fallback={
+                  <section className="panel panel-response" role="status" aria-live="polite">
+                    <h3>Your update is saved</h3>
+                    <p>Your original note is still saved. SolenOS couldn’t prepare the care summary just now. Refresh your Care Record before adding the same information again.</p>
+                  </section>
                 }
-                onAddUpdate={() => {
-                  setRawInput("");
-                  setDocuments([]);
-                  const obs =
-                    situationResponse.active_care_situation?.observations?.length ?? 0;
-                  setEntryMode(startInUpdateMode || obs > 1 ? "update" : "initial");
-                  go("REAL_MOMENT");
-                }}
-                onContinue={handleDoneForNow}
-              />
+              >
+                <SituationResponsePanel
+                  response={situationResponse}
+                  rawInput={lastSharedDisplay || rawInput}
+                  careKey={caregiverId}
+                  entryIntent={
+                    (situationResponse.active_care_situation?.observations?.length ?? 0) > 1
+                      ? "update"
+                      : "initial"
+                  }
+                  onAddUpdate={() => {
+                    setRawInput("");
+                    setDocuments([]);
+                    const obs =
+                      situationResponse.active_care_situation?.observations?.length ?? 0;
+                    setEntryMode(startInUpdateMode || obs > 1 ? "update" : "initial");
+                    go("REAL_MOMENT");
+                  }}
+                  onContinue={handleDoneForNow}
+                />
+              </ErrorBoundary>
             )}
             <button
               type="button"
