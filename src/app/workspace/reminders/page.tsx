@@ -242,11 +242,12 @@ export default function CareRemindersPage() {
         {loading && !hasLoadedRef.current ? (
           <RecordState kind="loading" title="Loading saved reminders" />
         ) : error && !hasLoadedRef.current ? null : visibleReminders.length === 0 ? (
-          <div className="care-reminders-empty">
-            <Clock3 size={24} aria-hidden />
-            <h3>No {filter === "all" ? "" : filter + " "}reminders saved</h3>
-            <p>Reminders you create will appear here. SolenOS does not invent sample reminders.</p>
-          </div>
+          <RecordState
+            kind={reminders.length === 0 ? "first-empty" : "no-results"}
+            title={reminders.length === 0 ? "No reminders scheduled" : `No ${filter} reminders`}
+            description={reminders.length === 0 ? "Reminders you add will appear here." : "Change the filter to see other saved reminders."}
+            onAction={reminders.length > 0 ? () => setFilter("all") : undefined}
+          />
         ) : (
           <ul className="care-reminders-items">
             {visibleReminders.map((reminder) => {
