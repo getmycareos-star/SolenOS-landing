@@ -54,6 +54,10 @@ function auth(session) {
 async function createBrowserPage(session, path, viewport = { width: 390, height: 844 }) {
   const context = await browser.newContext({ viewport });
   await context.addInitScript((identity) => {
+    // Seed only the first document in this browser context. Re-seeding on every
+    // navigation would silently restore credentials after the user deletes them.
+    if (sessionStorage.getItem("solenos_e2e_identity_seeded") === "1") return;
+    sessionStorage.setItem("solenos_e2e_identity_seeded", "1");
     localStorage.setItem("solenos_anonymous_access_token", identity.token);
     localStorage.setItem("solenos_backend_person_id", identity.personId);
     localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
@@ -402,6 +406,16 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
+  const identityBeforeDeletion = await disposable.page.evaluate(() => ({
+    token: localStorage.getItem("solenos_anonymous_access_token"),
+    personId: localStorage.getItem("solenos_backend_person_id"),
+    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+  }));
+  assert.deepEqual(identityBeforeDeletion, {
+    token: disposableIdentity.token,
+    personId: disposableIdentity.personId,
+    caregiverId: disposableIdentity.caregiverId,
+  }, "the disposable browser must start with its own identity before deletion");
   const deletionRequests = [];
   disposable.page.on("request", (request) => {
     if (request.url().includes("/api/v1/") && request.method() === "DELETE") {
