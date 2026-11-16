@@ -295,8 +295,9 @@ await record("01c workspace links, browser back, More menu and account form vali
   await sharePanel.getByRole("radio", { name: /^Family/ }).click();
   await sharePanel.getByText("Prepared for: Family", { exact: true }).waitFor({ timeout: 10_000 });
   await sharePanel.getByRole("button", { name: "Continue", exact: true }).click();
-  await sharePanel.getByRole("button", { name: "Copy text", exact: true }).click();
-  await sharePanel.getByRole("button", { name: "Share", exact: true }).click();
+  await sharePanel.locator(".share-format-option").filter({ hasText: "Copy text" }).click();
+  await sharePanel.locator(".share-confirm-actions")
+    .getByRole("button", { name: "Share", exact: true }).click();
   await sharePanel.getByText("Summary copied to clipboard.", { exact: true }).waitFor({ timeout: 10_000 });
   const copiedSummary = await page.evaluate(() => navigator.clipboard.readText());
   assert.match(copiedSummary, /Prepared for: Family/,
