@@ -2,6 +2,7 @@ name: Critical care journeys — real backend and browser
 
 on:
   workflow_call:
+# Run the browser suite against the PR merge ref, not only after code reaches main.
   pull_request:
     branches: [main]
     paths:
