@@ -263,11 +263,12 @@ await record("01c workspace links, browser back, More menu and account form vali
 
   actionMenu = await openMoreMenu();
   const installAlertPromise = page.waitForEvent("dialog");
-  await actionMenu.getByRole("menuitem", { name: "Add to Home", exact: true }).click();
+  const installClick = actionMenu.getByRole("menuitem", { name: "Add to Home", exact: true }).click();
   const installAlert = await installAlertPromise;
   assert.match(installAlert.message(), /iPhone or iPad|Android|Desktop/,
     "Add to Home must explain the supported browser installation steps");
   await installAlert.accept();
+  await installClick;
 
   const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navToggle.click();
@@ -351,11 +352,12 @@ await record("01c workspace links, browser back, More menu and account form vali
   }).click().then(() => disposable.page.getByRole("menu", { name: "Care record actions", exact: true }));
   await deleteMenu.waitFor({ state: "visible", timeout: 5_000 });
   const deleteDialogPromise = disposable.page.waitForEvent("dialog");
-  await deleteMenu.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  const deleteClick = deleteMenu.getByRole("menuitem", { name: "Delete", exact: true }).click();
   const deleteDialog = await deleteDialogPromise;
   assert.match(deleteDialog.message(), /does not delete care information already saved in SolenOS/i,
     "workspace deletion must distinguish local browser data from saved care information");
   await deleteDialog.accept();
+  await deleteClick;
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
   const clearedLocalData = await disposable.page.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
