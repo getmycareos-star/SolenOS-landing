@@ -84,6 +84,7 @@ const companion = read("../src/components/workflows/AICompanion.tsx");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
 const documentsPage = read("../src/app/workspace/documents/page.tsx");
 const settings = read("../src/app/workspace/settings/page.tsx");
+const reminders = read("../src/app/workspace/reminders/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
@@ -345,3 +346,12 @@ assert.match(documentExtractionRouteLanguage, /We couldn’t confirm your access
   "expired document access must explain the next step in plain English");
 assert.doesNotMatch(documentExtractionRouteLanguage, /A valid SolenOS care-record session is required|This care-record session is no longer valid/i,
   "document extraction must not expose session implementation terminology to caregivers");
+
+assert.match(reminders, /Back to Care Record/,
+  "reminders must use the caregiver-facing Care Record name");
+assert.match(reminders, /Save a reminder here/,
+  "reminders introduction must use everyday language");
+assert.doesNotMatch(reminders, /CARE CONTINUITY|Living Care Record|in-app notification feed|notification is recorded/i,
+  "reminders must not expose internal continuity or delivery terminology");
+assert.match(reminders, /Reminders you add will appear here/,
+  "reminders empty state must explain what the caregiver will see");
