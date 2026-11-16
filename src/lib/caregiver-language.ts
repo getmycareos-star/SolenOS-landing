@@ -279,6 +279,7 @@ const CAREGIVER_PRODUCT_TERMS: Readonly<Record<string, string>> = {
   provenance: "What was recorded and where it came from",
   evidence: "What was recorded and where it came from",
   "delta engine": "Changes since your last visit",
+  delta_engine: "Changes since your last visit",
   retrieval: "Finding past care information",
   "open loops": "Things that still need attention",
   open_loops: "Things that still need attention",
