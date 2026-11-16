@@ -593,20 +593,28 @@ export function recordDecisionFromText(params: {
   };
 
   const store = load(careKey);
-  const prior = store.entries.find((e) => e.what === entry.what || e.decision === entry.what);
+  const prior = store.entries.find((e) =>
+    e.what === entry.what ||
+    e.decision === entry.what ||
+    (params.id !== undefined && (e.id === params.id || e.extraction_ids?.includes(params.id) || e.client_reference_id === params.id))
+  );
   const persistedEntry = prior?.postgres_id
     ? {
         ...entry,
         id: prior.id,
         postgres_id: prior.postgres_id,
         postgres_snapshot: prior.postgres_snapshot ?? prior.what,
+        postgres_status_snapshot: prior.postgres_status_snapshot,
+        postgres_context_snapshot: prior.postgres_context_snapshot,
+        outcome_client_reference_id: prior.outcome_client_reference_id,
         outcome: params.outcome !== undefined ? entry.outcome : prior.outcome,
         outcome_event_ids: prior.outcome_event_ids,
         extraction_ids: [...new Set([...(prior.extraction_ids ?? []), ...(params.id ? [params.id] : [])])],
         client_reference_id: prior.client_reference_id ?? params.id,
         revisions: prior.revisions ?? [],
         ...(prior.postgres_outcome_id ? { postgres_outcome_id: prior.postgres_outcome_id } : {}),
-        ...(prior.postgres_outcome_snapshot ? { postgres_outcome_snapshot: prior.postgres_outcome_snapshot } : {}),
+        ...(prior.postgres_outcome_snapshot !== undefined ? { postgres_outcome_snapshot: prior.postgres_outcome_snapshot } : {}),
+        ...(prior.outcome_client_reference_id ? { outcome_client_reference_id: prior.outcome_client_reference_id } : {}),
       }
     : entry;
   const next = [
