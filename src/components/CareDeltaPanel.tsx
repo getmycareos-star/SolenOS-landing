@@ -125,7 +125,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
   }, [personId])
 
   function renderRows(title: string, rows?: Array<Record<string, any>>) {
-    if (!rows?.length) return null
+    if (!rows?.length || !result?.interpretation_evaluation) return null
     const visibleRows = rows.filter((row) =>
       row.claim_supported !== false &&
       row.evidence_supported !== false &&
@@ -226,7 +226,9 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
     {result && <div aria-live="polite" style={{ marginTop: 14 }}>
       <h3 style={{ fontSize: 15, margin: 0 }}>What may have changed</h3>
       <p style={{ fontSize: 12, lineHeight: 1.5 }}>
-        {result.interpretation_evaluation && result.interpretation_evaluation.overall_status !== 'supported'
+        {!result.interpretation_evaluation
+          ? 'This earlier comparison has not passed the current reliability check. Its interpretation is withheld; review the original care records instead.'
+          : result.interpretation_evaluation.overall_status !== 'supported'
           ? result.interpretation_evaluation.overall_status === 'conflicting'
             ? 'The saved reports disagree. The original accounts are kept separate and no single account is treated as correct.'
             : result.interpretation_evaluation.overall_status === 'stale_evidence'
@@ -249,7 +251,8 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       </p>}
       {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>We could not find the notes or documents behind some of these possible changes. Check them before relying on them.</p>}
       {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each finding is linked to the words in a saved note or document. This does not prove the information is medically correct or came from a different report.</p>}
-      {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary') && (
+      {!result.interpretation_evaluation && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>This saved comparison predates the current reliability check. Its generated findings are not shown as current care information.</p>}
+      {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary' && claim.support_status === 'matched_exact_source_wording') && (
         <section style={{ borderTop: '1px solid var(--border)', paddingTop: 9, marginTop: 9 }}>
           <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Check the summary against saved information</h4>
           {result.claim_provenance?.claims?.filter((claim) => claim.claim_type === 'summary' && claim.support_status === 'matched_exact_source_wording').map((claim) => (
@@ -265,7 +268,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       )}
       {result.computed_changes?.length ? <section style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
         <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Changes to review</h4>
-        {result.computed_changes.filter((item) => item.interpretation_caregiver_visible !== false).map((item, index) => <article key={index} style={{ fontSize: 12, margin: '5px 0' }}>
+        {result.computed_changes.filter((item) => item.interpretation_caregiver_visible === true).map((item, index) => <article key={index} style={{ fontSize: 12, margin: '5px 0' }}>
           <p style={{ margin: 0 }}>
             <strong>{caregiverSafeAssistantText(String(item.name || 'Care information')) || 'Care information'}</strong> · {caregiverStatusLabel(String(item.change_type || 'uncertain')) || 'Not confirmed'} · {caregiverSafeAssistantText(String(item.previous ?? 'No prior value')) || 'Not available'} → {caregiverSafeAssistantText(String(item.current ?? 'Not available')) || 'Not available'} · {caregiverStatusLabel(String(item.interpretation_status || item.certainty || 'uncertain')) || 'Not confirmed'}
           </p>
