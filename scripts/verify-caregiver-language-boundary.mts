@@ -126,10 +126,6 @@ assert.doesNotMatch(appointment, /Information status not available|Review status
 assert.match(appointment, /Notes and documents:/);
 assert.doesNotMatch(settings, /anonymous session|one-time recovery code|Clear local data/);
 assert.match(settings, /Clear saved information from this device/);
-assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/);
-assert.match(careContinuity, /Care details shared with SolenOS/);
-assert.doesNotMatch(statusCareDelta, /Clinician-oriented summary/);
-assert.match(statusCareDelta, /Summary for a healthcare professional/);
 assert.doesNotMatch(companion, /distinct, dated|The same wording appears in .*saved item/);
 
 assert.match(companion, /Based on saved information/);
@@ -216,6 +212,10 @@ const statusCareDelta = read("../src/components/CareDeltaPanel.tsx");
 const careOverviewPage = read("../src/app/workspace/care-continuity/page.tsx");
 const sourceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const careContinuity = read("../src/components/CareContinuityIntegrityPanel.tsx");
+assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/);
+assert.match(careContinuity, /Care details shared with SolenOS/);
+assert.doesNotMatch(statusCareDelta, /Clinician-oriented summary/);
+assert.match(statusCareDelta, /Summary for a healthcare professional/);
 const careRecordOverview = read("../src/components/app-shell/CareRecordOverview.tsx");
 const persistedOrientation = read("../src/components/mvp-workspace/PersistedCareOrientation.tsx");
 const howItWorksPage = read("../src/app/how-it-works/page.tsx");
