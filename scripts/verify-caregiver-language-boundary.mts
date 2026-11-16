@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   caregiverFieldLabel,
+  caregiverProductTermLabel,
   caregiverInformationAreaLabel,
   caregiverInformationLabel,
   caregiverSafeAssistantText,
@@ -345,3 +346,25 @@ assert.match(documentExtractionRouteLanguage, /We couldn’t confirm your access
   "expired document access must explain the next step in plain English");
 assert.doesNotMatch(documentExtractionRouteLanguage, /A valid SolenOS care-record session is required|This care-record session is no longer valid/i,
   "document extraction must not expose session implementation terminology to caregivers");
+
+
+for (const [term, expected] of [
+  ["Living Care Record", "Care Record"],
+  ["LCR", "Care Record"],
+  ["Care continuity", "Keeping care information together"],
+  ["reconciliation", "Comparing saved care information"],
+  ["provenance", "Where the information came from"],
+  ["evidence", "Notes and documents"],
+  ["Delta Engine", "Changes since your last visit"],
+  ["retrieval", "Finding past care information"],
+  ["open loops", "Things that still need attention"],
+  ["longitudinal history", "Care history over time"],
+  ["AI Companion", "Care Assistant"],
+  ["epistemic status", "What is known, not sure yet, or not recorded"],
+  ["assessment_coverage", "What information was checked"],
+  ["source attribution", "Who reported it and where it came from"],
+] as const) {
+  assert.equal(caregiverProductTermLabel(term), expected, "caregiver wording for " + term);
+}
+assert.equal(caregiverProductTermLabel("unapproved_internal_term"), null,
+  "unknown product terms must not be prettified or exposed");
