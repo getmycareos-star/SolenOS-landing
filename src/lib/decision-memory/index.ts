@@ -426,7 +426,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
               postgres_id: saved.id as string,
               postgres_snapshot: String(saved.decision_text ?? candidate.what),
               postgres_status_snapshot: String(saved.decision_status ?? decisionStatusForPostgres(candidate.status)),
-              postgres_context_snapshot: decisionContextForPostgres(candidate),
+              postgres_context_snapshot: typeof saved.context === "string" ? saved.context : decisionContextForPostgres(candidate),
               client_reference_id: entry.client_reference_id ?? entry.extraction_ids?.[0] ?? entry.id,
             }
           : candidate,
