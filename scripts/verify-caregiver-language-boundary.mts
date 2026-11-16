@@ -224,7 +224,7 @@ assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/)
 assert.match(careContinuity, /Care details shared with SolenOS/);
 assert.doesNotMatch(statusCareDelta, /Clinician-oriented summary/);
 assert.match(statusCareDelta, /Model-generated clinician summaries are withheld until they have their own evidence evaluation/);
-assert.doesNotMatch(statusCareDelta, /result\\.clinician_summary/);
+assert.doesNotMatch(statusCareDelta, /result\.clinician_summary/);
 const careRecordOverview = read("../src/components/app-shell/CareRecordOverview.tsx");
 const persistedOrientation = read("../src/components/mvp-workspace/PersistedCareOrientation.tsx");
 const howItWorksPage = read("../src/app/how-it-works/page.tsx");
