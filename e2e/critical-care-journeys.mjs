@@ -489,9 +489,16 @@ await record("01c workspace links, browser back, More menu and account form vali
         "solenos_anonymous_session_expires_at",
         "solenos_person_id",
       ];
-      window.__solenosWorkspaceDeleteSnapshot = Object.fromEntries(
+      const values = Object.fromEntries(
         keys.map((key) => [key, window.localStorage.getItem(key)]),
       );
+      window.__solenosWorkspaceDeleteSnapshot = {
+        token: values.solenos_anonymous_access_token,
+        personId: values.solenos_backend_person_id,
+        caregiverId: values.solenos_backend_caregiver_id,
+        expiresAt: values.solenos_anonymous_session_expires_at,
+        legacyPersonId: values.solenos_person_id,
+      };
     }
   });
   const deleteMenu = await disposable.page.getByRole("button", {
