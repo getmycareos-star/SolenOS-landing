@@ -336,7 +336,9 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         outcome: previous && previous.postgres_outcome_snapshot !== undefined && previous.postgres_outcome_snapshot !== previous.outcome
           ? previous.outcome
           : typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
-        outcome_event_ids: previous?.outcome_event_ids ?? [],
+        outcome_event_ids: Array.isArray(persistedOutcome?.source_event_ids)
+          ? persistedOutcome.source_event_ids.filter((value): value is string => typeof value === "string")
+          : previous?.outcome_event_ids ?? [],
         status: ["pending", "changed", "completed", "reversed", "uncertain", "needs_review"].includes(String(row.decision_status))
           ? row.decision_status as DecisionMemoryStatus
           : previous?.status ?? "active",
@@ -458,6 +460,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       description: entry.outcome,
       client_reference_id: referenceId,
       evidence_ids: [],
+      source_event_ids: [...new Set(entry.outcome_event_ids ?? [])],
       is_intended_outcome: false,
     }) as Record<string, unknown>;
     if (typeof outcome.id !== "string" || !outcome.id) {
