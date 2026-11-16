@@ -958,7 +958,17 @@ await record("Daily Care saves and retrieves original reports without relying on
 await record("LCR care history shows the original caregiver report with source details on demand", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
-  await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
+  const reportText = history.page.getByText(scenarioReports[0], { exact: false }).first();
+  await reportText.waitFor({ timeout: 20_000 });
+  const reportDom = await reportText.evaluate((element) => {
+    const ancestors = [];
+    for (let node = element; node && ancestors.length < 8; node = node.parentElement) {
+      ancestors.push({ tag: node.tagName.toLowerCase(), className: String(node.className || ""), text: (node.innerText || "").slice(0, 240), hasDetails: Boolean(node.querySelector("details")) });
+    }
+    return ancestors;
+  });
+  console.log("LCR_REPORT_DOM", JSON.stringify(reportDom));
+  console.log("LCR_PAGE_API", JSON.stringify(history.observed.filter((item) => item.path.includes("current-care") || item.path.includes("situation"))));
 
   const reportCard = history.page.locator(".lcr-current-fact:visible")
     .filter({ hasText: scenarioReports[0] }).first();
