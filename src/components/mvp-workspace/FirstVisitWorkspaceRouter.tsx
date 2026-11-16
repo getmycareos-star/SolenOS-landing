@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ensureAnonymousSession } from "@/api/client";
+import { apiUrl } from "@/lib/api-url";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { CognitiveWorkspace } from "./CognitiveWorkspace";
 
@@ -35,7 +36,7 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
       const careSessionId = ensureClientInteractionSessionId(storedSessionId);
       window.localStorage.setItem("solenos_care_session_id", careSessionId);
       const response = await fetch(
-        `/api/situation?care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`,
+        apiUrl(`/api/situation?care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`),
         { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" },
       );
       if (!response.ok) throw new Error(`Care information could not be checked (${response.status}).`);
