@@ -618,7 +618,11 @@ export function recordDecisionFromText(params: {
       }
     : entry;
   const next = [
-    ...store.entries.filter((e) => e.what !== entry.what && e.decision !== entry.what),
+    ...store.entries.filter((e) =>
+      e.what !== entry.what &&
+      e.decision !== entry.what &&
+      !(prior && (e.id === prior.id || (prior.postgres_id && e.postgres_id === prior.postgres_id)))
+    ),
     persistedEntry,
   ].slice(-24);
   save({ care_key: careKey, entries: next, updated_at: now });
