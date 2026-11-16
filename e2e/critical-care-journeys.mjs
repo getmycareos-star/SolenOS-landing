@@ -964,9 +964,11 @@ await record("LCR care history shows a recent caregiver report with source detai
   const currentCareForUi = await request("/api/v1/care-continuity/current-care?limit_per_source=12", { token: identity.token });
   assert.equal(currentCareForUi.status, 200, JSON.stringify(currentCareForUi.payload));
   const visibleScenarioReport = [...scenarioReports].reverse().find((report) =>
-    currentCareForUi.payload.items.some((item) => JSON.stringify(item).includes(report))
+    currentCareForUi.payload.items.some((item) =>
+      String(item.title ?? "").includes(report) || String(item.description ?? "").includes(report)
+    )
   );
-  assert.ok(visibleScenarioReport, "the visible Care Record projection must include a recent saved caregiver report");
+  assert.ok(visibleScenarioReport, "the Care Record projection must include a recent caregiver report in its displayed title or description");
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await history.page.getByText(visibleScenarioReport, { exact: false }).first().waitFor({ timeout: 20_000 });
