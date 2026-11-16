@@ -92,9 +92,11 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
       if (!response) throw new Error("Backend proxy did not return a response after transient retries");
       await route.fulfill({ response });
     } catch (error) {
-      // Closing a test context may cancel API requests still in flight. Ignore
-      // only that teardown race; failures from a live page must still fail E2E.
-      if (page.isClosed()) return;
+      // Closing a test context may cancel API requests before Playwright reports
+      // page.isClosed(). Ignore only that explicit target-closed teardown error.
+      const message = String(error?.message || error);
+      const targetClosedDuringTeardown = /Target page, context or browser has been closed|TargetClosedError/.test(message);
+      if (page.isClosed() || context.pages().length === 0 || targetClosedDuringTeardown) return;
       throw error;
     }
   });
