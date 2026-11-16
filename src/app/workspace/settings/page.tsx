@@ -821,7 +821,7 @@ function PrivacyCard() {
               </label>
               {erasureError && <p role="alert">{erasureError} <button type="button" onClick={() => void loadErasureHistory()}>Try again</button></p>}
               {hasUnresolvedErasureRequest && <p role="status">You already have an erasure request awaiting review. Check the request history above; you do not need to submit it again.</p>}
-              <Button variant="secondary" onClick={() => void submitCareRecordErasureRequest()} disabled={!erasureAttested || erasureSubmitting || hasUnresolvedErasureRequest} loading={erasureSubmitting}>
+              <Button variant="secondary" onClick={() => void submitCareRecordErasureRequest()} disabled={!erasureAttested || erasureSubmitting || erasureHistoryLoading || Boolean(erasureError) || hasUnresolvedErasureRequest} loading={erasureSubmitting}>
                 {erasureSubmitting ? "Submitting request…" : "Submit care-record erasure request"}
               </Button>
               <p>Submitting creates a private request for review. It does not immediately delete data. SolenOS must verify identity and authority, assess shared-record and legal-hold restrictions, and complete a separate erasure process where eligible.</p>
