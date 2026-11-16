@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
@@ -52,12 +53,14 @@ function plainStatus(value?: string | null): string {
 }
 
 export function CareRecordOverview() {
+  const router = useRouter();
   const [items, setItems] = useState<CareItem[]>([]);
   const [changes, setChanges] = useState<ChangeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyNote, setHistoryNote] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const hasLoadedRef = useRef(false);
 
@@ -79,6 +82,9 @@ export function CareRecordOverview() {
         throw new Error("The saved care information could not be verified for this session.");
       }
       setItems(response.items);
+      hasLoadedRef.current = true;
+      setHasLoaded(true);
+      setHistoryLoading(true);
       try {
         const history = await getJSON("/change/changes/" + encodeURIComponent(personId));
         if (!Array.isArray(history)) throw new Error("History was unavailable.");
@@ -86,11 +92,10 @@ export function CareRecordOverview() {
       } catch {
         setHistoryNote("The saved change history could not be loaded. Other saved information is still shown.");
       }
-      hasLoadedRef.current = true;
-      setHasLoaded(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Saved care information could not be loaded.");
     } finally {
+      setHistoryLoading(false);
       setLoading(false);
       setRefreshing(false);
     }
@@ -111,14 +116,14 @@ export function CareRecordOverview() {
         </button>
       </header>
 
-      {error && <RecordState kind={/\\b(401|403|unauthori[sz]ed|forbidden)\\b/i.test(error) ? "forbidden" : /\\b(502|503|504|network|fetch failed)\\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
+      {error && <RecordState kind={/\b(401|403|unauthori[sz]ed|forbidden|not authenticated|access denied|permission)\b/i.test(error) ? "forbidden" : /\\b(502|503|504|network|fetch failed)\\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
       {loading && !hasLoaded ? <RecordState kind="loading" /> : (hasLoaded || !error) && (
         <>
           <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
             <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>What is saved</h3>
             <p style={{ margin: "0 0 12px", color: "#758276", fontSize: 12 }}>These are saved care details. A report is not automatically a confirmed fact.</p>
             {items.length === 0 ? (
-              <RecordState kind="first-empty" title="No care information recorded yet" description="Add a care update to begin building this record." />
+              <RecordState kind="first-empty" title="No care information recorded yet" description="Add a care update to begin building this record." onAction={() => router.push("/workspace/daily-care")} />
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {items.map((item) => (
