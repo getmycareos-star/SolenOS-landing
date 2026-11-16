@@ -749,15 +749,25 @@ let documentAnalysisId;
 let documentReviewCandidate;
 let documentAcceptanceVerified = false;
 await record("04 document upload and extraction", async () => {
-  const form = new FormData();
-  form.append("person_id", identity.personId);
-  form.append("caregiver_id", identity.caregiverId);
-  form.append("evidence_type", "document");
-  form.append("file", new Blob(["Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today."], { type: "text/plain" }), "journey-discharge-note.txt");
-  const uploaded = await request("/api/v1/upload", { token: identity.token, method: "POST", form });
-  assert.equal(uploaded.status, 201, JSON.stringify(uploaded.payload));
-  documentId = uploaded.payload.evidence_id;
-  assert.equal(uploaded.payload.persisted, true);
+  const documentSource = "Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today.";
+  const uploadPage = await createBrowserPage(session, "/workspace/documents");
+  await uploadPage.page.locator('input[type="file"]').first().setInputFiles({
+    name: "journey-discharge-note.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(documentSource, "utf8"),
+  });
+  await uploadPage.page.getByRole("button", { name: "Save files", exact: true }).click();
+  const uploadResponse = await uploadPage.page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/v1/upload")
+      && response.request().method() === "POST"
+  );
+  const uploadReceipt = await uploadResponse.json();
+  assert.equal(uploadResponse.status(), 201, JSON.stringify(uploadReceipt));
+  assert.equal(uploadReceipt.persisted, true);
+  documentId = uploadReceipt.evidence_id;
+  assert.ok(documentId, "the caregiver-facing upload flow must return the persisted original document ID");
+  await uploadPage.page.getByText("SolenOS saved 1 original file", { exact: false }).waitFor({ timeout: 15_000 });
+  await uploadPage.context.close();
   const extracted = await request(`/api/v1/documents/${documentId}/extract`, { token: identity.token, method: "POST", body: {} });
   assert.equal(extracted.status, 201, JSON.stringify(extracted.payload));
   documentAnalysisId = extracted.payload.analysis_id;
