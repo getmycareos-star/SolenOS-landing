@@ -217,7 +217,8 @@ const CARE_INFORMATION_AREA_LABELS: Readonly<Record<string, string>> = {
 
 export function caregiverInformationAreaLabel(value?: string | null): string | null {
   if (!value) return null;
-  return CARE_INFORMATION_AREA_LABELS[value.trim().toLowerCase()] ?? null;
+  const key = value.trim().toLowerCase();
+  return CARE_INFORMATION_AREA_LABELS[key] ?? caregiverProductTermLabel(key);
 }
 
 /** Human-readable labels for saved care fields; unknown keys are not prettified. */
@@ -268,6 +269,26 @@ const ROLE_LABELS: Readonly<Record<string, string>> = {
 export function caregiverRoleLabel(value?: string | null): string | null {
   if (!value) return null;
   return ROLE_LABELS[value.trim().toLowerCase()] ?? null;
+}
+
+const CAREGIVER_PRODUCT_TERMS: Readonly<Record<string, string>> = {
+  "living care record": "Care Record", lcr: "Care Record",
+  "care continuity": "Keeping care information together",
+  reconciliation: "Updating your care information",
+  provenance: "What was recorded and where it came from",
+  evidence: "What was recorded and where it came from",
+  "delta engine": "Changes since your last visit", delta_engine: "Changes since your last visit",
+  retrieval: "Finding past care information",
+  "open loops": "Things that still need attention", open_loops: "Things that still need attention",
+  "longitudinal history": "Care history over time", longitudinal_history: "Care history over time",
+  "ai companion": "Care Assistant", ai_companion: "Care Assistant",
+  "epistemic status": "What is known, not sure yet, or not recorded",
+  assessment_coverage: "What information was checked",
+  "source attribution": "Who reported it and where it came from",
+};
+export function caregiverProductTermLabel(value?: string | null): string | null {
+  if (!value) return null;
+  return CAREGIVER_PRODUCT_TERMS[value.trim().toLowerCase()] ?? null;
 }
 
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
