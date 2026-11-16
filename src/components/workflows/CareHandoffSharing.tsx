@@ -266,6 +266,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [selectedScope, setSelectedScope] = useState<string[]>([]);
   const [editedSections, setEditedSections] = useState<NonNullable<DraftPayload["generation"]>["sections"]>([]);
   const [revisionHistory, setRevisionHistory] = useState<DraftRevision[]>([]);
+  const loadedPersonIdRef = useRef<string | null>(null);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
@@ -282,8 +283,20 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     setDirectoryError(false);
     setHistoryError(false);
     setDraftsError(false);
+    let requestPersonId: string | null = null;
     try {
-      await ensureAnonymousSession();
+      const session = await ensureAnonymousSession();
+      requestPersonId = session.person?.id ?? null;
+      if (!requestPersonId) throw new Error("A valid Care Record session is required.");
+      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId) {
+        setDirectory([]);
+        setInbox([]);
+        setOutbox([]);
+        setSavedDrafts([]);
+        setSelectedRecipients([]);
+        setSelectedScope([]);
+      }
+      loadedPersonIdRef.current = requestPersonId;
       // Handoff inbox and recipient discovery require the caregiver's persisted
       // privacy/multi-caregiver acknowledgements. Read that state first so a
       // normal first-use session does not generate avoidable 403 responses.
@@ -310,7 +323,18 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       else setHistoryError(true);
       if (draftsResult.status === "fulfilled" && Array.isArray(draftsResult.value.items)) setSavedDrafts(draftsResult.value.items);
       else setDraftsError(true);
-    } catch {
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "";
+      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
+      if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
+        setDirectory([]);
+        setInbox([]);
+        setOutbox([]);
+        setSavedDrafts([]);
+        setSelectedRecipients([]);
+        setSelectedScope([]);
+        loadedPersonIdRef.current = null;
+      }
       setDirectoryError(true);
       setHistoryError(true);
       setDraftsError(true);
