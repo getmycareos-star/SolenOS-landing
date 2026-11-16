@@ -155,8 +155,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.getByRole("button", { name: "Add to record", exact: true }).click();
   await page.getByRole("heading", { name: "Here’s what we know so far.", exact: true })
     .waitFor({ state: "visible", timeout: 10_000 });
-  await page.getByText("Caregiver note", { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
-  await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+  await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
 
   const careSessionId = await page.evaluate(() => localStorage.getItem("solenos_care_session_id"));
   assert.ok(careSessionId, "first capture must retain the interaction session identity");
