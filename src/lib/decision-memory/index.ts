@@ -16,7 +16,7 @@ import {
   clearDurableDirectory,
 } from "../living-care-record-persistence/fs-store";
 import { resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
-import { getJSON, postJSON } from "../../api/client";
+import { getJSON, postJSON, patchJSON } from "../../api/client";
 
 export const DECISION_MEMORY_PURPOSE =
   "Preserve why care decisions existed — answer record questions from held evidence, never advice.";
@@ -282,7 +282,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
   for (const entry of entries) {
     if (entry.postgres_id) {
       if (entry.postgres_snapshot !== entry.what) {
-        await (await import("../../api/client")).patchJSON(`/care-continuity/decisions/${entry.postgres_id}`, {
+        await patchJSON(`/care-continuity/decisions/${entry.postgres_id}`, {
           title: entry.what.slice(0, 240),
           decision_text: entry.what,
           context: JSON.stringify({
