@@ -6,7 +6,7 @@ const overview = fs.readFileSync("src/components/app-shell/CareRecordOverview.ts
 const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 const darkModeStyles = fs.readFileSync("src/app/dark-mode-remediation.css", "utf8");
 const caregiverJourney = fs.readFileSync("e2e/critical-care-journeys.mjs", "utf8");
-assert.match(caregiverJourney, /navigationDialog\\.getByRole\\("button", \\{ name: "Close navigation" \\}\\)/,
+assert(caregiverJourney.includes('navigationDialog.getByRole("button", { name: "Close navigation" })'),
   "the care-history browser journey must scope the close control to the navigation dialog");
 assert(darkModeStyles.includes(':root[data-solenos-theme="dark"] .record-state'),
   "shared record states must override inline light-theme surfaces in dark mode");
