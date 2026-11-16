@@ -45,10 +45,13 @@ export const AUDIENCE_OPTIONS: AudienceOption[] = [
 ];
 
 type PersistedCareEvent = {
+  id?: unknown;
   raw_input?: unknown;
   description?: unknown;
   title?: unknown;
   event_type?: unknown;
+  timestamp?: unknown;
+  occurred_at?: unknown;
 };
 
 type SituationResponseWithPersistedEvents = SituationResponse & {
@@ -394,12 +397,12 @@ export interface DetectedConflict {
 
 export function detectConflicts(response: SituationResponse): DetectedConflict[] {
   const conflicts: DetectedConflict[] = [];
-  const events = response.events_created ?? [];
+  const events = getShareEvents(response);
 
   const medDoses = new Map<string, string[]>();
-  for (const ev of events) {
-    const raw = ev.raw_input ?? "";
-    const doseMatch = raw.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|g|ml|units)/i);
+  for (const event of events) {
+    const raw = getShareEventText(event);
+    const doseMatch = raw.match(/(\\d+(?:\\.\\d+)?)\\s*(mg|mcg|g|ml|units)/i);
     if (doseMatch) {
       const medName = raw.toLowerCase().split(doseMatch[0])[0].trim().slice(-30);
       const key = medName || "unknown_medication";
@@ -415,7 +418,10 @@ export function detectConflicts(response: SituationResponse): DetectedConflict[]
       conflicts.push({
         type: "medication_dose",
         description: `Medication information is conflicting: different doses were found for ${med}: ${uniqueDoses.join(" and ")}. The current dose may need to be verified.`,
-        sources: events.filter((e) => e.raw_input?.toLowerCase().includes(med.slice(-10))).map((e) => e.id),
+        sources: events
+          .filter((event) => getShareEventText(event).toLowerCase().includes(med.slice(-10)))
+          .map((event) => typeof event.id === "string" ? event.id : "")
+          .filter(Boolean),
       });
     }
   }
@@ -434,31 +440,40 @@ export interface FreshnessResult {
 }
 
 export function assessFreshness(response: SituationResponse): FreshnessResult {
-  if (!response || !response.context) {
+  if (!response) {
     return { isStale: false, staleItems: [], lastUpdated: null };
   }
 
-  const updatedAt = response.context.updated_at;
-  if (!updatedAt) {
-    return { isStale: false, staleItems: [], lastUpdated: null };
-  }
-
-  const updated = new Date(updatedAt);
+  const events = getShareEvents(response);
+  const contextUpdatedAt = (response.context as { updated_at?: string } | undefined)?.updated_at;
+  const latestEventAt = events
+    .map((event) => {
+      const value = event.occurred_at ?? event.timestamp;
+      return typeof value === "string" ? value : "";
+    })
+    .filter(Boolean)
+    .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
+  const updatedAt = contextUpdatedAt || latestEventAt || null;
   const now = new Date();
-  const daysSinceUpdate = (now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24);
-
   const staleItems: string[] = [];
-  if (daysSinceUpdate > 30) {
-    staleItems.push(
-      `Care information has not been updated in ${Math.round(daysSinceUpdate)} days. Some details may be out of date.`,
-    );
+
+  if (updatedAt) {
+    const updated = new Date(updatedAt);
+    const daysSinceUpdate = (now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24);
+    if (Number.isFinite(daysSinceUpdate) && daysSinceUpdate > 30) {
+      staleItems.push(
+        `Care information has not been updated in ${Math.round(daysSinceUpdate)} days. Some details may be out of date.`,
+      );
+    }
   }
 
-  for (const ev of response.events_created ?? []) {
-    const evTime = new Date(ev.timestamp);
+  for (const event of events) {
+    const timestamp = event.occurred_at ?? event.timestamp;
+    if (typeof timestamp !== "string") continue;
+    const evTime = new Date(timestamp);
     const evAge = (now.getTime() - evTime.getTime()) / (1000 * 60 * 60 * 24);
-    if (evAge > 90) {
-      staleItems.push(`"${ev.raw_input?.slice(0, 60)}" was recorded ${Math.round(evAge)} days ago and may no longer reflect current status.`);
+    if (Number.isFinite(evAge) && evAge > 90) {
+      staleItems.push(`"${getShareEventText(event).slice(0, 60)}" was recorded ${Math.round(evAge)} days ago and may no longer reflect current status.`);
     }
   }
 
