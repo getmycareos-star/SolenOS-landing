@@ -291,7 +291,7 @@ try {
             ...(!rendered.hasWorkspaceMain ? [{ kind: "missing_workspace_main" }] : []),
             ...(!rendered.hasWorkspaceNav ? [{ kind: "missing_workspace_navigation" }] : []),
             ...(rendered.isNotFound ? [{ kind: "not_found_content" }] : []),
-            ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Care Handoffs"
+            ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Share care information"
               ? [{ kind: "missing_handoffs_heading", actual: rendered.handoffsHeading }]
               : []),
             ...apiFailures.map((item) => ({ kind: "api_error", ...item })),
