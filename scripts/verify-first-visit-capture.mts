@@ -10,6 +10,7 @@ assert.match(page, /FirstVisitWorkspaceRouter/);
 assert.match(router, /ensureAnonymousSession/);
 assert.match(router, /api\/situation\?care_session_id=/);
 assert.match(router, /data\.has_context_root/);
+assert.match(router, /suppress_first_time_ux/);
 assert.match(router, /\(data\.total_events \?\? 0\) > 0/);
 assert.match(router, /setState\(hasSavedCare \? "returning" : "first_visit"\)/);
 assert.match(router, /setState\("unavailable"\)/);
