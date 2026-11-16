@@ -661,10 +661,30 @@ function PrivacyCard() {
   const [erasureAttested, setErasureAttested] = useState(false);
   const [erasureSubmitting, setErasureSubmitting] = useState(false);
   const [erasureRequest, setErasureRequest] = useState<{ id: string; status: string; message: string } | null>(null);
+  const [erasureHistory, setErasureHistory] = useState<Array<{ id: string; request_type: string; status: string; requested_at: string | null }>>([]);
+  const [erasureHistoryLoading, setErasureHistoryLoading] = useState(true);
   const [erasureError, setErasureError] = useState("");
 
+  const loadErasureHistory = useCallback(async () => {
+    setErasureHistoryLoading(true);
+    try {
+      const result = await getJSON("/privacy/requests") as { requests?: Array<{ id: string; request_type: string; status: string; requested_at: string | null }> };
+      setErasureHistory((result.requests ?? []).filter((item) => item.request_type === "deletion"));
+    } catch {
+      setErasureError("We couldn't load your previous privacy requests. You can try again.");
+    } finally {
+      setErasureHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadErasureHistory(); }, [loadErasureHistory]);
+
+  const hasUnresolvedErasureRequest = erasureHistory.some((item) =>
+    ["received_pending_authority_review", "approved_pending_fulfilment_assessment"].includes(item.status)
+  );
+
   const submitCareRecordErasureRequest = async () => {
-    if (!erasureAttested || erasureSubmitting) return;
+    if (!erasureAttested || erasureSubmitting || hasUnresolvedErasureRequest) return;
     setErasureSubmitting(true);
     setErasureError("");
     try {
@@ -674,6 +694,12 @@ function PrivacyCard() {
         authority_attested: true,
       }) as { id: string; status: string; message: string };
       setErasureRequest(result);
+      setErasureHistory((current) => [{
+        id: result.id,
+        request_type: "deletion",
+        status: result.status,
+        requested_at: new Date().toISOString(),
+      }, ...current]);
       show("Your care-record erasure request was received.", "success");
     } catch {
       setErasureError("We couldn't submit your request. Your care record has not been erased. Check your connection and try again.");
@@ -764,13 +790,22 @@ function PrivacyCard() {
         )}
         <div className="mobile-settings-hint" style={{ display: "grid", gap: "0.65rem" }}>
           <strong>Request erasure of your care record</strong>
-          {erasureRequest ? (
+          {erasureRequest && (
             <>
-              <p role="status">Request received. Reference: {erasureRequest.id}. Status: {erasureRequest.status.replaceAll("_", " ")}.</p>
+              <p role="status">Request received. Reference: {erasureRequest.id}. Status: {erasureRequest.status.replace(/_/g, " ")}.</p>
               <p>{erasureRequest.message}</p>
               <p>This is a request only. Your care record remains in place unless and until an authorized review and separate fulfilment are completed.</p>
             </>
-          ) : (
+          )}
+          {erasureHistoryLoading ? <p>Loading previous requests…</p> : erasureHistory.length > 0 && (
+            <div aria-label="Previous care-record erasure requests">
+              <strong>Request history</strong>
+              {erasureHistory.map((item) => (
+                <p key={item.id}>Reference {item.id} · {item.status.replace(/_/g, " ")} · {item.requested_at ? new Date(item.requested_at).toLocaleDateString() : "Date unavailable"}</p>
+              ))}
+            </div>
+          )}
+          {!erasureRequest && (
             <>
               <label className="mobile-settings-label" htmlFor="erasure-authority">Your authority for this care record</label>
               <select id="erasure-authority" className="mobile-settings-input" value={erasureAuthority} disabled={erasureSubmitting} onChange={(event) => setErasureAuthority(event.target.value as typeof erasureAuthority)}>
@@ -784,8 +819,9 @@ function PrivacyCard() {
                 <input type="checkbox" checked={erasureAttested} disabled={erasureSubmitting} onChange={(event) => setErasureAttested(event.target.checked)} />
                 I confirm that the authority information above is accurate and that I am entitled to submit this request.
               </label>
-              {erasureError && <p role="alert">{erasureError}</p>}
-              <Button variant="secondary" onClick={() => void submitCareRecordErasureRequest()} disabled={!erasureAttested || erasureSubmitting} loading={erasureSubmitting}>
+              {erasureError && <p role="alert">{erasureError} <button type="button" onClick={() => void loadErasureHistory()}>Try again</button></p>}
+              {hasUnresolvedErasureRequest && <p role="status">You already have an erasure request awaiting review. Check the request history above; you do not need to submit it again.</p>}
+              <Button variant="secondary" onClick={() => void submitCareRecordErasureRequest()} disabled={!erasureAttested || erasureSubmitting || hasUnresolvedErasureRequest} loading={erasureSubmitting}>
                 {erasureSubmitting ? "Submitting request…" : "Submit care-record erasure request"}
               </Button>
               <p>Submitting creates a private request for review. It does not immediately delete data. SolenOS must verify identity and authority, assess shared-record and legal-hold restrictions, and complete a separate erasure process where eligible.</p>
