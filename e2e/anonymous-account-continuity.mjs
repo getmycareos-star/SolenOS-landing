@@ -254,8 +254,8 @@ try {
   // Register the authenticated installation through the actual Settings UI.
   // The backend should bind the device to this account session and mark it
   // verified only because the session was issued by successful account login.
-  await pageA.getByRole("button", { name: "Register this device", exact: true }).click();
-  await pageA.getByText("This device is registered and verified for the signed-in account.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageA.getByRole("button", { name: "Add this device", exact: true }).click();
+  await pageA.getByText("This device is linked to your account.", { exact: true }).waitFor({ timeout: 20_000 });
   const registeredDevices = await backendRequest("/api/v1/identity/devices", { token: afterRegistration.token });
   assert.equal(registeredDevices.response.status, 200, "Settings could not retrieve its registered device");
   assert.equal(registeredDevices.payload?.devices?.length, 1, "Settings did not persist the device registration");
