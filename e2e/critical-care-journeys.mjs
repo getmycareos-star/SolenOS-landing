@@ -269,6 +269,31 @@ await record("01c workspace links, browser back, More menu and account form vali
   if (await limitedReadiness.isVisible().catch(() => false)) {
     await limitedReadiness.click();
   }
+  const shareContextDiagnostic = await page.evaluate(() => ({
+    tokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
+    personPresent: Boolean(localStorage.getItem("solenos_backend_person_id")),
+    caregiverPresent: Boolean(localStorage.getItem("solenos_backend_caregiver_id")),
+    careSessionIdPresent: Boolean(localStorage.getItem("solenos_care_session_id")),
+    careSessionId: localStorage.getItem("solenos_care_session_id"),
+  }));
+  const situationDiagnostic = await request(
+    `/api/situation?caregiver_id=${encodeURIComponent(session.caregiver.id)}&care_session_id=${encodeURIComponent(shareContextDiagnostic.careSessionId ?? "e2e-share")}`,
+    { token: session.access_token },
+  );
+  console.log("SHARE_EXPORT_DIAGNOSTIC", JSON.stringify({
+    tokenPresent: shareContextDiagnostic.tokenPresent,
+    personPresent: shareContextDiagnostic.personPresent,
+    caregiverPresent: shareContextDiagnostic.caregiverPresent,
+    careSessionIdPresent: shareContextDiagnostic.careSessionIdPresent,
+    status: situationDiagnostic.status,
+    responseKeys: Object.keys(situationDiagnostic.payload ?? {}),
+    events: Array.isArray(situationDiagnostic.payload?.events) ? situationDiagnostic.payload.events.length : null,
+    contextEvents: Array.isArray(situationDiagnostic.payload?.context?.events) ? situationDiagnostic.payload.context.events.length : null,
+    totalEvents: situationDiagnostic.payload?.total_events ?? null,
+    observations: Array.isArray(situationDiagnostic.payload?.active_care_situation?.observations)
+      ? situationDiagnostic.payload.active_care_situation.observations.length : null,
+  }));
+  console.log("SHARE_EXPORT_PANEL_TEXT", (await exportPanel.innerText()).slice(0, 1200));
   await exportPanel.getByRole("radio", { name: /Doctor \/ clinician/ }).click();
   await exportPanel.getByText("Prepared for: Doctor / clinician", { exact: true }).waitFor({ timeout: 10_000 });
   await exportPanel.getByRole("button", { name: "Continue", exact: true }).click();
