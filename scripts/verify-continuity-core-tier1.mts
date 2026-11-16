@@ -26,6 +26,8 @@ import {
   resetDecisionMemoryStore,
   listDecisionMemory,
   linkDecisionOutcome,
+  recordDecisionFromText,
+  recordDecisionOutcomeObservation,
   answerRecordQuestion,
 } from "../src/lib/decision-memory";
 import { assertRealCaregiverTest } from "../src/lib/real-caregiver-test";
@@ -317,6 +319,34 @@ console.log("=== Continuity core Tier 1 (G3–G6 / G12–G13 / G16) ===\n");
     "G13b no advice",
   );
   console.log("✓ G13b outcome + unknown reason + no advice");
+}
+
+// ——— G13d — extracted outcome identity is exact and does not rewrite decision status ———
+{
+  resetAll();
+  const careKey = "cg_g13d";
+  const decision = recordDecisionFromText({
+    careKey,
+    id: "extract-decision-1",
+    rawText: "We agreed to trial evening support because nights had become difficult.",
+    forceFromRelationshipEngine: true,
+    status: "active",
+  });
+  assert(decision != null, "G13d extracted decision recorded");
+  const unlinked = recordDecisionOutcomeObservation({
+    careKey,
+    decisionId: "not-the-extracted-decision",
+    outcomeText: "The support visit happened.",
+  });
+  assert.equal(unlinked, null, "G13d unknown decision reference stays unlinked");
+  const linked = recordDecisionOutcomeObservation({
+    careKey,
+    decisionId: "extract-decision-1",
+    outcomeText: "The support visit happened.",
+  });
+  assert.equal(linked?.outcome, "The support visit happened.", "G13d explicit ID outcome attached");
+  assert.equal(linked?.status, "active", "G13d observation does not imply decision completion");
+  console.log("✓ G13d explicit extracted outcome ID — no inferred completion");
 }
 
 // ——— G13c — unified decision signal: SRE + Decision Memory + composer why-path ———
