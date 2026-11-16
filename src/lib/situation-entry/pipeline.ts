@@ -38,6 +38,7 @@ import {
 } from "../resolution-engine/care-context-sync";
 import { toActiveSituation } from "../ui-runtime/situation-store";
 import { ingestActiveCareObservation } from "../active-care-situation";
+import { hydrateDecisionMemoryFromPostgres, syncDecisionMemoryToPostgres } from "../decision-memory";
 import {
   ingestCareThread,
   looksLikeCareThread,
@@ -213,6 +214,14 @@ export async function processSituationInput(
   // Locked B: Care Reality keyed by care recipient; contributor is attribution.
   ensureContributorCareReality(contributorId, input.care_recipient_id);
   const caregiverId = contributorId;
+  // PostgreSQL is the durable decision source; browser JSON is only a warm cache.
+  if (typeof window !== "undefined") {
+    try {
+      await hydrateDecisionMemoryFromPostgres(input.care_recipient_id ?? caregiverId);
+    } catch (error) {
+      console.error("[SolenOS] Decision history could not be refreshed from PostgreSQL", error);
+    }
+  }
 
   // Phase 10 — Care Identity: ensure identity record exists, detect continuity type.
   // This runs before pipeline processing so the entire stack benefits from continuity awareness.
@@ -1154,6 +1163,16 @@ acsTurn =
       // behavior for new vs returning caregivers.
       continuityDecision,
     });
+  }
+
+  // Persist decisions extracted by ACS before returning the caregiver response.
+  // A failed database write is logged and is never promoted to a successful PostgreSQL save.
+  if (typeof window !== "undefined") {
+    try {
+      await syncDecisionMemoryToPostgres(finalized.context.care_recipient_id ?? caregiverId);
+    } catch (error) {
+      console.error("[SolenOS] Decision capture was not persisted to PostgreSQL", error);
+    }
   }
 
   // Constitution CareRecord spine after ACS — person_profile uses caregiver display name.
