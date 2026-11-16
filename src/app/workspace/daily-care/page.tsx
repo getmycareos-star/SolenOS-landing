@@ -752,10 +752,11 @@ export default function DailyCarePage() {
           <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
             <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
             <p className="daily-care-muted">
-              This summary uses records added since your previous visit on this device. It does not describe unrecorded care.
+              Shows care updates added since your previous visit on this device.
             </p>
+            {historyError && <p role="status" className="daily-care-muted">This summary could not be refreshed. Previously saved care information remains available below.</p>}
             {sinceLastOpenItems === null ? (
-              <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
+              historyError ? null : <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
             ) : sinceLastOpenItems.length > 0 ? (
               <>
                 <p><strong>{sinceLastOpenItems.length}</strong> new care record{sinceLastOpenItems.length === 1 ? "" : "s"} added since {lastOpenedAt ? displayCareTime(lastOpenedAt) : "your previous visit"}.</p>
@@ -786,8 +787,8 @@ export default function DailyCarePage() {
                 </ul>
                 <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
               </>
-            ) : (
-              <p>No new care records have been added since your last visit on this device. This does not mean nothing happened.</p>
+            ) : historyError ? null : (
+              <RecordState kind="period-empty" title="No new care updates recorded" description="Care updates added since your last visit will appear here." />
             )}
             {historyMayBeTruncated && <p className="daily-care-muted">This summary shows the latest 200 saved updates. Open full care history to see older ones.</p>}
           </section>
