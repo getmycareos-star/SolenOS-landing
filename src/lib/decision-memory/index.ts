@@ -16,6 +16,7 @@ import {
   clearDurableDirectory,
 } from "../living-care-record-persistence/fs-store";
 import { resolveCareRealityStoreKey } from "../multi-caregiver-context-model";
+import { getJSON, postJSON, patchJSON } from "../../api/client";
 
 export const DECISION_MEMORY_PURPOSE =
   "Preserve why care decisions existed — answer record questions from held evidence, never advice.";
@@ -33,6 +34,7 @@ export type DecisionMemoryEvidence = {
   source?: string;
   text: string;
   event_id?: string;
+  evidence_id?: string;
 };
 
 export type DecisionMemoryEntry = {
@@ -63,6 +65,12 @@ export type DecisionMemoryEntry = {
   evidence_texts: string[];
   recorded_at: string;
   content_tokens: string[];
+  /** Canonical PostgreSQL record ID once server persistence succeeds. */
+  postgres_id?: string;
+  postgres_outcome_id?: string;
+  postgres_outcome_snapshot?: string;
+  postgres_snapshot?: string;
+  extraction_ids?: string[];
 };
 
 type Store = {
@@ -136,6 +144,7 @@ function migrateEntry(raw: LegacyEntry, careKey: string): DecisionMemoryEntry | 
           source: e.source,
           text: e.text,
           event_id: e.event_id,
+          evidence_id: e.evidence_id,
         }))
       : (raw.evidence_texts ?? []).map((text) => ({ text }));
   const evidence_texts =
@@ -145,6 +154,7 @@ function migrateEntry(raw: LegacyEntry, careKey: string): DecisionMemoryEntry | 
 
   return {
     id: raw.id ?? `dm_${Date.now().toString(36)}`,
+    extraction_ids: Array.isArray(raw.extraction_ids) ? raw.extraction_ids.filter((v): v is string => typeof v === "string") : [],
     care_key: raw.care_key ?? careKey,
     what,
     decision: what,
@@ -202,6 +212,163 @@ function save(store: Store): void {
 export function listDecisionMemory(careKey: string): DecisionMemoryEntry[] {
   return [...load(careKey).entries];
 }
+
+/**
+ * Rehydrate the decision cache from the authenticated PostgreSQL care record.
+ * Local JSON is a cache only; the API remains the durable source of truth.
+ */
+export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promise<void> {
+  const [rows, outcomeRows] = await Promise.all([
+    getJSON("/care-continuity/decisions") as Promise<Array<Record<string, unknown>>>,
+    getJSON("/care-continuity/decision-outcomes") as Promise<Array<Record<string, unknown>>>,
+  ]);
+  const outcomesByDecision = new Map<string, Record<string, unknown>>();
+  for (const outcome of outcomeRows) {
+    if (typeof outcome.decision_id === "string" && !outcomesByDecision.has(outcome.decision_id)) outcomesByDecision.set(outcome.decision_id, outcome);
+  }
+  const store = load(careKey);
+  const existingById = new Map(store.entries.map((entry) => [entry.postgres_id ?? entry.id, entry]));
+  const hydrated: DecisionMemoryEntry[] = rows
+    .filter((row) => typeof row.id === "string" && typeof row.decision_text === "string")
+    .map((row) => {
+      let context: Record<string, unknown> = {};
+      if (typeof row.context === "string") {
+        try {
+          const parsed = JSON.parse(row.context);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) context = parsed;
+        } catch {
+          context = { context_summary: row.context };
+        }
+      }
+      const id = String(row.id);
+      const previous = existingById.get(id);
+      const what = String(row.decision_text);
+      const when = String(row.decided_at ?? row.recorded_at ?? row.created_at ?? new Date().toISOString());
+      const evidenceIds = Array.isArray(row.evidence_ids) ? row.evidence_ids.filter((v): v is string => typeof v === "string") : [];
+      const evidenceText = typeof context.evidence_text === "string" ? context.evidence_text : what;
+      const persistedOutcome = outcomesByDecision.get(id);
+      return {
+        id,
+        postgres_id: id,
+        postgres_snapshot: what,
+        extraction_ids: previous?.extraction_ids ?? [],
+        ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id, postgres_outcome_snapshot: String(persistedOutcome.description ?? "") } : {}),
+        care_key: storeKey(careKey),
+        what,
+        decision: what,
+        when,
+        who: previous?.who ?? (typeof row.created_by_caregiver_id === "string" ? [row.created_by_caregiver_id] : []),
+        context_situation_id: typeof context.situation_id === "string" ? context.situation_id : null,
+        context_summary: typeof context.context_summary === "string" ? context.context_summary : null,
+        evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { evidence_id: evidenceIds[0] } : {}), ...(typeof context.event_id === "string" ? { event_id: context.event_id } : {}) }],
+        alternatives: Array.isArray(context.alternatives) ? context.alternatives.filter((v): v is string => typeof v === "string") : [],
+        reason: typeof context.reason === "string" ? context.reason : null,
+        outcome: typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
+        outcome_event_ids: previous?.outcome_event_ids ?? [],
+        status: ["pending", "changed", "completed", "reversed", "uncertain", "needs_review"].includes(String(row.decision_status))
+          ? row.decision_status as DecisionMemoryStatus
+          : previous?.status ?? "active",
+        evidence_texts: [evidenceText],
+        recorded_at: String(row.recorded_at ?? row.created_at ?? when),
+        content_tokens: tokens(what),
+      };
+    });
+  const byId = new Map(hydrated.map((entry) => [entry.id, entry]));
+  // Preserve local-only entries temporarily; the sync step below attempts to persist them.
+  for (const entry of store.entries) {
+    if (!entry.postgres_id && !byId.has(entry.id)) byId.set(entry.id, entry);
+  }
+  save({ care_key: storeKey(careKey), entries: [...byId.values()].slice(-100), updated_at: new Date().toISOString() });
+}
+
+/** Persist any newly captured decisions and replace temporary IDs with server IDs. */
+export async function syncDecisionMemoryToPostgres(careKey: string): Promise<void> {
+  const store = load(careKey);
+  const entries = [...store.entries];
+  for (const entry of entries) {
+    if (entry.postgres_id) {
+      if (entry.postgres_snapshot !== entry.what) {
+        await patchJSON(`/care-continuity/decisions/${entry.postgres_id}`, {
+          title: entry.what.slice(0, 240),
+          decision_text: entry.what,
+          decision_status: entry.status === "active" ? "recorded" : entry.status,
+          context: JSON.stringify({
+            reason: entry.reason,
+            alternatives: entry.alternatives,
+            situation_id: entry.context_situation_id,
+            context_summary: entry.context_summary,
+            evidence_text: entry.evidence[0]?.text ?? entry.what,
+            event_id: entry.evidence[0]?.event_id ?? null,
+          }),
+        });
+        const current = load(careKey);
+        save({
+          care_key: storeKey(careKey),
+          entries: current.entries.map((candidate) =>
+            candidate.postgres_id === entry.postgres_id ? { ...candidate, postgres_snapshot: candidate.what } : candidate,
+          ),
+          updated_at: new Date().toISOString(),
+        });
+      }
+      continue;
+    }
+    const saved = await postJSON("/care-continuity/decisions", {
+      title: entry.what.slice(0, 240),
+      decision_text: entry.what,
+      decision_status: entry.status === "active" ? "recorded" : entry.status,
+      decided_at: entry.when,
+      context: JSON.stringify({
+        reason: entry.reason,
+        alternatives: entry.alternatives,
+        situation_id: entry.context_situation_id,
+        context_summary: entry.context_summary,
+        evidence_text: entry.evidence[0]?.text ?? entry.what,
+        event_id: entry.evidence[0]?.event_id ?? null,
+      }),
+      evidence_ids: [],
+    }) as Record<string, unknown>;
+    if (typeof saved.id !== "string" || !saved.id) {
+      throw new Error("PostgreSQL did not return a canonical decision ID");
+    }
+    const current = load(careKey);
+    save({
+      care_key: storeKey(careKey),
+      entries: current.entries.map((candidate) =>
+        candidate.id === entry.id
+          ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string, postgres_snapshot: candidate.what }
+          : candidate,
+      ),
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  // Outcome rows are written only after their decision has a server-issued ID.
+  for (const entry of load(careKey).entries) {
+    if (!entry.postgres_id || !entry.outcome || entry.postgres_outcome_snapshot === entry.outcome) continue;
+    const outcome = await postJSON("/care-continuity/decision-outcomes", {
+      decision_id: entry.postgres_id,
+      outcome_status: "observed",
+      observed_at: new Date().toISOString(),
+      description: entry.outcome,
+      evidence_ids: [],
+      is_intended_outcome: false,
+    }) as Record<string, unknown>;
+    if (typeof outcome.id !== "string" || !outcome.id) {
+      throw new Error("PostgreSQL did not return a persisted decision outcome ID");
+    }
+    const current = load(careKey);
+    save({
+      care_key: storeKey(careKey),
+      entries: current.entries.map((candidate) =>
+        candidate.postgres_id === entry.postgres_id
+          ? { ...candidate, postgres_outcome_id: outcome.id as string, postgres_outcome_snapshot: candidate.outcome ?? "" }
+          : candidate,
+      ),
+      updated_at: new Date().toISOString(),
+    });
+  }
+}
+
 
 /**
  * Extract a decision candidate from caregiver / document language.
@@ -298,6 +465,7 @@ export function recordDecisionFromText(params: {
 
   const entry: DecisionMemoryEntry = {
     id: params.id ?? `dm_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    extraction_ids: params.id ? [params.id] : [],
     care_key: careKey,
     what,
     decision: what,
@@ -317,12 +485,26 @@ export function recordDecisionFromText(params: {
   };
 
   const store = load(careKey);
+  const prior = store.entries.find((e) => e.what === entry.what || e.decision === entry.what);
+  const persistedEntry = prior?.postgres_id
+    ? {
+        ...entry,
+        id: prior.id,
+        postgres_id: prior.postgres_id,
+        postgres_snapshot: prior.postgres_snapshot ?? prior.what,
+        outcome: params.outcome !== undefined ? entry.outcome : prior.outcome,
+        outcome_event_ids: prior.outcome_event_ids,
+        extraction_ids: [...new Set([...(prior.extraction_ids ?? []), ...(params.id ? [params.id] : [])])],
+        ...(prior.postgres_outcome_id ? { postgres_outcome_id: prior.postgres_outcome_id } : {}),
+        ...(prior.postgres_outcome_snapshot ? { postgres_outcome_snapshot: prior.postgres_outcome_snapshot } : {}),
+      }
+    : entry;
   const next = [
     ...store.entries.filter((e) => e.what !== entry.what && e.decision !== entry.what),
-    entry,
+    persistedEntry,
   ].slice(-24);
   save({ care_key: careKey, entries: next, updated_at: now });
-  return entry;
+  return persistedEntry;
 }
 
 /**
@@ -338,10 +520,11 @@ export function linkDecisionOutcome(params: {
   nowIso?: string;
 }): DecisionMemoryEntry | null {
   const outcome = params.outcomeText.trim().slice(0, 240);
-  if (!outcome || !params.decisionId) return null;
+  const decisionId = params.decisionId;
+  if (!outcome || !decisionId) return null;
 
   const store = load(params.careKey);
-  const target = store.entries.find((entry) => entry.id === params.decisionId);
+  const target = store.entries.find((entry) => entry.id === decisionId || entry.extraction_ids?.includes(decisionId));
   // A missing or cross-context decision reference is not permission to guess.
   if (!target) return null;
 
@@ -364,6 +547,35 @@ export function linkDecisionOutcome(params: {
     entry.id === updated.id ? updated : entry,
   );
   save({ care_key: params.careKey, entries, updated_at: now });
+  return updated;
+}
+
+/** Attach an extracted outcome only through its explicit same-extraction decision ID. */
+export function recordDecisionOutcomeObservation(params: {
+  careKey: string;
+  decisionId: string;
+  outcomeText: string;
+  eventId?: string;
+  nowIso?: string;
+}): DecisionMemoryEntry | null {
+  const outcome = params.outcomeText.trim().slice(0, 1000);
+  if (!outcome || !params.decisionId) return null;
+  const store = load(params.careKey);
+  const target = store.entries.find((entry) => entry.id === params.decisionId);
+  if (!target) return null;
+  const updated: DecisionMemoryEntry = {
+    ...target,
+    outcome,
+    outcome_event_ids: params.eventId
+      ? [...new Set([...target.outcome_event_ids, params.eventId])]
+      : target.outcome_event_ids,
+  };
+  const now = params.nowIso ?? new Date().toISOString();
+  save({
+    care_key: storeKey(params.careKey),
+    entries: store.entries.map((entry) => entry.id === updated.id ? updated : entry),
+    updated_at: now,
+  });
   return updated;
 }
 
