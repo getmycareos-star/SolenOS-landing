@@ -8,6 +8,7 @@ on:
       - "e2e/document-continuity-live-qwen.mjs"
       - "e2e/critical-care-journeys.mjs"
       - "src/components/DocumentIntelligenceReview.tsx"
+      - "src/components/ClarificationWorkflowPanel.tsx"
       - ".github/workflows/document-continuity-live-qwen.yml"
 
 permissions:
