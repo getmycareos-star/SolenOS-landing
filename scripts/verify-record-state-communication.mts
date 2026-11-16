@@ -103,3 +103,5 @@ assert(companion.includes("availability === 'unverified'"), "unverified inferenc
 assert(companion.includes("availability !== \"available\""), "the message composer must remain disabled until inference is confirmed");
 assert(companion.includes("Your Care Record, Daily Care and Documents remain available"), "Companion unavailability must direct caregivers to working care-record areas");
 console.log("PASS: Companion welcome and message composer are gated on confirmed inference readiness.");
+
+assert(history.includes("sourceWarnings.length > 0 && !loading && records.length > 0"), "partial history warnings must not be duplicated with the incomplete empty state");
