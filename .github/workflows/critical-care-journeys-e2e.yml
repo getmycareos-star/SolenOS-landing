@@ -19,6 +19,7 @@ on:
       - "src/components/app-shell/**"
       - "scripts/verify-handoff-source-provenance.mts"
       - "scripts/verify-appointment-low-burden.mts"
+      - "scripts/verify-record-state-communication.mts"
       - "src/components/workflows/**"
       - "src/components/mvp-workspace/**"
       - "src/components/DocumentIntelligenceReview.tsx"
