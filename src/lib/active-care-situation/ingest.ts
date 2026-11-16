@@ -51,6 +51,7 @@ import { caregiverFacingFragmentText } from "../thread-ingestion/detect";
 import { evaluateSourceConflict, recordSourceClaim, sourcePriorityRank } from "../source-conflict";
 import {
   recordDecisionFromText,
+  recordDecisionOutcomeObservation,
   looksLikeDecisionEvidence,
 } from "../decision-memory";
 import { extractCareRealityFromText } from "../care-reality-extraction";
@@ -1045,8 +1046,18 @@ export function ingestActiveCareObservation(params: {
                   : "active",
       });
     }
-    // Extracted outcomes remain observations until extraction supplies an explicit
-    // decision ID. Decision Memory deliberately rejects fuzzy/latest-decision linking.
+    // Only extraction's explicit same-pass decision reference may create an outcome link.
+    // Missing, event-linked, or unresolved references remain unlinked observations.
+    for (const outcome of extracted.outcomes) {
+      if (outcome.related_type !== "decision" || !outcome.related_id) continue;
+      recordDecisionOutcomeObservation({
+        careKey: careRecipientId,
+        decisionId: outcome.related_id,
+        outcomeText: outcome.description,
+        eventId: observation.event_ids[0],
+        nowIso,
+      });
+    }
     for (const u of extracted.unknowns) {
       if (u.status !== "open") continue;
       extractedOpenUnknownAsks.push(u.question);
