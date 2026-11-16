@@ -79,6 +79,7 @@ export type DecisionMemoryEntry = {
   postgres_id?: string;
   postgres_outcome_id?: string;
   postgres_outcome_snapshot?: string;
+  outcome_client_reference_id?: string;
   postgres_snapshot?: string;
   extraction_ids?: string[];
   client_reference_id?: string;
@@ -130,6 +131,13 @@ const STOP = new Set([
   "taking",
   "take",
 ]);
+
+function newClientReferenceId(prefix: string): string {
+  const value = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${value}`.slice(0, 120);
+}
 
 function tokens(text: string): string[] {
   return text
@@ -253,7 +261,13 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
   }
   const outcomesByDecision = new Map<string, Record<string, unknown>>();
   for (const outcome of outcomeRows) {
-    if (typeof outcome.decision_id === "string" && !outcomesByDecision.has(outcome.decision_id)) outcomesByDecision.set(outcome.decision_id, outcome);
+    if (typeof outcome.decision_id !== "string") continue;
+    const previous = outcomesByDecision.get(outcome.decision_id);
+    const previousAt = Date.parse(String(previous?.observed_at ?? previous?.created_at ?? ""));
+    const currentAt = Date.parse(String(outcome.observed_at ?? outcome.created_at ?? ""));
+    if (!previous || (Number.isFinite(currentAt) && currentAt >= previousAt)) {
+      outcomesByDecision.set(outcome.decision_id, outcome);
+    }
   }
   const store = load(careKey);
   const existingById = new Map(store.entries.map((entry) => [entry.postgres_id ?? entry.id, entry]));
@@ -284,7 +298,11 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         extraction_ids: previous?.extraction_ids ?? [],
         client_reference_id: typeof row.client_reference_id === "string" ? row.client_reference_id : previous?.client_reference_id,
         revisions: (revisionsByDecision.get(id) ?? []).sort((a, b) => a.revision_number - b.revision_number),
-        ...(persistedOutcome && typeof persistedOutcome.id === "string" ? { postgres_outcome_id: persistedOutcome.id, postgres_outcome_snapshot: String(persistedOutcome.description ?? "") } : {}),
+        ...(persistedOutcome && typeof persistedOutcome.id === "string" ? {
+          postgres_outcome_id: persistedOutcome.id,
+          postgres_outcome_snapshot: String(persistedOutcome.description ?? ""),
+          outcome_client_reference_id: typeof persistedOutcome.client_reference_id === "string" ? persistedOutcome.client_reference_id : previous?.outcome_client_reference_id,
+        } : {}),
         care_key: storeKey(careKey),
         what,
         decision: what,
@@ -396,11 +414,25 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
   // Outcome rows are written only after their decision has a server-issued ID.
   for (const entry of load(careKey).entries) {
     if (!entry.postgres_id || !entry.outcome || entry.postgres_outcome_snapshot === entry.outcome) continue;
+    const referenceId = !entry.outcome_client_reference_id || (
+      entry.postgres_outcome_snapshot !== undefined && entry.postgres_outcome_snapshot !== entry.outcome
+    ) ? newClientReferenceId("decision-outcome") : entry.outcome_client_reference_id;
+    if (referenceId !== entry.outcome_client_reference_id) {
+      const current = load(careKey);
+      save({
+        care_key: storeKey(careKey),
+        entries: current.entries.map((candidate) =>
+          candidate.postgres_id === entry.postgres_id ? { ...candidate, outcome_client_reference_id: referenceId } : candidate,
+        ),
+        updated_at: new Date().toISOString(),
+      });
+    }
     const outcome = await postJSON("/care-continuity/decision-outcomes", {
       decision_id: entry.postgres_id,
       outcome_status: "observed",
       observed_at: new Date().toISOString(),
       description: entry.outcome,
+      client_reference_id: referenceId,
       evidence_ids: [],
       is_intended_outcome: false,
     }) as Record<string, unknown>;
@@ -412,7 +444,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       care_key: storeKey(careKey),
       entries: current.entries.map((candidate) =>
         candidate.postgres_id === entry.postgres_id
-          ? { ...candidate, postgres_outcome_id: outcome.id as string, postgres_outcome_snapshot: candidate.outcome ?? "" }
+          ? { ...candidate, postgres_outcome_id: outcome.id as string, postgres_outcome_snapshot: candidate.outcome ?? "", outcome_client_reference_id: referenceId }
           : candidate,
       ),
       updated_at: new Date().toISOString(),
