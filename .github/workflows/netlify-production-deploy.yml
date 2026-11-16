@@ -24,8 +24,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: solenos-netlify-production
-  cancel-in-progress: true
+  # Isolate pull-request verification so unrelated previews cannot cancel one
+  # another. Production release runs share a protected group and are never
+  # cancelled by a newer preview or workflow dispatch.
+  group: ${{ github.event_name == 'pull_request' && format('solenos-netlify-pr-{0}', github.event.pull_request.number) || 'solenos-netlify-production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -49,8 +52,10 @@ jobs:
           const fs = require("node:fs");
           const spec = JSON.parse(fs.readFileSync("/tmp/solenos-openapi.json", "utf8"));
           const requiredPath = "/api/v1/care-continuity/record-snapshots/as-of";
+          const availableSnapshotPaths = Object.keys(spec.paths ?? {}).filter((path) => path.includes("record-snapshot"));
+          console.log("Production backend record-snapshot routes:", JSON.stringify(availableSnapshotPaths));
           if (!Object.hasOwn(spec.paths ?? {}, requiredPath)) {
-            console.error("Production backend does not yet provide saved care history. Frontend production deployment is blocked.");
+            console.error(`Production backend does not yet provide saved care history. Missing ${requiredPath}. Available snapshot routes: ${availableSnapshotPaths.join(", ") || "(none)"}`);
             process.exit(1);
           }
           console.log("Production backend has the saved care history endpoint.");
@@ -74,6 +79,7 @@ jobs:
           const required = [
             "tests",
             "container-build-smoke",
+            "deployed-smoke",
             "postgres-migrations",
             "postgres-migration",
             "test",
