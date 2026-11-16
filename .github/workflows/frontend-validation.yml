@@ -25,6 +25,8 @@ jobs:
         run: npm run typecheck && npm run build
       - name: Verify document intake, review and incomplete-page safeguards
         run: npm run verify:document-scan-processing && npm run verify:document-review-history && npm run verify:companion-home
+      - name: Validate critical caregiver E2E test syntax
+        run: node --check e2e/critical-care-journeys.mjs
       - name: Run continuity and production-safety checks
         run: npm test
       - name: Verify caregiver-facing language boundary
