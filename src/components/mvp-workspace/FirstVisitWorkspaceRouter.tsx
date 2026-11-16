@@ -13,6 +13,7 @@ type SituationSnapshot = {
   situations?: unknown[];
   ui_situations?: unknown[];
   active_care_situation?: { observations?: unknown[] } | null;
+  return_continuity?: { suppress_first_time_ux?: boolean };
 };
 
 type LoadState = "loading" | "first_visit" | "returning" | "unavailable";
@@ -46,6 +47,7 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
       }
       const hasSavedCare =
         data.has_context_root ||
+        data.return_continuity?.suppress_first_time_ux === true ||
         (data.total_events ?? 0) > 0 ||
         (data.situations?.length ?? 0) > 0 ||
         (Array.isArray(data.ui_situations) && data.ui_situations.length > 0) ||
