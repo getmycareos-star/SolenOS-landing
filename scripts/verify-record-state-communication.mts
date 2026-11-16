@@ -93,3 +93,13 @@ assert(history.includes('<RecordState kind="incomplete" title="Your care history
 assert(history.includes('<RecordState kind="no-results" title="No matching records"'), "filtered history with zero matches must be distinct from a genuinely empty history");
 assert(!history.includes("an empty section does not mean nothing happened"), "the history view must not repeat defensive empty-state disclaimers");
 console.log("PASS: care history preserves loaded records and separates empty, filtered, incomplete, loading and failure states.");
+
+const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
+assert(companion.includes("getJSON('/assistant/status')"), "Companion must check the backend readiness signal before presenting its welcome state");
+assert(companion.includes("status.operational === true"), "Companion must require confirmed inference operation before showing starter prompts");
+assert(companion.includes("availability === 'checking'"), "Companion readiness checks must have a loading state");
+assert(companion.includes("availability === 'unavailable'"), "unavailable inference must not display the normal welcome state");
+assert(companion.includes("availability === 'unverified'"), "unverified inference must not be presented as ready");
+assert(companion.includes("availability !== \"available\""), "the message composer must remain disabled until inference is confirmed");
+assert(companion.includes("Your Care Record, Daily Care and Documents remain available"), "Companion unavailability must direct caregivers to working care-record areas");
+console.log("PASS: Companion welcome and message composer are gated on confirmed inference readiness.");
