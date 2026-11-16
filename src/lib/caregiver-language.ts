@@ -160,8 +160,8 @@ const INFORMATION_LABELS: Readonly<Record<string, string>> = {
   reported: "Caregiver report",
   observed: "Seen by a caregiver",
   verified: "Checked against a source",
-  inferred: "Not yet confirmed",
-  uncertain: "Unclear",
+  inferred: "Possible explanation",
+  uncertain: "Not sure yet",
   conflicting: "Reports do not match",
   missing: "Not recorded",
 };
