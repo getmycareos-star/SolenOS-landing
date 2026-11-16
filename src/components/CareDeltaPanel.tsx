@@ -16,6 +16,12 @@ type DeltaResult = {
   caregiver_summary?: string
   clinician_summary?: string
   computed_changes?: Array<Record<string, any>>
+  interpretation_evaluation?: {
+    overall_status?: string
+    caregiver_visible?: boolean
+    counts?: Record<string, number>
+    evaluations?: Array<Record<string, any>>
+  }
   provenance?: Record<string, any>
   claim_provenance?: {
     coverage?: string
@@ -120,10 +126,20 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
 
   function renderRows(title: string, rows?: Array<Record<string, any>>) {
     if (!rows?.length) return null
+    const visibleRows = rows.filter((row) =>
+      row.claim_supported !== false &&
+      row.evidence_supported !== false &&
+      row.historical_only !== true &&
+      row.source_reference_status !== 'not_matched'
+    )
+    const withheldCount = rows.length - visibleRows.length
     return <section style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
       <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>{title}</h4>
-      <div style={{ display: 'grid', gap: 8 }}>
-        {rows.map((row, index) => <article key={index} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 9 }}>
+      {withheldCount > 0 && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '0 0 8px' }}>
+        {withheldCount} item{withheldCount === 1 ? ' was' : 's were'} left out because the saved information did not support a current conclusion. Review the original records if clarification is needed.
+      </p>}
+      {visibleRows.length > 0 && <div style={{ display: 'grid', gap: 8 }}>
+        {visibleRows.map((row, index) => <article key={index} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 9 }}>
           <strong style={{ fontSize: 12 }}>{caregiverSafeAssistantText(String(row.name || row.action || row.topic || row.gap || row.field || title)) || 'Care information'}</strong>
           <p style={{ fontSize: 12, margin: '4px 0' }}>
             {row.change_type ? `Change: ${caregiverStatusLabel(String(row.change_type)) || 'Changed'} · ` : ''}
@@ -157,7 +173,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
           {row.provenance_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeAssistantText(String(row.provenance_warning)) || 'Where this information came from needs checking.'}</p>}
           {Array.isArray(row.reports) && <ul style={{ fontSize: 12, margin: '4px 0', paddingLeft: 18 }}>{row.reports.map((report: string, i: number) => <li key={i}>{report}</li>)}</ul>}
         </article>)}
-      </div>
+      </div>}
     </section>
   }
 
@@ -210,6 +226,17 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
     {result && <div aria-live="polite" style={{ marginTop: 14 }}>
       <h3 style={{ fontSize: 15, margin: 0 }}>What may have changed</h3>
       <p style={{ fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(result.caregiver_summary || result.event_summary) || 'The comparison is ready, but its summary is not available to show.'}</p>
+      {result.interpretation_evaluation && <p role="status" style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+        {result.interpretation_evaluation.overall_status === 'supported'
+          ? 'The linked records and comparison checks support these possible changes. This is not a medical conclusion.'
+          : result.interpretation_evaluation.overall_status === 'conflicting'
+            ? 'The saved reports disagree. Both accounts are kept separate; SolenOS does not choose which one is correct.'
+            : result.interpretation_evaluation.overall_status === 'stale_evidence'
+              ? 'The information behind this comparison may be out of date, so it is not presented as current.'
+              : result.interpretation_evaluation.overall_status === 'partially_supported'
+                ? 'Some information supports this comparison, but parts remain uncertain. Review the linked records before relying on it.'
+                : 'There is not enough verified information to present a care change as established.'}
+      </p>}
       {result.claim_provenance?.coverage === 'some_findings_unmatched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>We could not find the notes or documents behind some of these possible changes. Check them before relying on them.</p>}
       {result.claim_provenance?.coverage === 'all_findings_linked' && <p role="status" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Each finding is linked to the words in a saved note or document. This does not prove the information is medically correct or came from a different report.</p>}
       {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary') && (
@@ -228,9 +255,13 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       )}
       {result.computed_changes?.length ? <section style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
         <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Changes to review</h4>
-        {result.computed_changes.map((item, index) => <p key={index} style={{ fontSize: 12, margin: '5px 0' }}>
-          <strong>{caregiverSafeAssistantText(String(item.name || 'Care information')) || 'Care information'}</strong> · {caregiverStatusLabel(String(item.change_type || 'uncertain')) || 'Not confirmed'} · {caregiverSafeAssistantText(String(item.previous ?? 'No prior value')) || 'Not available'} → {caregiverSafeAssistantText(String(item.current ?? 'No current value')) || 'Not available'} · {caregiverStatusLabel(String(item.certainty || 'uncertain')) || 'Not confirmed'}
-        </p>)}
+        {result.computed_changes.filter((item) => item.interpretation_caregiver_visible !== false).map((item, index) => <article key={index} style={{ fontSize: 12, margin: '5px 0' }}>
+          <p style={{ margin: 0 }}>
+            <strong>{caregiverSafeAssistantText(String(item.name || 'Care information')) || 'Care information'}</strong> · {caregiverStatusLabel(String(item.change_type || 'uncertain')) || 'Not confirmed'} · {caregiverSafeAssistantText(String(item.previous ?? 'No prior value')) || 'Not available'} → {caregiverSafeAssistantText(String(item.current ?? 'Not available')) || 'Not available'} · {caregiverStatusLabel(String(item.interpretation_status || item.certainty || 'uncertain')) || 'Not confirmed'}
+          </p>
+          {item.interpretation_uncertainty_justification && item.interpretation_status !== 'supported' && <p role="note" style={{ color: 'var(--text-secondary)', margin: '3px 0 0' }}>{caregiverSafeAssistantText(String(item.interpretation_uncertainty_justification)) || 'This comparison needs review.'}</p>}
+        </article>)}
+        {result.computed_changes.some((item) => item.interpretation_caregiver_visible === false) && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Some possible changes were withheld because the evidence was missing, unsupported or out of date.</p>}
       </section> : null}
       {renderRows('Medicine changes to review', result.medications)}
       {renderRows('Conditions and status changes', result.conditions)}
