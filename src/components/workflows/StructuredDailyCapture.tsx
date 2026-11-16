@@ -894,7 +894,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       setSaveError(null);
       setSavedEntrySummary(variables.notes.trim() || 'Entry recorded.');
       setSaved(true);
-      // Refresh the shared LCR projection only after the backend confirms persistence.
+      // Refresh saved care information only after the backend confirms persistence.
       window.dispatchEvent(new Event('careRecordUpdated'));
     },
     onError: async (error, variables, context) => {
