@@ -28,7 +28,6 @@ type OpenLoop = {
   source_type?: string | null;
   source_id?: string | null;
   owner_label?: string | null;
-  deadline_at?: string | null;
 };
 
 type DecisionOption = {
