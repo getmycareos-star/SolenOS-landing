@@ -4,6 +4,14 @@ import fs from "node:fs";
 const state = fs.readFileSync("src/components/ui/RecordState.tsx", "utf8");
 const overview = fs.readFileSync("src/components/app-shell/CareRecordOverview.tsx", "utf8");
 const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const darkModeStyles = fs.readFileSync("src/app/dark-mode-remediation.css", "utf8");
+assert.match(darkModeStyles, /:root\\[data-solenos-theme="dark"\\] \\.record-state/,
+  "shared record states must override inline light-theme surfaces in dark mode");
+assert.match(darkModeStyles, /record-state--error[\\s\\S]*?theme-warning-bg/,
+  "error, forbidden and unavailable states must use the dark warning surface");
+assert.match(darkModeStyles, /record-state--unavailable[\\s\\S]*?theme-warning-fg/,
+  "warning-state text must use the accessible dark warning foreground");
+
 
 for (const kind of [
   "first-empty",
