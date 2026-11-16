@@ -225,7 +225,17 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
     </section>}
     {result && <div aria-live="polite" style={{ marginTop: 14 }}>
       <h3 style={{ fontSize: 15, margin: 0 }}>What may have changed</h3>
-      <p style={{ fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(result.caregiver_summary || result.event_summary) || 'The comparison is ready, but its summary is not available to show.'}</p>
+      <p style={{ fontSize: 12, lineHeight: 1.5 }}>
+        {result.interpretation_evaluation && result.interpretation_evaluation.overall_status !== 'supported'
+          ? result.interpretation_evaluation.overall_status === 'conflicting'
+            ? 'The saved reports disagree. The original accounts are kept separate and no single account is treated as correct.'
+            : result.interpretation_evaluation.overall_status === 'stale_evidence'
+              ? 'The information behind this comparison may be out of date. It is not presented as the current care situation.'
+              : result.interpretation_evaluation.overall_status === 'partially_supported'
+                ? 'Some saved information supports this comparison, but parts remain uncertain and need review.'
+                : 'There is not enough verified information to establish a care change.'
+          : caregiverSafeAssistantText(result.caregiver_summary || result.event_summary) || 'The comparison is ready, but its summary is not available to show.'}
+      </p>
       {result.interpretation_evaluation && <p role="status" style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
         {result.interpretation_evaluation.overall_status === 'supported'
           ? 'The linked records and comparison checks support these possible changes. This is not a medical conclusion.'
@@ -242,7 +252,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       {result.claim_provenance?.claims?.some((claim) => claim.claim_type === 'summary') && (
         <section style={{ borderTop: '1px solid var(--border)', paddingTop: 9, marginTop: 9 }}>
           <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Check the summary against saved information</h4>
-          {result.claim_provenance?.claims?.filter((claim) => claim.claim_type === 'summary').map((claim) => (
+          {result.claim_provenance?.claims?.filter((claim) => claim.claim_type === 'summary' && claim.support_status === 'matched_exact_source_wording').map((claim) => (
             <article key={claim.claim_id} style={{ marginBottom: 8 }}>
               <p style={{ fontSize: 12, margin: '0 0 4px' }}>{caregiverSafeAssistantText(claim.text) || 'Summary wording is not available.'}</p>
               {claim.support_status === 'matched_exact_source_wording' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears in a saved note or document.</p>}
