@@ -1,11 +1,12 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { RecordState } from '@/components/ui/RecordState'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
 
 interface ClaimSourceReference {
@@ -153,6 +154,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | 'unverified' | 'unknown'>('checking')
   const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
   const [careUpdateLoading, setCareUpdateLoading] = useState(false)
   const [reviewingCareUpdateId, setReviewingCareUpdateId] = useState<string | null>(null)
@@ -165,6 +167,27 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const pendingTurnId = useRef<string | null>(null)
   const pendingTurnText = useRef<string | null>(null)
   const personId = getPersonId()
+
+  const checkAvailability = useCallback(async () => {
+    setAvailability('checking')
+    try {
+      await ensureAnonymousSession()
+      const status = await getJSON('/assistant/status') as {
+        available?: boolean
+        operational?: boolean
+      }
+      if (status.operational === true) {
+        setAvailability('available')
+        setRequestError(null)
+      } else if (status.available === false) {
+        setAvailability('unavailable')
+      } else {
+        setAvailability('unverified')
+      }
+    } catch {
+      setAvailability('unknown')
+    }
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -198,6 +221,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       const caregiverReply = caregiverSafeAssistantText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
+      setAvailability('available')
       setInput('')
       pendingTurnId.current = null
       pendingTurnText.current = null
@@ -236,6 +260,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     } catch {
       setMessages(prev => prev.filter(message => message !== userMsg))
       setInput(submittedText)
+      setAvailability('unknown')
       setRequestError('Your message could not be sent. It remains in the box below. Check your connection and try again.')
     } finally {
       setLoading(false)
@@ -301,8 +326,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   useEffect(() => {
-    void loadPendingCareUpdates()
-  }, [])
+    void checkAvailability().then(() => loadPendingCareUpdates())
+  }, [checkAvailability])
 
   useEffect(() => {
     const prompt = initialPrompt?.trim()
@@ -350,27 +375,37 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
 
-      {requestError && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
         <section className="companion-conversation" aria-label="Conversation">
           {messages.length === 0 ? (
-            <div className="companion-empty">
-              <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-              <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
-              <div className="companion-starters">
-                {STARTER_PROMPTS.map(item => {
-                  const Icon = item.icon
-                  return <button className="companion-starter" type="button" key={item.title} onClick={() => { void sendMessage(item.prompt) }}>
-                    <span className="companion-starter-icon"><Icon size={18} aria-hidden="true" /></span>
-                    <span className="companion-starter-copy"><strong>{item.title}</strong><span>{item.description}</span></span>
-                    <span className="companion-starter-arrow" aria-hidden="true">↗</span>
-                  </button>
-                })}
+            availability === 'checking' ? (
+              <RecordState kind="loading" title="Checking whether the Care Assistant is available" />
+            ) : availability === 'available' && !requestError ? (
+              <div className="companion-empty">
+                <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
+                <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
+                <div className="companion-starters">
+                  {STARTER_PROMPTS.map(item => {
+                    const Icon = item.icon
+                    return <button className="companion-starter" type="button" key={item.title} onClick={() => { void sendMessage(item.prompt) }}>
+                      <span className="companion-starter-icon"><Icon size={18} aria-hidden="true" /></span>
+                      <span className="companion-starter-copy"><strong>{item.title}</strong><span>{item.description}</span></span>
+                      <span className="companion-starter-arrow" aria-hidden="true">↗</span>
+                    </button>
+                  })}
+                </div>
+                <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
               </div>
-              <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
-            </div>
+            ) : availability === 'unavailable' ? (
+              <RecordState kind="unavailable" title="The Care Assistant is temporarily unavailable" description="Responses are not available right now. Your Care Record, Daily Care and Documents remain available." actionLabel="Check again" onAction={() => void checkAvailability()} />
+            ) : availability === 'unverified' ? (
+              <RecordState kind="incomplete" title="The Care Assistant hasn't been confirmed as ready" description="We couldn't confirm that responses are working right now. Check again before starting a conversation." actionLabel="Check again" onAction={() => void checkAvailability()} />
+            ) : (
+              <RecordState kind="error" title="We couldn't check the Care Assistant" description={requestError || "We couldn't confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
+            )
           ) : (
             <div className="companion-message-list">
               <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
@@ -515,9 +550,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading} rows={2} />
+          }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading || availability !== "available"} rows={2} />
           <div className="companion-composer-footer">
-            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || availability !== "available" || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
