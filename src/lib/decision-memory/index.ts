@@ -256,7 +256,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         who: previous?.who ?? (typeof row.created_by_caregiver_id === "string" ? [row.created_by_caregiver_id] : []),
         context_situation_id: typeof context.situation_id === "string" ? context.situation_id : null,
         context_summary: typeof context.context_summary === "string" ? context.context_summary : null,
-        evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { evidence_id: evidenceIds[0] } : {}) }],
+        evidence: [{ source: "postgresql", text: evidenceText, ...(evidenceIds[0] ? { evidence_id: evidenceIds[0] } : {}), ...(typeof context.event_id === "string" ? { event_id: context.event_id } : {}) }],
         alternatives: Array.isArray(context.alternatives) ? context.alternatives.filter((v): v is string => typeof v === "string") : [],
         reason: typeof context.reason === "string" ? context.reason : null,
         outcome: typeof persistedOutcome?.description === "string" ? persistedOutcome.description : previous?.outcome ?? null,
@@ -315,6 +315,7 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
         situation_id: entry.context_situation_id,
         context_summary: entry.context_summary,
         evidence_text: entry.evidence[0]?.text ?? entry.what,
+        event_id: entry.evidence[0]?.event_id ?? null,
       }),
       evidence_ids: [],
     }) as Record<string, unknown>;
