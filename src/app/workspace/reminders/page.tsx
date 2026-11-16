@@ -170,13 +170,13 @@ export default function CareRemindersPage() {
     <div className="mobile-screen care-reminders-page">
       <div className="care-reminders-header">
         <Link href="/workspace" className="care-reminders-back">
-          <ArrowLeft size={18} aria-hidden /> Back to Living Care Record
+          <ArrowLeft size={18} aria-hidden /> Back to Care Record
         </Link>
-        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> CARE CONTINUITY</p>
+        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> REMINDERS</p>
         <h1>Care reminders</h1>
-        <p>Save a follow-up once. SolenOS records an in-app notification when it is due.</p>
+        <p>Save a reminder here. SolenOS will show you a notification when it’s due.</p>
         <p className="care-reminders-delivery">
-          In-app notification feed · optional browser push · no email alerts.
+          You’ll see a notification in SolenOS when it’s due. Browser notifications are optional. We don’t send email alerts.
         </p>
       </div>
 
@@ -243,7 +243,7 @@ export default function CareRemindersPage() {
           <div className="care-reminders-empty">
             <Clock3 size={24} aria-hidden />
             <h3>No {filter === "all" ? "" : filter + " "}reminders saved</h3>
-            <p>Reminders you create will appear here. SolenOS does not invent sample reminders.</p>
+            <p>Reminders you add will appear here.</p>
           </div>
         ) : (
           <ul className="care-reminders-items">
@@ -279,7 +279,7 @@ export default function CareRemindersPage() {
                       </Button>
                     </div>
                   ) : null}
-                  <p className="care-reminder-footnote">Saved in this care record · an in-app notification is recorded when due</p>
+                  <p className="care-reminder-footnote">Saved in your Care Record · a notification will appear in SolenOS when it’s due</p>
                 </li>
               );
             })}
