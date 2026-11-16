@@ -31,7 +31,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   resolved: "Resolved",
   closed: "Closed after review",
   reported: "Reported by caregiver",
-  observed: "Observed",
+  observed: "Seen by a caregiver",
   verified: "Checked against a source",
   inferred: "Possible explanation",
   uncertain: "Not sure yet",
@@ -48,7 +48,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   suspended: "Temporarily unavailable",
   awaiting_confirmation: "Needs review",
   detected: "Possible change",
-  confirmed: "Reviewed and confirmed by a caregiver",
+  confirmed: "Marked as confirmed by a caregiver",
   inconclusive: "Could not be confirmed",
   accepted_by_caregiver: "Added to care record",
   rejected_by_caregiver: "Not added",
@@ -271,7 +271,7 @@ export function caregiverRoleLabel(value?: string | null): string | null {
 }
 
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
-  /\b(?:Delta Engine|AI Companion|Qwen (?:inference|model|endpoint)|LCR (?:projection|retrieval|engine))\b/i,
+  /\b(?:LCR|Delta Engine|AI Companion|Qwen)\b/i,
   /database schema/i,
   /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint)\b/i,
   /\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\b/i,
