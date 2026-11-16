@@ -973,7 +973,20 @@ await record("Care history opens the original caregiver report and its source de
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
-  await reportCard.getByRole("button", { name: /Open record: Daily care entry/ }).click();
+  await reportCard.evaluate((element) => element.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" }));
+  const reportGeometry = await reportCard.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const list = element.closest(".history-list-scroll");
+    return {
+      card: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right },
+      viewport: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
+      list: list ? { scrollTop: list.scrollTop, scrollHeight: list.scrollHeight, clientHeight: list.clientHeight } : null,
+    };
+  });
+  process.stdout.write(`HISTORY_CARD_GEOMETRY ${JSON.stringify(reportGeometry)}\\n`);
+  const openRecordButton = reportCard.getByRole("button", { name: /Open record: Daily care entry/ });
+  await openRecordButton.scrollIntoViewIfNeeded();
+  await openRecordButton.click();
 
   await history.page.locator(".history-drawer-heading strong").filter({ hasText: "Care record" }).waitFor({ state: "visible", timeout: 15_000 });
   await history.page.getByRole("heading", { name: "Original record", exact: true }).waitFor({ timeout: 15_000 });
