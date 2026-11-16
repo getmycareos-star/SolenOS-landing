@@ -44,6 +44,41 @@ export const AUDIENCE_OPTIONS: AudienceOption[] = [
   },
 ];
 
+type PersistedCareEvent = {
+  raw_input?: unknown;
+  description?: unknown;
+  title?: unknown;
+  event_type?: unknown;
+};
+
+type SituationResponseWithPersistedEvents = SituationResponse & {
+  events?: PersistedCareEvent[];
+  total_events?: number;
+  context?: { events?: PersistedCareEvent[] };
+};
+
+/** Accept both the older summary shape and the current persisted care response. */
+function getShareEvents(response: SituationResponse): PersistedCareEvent[] {
+  const current = response as SituationResponseWithPersistedEvents;
+  const legacyEvents = (response as SituationResponse & { events_created?: PersistedCareEvent[] }).events_created;
+  if (Array.isArray(legacyEvents) && legacyEvents.length > 0) return legacyEvents;
+  if (Array.isArray(current.events)) return current.events;
+  if (Array.isArray(current.context?.events)) return current.context.events;
+  return [];
+}
+
+function getShareEventText(event: PersistedCareEvent): string {
+  const raw = typeof event.raw_input === "string" ? event.raw_input.trim() : "";
+  if (raw) return raw;
+  const description = typeof event.description === "string" ? event.description.trim() : "";
+  const title = typeof event.title === "string" ? event.title.trim() : "";
+  if (description && title && description !== title) return `${title}: ${description}`;
+  if (description || title) return description || title;
+  return typeof event.event_type === "string"
+    ? event.event_type.replace(/[_-]+/g, " ").trim()
+    : "";
+}
+
 /* ------------------------------------------------------------------ */
 /*  Readiness                                                         */
 /* ------------------------------------------------------------------ */
@@ -94,7 +129,9 @@ export function assessReadiness(response: SituationResponse | null): ReadinessRe
 
   const observations = response.active_care_situation?.observations ?? [];
   const changes = response.what_changed ?? [];
-  const events = response.events_created ?? [];
+  const events = getShareEvents(response);
+  const currentResponse = response as SituationResponseWithPersistedEvents;
+  const reportedEventCount = Number(currentResponse.total_events ?? events.length);
   const documents = response.document_events_count ?? 0;
   const uncertainty = response.what_is_uncertain ?? [];
   const clarifications = response.what_needs_clarification ?? [];
@@ -103,14 +140,14 @@ export function assessReadiness(response: SituationResponse | null): ReadinessRe
   const info = {
     hasObservations: observations.length > 0,
     hasChanges: changes.length > 0,
-    hasEvents: events.length > 0,
+    hasEvents: events.length > 0 || reportedEventCount > 0,
     hasDocuments: documents > 0,
     hasUncertainty: uncertainty.length > 0,
     hasClarifications: clarifications.length > 0,
     hasPriorityDemands: priority > 0,
     observationCount: observations.length,
     changeCount: changes.length,
-    eventCount: events.length,
+    eventCount: Math.max(events.length, Number.isFinite(reportedEventCount) ? reportedEventCount : 0),
     documentCount: documents,
   };
 
@@ -175,16 +212,16 @@ export function selectContentForAudience(
   const uncertainty = response.what_is_uncertain ?? [];
   const clarifications = response.what_needs_clarification ?? [];
   const tracked = response.what_will_be_tracked ?? [];
-  const events = response.events_created ?? [];
+  const events = getShareEvents(response);
+  const eventTexts = events.map(getShareEventText).filter(Boolean);
   const priorityTop = response.priority_layer?.top_events ?? [];
 
   const extractMedications = (): string[] => {
     const meds: string[] = [];
-    for (const ev of events) {
-      const raw = (ev.raw_input ?? "").toLowerCase();
+    for (const snippet of eventTexts) {
+      const raw = snippet.toLowerCase();
       if (raw.includes("medication") || raw.includes("medicine") || raw.includes("dose") || raw.includes("mg ")) {
-        const snippet = ev.raw_input.trim();
-        if (snippet) meds.push(snippet);
+        meds.push(snippet);
       }
     }
     for (const obs of observations) {
@@ -199,8 +236,8 @@ export function selectContentForAudience(
 
   const extractConditions = (): string[] => {
     const conds: string[] = [];
-    for (const ev of events) {
-      const raw = (ev.raw_input ?? "").toLowerCase();
+    for (const snippet of eventTexts) {
+      const raw = snippet.toLowerCase();
       if (
         raw.includes("diagnos") ||
         raw.includes("condition") ||
@@ -210,8 +247,7 @@ export function selectContentForAudience(
         raw.includes("hypertension") ||
         raw.includes("arthritis")
       ) {
-        const snippet = ev.raw_input.trim();
-        if (snippet) conds.push(snippet);
+        conds.push(snippet);
       }
     }
     for (const obs of observations) {
@@ -231,12 +267,8 @@ export function selectContentForAudience(
 
   const extractAllergies = (): string[] => {
     const allergies: string[] = [];
-    for (const ev of events) {
-      const raw = (ev.raw_input ?? "").toLowerCase();
-      if (raw.includes("allerg")) {
-        const snippet = ev.raw_input.trim();
-        if (snippet) allergies.push(snippet);
-      }
+    for (const snippet of eventTexts) {
+      if (snippet.toLowerCase().includes("allerg")) allergies.push(snippet);
     }
     for (const obs of observations) {
       const raw = (obs.raw_text ?? "").toLowerCase();
@@ -258,7 +290,6 @@ export function selectContentForAudience(
   const uncertaintyTexts = uncertainty.map((u) => u).filter(Boolean);
   const clarificationTexts = clarifications.map((c) => c).filter(Boolean);
   const trackedTexts = tracked.map((t) => typeof t === "string" ? t : String(t)).filter(Boolean);
-  const eventTexts = events.map((e) => e.raw_input?.trim()).filter(Boolean) as string[];
   const priorityTexts = priorityTop.map((p) => p).filter(Boolean);
 
   const timeline = [
