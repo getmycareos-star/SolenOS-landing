@@ -7,6 +7,7 @@ import { BrandLoading } from "@/components/brand";
 import Link from "next/link";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
 import { CaregiverHandoverInbox } from "@/components/mvp-workspace/CaregiverHandoverInbox";
+import { FirstVisitWorkspaceRouter } from "@/components/mvp-workspace/FirstVisitWorkspaceRouter";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -26,6 +27,7 @@ function WorkspaceHomeInner() {
   }
 
   return (
+    <FirstVisitWorkspaceRouter fallback={(
     <div className="mobile-screen feature-page solenos-lcr-home">
       <header className="solenos-workspace-page-heading"><h1>Care Record</h1></header>
       {/* Show the current care situation before inbox and detailed record content. */}
@@ -60,6 +62,7 @@ function WorkspaceHomeInner() {
       </nav>
       <CaregiverHandoverInbox />
     </div>
+    )} />
   );
 }
 
