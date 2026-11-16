@@ -261,14 +261,20 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("heading", { name: "Download / Export care summary", exact: true }).waitFor({ timeout: 10_000 });
   await page.locator(".share-panel-close").click();
 
+  await page.evaluate(() => {
+    const installEvent = new Event("beforeinstallprompt", { cancelable: true });
+    Object.defineProperty(window, "__solenosInstallPromptCalled", { configurable: true, value: false, writable: true });
+    Object.defineProperties(installEvent, {
+      prompt: { value: async () => { window.__solenosInstallPromptCalled = true; } },
+      userChoice: { value: Promise.resolve({ outcome: "accepted", platform: "web" }) },
+    });
+    window.dispatchEvent(installEvent);
+  });
+  await page.waitForTimeout(100);
   actionMenu = await openMoreMenu();
-  const installAlertPromise = page.waitForEvent("dialog");
-  const installClick = actionMenu.getByRole("menuitem", { name: "Add to Home", exact: true }).click();
-  const installAlert = await installAlertPromise;
-  assert.match(installAlert.message(), /iPhone or iPad|Android|Desktop/,
-    "Add to Home must explain the supported browser installation steps");
-  await installAlert.accept();
-  await installClick;
+  await actionMenu.getByRole("menuitem", { name: "Add to Home", exact: true }).click();
+  assert.equal(await page.evaluate(() => window.__solenosInstallPromptCalled), true,
+    "Add to Home must invoke the browser install prompt when one is available");
 
   const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navToggle.click();
