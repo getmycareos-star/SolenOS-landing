@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import { execFileSync } from "node:child_process";
 
@@ -259,6 +260,27 @@ await record("01c workspace links, browser back, More menu and account form vali
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Download / Export", exact: true }).click();
   await page.getByRole("heading", { name: "Download / Export care summary", exact: true }).waitFor({ timeout: 10_000 });
+  const exportPanel = page.locator(".share-care-summary-panel");
+  const limitedReadiness = exportPanel.getByRole("button", { name: "Continue anyway", exact: true });
+  if (await limitedReadiness.isVisible().catch(() => false)) {
+    await limitedReadiness.click();
+  }
+  await exportPanel.getByRole("radio", { name: /Doctor \/ clinician/ }).click();
+  await exportPanel.getByText("Prepared for: Doctor / clinician", { exact: true }).waitFor({ timeout: 10_000 });
+  await exportPanel.getByRole("button", { name: "Continue", exact: true }).click();
+  await exportPanel.getByText("Review the summary, then download it or save it as a PDF.", { exact: true })
+    .waitFor({ timeout: 10_000 });
+  const summaryDownloadPromise = page.waitForEvent("download");
+  await exportPanel.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
+  const summaryDownload = await summaryDownloadPromise;
+  assert.match(summaryDownload.suggestedFilename(), /^care-summary-\\d{4}-\\d{2}-\\d{2}\\.txt$/,
+    "the export action must create a dated care summary file");
+  const summaryPath = await summaryDownload.path();
+  const summaryText = await readFile(summaryPath, "utf8");
+  assert.ok(summaryText.length > 100, "the downloaded summary must contain actual reviewed content");
+  assert.match(summaryText, /Prepared for: Doctor \/ clinician/,
+    "the downloaded file must retain its selected recipient");
+  await exportPanel.getByText("Summary downloaded.", { exact: true }).waitFor({ timeout: 10_000 });
   await page.locator(".share-panel-close").click();
 
   await page.evaluate(() => {
