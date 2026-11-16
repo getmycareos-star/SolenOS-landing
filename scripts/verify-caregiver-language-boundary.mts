@@ -354,8 +354,8 @@ assert.doesNotMatch(documentExtractionRouteLanguage, /A valid SolenOS care-recor
 
 assert.match(reminders, /Back to Care Record/,
   "reminders must use the caregiver-facing Care Record name");
-assert.match(reminders, /Save a reminder here/,
-  "reminders introduction must use everyday language");
+assert.match(reminders, /Save a reminder here so you can come back to it when it is due/,
+  "reminders introduction must explain the purpose in everyday language");
 assert.doesNotMatch(reminders, /CARE CONTINUITY|Living Care Record|in-app notification feed|notification is recorded/i,
   "reminders must not expose internal continuity or delivery terminology");
 assert.match(reminders, /Reminders you add will appear here/,
