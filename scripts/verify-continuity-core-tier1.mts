@@ -282,6 +282,7 @@ console.log("=== Continuity core Tier 1 (G3–G6 / G12–G13 / G16) ===\n");
 
   linkDecisionOutcome({
     careKey: rk,
+    decisionId: entries[0]!.id,
     outcomeText: "Walking confidence is still reduced after rehabilitation.",
     nowIso: "2026-07-15T10:00:00.000Z",
   });
