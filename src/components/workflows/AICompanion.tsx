@@ -190,10 +190,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }, [])
 
   useEffect(() => {
-    void checkAvailability()
-  }, [checkAvailability])
-
-  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
@@ -330,8 +326,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   useEffect(() => {
-    void loadPendingCareUpdates()
-  }, [])
+    void checkAvailability().then(() => loadPendingCareUpdates())
+  }, [checkAvailability])
 
   useEffect(() => {
     const prompt = initialPrompt?.trim()
