@@ -107,3 +107,13 @@ console.log("PASS: Companion welcome and message composer are gated on confirmed
 assert(history.includes("sourceWarnings.length > 0 && !loading && records.length > 0"), "partial history warnings must not be duplicated with the incomplete empty state");
 
 assert(companion.includes("void checkAvailability().then(() => loadPendingCareUpdates())"), "Companion must reuse one bootstrapped session for readiness and pending-update reads");
+
+const handoffs = fs.readFileSync("src/components/workflows/CareHandoffSharing.tsx", "utf8");
+for (const source of ["directoryResult", "inboxResult", "outboxResult", "draftsResult"]) {
+  assert(handoffs.includes(`Array.isArray(${source}.value.items)`), `handoff ${source} must validate a real list before treating it as loaded`);
+}
+assert(handoffs.includes("historyError && (inbox.length > 0 || outbox.length > 0) && <RecordState"), "failed handoff refreshes must keep previously loaded sharing history visible");
+assert(handoffs.includes('title="No handoffs recorded yet"'), "only a successful, consent-authorized empty read may show no handoffs");
+assert(handoffs.includes('title="Sharing history could not be loaded"'), "failed handoff history must be distinct from an empty history");
+assert(handoffs.includes('title="Recipient access could not be checked"'), "failed recipient discovery must have a distinct retryable state");
+console.log("PASS: handoff lists validate their payloads and preserve loaded history across retrieval failures.");
