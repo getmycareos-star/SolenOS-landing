@@ -481,7 +481,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   // a fresh anonymous session after navigation, so a document-start snapshot
   // can race with app bootstrap. Observe the actual localStorage removals and
   // freeze the snapshot as soon as every identity key has been cleared.
-  await disposable.page.addInitScript(() => {
+  await disposable.page.evaluate(() => {
     const identityKeys = [
       "solenos_anonymous_access_token",
       "solenos_backend_person_id",
@@ -489,22 +489,27 @@ await record("01c workspace links, browser back, More menu and account form vali
       "solenos_anonymous_session_expires_at",
       "solenos_person_id",
     ];
-    const originalRemoveItem = Storage.prototype.removeItem;
-    Storage.prototype.removeItem = function (key) {
-      const result = originalRemoveItem.call(this, key);
-      if (
-        this === window.localStorage &&
-        !window.__solenosWorkspaceDeleteSnapshot &&
-        identityKeys.every((identityKey) => window.localStorage.getItem(identityKey) === null)
-      ) {
-        window.__solenosWorkspaceDeleteSnapshot = {
+    const captureIfCleared = () => {
+      if (identityKeys.every((identityKey) => window.localStorage.getItem(identityKey) === null)) {
+        window.sessionStorage.setItem("__solenosWorkspaceDeleteSnapshot", JSON.stringify({
           token: null,
           personId: null,
           caregiverId: null,
           expiresAt: null,
           legacyPersonId: null,
-        };
+        }));
       }
+    };
+    const originalRemoveItem = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function (key) {
+      const result = originalRemoveItem.call(this, key);
+      if (this === window.localStorage) captureIfCleared();
+      return result;
+    };
+    const originalClear = Storage.prototype.clear;
+    Storage.prototype.clear = function () {
+      const result = originalClear.call(this);
+      if (this === window.localStorage) captureIfCleared();
       return result;
     };
   });
@@ -520,9 +525,10 @@ await record("01c workspace links, browser back, More menu and account form vali
   await deleteDialog.accept();
   await deleteClick;
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
-  const clearedLocalData = await disposable.page.evaluate(() =>
-    window.__solenosWorkspaceDeleteSnapshot ?? null
-  );
+  const clearedLocalData = await disposable.page.evaluate(() => {
+    const snapshot = window.sessionStorage.getItem("__solenosWorkspaceDeleteSnapshot");
+    return snapshot ? JSON.parse(snapshot) : null;
+  });
   assert.ok(clearedLocalData, "the /start document must capture local identity before application bootstrap");
   assert.deepEqual(clearedLocalData, {
     token: null,
