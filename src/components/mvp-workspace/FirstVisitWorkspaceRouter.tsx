@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ensureAnonymousSession } from "@/api/client";
-import { apiUrl } from "@/lib/api-url";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { CognitiveWorkspace } from "./CognitiveWorkspace";
 
@@ -36,22 +35,18 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
       const careSessionId = ensureClientInteractionSessionId(storedSessionId);
       window.localStorage.setItem("solenos_care_session_id", careSessionId);
       const response = await fetch(
-        apiUrl(`/api/situation?care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`),
+        `/api/situation?care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`,
         { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" },
       );
       if (!response.ok) throw new Error(`Care information could not be checked (${response.status}).`);
       const data = (await response.json()) as SituationSnapshot;
-      if (
-        typeof data.has_context_root !== "boolean" ||
-        typeof data.total_events !== "number" ||
-        !Array.isArray(data.situations)
-      ) {
+      if (typeof data.has_context_root !== "boolean") {
         throw new Error("The care record returned an incomplete response.");
       }
       const hasSavedCare =
         data.has_context_root ||
-        data.total_events > 0 ||
-        data.situations.length > 0 ||
+        (data.total_events ?? 0) > 0 ||
+        (data.situations?.length ?? 0) > 0 ||
         (Array.isArray(data.ui_situations) && data.ui_situations.length > 0) ||
         (data.active_care_situation?.observations?.length ?? 0) > 0;
       setState(hasSavedCare ? "returning" : "first_visit");
