@@ -1050,12 +1050,13 @@ export function HistoryDrawer() {
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
-      if (!requestPersonId || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
+      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied/i.test(message);
+      if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
         setRecords([]);
         setSelectedId(null);
         loadedPersonIdRef.current = null;
       }
-      setError(/401|403|unauthori[sz]ed|forbidden|access denied/i.test(message)
+      setError(accessDenied
         ? "You may not have access to this care history. Check your account and try again."
         : "We couldn’t load care history. Please try again.");
     } finally {
@@ -1284,7 +1285,7 @@ export function HistoryDrawer() {
                   {loading ? (
                     <RecordState kind="loading" title="Loading saved care history" />
                   ) : error && records.length === 0 ? (
-                    <RecordState kind="error" title="History could not be loaded" description={error} onAction={() => void loadHistory(true)} />
+                    <RecordState kind={/may not have access|401|403|unauthori[sz]ed|forbidden/i.test(error) ? "forbidden" : "error"} title="History could not be loaded" description={error} onAction={() => void loadHistory(true)} />
                   ) : visibleRecords.length === 0 ? (
                     records.length > 0 ? (
                       <RecordState kind="no-results" title="No matching records" description="Try a different search or filter." actionLabel="Clear search and filters" onAction={() => { setQuery(""); setFilter("all"); }} />
