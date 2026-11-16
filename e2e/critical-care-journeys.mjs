@@ -779,12 +779,12 @@ await record("04 document upload and extraction", async () => {
     await documentPage.page.getByRole("heading", { name: "Review document details", exact: true }).waitFor({ timeout: 20_000 });
     await documentPage.page.getByText(documentReviewCandidate.source_quote, { exact: true }).waitFor({ timeout: 20_000 });
     await documentPage.page.getByRole("button", { name: "Add to Care Record", exact: true }).first().click();
-    await documentPage.page.getByLabel("Added to Care Record").first().waitFor({ timeout: 20_000 });
+    await documentPage.page.locator('[aria-label="Added to Care Record"]').first().waitFor({ timeout: 20_000 });
     await documentPage.page.getByText("You approved this detail. It was added to your Care Record with a link to the original document.", { exact: true }).waitFor({ timeout: 20_000 });
 
     // Reload from the server, open the append-only review history, and verify source access.
     await documentPage.page.reload({ waitUntil: "domcontentloaded" });
-    await documentPage.page.getByLabel("Added to Care Record").first().waitFor({ timeout: 20_000 });
+    await documentPage.page.locator('[aria-label="Added to Care Record"]').first().waitFor({ timeout: 20_000 });
     await documentPage.page.locator("summary").filter({ hasText: "Review history" }).first().click();
     await documentPage.page.getByText("Added to Care Record", { exact: false }).last().waitFor({ timeout: 10_000 });
     const originalDocumentRow = documentPage.page.getByRole("button").filter({ hasText: "journey-discharge-note.txt" }).last();
