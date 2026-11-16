@@ -864,7 +864,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
   return (
     <div className={shellClass}>
       <div className="lcr-capture-context" role="note">
-        <p className="workspace-muted">Add information to the shared care record. Suggestions are not treated as confirmed facts, and nothing is submitted until you choose to save it.</p>
+        <p className="workspace-muted">{hasContextRoot || sessionHasNote ? "Add a new detail to the care record. Your earlier notes stay saved." : "Start with one thing you want to remember. You can add more later."}</p>
       </div>
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
