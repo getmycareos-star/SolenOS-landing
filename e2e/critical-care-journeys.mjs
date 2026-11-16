@@ -962,7 +962,7 @@ await record("Care history opens the original caregiver report and its source de
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
-  await reportCard.getByRole("button", { name: /Open record: Daily care entry/ }).click();
+  await reportCard.locator("button.history-event-open").click();
 
   await history.page.locator(".history-drawer-heading strong").filter({ hasText: "Care record" }).waitFor({ state: "visible", timeout: 15_000 });
   await history.page.getByRole("heading", { name: "Original record", exact: true }).waitFor({ timeout: 15_000 });
