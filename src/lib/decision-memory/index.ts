@@ -614,7 +614,7 @@ export function recordDecisionOutcomeObservation(params: {
   const outcome = params.outcomeText.trim().slice(0, 1000);
   if (!outcome || !params.decisionId) return null;
   const store = load(params.careKey);
-  const target = store.entries.find((entry) => entry.id === params.decisionId);
+  const target = store.entries.find((entry) => entry.id === params.decisionId || entry.extraction_ids?.includes(params.decisionId));
   if (!target) return null;
   const updated: DecisionMemoryEntry = {
     ...target,
