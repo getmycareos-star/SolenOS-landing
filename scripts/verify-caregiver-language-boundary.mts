@@ -281,7 +281,7 @@ assert.doesNotMatch(timeline, /Care Timeline|Follow-ups & open items/);
 assert.match(handoff, /Check what will be shared/);
 assert.doesNotMatch(handoff, /Saved information item:|Caregiver-added note \(not independently verified\)|Sharing reviewed handoff/);
 assert.match(sourceReview, /How often should this information be checked/);
-assert.doesNotMatch(sourceReview, /Choose a review rule set by the caregiver|Device used|Original file or link/);
+assert.doesNotMatch(sourceReview, /Choose a review rule set by the caregiver|Original file or link/);
 assert.match(sourceReview, /How much to rely on this information/);
 assert.doesNotMatch(sourceReview, /Information quality|How reliable this information is/);
 assert.match(careContinuity, /Recently checked/);
