@@ -29,12 +29,19 @@ function jsonResponse(value: unknown, status = 200): Response {
     blob: async () => new Blob([body]),
   } as unknown as Response;
 }
-function installBrowser(store: Store): void {
+function installBrowser(
+  store: Store,
+  sessionStore: Store = makeStore(),
+  href = "https://solenos.test/workspace",
+): void {
   Object.defineProperty(globalThis, "localStorage", { configurable: true, value: store });
+  Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: sessionStore });
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
       localStorage: store,
+      sessionStorage: sessionStore,
+      location: { href },
       dispatchEvent: () => true,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
@@ -77,6 +84,45 @@ async function main() {
     assert.equal(protectedCalls.length, 2);
     assert.ok(protectedCalls.every((call) => (call.init?.headers as Record<string, string>)?.Authorization === "Bearer server-issued-token"));
     assert.equal(getPersonId(), "person-server-1");
+  }
+
+  // A locally deleted workspace must stay deleted until the caregiver explicitly starts a new record.
+  {
+    const store = makeStore();
+    const sessionStore = makeStore();
+    sessionStore.setItem("solenos_anonymous_session_revoked", "1");
+    installBrowser(store, sessionStore, "https://solenos.test/start");
+    let requests = 0;
+    globalThis.fetch = (async () => {
+      requests += 1;
+      return jsonResponse(session());
+    }) as typeof fetch;
+
+    await assert.rejects(
+      () => getJSON("/events/person-server-1"),
+      /workspace was deleted from this device/i,
+    );
+    assert.equal(requests, 0, "deleted browser sessions must not create replacement identities in the background");
+    assert.equal(sessionStore.getItem("solenos_anonymous_session_revoked"), "1");
+  }
+  {
+    const store = makeStore();
+    const sessionStore = makeStore();
+    sessionStore.setItem("solenos_anonymous_session_revoked", "1");
+    installBrowser(store, sessionStore, "https://solenos.test/workspace?enter=1");
+    let sessionCreates = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/v1/sessions/anonymous") {
+        sessionCreates += 1;
+        return jsonResponse(session());
+      }
+      return jsonResponse({ ok: true });
+    }) as typeof fetch;
+
+    await getJSON("/events/person-server-1");
+    assert.equal(sessionCreates, 1, "explicit Care Record entry may create a fresh anonymous identity");
+    assert.equal(sessionStore.getItem("solenos_anonymous_session_revoked"), null);
+    assert.equal(store.getItem("solenos_anonymous_access_token"), "server-issued-token");
   }
 
   // A legacy record ID must not override the server-issued identity already bound to the bearer token.
