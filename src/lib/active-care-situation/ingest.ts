@@ -50,7 +50,6 @@ import {
 import { caregiverFacingFragmentText } from "../thread-ingestion/detect";
 import { evaluateSourceConflict, recordSourceClaim, sourcePriorityRank } from "../source-conflict";
 import {
-  linkDecisionOutcome,
   recordDecisionFromText,
   looksLikeDecisionEvidence,
 } from "../decision-memory";
@@ -1045,42 +1044,17 @@ export function ingestActiveCareObservation(params: {
                   : "active",
       });
     }
-    for (const out of extracted.outcomes) {
-      if (out.related_type !== "decision") continue;
-      // Never invent success — store neutral observed/uncertain result text only
-      linkDecisionOutcome({
-        careKey: careRecipientId,
-        outcomeText: out.description,
-        eventId: observation.event_ids[0],
-        matchTokens: out.raw_fragment
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, " ")
-          .split(/\s+/)
-          .filter((w) => w.length > 2),
-        nowIso,
-        status: out.status === "uncertain" ? "uncertain" : undefined,
-      });
-    }
+    // Extracted outcomes remain observations until extraction supplies an explicit
+    // decision ID. Decision Memory deliberately rejects fuzzy/latest-decision linking.
     for (const u of extracted.unknowns) {
       if (u.status !== "open") continue;
       extractedOpenUnknownAsks.push(u.question);
     }
   }
 
+  // Improvement/uncertainty updates are retained as care observations. Do not
+  // attach them to a decision without an explicit decision ID.
   const improvementSignals = detectObservationSignals(factSource, params.kind);
-  if (isImprovementUpdate(improvementSignals) || relation === "answers_uncertainty") {
-    linkDecisionOutcome({
-      careKey: careRecipientId,
-      outcomeText: factSource,
-      eventId: observation.event_ids[0],
-      matchTokens: factSource
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, " ")
-        .split(/\s+/)
-        .filter((w) => w.length > 2),
-      nowIso,
-    });
-  }
 
   const what_changed =
     advancedCare.note ??
