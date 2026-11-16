@@ -756,11 +756,12 @@ await record("04 document upload and extraction", async () => {
     mimeType: "text/plain",
     buffer: Buffer.from(documentSource, "utf8"),
   });
-  await uploadPage.page.getByRole("button", { name: "Save files", exact: true }).click();
-  const uploadResponse = await uploadPage.page.waitForResponse((response) =>
+  const uploadResponsePromise = uploadPage.page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith("/api/v1/upload")
       && response.request().method() === "POST"
   );
+  await uploadPage.page.getByRole("button", { name: "Save files", exact: true }).click();
+  const uploadResponse = await uploadResponsePromise;
   const uploadReceipt = await uploadResponse.json();
   assert.equal(uploadResponse.status(), 201, JSON.stringify(uploadReceipt));
   assert.equal(uploadReceipt.persisted, true);
