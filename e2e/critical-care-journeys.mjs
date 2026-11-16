@@ -1177,6 +1177,11 @@ await record("06 Companion context and Qwen output", async () => {
   );
   assert.doesNotMatch(
     medicationReply,
+    /\\b500\\s*mg\\b/i,
+    "Companion must not substitute an older recorded dose for the requested new prescription",
+  );
+  assert.doesNotMatch(
+    medicationReply,
     /(?:the new dose is|the doctor prescribed|the medication was changed to)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|ml)/i,
     "Companion must not invent a new medication dose from an uncertain caregiver report",
   );
