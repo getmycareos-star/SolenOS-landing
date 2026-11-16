@@ -240,7 +240,7 @@ try {
   await pageA.locator("#account-email").fill(email);
   await pageA.locator("#account-password").fill(password);
   await pageA.getByRole("button", { name: "Sign in", exact: true }).click();
-  await pageA.getByText("Signed in. Your existing care record is available in this session.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageA.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
 
   const afterRegistration = await pageA.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
@@ -306,7 +306,7 @@ try {
   await pageB.locator("#account-email").fill(email);
   await pageB.locator("#account-password").fill(password);
   await pageB.getByRole("button", { name: "Sign in", exact: true }).click();
-  await pageB.getByText("Signed in. Your existing care record is available in this session.", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageB.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
   const deviceBSession = await pageB.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
   assert.ok(deviceBSession, "device B did not receive an authenticated session");
   await pageB.getByRole("button", { name: "Register this device", exact: true }).click();
