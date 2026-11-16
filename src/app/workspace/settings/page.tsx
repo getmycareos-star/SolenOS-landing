@@ -667,6 +667,7 @@ function PrivacyCard() {
 
   const loadErasureHistory = useCallback(async () => {
     setErasureHistoryLoading(true);
+    setErasureError("");
     try {
       const result = await getJSON("/privacy/requests") as { requests?: Array<{ id: string; request_type: string; status: string; requested_at: string | null }> };
       setErasureHistory((result.requests ?? []).filter((item) => item.request_type === "deletion"));
