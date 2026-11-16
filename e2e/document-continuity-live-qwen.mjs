@@ -8,7 +8,7 @@ const timeoutMs = Number(process.env.DOCUMENT_QWEN_TIMEOUT_MS ?? 360_000);
 const browser = await chromium.launch({ headless: true });
 const sourceText = [
   "Synthetic CI discharge note. This is fictional test content, not a real person's record.",
-  "On 12 October, the patient walked 20 metres with a frame during the physiotherapy session.",
+  "Patient walked 20 metres with a frame on 12 October during the physiotherapy session.",
   "The patient ate half of lunch during the observation period.",
   "The caregiver reported that the patient slept poorly last night.",
 ].join("\n");
