@@ -256,6 +256,22 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.goBack({ waitUntil: "domcontentloaded" });
   await page.waitForURL("**/workspace", { timeout: 15_000 });
 
+  // Give the summary flow one real, caregiver-authored care entry. Without
+  // this, the correct empty-record state prevents recipient selection/export.
+  const summarySeed = await request("/api/v1/daily/log", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      caregiver_id: identity.caregiverId,
+      capture_idempotency_key: unique("summary-seed"),
+      observation: "Caregiver reports a restless night and reduced breakfast appetite.",
+      source: "critical_care_journey_e2e",
+    },
+  });
+  assert.ok([200, 201].includes(summarySeed.status), JSON.stringify(summarySeed.payload));
+  assert.ok(summarySeed.payload.id, "summary seed must be persisted before export");
+
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Share care summary", exact: true }).click();
   await page.getByRole("heading", { name: "Share care summary", exact: true }).waitFor({ timeout: 10_000 });
@@ -948,13 +964,19 @@ await record("Daily Care saves and retrieves original reports without relying on
 
 });
 
-await record("LCR care history shows the original caregiver report with source details on demand", async () => {
+await record("LCR care history shows a recent caregiver report with source details on demand", async () => {
+  const currentCareForUi = await request("/api/v1/care-continuity/current-care?limit_per_source=12", { token: identity.token });
+  assert.equal(currentCareForUi.status, 200, JSON.stringify(currentCareForUi.payload));
+  const visibleScenarioReport = [...scenarioReports].reverse().find((report) =>
+    currentCareForUi.payload.items.some((item) => JSON.stringify(item).includes(report))
+  );
+  assert.ok(visibleScenarioReport, "the visible Care Record projection must include a recent saved caregiver report");
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
-  await history.page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
+  await history.page.getByText(visibleScenarioReport, { exact: false }).first().waitFor({ timeout: 20_000 });
 
   const reportCard = history.page.locator(".lcr-current-fact:visible")
-    .filter({ hasText: scenarioReports[0] }).first();
+    .filter({ hasText: visibleScenarioReport }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
   const sourceSummary = reportCard.locator("summary")
     .filter({ hasText: "Care details" }).first();
@@ -976,12 +998,12 @@ await record("LCR care history shows the original caregiver report with source d
   });
   assert.equal(evidenceList.status, 200, JSON.stringify(evidenceList.payload));
   const originalEvidence = evidenceList.payload.find(
-    (item) => item.id === dailyScenarioEvidenceIdsByReport[scenarioReports[0]],
+    (item) => item.id === dailyScenarioEvidenceIdsByReport[visibleScenarioReport],
   );
   assert.ok(originalEvidence?.id, "the source record linked to the caregiver report must remain available");
   assert.ok(
     typeof originalEvidence.source_text === "string" &&
-      originalEvidence.source_text.includes(scenarioReports[0]),
+      originalEvidence.source_text.includes(visibleScenarioReport),
     "the exact original caregiver wording must remain inside the saved source text",
   );
 
@@ -991,7 +1013,7 @@ await record("LCR care history shows the original caregiver report with source d
   await sourceSelect.waitFor({ state: "visible", timeout: 15_000 });
   await sourceSelect.selectOption(originalEvidence.id);
   await history.page.locator("blockquote")
-    .filter({ hasText: scenarioReports[0] }).waitFor({ state: "visible", timeout: 15_000 });
+    .filter({ hasText: visibleScenarioReport }).waitFor({ state: "visible", timeout: 15_000 });
   await verifyMobile(history.page);
   await history.context.close();
 });
