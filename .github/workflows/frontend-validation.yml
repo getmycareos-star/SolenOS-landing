@@ -73,7 +73,7 @@ jobs:
           assert values["SOLENOS_PRIVACY_REVIEWER_TOKEN"] != values["SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN"]
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
               for key, value in values.items():
-                  env_file.write(f"{key}={value}\\n")
+                  env_file.write(f"{key}={value}\n")
           PY
       - name: Confirm isolated PostgreSQL is ready
         run: |
