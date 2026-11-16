@@ -17,6 +17,8 @@ assert.match(router, /setState\("unavailable"\)/);
 assert.match(router, /We won’t treat an unavailable record as a new one/);
 assert.match(router, /<CognitiveWorkspace \/>/);
 assert.match(router, /Your care journey starts here/);
+assert.match(router, /Here’s what we know so far/);
+assert.match(router, /onSituationComplete=\{\(\) => setFirstCaptureComplete\(true\)\}/);
 assert.match(router, /Your words stay yours/);
 assert.match(router, /solenos-first-visit-mode/);
 assert.match(capture, /const isFirstCapture/);
