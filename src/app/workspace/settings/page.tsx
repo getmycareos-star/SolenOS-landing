@@ -709,6 +709,15 @@ function PrivacyCard() {
 
       <PolicySettingsPanel />
 
+      <div className="mobile-settings-hint" role="note">
+        <strong>These are three different actions:</strong>
+        <ul>
+          <li><strong>Clear this device:</strong> removes saved information and session details from this browser. It does not erase information stored by SolenOS.</li>
+          <li><strong>Close or delete an account:</strong> removes account access where that account feature is available. It does not, by itself, erase the care record or other care-related information.</li>
+          <li><strong>Request care-record erasure:</strong> asks SolenOS to review and erase eligible server-held care information. Requests require identity and authority review. Shared records, legal holds, provider copies and backup-retention periods may affect what can be erased and when. We will confirm what was actually completed; submitting a request is not confirmation of erasure.</li>
+        </ul>
+      </div>
+
       {confirmClear && <p className="mobile-settings-hint" role="alert">This removes saved information and sign-in details from this browser. If you have no other way to sign in, you may not be able to open your Care Record on this device. It does not delete your Care Record from SolenOS.</p>}
       <div className="mobile-settings-buttons">
         {confirmClear ? (
