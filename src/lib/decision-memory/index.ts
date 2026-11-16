@@ -81,6 +81,7 @@ export type DecisionMemoryEntry = {
   postgres_outcome_snapshot?: string;
   outcome_client_reference_id?: string;
   postgres_snapshot?: string;
+  postgres_status_snapshot?: string;
   extraction_ids?: string[];
   client_reference_id?: string;
   revisions?: DecisionMemoryRevision[];
@@ -131,6 +132,10 @@ const STOP = new Set([
   "taking",
   "take",
 ]);
+
+function decisionStatusForPostgres(status: DecisionMemoryStatus): string {
+  return status === "active" ? "recorded" : status;
+}
 
 function newClientReferenceId(prefix: string): string {
   const value = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -296,6 +301,7 @@ export async function hydrateDecisionMemoryFromPostgres(careKey: string): Promis
         id,
         postgres_id: id,
         postgres_snapshot: serverWhat,
+        postgres_status_snapshot: typeof row.decision_status === "string" ? row.decision_status : previous?.postgres_status_snapshot,
         extraction_ids: previous?.extraction_ids ?? [],
         client_reference_id: typeof row.client_reference_id === "string" ? row.client_reference_id : previous?.client_reference_id,
         revisions: (revisionsByDecision.get(id) ?? []).sort((a, b) => a.revision_number - b.revision_number),
@@ -356,7 +362,10 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
   const entries = [...store.entries];
   for (const entry of entries) {
     if (entry.postgres_id) {
-      if (entry.postgres_snapshot !== entry.what) {
+      if (
+        entry.postgres_snapshot !== entry.what ||
+        entry.postgres_status_snapshot !== decisionStatusForPostgres(entry.status)
+      ) {
         await patchJSON(`/care-continuity/decisions/${entry.postgres_id}`, {
           title: entry.what.slice(0, 240),
           decision_text: entry.what,
@@ -374,7 +383,11 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
         save({
           care_key: storeKey(careKey),
           entries: current.entries.map((candidate) =>
-            candidate.postgres_id === entry.postgres_id ? { ...candidate, postgres_snapshot: candidate.what } : candidate,
+            candidate.postgres_id === entry.postgres_id ? {
+              ...candidate,
+              postgres_snapshot: candidate.what,
+              postgres_status_snapshot: decisionStatusForPostgres(candidate.status),
+            } : candidate,
           ),
           updated_at: new Date().toISOString(),
         });
@@ -405,7 +418,14 @@ export async function syncDecisionMemoryToPostgres(careKey: string): Promise<voi
       care_key: storeKey(careKey),
       entries: current.entries.map((candidate) =>
         candidate.id === entry.id
-          ? { ...candidate, id: saved.id as string, postgres_id: saved.id as string, postgres_snapshot: String(saved.decision_text ?? candidate.what), client_reference_id: entry.client_reference_id ?? entry.extraction_ids?.[0] ?? entry.id }
+          ? {
+              ...candidate,
+              id: saved.id as string,
+              postgres_id: saved.id as string,
+              postgres_snapshot: String(saved.decision_text ?? candidate.what),
+              postgres_status_snapshot: String(saved.decision_status ?? decisionStatusForPostgres(candidate.status)),
+              client_reference_id: entry.client_reference_id ?? entry.extraction_ids?.[0] ?? entry.id,
+            }
           : candidate,
       ),
       updated_at: new Date().toISOString(),
