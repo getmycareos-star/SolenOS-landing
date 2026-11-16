@@ -75,3 +75,21 @@ assert(reminders.includes('kind={reminders.length === 0 ? "first-empty" : "no-re
 assert(reminders.includes('onAction={reminders.length > 0 ? () => setFilter("all") : undefined}'), "the no-results reminder action must clear the filter");
 
 assert(documents.includes('actionLabel={documents.length === 0 ? "Add a document" : "Clear search"}'), "document empty-state actions must use accurate caregiver-facing labels");
+
+const lcr = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+assert(lcr.includes("SolenOS brings together the care information you and your care team record"), "the Care Record must explain once what its information represents");
+assert(lcr.includes('<RecordState kind="first-empty" title="No care updates recorded yet"'), "the Care Record must distinguish a genuine first-time empty state");
+assert(lcr.includes('<RecordState kind="incomplete"'), "insufficient information must remain distinct from an empty record");
+assert(lcr.includes('<RecordState kind="period-empty" title="No recent changes recorded"'), "recent changes must have a distinct empty state");
+assert(!lcr.includes("Missing information does not mean"), "repeated defensive empty-state disclaimers must be removed from the Care Record");
+assert(!lcr.includes("This is not a statement that no care needs exist"), "care-priority empty states must not repeat defensive disclaimers");
+console.log("PASS: the Care Record has one contextual introduction and concise, distinct empty/incomplete/error states.");
+
+const history = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
+assert(history.includes("error && records.length > 0 && <RecordState"), "a failed history refresh must keep previously loaded records visible");
+assert(history.includes("error && records.length === 0"), "an initial history failure must not be shown as an empty history");
+assert(history.includes('<RecordState kind="loading" title="Loading saved care history"'), "history loading must remain distinct from empty");
+assert(history.includes('<RecordState kind="incomplete" title="Your care history is incomplete"'), "partial history retrieval must be distinct from an empty history");
+assert(history.includes('<RecordState kind="no-results" title="No matching records"'), "filtered history with zero matches must be distinct from a genuinely empty history");
+assert(!history.includes("an empty section does not mean nothing happened"), "the history view must not repeat defensive empty-state disclaimers");
+console.log("PASS: care history preserves loaded records and separates empty, filtered, incomplete, loading and failure states.");
