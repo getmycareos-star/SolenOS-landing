@@ -652,6 +652,7 @@ function caregiverLabel(value?: string | null): string {
 
 export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
+  const personIdRef = useRef("");
   const [currentCaregiverId, setCurrentCaregiverId] = useState("");
   const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
   const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
@@ -766,6 +767,18 @@ export function LCRCurrentUnderstanding() {
         throw new Error("Your care record session is not available. Refresh the page and try again.");
       }
       const scopedPersonId = session.person.id;
+      if (personIdRef.current && personIdRef.current !== scopedPersonId) {
+        setProjection(null);
+        setRegisteredActions([]);
+        setChanges([]);
+        setPatterns([]);
+        setAssessment(null);
+        setSourceFreshness(null);
+        setActionHistory({});
+        setChangeEvidence({});
+        setEvidenceIntegrityByFact({});
+      }
+      personIdRef.current = scopedPersonId;
       setPersonId(scopedPersonId);
       setCurrentCaregiverId(session.caregiver.id);
 
@@ -858,9 +871,7 @@ export function LCRCurrentUnderstanding() {
               setSourceFreshness(null);
               setAssessmentError("The care summary is not available yet. Some care information may be missing.");
             }
-          } catch (cause) {
-            setAssessment(null);
-            setSourceFreshness(null);
+          } catch {
             setAssessmentError("The saved care summary could not be loaded. Please try again.");
           }
         })(),
@@ -868,13 +879,20 @@ export function LCRCurrentUnderstanding() {
       const backgroundWork = Promise.allSettled(backgroundTasks).finally(() => setRefreshing(false));
       if (manual) await backgroundWork;
       else void backgroundWork;
-    } catch (cause) {
-      setPersonId("");
-      setCurrentCaregiverId("");
-      setProjection(null);
-      setRegisteredActions([]);
-      setRegisteredActionsError("Agreed actions are unavailable because your care record session could not be confirmed.");
-      setError("The care history could not be loaded. Please try again.");
+    } catch {
+      if (!manual) {
+        setPersonId("");
+        setCurrentCaregiverId("");
+        setProjection(null);
+        setRegisteredActions([]);
+        setChanges([]);
+        setPatterns([]);
+        setAssessment(null);
+        setSourceFreshness(null);
+        personIdRef.current = "";
+        setRegisteredActionsError("Agreed actions are unavailable because your care record session could not be confirmed.");
+      }
+      setError("The care history could not be loaded. Your previously saved information is still shown when available. Please try again.");
     } finally {
       setLoading(false);
       if (!backgroundStarted) setRefreshing(false);
