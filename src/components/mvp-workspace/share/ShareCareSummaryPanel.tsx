@@ -109,7 +109,7 @@ export function ShareCareSummaryPanel({
 
   const fetchCareData = useCallback(async (): Promise<any> => {
     if (!getAnonymousAccessToken()) {
-      throw new Error("This browser has no server-issued care session. Open the saved care record before sharing.");
+      throw new Error("Open your Care Record before creating a summary.");
     }
     const session = await ensureAnonymousSession();
     const url = apiUrl(
@@ -146,7 +146,7 @@ export function ShareCareSummaryPanel({
       }
       setState("audience_selection");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load care information.");
+      setError(sanitizeCaregiverErrorMessage(e instanceof Error ? e.message : "Could not load care information."));
       setState("failed");
     }
   }, [fetchCareData]);
@@ -168,7 +168,7 @@ export function ShareCareSummaryPanel({
         setSummary(generated);
         setState("review");
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not prepare the summary.");
+        setError(sanitizeCaregiverErrorMessage(e instanceof Error ? e.message : "Could not prepare the summary."));
         setState("failed");
       }
     },
