@@ -186,7 +186,7 @@ export default function FollowUpsPage() {
     if (nextAssessment !== null) setAssessment(nextAssessment);
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
     else if (!reassessmentFailed) setAttentionWarning("");
-  }, [selectedDecisionId]);
+  }, []);
 
   useEffect(() => {
     let active = true;
