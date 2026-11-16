@@ -190,6 +190,8 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   console.log("FIRST_VISIT_CAPTURE_STATE", await page.locator(".cognitive-workspace").getAttribute("class").catch(() => null));
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
 
   const careSessionId = await page.evaluate(() => localStorage.getItem("solenos_care_session_id"));
   assert.ok(careSessionId, "first capture must retain the interaction session identity");
