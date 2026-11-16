@@ -331,7 +331,7 @@ export function linkDecisionOutcome(params: {
   outcomeText: string;
   eventId?: string;
   /** Required: outcomes must never be guessed onto the latest or a fuzzy-matched decision. */
-  decisionId: string;
+  decisionId?: string;
   status?: DecisionMemoryStatus;
   nowIso?: string;
 }): DecisionMemoryEntry | null {
