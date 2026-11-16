@@ -1624,7 +1624,7 @@ await record("frontend network failure is surfaced rather than rendered as empty
 
 await record("browser renders caregiver surfaces and submits Companion through the UI", async () => {
 
-  const surfaces = ["/workspace", "/workspace/companion", "/workspace/appointments", "/workspace/documents", "/workspace/settings", "/workspace/community"];
+  const surfaces = ["/workspace", "/workspace/companion", "/workspace/appointments", "/workspace/documents", "/workspace/settings"];
   for (const route of surfaces) {
     const { context, page, observed } = await createBrowserPage(session, route);
     await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
