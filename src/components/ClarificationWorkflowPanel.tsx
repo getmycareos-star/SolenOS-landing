@@ -452,13 +452,14 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       if (!updated || updated.id !== selectedQuestion.id || updated.person_id !== scopePersonId || updated.status !== status) {
         throw new Error("Question transition response not confirmed");
       }
-      setNotice(status === "answered"
+      const successNotice = status === "answered"
         ? "Your answer has been saved. It will remain separate from confirmed care information until reviewed."
         : status === "open" ? "This question has been reopened. Earlier answers are still saved."
-        : "No answer was recorded. This question remains open for later.");
+        : "No answer was recorded. This question remains open for later.";
       if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEntryOpen(false); }
       await loadAll();
       await loadHistory();
+      setNotice(successNotice);
     } catch {
       setError("That change could not be saved. Please try again.");
     } finally {
