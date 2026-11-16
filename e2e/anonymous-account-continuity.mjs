@@ -64,7 +64,7 @@ try {
   const pageA = await contextA.newPage();
   await connectRealBackend(pageA, { loseFirstAccountResponse: true });
   await pageA.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await pageA.getByRole("heading", { name: "Account", exact: true }).waitFor();
+  await pageA.getByRole("heading", { name: "Account access", exact: true }).waitFor();
   await pageA.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -126,7 +126,7 @@ try {
   const isolatedPage = await isolatedContext.newPage();
   await connectRealBackend(isolatedPage);
   await isolatedPage.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await isolatedPage.getByRole("heading", { name: "Account", exact: true }).waitFor();
+  await isolatedPage.getByRole("heading", { name: "Account access", exact: true }).waitFor();
   await isolatedPage.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -294,7 +294,7 @@ try {
   const pageB = await contextB.newPage();
   await connectRealBackend(pageB);
   await pageB.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await pageB.getByRole("heading", { name: "Account", exact: true }).waitFor();
+  await pageB.getByRole("heading", { name: "Account access", exact: true }).waitFor();
   await pageB.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
