@@ -465,6 +465,24 @@ await record("01c workspace links, browser back, More menu and account form vali
       deletionRequests.push(request.url());
     }
   });
+  // Capture storage at the first /start document script boundary. The start
+  // route may legitimately create a fresh anonymous session after deletion;
+  // inspecting storage after hydration would observe that new session rather
+  // than the cleared state produced by the delete action.
+  await disposable.page.addInitScript(() => {
+    if (window.location.pathname === "/start") {
+      const keys = [
+        "solenos_anonymous_access_token",
+        "solenos_backend_person_id",
+        "solenos_backend_caregiver_id",
+        "solenos_anonymous_session_expires_at",
+        "solenos_person_id",
+      ];
+      window.__solenosWorkspaceDeleteSnapshot = Object.fromEntries(
+        keys.map((key) => [key, window.localStorage.getItem(key)]),
+      );
+    }
+  });
   const deleteMenu = await disposable.page.getByRole("button", {
     name: "More care record actions", exact: true,
   }).click().then(() => disposable.page.getByRole("menu", { name: "Care record actions", exact: true }));
@@ -477,13 +495,10 @@ await record("01c workspace links, browser back, More menu and account form vali
   await deleteDialog.accept();
   await deleteClick;
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
-  const clearedLocalData = await disposable.page.evaluate(() => ({
-    token: localStorage.getItem("solenos_anonymous_access_token"),
-    personId: localStorage.getItem("solenos_backend_person_id"),
-    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
-    expiresAt: localStorage.getItem("solenos_anonymous_session_expires_at"),
-    legacyPersonId: localStorage.getItem("solenos_person_id"),
-  }));
+  const clearedLocalData = await disposable.page.evaluate(() =>
+    window.__solenosWorkspaceDeleteSnapshot ?? null
+  );
+  assert.ok(clearedLocalData, "the /start document must capture local identity before application bootstrap");
   assert.deepEqual(clearedLocalData, {
     token: null,
     personId: null,
