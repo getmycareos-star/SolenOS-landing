@@ -153,6 +153,8 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   const firstNote = "Mum has been forgetting whether she has eaten breakfast.";
   await page.getByRole("textbox", { name: "Describe your situation", exact: true }).fill(firstNote);
   await page.getByRole("button", { name: "Add to record", exact: true }).click();
+  await page.getByRole("heading", { name: "Here’s what we know so far.", exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
   await page.getByText("Caregiver note", { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
   await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
 
