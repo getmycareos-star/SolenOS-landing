@@ -95,7 +95,7 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
           <p className="panel-muted">You don’t need to organise everything before you begin. Start with one thing.</p>
         </section>
         <CognitiveWorkspace />
-        <p className="panel-muted">Your original updates are kept separate from suggestions. SolenOS will tell you when something has been saved or when it still needs attention.</p>
+        <p className="panel-muted">Your words stay yours. SolenOS keeps your original note and clearly shows when it has — or hasn’t — been saved.</p>
       </main>
     );
   }
