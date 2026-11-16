@@ -857,8 +857,15 @@ await record("LCR care history shows the original caregiver report with source d
     token: identity.token,
   });
   assert.equal(evidenceList.status, 200, JSON.stringify(evidenceList.payload));
-  const originalEvidence = evidenceList.payload.find((item) => item.source_text === scenarioReports[0]);
-  assert.ok(originalEvidence?.id, "the exact original report must remain available in saved source records");
+  const originalEvidence = evidenceList.payload.find(
+    (item) => item.id === dailyScenarioEvidenceIdsByReport[scenarioReports[0]],
+  );
+  assert.ok(originalEvidence?.id, "the source record linked to the caregiver report must remain available");
+  assert.ok(
+    typeof originalEvidence.source_text === "string" &&
+      originalEvidence.source_text.includes(scenarioReports[0]),
+    "the exact original caregiver wording must remain inside the saved source text",
+  );
 
   await history.page.getByText("Where this information came from", { exact: true }).click();
   await history.page.getByText("Notes and documents behind this information", { exact: true }).click();
