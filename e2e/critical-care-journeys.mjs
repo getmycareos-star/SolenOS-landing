@@ -964,6 +964,12 @@ await record("Daily Care saves and retrieves original reports without relying on
 await record("Care history opens the original caregiver report and its source details", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+  // Care history is intentionally inside the mobile navigation drawer. Open
+  // that drawer before interacting with its controls; the closed drawer is inert.
+  await history.page.getByRole("button", { name: "Open navigation", exact: true }).click();
+  await history.page.waitForFunction(() =>
+    document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
+  , undefined, { timeout: 5_000 });
 
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
