@@ -109,7 +109,7 @@ assert.match(read("src/components/app-shell/CareRecordOverview.tsx"), /Changes i
 assert.doesNotMatch(read("src/components/app-shell/CareRecordOverview.tsx"), /LONGITUDINAL RECORD/);
 assert.match(shell, /case "download_export"/);
 assert.match(shell, /intent={sharePanelIntent}/);
-assert.match(shell, /does NOT delete care information already stored on SolenOS servers/i);
+assert.match(shell, /It does not delete care information already saved in SolenOS/i, "workspace deletion must clearly distinguish local device data from saved care information");
 assert.match(shell, /getAnonymousAccessToken/);
 assert.match(shell, /revokeAnonymousSession/);
 assert.doesNotMatch(home, /startInUpdateMode|CognitiveWorkspace/);
