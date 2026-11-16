@@ -74,14 +74,10 @@ assert(claimPanel.includes("/uncertainty/claims/dependencies"), "claim dependenc
 assert(claimPanel.includes("/uncertainty/claims/"), "claim dependency UI must retrieve the persisted dependency graph");
 assert(claimPanel.includes("do not prove it is true"), "dependency links must not be presented as proof of claim truth");
 const dependencySubmit = claimPanel.slice(claimPanel.indexOf("async function submitDependency()"), claimPanel.indexOf("function updateLink"));
-assert(dependencySubmit.includes("let writeCompleted = false"), "dependency submission must track whether the write completed before refreshing");
-assert(dependencySubmit.indexOf("setDependencies(rows)") < dependencySubmit.indexOf('setDependencyNotice("The connection was saved.'),
-  "dependency success must not be shown until the saved graph has been reloaded");
-assert(dependencySubmit.includes("setDependencyNotice(\"\")"), "a failed confirmation must clear any success notice");
-assert(dependencySubmit.includes("The connection may have been saved, but the updated details could not be loaded"),
-  "a successful write followed by a failed refresh must not claim that no change was made");
-assert(dependencySubmit.includes("We couldn't confirm that this connection was saved"),
-  "an uncertain write result must not be presented as a definite failure or success");
+assert(dependencySubmit.includes("await postJSON"), "dependency links must be persisted before showing a success receipt");
+assert(dependencySubmit.indexOf("await postJSON") < dependencySubmit.indexOf('setDependencyNotice("The link was saved.'), "a success receipt must follow backend write confirmation");
+assert(dependencySubmit.includes("We couldn't confirm that this link was saved"), "failed dependency writes must not be shown as successful");
+assert(dependencySubmit.includes("The link was saved, but related care details could not be refreshed"), "a refresh failure after a confirmed write must not falsely claim that nothing was saved");
 console.log("PASS: claim dependency graph is connected to the LCR with failure-safe persistence messaging.");
 
 assert(panel.includes("/relationships"), "source-lineage UI must use the persisted relationship API");
