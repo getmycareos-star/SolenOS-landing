@@ -108,8 +108,9 @@ const humanValidation = read("../src/components/HumanValidationLoop.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
-assert.match(dailyCare, /caregiverSafeAssistantText\(item\.original_text\)/);
-assert.match(dailyCare, /caregiverSafeAssistantText\(item\.corrected_text\)/);
+assert.match(dailyCare, /item\.original_text\.trim\(\)/, "original caregiver reports must remain verbatim");
+assert.match(dailyCare, /item\.corrected_text\.trim\(\)/, "corrected caregiver reports must remain verbatim");
+assert.doesNotMatch(dailyCare, /caregiverSafeAssistantText\(item\.(original_text|corrected_text|reason)\)/, "assistant-output filtering must not be applied to caregiver source text");
 assert.doesNotMatch(dailyCare, /The latest information currently available in the care record|Processing has not started yet|Document understanding could not be completed|Document processing was stopped|Care Timeline|change and pattern assessments/);
 assert.match(dailyCare, /SolenOS has finished reading it/);
 assert.match(dailyCare, /Open care history/);
