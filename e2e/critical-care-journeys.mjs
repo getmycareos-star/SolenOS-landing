@@ -1915,6 +1915,12 @@ await record("clarification questions are linked, answerable, skippable and dura
   assert.equal(answeredQuestions.status, 200, JSON.stringify(answeredQuestions.payload));
   assert.equal(answeredQuestions.payload.find((row) => row.id === answerQuestion.id)?.status, "answered");
   await page.reload({ waitUntil: "domcontentloaded" });
+  // The LCR details and clarification archive intentionally collapse after
+  // navigation so the first care screen stays concise. Reopen them explicitly.
+  await careDetails.locator(":scope > summary").click();
+  await page.waitForFunction(() => document.querySelector("details.lcr-history-details.lcr-progressive-disclosure")?.open === true);
+  await clarificationDetails.locator(":scope > summary").click();
+  await page.waitForFunction(() => document.querySelector("#lcr-clarification-workflow > details")?.open === true);
   await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
   await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText("View answered and closed questions", { exact: true }).click();
