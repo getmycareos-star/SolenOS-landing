@@ -718,8 +718,15 @@ function PrivacyCard() {
         const registration = await navigator.serviceWorker.getRegistration("/");
         const subscription = await registration?.pushManager.getSubscription();
         if (subscription) {
-          await deleteJSON("/notifications/push/subscriptions", { endpoint: subscription.endpoint });
-          pushSubscriptionRemoved = await subscription.unsubscribe();
+          if (getAnonymousAccessToken()) {
+            await deleteJSON("/notifications/push/subscriptions", { endpoint: subscription.endpoint });
+          } else {
+            // Never create a replacement anonymous care session just to clean up
+            // an old push subscription after the caregiver has already signed out.
+            pushSubscriptionRemoved = false;
+          }
+          const browserUnsubscribed = await subscription.unsubscribe();
+          pushSubscriptionRemoved = pushSubscriptionRemoved && browserUnsubscribed;
         }
       }
     } catch {
