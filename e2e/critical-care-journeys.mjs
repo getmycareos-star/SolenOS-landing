@@ -2076,7 +2076,7 @@ finally:
   await page.getByText("How the care picture has changed", { exact: true })
     .click();
   const reloadedCard = page.locator("article.lcr-timeline-item").filter({
-    hasText: "Sleep changes",
+    hasText: "E2E sleep evidence review",
   });
   await reloadedCard.waitFor({ state: "visible", timeout: 20_000 });
   const reloadedHistory = reloadedCard.locator("details").filter({
