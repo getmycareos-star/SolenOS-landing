@@ -71,13 +71,15 @@ jobs:
         run: |
           set -euo pipefail
           backend_sha="$(curl -fsSL https://api.github.com/repos/getmycareos-star/SolenOS_backend/branches/main | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).commit.sha))')"
-          runs="$(curl -fsSL -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/getmycareos-star/SolenOS_backend/actions/runs?branch=main&per_page=100")"
+          runs_file=/tmp/solenos-backend-runs.json
+          curl -fsSL -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/getmycareos-star/SolenOS_backend/actions/runs?branch=main&per_page=100" -o "$runs_file"
           git init --quiet /tmp/solenos-backend-source
           git -C /tmp/solenos-backend-source remote add origin https://github.com/getmycareos-star/SolenOS_backend.git
           git -C /tmp/solenos-backend-source fetch --quiet --depth=200 origin main
-          BACKEND_SHA="$backend_sha" RUNS_JSON="$runs" node <<'NODE'
+          BACKEND_SHA="$backend_sha" RUNS_FILE="$runs_file" node <<'NODE'
           const { execFileSync } = require("node:child_process");
-          const runs = JSON.parse(process.env.RUNS_JSON).workflow_runs || [];
+          const { readFileSync } = require("node:fs");
+          const runs = JSON.parse(readFileSync(process.env.RUNS_FILE, "utf8")).workflow_runs || [];
           const backendSha = process.env.BACKEND_SHA;
           const checks = [
             {
