@@ -703,7 +703,8 @@ function PrivacyCard() {
       }, ...current]);
       show("Your care-record erasure request was received.", "success");
     } catch {
-      setErasureError("We couldn't submit your request. Your care record has not been erased. Check your connection and try again.");
+      await loadErasureHistory();
+      setErasureError("We couldn't submit a new request. If a request is already open, it will appear in your request history. Your care record has not been erased.");
       show("Your erasure request wasn't submitted.", "error");
     } finally {
       setErasureSubmitting(false);
