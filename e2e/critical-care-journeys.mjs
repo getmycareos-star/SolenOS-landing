@@ -2040,19 +2040,21 @@ finally:
   await situationCard.getByLabel("Status shared by caregiver").selectOption("worsening");
   await situationCard.getByLabel("Reason for this status (required)").fill(reason);
   await situationCard.getByRole("button", { name: "Save status", exact: true }).click();
-  await situationCard.getByText("Previous status updates (1)", { exact: true })
-    .waitFor({ timeout: 20_000 });
-  await situationCard.locator("details").getByText("Caregiver reports worsening", { exact: true }).waitFor();
-  await situationCard.getByText(reason, { exact: true }).waitFor();
+  const statusHistory = situationCard.locator("details");
+  await statusHistory.locator(":scope > summary").waitFor({ timeout: 20_000 });
+  await statusHistory.locator(":scope > summary").click();
+  await statusHistory.getByText("Caregiver reports worsening", { exact: true }).waitFor();
+  await statusHistory.getByText(reason, { exact: true }).waitFor();
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByText("Earlier care history", { exact: true }).click();
   const reloadedCard = page.locator("article.lcr-timeline-item").filter({
     hasText: "Sleep changes",
   });
-  await reloadedCard.getByText("Previous status updates (1)", { exact: true })
-    .waitFor({ timeout: 20_000 });
-  await reloadedCard.getByText(reason, { exact: true }).waitFor();
+  const reloadedHistory = reloadedCard.locator("details");
+  await reloadedHistory.locator(":scope > summary").waitFor({ timeout: 20_000 });
+  await reloadedHistory.locator(":scope > summary").click();
+  await reloadedHistory.getByText(reason, { exact: true }).waitFor();
   await verifyMobile(page);
   await context.close();
 });
