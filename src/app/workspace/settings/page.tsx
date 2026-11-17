@@ -711,43 +711,54 @@ function PrivacyCard() {
     }
   };
 
-  const clearLocalData = () => {
-    const keys = [
-      // identity
-      "solenos_durable_care_key",
-      "solenos_care_session_id",
-      "solenos_telemetry_user_id",
-      // Current server-issued session credentials. Clearing them removes this browser's access.
-      "solenos_anonymous_access_token",
-      "solenos_backend_person_id",
-      "solenos_backend_caregiver_id",
-      "solenos_anonymous_session_expires_at",
-      "solenos_person_id",
-      "solenos_device_installation_key_v1",
-      // record
-      "solenos_situations",
-      "solenos_timeline",
-      "solenos_active_situation_id",
-      "solenos_care_recipient_display_name",
-      "solenos_care_profile",
-      "solenos_care_recipient_id",
-      "solenos_last_input_raw",
-      // preferences
-      "solenos_notif_prefs",
-      "solenos_data_training",
-      "solenos_language_preference",
-      "solenos_early_access_consent_v1",
-      "onboarding_complete",
-      "onboarding_complete_at",
-    ];
-    keys.forEach((k) => {
+  const clearLocalData = async () => {
+    let serverSessionRevoked = !getAnonymousAccessToken();
+    if (!serverSessionRevoked) {
       try {
-        window.localStorage.removeItem(k);
+        await revokeAnonymousSession();
+        serverSessionRevoked = true;
       } catch {
-        /* ignore */
+        // Still clear local data, but do not claim that the server session was revoked.
       }
-    });
-    show("Saved information on this device was cleared", "success");
+    }
+
+    // Clear every SolenOS-owned browser key, including keys added by newer
+    // features, without deleting unrelated data stored by other apps on this origin.
+    try {
+      const ownedKeys = Array.from({ length: window.localStorage.length }, (_, index) =>
+        window.localStorage.key(index)
+      ).filter((key): key is string =>
+        Boolean(key && (key.startsWith("solenos_") || key === "onboarding_complete" || key === "onboarding_complete_at"))
+      );
+      ownedKeys.forEach((key) => window.localStorage.removeItem(key));
+    } catch {
+      // Continue clearing other browser storage even if localStorage is unavailable.
+    }
+
+    try {
+      window.sessionStorage.clear();
+    } catch {
+      // Session storage may be unavailable in restricted browser contexts.
+    }
+
+    // Clear visible SolenOS notifications but preserve the service worker and
+    // push subscription settings; those have a separate notification control.
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration("/");
+        const notifications = await registration?.getNotifications();
+        notifications?.forEach((notification) => notification.close());
+      }
+    } catch {
+      // Notification cleanup must not prevent local data removal.
+    }
+
+    show(
+      serverSessionRevoked
+        ? "Saved SolenOS information was cleared from this device."
+        : "Saved SolenOS information was cleared, but server sign-out could not be confirmed. The previous session may remain valid until it expires.",
+      serverSessionRevoked ? "success" : "error",
+    );
     setConfirmClear(false);
     setTimeout(() => {
       window.location.href = "/start";
