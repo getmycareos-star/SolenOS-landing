@@ -206,8 +206,13 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
-  await page.locator(".care-card-understanding").getByText(firstNote, { exact: false })
-    .waitFor({ state: "visible", timeout: 10_000 });
+  const firstCaptureUnderstanding = await page.locator(".care-card-understanding").innerText();
+  assert.match(
+    firstCaptureUnderstanding,
+    /first update about E2E first visit capture|one care detail about E2E first visit capture/i,
+    "one first-capture observation must not be described as several care concerns",
+  );
+  assert.doesNotMatch(firstCaptureUnderstanding, /several care concerns/i);
   assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
 
   const browserIdentity = await page.evaluate(() => ({
