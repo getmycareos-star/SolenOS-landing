@@ -1895,7 +1895,12 @@ await record("clarification questions are linked, answerable, skippable and dura
     skipQuestion.status,
     "leaving the question unanswered must preserve its original open status",
   );
-  assert.equal(questions.payload.find((row) => row.id === answerQuestion.id)?.status, "answered");
+  const answeredQuestions = await request(
+    "/api/v1/uncertainty/questions/" + identity.personId + "?status=answered",
+    { token: identity.token },
+  );
+  assert.equal(answeredQuestions.status, 200, JSON.stringify(answeredQuestions.payload));
+  assert.equal(answeredQuestions.payload.find((row) => row.id === answerQuestion.id)?.status, "answered");
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
   await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
