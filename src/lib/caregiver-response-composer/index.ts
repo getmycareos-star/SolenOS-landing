@@ -2229,6 +2229,23 @@ connection_note = scrubPasteField(connection_note);
     }
   }
 
+  // Fail closed when the composer cannot produce a grounded account of what is happening.
+  // Generic record-status copy is not a situation summary and must not unlock Clarity.
+  const groundedSituationSummary =
+    Boolean(situation_summary?.trim()) && !containsWeakOrientation(situation_summary);
+  if (situation_summary && !groundedSituationSummary) {
+    situation_summary = null;
+  }
+  const hasGroundedCurrentUnderstanding =
+    groundedSituationSummary || what_we_know.length > 0;
+  if (show_clarity && !hasGroundedCurrentUnderstanding) {
+    show_clarity = false;
+    what_matters_now = null;
+    what_can_wait = null;
+    what_may_become_serious = null;
+    follow_up_items.length = 0;
+  }
+
   const composed: ComposedCaregiverResponse = {
     recognition_line,
     confirmation,
