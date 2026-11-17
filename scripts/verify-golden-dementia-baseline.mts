@@ -781,6 +781,25 @@ console.log("✓ structural classification (varied wording)");
     "NL unease is care-reality anchor",
   );
 
+  // The caregiver's original observation remains an anchor when an
+  // extracted human_fact is too vague to classify.
+  assert.equal(
+    observationCareFact({
+      human_fact: "A change was reported.",
+      raw_text: "Mum has been forgetting whether she has eaten breakfast.",
+    }),
+    "Mum has been forgetting whether she has eaten breakfast.",
+    "rejected extracted summary falls back to independently valid caregiver source text",
+  );
+  assert.equal(
+    observationCareFact({
+      human_fact: "A change was reported.",
+      raw_text: "I am trying SolenOS for the first time and need help organizing notes.",
+    }),
+    null,
+    "rejected extracted summary must not turn product/session meta into care evidence",
+  );
+
   // Meta must not inherit thread continuity
   assert.equal(
     isCareRealityAnchorText("thanks for helping me organize this", {
