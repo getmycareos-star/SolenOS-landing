@@ -1303,7 +1303,7 @@ export function composeCaregiverResponse(params: {
     }
 }
 
-  const show_clarity = facets.show_clarity;
+  let show_clarity = facets.show_clarity;
   let what_matters_now: string | null = null;
   let what_can_wait: string | null = null;
   let what_may_become_serious: string | null = null;
@@ -2037,6 +2037,18 @@ const heldEvidenceTexts = situation.observations
       observationCareFact({ human_fact: o.human_fact, raw_text: o.raw_text }),
     )
     .filter((f): f is string => Boolean(f));
+  const hasHappeningForClarity =
+    Boolean(situation_summary?.trim()) || what_we_know.length > 0;
+  if (show_clarity && !hasHappeningForClarity) {
+    // Never let a relief panel claim orientation when the composed response
+    // has no actual account of what is happening. Keep the saved note intact;
+    // gather more context instead of throwing and blanking the record.
+    show_clarity = false;
+    what_matters_now = null;
+    what_can_wait = null;
+    what_may_become_serious = null;
+  }
+
   const riskFromEvidence = inferRiskFromHeldCareEvidence({
     heldTexts: heldEvidenceTexts,
     latestRawText,
