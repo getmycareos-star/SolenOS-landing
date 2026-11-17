@@ -720,6 +720,10 @@ assert(
     firstCognition.what_we_know.length > 0,
   "G20 must never show Clarity without a grounded account of what is happening",
 );
+assert(
+  !/several care concerns/i.test(firstCognition.situation_summary ?? ""),
+  "G20 must not pluralize a single first caregiver report",
+);
 assertResponseAcceptanceGate({
   composed: firstCognition,
   careMemoryState: "new_care_reality",
