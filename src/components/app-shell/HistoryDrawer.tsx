@@ -1070,6 +1070,14 @@ export function HistoryDrawer() {
     if (open && !hasLoaded && !loading) void loadHistory();
   }, [open, hasLoaded, loading, loadHistory]);
 
+  useEffect(() => {
+    const refreshAfterCareRecordWrite = () => {
+      void loadHistory(true);
+    };
+    window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+    return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+  }, [loadHistory]);
+
 
 
   const visibleRecords = useMemo(() => {
