@@ -94,7 +94,19 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
         }
       }
       if (!response) throw new Error("Backend proxy did not return a response after transient retries");
-      await route.fulfill({ response });
+      // Materialize the upstream body before fulfilling. Passing the APIResponse
+      // object through can race with browser navigation/teardown and produce
+      // "Fetch response has been disposed" even when the backend answered.
+      const responseBody = await response.body();
+      const responseHeaders = { ...response.headers() };
+      delete responseHeaders["content-encoding"];
+      delete responseHeaders["content-length"];
+      delete responseHeaders["transfer-encoding"];
+      await route.fulfill({
+        status: response.status(),
+        headers: responseHeaders,
+        body: responseBody,
+      });
     } catch (error) {
       // Closing a test context may cancel API requests before Playwright reports
       // page.isClosed(). Ignore only that explicit target-closed teardown error.
@@ -1836,6 +1848,74 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await companion.context.close();
 });
 
+
+
+await record("Companion report review stays separate from conversation and persists only after caregiver acceptance", async () => {
+  const caregiverIdentity = auth(session);
+  const observationText = "Mum woke up three times last night.";
+  const conversationId = unique("companion-review-session");
+  const messageId = unique("companion-review-message");
+  const seed = [
+    "import sys",
+    "from app.core.database import SessionLocal",
+    "from app.models.collaboration import ConversationSession, ConversationMessage",
+    "",
+    "person_id, caregiver_id, session_id, message_id, source_text = sys.argv[1:6]",
+    "db = SessionLocal()",
+    "try:",
+    "    db.add(ConversationSession(id=session_id, person_id=person_id, caregiver_id=caregiver_id, title='Caregiver report review test', status='active'))",
+    "    db.flush()",
+    "    db.add(ConversationMessage(id=message_id, session_id=session_id, role='user', content=source_text, client_turn_id=None))",
+    "    db.commit()",
+    "finally:",
+    "    db.close()",
+  ].join("\n");
+  execFileSync(
+    "python",
+    ["-c", seed, caregiverIdentity.personId, caregiverIdentity.caregiverId, conversationId, messageId, observationText],
+    { cwd: "backend-service/backend", env: process.env, stdio: "pipe" },
+  );
+
+  const proposal = await request(
+    "/api/v1/companion/care-updates/from-message/" + encodeURIComponent(messageId),
+    { token: caregiverIdentity.token, method: "POST", body: { confirm_care_report: true } },
+  );
+  assert.equal(proposal.status, 200, JSON.stringify(proposal.payload));
+  assert.equal(proposal.payload.proposal.status, "pending_authorization");
+  assert.equal(proposal.payload.proposal.proposed_change.asserted_value, observationText);
+
+  const beforeAcceptance = await request(
+    "/api/v1/care-continuity/current-care?limit_per_source=50",
+    { token: caregiverIdentity.token },
+  );
+  assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
+  assert.equal(
+    JSON.stringify(beforeAcceptance.payload).includes(observationText),
+    false,
+    "a pending Companion proposal must not update the Care Record",
+  );
+
+  const { context, page } = await createBrowserPage(session, "/workspace/companion");
+  const reviewCard = page.locator(".companion-care-update").filter({ hasText: observationText }).last();
+  await reviewCard.waitFor({ timeout: 20_000 });
+  await reviewCard.getByRole("button", { name: "Add to Care Record" }).click();
+  await page.getByText(
+    "Your report was added to the Care Record. A healthcare professional has not confirmed it.",
+    { exact: true },
+  ).waitFor({ timeout: 20_000 });
+
+  const afterAcceptance = await request(
+    "/api/v1/care-continuity/current-care?limit_per_source=50",
+    { token: caregiverIdentity.token },
+  );
+  assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
+  assert.ok(
+    JSON.stringify(afterAcceptance.payload).includes(observationText),
+    "the explicitly accepted Companion report must appear in the same persisted Care Record",
+  );
+  await verifyMobile(page);
+  await context.close();
+});
 
 
 await record("clarification questions are linked, answerable, skippable and durable", async () => {
