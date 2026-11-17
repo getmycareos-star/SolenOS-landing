@@ -214,6 +214,15 @@ export function assertResponseAcceptanceGate(params: ResponseAcceptanceInput): v
 
   const awaitingCare =
     params.careWorthyCount <= 0 || !params.latestIsCareWorthy;
+  // A first saved report may be valid before the system can safely interpret it.
+  // In that case, preserve the report and an open question; do not force a summary.
+  const firstCaptureCanRemainUninterpreted =
+    careMemoryState === "new_care_reality" &&
+    observationCount <= 1 &&
+    !composed.show_clarity &&
+    !composed.situation_summary?.trim() &&
+    (composed.what_we_know?.length ?? 0) === 0 &&
+    !composed.what_changed?.trim();
 
   if (turnClass === "identity_mismatch") {
     if ((composed.still_unclear?.length ?? 0) > 1) {
@@ -287,6 +296,7 @@ export function assertResponseAcceptanceGate(params: ResponseAcceptanceInput): v
       Boolean(composed.situation_summary?.trim()) ||
       Boolean(composed.what_changed?.trim()) ||
       turnClass === "emotional_only" ||
+      firstCaptureCanRemainUninterpreted ||
       (!composed.show_clarity &&
         !params.latestIsCareWorthy &&
         Boolean(composed.recognition_line?.trim()));
@@ -404,7 +414,7 @@ export function assertResponseAcceptanceGate(params: ResponseAcceptanceInput): v
     }
   }
 
-  if (!skipStructure && !awaitingCare) {
+  if (!skipStructure && !awaitingCare && !firstCaptureCanRemainUninterpreted) {
     const understanding = evaluateCaregiverUnderstandingOutput(composed);
     if (!understanding.passed) {
       throw new Error(
