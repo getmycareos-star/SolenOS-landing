@@ -809,6 +809,13 @@ console.log("✓ structural classification (varied wording)");
   assert.equal(firstCaptureFacets.show_clarity, false, "one incomplete first capture must stay gather-first");
   assert.equal(firstCaptureFacets.show_what_we_know, true, "the first saved observation must remain visible");
 
+  const firstCaptureResponse = composeCaregiverResponse({
+    turn: firstCaptureTurn,
+    latestRawText: firstCaptureText,
+    kind: classifyCareEventKind(firstCaptureText),
+  });
+  assert.equal(firstCaptureResponse.show_clarity, false, "Clarity must not render without an actual happening summary or held facts");
+
   // Natural-language unease aligns with care anchor (emotional/NL path)
   assert.equal(
     isStandaloneCareRealityAnchor("Something feels off with her this week."),
