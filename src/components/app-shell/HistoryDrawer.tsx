@@ -1310,7 +1310,9 @@ export function HistoryDrawer() {
                           <div className="history-event-list">
                             {group.records.map((record) => {
                               const category = categoryFor(record);
+                              const title = caregiverSafeAssistantText(record.title) || "Care update";
                               const description = parseDescription(record.description);
+                              const distinctDescription = description?.trim() !== title.trim() ? description : null;
                               return (
                                 <article key={record.id} className="history-event-card">
                                   <button
@@ -1324,8 +1326,8 @@ export function HistoryDrawer() {
                                       <span className="history-event-category">{categoryLabel(category, record.event_type)}</span>
                                       <span className="history-event-time">{formatRecordDate(record)}</span>
                                     </span>
-                                    <strong>{caregiverSafeAssistantText(record.title) || "Care update"}</strong>
-                                    {description && <span className="history-event-description">{description}</span>}
+                                    <strong>{title}</strong>
+                                    {distinctDescription && <span className="history-event-description">{distinctDescription}</span>}
                                     {(record.follow_up_candidate || record.attention_candidate) && (
                                       <span className="history-event-flag">Flagged for follow-up</span>
                                     )}
