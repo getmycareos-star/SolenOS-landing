@@ -58,10 +58,11 @@ export function projectCareSituationOrientation(
   const what_is_happening =
     factLines.length >= 2
       ? `${who}: ${factLines.slice(0, 3).join(" · ")}`
-      : factLines[0] ??
-        (u.context_only[0]
+      : factLines.length === 1
+        ? `One care detail about ${who} is saved. More context can be added as you learn more.`
+        : u.context_only[0]
           ? `Load and fragmented pieces are present — care details still need to be placed.`
-          : `A care situation is being held for ${who}.`);
+          : `A care situation is being held for ${who}.`;
 
   const what_matters_now =
     u.matters_now.length > 0
@@ -91,7 +92,6 @@ export function projectCareSituationOrientation(
       : null);
 
   const follow_up_items = [
-    ...u.continuity_hooks.slice(0, 2).map((h) => `Keep tracking: ${h.slice(0, 120)}`),
     ...(u.possible_links.length > 0
       ? ["Track whether changes and the recent care decision continue to move together."]
       : []),
