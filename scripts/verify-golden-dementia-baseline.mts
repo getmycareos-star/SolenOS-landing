@@ -46,7 +46,7 @@ import {
   latestObservationIsCareWorthy,
   careRealityObservations,
 } from "../src/lib/progressive-understanding/questions";
-import { classifyCaregiverTurn } from "../src/lib/response-behavior";
+import { classifyCaregiverTurn, selectResponseFacets } from "../src/lib/response-behavior";
 import { evaluateSourceConflict } from "../src/lib/source-conflict";
 import { composePerspectiveAttribution } from "../src/lib/perspective-attribution";
 
@@ -787,6 +787,27 @@ console.log("✓ structural classification (varied wording)");
     "Mum has been forgetting whether she has eaten breakfast.",
     "the caregiver's original memory-related observation survives a weak extracted summary",
   );
+
+  const firstCaptureText = "Mum has been forgetting whether she has eaten breakfast.";
+  const firstCaptureTurn = ingestActiveCareObservation({
+    caregiverId: "cg_first_capture_memory",
+    rawText: firstCaptureText,
+    kind: classifyCareEventKind(firstCaptureText),
+    nowIso: "2026-11-17T10:00:00.000Z",
+  });
+  const firstCaptureClass = classifyCaregiverTurn({
+    latestRawText: firstCaptureText,
+    kind: classifyCareEventKind(firstCaptureText),
+    turn: firstCaptureTurn,
+  });
+  const firstCaptureFacets = selectResponseFacets({
+    turn: firstCaptureTurn,
+    turnClass: firstCaptureClass,
+    gatheringContext: true,
+    latestRawText: firstCaptureText,
+  });
+  assert.equal(firstCaptureFacets.show_clarity, false, "one incomplete first capture must stay gather-first");
+  assert.equal(firstCaptureFacets.show_what_we_know, true, "the first saved observation must remain visible");
 
   // Natural-language unease aligns with care anchor (emotional/NL path)
   assert.equal(
