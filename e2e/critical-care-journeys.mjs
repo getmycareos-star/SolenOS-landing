@@ -2013,7 +2013,10 @@ finally:
   assert.ok(persisted.payload.some((row) => row.id === situationId));
 
   const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
-  await page.getByText("Earlier care history", { exact: true }).click();
+  await page.getByRole("button", { name: "View care history", exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/workspace/timeline", { timeout: 15_000 });
+  await page.getByText("How the care picture has changed", { exact: true }).click();
+  await page.getByText("Care topics", { exact: true }).waitFor({ timeout: 20_000 });
   const situationCard = page.locator("article.lcr-timeline-item").filter({
     hasText: "Sleep changes",
   });
