@@ -774,6 +774,20 @@ console.log("✓ structural classification (varied wording)");
     "thread-context makes thin note a care anchor",
   );
 
+  assert.equal(
+    isStandaloneCareRealityAnchor("Mum has been forgetting whether she has eaten breakfast."),
+    true,
+    "an everyday memory-related care observation is a care-reality anchor",
+  );
+  assert.equal(
+    observationCareFact({
+      human_fact: "A change was reported.",
+      raw_text: "Mum has been forgetting whether she has eaten breakfast.",
+    }),
+    "Mum has been forgetting whether she has eaten breakfast.",
+    "the caregiver's original memory-related observation survives a weak extracted summary",
+  );
+
   // Natural-language unease aligns with care anchor (emotional/NL path)
   assert.equal(
     isStandaloneCareRealityAnchor("Something feels off with her this week."),
