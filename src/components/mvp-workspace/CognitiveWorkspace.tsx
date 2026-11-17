@@ -579,6 +579,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         );
       }
       setSavedEventReceipt(verifiedReceipt);
+      if (verifiedReceipt?.id) {
+        window.dispatchEvent(new Event("careRecordUpdated"));
+      }
 
       situationData = ({
         ...situationData,
