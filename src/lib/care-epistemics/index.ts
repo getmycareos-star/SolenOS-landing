@@ -197,7 +197,7 @@ export function looksLikeConcreteObservation(text: string): boolean {
   // Messy typing: "herefusedto" still counts as refusal structure (not a topic keyword product rule).
   if (/refus\w*/i.test(t)) return true;
   return (
-    /\b(wouldn't|would not|won't|could not|couldn't|needed help|forgot|missed|left .{0,24} (?:on|open|running)|got lost|couldn't find|threw|hit|yell\w*|upset during|during .{0,20}|took|didn't take|did not take)\b/i.test(
+    /\b(wouldn't|would not|won't|could not|couldn't|needed help|forgot|forget(?:s|ting)?|missed|left .{0,24} (?:on|open|running)|got lost|couldn't find|threw|hit|yell\w*|upset during|during .{0,20}|took|didn't take|did not take)\b/i.test(
       t,
     ) ||
     // Hard event structure (something happened) — not a topic-quiz product rule
