@@ -2037,7 +2037,7 @@ finally:
     .waitFor({ timeout: 15_000 });
 
   const reason = "The caregiver reports the sleep disruption is worse than the previous night.";
-  await situationCard.getByLabel("Caregiver-reported status").selectOption("worsening");
+  await situationCard.getByLabel("Status shared by caregiver").selectOption("worsening");
   await situationCard.getByLabel("Reason for this status (required)").fill(reason);
   await situationCard.getByRole("button", { name: "Save status", exact: true }).click();
   await situationCard.getByText("Previous status updates (1)", { exact: true })
