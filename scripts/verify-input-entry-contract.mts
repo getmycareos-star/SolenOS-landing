@@ -205,5 +205,5 @@ assert(settingsPage.includes('getJSON("/notifications/unread-count")'));
 assert(settingsPage.includes('patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {})'));
 assert(settingsPage.includes("Notification inbox"));
 const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "notifications", "page.tsx"), "utf8");
-assert(notificationPage.includes('redirect("/workspace/settings#settings-notifications")'));
+assert(notificationPage.includes('router.replace("/workspace/settings#settings-notifications")'));
 console.log("✓ Notification inbox and preferences live inside Settings; old notification URL redirects there");
