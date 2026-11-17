@@ -1851,6 +1851,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
 
 
 await record("Companion report review stays separate from conversation and persists only after caregiver acceptance", async () => {
+  const caregiverIdentity = auth(session);
   const observationText = "Mum woke up three times last night.";
   const conversationId = unique("companion-review-session");
   const messageId = unique("companion-review-message");
@@ -1870,13 +1871,13 @@ await record("Companion report review stays separate from conversation and persi
   ].join("\n");
   execFileSync(
     "python",
-    ["-c", seed, identity.personId, identity.caregiverId, conversationId, messageId, observationText],
+    ["-c", seed, caregiverIdentity.personId, caregiverIdentity.caregiverId, conversationId, messageId, observationText],
     { cwd: "backend-service/backend", env: process.env, stdio: "pipe" },
   );
 
   const proposal = await request(
     "/api/v1/companion/care-updates/from-message/" + encodeURIComponent(messageId),
-    { token: identity.token, method: "POST", body: { confirm_care_report: true } },
+    { token: caregiverIdentity.token, method: "POST", body: { confirm_care_report: true } },
   );
   assert.equal(proposal.status, 200, JSON.stringify(proposal.payload));
   assert.equal(proposal.payload.proposal.status, "pending_authorization");
@@ -1884,7 +1885,7 @@ await record("Companion report review stays separate from conversation and persi
 
   const beforeAcceptance = await request(
     "/api/v1/care-continuity/current-care?limit_per_source=50",
-    { token: identity.token },
+    { token: caregiverIdentity.token },
   );
   assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
   assert.equal(
@@ -1904,7 +1905,7 @@ await record("Companion report review stays separate from conversation and persi
 
   const afterAcceptance = await request(
     "/api/v1/care-continuity/current-care?limit_per_source=50",
-    { token: identity.token },
+    { token: caregiverIdentity.token },
   );
   assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
   assert.ok(
