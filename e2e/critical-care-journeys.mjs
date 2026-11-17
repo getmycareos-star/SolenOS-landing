@@ -211,13 +211,21 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
-  // The history list lives in the mobile navigation drawer. Open it before
-  // asserting that the newly saved event is visible to the caregiver.
-  await page.getByRole("button", { name: "Open navigation", exact: true }).click();
-  const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
-    .filter({ hasText: firstNote });
+  // On narrow screens the history list is inside the navigation drawer. It may
+  // already be open (or the viewport may use the expanded layout), so open it only
+  // when the control is actually present and visible.
+  const openNavigation = page.getByRole("button", { name: "Open navigation", exact: true });
+  if (await openNavigation.count() > 0 && await openNavigation.isVisible()) {
+    await openNavigation.click();
+  }
+  const savedHistoryRecord = page.locator(".history-event-list .history-event-card")
+    .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
+  assert.equal(
+    await page.locator(".history-event-list .history-event-card").filter({ hasText: firstNote }).count(),
+    1,
+    "the saved care update should appear exactly once in the visible history list",
+  );
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   await page.locator(".care-card-understanding").getByText(firstNote, { exact: false })
     .waitFor({ state: "visible", timeout: 10_000 });
