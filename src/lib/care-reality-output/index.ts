@@ -38,6 +38,8 @@ export const WEAK_ORIENTATION_PHRASES = [
   "unknowns stay open until clearer evidence",
   "beginning to understand this care situation",
   "your first care detail is saved",
+  "this first update about",
+  "this first care update is saved",
   "several care concerns are gathered from what you shared",
 ] as const;
 
