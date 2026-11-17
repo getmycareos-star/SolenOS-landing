@@ -712,6 +712,21 @@ function PrivacyCard() {
   };
 
   const clearLocalData = async () => {
+    let pushSubscriptionRemoved = true;
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration("/");
+        const subscription = await registration?.pushManager.getSubscription();
+        if (subscription) {
+          await deleteJSON("/notifications/push/subscriptions", { endpoint: subscription.endpoint });
+          pushSubscriptionRemoved = await subscription.unsubscribe();
+        }
+      }
+    } catch {
+      // Do not claim push removal when the server or browser rejected it.
+      pushSubscriptionRemoved = false;
+    }
+
     let serverSessionRevoked = !getAnonymousAccessToken();
     if (!serverSessionRevoked) {
       try {
@@ -741,8 +756,8 @@ function PrivacyCard() {
       // Session storage may be unavailable in restricted browser contexts.
     }
 
-    // Clear visible SolenOS notifications but preserve the service worker and
-    // push subscription settings; those have a separate notification control.
+    // Clear visible SolenOS notifications. Keep the service worker installed
+    // so the browser can register a fresh subscription if the caregiver opts in later.
     try {
       if ("serviceWorker" in navigator) {
         const registration = await navigator.serviceWorker.getRegistration("/");
@@ -753,11 +768,15 @@ function PrivacyCard() {
       // Notification cleanup must not prevent local data removal.
     }
 
+    const cleanupWarnings = [
+      ...(!serverSessionRevoked ? ["server sign-out could not be confirmed; the previous session may remain valid until it expires"] : []),
+      ...(!pushSubscriptionRemoved ? ["push notification removal could not be confirmed; check Notification settings and your browser permissions"] : []),
+    ];
     show(
-      serverSessionRevoked
-        ? "Saved SolenOS information was cleared from this device."
-        : "Saved SolenOS information was cleared, but server sign-out could not be confirmed. The previous session may remain valid until it expires.",
-      serverSessionRevoked ? "success" : "error",
+      cleanupWarnings.length
+        ? `Saved SolenOS information was cleared, but ${cleanupWarnings.join("; ")}.`
+        : "Saved SolenOS information and this browser's push subscription were cleared.",
+      cleanupWarnings.length ? "error" : "success",
     );
     setConfirmClear(false);
     setTimeout(() => {
