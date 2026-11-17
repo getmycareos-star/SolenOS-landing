@@ -199,6 +199,9 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
+  // The history list lives in the mobile navigation drawer. Open it before
+  // asserting that the newly saved event is visible to the caregiver.
+  await page.getByRole("button", { name: "Open navigation", exact: true }).click();
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote });
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
