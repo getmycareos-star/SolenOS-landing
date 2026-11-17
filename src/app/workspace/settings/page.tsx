@@ -670,6 +670,7 @@ function PrivacyCard() {
     setErasureHistoryLoading(true);
     setErasureError("");
     try {
+      await ensureAnonymousSession();
       const result = await getJSON("/privacy/requests") as { requests?: Array<{ id: string; request_type: string; status: string; requested_at: string | null }> };
       setErasureHistory((result.requests ?? []).filter((item) => item.request_type === "deletion"));
     } catch {
