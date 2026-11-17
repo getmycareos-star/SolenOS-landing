@@ -1892,7 +1892,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   await page.getByText(answerQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().click();
   await page.getByRole("button", { name: "Add what you know", exact: true }).click();
-  const exactAnswer = "I observed this on " + tag + ".";
+  const exactAnswer = "I noticed this during the morning visit at 8:17 AM.";
   const exactProvenance = "I was present and recorded it in the care note.";
   await page.getByLabel("What did you observe or report?").fill(exactAnswer);
   await page.getByLabel("When did you observe this?").fill(exactProvenance);
