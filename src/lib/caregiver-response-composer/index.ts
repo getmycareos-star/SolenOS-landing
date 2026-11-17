@@ -825,6 +825,7 @@ export function composeCaregiverResponse(params: {
         heldFocus: extractionFocusLine,
         subjectLabel: named,
         latestRawText,
+        careWorthyCount,
       });
       if (recognition && !/i understand how you feel|i'm here for you/i.test(recognition)) {
         recognition_line = scrub(recognition);
