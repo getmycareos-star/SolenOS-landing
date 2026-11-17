@@ -252,9 +252,12 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const [claimRows, questionRows, evidenceRows] = await Promise.all([
+      const [claimRows, questionRows, answeredRows, declinedRows, closedRows, evidenceRows] = await Promise.all([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
+        getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}?status=answered`),
+        getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}?status=declined`),
+        getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}?status=closed`),
         getJSON("/care-continuity/evidence?limit=100"),
       ]);
       let recommendation: {
@@ -278,7 +281,10 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         setRecommendationUnavailable(true);
       }
       assertScopedRows(claimRows, sessionPersonId, "claims");
-      assertScopedRows(questionRows, sessionPersonId, "questions");
+      assertScopedRows(questionRows, sessionPersonId, "active questions");
+      assertScopedRows(answeredRows, sessionPersonId, "answered questions");
+      assertScopedRows(declinedRows, sessionPersonId, "declined questions");
+      assertScopedRows(closedRows, sessionPersonId, "closed questions");
       assertScopedRows(evidenceRows, sessionPersonId, "evidence");
       if (!recommendation || recommendation.person_id !== sessionPersonId ||
           !Array.isArray(recommendation.eligible_question_ids) ||
@@ -290,7 +296,15 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         throw new Error("Invalid or cross-record recommended question response");
       }
       const loadedClaims = claimRows as Claim[];
-      const loadedQuestions = questionRows as Question[];
+      // The default endpoint intentionally returns only active caregiver work.
+      // Fetch completed states separately so the caregiver can still review the
+      // durable answer and provenance archive without expanding the active queue.
+      const loadedQuestions = [
+        ...(questionRows as Question[]),
+        ...(answeredRows as Question[]),
+        ...(declinedRows as Question[]),
+        ...(closedRows as Question[]),
+      ];
       const loadedEvidence = evidenceRows as Evidence[];
       setScopePersonId(sessionPersonId);
       setClaims(loadedClaims);
