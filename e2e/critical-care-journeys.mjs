@@ -545,6 +545,18 @@ await record("01c workspace links, browser back, More menu and account form vali
   // caregiver fixture used by the remaining acceptance journeys.
   const disposableSession = await newSession("more-menu local deletion");
   const disposableIdentity = auth(disposableSession);
+  const disposableSeed = await request("/api/v1/daily/log", {
+    token: disposableIdentity.token,
+    method: "POST",
+    body: {
+      person_id: disposableIdentity.personId,
+      caregiver_id: disposableIdentity.caregiverId,
+      capture_idempotency_key: unique("disposable-local-delete"),
+      observation: "Synthetic test fixture: one care update exists before local workspace deletion.",
+      source: "critical_care_journey_e2e",
+    },
+  });
+  assert.ok([200, 201].includes(disposableSeed.status), JSON.stringify(disposableSeed.payload));
   const disposable = await createBrowserPage(
     disposableSession,
     "/workspace",
