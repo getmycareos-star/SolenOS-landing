@@ -207,8 +207,8 @@ export function composeRecognitionLine(params: {
   // New Care Reality: never paste a capture facet into "What stands out" — that reads as note echo.
   if (params.isNewCareReality) {
     return who
-      ? `Several care concerns about ${who} are gathered from what you shared — organized so they stay connected.`
-      : "Several care concerns are gathered from what you shared — organized so they stay connected.";
+      ? `Your first care detail about ${who} is saved. More context can be added when you’re ready.`
+      : "Your first care detail is saved. More context can be added when you’re ready.";
   }
   if (focus && !looksLikeRawNoteDump(focus, params.latestRawText)) {
     const short = focus.replace(/\.$/, "");
