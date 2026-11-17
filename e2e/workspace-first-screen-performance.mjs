@@ -3,12 +3,49 @@ import { chromium } from "playwright";
 
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
+const performanceSessionResponse = await fetch(new URL("/api/v1/sessions/anonymous", backend), {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    name: "Synthetic first-screen performance caregiver",
+    caregiver_name: "Synthetic performance test caregiver",
+  }),
+});
+assert.equal(performanceSessionResponse.status, 201, "the performance run needs a fresh server-issued session");
+const performanceSession = await performanceSessionResponse.json();
+const seedEventResponse = await fetch(new URL("/api/v1/daily/log", backend), {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${performanceSession.access_token}`,
+  },
+  body: JSON.stringify({
+    person_id: performanceSession.person.id,
+    caregiver_id: performanceSession.caregiver.id,
+    capture_idempotency_key: `first-screen-performance-${Date.now()}`,
+    observation: "Synthetic performance fixture: the caregiver recorded one routine update.",
+    source: "workspace_first_screen_performance_ci",
+  }),
+});
+assert.ok([200, 201].includes(seedEventResponse.status), "the returning-caregiver fixture must persist before timing begins");
+
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 1,
   isMobile: true,
   hasTouch: true,
+});
+await context.addInitScript((identity) => {
+  localStorage.setItem("solenos_anonymous_access_token", identity.token);
+  localStorage.setItem("solenos_backend_person_id", identity.personId);
+  localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
+  localStorage.setItem("solenos_anonymous_session_expires_at", identity.expiresAt);
+}, {
+  token: performanceSession.access_token,
+  personId: performanceSession.person.id,
+  caregiverId: performanceSession.caregiver.id,
+  expiresAt: performanceSession.expires_at,
 });
 const page = await context.newPage();
 const apiResponses = [];
@@ -29,8 +66,9 @@ try {
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
 
   // Route same-origin frontend requests to the isolated FastAPI + PostgreSQL
-  // service. The test uses a fresh server-issued anonymous session and creates
-  // no care events, evidence, appointments, handoffs or Companion messages.
+  // service. A single synthetic care event is seeded before timing so the
+  // browser measures the returning-caregiver current-care screen. The browser
+  // journey itself performs no care-record writes.
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const requestUrl = new URL(request.url());
