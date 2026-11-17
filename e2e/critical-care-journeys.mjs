@@ -224,14 +224,25 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     "the saved care update should appear exactly once in history",
   );
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
-  const firstCaptureUnderstanding = await page.locator(".care-card-understanding").innerText();
-  assert.match(
-    firstCaptureUnderstanding,
-    /first update about E2E first visit capture|one care detail about E2E first visit capture/i,
-    "one first-capture observation must not be described as several care concerns",
+  // With one report and no independently grounded interpretation, the saved
+  // note and one open question remain visible; the Clarity panel must stay hidden.
+  assert.equal(
+    await page.locator(".care-card-understanding").count(),
+    0,
+    "first capture must not show Clarity without grounded understanding",
   );
-  assert.doesNotMatch(firstCaptureUnderstanding, /several care concerns/i);
-  assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
+  await page.getByText("What else have you noticed alongside this?", { exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
+  assert.doesNotMatch(
+    await page.locator("body").innerText(),
+    /several care concerns/i,
+    "one first-capture report must not be pluralized into several concerns",
+  );
+  assert.equal(
+    await page.getByText("Your original note is still saved.", { exact: false }).count(),
+    0,
+    "the first care capture must not fall back to a summary error",
+  );
 
   const browserIdentity = await page.evaluate(() => ({
     tokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
