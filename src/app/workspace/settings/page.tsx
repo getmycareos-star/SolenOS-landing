@@ -657,6 +657,7 @@ function LegalCard() {
 function PrivacyCard() {
   const { show, render } = useToast();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [clearingLocalData, setClearingLocalData] = useState(false);
   const [erasureAuthority, setErasureAuthority] = useState<"self" | "parent_or_guardian" | "legal_representative" | "authorized_caregiver" | "other">("other");
   const [erasureAttested, setErasureAttested] = useState(false);
   const [erasureSubmitting, setErasureSubmitting] = useState(false);
@@ -712,6 +713,8 @@ function PrivacyCard() {
   };
 
   const clearLocalData = async () => {
+    if (clearingLocalData) return;
+    setClearingLocalData(true);
     let pushSubscriptionRemoved = true;
     try {
       if ("serviceWorker" in navigator) {
@@ -812,8 +815,8 @@ function PrivacyCard() {
       <div className="mobile-settings-buttons">
         {confirmClear ? (
           <div className="mobile-settings-actions">
-            <Button variant="destructive" onClick={clearLocalData}>
-              Clear now
+            <Button variant="destructive" onClick={clearLocalData} disabled={clearingLocalData} loading={clearingLocalData}>
+              {clearingLocalData ? "Clearing this device…" : "Clear now"}
             </Button>
             <Button variant="secondary" onClick={() => setConfirmClear(false)}>
               Cancel
