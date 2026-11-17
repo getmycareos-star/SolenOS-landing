@@ -170,6 +170,10 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     status: captureResponse.status(),
     keys: Object.keys(capturePayload ?? {}),
     ok: capturePayload?.ok,
+    person_id: capturePayload?.person_id,
+    care_recipient_id: capturePayload?.care_recipient_id,
+    caregiver_id: capturePayload?.caregiver_id,
+    care_session_id: capturePayload?.care_session_id,
     care_event_id: capturePayload?.care_event_id,
     has_context_root: capturePayload?.has_context_root,
     active_care_situation: capturePayload?.active_care_situation ? {
@@ -197,13 +201,28 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
 
-  const careSessionId = await page.evaluate(() => localStorage.getItem("solenos_care_session_id"));
+  const browserIdentity = await page.evaluate(() => ({
+    tokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
+    personId: localStorage.getItem("solenos_backend_person_id"),
+    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+    careSessionId: localStorage.getItem("solenos_care_session_id"),
+  }));
+  console.log("FIRST_VISIT_BROWSER_IDENTITY", JSON.stringify(browserIdentity));
+  const careSessionId = browserIdentity.careSessionId;
   assert.ok(careSessionId, "first capture must retain the interaction session identity");
   const persisted = await request(
     `/api/situation?care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`,
     { token: firstVisitSession.access_token },
   );
   assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
+  console.log("FIRST_VISIT_PERSISTED_READ", JSON.stringify({
+    care_recipient_id: persisted.payload?.care_recipient_id,
+    has_context_root: persisted.payload?.has_context_root,
+    total_events: persisted.payload?.total_events,
+    observations: persisted.payload?.observations?.length,
+    browser_person_id: browserIdentity.personId,
+    bootstrap_person_id: firstVisitSession.person.id,
+  }));
   assert.equal(persisted.payload?.has_context_root, true, "first capture must create durable care context");
   assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
 
