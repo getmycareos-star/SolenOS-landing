@@ -94,7 +94,19 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
         }
       }
       if (!response) throw new Error("Backend proxy did not return a response after transient retries");
-      await route.fulfill({ response });
+      // Materialize the upstream body before fulfilling. Passing the APIResponse
+      // object through can race with browser navigation/teardown and produce
+      // "Fetch response has been disposed" even when the backend answered.
+      const responseBody = await response.body();
+      const responseHeaders = { ...response.headers() };
+      delete responseHeaders["content-encoding"];
+      delete responseHeaders["content-length"];
+      delete responseHeaders["transfer-encoding"];
+      await route.fulfill({
+        status: response.status(),
+        headers: responseHeaders,
+        body: responseBody,
+      });
     } catch (error) {
       // Closing a test context may cancel API requests before Playwright reports
       // page.isClosed(). Ignore only that explicit target-closed teardown error.
