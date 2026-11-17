@@ -181,18 +181,18 @@ function classifyHistoryRecord(item: CareItem): "observations" | "medicines" | "
 function displayHistoryText(item: CareItem): string {
   if (item.source_type === "correction" && (item.original_text || item.corrected_text)) {
     return [
-      item.original_text ? `Earlier entry: ${caregiverSafeAssistantText(item.original_text) || "An earlier entry was saved."}` : "",
-      item.corrected_text ? `Correction: ${caregiverSafeAssistantText(item.corrected_text) || "A correction was saved."}` : "",
-      item.reason ? `Reason: ${caregiverSafeAssistantText(item.reason) || "A reason was recorded."}` : "",
+      item.original_text ? `Earlier entry: ${item.original_text.trim() || "An earlier entry was saved."}` : "",
+      item.corrected_text ? `Correction: ${item.corrected_text.trim() || "A correction was saved."}` : "",
+      item.reason ? `Reason: ${item.reason.trim() || "A reason was recorded."}` : "",
       item.processing_status === "completed" ? "Care Record updated" : ["pending", "processing"].includes(item.processing_status || "") ? "Care Record update still pending" : "",
     ].filter(Boolean).join(" · ");
   }
 
   const raw = item.text || item.description || "";
-  if (!raw) return caregiverSafeAssistantText(item.reason) || "";
+  if (!raw) return item.reason?.trim() || "";
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return caregiverSafeAssistantText(raw) || "Saved care information";
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return raw.trim() || "Saved care information";
     const capture = (parsed.original_capture && typeof parsed.original_capture === "object"
       ? parsed.original_capture
       : parsed) as Record<string, unknown>;
@@ -213,11 +213,11 @@ function displayHistoryText(item: CareItem): string {
     }
 
     const note = typeof quick?.note === "string" && quick.note.trim()
-      ? caregiverSafeAssistantText(quick.note.trim()) || ""
+      ? quick.note.trim()
       : typeof capture.notes === "string" && capture.notes.trim()
-        ? caregiverSafeAssistantText(capture.notes.trim()) || ""
+        ? capture.notes.trim()
         : typeof capture.original_notes === "string" && capture.original_notes.trim()
-          ? caregiverSafeAssistantText(capture.original_notes.trim()) || ""
+          ? capture.original_notes.trim()
           : "";
     if (note) parts.push(note);
 
@@ -239,7 +239,7 @@ function displayHistoryText(item: CareItem): string {
         const scheduledFor = typeof medicine.scheduled_for === "string"
           ? ` (scheduled for ${displayCareTime(medicine.scheduled_for)})`
           : "";
-        parts.push(`${caregiverSafeAssistantText(name) || "Medicine"}: ${statusLabels[status] || caregiverStatusLabel(status) || "Status not recorded"}${scheduledFor}`);
+        parts.push(`${name.trim() || "Medicine"}: ${statusLabels[status] || caregiverStatusLabel(status) || "Status not recorded"}${scheduledFor}`);
       }
     }
 
@@ -253,14 +253,14 @@ function displayHistoryText(item: CareItem): string {
         const reading = vital.value;
         const unit = typeof vital.unit === "string" ? vital.unit : "";
         if (typeof reading === "number" || typeof reading === "string") {
-          parts.push(`${caregiverSafeAssistantText(type) || "Measurement"}: ${reading}${unit ? ` ${unit}` : ""}`);
+          parts.push(`${type.trim() || "Measurement"}: ${reading}${unit ? ` ${unit}` : ""}`);
         }
       }
     }
 
     return parts.length ? parts.join(" · ") : "Saved care information";
   } catch {
-    return caregiverSafeAssistantText(raw) || "Saved care information";
+    return raw.trim() || "Saved care information";
   }
 }
 
