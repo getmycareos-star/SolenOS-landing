@@ -563,6 +563,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
+  await disposable.page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 20_000 });
   const identityBeforeDeletion = await disposable.page.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
     personId: localStorage.getItem("solenos_backend_person_id"),
