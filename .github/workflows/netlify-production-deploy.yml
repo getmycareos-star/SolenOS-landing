@@ -22,7 +22,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   # Isolate pull-request verification so unrelated previews cannot cancel one
@@ -69,12 +68,10 @@ jobs:
       - name: Require successful backend release checks for unchanged backend source
         if: github.event_name == 'workflow_dispatch' && inputs.release_approved == true
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           backend_sha="$(curl -fsSL https://api.github.com/repos/getmycareos-star/SolenOS_backend/branches/main | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).commit.sha))')"
-          runs="$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/getmycareos-star/SolenOS_backend/actions/runs?branch=main&per_page=100")"
+          runs="$(curl -fsSL -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/getmycareos-star/SolenOS_backend/actions/runs?branch=main&per_page=100")"
           git init --quiet /tmp/solenos-backend-source
           git -C /tmp/solenos-backend-source remote add origin https://github.com/getmycareos-star/SolenOS_backend.git
           git -C /tmp/solenos-backend-source fetch --quiet --depth=200 origin main
