@@ -9,6 +9,12 @@ on:
       - "e2e/critical-care-journeys.mjs"
       - "src/components/DocumentIntelligenceReview.tsx"
       - "src/components/ClarificationWorkflowPanel.tsx"
+      - "src/app/workspace/documents/**"
+      - "src/api/**"
+      - "src/lib/**"
+      - "src/services/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/document-continuity-live-qwen.yml"
 
 permissions:
