@@ -211,7 +211,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   const careSessionId = browserIdentity.careSessionId;
   assert.ok(careSessionId, "first capture must retain the interaction session identity");
   const persisted = await request(
-    `/api/situation?care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`,
+    `/api/situation?caregiver_id=${encodeURIComponent(browserIdentity.caregiverId ?? "")}&care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`,
     { token: firstVisitSession.access_token },
   );
   assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
