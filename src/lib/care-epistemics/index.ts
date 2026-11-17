@@ -322,9 +322,15 @@ export function observationCareFact(params: {
       ? { priorFacts: params.priorFacts }
       : undefined;
   const hf = (params.human_fact ?? "").trim();
-  if (hf) {
-    return isCareRealityAnchorText(hf, opts) ? hf : null;
+  if (hf && isCareRealityAnchorText(hf, opts)) {
+    return hf;
   }
+
+  // An extracted human_fact is a convenience projection, not the source of
+  // truth. If that projection is too vague or malformed to qualify, preserve
+  // a caregiver-authored raw observation when it independently qualifies.
+  // Product/session meta remains excluded even when an extractor produced a
+  // non-empty but unusable human_fact.
   const raw = (params.raw_text ?? "").trim();
   if (!raw || isProductSessionMetaText(raw)) return null;
   return isCareRealityAnchorText(raw, opts) ? raw : null;
