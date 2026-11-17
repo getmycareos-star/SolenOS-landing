@@ -2204,5 +2204,36 @@ with engine.connect() as connection:
   assert.equal(verification.deletion_audit_receipts, 1, JSON.stringify(verification));
 });
 
+await record("16 clearing this device revokes the session and removes SolenOS browser state only", async () => {
+  const cleanupSession = await newSession("local device cleanup");
+  const cleanupIdentity = auth(cleanupSession);
+  const { context, page } = await createBrowserPage(cleanupSession, "/workspace/settings");
+  await page.getByRole("heading", { name: "Privacy & Data" }).waitFor({ timeout: 20_000 });
+  await page.evaluate(() => {
+    localStorage.setItem("solenos:daily-care:last-opened:synthetic:caregiver", "synthetic");
+    localStorage.setItem("unrelated-test-key", "preserve");
+    sessionStorage.setItem("temporary-test-key", "clear");
+  });
+  await page.getByRole("button", { name: "Clear saved information from this device", exact: true }).click();
+  await page.getByRole("button", { name: "Clear now", exact: true }).click();
+  await page.getByText("Saved SolenOS information and this browser's push subscription were cleared.", { exact: true }).waitFor({ timeout: 10_000 });
+
+  const remaining = await page.evaluate(() => ({
+    solenosKeys: Object.keys(localStorage).filter((key) => key.startsWith("solenos_") || key.startsWith("solenos:")),
+    onboarding: localStorage.getItem("onboarding_complete"),
+    unrelated: localStorage.getItem("unrelated-test-key"),
+    sessionStorageCount: sessionStorage.length,
+  }));
+  assert.deepEqual(remaining.solenosKeys, [], JSON.stringify(remaining));
+  assert.equal(remaining.onboarding, null, JSON.stringify(remaining));
+  assert.equal(remaining.unrelated, "preserve", JSON.stringify(remaining));
+  assert.equal(remaining.sessionStorageCount, 0, JSON.stringify(remaining));
+
+  const revoked = await request(`/api/v1/persons/${encodeURIComponent(cleanupIdentity.personId)}`, { token: cleanupIdentity.token });
+  assert.equal(revoked.status, 401, "clearing the device must revoke the server-issued anonymous session");
+  await page.waitForURL((url) => url.pathname === "/start", { timeout: 10_000 });
+  await context.close();
+});
+
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
