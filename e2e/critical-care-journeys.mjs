@@ -1842,7 +1842,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   assert.equal(sourceRows.status, 200, JSON.stringify(sourceRows.payload));
   const source = sourceRows.payload.find((row) => row.person_id === identity.personId && row.id);
   assert.ok(source, "the clarification journey needs a real saved source in this care record");
-  const tag = "from the morning visit";
+  const tag = unique("clarification-source");
   const answerQuestionText = "Who can confirm the care detail " + tag + "?";
   const skipQuestionText = "When was the care detail " + tag + " first noticed?";
   const createQuestion = async (question) => {
@@ -1892,7 +1892,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   await page.getByText(answerQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().click();
   await page.getByRole("button", { name: "Add what you know", exact: true }).click();
-  const exactAnswer = "I noticed this during the morning visit at 8:17 AM.";
+  const exactAnswer = "I observed this on " + tag + ".";
   const exactProvenance = "I was present and recorded it in the care note.";
   await page.getByLabel("What did you observe or report?").fill(exactAnswer);
   await page.getByLabel("When did you observe this?").fill(exactProvenance);
