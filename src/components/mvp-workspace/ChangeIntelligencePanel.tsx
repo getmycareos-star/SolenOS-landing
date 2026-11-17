@@ -676,7 +676,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                                   : ""}
                               </p>
                               {record.excerpt ? (
-                                <p>{caregiverSafeChangeText(record.excerpt) ?? "Source text is available for review."}</p>
+                                <p>{record.excerpt}</p>
                               ) : null}
                               {record.epistemic_status ? (
                                 <p className="panel-muted">
