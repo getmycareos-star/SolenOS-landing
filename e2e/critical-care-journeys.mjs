@@ -2048,6 +2048,8 @@ finally:
   await statusHistory.getByText(reason, { exact: true }).waitFor();
 
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Earlier care updates", exact: true })
+    .waitFor({ timeout: 20_000 });
   const reloadedCard = page.locator("article.lcr-timeline-item").filter({
     hasText: "Sleep changes",
   });
