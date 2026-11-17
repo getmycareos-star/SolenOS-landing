@@ -657,7 +657,7 @@ function LegalCard() {
 function PrivacyCard() {
   const { show, render } = useToast();
   const [confirmClear, setConfirmClear] = useState(false);
-  const [erasureAuthority, setErasureAuthority] = useState<"self" | "parent_or_guardian" | "legal_representative" | "authorized_caregiver" | "other">("self");
+  const [erasureAuthority, setErasureAuthority] = useState<"self" | "parent_or_guardian" | "legal_representative" | "authorized_caregiver" | "other">("other");
   const [erasureAttested, setErasureAttested] = useState(false);
   const [erasureSubmitting, setErasureSubmitting] = useState(false);
   const [erasureRequest, setErasureRequest] = useState<{ id: string; status: string; message: string } | null>(null);
