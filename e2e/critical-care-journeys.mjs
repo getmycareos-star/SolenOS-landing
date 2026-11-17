@@ -54,10 +54,11 @@ function auth(session) {
 async function createBrowserPage(session, path, viewport = { width: 390, height: 844 }) {
   const context = await browser.newContext({ viewport });
   await context.addInitScript((identity) => {
-    // Seed only the first document in this browser context. Re-seeding on every
-    // navigation would silently restore credentials after the user deletes them.
-    if (sessionStorage.getItem("solenos_e2e_identity_seeded") === "1") return;
-    sessionStorage.setItem("solenos_e2e_identity_seeded", "1");
+    // window.name survives same-tab navigation but is not browser storage.
+    // Do not use sessionStorage here: device cleanup intentionally clears it,
+    // and a later navigation must never reseed a revoked credential.
+    if (window.name === "solenos-e2e-identity-seeded") return;
+    window.name = "solenos-e2e-identity-seeded";
     localStorage.setItem("solenos_anonymous_access_token", identity.token);
     localStorage.setItem("solenos_backend_person_id", identity.personId);
     localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
