@@ -61,6 +61,19 @@ type PreparationBrief = {
     display_limited?: boolean
     interpretation_limit?: string
   }>
+  living_care_record_context?: {
+    retrieval_scan_complete?: boolean
+    retrieval_projection_complete?: boolean
+    schema_status?: string
+    missing_required_sources?: string[]
+    missing_optional_sources?: string[]
+    sources?: Record<string, {
+      status?: string
+      returned_count?: number
+      has_more?: boolean
+      candidate_scan_complete?: boolean
+    }>
+  }
 }
 type WorkspaceRecord = {
   id: string
@@ -360,10 +373,21 @@ export default function AppointmentWorkspace() {
           {!brief && <p className="guided-muted">Your care history could not be loaded. Missing information is not treated as proof that it does not exist.</p>}
           {brief && <>
             <div className="guided-columns">
-              {Object.entries(brief.source_completeness ?? {}).some(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false) && <section className="guided-muted" role="status" style={{ gridColumn: "1 / -1" }}>
-                <h5>This summary does not show all saved care information</h5>
+              {(Object.entries(brief.source_completeness ?? {}).some(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false) ||
+                brief.living_care_record_context == null ||
+                brief.living_care_record_context.retrieval_scan_complete !== true ||
+                brief.living_care_record_context.retrieval_projection_complete !== true ||
+                brief.living_care_record_context.schema_status !== "complete" ||
+                (brief.living_care_record_context.missing_required_sources?.length ?? 0) > 0 ||
+                (brief.living_care_record_context.missing_optional_sources?.length ?? 0) > 0) && <section className="guided-muted" role="status" style={{ gridColumn: "1 / -1" }}>
+                <h5>Some parts of your Care Record could not be fully checked</h5>
                 <p>This appointment summary shows only some saved care information. Check your full Care Record before relying on it as the complete history.</p>
+                {brief.living_care_record_context == null && <p>This service did not return the Care Record coverage details needed to confirm this summary is complete. Open the full Care Record before relying on it as the complete history.</p>}
+                {brief.living_care_record_context?.schema_status === "failed" && <p>We could not check the full Care Record just now. Refresh or open the Care Record before relying on this visit summary.</p>}
+                {brief.living_care_record_context?.missing_required_sources?.length ? <p>Sources that could not be checked: {brief.living_care_record_context.missing_required_sources.map(source => caregiverInformationAreaLabel(source) || "Other care information").join(", ")}.</p> : null}
+                {brief.living_care_record_context?.missing_optional_sources?.length ? <p>Some other saved care information is not available in this view.</p> : null}
                 <ul>{Object.entries(brief.source_completeness ?? {}).filter(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false).map(([source, coverage]) => <li key={source}>{caregiverInformationAreaLabel(source) || "Other care information"}: {coverage.returned_count} {coverage.returned_count === 1 ? "detail" : "details"} shown{coverage.has_more ? "; more saved details are available" : ""}</li>)}</ul>
+                {Object.entries(brief.living_care_record_context?.sources ?? {}).filter(([, source]) => source.has_more === true || source.candidate_scan_complete === false).length > 0 && <ul>{Object.entries(brief.living_care_record_context?.sources ?? {}).filter(([, source]) => source.has_more === true || source.candidate_scan_complete === false).map(([source, coverage]) => <li key={source}>{caregiverInformationAreaLabel(source) || "Other care information"}: {coverage.returned_count ?? 0} {coverage.returned_count === 1 ? "detail" : "details"} shown{coverage.has_more ? "; more saved information remains" : ""}</li>)}</ul>}
               </section>}
               {brief.source_completeness?.open_questions?.display_limited && <p className="guided-muted" style={{ gridColumn: "1 / -1" }}>There may be more questions in your Care Record. This view shows the most important ones first.</p>}
               <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || 'Care update'}</strong>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul> : <p className="guided-muted">No recent care updates are available for this summary.</p>}</section>
