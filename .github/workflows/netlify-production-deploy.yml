@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   # Isolate pull-request verification so unrelated previews cannot cancel one
