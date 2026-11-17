@@ -1842,7 +1842,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   assert.equal(sourceRows.status, 200, JSON.stringify(sourceRows.payload));
   const source = sourceRows.payload.find((row) => row.person_id === identity.personId && row.id);
   assert.ok(source, "the clarification journey needs a real saved source in this care record");
-  const tag = unique("clarification-source");
+  const tag = "from the morning visit";
   const answerQuestionText = "Who can confirm the care detail " + tag + "?";
   const skipQuestionText = "When was the care detail " + tag + " first noticed?";
   const createQuestion = async (question) => {
