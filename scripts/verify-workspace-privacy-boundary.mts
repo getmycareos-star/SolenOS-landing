@@ -41,9 +41,9 @@ const settings = fs.readFileSync("src/app/workspace/settings/page.tsx", "utf8");
 assert.match(settings, /await revokeAnonymousSession\(\)/,
   "clearing a device must attempt server-side revocation before local credentials are removed");
 assert.match(settings, /key\.startsWith\("solenos_"\)/,
+  "clearing a device must remove underscore-prefixed SolenOS localStorage keys");
 assert.match(settings, /key\.startsWith\("solenos:"\)/,
   "clearing a device must remove colon-namespaced SolenOS localStorage keys");
-  "clearing a device must remove all SolenOS-owned localStorage keys, not only a fixed list");
 assert.match(settings, /window\.sessionStorage\.clear\(\)/,
   "clearing a device must also clear tab-scoped SolenOS state");
 assert.match(settings, /deleteJSON\("\/notifications\/push\/subscriptions"/,
