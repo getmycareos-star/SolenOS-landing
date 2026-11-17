@@ -2220,8 +2220,13 @@ connection_note = scrubPasteField(connection_note);
   // Fail closed when the composer cannot produce a grounded account of what is happening.
   // A saved caregiver report remains visible, but an empty interpretation must not
   // unlock the Clarity panel or crash the whole first-capture response.
+  const groundedSituationSummary =
+    Boolean(situation_summary?.trim()) && !containsWeakOrientation(situation_summary);
+  if (situation_summary && !groundedSituationSummary) {
+    situation_summary = null;
+  }
   const hasGroundedCurrentUnderstanding =
-    Boolean(situation_summary?.trim()) || what_we_know.length > 0;
+    groundedSituationSummary || what_we_know.length > 0;
   if (show_clarity && !hasGroundedCurrentUnderstanding) {
     show_clarity = false;
     what_matters_now = null;
