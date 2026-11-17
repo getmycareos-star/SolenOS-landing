@@ -36,3 +36,24 @@ assert.match(consentPanel, /api\/v1\/consent/,
 
 console.log("✓ workspace routes mount without a privacy or early-version checkbox gate");
 console.log("✓ direct workspace entry does not disable server-side authentication or authorisation");
+
+const settings = fs.readFileSync("src/app/workspace/settings/page.tsx", "utf8");
+assert.match(settings, /await revokeAnonymousSession\(\)/,
+  "clearing a device must attempt server-side revocation before local credentials are removed");
+assert.match(settings, /key\.startsWith\("solenos_"\)/,
+  "clearing a device must remove all SolenOS-owned localStorage keys, not only a fixed list");
+assert.match(settings, /window\.sessionStorage\.clear\(\)/,
+  "clearing a device must also clear tab-scoped SolenOS state");
+assert.match(settings, /deleteJSON\("\/notifications\/push\/subscriptions"/,
+  "clearing a device must remove the server-side push subscription when an authenticated session exists");
+assert.match(settings, /subscription\.unsubscribe\(\)/,
+  "clearing a device must unsubscribe this browser from push delivery");
+assert.match(settings, /registration\?\.getNotifications\(\)/,
+  "clearing a device must close visible SolenOS notifications");
+assert.match(settings, /Request care-record erasure/,
+  "device clearing must remain distinct from care-record erasure");
+assert.match(settings, /does not erase information stored by SolenOS/,
+  "device clearing must not imply server-side care-record erasure");
+
+console.log("✓ device cleanup revokes sessions, removes owned browser state and push subscriptions, and preserves server-record deletion as a separate request");
+
