@@ -1841,6 +1841,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   };
   const answerQuestion = await createQuestion(answerQuestionText);
   const skipQuestion = await createQuestion(skipQuestionText);
+  assert.equal(skipQuestion.status, "open", "a new clarification question must begin open");
 
   const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
   // Clarification sits inside the secondary care-record details disclosure.
@@ -1880,12 +1881,20 @@ await record("clarification questions are linked, answerable, skippable and dura
   await page.evaluate(() => window.dispatchEvent(new Event("careRecordUpdated")));
   await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(skipQuestionText, { exact: true }).first().click();
-  await page.getByRole("button", { name: "I don't know the answer yet", exact: true }).click();
-  await page.getByText("This question remains open for later.", { exact: false }).waitFor({ timeout: 20_000 });
+  await page.getByText("You can leave this unanswered if you do not know.", { exact: false }).waitFor({ timeout: 10_000 });
+  assert.equal(
+    await page.getByRole("button", { name: "I don't know the answer yet", exact: true }).count(),
+    0,
+    "leaving a question unanswered must not require a status-changing action",
+  );
 
   const questions = await request("/api/v1/uncertainty/questions/" + identity.personId, { token: identity.token });
   assert.equal(questions.status, 200, JSON.stringify(questions.payload));
-  assert.equal(questions.payload.find((row) => row.id === skipQuestion.id)?.status, "unresolved");
+  assert.equal(
+    questions.payload.find((row) => row.id === skipQuestion.id)?.status,
+    skipQuestion.status,
+    "leaving the question unanswered must preserve its original open status",
+  );
   assert.equal(questions.payload.find((row) => row.id === answerQuestion.id)?.status, "answered");
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
