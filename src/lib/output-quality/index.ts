@@ -186,6 +186,7 @@ export function composeRecognitionLine(params: {
   heldFocus: string | null;
   subjectLabel: string | null;
   latestRawText?: string | null;
+  careWorthyCount?: number;
 }): string | null {
   const who =
     params.subjectLabel &&
@@ -206,9 +207,14 @@ export function composeRecognitionLine(params: {
   const focus = params.heldFocus?.trim() ?? "";
   // New Care Reality: never paste a capture facet into "What stands out" — that reads as note echo.
   if (params.isNewCareReality) {
+    if ((params.careWorthyCount ?? 0) <= 1) {
+      return who
+        ? `This first update about ${who} is saved. More detail can be added as you learn more.`
+        : "This first care update is saved. More detail can be added as you learn more.";
+    }
     return who
-      ? `Several care concerns about ${who} are gathered from what you shared — organized so they stay connected.`
-      : "Several care concerns are gathered from what you shared — organized so they stay connected.";
+      ? `Several care details about ${who} are gathered from what you shared — organized so they stay connected.`
+      : "Several care details are gathered from what you shared — organized so they stay connected.";
   }
   if (focus && !looksLikeRawNoteDump(focus, params.latestRawText)) {
     const short = focus.replace(/\.$/, "");
