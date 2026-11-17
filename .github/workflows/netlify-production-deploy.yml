@@ -65,44 +65,74 @@ jobs:
       - name: Build Next.js production app
         run: npm run build
 
-      - name: Require successful backend release checks on current main
+      - name: Require successful backend release checks for unchanged backend source
         if: github.event_name == 'workflow_dispatch' && inputs.release_approved == true
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           backend_sha="$(curl -fsSL https://api.github.com/repos/getmycareos-star/SolenOS_backend/branches/main | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).commit.sha))')"
-          checks="$(curl -fsSL "https://api.github.com/repos/getmycareos-star/SolenOS_backend/commits/$backend_sha/check-runs")"
-          BACKEND_SHA="$backend_sha" CHECKS_JSON="$checks" node <<'NODE'
-          const payload = JSON.parse(process.env.CHECKS_JSON);
-          const required = [
-            "tests",
-            "container-build-smoke",
-            "deployed-smoke",
-            "postgres-migrations",
-            "postgres-migration",
-            "test",
-            "Care spine, documents, Daily Care and handoff on PostgreSQL",
-            "restore-and-verify",
+          runs="$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/getmycareos-star/SolenOS_backend/actions/runs?branch=main&per_page=100")"
+          git init --quiet /tmp/solenos-backend-source
+          git -C /tmp/solenos-backend-source remote add origin https://github.com/getmycareos-star/SolenOS_backend.git
+          git -C /tmp/solenos-backend-source fetch --quiet --depth=200 origin main
+          BACKEND_SHA="$backend_sha" RUNS_JSON="$runs" node <<'NODE'
+          const { execFileSync } = require("node:child_process");
+          const runs = JSON.parse(process.env.RUNS_JSON).workflow_runs || [];
+          const backendSha = process.env.BACKEND_SHA;
+          const checks = [
+            {
+              name: "Backend tests",
+              paths: ["backend/", "ci/", "Dockerfile", "start-with-qwen.sh", "railway.json", ".dockerignore"],
+            },
+            {
+              name: "PostgreSQL migration validation",
+              paths: ["backend/alembic/", "backend/app/", "backend/tests/", "backend/scripts/", "backend/pyproject.toml", "backend/alembic.ini"],
+            },
+            {
+              name: "Backup and recovery verification",
+              paths: ["backend/app/", "backend/alembic/", "backend/scripts/", "backend/tests/", "backend/pyproject.toml", "backend/alembic.ini"],
+            },
+            {
+              name: "Backend validation",
+              paths: ["backend/", "ci/", "Dockerfile", "railway.json"],
+            },
+            {
+              name: "Document lifecycle PostgreSQL integration",
+              paths: ["backend/"],
+            },
+            {
+              name: "Production readiness monitor",
+              paths: ["backend/app/", "backend/alembic/", "Dockerfile", "railway.json"],
+            },
           ];
           const failures = [];
-          for (const name of required) {
-            const matches = (payload.check_runs || [])
-              .filter((item) => item.name === name)
-              .sort((a, b) => Date.parse(b.started_at || b.completed_at || 0) - Date.parse(a.started_at || a.completed_at || 0));
-            if (matches.length === 0) {
-              failures.push(`${name}: check not found`);
+          for (const required of checks) {
+            const latest = runs
+              .filter((run) => run.name === required.name && run.head_branch === "main")
+              .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
+            if (!latest) {
+              failures.push(`${required.name}: no main-branch run found`);
               continue;
             }
-            const check = matches[0];
-            if (check.status !== "completed" || check.conclusion !== "success") {
-              failures.push(`${name}: ${check.status}/${check.conclusion || "pending"}`);
+            if (latest.status !== "completed" || latest.conclusion !== "success") {
+              failures.push(`${required.name}: ${latest.status}/${latest.conclusion || "pending"} (${latest.head_sha})`);
+              continue;
+            }
+            try {
+              execFileSync("git", ["-C", "/tmp/solenos-backend-source", "cat-file", "-e", `${latest.head_sha}^{commit}`], { stdio: "ignore" });
+              execFileSync("git", ["-C", "/tmp/solenos-backend-source", "merge-base", "--is-ancestor", latest.head_sha, backendSha], { stdio: "ignore" });
+              execFileSync("git", ["-C", "/tmp/solenos-backend-source", "diff", "--quiet", `${latest.head_sha}..${backendSha}`, "--", ...required.paths], { stdio: "ignore" });
+            } catch {
+              failures.push(`${required.name}: backend source changed after tested commit ${latest.head_sha}`);
             }
           }
           if (failures.length) {
-            process.stderr.write(`Backend release checks failed for ${process.env.BACKEND_SHA}:\n${failures.join("\n")}\n`);
+            process.stderr.write(`Backend release checks are not current for main (${backendSha}):\\n${failures.join("\\n")}\\n`);
             process.exit(1);
           }
-          process.stdout.write(`All required backend release checks passed for ${process.env.BACKEND_SHA}.\n`);
+          process.stdout.write(`All required backend checks passed, and backend source paths are unchanged through ${backendSha}.\\n`);
           NODE
 
   caregiver-acceptance:
