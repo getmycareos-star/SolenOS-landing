@@ -1948,8 +1948,8 @@ await record("clarification questions are linked, answerable, skippable and dura
   await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText("View answered and closed questions", { exact: true }).click();
   await page.getByRole("button", { name: new RegExp(answerQuestionText) }).click();
-  await page.getByText(exactAnswer, { exact: true }).waitFor({ timeout: 15_000 });
-  await page.getByText(exactProvenance, { exact: false }).waitFor({ timeout: 15_000 });
+  await page.getByText(exactAnswer, { exact: true }).first().waitFor({ timeout: 15_000 });
+  await page.getByText(exactProvenance, { exact: false }).first().waitFor({ timeout: 15_000 });
   await page.getByText("Earlier answers", { exact: true }).waitFor();
   await verifyMobile(page);
   await context.close();
