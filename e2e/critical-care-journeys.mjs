@@ -211,10 +211,14 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
-  const savedHistoryRecord = page.locator(".history-event-list")
-    .getByRole("button", { name: `Open record: ${firstNote}`, exact: true });
+  const savedHistoryRecord = page.locator(".history-event-list .history-event-card")
+    .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
+  assert.equal(
+    await page.locator(".history-event-list .history-event-card").filter({ hasText: firstNote }).count(),
+    1,
+    "the saved care update should appear exactly once in the visible history list",
+  );
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
 
