@@ -67,7 +67,17 @@ console.log("✓ internal language bans");
   });
   assert.ok(rec && /unsettled|organizes/i.test(rec));
   assert.ok(!/i understand how you feel|i'm here for you/i.test(rec!));
-  console.log("✓ recognition without empathy theater");
+  const firstUpdate = composeRecognitionLine({
+    isNewCareReality: true,
+    isCompeting: false,
+    hasCaregiverLoad: false,
+    heldFocus: null,
+    subjectLabel: "Mum",
+    careWorthyCount: 1,
+  });
+  assert.ok(firstUpdate && /first update about Mum/i.test(firstUpdate));
+  assert.ok(!/several care concerns/i.test(firstUpdate));
+  console.log("✓ first capture is not described as multiple concerns");
 }
 
 {
