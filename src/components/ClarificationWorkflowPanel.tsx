@@ -693,8 +693,8 @@ SolenOS only brings up a question when saved care information shows that an answ
           </p>
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
             <strong style={{ fontSize: 12 }}>Last answer</strong>
-            <p>{caregiverSafeAssistantText(selectedQuestion.answer) || "The saved answer is available for review."}</p>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {caregiverSafeAssistantText(selectedQuestion.answer_provenance) || "Not recorded"}</p>
+            <p>{selectedQuestion.answer?.trim() || "The saved answer is available for review."}</p>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {selectedQuestion.answer_provenance?.trim() || "Not recorded"}</p>
             <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
           {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
@@ -805,8 +805,8 @@ SolenOS only brings up a question when saved care information shows that an answ
             {!historyError && history.length === 0 && <p style={{ fontSize: 12 }}>No earlier answers have been saved.</p>}
             <ol style={{ fontSize: 12, paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
-                <p>{caregiverSafeAssistantText(item.answer) || "The saved answer is available for review."}</p>
-                <p>Source: {caregiverSafeAssistantText(item.answer_provenance) || "Not recorded"}</p>
+                <p>{item.answer?.trim() || "The saved answer is available for review."}</p>
+                <p>Source: {item.answer_provenance?.trim() || "Not recorded"}</p>
                 <p>Saved {displayDate(item.created_at)}</p>
               </li>)}
             </ol>
