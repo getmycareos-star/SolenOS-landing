@@ -507,6 +507,19 @@ function composeIdentityMismatchTurn(params: {
     has_open_unknowns: true,
     has_meaningful_change: false,
   });
+  // Fail closed when the composer cannot produce a grounded account of what is happening.
+  // A saved caregiver report remains visible, but an empty interpretation must not
+  // unlock the Clarity panel or crash the whole first-capture response.
+  const hasGroundedCurrentUnderstanding =
+    Boolean(situation_summary?.trim()) || what_we_know.length > 0;
+  if (show_clarity && !hasGroundedCurrentUnderstanding) {
+    show_clarity = false;
+    what_matters_now = null;
+    what_can_wait = null;
+    what_may_become_serious = null;
+    follow_up_items.length = 0;
+  }
+
   const composed: ComposedCaregiverResponse = {
     recognition_line,
     confirmation,
@@ -1303,7 +1316,7 @@ export function composeCaregiverResponse(params: {
     }
 }
 
-  const show_clarity = facets.show_clarity;
+  let show_clarity = facets.show_clarity;
   let what_matters_now: string | null = null;
   let what_can_wait: string | null = null;
   let what_may_become_serious: string | null = null;
