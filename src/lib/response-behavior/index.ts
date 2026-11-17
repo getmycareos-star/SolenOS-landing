@@ -301,7 +301,10 @@ export function selectResponseFacets(params: {
       show_what_we_know: turnClass !== "emotional_only" || priorHeld,
       show_what_is_happening: relief.show_what_is_happening,
       show_what_changed: false,
-      show_clarity: relief.show_clarity,
+      // Incomplete understanding must remain gather-first. Relief may propose
+      // Clarity for orientable content, but without a stable happening summary
+      // that would violate the response contract and blank the saved record.
+      show_clarity: false,
       show_asks: relief.show_asks,
       show_why_asking: obsCount <= 1 && turnClass !== "emotional_only",
       show_evidence_line: true,
