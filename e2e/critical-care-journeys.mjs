@@ -2032,7 +2032,8 @@ finally:
   });
   await situationCard.waitFor({ state: "visible", timeout: 20_000 });
   await situationCard.getByRole("button", { name: "Review related notes and documents", exact: true }).click();
-  await situationCard.getByText("restless sleep and three overnight awakenings", { exact: false })
+  await situationCard.locator(".lcr-evidence-list")
+    .getByText("Caregiver reports restless sleep and three overnight awakenings.", { exact: true })
     .waitFor({ timeout: 15_000 });
 
   const reason = "The caregiver reports the sleep disruption is worse than the previous night.";
