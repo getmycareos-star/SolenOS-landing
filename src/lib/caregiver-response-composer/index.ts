@@ -2232,7 +2232,9 @@ connection_note = scrubPasteField(connection_note);
 
   // Generic first-update status is not a grounded account of what is happening.
   const groundedSituationSummary =
-    Boolean(situation_summary?.trim()) && !containsWeakOrientation(situation_summary);
+    situation_summary !== null &&
+    situation_summary.trim().length > 0 &&
+    !containsWeakOrientation(situation_summary);
   if (situation_summary && !groundedSituationSummary) {
     situation_summary = null;
   }
