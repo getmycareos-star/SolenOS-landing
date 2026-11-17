@@ -672,6 +672,16 @@ export function LCRCurrentUnderstanding() {
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
   const [advancedPanelsOpen, setAdvancedPanelsOpen] = useState(false);
   const [clarificationOpen, setClarificationOpen] = useState(false);
+  const clarificationDetailsRef = useRef<HTMLDetailsElement | null>(null);
+  const openClarification = useCallback(() => {
+    if (clarificationDetailsRef.current) clarificationDetailsRef.current.open = true;
+    setClarificationOpen(true);
+  }, []);
+  useEffect(() => {
+    // Preserve a native disclosure opened before React finishes hydrating.
+    // Without this sync, the lazy panel can remain unmounted after a fast click.
+    if (clarificationDetailsRef.current?.open) setClarificationOpen(true);
+  }, []);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1451,7 +1461,7 @@ export function LCRCurrentUnderstanding() {
                                     question: item.request_text?.trim() || item.description || item.title,
                                     evidenceIds: item.evidence_ids,
                                   });
-                                  setClarificationOpen(true);
+                                  openClarification();
                                   document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
                                 }}>
                                   Request clarification
@@ -1502,7 +1512,7 @@ export function LCRCurrentUnderstanding() {
                       type="button"
                       className="lcr-text-action"
                       onClick={() => {
-                        setClarificationOpen(true);
+                        openClarification();
                         document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
                       }}
                     >
@@ -2077,7 +2087,7 @@ export function LCRCurrentUnderstanding() {
         </>
       ) : null}
       <div id="lcr-clarification-workflow">
-        <details className="lcr-history-details" open={clarificationOpen} onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
+        <details ref={clarificationDetailsRef} className="lcr-history-details" onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
           <summary>Questions that may help clarify care</summary>
           {clarificationOpen ? <ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /> : null}
         </details>
