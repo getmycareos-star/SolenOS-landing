@@ -2071,19 +2071,40 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
   const evidenceId = uploaded.payload.evidence_id;
   assert.ok(evidenceId, "the synthetic upload must have a persisted evidence identifier");
 
-  const submitted = await request("/api/v1/privacy/requests", {
+  const privacyBrowser = await createBrowserPage(deletionSession, "/workspace/settings");
+  await privacyBrowser.page.getByRole("heading", { name: "Privacy & Data" }).waitFor({ timeout: 20_000 });
+  await privacyBrowser.page.getByLabel("Your authority for this care record").selectOption("self");
+  await privacyBrowser.page.getByLabel(/I confirm that the authority information above is accurate/).check();
+  const submitErasure = privacyBrowser.page.getByRole("button", { name: "Submit care-record erasure request", exact: true });
+  await submitErasure.click();
+  await privacyBrowser.page.getByText("Request received. Reference:", { exact: false }).waitFor({ timeout: 20_000 });
+  await privacyBrowser.page.getByText("This is a request only.", { exact: false }).waitFor();
+
+  const requestList = await request("/api/v1/privacy/requests", { token });
+  assert.equal(requestList.status, 200, JSON.stringify(requestList.payload));
+  const deletionRequests = requestList.payload.requests.filter((item) => item.request_type === "deletion");
+  assert.equal(deletionRequests.length, 1, "the Settings flow must persist one care-record erasure request");
+  const requestId = deletionRequests[0].id;
+  assert.equal(deletionRequests[0].status, "received_pending_authority_review");
+
+  const duplicate = await request("/api/v1/privacy/requests", {
     token,
     method: "POST",
     body: {
       request_type: "deletion",
       authority_basis: "self",
       authority_attested: true,
-      note: "Synthetic CI deletion verification; no real caregiver information is present.",
     },
   });
-  assert.equal(submitted.status, 201, JSON.stringify(submitted.payload));
-  const requestId = submitted.payload.id;
-  assert.equal(submitted.payload.status, "received_pending_authority_review");
+  assert.equal(duplicate.status, 409, JSON.stringify(duplicate.payload));
+  assert.equal(duplicate.payload.detail.code, "deletion_request_already_open");
+  assert.equal(duplicate.payload.detail.request.id, requestId);
+
+  await privacyBrowser.page.reload({ waitUntil: "domcontentloaded" });
+  await privacyBrowser.page.getByText("Request history", { exact: true }).waitFor({ timeout: 20_000 });
+  await privacyBrowser.page.getByText("You already have an erasure request awaiting review.", { exact: false }).waitFor();
+  assert.equal(await submitErasure.isDisabled(), true, "an open erasure request must block duplicate UI submission after reload");
+  await privacyBrowser.context.close();
 
   const reviewerToken = process.env.SOLENOS_PRIVACY_REVIEWER_TOKEN;
   const deletionReviewerToken = process.env.SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN;
