@@ -2048,10 +2048,10 @@ finally:
   await statusHistory.getByText(reason, { exact: true }).waitFor();
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByText("Earlier care history", { exact: true }).click();
   const reloadedCard = page.locator("article.lcr-timeline-item").filter({
     hasText: "Sleep changes",
   });
+  await reloadedCard.waitFor({ state: "visible", timeout: 20_000 });
   const reloadedHistory = reloadedCard.locator("details").filter({
     hasText: "Previous status updates (1)",
   });
