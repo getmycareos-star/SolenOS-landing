@@ -1651,6 +1651,7 @@ await record("10 evidence-backed handoff", async () => {
   });
   assert.equal(replay.status, 200, JSON.stringify(replay.payload));
   assert.equal(replay.payload.draft_id, handoffDraftId);
+  assert.ok(["current", "stale", "unknown"].includes(replay.payload.source_freshness?.status), "replayed drafts must disclose source freshness");
   const invalid = await request("/api/v1/handoff-drafts/prepare", {
     token: identity.token, method: "POST",
     body: { purpose: "invalid-purpose", audience: "professional", window_days: 30 },
