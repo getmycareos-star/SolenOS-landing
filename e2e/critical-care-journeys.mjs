@@ -2042,7 +2042,7 @@ finally:
   await situationCard.getByRole("button", { name: "Save status", exact: true }).click();
   await situationCard.getByText("Previous status updates (1)", { exact: true })
     .waitFor({ timeout: 20_000 });
-  await situationCard.getByText("Caregiver reports worsening", { exact: true }).waitFor();
+  await situationCard.locator("details").getByText("Caregiver reports worsening", { exact: true }).waitFor();
   await situationCard.getByText(reason, { exact: true }).waitFor();
 
   await page.reload({ waitUntil: "domcontentloaded" });
