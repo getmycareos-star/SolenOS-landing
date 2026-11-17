@@ -211,13 +211,19 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
-  const firstCaptureUnderstanding = await page.locator(".care-card-understanding").innerText();
+  const firstCaptureUnderstanding = await page.locator(".lcr-recognition").innerText();
   assert.match(
     firstCaptureUnderstanding,
-    /first update about E2E first visit capture|one care detail about E2E first visit capture/i,
-    "one first-capture observation must not be described as several care concerns",
+    /first update about E2E first visit capture/i,
+    "one first-capture observation must be described as one update",
   );
   assert.doesNotMatch(firstCaptureUnderstanding, /several care concerns/i);
+  const firstCaptureRecordText = await page.locator(".living-care-record-panel").innerText();
+  assert.doesNotMatch(
+    firstCaptureRecordText,
+    /Keep tracking: Mum has been forgetting whether she has eaten breakfast/i,
+    "the record must not turn the original note into a repetitive next action",
+  );
   assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
 
   const browserIdentity = await page.evaluate(() => ({
