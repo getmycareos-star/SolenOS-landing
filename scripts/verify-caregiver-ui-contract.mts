@@ -185,6 +185,10 @@ assert.match(settingsPage, /\(item.status \?\? "active"\) === "active"/,
   "the caregiver inbox must distinguish active notifications from resolved ones");
 
 assert.ok(dailyCarePage.includes("<NaturalLanguageDailyUpdate />"), "free-text updates must use the existing Daily Care capture path");
+assert.match(dailyCarePage, /item\.original_text\.trim\(\)/, "Daily Care must display the original caregiver report without assistant-output filtering");
+assert.match(dailyCarePage, /item\.corrected_text\.trim\(\)/, "Daily Care must preserve the exact corrected caregiver wording");
+assert.match(dailyCarePage, /quick\.note\.trim\(\)/, "Daily Care must preserve original quick-check-in notes");
+assert.doesNotMatch(dailyCarePage, /caregiverSafeAssistantText\(item\.(original_text|corrected_text|reason)\)/, "caregiver-authored source text must not be filtered as assistant output");
 assert.ok(dailyCarePage.includes("Review suggested details"), "returning caregivers must be able to reopen pending Daily Care suggestions");
 assert.ok(dailyCarePage.includes("<CaptureAnalysisReview"), "Daily Care history must render the persisted review flow");
 assert.ok(captureReview.includes('getJSON(`/capture/analyses/${encodeURIComponent(analysisId)}`)'), "review UI must load the caregiver-scoped persisted extraction");
