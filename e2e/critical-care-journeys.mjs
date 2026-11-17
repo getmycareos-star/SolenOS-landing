@@ -1982,7 +1982,7 @@ try:
         person_id=person_id,
         situation_type=SituationType.UNKNOWN,
         state=SituationState.ACTIVE,
-        title="Sleep changes",
+        title="E2E sleep evidence review",
         description="A caregiver recorded restless sleep and overnight awakenings.",
         signal_ids=[event.id],
         signal_types=["care_event"],
@@ -2031,7 +2031,7 @@ finally:
   await page.getByText("How the care picture has changed", { exact: true }).click();
   await page.getByText("Care topics", { exact: true }).waitFor({ timeout: 20_000 });
   const situationCard = page.locator("article.lcr-timeline-item").filter({
-    hasText: "Sleep changes",
+    hasText: "E2E sleep evidence review",
   });
   await situationCard.waitFor({ state: "visible", timeout: 20_000 });
   await situationCard.getByRole("button", { name: "Review related notes and documents", exact: true }).click();
