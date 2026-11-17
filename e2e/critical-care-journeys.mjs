@@ -1864,6 +1864,7 @@ await record("Companion report review stays separate from conversation and persi
     "db = SessionLocal()",
     "try:",
     "    db.add(ConversationSession(id=session_id, person_id=person_id, caregiver_id=caregiver_id, title='Caregiver report review test', status='active'))",
+    "    db.flush()",
     "    db.add(ConversationMessage(id=message_id, session_id=session_id, role='user', content=source_text, client_turn_id=None))",
     "    db.commit()",
     "finally:",
