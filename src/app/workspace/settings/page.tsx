@@ -753,7 +753,7 @@ function PrivacyCard() {
       const ownedKeys = Array.from({ length: window.localStorage.length }, (_, index) =>
         window.localStorage.key(index)
       ).filter((key): key is string =>
-        Boolean(key && (key.startsWith("solenos_") || key === "onboarding_complete" || key === "onboarding_complete_at"))
+        Boolean(key && (key.startsWith("solenos_") || key.startsWith("solenos:") || key === "onboarding_complete" || key === "onboarding_complete_at"))
       );
       ownedKeys.forEach((key) => window.localStorage.removeItem(key));
     } catch {
