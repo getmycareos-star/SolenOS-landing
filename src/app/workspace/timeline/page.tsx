@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
@@ -275,6 +275,11 @@ export default function TimelinePage() {
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [personId, setPersonId] = useState<string | null>(null);
   const [changeHistoryOpen, setChangeHistoryOpen] = useState(false);
+  const changeHistoryDetailsRef = useRef<HTMLDetailsElement | null>(null);
+  useEffect(() => {
+    // Preserve a native disclosure opened before React finishes hydrating.
+    if (changeHistoryDetailsRef.current?.open) setChangeHistoryOpen(true);
+  }, []);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -777,8 +782,8 @@ export default function TimelinePage() {
       {personId && (
         <section aria-label="Care changes over time" style={{ marginTop: 24 }}>
           <details
+            ref={changeHistoryDetailsRef}
             className="timeline-history-details"
-            open={changeHistoryOpen}
             onToggle={(event) => setChangeHistoryOpen(event.currentTarget.open)}
           >
             <summary style={{ cursor: "pointer", fontWeight: 600, padding: "14px 0" }}>How the care picture has changed</summary>
