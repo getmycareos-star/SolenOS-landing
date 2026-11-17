@@ -57,6 +57,9 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     // window.name survives same-tab navigation but is not browser storage.
     // Do not use sessionStorage here: device cleanup intentionally clears it,
     // and a later navigation must never reseed a revoked credential.
+    // Playwright creates an initial about:blank document before navigation.
+    // Do not consume the one-time marker there: seed on the real app origin.
+    if (location.origin === "null" || location.protocol === "about:") return;
     if (window.name === "solenos-e2e-identity-seeded") return;
     window.name = "solenos-e2e-identity-seeded";
     localStorage.setItem("solenos_anonymous_access_token", identity.token);
