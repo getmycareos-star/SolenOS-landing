@@ -197,7 +197,8 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator("body").innerText());
   console.log("FIRST_VISIT_CAPTURE_STATE", await page.locator(".cognitive-workspace").getAttribute("class").catch(() => null));
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
-  await page.getByText(firstNote, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
+    .waitFor({ state: "visible", timeout: 30_000 });
   await page.locator(".history-event-list").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
