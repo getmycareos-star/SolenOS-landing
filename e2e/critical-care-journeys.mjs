@@ -2012,6 +2012,16 @@ finally:
   assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
   assert.ok(persisted.payload.some((row) => row.id === situationId));
 
+  const detailResponse = await request(
+    `/api/v1/change/situations/${encodeURIComponent(identity.personId)}/${encodeURIComponent(situationId)}/detail`,
+    { token: identity.token },
+  );
+  assert.equal(detailResponse.status, 200, JSON.stringify(detailResponse.payload));
+  const linkedSource = detailResponse.payload.source_records.find((row) => row.id === dailyCaptureEventId);
+  assert.ok(linkedSource, `situation detail must resolve its linked persisted care event; returned sources: ${JSON.stringify(detailResponse.payload.source_records)}`);
+  assert.match(linkedSource.excerpt ?? "", /restless sleep and three overnight awakenings/i,
+    "the detail API must expose the caregiver-authored source sentence, not only a derived situation summary");
+
   const { context, page } = await createBrowserPage(session, "/workspace/care-continuity");
   await page.getByRole("button", { name: "View care history", exact: true }).click();
   await page.waitForURL((url) => url.pathname === "/workspace/timeline", { timeout: 15_000 });
