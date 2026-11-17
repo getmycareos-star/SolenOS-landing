@@ -142,7 +142,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   page.on("pageerror", (error) => console.log("FIRST_VISIT_PAGE_ERROR", error.message));
   page.on("console", (message) => { if (message.type() === "error") console.log("FIRST_VISIT_CONSOLE_ERROR", message.text()); });
   page.on("response", (response) => {
-    if (response.status() >= 500) {
+    if (response.status() >= 400) {
       console.log("FIRST_VISIT_HTTP_ERROR", response.status(), response.url());
     }
   });
