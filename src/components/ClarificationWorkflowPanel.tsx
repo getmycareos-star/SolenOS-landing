@@ -458,7 +458,26 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         : "No answer was recorded. This question remains open for later.";
       if (status === "answered") { setAnswer(""); setAnswerProvenance(""); setAnswerEntryOpen(false); }
       await loadAll();
-      await loadHistory();
+      if (status === "answered") {
+        // Fetch the durable answer history by the exact question ID. Do not
+        // depend on a React state refresh racing the selected-question effect.
+        const [answerRows, reviewRows] = await Promise.all([
+          getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}/answer-history`),
+          getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}/review-history`),
+        ]);
+        if (!Array.isArray(answerRows) || answerRows.some((row) =>
+          row?.question_id !== selectedQuestion.id || row?.person_id !== scopePersonId)) {
+          throw new Error("Saved answer history did not match the selected care question");
+        }
+        if (!Array.isArray(reviewRows) || reviewRows.some((row) =>
+          row?.question_id !== selectedQuestion.id || row?.person_id !== scopePersonId)) {
+          throw new Error("Saved review history did not match the selected care question");
+        }
+        setHistory(answerRows as AnswerEvent[]);
+        setReviewEvents(reviewRows as ReviewEvent[]);
+      } else {
+        await loadHistory();
+      }
       setNotice(successNotice);
     } catch {
       setError("That change could not be saved. Please try again.");
