@@ -44,6 +44,8 @@ assert.match(settings, /key\.startsWith\("solenos_"\)/,
   "clearing a device must remove underscore-prefixed SolenOS localStorage keys");
 assert.match(settings, /key\.startsWith\("solenos:"\)/,
   "clearing a device must remove colon-namespaced SolenOS localStorage keys");
+assert.match(settings, /await ensureAnonymousSession\(\);\s*const result = await getJSON\("\/privacy\/requests"\)/,
+  "privacy request history must establish the authenticated anonymous session before reading server data");
 assert.match(settings, /window\.sessionStorage\.clear\(\)/,
   "clearing a device must also clear tab-scoped SolenOS state");
 assert.match(settings, /deleteJSON\("\/notifications\/push\/subscriptions"/,
