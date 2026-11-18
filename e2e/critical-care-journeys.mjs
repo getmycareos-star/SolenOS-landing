@@ -2306,7 +2306,7 @@ with engine.connect() as connection:
           (SELECT COUNT(*) FROM data_subject_requests
              WHERE id = :request_id AND request_status = 'fulfilled'
                AND person_id IS NULL AND caregiver_id IS NULL
-               AND record_metadata->'fulfilment'->>'operation' = 'deletion') AS redacted_receipts,
+               AND metadata->'fulfilment'->>'operation' = 'deletion') AS redacted_receipts,
           (SELECT COUNT(*) FROM audit_log_events
              WHERE target_id = :receipt_id AND action = 'privacy_request.deletion_fulfilled') AS deletion_audit_receipts
     """), params).mappings().one()
