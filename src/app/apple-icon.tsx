@@ -26,22 +26,25 @@ export default function AppleIcon() {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M13 72V42C13 24.88 26.88 11 44 11S75 24.88 75 42V72"
-            stroke={BRAND_COLORS.slate}
-            strokeWidth="5.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M26 72V43C26 33.06 34.06 25 44 25S62 33.06 62 43V72"
+            d="M13 72V42C13 24.9 26.9 11 44 11s31 13.9 31 31v30"
             stroke={BRAND_COLORS.sage}
-            strokeWidth="5.5"
+            strokeWidth="3.2"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
           <path
-            d="M44 43V72M13 72H75"
-            stroke={BRAND_COLORS.slate}
-            strokeWidth="5.5"
+            d="M27 72V43c0-9.4 7.6-17 17-17s17 7.6 17 17v29"
+            stroke={BRAND_COLORS.sage}
+            strokeWidth="3.2"
             strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M44 43v29M9 72h70"
+            stroke={BRAND_COLORS.sage}
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       </div>
