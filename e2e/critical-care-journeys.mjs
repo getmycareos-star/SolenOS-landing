@@ -277,7 +277,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.equal(feedbackPayload?.source_type, "feedback");
   await page.locator(".research-feedback-thanks").waitFor({ state: "visible", timeout: 10_000 });
   const persistedFeedbackEvents = await request(
-    `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    `/api/v1/learning-events/${encodeURIComponent(firstVisitSession.person.id)}`,
     { token: firstVisitSession.access_token },
   );
   assert.equal(persistedFeedbackEvents.status, 200, JSON.stringify(persistedFeedbackEvents.payload));
