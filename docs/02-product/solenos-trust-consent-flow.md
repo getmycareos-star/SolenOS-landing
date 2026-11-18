@@ -98,7 +98,7 @@ Always reachable from Menu → About SolenOS (and trust link row):
 Upload area: quiet privacy notice + link to Privacy Policy.  
 Emergency boundary: quiet footer / About note — not alarm chrome.
 
-Post-response feedback: “Did SolenOS understand this situation clearly?” → Helpful / Needs improvement → structured miss options + optional text → `POST /api/research-feedback`.
+Post-response feedback: “Did SolenOS understand this situation clearly?” → Helpful / Needs improvement → structured miss options + optional text → authenticated, consent-gated `POST /api/v1/feedback`. The legacy `/api/research-feedback` route is not implemented.
 
 ---
 

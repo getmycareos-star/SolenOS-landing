@@ -917,7 +917,8 @@ export const FUTURE_CAPABILITIES = {
 export const OPS_CONSOLE = {
   notANewPillar: true,
   routes: ["/ops", "/metrics"] as const,
-  ingest: "POST /api/track",
+  ingest: "server-only insertSolenEvent(); browser /api/track ingestion disabled",
+  clientIngestion: "DISABLED until a scoped persisted endpoint is implemented",
   table: "solen_events",
   migration: "db/migrations/075_solen_ops_events.sql",
   modulePath: "src/lib/ops-console",

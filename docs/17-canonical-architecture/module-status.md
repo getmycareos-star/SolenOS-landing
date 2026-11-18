@@ -152,7 +152,7 @@
 | `deterministic-prioritization` | 6-field Decision Snapshot overlay | **INTERNAL · IMPLEMENTED** | `verify:deterministic-prioritization` |
 | `observation-intelligence` | Text observation language | **INTERNAL · IMPLEMENTED** | observation path |
 | `north-star` feature gate | Feature eval log | **TELEMETRY** | `verify:product-north-star` |
-| `ops-console` + `/api/track` | Founder/eng console | **INTERNAL** | `verify:ops-console` |
+| `ops-console` (server-side event insert; browser ingestion disabled) | Founder/eng console | **INTERNAL** | `verify:ops-console` |
 
 ---
 

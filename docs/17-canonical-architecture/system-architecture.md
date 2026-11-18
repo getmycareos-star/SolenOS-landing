@@ -230,7 +230,7 @@ Internal product-learning / system-health console — **not** user-facing, **not
 | `/ops` | `OPS_SECRET` | Founders, eng, product |
 | `/metrics` | `METRICS_SECRET` | Investors (aggregates only) |
 
-Ingest: `POST /api/track` → `solen_events` (migration `075`)  
+Server-side event insertion: `insertSolenEvent()` → `solen_events` (migration `075`). Browser `track()` is a no-op; no `/api/track` route is registered.  
 Emitter: `src/lib/trackEvent.ts` · Module: `src/lib/ops-console`  
 Docs: `docs/OPS_CONSOLE.md` · robots: Disallow `/ops` `/metrics`  
 Domain: https://solenosai.netlify.app
