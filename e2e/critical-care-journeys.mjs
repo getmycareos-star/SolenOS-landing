@@ -145,6 +145,23 @@ async function record(name, work) {
 
 // 0. First-time caregiver: focused welcome, first capture, durable save, then returning record.
 const firstVisitSession = await newSession("first visit capture");
+const firstVisitConsent = await request("/api/v1/consent", {
+  token: firstVisitSession.access_token,
+  method: "POST",
+  body: {
+    person_id: firstVisitSession.person.id,
+    caregiver_id: firstVisitSession.caregiver.id,
+    medical_disclaimer_acknowledged: true,
+    privacy_model_acknowledged: true,
+    multi_caregiver_acknowledged: true,
+    no_advertising_acknowledged: true,
+    data_improvement_consent: true,
+    accepted_terms_version: "2026-10",
+  },
+});
+assert.equal(firstVisitConsent.status, 200, JSON.stringify(firstVisitConsent.payload));
+assert.equal(firstVisitConsent.payload.verified, true);
+assert.equal(firstVisitConsent.payload.profile?.data_improvement_consent, true);
 await record("00 first-time caregiver capture and persisted return", async () => {
   const { context, page, pageErrors } = await createBrowserPage(
     firstVisitSession,
@@ -244,6 +261,30 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     "the record must not turn the original note into a repetitive next action",
   );
   assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
+
+  const helpfulFeedback = page.getByRole("button", { name: "Helpful", exact: true });
+  await helpfulFeedback.waitFor({ state: "visible", timeout: 15_000 });
+  const feedbackResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/v1/feedback" &&
+    response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
+  await helpfulFeedback.click();
+  const feedbackResponse = await feedbackResponsePromise;
+  const feedbackPayload = await feedbackResponse.json().catch(() => null);
+  assert.equal(feedbackResponse.status(), 200, JSON.stringify(feedbackPayload));
+  assert.equal(feedbackPayload?.event_type, "feedback");
+  assert.equal(feedbackPayload?.source_type, "feedback");
+  await page.locator(".research-feedback-thanks").waitFor({ state: "visible", timeout: 10_000 });
+  const persistedFeedbackEvents = await request(
+    `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    { token: firstVisitSession.access_token },
+  );
+  assert.equal(persistedFeedbackEvents.status, 200, JSON.stringify(persistedFeedbackEvents.payload));
+  assert.ok(
+    persistedFeedbackEvents.payload.some((event) => event.event_type === "feedback" && event.source_type === "feedback"),
+    "explicit caregiver feedback must persist through the consent-gated backend contract",
+  );
 
   const browserIdentity = await page.evaluate(() => ({
     tokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
