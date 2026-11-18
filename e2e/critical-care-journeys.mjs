@@ -102,7 +102,15 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
       // page.isClosed(). Ignore only that explicit target-closed teardown error.
       const message = String(error?.message || error);
       const targetClosedDuringTeardown = /Target page, context or browser has been closed|TargetClosedError/.test(message);
-      if (page.isClosed() || context.pages().length === 0 || targetClosedDuringTeardown) return;
+      const requestFailure = route.request().failure();
+      const responseDisposedAfterRequestAbort =
+        /Fetch response has been disposed/.test(message) && Boolean(requestFailure);
+      if (
+        page.isClosed() ||
+        context.pages().length === 0 ||
+        targetClosedDuringTeardown ||
+        responseDisposedAfterRequestAbort
+      ) return;
       throw error;
     }
   });
