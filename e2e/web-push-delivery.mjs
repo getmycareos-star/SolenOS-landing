@@ -48,14 +48,12 @@ assert.equal(capability.available, true, "CI VAPID configuration must enable bro
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext();
+// Grant the browser permission at context creation, before any page or redirect
+// can trigger permission checks. This isolated CI context is used only for push E2E.
+const context = await browser.newContext({ permissions: ["notifications"] });
 try {
   const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
-  // Grant against the browser's actual post-navigation origin (the app may redirect
-  // the initial URL). Playwright requires the exact origin for Chromium permissions.
-  const pageOrigin = await page.evaluate(() => window.location.origin);
-  await context.grantPermissions(["notifications"], { origin: pageOrigin });
 
   const subscription = await page.evaluate(async (encodedPublicKey) => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
