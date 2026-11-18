@@ -213,6 +213,13 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(
+    await page.locator(".care-card-understanding").count(),
+    0,
+    "first capture must not show Clarity when no grounded interpretation is available",
+  );
+  await page.getByText("What else have you noticed alongside this?", { exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
   const firstCaptureUnderstanding = await page.locator(".lcr-recognition").innerText();
   assert.match(
     firstCaptureUnderstanding,
