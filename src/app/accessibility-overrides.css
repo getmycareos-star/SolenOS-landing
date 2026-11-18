@@ -222,6 +222,65 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 :root[data-solenos-theme="dark"] .solenos-display-panel :is(h2, legend, label, p, button) { color:#ffffff; }
 :root[data-solenos-theme="dark"] .solenos-display-trigger,
 :root[data-solenos-theme="dark"] .solenos-display-trigger * { background:#dce9dc; color:#18251b; }
+
+/* The real application shell uses solenos-chat-* classes. Theme those surfaces
+   directly; do not blanket-colour every paragraph/span in the document. */
+:root[data-solenos-theme="dark"] body,
+:root[data-solenos-theme="dark"] .solenos-chat-app,
+:root[data-solenos-theme="dark"] .solenos-chat-workspace,
+:root[data-solenos-theme="dark"] .solenos-chat-main,
+:root[data-solenos-theme="dark"] .mobile-screen {
+  background-color:#111817;
+  color:#ffffff;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-sidebar {
+  background:#202a24;
+  color:#ffffff;
+  border-color:#526256;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-sidebar :is(
+  a, button, span, p, strong, small, h1, h2, h3, h4, label
+):not(.solenos-chat-brand-mark) { color:#ffffff; }
+:root[data-solenos-theme="dark"] .solenos-chat-nav-item { background:transparent; color:#ffffff; }
+:root[data-solenos-theme="dark"] .solenos-chat-nav-item:hover { background:#34463a; }
+:root[data-solenos-theme="dark"] .solenos-chat-nav-item.is-active { background:#3b5143; color:#ffffff; }
+:root[data-solenos-theme="dark"] .solenos-chat-history-heading { color:#d0dbd2; }
+:root[data-solenos-theme="dark"] .solenos-chat-topbar {
+  background:#111817; color:#ffffff; border-color:#435149;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-topbar :is(button, span, p, a) { color:#ffffff; }
+:root[data-solenos-theme="dark"] .solenos-sidebar-icon-button:hover { background:#34463a; color:#ffffff; }
+
+/* Shared app tokens also cover inline-styled document, settings and care panels. */
+:root[data-solenos-theme="dark"] :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  background-color:#18211c;
+  color:#ffffff;
+  border-color:#718477;
+}
+:root[data-solenos-theme="dark"] :is(input, textarea, select)::placeholder {
+  color:#d0dbd2; opacity:1;
+}
+:root[data-solenos-theme="dark"] .document-card,
+:root[data-solenos-theme="dark"] .workspace-entry-action {
+  background:#ffffff;
+  color:#18251b;
+  border-color:#dce5e8;
+}
+:root[data-solenos-theme="dark"] .document-card :is(h1,h2,h3,p,span,strong,small),
+:root[data-solenos-theme="dark"] .workspace-entry-action :is(span,strong,small) {
+  color:#18251b;
+}
+:root[data-solenos-theme="dark"] .workspace-primary,
+:root[data-solenos-theme="dark"] .workspace-primary button,
+:root[data-solenos-theme="dark"] .care-reality-fab {
+  background:#167d78;
+  color:#ffffff;
+  border-color:#167d78;
+}
+:root[data-solenos-theme="dark"] .solenos-display-preferences { inset-block-end:max(88px,calc(env(safe-area-inset-bottom) + 76px)); }
+@media (max-width: 640px) {
+  .solenos-display-preferences { max-width: calc(100vw - 16px); }
+}
 @media (max-width: 360px) {
   .solenos-display-trigger { min-width:48px; padding-inline:10px; }
   .solenos-display-trigger span:nth-child(2) { display:none; }
