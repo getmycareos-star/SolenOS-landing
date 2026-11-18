@@ -50,14 +50,21 @@ assert.ok(capability.public_key, "The server must return its configured VAPID pu
 const browser = await chromium.launch({ headless: true });
 // Grant the browser permission at context creation, before any page or redirect
 // can trigger permission checks. This isolated CI context is used only for push E2E.
-const context = await browser.newContext();
-// Chromium can retain its default denied notification permission even when the
-// permission is supplied in newContext options. Grant it explicitly for the
-// exact local app origin before creating or navigating the page.
-await context.grantPermissions(["notifications"], { origin: new URL(frontend).origin });
+const context = await browser.newContext({ permissions: ["notifications"] });
 try {
   const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
+
+  // Grant against the final browser origin after redirects. This ensures the
+  // permission is scoped to the exact origin that owns the service worker.
+  const pageOrigin = new URL(page.url()).origin;
+  await context.grantPermissions(["notifications"], { origin: pageOrigin });
+  const notificationPermission = await page.evaluate(() => Notification.permission);
+  assert.equal(
+    notificationPermission,
+    "granted",
+    `Chromium notification permission was not granted for ${pageOrigin}`,
+  );
 
   const subscription = await page.evaluate(async (encodedPublicKey) => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
