@@ -16,7 +16,6 @@ export default function AppleIcon() {
           alignItems: "center",
           justifyContent: "center",
           background: BRAND_COLORS.paper,
-          padding: 16,
         }}
       >
         <svg
@@ -27,19 +26,19 @@ export default function AppleIcon() {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M22 68V44C22 31.85 31.85 22 44 22S66 31.85 66 44V68"
+            d="M13 72V42C13 24.88 26.88 11 44 11S75 24.88 75 42V72"
             stroke={BRAND_COLORS.slate}
             strokeWidth="5.5"
             strokeLinecap="round"
           />
           <path
-            d="M32 68V44C32 37.37 37.37 32 44 32S56 37.37 56 44V68"
+            d="M26 72V43C26 33.06 34.06 25 44 25S62 33.06 62 43V72"
             stroke={BRAND_COLORS.sage}
             strokeWidth="5.5"
             strokeLinecap="round"
           />
           <path
-            d="M44 44V68M22 68H66"
+            d="M44 43V72M13 72H75"
             stroke={BRAND_COLORS.slate}
             strokeWidth="5.5"
             strokeLinecap="round"
