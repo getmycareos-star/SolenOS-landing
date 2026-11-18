@@ -59,6 +59,21 @@ try {
   const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
 
+  // Re-grant against the final document origin after redirects. Chromium's
+  // permission override can otherwise remain scoped away from the loaded app.
+  const appOrigin = new URL(page.url()).origin;
+  await context.grantPermissions(["notifications"], { origin: appOrigin });
+  const permissionState = await page.evaluate(async () => ({
+    notification: Notification.permission,
+    permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
+    origin: location.origin,
+  }));
+  assert.equal(
+    permissionState.notification,
+    "granted",
+    `Chromium notification permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
+  );
+
   const subscription = await page.evaluate(async (encodedPublicKey) => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       throw new Error("Chromium does not expose the Web Push APIs required for this test");
