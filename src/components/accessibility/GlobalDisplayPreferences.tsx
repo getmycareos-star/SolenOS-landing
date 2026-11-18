@@ -41,6 +41,7 @@ export function GlobalDisplayPreferences() {
   const [ready, setReady] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const [rootSize, setRootSize] = useState({ width: 120, height: 48 });
   const [announcement, setAnnouncement] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ pointerId: number; startX: number; startY: number; left: number; top: number; moved: boolean } | null>(null);
@@ -88,6 +89,7 @@ export function GlobalDisplayPreferences() {
       setViewport({ width: window.innerWidth, height: window.innerHeight });
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
+      setRootSize({ width: rect.width, height: rect.height });
       setPosition((current) => {
         if (!current) return current;
         const bounded = clampPosition(current, rect.width, rect.height);
@@ -167,19 +169,26 @@ export function GlobalDisplayPreferences() {
     setAnnouncement("Display control moved. Its new position is saved on this device.");
   }
 
-  const placement = position
-    ? {
-        vertical: position.top < viewport.height / 2 ? "below" : "above",
-        horizontal: position.left < viewport.width / 2 ? "left" : "right",
-      }
-    : { vertical: "above", horizontal: "right" };
+  const availableAbove = position ? Math.max(0, position.top - 18) : 0;
+  const availableBelow = position
+    ? Math.max(0, viewport.height - position.top - rootSize.height - 18)
+    : 0;
+  const panelVertical = availableBelow >= availableAbove ? "below" : "above";
+  const panelWidth = Math.max(0, Math.min(352, viewport.width - 24));
+  const panelMaxLeft = Math.max(8, viewport.width - panelWidth - 8);
+  const panelLeft = position ? Math.max(8, Math.min(position.left, panelMaxLeft)) : 8;
+  const panelStyle: CSSProperties = {
+    left: position ? panelLeft - position.left : 0,
+    right: "auto",
+    maxHeight: Math.max(120, Math.min(viewport.height * 0.7, Math.max(availableAbove, availableBelow))),
+  };
 
   const positionStyle: CSSProperties | undefined = position
     ? { left: position.left, top: position.top, right: "auto", bottom: "auto" }
     : undefined;
 
   return (
-    <div ref={rootRef} className="solenos-display-preferences" style={positionStyle} data-panel-vertical={placement.vertical} data-panel-horizontal={placement.horizontal}>
+    <div ref={rootRef} className="solenos-display-preferences" style={positionStyle} data-panel-vertical={panelVertical}>
       <button
         type="button"
         className="solenos-display-trigger"
@@ -203,7 +212,7 @@ export function GlobalDisplayPreferences() {
       </button>
       <span className="solenos-display-sr-only" role="status" aria-live="polite">{announcement}</span>
       {open && (
-        <section id="solenos-display-panel" className="solenos-display-panel" role="region" aria-label="Display and accessibility settings">
+        <section id="solenos-display-panel" className="solenos-display-panel" style={panelStyle} role="region" aria-label="Display and accessibility settings">
           <div className="solenos-display-panel-heading">
             <h2>Display & accessibility</h2>
             <button type="button" className="solenos-display-close" onClick={() => setOpen(false)} aria-label="Close display settings">×</button>
