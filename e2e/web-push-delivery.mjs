@@ -54,7 +54,7 @@ const context = await browser.newContext();
 // Chromium can retain its default denied notification permission even when the
 // permission is supplied in newContext options. Grant it explicitly for the
 // exact local app origin before creating or navigating the page.
-await context.grantPermissions(["notifications"], { origin: new URL(frontend).origin });
+await context.grantPermissions(["notifications"]);
 try {
   const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
