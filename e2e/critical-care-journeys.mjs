@@ -2449,7 +2449,7 @@ await record("17 Daily Care suggested-detail review actions preserve caregiver c
     { subject: "mood", observation: "Mum seemed unsettled this morning.", source_quote: "Mum seemed unsettled this morning.", review_status: "pending_review" },
   ];
   const decisions = [];
-  await page.route("**/api/care-continuity/current-care**", (route) => route.fulfill({
+  await page.route("**/api/v1/care-continuity/current-care**", (route) => route.fulfill({
     status: 200,
     contentType: "application/json",
     body: JSON.stringify({ items: [{
@@ -2466,19 +2466,19 @@ await record("17 Daily Care suggested-detail review actions preserve caregiver c
       },
     }] }),
   }));
-  await page.route("**/api/daily-care/intelligence/history**", (route) => route.fulfill({
+  await page.route("**/api/v1/daily-care/intelligence/history**", (route) => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
   }));
-  await page.route("**/api/open-loops**", (route) => route.fulfill({
+  await page.route("**/api/v1/open-loops**", (route) => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
   }));
-  await page.route("**/api/notifications**", (route) => route.fulfill({
+  await page.route("**/api/v1/notifications**", (route) => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
   }));
-  await page.route("**/api/documents/status**", (route) => route.fulfill({
+  await page.route("**/api/v1/documents/status**", (route) => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
   }));
-  await page.route(`**/api/capture/analyses/${analysisId}**`, async (route) => {
+  await page.route(`**/api/v1/capture/analyses/${analysisId}**`, async (route) => {
     if (route.request().method() === "GET") {
       return route.fulfill({
         status: 200, contentType: "application/json",
