@@ -94,26 +94,10 @@ try {
     await context.grantPermissions(["notifications"], { origin: appOrigin });
     await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
   }
-  // Chromium requires a trusted user activation for the notification
-  // permission request. Use a test-only button so requestPermission runs from
-  // a real Playwright click rather than an untrusted page.evaluate call.
-  await page.evaluate(() => {
-    const button = document.createElement("button");
-    button.id = "__solenos-grant-notifications";
-    button.type = "button";
-    button.textContent = "Enable notifications";
-    button.style.cssText = "position:fixed;top:0;left:0;z-index:2147483647;padding:12px";
-    button.addEventListener("click", () => {
-      void Notification.requestPermission();
-    });
-    document.body.appendChild(button);
-  });
-  await page.click("#__solenos-grant-notifications");
-  await page.waitForFunction(
-    () => Notification.permission === "granted",
-    null,
-    { timeout: 5_000 },
-  );
+  // Chromium headless can report Notification.permission as "denied" even
+  // when Playwright has granted the notifications permission. The actual
+  // PushManager subscription and delivered service-worker notification below
+  // are the authoritative checks, not this known-buggy property.
   const permissionState = await page.evaluate(async () => ({
     notification: Notification.permission,
     permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
@@ -121,10 +105,11 @@ try {
     secureContext: window.isSecureContext,
   }));
   assert.equal(
-    permissionState.notification,
+    permissionState.permissionsApi,
     "granted",
-    `Chromium notification permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
+    `Chromium notifications permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
   );
+  assert.equal(permissionState.secureContext, true, "Web Push requires a secure browser context");
 
   const subscription = await page.evaluate(async (encodedPublicKey) => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
