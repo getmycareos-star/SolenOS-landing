@@ -152,6 +152,10 @@ jobs:
       - name: Run critical caregiver browser journeys against PostgreSQL-backed FastAPI
         run: FRONTEND_URL=http://127.0.0.1:3000 BACKEND_URL=http://127.0.0.1:8000 node e2e/critical-care-journeys.mjs
       - name: Run continuity and production-safety checks
+        # These source-contract scripts include isolated in-memory legacy-domain fixtures.
+        # Real PostgreSQL durability is exercised by the preceding live FastAPI/Chromium E2E.
+        env:
+          DATABASE_URL: ""
         run: npm test
       - name: Verify caregiver-facing language boundary
         run: npm run verify:caregiver-language-boundary
