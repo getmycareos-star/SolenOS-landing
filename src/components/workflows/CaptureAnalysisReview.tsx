@@ -187,7 +187,20 @@ export default function CaptureAnalysisReview({
                     <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "correct")}>
                       Save correction
                     </button>
-                    <button type="button" disabled={busyIndex !== null} onClick={() => setEditingIndex(null)}>
+                    <button
+                      type="button"
+                      disabled={busyIndex !== null}
+                      onClick={() => {
+                        setDrafts((current) => ({
+                          ...current,
+                          [index]: {
+                            subject: candidate.corrected_subject ?? candidate.subject ?? "",
+                            observation: candidate.corrected_observation ?? candidate.observation ?? "",
+                          },
+                        }));
+                        setEditingIndex(null);
+                      }}
+                    >
                       Cancel
                     </button>
                   </>
