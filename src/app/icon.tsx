@@ -26,22 +26,25 @@ export default function Icon() {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M19 68V44C19 30.19 30.19 19 44 19S69 30.19 69 44V68"
-            stroke={BRAND_COLORS.slate}
-            strokeWidth="5.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M30 68V44C30 36.27 36.27 30 44 30S58 36.27 58 44V68"
+            d="M13 72V42C13 24.9 26.9 11 44 11s31 13.9 31 31v30"
             stroke={BRAND_COLORS.sage}
-            strokeWidth="5.5"
+            strokeWidth="2.6"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
           <path
-            d="M44 44V68M19 68H69"
-            stroke={BRAND_COLORS.slate}
-            strokeWidth="5.5"
+            d="M27 72V43c0-9.4 7.6-17 17-17s17 7.6 17 17v29"
+            stroke={BRAND_COLORS.sage}
+            strokeWidth="2.6"
             strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M44 43v29M9 72h70"
+            stroke={BRAND_COLORS.sage}
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       </div>
