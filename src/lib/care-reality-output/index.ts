@@ -37,6 +37,10 @@ export const WEAK_ORIENTATION_PHRASES = [
   "first care observations are held",
   "unknowns stay open until clearer evidence",
   "beginning to understand this care situation",
+  "your first care detail is saved",
+  "this first update about",
+  "this first care update is saved",
+  "several care concerns are gathered from what you shared",
 ] as const;
 
 export function containsWeakOrientation(text: string): boolean {
