@@ -1,4 +1,6 @@
-# SolenOS — Production Release TODO (Restructure & Trust Audit)
+# SolenOS — Historical Production Release TODO (Restructure & Trust Audit)
+
+> **Superseded checklist — do not use its historical [x] marks as current release evidence.** This file contains claims from earlier deployments and architectures. Current source of truth is the Next.js App Router frontend on `main` and the FastAPI backend on `main`. In particular, the backend does **not** register `/api/research-feedback` or `/api/track`; feedback is `POST /api/v1/feedback`, while telemetry in `src/lib/trackEvent.ts` is intentionally a no-op. The active backend is `https://solenosbackend-production.up.railway.app`. Verify current workflows and production deployment independently before release.
 
 > Generated for the SolenOS release restructure. Optimize for reliability, accuracy,
 > persistence, transparency, user confidence — not feature count.
@@ -8,7 +10,7 @@
 ---
 
 ## TASK 1 — Fix production client exception (runtime)
-- [x] Root cause identified: `useSearchParams()` without Suspense in `workspace/page.tsx`
+- [x] Root cause identified at the time: `useSearchParams()` without Suspense in `workspace/page.tsx`
 - [x] Wrap page in `<Suspense>` (verified in source)
 - [x] `displayName` hydration mismatch fixed via useState + useEffect (verified)
 - [x] Build passes (BUILD_ID generated)
@@ -57,10 +59,10 @@
 - [x] API contract: request payload/response structure/error format match backend `/api/situation` (verified live — POST returned canonical response with `what_i_understood`, `ui_situations`, etc.)
 
 ## TASK 9-11 — Backend connection, CORS, env, Next.js config
-- [x] Backend route exists & verified: `/api/research-feedback`, `/api/feedback`, `/api/situation`, `/api/extract`, `/api/track` all present in backend repo
+- [ ] Historical route claim invalid: `/api/research-feedback` and `/api/track` are not registered; current feedback route is `POST /api/v1/feedback`, and telemetry is a no-op.
 - [x] CORS: backend `src/middleware.ts` allows `https://solenosai.netlify.app`; METHODS GET/POST/OPTIONS; HEADERS Content-Type; correct OPTIONS preflight + `Vary: Origin` (verified)
-- [x] Frontend `netlify.toml` proxies `/api/*` to `https://solenosbackend-production-8773.up.railway.app` + CORS headers (uncommitted change)
-- [x] `NEXT_PUBLIC_API_URL` = `https://solenosbackend-production-8773.up.railway.app` (`.env.production`) — no localhost (verified `api-url.ts` + `.env.production`)
+- [ ] Historical Netlify proxy claim is obsolete; inspect current explicit rewrites in `netlify.toml`.
+- [ ] Historical `NEXT_PUBLIC_API_URL` value is obsolete; verify the deployed Netlify environment separately.
 - [x] `next.config.ts` has NO `output: "export"` (verified — correct for Netlify Next.js runtime)
 - [x] Netlify: `npm run build`, publish `.next`, plugin `@netlify/plugin-nextjs`, repo SolenOS-landing
 - [x] Backend online verified (live): GET `/api/situation` with valid params -> **200 OK** (1210 bytes); without params -> structured 400 (correct validation, not crash)
