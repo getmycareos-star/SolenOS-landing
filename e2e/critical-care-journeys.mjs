@@ -2534,7 +2534,7 @@ await record("17 Daily Care suggested-detail review actions preserve caregiver c
   await thirdCandidate.getByRole("textbox", { name: "Suggested detail observation 3", exact: true }).fill("Unsaved observation change.");
   await thirdCandidate.getByRole("button", { name: "Cancel", exact: true }).click();
   await thirdCandidate.getByText("mood", { exact: true }).waitFor();
-  await thirdCandidate.getByText("Mum seemed unsettled this morning.", { exact: true }).waitFor();
+  await thirdCandidate.getByText("Mum seemed unsettled this morning.", { exact: true }).first().waitFor();
   await thirdCandidate.getByRole("button", { name: "Dismiss", exact: true }).click();
   await thirdCandidate.getByText("Dismissed", { exact: true }).waitFor();
   assert.deepEqual(decisions.map((item) => item.decision), ["accept", "correct", "reject"]);
