@@ -199,8 +199,6 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 }
 .solenos-display-preferences[data-panel-vertical="above"] .solenos-display-panel { bottom: calc(100% + 10px); }
 .solenos-display-preferences[data-panel-vertical="below"] .solenos-display-panel { top: calc(100% + 10px); }
-.solenos-display-preferences[data-panel-horizontal="left"] .solenos-display-panel { left: 0; right: auto; }
-.solenos-display-preferences[data-panel-horizontal="right"] .solenos-display-panel { right: 0; left: auto; }
 .solenos-display-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .solenos-display-panel-heading h2 { margin:0; font-size:1.05rem; }
 .solenos-display-close {
