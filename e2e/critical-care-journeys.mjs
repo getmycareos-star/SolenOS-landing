@@ -2434,5 +2434,111 @@ await record("16 clearing this device revokes the session and removes SolenOS br
   await context.close();
 });
 
+
+await record("17 Daily Care suggested-detail review actions preserve caregiver choice on mobile", async () => {
+  const reviewSession = await newSession("suggested detail review UI");
+  const { context, page, pageErrors } = await createBrowserPage(
+    reviewSession,
+    "/workspace/daily-care",
+    { width: 390, height: 844 },
+  );
+  const analysisId = "e2e-review-analysis";
+  const candidates = [
+    { subject: "sleep", observation: "Mum slept poorly last night.", source_quote: "Mum slept poorly last night.", review_status: "pending_review" },
+    { subject: "appetite", observation: "Mum ate very little at lunch.", source_quote: "Mum ate very little at lunch.", review_status: "pending_review" },
+    { subject: "mood", observation: "Mum seemed unsettled this morning.", source_quote: "Mum seemed unsettled this morning.", review_status: "pending_review" },
+  ];
+  const decisions = [];
+  await page.route("**/api/care-continuity/current-care**", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ items: [{
+      id: "e2e-daily-care-source",
+      title: "Daily Care update",
+      description: "A saved update is ready for review.",
+      source_type: "caregiver_report",
+      event_type: "structured_daily_capture",
+      capture_processing: {
+        analysis_id: analysisId,
+        extraction_status: "available",
+        review_required: true,
+        message: "Suggested details are ready to review.",
+      },
+    }] }),
+  }));
+  await page.route("**/api/daily-care/intelligence/history**", (route) => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
+  }));
+  await page.route("**/api/open-loops**", (route) => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
+  }));
+  await page.route("**/api/notifications**", (route) => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
+  }));
+  await page.route("**/api/documents/status**", (route) => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
+  }));
+  await page.route(`**/api/capture/analyses/${analysisId}**`, async (route) => {
+    if (route.request().method() === "GET") {
+      return route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ analysis_id: analysisId, extraction_status: "available", candidates: { observations: candidates }, review_required: true }),
+      });
+    }
+    const body = route.request().postDataJSON();
+    const candidate = candidates[body.candidate_index];
+    assert.ok(candidate, "review action must address an existing candidate");
+    decisions.push({ ...body });
+    if (body.decision === "correct") {
+      candidate.corrected_subject = body.corrected_subject;
+      candidate.corrected_observation = body.corrected_observation;
+      candidate.review_status = "corrected_pending_approval";
+    } else if (body.decision === "accept") {
+      candidate.review_status = "accepted_by_caregiver";
+    } else {
+      candidate.review_status = "rejected_by_caregiver";
+    }
+    return route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({
+        analysis_id: analysisId,
+        candidate: { ...candidate },
+        review_decision: body.decision,
+        written_to_lcr: body.decision === "accept",
+        message: body.decision === "accept"
+          ? "The reviewed detail was added to the care record."
+          : body.decision === "correct"
+            ? "Correction saved. It still needs approval before it becomes part of the care record."
+            : "Suggestion dismissed. No care-record detail was added.",
+      }),
+    });
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Daily Care", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Review suggested details", exact: true }).click();
+  const review = page.getByRole("region", { name: "Review suggested care details" });
+  await review.waitFor({ state: "visible", timeout: 10_000 });
+  await review.getByText("From your note", { exact: true }).first().waitFor();
+  await review.getByRole("button", { name: "Accept and add to care record", exact: true }).nth(0).click();
+  await review.getByText("Accepted and added to the care record", { exact: true }).waitFor();
+  await review.getByRole("button", { name: "Correct", exact: true }).nth(0).click();
+  const subject = review.getByRole("textbox", { name: "Suggested detail subject 2", exact: true });
+  await subject.fill("Eating");
+  await review.getByRole("textbox", { name: "Suggested detail observation 2", exact: true }).fill("Mum ate a small amount at lunch.");
+  await review.getByRole("button", { name: "Save correction", exact: true }).click();
+  await review.getByText("Correction saved — waiting for approval", { exact: true }).waitFor();
+  await review.getByText("Correction saved. It still needs approval before it becomes part of the care record.", { exact: true }).waitFor();
+  await review.getByRole("button", { name: "Dismiss", exact: true }).click();
+  await review.getByText("Dismissed", { exact: true }).waitFor();
+  assert.deepEqual(decisions.map((item) => item.decision), ["accept", "correct", "reject"]);
+  assert.equal(decisions[1].corrected_subject, "Eating");
+  assert.equal(decisions[1].corrected_observation, "Mum ate a small amount at lunch.");
+  assert.equal(candidates[1].review_status, "corrected_pending_approval", "correction must not silently become an accepted LCR item");
+  assert.equal(candidates[2].review_status, "rejected_by_caregiver", "dismissal must remain distinct from acceptance");
+  await verifyMobile(page);
+  assert.deepEqual(pageErrors, [], `suggested-detail review must not throw browser errors: ${JSON.stringify(pageErrors)}`);
+  await context.close();
+});
+
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
