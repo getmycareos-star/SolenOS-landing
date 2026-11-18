@@ -1,5 +1,7 @@
 # SolenOS active frontend/backend API contract audit — 2026-10-24
 
+> **SUPERSEDED — historical contract snapshot.** This document describes an earlier branch and incorrectly lists Community as active. On current `main`, Community is intentionally disabled in both frontend and backend. Treat all route mappings below as historical until re-verified against current `main` source and tests.
+
 ## Scope
 
 This audit covers the active Next.js caregiver surface and the FastAPI application on the Railway-target branch `feat/care-continuity-integrity-engine-2026-10-22`. Archived Vite pages and the `/ops/devtools` quarantine are not part of the caregiver workflow.
