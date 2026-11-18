@@ -297,6 +297,7 @@ export default function ClaimAssessmentPanel() {
     setDependencySaving(true);
     setDependencyError("");
     setDependencyNotice("");
+    let writeCompleted = false;
     try {
       await postJSON("/uncertainty/claims/dependencies", {
         person_id: personId,
@@ -305,17 +306,7 @@ export default function ClaimAssessmentPanel() {
         dependency_type: dependencyType,
         rationale: dependencyRationale.trim(),
       });
-    } catch {
-      setDependencyError("We couldn't confirm that this link was saved. Refresh related care details before trying again.");
-      setDependencySaving(false);
-      return;
-    }
-
-    // The write endpoint confirmed persistence. A later read failure must not
-    // reverse that receipt or claim that no change was made.
-    setDependencyRationale("");
-    setDependencyNotice("The link was saved. This records how the details are related; it does not prove that either detail is true.");
-    try {
+      writeCompleted = true;
       const result = await getJSON(
         `/uncertainty/claims/${encodeURIComponent(selectedClaim.id)}/dependencies`,
       );
@@ -328,8 +319,13 @@ export default function ClaimAssessmentPanel() {
         throw new Error("Dependency graph escaped the authenticated care record");
       }
       setDependencies(rows);
+      setDependencyRationale("");
+      setDependencyNotice("The connection was saved. This records how the details are related; it does not prove that either detail is true.");
     } catch {
-      setDependencyError("The link was saved, but related care details could not be refreshed. Try reloading this section.");
+      setDependencyNotice("");
+      setDependencyError(writeCompleted
+        ? "The connection may have been saved, but the updated details could not be loaded. Refresh this page before trying again."
+        : "We couldn't confirm that this connection was saved. Check your connection and refresh before trying again.");
     } finally {
       setDependencySaving(false);
     }
