@@ -297,7 +297,6 @@ export default function ClaimAssessmentPanel() {
     setDependencySaving(true);
     setDependencyError("");
     setDependencyNotice("");
-    let writeCompleted = false;
     try {
       await postJSON("/uncertainty/claims/dependencies", {
         person_id: personId,
@@ -306,7 +305,17 @@ export default function ClaimAssessmentPanel() {
         dependency_type: dependencyType,
         rationale: dependencyRationale.trim(),
       });
-      writeCompleted = true;
+    } catch {
+      setDependencyError("We couldn't confirm that this connection was saved. Check your connection and refresh before trying again.");
+      setDependencySaving(false);
+      return;
+    }
+
+    // The backend confirmed the write. A later refresh failure must not undo
+    // the receipt or suggest that the caregiver's action was lost.
+    setDependencyRationale("");
+    setDependencyNotice("The connection was saved. This records how the details are related; it does not prove that either detail is true.");
+    try {
       const result = await getJSON(
         `/uncertainty/claims/${encodeURIComponent(selectedClaim.id)}/dependencies`,
       );
@@ -319,13 +328,8 @@ export default function ClaimAssessmentPanel() {
         throw new Error("Dependency graph escaped the authenticated care record");
       }
       setDependencies(rows);
-      setDependencyRationale("");
-      setDependencyNotice("The connection was saved. This records how the details are related; it does not prove that either detail is true.");
     } catch {
-      setDependencyNotice("");
-      setDependencyError(writeCompleted
-        ? "The connection may have been saved, but the updated details could not be loaded. Refresh this page before trying again."
-        : "We couldn't confirm that this connection was saved. Check your connection and refresh before trying again.");
+      setDependencyError("The connection was saved, but related care details could not be refreshed. Reload this section before making another change.");
     } finally {
       setDependencySaving(false);
     }
