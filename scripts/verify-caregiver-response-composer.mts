@@ -37,6 +37,7 @@ import {
   classifyCaregiverTurn,
   evidenceMaturityFor,
 } from "../src/lib/response-behavior";
+import { assertResponseAcceptanceGate } from "../src/lib/response-acceptance-gate";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -697,5 +698,41 @@ assert(
 const crs = getCareRealityState("cg_ev");
 assert(crs != null && crs.observation_count === ev2.crs_observation_count, "CRS counts align");
 console.log("✓ Evidence maturity from CRS observation/revision");
+
+// ——— G20: no Clarity when a first caregiver report has no grounded interpretation ———
+resetAll("cg_first_cognition_capture");
+const firstCognitionText = "Mum has been forgetting whether she has eaten breakfast.";
+const firstCognitionTurn = ingestActiveCareObservation({
+  caregiverId: "cg_first_cognition_capture",
+  rawText: firstCognitionText,
+  kind: classifyCareEventKind(firstCognitionText),
+  nowIso: "2026-11-17T19:00:00.000Z",
+});
+const firstCognition = composeCaregiverResponse({
+  turn: firstCognitionTurn,
+  latestRawText: firstCognitionText,
+  kind: classifyCareEventKind(firstCognitionText),
+});
+assertComposedResponseProfessional(firstCognition);
+assert(
+  !firstCognition.show_clarity ||
+    Boolean(firstCognition.situation_summary?.trim()) ||
+    firstCognition.what_we_know.length > 0,
+  "G20 must never show Clarity without a grounded account of what is happening",
+);
+assert(
+  !/several care concerns/i.test(firstCognition.situation_summary ?? ""),
+  "G20 must not pluralize a single first caregiver report",
+);
+assertResponseAcceptanceGate({
+  composed: firstCognition,
+  careMemoryState: "new_care_reality",
+  observationCount: firstCognitionTurn.situation.observations.length,
+  careWorthyCount: 1,
+  latestIsCareWorthy: true,
+  latestRawText: firstCognitionText,
+  turnClass: "observation",
+});
+console.log("✓ G20 first cognition report — saved report remains safe when grounded understanding is unavailable");
 
 console.log("\n=== Caregiver Response Contract: all checks passed ===\n");
