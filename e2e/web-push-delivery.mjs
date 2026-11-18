@@ -123,31 +123,21 @@ try {
     for (let index = 0; index < raw.length; index += 1) {
       applicationServerKey[index] = raw.charCodeAt(index);
     }
-    const registrationPromise = navigator.serviceWorker.ready;
-    registrationPromise.then(async (registration) => {
-      const existing = await registration.pushManager.getSubscription();
-      if (existing) await existing.unsubscribe();
-    });
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
     const button = document.createElement("button");
     button.id = "solenos-enable-push-e2e";
     button.type = "button";
     button.textContent = "Enable test notifications";
     button.addEventListener("click", () => {
-      // Call subscribe synchronously in the click event. Awaiting service-worker
-      // readiness or getSubscription here can consume the browser's transient
-      // user activation before PushManager.subscribe() reaches Chromium.
-      registrationPromise.then((registration) => {
-        registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey,
-        }).then((created) => {
-          window.__solenosPushSubscriptionResult = { ok: true, subscription: created.toJSON() };
-        }).catch((error) => {
-          window.__solenosPushSubscriptionResult = {
-            ok: false,
-            error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-          };
-        });
+      // Call subscribe synchronously in the click event. All service-worker
+      // readiness and stale-subscription cleanup happened before this gesture.
+      registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      }).then((created) => {
+        window.__solenosPushSubscriptionResult = { ok: true, subscription: created.toJSON() };
       }).catch((error) => {
         window.__solenosPushSubscriptionResult = {
           ok: false,
