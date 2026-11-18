@@ -5,6 +5,7 @@ const legacyRoute = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8")
 const capture = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/app/workspace/care-continuity/page.tsx", "utf8");
 const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const captureReview = fs.readFileSync("src/components/workflows/CaptureAnalysisReview.tsx", "utf8");
 const integrityPanel = fs.readFileSync("src/components/CareContinuityIntegrityPanel.tsx", "utf8");
 const evidenceReview = fs.readFileSync("src/components/EvidenceReviewPanel.tsx", "utf8");
 const changeIntelligence = fs.readFileSync("src/components/mvp-workspace/ChangeIntelligencePanel.tsx", "utf8");
@@ -62,6 +63,13 @@ assert.match(currentUnderstanding, /<details className="lcr-history-details" onT
 assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setConflictReviewOpen\(event.currentTarget.open\)\}>/, "conflict panel follows its own native disclosure state");
 assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setRecordHistoryOpen\(event.currentTarget.open\)\}>/, "record-history panel follows its own native disclosure state");
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
+assert.match(captureReview, /These suggestions are not part of the care record until you accept them\./, "unapproved extraction suggestions stay outside the care record");
+assert.match(captureReview, /candidate\.source_quote/, "the caregiver can inspect the original quotation before deciding");
+assert.match(captureReview, /written_to_lcr !== \(decision === "accept"\)/, "only an explicitly accepted suggestion may be confirmed as written to the care record");
+assert.match(captureReview, /review\(index, "accept"\)/, "caregivers can accept a suggested detail");
+assert.match(captureReview, /review\(index, "correct"\)/, "caregivers can correct a suggested detail");
+assert.match(captureReview, /review\(index, "reject"\)/, "caregivers can dismiss a suggested detail");
+assert.match(captureReview, /Correction saved\. It still needs approval before it becomes part of the care record\./, "a correction remains pending approval rather than silently becoming a care-record fact");
 assert.doesNotMatch(evidenceReview, /submitObservation|Save structured observation|Observation kind|Exact source passage/, "manual structured-observation creation is removed from evidence review");
 assert.doesNotMatch(evidenceReview, /<form\b/, "evidence review contains no capture forms");
 assert.doesNotMatch(evidenceReview, /submitRelationship|Save source relationship|relatedEvidenceId|relationshipRationale/, "evidence review cannot create standalone source links");
