@@ -34,6 +34,7 @@ export default function CaptureAnalysisReview({
   const [busyIndex, setBusyIndex] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<Record<number, { subject: string; observation: string }>>({});
   const [feedback, setFeedback] = useState("");
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -88,6 +89,7 @@ export default function CaptureAnalysisReview({
           ),
         };
       });
+      if (decision === "correct") setEditingIndex(null);
       setFeedback(result.message || (decision === "accept"
         ? "The reviewed detail was added to the care record."
         : decision === "correct"
@@ -137,49 +139,71 @@ export default function CaptureAnalysisReview({
                   : status === "corrected_pending_approval" || status === "corrected_by_caregiver"
                     ? "Correction saved — waiting for approval" : "Waiting for your review"}
             </p>
-            <label style={{ display: "block", marginBottom: 8 }}>
-              What is this about?
-              <input
-                aria-label={`Suggested detail subject ${index + 1}`}
-                value={draft.subject}
-                disabled={final || busyIndex !== null}
-                onChange={(event) => setDrafts((current) => ({
-                  ...current,
-                  [index]: { ...draft, subject: event.target.value },
-                }))}
-                maxLength={160}
-                style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 4 }}
-              />
-            </label>
-            <label style={{ display: "block", marginBottom: 8 }}>
-              What was reported?
-              <textarea
-                aria-label={`Suggested detail observation ${index + 1}`}
-                value={draft.observation}
-                disabled={final || busyIndex !== null}
-                onChange={(event) => setDrafts((current) => ({
-                  ...current,
-                  [index]: { ...draft, observation: event.target.value },
-                }))}
-                maxLength={500}
-                rows={3}
-                style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 4 }}
-              />
-            </label>
+            <div style={{ marginBottom: 8 }}>
+              <strong>What is this about?</strong>
+              {editingIndex === index ? (
+                <input
+                  aria-label={`Suggested detail subject ${index + 1}`}
+                  value={draft.subject}
+                  disabled={busyIndex !== null}
+                  onChange={(event) => setDrafts((current) => ({
+                    ...current,
+                    [index]: { ...draft, subject: event.target.value },
+                  }))}
+                  maxLength={160}
+                  style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 4 }}
+                />
+              ) : <p>{draft.subject || "Not specified"}</p>}
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <strong>What was reported?</strong>
+              {editingIndex === index ? (
+                <textarea
+                  aria-label={`Suggested detail observation ${index + 1}`}
+                  value={draft.observation}
+                  disabled={busyIndex !== null}
+                  onChange={(event) => setDrafts((current) => ({
+                    ...current,
+                    [index]: { ...draft, observation: event.target.value },
+                  }))}
+                  maxLength={500}
+                  rows={3}
+                  style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 4 }}
+                />
+              ) : <p>{draft.observation || "No details were provided."}</p>}
+            </div>
             {candidate.source_quote ? (
-              <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>From your note: {candidate.source_quote}</p>
-            ) : null}
+              <blockquote style={{ margin: "8px 0", padding: "8px 12px", borderLeft: "3px solid var(--border)", color: "var(--text-secondary)", fontSize: 13 }}>
+                <strong>From your note</strong>
+                <p style={{ margin: "4px 0 0" }}>{candidate.source_quote}</p>
+              </blockquote>
+            ) : (
+              <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>The original quotation is not available in this review.</p>
+            )}
             {!final ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "accept")}>
-                  Accept and add to care record
-                </button>
-                <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "correct")}>
-                  Save correction
-                </button>
-                <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "reject")}>
-                  Dismiss suggestion
-                </button>
+                {editingIndex === index ? (
+                  <>
+                    <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "correct")}>
+                      Save correction
+                    </button>
+                    <button type="button" disabled={busyIndex !== null} onClick={() => setEditingIndex(null)}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "accept")}>
+                      Accept and add to care record
+                    </button>
+                    <button type="button" disabled={busyIndex !== null} onClick={() => setEditingIndex(index)}>
+                      Correct
+                    </button>
+                    <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "reject")}>
+                      Dismiss
+                    </button>
+                  </>
+                )}
               </div>
             ) : null}
           </article>
