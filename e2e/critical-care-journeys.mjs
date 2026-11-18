@@ -1761,6 +1761,70 @@ await record("12 account recovery preserves care record", async () => {
   assert.ok(persisted.payload.some((row) => row.id === evidenceId));
 });
 
+// 12b. A separately authenticated invited caregiver reads the same shared record,
+// while unrelated sessions remain isolated and revocation takes effect immediately.
+await record("12b invited caregiver sees the shared care record in a separate browser context", async () => {
+  const invitedEmail = `shared-care-${randomUUID()}@example.test`;
+  const invitation = await request("/api/v1/caregiver-access/invitations", {
+    token: identity.token,
+    method: "POST",
+    body: { email: invitedEmail, expires_in_days: 7 },
+  });
+  assert.equal(invitation.status, 201, JSON.stringify(invitation.payload));
+  assert.equal(invitation.payload.delivery_status, "not_sent",
+    "the product must not claim an invitation email was sent when no delivery provider ran");
+
+  const accepted = await request("/api/v1/caregiver-access/invitations/accept", {
+    method: "POST",
+    body: {
+      token: invitation.payload.invitation_token,
+      email: invitedEmail,
+      password: "shared-care-invite-passphrase-2026!",
+      name: "Invited family caregiver",
+    },
+  });
+  assert.equal(accepted.status, 201, JSON.stringify(accepted.payload));
+  assert.equal(accepted.payload.person_id, identity.personId);
+  assert.notEqual(accepted.payload.caregiver_id, identity.caregiverId);
+
+  const sharedEvents = await request(`/api/v1/events/${encodeURIComponent(identity.personId)}`, {
+    token: accepted.payload.access_token,
+  });
+  assert.equal(sharedEvents.status, 200, JSON.stringify(sharedEvents.payload));
+  assert.ok(sharedEvents.payload.some((event) => event.id === dailyCaptureEventId),
+    "the invited caregiver must retrieve the same saved care event");
+  const sharedEvidence = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, {
+    token: accepted.payload.access_token,
+  });
+  assert.equal(sharedEvidence.status, 200, JSON.stringify(sharedEvidence.payload));
+  assert.ok(sharedEvidence.payload.some((item) => item.id === evidenceId),
+    "the invited caregiver must retrieve the same source evidence");
+
+  const { context, page } = await createBrowserPage({
+    access_token: accepted.payload.access_token,
+    person: { id: accepted.payload.person_id },
+    caregiver: { id: accepted.payload.caregiver_id },
+    expires_at: accepted.payload.expires_at,
+  }, "/workspace/care-continuity");
+  await page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+  await page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
+  await verifyMobile(page);
+  await context.close();
+
+  const revoked = await request(
+    `/api/v1/caregiver-access/members/${encodeURIComponent(accepted.payload.caregiver_id)}`,
+    { token: identity.token, method: "DELETE" },
+  );
+  assert.equal(revoked.status, 200, JSON.stringify(revoked.payload));
+  assert.equal(revoked.payload.sessions_revoked, true);
+  const afterRevocation = await request(
+    `/api/v1/events/${encodeURIComponent(identity.personId)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(afterRevocation.status, 401,
+    "revoking a shared caregiver must invalidate their already-issued session");
+});
+
 // UI consumption checks: real frontend pages use the proxied backend, including mobile layout and failure UI.
 await record("frontend consumes persisted documents and appointments", async () => {
   const { context, page, observed } = await createBrowserPage(session, "/workspace/documents");
