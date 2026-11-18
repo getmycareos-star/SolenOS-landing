@@ -52,8 +52,15 @@ assert.ok(
 );
 assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Ask SolenOS remains directly accessible");
 assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Add a care update remains directly accessible");
-assert.match(currentUnderstanding, /<EvidenceReviewPanel personId={personId} \/>/, "Care Continuity mounts the evidence panel in its review-only form");
-assert.match(currentUnderstanding, /<CareContinuityIntegrityPanel personId={personId} \/>/, "Care Continuity mounts the integrity panel for review");
+assert.match(currentUnderstanding, /evidenceReviewOpen \? <EvidenceReviewPanel personId={personId} \/>/, "evidence review mounts only when its own disclosure is opened");
+assert.match(currentUnderstanding, /claimAssessmentOpen \? <ClaimAssessmentPanel \/>/, "claim review mounts only when its own disclosure is opened");
+assert.match(currentUnderstanding, /conflictReviewOpen \? <ConflictResolutionPanel personId={personId} \/>/, "conflict review mounts only when its own disclosure is opened");
+assert.match(currentUnderstanding, /recordHistoryOpen \? <CareContinuityIntegrityPanel personId={personId} \/>/, "record history mounts only when its own disclosure is opened");
+assert.doesNotMatch(currentUnderstanding, /advancedPanelsOpen|setAdvancedPanelsOpen/, "opening the outer evidence disclosure must not mount every advanced panel");
+assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setEvidenceReviewOpen\(event.currentTarget.open\)\}>/, "evidence panel follows its own native disclosure state");
+assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setClaimAssessmentOpen\(event.currentTarget.open\)\}>/, "claim panel follows its own native disclosure state");
+assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setConflictReviewOpen\(event.currentTarget.open\)\}>/, "conflict panel follows its own native disclosure state");
+assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setRecordHistoryOpen\(event.currentTarget.open\)\}>/, "record-history panel follows its own native disclosure state");
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
 assert.doesNotMatch(evidenceReview, /submitObservation|Save structured observation|Observation kind|Exact source passage/, "manual structured-observation creation is removed from evidence review");
 assert.doesNotMatch(evidenceReview, /<form\b/, "evidence review contains no capture forms");
