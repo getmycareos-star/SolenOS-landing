@@ -5,6 +5,9 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+
+// Exercise the same URL resolver used by the API client, not only source strings.
+process.env.NEXT_PUBLIC_API_URL = "";
 import {
   isCasualGreetingInput,
   isHowAreYouInput,
@@ -59,5 +62,14 @@ assert.match(
   /pathname\.endsWith\("\/lcr\/orientation"\) && method === "POST"\) return 210_000;/,
   "LCR orientation must not time out before the backend's bounded 180-second Qwen request",
 );
+assert.match(
+  apiClient,
+  /normalized === '\/api\/lcr\/orientation'.*?return apiUrl\(normalized\)/s,
+  "LCR orientation must bypass the /api/v1 prefix and use the shared base resolver",
+);
+const { apiUrl } = await import("../src/lib/api-url");
+assert.equal(apiUrl("/api/lcr/orientation"), "/api/lcr/orientation", "same-origin orientation URL must match the backend route exactly");
+const netlify = readFileSync(new URL("../netlify.toml", import.meta.url), "utf8");
+assert.match(netlify, /from = "\/api\/lcr\/orientation"[\s\S]*?to = "https:\/\/solenosbackend-production\.up\.railway\.app\/api\/lcr\/orientation"/);
 
 console.log("Greeting orientation classification and non-hardcoded generation contract passed.");
