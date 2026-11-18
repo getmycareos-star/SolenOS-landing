@@ -74,6 +74,8 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   });
   const page = await context.newPage();
   const observed = [];
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
   await page.route("**/api/**", async (route) => {
     try {
@@ -105,7 +107,7 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     }
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
-  return { context, page, observed };
+  return { context, page, observed, pageErrors };
 }
 
 async function browserPageConsumes(page, pathname, observed) {
@@ -134,7 +136,7 @@ async function record(name, work) {
 // 0. First-time caregiver: focused welcome, first capture, durable save, then returning record.
 const firstVisitSession = await newSession("first visit capture");
 await record("00 first-time caregiver capture and persisted return", async () => {
-  const { context, page } = await createBrowserPage(
+  const { context, page, pageErrors } = await createBrowserPage(
     firstVisitSession,
     "/workspace",
     { width: 390, height: 844 },
@@ -261,6 +263,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     "a returning caregiver must not be sent through first-visit welcome again",
   );
   await verifyMobile(page);
+  assert.deepEqual(pageErrors, [], `first-visit and returning-caregiver screens must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
 });
 
@@ -1720,12 +1723,13 @@ await record("11 returning caregiver history", async () => {
     returningEvidence.payload.some((row) => row.id === evidenceId),
     "returning caregiver could not retrieve the Add Record evidence",
   );
-  const { context, page } = await createBrowserPage({
+  const { context, page, pageErrors } = await createBrowserPage({
     ...session,
     access_token: login.payload.access_token,
     expires_at: login.payload.expires_at,
   }, "/workspace");
   await verifyMobile(page);
+  assert.deepEqual(pageErrors, [], `returning caregiver browser must not throw: ${JSON.stringify(pageErrors)}`);
   await context.close();
 });
 
@@ -1800,7 +1804,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
   assert.ok(sharedEvidence.payload.some((item) => item.id === evidenceId),
     "the invited caregiver must retrieve the same source evidence");
 
-  const { context, page } = await createBrowserPage({
+  const { context, page, pageErrors } = await createBrowserPage({
     access_token: accepted.payload.access_token,
     person: { id: accepted.payload.person_id },
     caregiver: { id: accepted.payload.caregiver_id },
@@ -1809,6 +1813,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
   await page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
   await verifyMobile(page);
+  assert.deepEqual(pageErrors, [], `invited caregiver browser must not throw: ${JSON.stringify(pageErrors)}`);
   await context.close();
 
   const revoked = await request(
