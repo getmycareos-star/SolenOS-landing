@@ -85,7 +85,7 @@
 - [ ] Data loss scenarios: refresh during loading, close during action, navigate away/return -> recovers safely
 - [ ] Mobile 375px/430px: nav, FAB, upload, text wrap, modals, scroll — no horizontal overflow
 - [ ] Security: no API secrets/credentials/keys exposed; uploads validated; errors don't leak stack traces
-- [ ] Analytics failure tolerant: `/api/track` failure does not break workspace
+- [x] Telemetry is intentionally a no-op in `src/lib/trackEvent.ts`; no `/api/track` request is made. Revisit only after a scoped, persisted backend ingestion endpoint exists.
 - [ ] Cache/deploy freshness: Netlify serves latest commit; no stale static HTML
 
 ## TASK 14 — Final production QA + commit + push
@@ -132,7 +132,7 @@
 - [x] "Saved ✓" only shown when data actually saved — ProfileCard `save()` shows "Saved ✓" ONLY in try branch after localStorage.setItem succeeds; catch shows "Could not save" (verified `settings/page.tsx`)
 - [x] No "Synced" shown — app does not claim sync/cross-device (Security card honestly states "Account sign-in and cross-device sync are not yet available") (verified `settings/page.tsx`)
 - [x] No "Account restored" — no fake account recovery; account controls all disabled with honest explanation (verified `SecurityCard`)
-- [x] FIXED: feedback copy in `HelpImproveSolenos.tsx` — success message now "Thank you — we have recorded your feedback for our team." (accurate, no implied AI learning). Backend `/api/research-feedback` verified to durably store feedback (fs-store).
+- [ ] Feedback copy in `HelpImproveSolenos.tsx` reports receipt only after the supported `POST /api/v1/feedback` request succeeds. Do not claim `/api/research-feedback` exists; verify backend persistence with the current feedback integration tests.
 - [x] FIXED: `HelpImproveSolenos` `submit()` previously had a silent `catch {}` and always showed thanks even if POST failed. Now only shows success when the request succeeds, and surfaces a clear error + allows retry on failure.
 - [x] FIXED: `UnderstandingFeedbackPrompt` `submit()` previously had a silent `catch {}` that set `step("hidden")` on network failure (no user feedback). Now surfaces a readable error (`submitError`) rendered with `role="alert"` and keeps the send/helpful buttons available for retry. Verified by `npm run build` (BUILD_ID: `OsKJZx6n-UF1eaf_-chIh`).
 - [x] Every visible control fully functional OR clearly disabled — Security/account controls disabled with tooltip explanation; all nav/FAB/save/upload/capture buttons functional (verified)
@@ -157,7 +157,7 @@
 - [x] Migrations safe; no DB reset / storage reset / broken routes — backend migrations additive; frontend routes compiled (verified build)
 
 ### G. User data ownership & recovery
-- [x] Can user recover care record if device lost? — data backed up on backend durable store (research-feedback + situations on Railway); local storage is primary in this MVP (honest copy states device-local)
+- [ ] Care-record recovery after device loss is not established by this checklist. Verify the actual care-record persistence and recovery contract independently; feedback storage is not care-record backup.
 - [x] Data tied to correct user; no cross-user leakage — durable care key + session id scoping; `requireCareKeyFromRequest` (verified)
 - [x] Multi-device consistency OR remove restoration claims — Security card honestly states "cross-device sync not yet available" (no false claim) (verified)
 
