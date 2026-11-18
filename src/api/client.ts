@@ -36,10 +36,14 @@ export function subscribeToPersonId(callback: (id: string) => void): () => void 
 function resolveApiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
 
-  // The backend exposes situation capture at /api/situation (outside /api/v1).
-  // All other calls using this client use the /api/v1 router.
+  // These backend routes live outside the /api/v1 router. Preserve their exact
+  // paths and use the shared base resolver so configured Railway deployments
+  // and the same-origin Netlify proxy behave consistently.
   if (normalized === '/situation' || normalized.startsWith('/situation?')) {
     return `/api${normalized}`
+  }
+  if (normalized === '/api/lcr/orientation' || normalized.startsWith('/api/lcr/orientation?')) {
+    return apiUrl(normalized)
   }
 
   return `${API_BASE.replace(/\/$/, '')}${normalized}`
