@@ -920,11 +920,11 @@ export const OPS_CONSOLE = {
   ingest: "server-only insertSolenEvent(); browser /api/track ingestion disabled",
   clientIngestion: "DISABLED until a scoped persisted endpoint is implemented",
   table: "solen_events",
-  migration: "db/migrations/075_solen_ops_events.sql",
+  migration: "NOT PRESENT in current repo; durable table provisioning unverified",
   modulePath: "src/lib/ops-console",
   clientEmitter: "src/lib/trackEvent.ts",
   noExternalAnalytics: true,
-  status: "IMPLEMENTED" as const,
+  status: "PARTIAL" as const,
 } as const;
 
 /**

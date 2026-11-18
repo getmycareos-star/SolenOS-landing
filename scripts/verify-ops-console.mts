@@ -25,8 +25,8 @@ function assert(cond: unknown, msg: string): asserts cond {
 
 async function main(): Promise<void> {
   assert(OPS_CONSOLE.notANewPillar === true, "Ops Console is not a product pillar");
-  assert(OPS_CONSOLE.status === "IMPLEMENTED", "Ops Console status");
-  assert(fs.existsSync(path.join(root, "db/migrations/075_solen_ops_events.sql")), "migration 075");
+  assert(OPS_CONSOLE.status === "PARTIAL", "durable Ops Console telemetry is not verified");
+  assert(OPS_CONSOLE.clientIngestion.includes("DISABLED"), "browser telemetry must remain disabled");
   assert(!fs.existsSync(path.join(root, "src/app/api/track/route.ts")), "no unsupported browser telemetry route");
   const clientTelemetry = fs.readFileSync(path.join(root, "src/lib/trackEvent.ts"), "utf8");
   assert(clientTelemetry.includes("Intentionally no network request"), "browser telemetry must remain disabled until a scoped backend endpoint exists");

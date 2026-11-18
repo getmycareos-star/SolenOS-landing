@@ -1,6 +1,6 @@
 # SolenOS Ops Console (INTERNAL)
 
-**Status: INTERNAL DASHBOARD IMPLEMENTED; CLIENT TELEMETRY INGESTION DISABLED** · Not user-facing · Not marketing · Not BI
+**Status: PARTIAL · DURABLE TELEMETRY PERSISTENCE UNVERIFIED** · Internal only · Not user-facing · Not marketing · Not BI
 
 Product-learning and system-health console for founders, engineering, and authorized investors.
 
@@ -18,7 +18,7 @@ Production domain: https://solenosai.netlify.app
 ## Stack
 
 - Next.js App Router
-- PostgreSQL (`pg`) — table `solen_events` + read-only production tables (`users`, `cases`, `care_events`, …). Server-side event insertion exists; browser telemetry is disabled.
+- PostgreSQL (`pg`) — server-side code can attempt writes to `solen_events`; the current repositories do not contain a migration that provisions this table. The writer falls back to process memory if the table is unavailable; durable production ingestion is therefore unverified.
 - No Mixpanel / GA / Segment
 
 ## Layers
@@ -33,9 +33,9 @@ Production domain: https://solenosai.netlify.app
 
 Every metric answers: *Is SolenOS becoming a caregiver's external memory system?*
 
-## Netlify env
+## Runtime requirements and limitation
 
-Set `OPS_SECRET`, `METRICS_SECRET`, and `DATABASE_URL`. Run migration `075` against production Postgres.
+`OPS_SECRET` and `METRICS_SECRET` protect the internal pages. `DATABASE_URL` is required for database-backed reads. The current repositories do not include the historical migration `075_solen_ops_events.sql`; do not assume `solen_events` exists or that event writes are durable. Browser telemetry remains disabled.
 
 ## Module
 
