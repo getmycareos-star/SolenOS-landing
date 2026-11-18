@@ -40,6 +40,7 @@ export function GlobalDisplayPreferences() {
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const [announcement, setAnnouncement] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ pointerId: number; startX: number; startY: number; left: number; top: number; moved: boolean } | null>(null);
@@ -88,7 +89,7 @@ export function GlobalDisplayPreferences() {
       if (!rect) return;
       setPosition((current) => current ? clampPosition(current, rect.width, rect.height) : current);
     };
-    window.addEventListener("resize", handleResize);
+    handleResize();\n    window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [position]);
 
