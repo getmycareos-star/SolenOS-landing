@@ -20,6 +20,9 @@ const browser = await chromium.launch({ headless: true });
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript((identity) => {
+    if (location.origin === "null" || location.protocol === "about:") return;
+    if (window.name === "solenos-e2e-display-identity-seeded") return;
+    window.name = "solenos-e2e-display-identity-seeded";
     localStorage.setItem("solenos_anonymous_access_token", identity.token);
     localStorage.setItem("solenos_backend_person_id", identity.personId);
     localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
