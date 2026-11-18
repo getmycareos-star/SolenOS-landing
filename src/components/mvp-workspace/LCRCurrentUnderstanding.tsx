@@ -674,6 +674,10 @@ export function LCRCurrentUnderstanding() {
   const [claimAssessmentOpen, setClaimAssessmentOpen] = useState(false);
   const [conflictReviewOpen, setConflictReviewOpen] = useState(false);
   const [recordHistoryOpen, setRecordHistoryOpen] = useState(false);
+  const evidenceReviewDetailsRef = useRef<HTMLDetailsElement | null>(null);
+  const claimAssessmentDetailsRef = useRef<HTMLDetailsElement | null>(null);
+  const conflictReviewDetailsRef = useRef<HTMLDetailsElement | null>(null);
+  const recordHistoryDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const [clarificationOpen, setClarificationOpen] = useState(false);
   const clarificationDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const openClarification = useCallback(() => {
@@ -681,8 +685,12 @@ export function LCRCurrentUnderstanding() {
     setClarificationOpen(true);
   }, []);
   useEffect(() => {
-    // Preserve a native disclosure opened before React finishes hydrating.
-    // Without this sync, the lazy panel can remain unmounted after a fast click.
+    // Preserve native disclosures opened before React finishes hydrating.
+    // Without this sync, a fast first click can leave a visible section empty.
+    if (evidenceReviewDetailsRef.current?.open) setEvidenceReviewOpen(true);
+    if (claimAssessmentDetailsRef.current?.open) setClaimAssessmentOpen(true);
+    if (conflictReviewDetailsRef.current?.open) setConflictReviewOpen(true);
+    if (recordHistoryDetailsRef.current?.open) setRecordHistoryOpen(true);
     if (clarificationDetailsRef.current?.open) setClarificationOpen(true);
   }, []);
   const [loading, setLoading] = useState(true);
@@ -2098,19 +2106,19 @@ export function LCRCurrentUnderstanding() {
       <details className="lcr-advanced-integrity">
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
-        <details className="lcr-history-details" onToggle={(event) => setEvidenceReviewOpen(event.currentTarget.open)}>
+        <details ref={evidenceReviewDetailsRef} className="lcr-history-details" onToggle={(event) => setEvidenceReviewOpen(event.currentTarget.open)}>
           <summary>Notes and documents behind this information</summary>
           {evidenceReviewOpen ? <EvidenceReviewPanel personId={personId} /> : null}
         </details>
-        <details className="lcr-history-details" onToggle={(event) => setClaimAssessmentOpen(event.currentTarget.open)}>
+        <details ref={claimAssessmentDetailsRef} className="lcr-history-details" onToggle={(event) => setClaimAssessmentOpen(event.currentTarget.open)}>
           <summary>Review the notes behind a care detail</summary>
           {claimAssessmentOpen ? <ClaimAssessmentPanel /> : null}
         </details>
-        <details className="lcr-history-details" onToggle={(event) => setConflictReviewOpen(event.currentTarget.open)}>
+        <details ref={conflictReviewDetailsRef} className="lcr-history-details" onToggle={(event) => setConflictReviewOpen(event.currentTarget.open)}>
           <summary>When information differs</summary>
           {conflictReviewOpen ? <ConflictResolutionPanel personId={personId} /> : null}
         </details>
-        <details className="lcr-history-details" onToggle={(event) => setRecordHistoryOpen(event.currentTarget.open)}>
+        <details ref={recordHistoryDetailsRef} className="lcr-history-details" onToggle={(event) => setRecordHistoryOpen(event.currentTarget.open)}>
           <summary>Reported information and record history</summary>
           {recordHistoryOpen ? <CareContinuityIntegrityPanel personId={personId} /> : null}
         </details>
