@@ -88,7 +88,11 @@ export function GlobalDisplayPreferences() {
       setViewport({ width: window.innerWidth, height: window.innerHeight });
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
-      setPosition((current) => current ? clampPosition(current, rect.width, rect.height) : current);
+      setPosition((current) => {
+        if (!current) return current;
+        const bounded = clampPosition(current, rect.width, rect.height);
+        return bounded.left === current.left && bounded.top === current.top ? current : bounded;
+      });
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -141,7 +145,6 @@ export function GlobalDisplayPreferences() {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     if (drag.moved) {
-      const rect = rootRef.current?.getBoundingClientRect();
       const current = rootRef.current?.getBoundingClientRect();
       if (current) savePosition({ left: current.left, top: current.top });
       setAnnouncement("Display control moved. Its new position is saved on this device.");
