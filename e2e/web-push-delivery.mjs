@@ -48,33 +48,32 @@ assert.equal(capability.available, true, "CI VAPID configuration must enable bro
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
 const browser = await chromium.launch({ headless: true });
-// Grant the browser permission at context creation, before any page or redirect
-// can trigger permission checks. This isolated CI context is used only for push E2E.
 const context = await browser.newContext();
-// Chromium can retain its default denied notification permission even when the
-// permission is supplied in newContext options. Grant it explicitly for the
-// exact local app origin before creating or navigating the page.
-await context.grantPermissions(["notifications"]);
 try {
   const page = await context.newPage();
-  await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
-
-  // Re-grant against the final document origin after redirects. Chromium's
-  // permission override can otherwise remain scoped away from the loaded app.
-  const appOrigin = new URL(page.url()).origin;
-  // Use Chromium's DevTools permission override directly. Playwright's
-  // context-level override can report "granted" through Permissions API while
-  // Notification.permission remains "denied" in headless CI.
+  // Chromium caches Notification.permission for a document's execution
+  // context. Grant the permission against the exact app origin before the
+  // first navigation so the document starts with the granted state.
+  const requestedOrigin = new URL(frontend).origin;
   const cdp = await context.newCDPSession(page);
   await cdp.send("Browser.grantPermissions", {
-    origin: appOrigin,
+    origin: requestedOrigin,
     permissions: ["notifications"],
   });
-  await page.evaluate(async () => {
-    if (Notification.permission !== "granted") {
-      await Notification.requestPermission();
-    }
-  });
+  await context.grantPermissions(["notifications"], { origin: requestedOrigin });
+  await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
+
+  // Handle an unexpected redirect to a different origin explicitly. Reload
+  // so the new document observes the permission before any permission checks.
+  const appOrigin = new URL(page.url()).origin;
+  if (appOrigin !== requestedOrigin) {
+    await cdp.send("Browser.grantPermissions", {
+      origin: appOrigin,
+      permissions: ["notifications"],
+    });
+    await context.grantPermissions(["notifications"], { origin: appOrigin });
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
+  }
   const permissionState = await page.evaluate(async () => ({
     notification: Notification.permission,
     permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
