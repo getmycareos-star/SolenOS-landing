@@ -149,6 +149,8 @@ jobs:
             cat /tmp/solenos-frontend-e2e.log
             exit 1
           fi
+      - name: Verify movable display control in Chromium
+        run: FRONTEND_URL=http://127.0.0.1:3000 BACKEND_URL=http://127.0.0.1:8000 node e2e/display-preferences-movable.mjs
       - name: Run critical caregiver browser journeys against PostgreSQL-backed FastAPI
         run: FRONTEND_URL=http://127.0.0.1:3000 BACKEND_URL=http://127.0.0.1:8000 node e2e/critical-care-journeys.mjs
       - name: Run continuity and production-safety checks
