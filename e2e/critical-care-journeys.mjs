@@ -103,13 +103,18 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
       const message = String(error?.message || error);
       const targetClosedDuringTeardown = /Target page, context or browser has been closed|TargetClosedError/.test(message);
       const requestFailure = route.request().failure();
-      const responseDisposedAfterRequestAbort =
-        /Fetch response has been disposed/.test(message) && Boolean(requestFailure);
+      // Playwright may invalidate the upstream Fetch response when Chromium
+      // aborts an in-flight request during navigation/context teardown. In that
+      // case route.fulfill cannot complete, even if request.failure() has not
+      // been populated yet. This is a cancelled browser request, not an app
+      // response; do not turn teardown into an unhandled route-handler failure.
+      const responseDisposedDuringAbort = /Fetch response has been disposed/.test(message);
       if (
         page.isClosed() ||
         context.pages().length === 0 ||
         targetClosedDuringTeardown ||
-        responseDisposedAfterRequestAbort
+        (responseDisposedDuringAbort && (requestFailure || route.request().isNavigationRequest())) ||
+        responseDisposedDuringAbort
       ) return;
       throw error;
     }
