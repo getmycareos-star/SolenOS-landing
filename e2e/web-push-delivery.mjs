@@ -47,7 +47,7 @@ assert.equal(capabilityResponse.status, 200, JSON.stringify(capability));
 assert.equal(capability.available, true, "CI VAPID configuration must enable browser push");
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: false });
 // Grant the browser permission at context creation, before any page or redirect
 // can trigger permission checks. This isolated CI context is used only for push E2E.
 const context = await browser.newContext();
@@ -74,13 +74,14 @@ try {
     `Chromium notification permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
   );
 
-  const subscription = await page.evaluate(async (encodedPublicKey) => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-      throw new Error("Chromium does not expose the Web Push APIs required for this test");
-    }
-    if (Notification.permission !== "granted") {
-      throw new Error(`Notification permission is ${Notification.permission}, not granted`);
-    }
+  const serviceWorker = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    await navigator.serviceWorker.ready;
+    return { scope: registration.scope, activeScript: registration.active?.scriptURL ?? null };
+  });
+  assert.ok(serviceWorker.activeScript?.endsWith("/sw.js"), JSON.stringify(serviceWorker));
+
+  const pushPermissionState = await page.evaluate(async (encodedPublicKey) => {
     const padding = "=".repeat((4 - encodedPublicKey.length % 4) % 4);
     const base64 = (encodedPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
     const raw = atob(base64);
@@ -88,16 +89,61 @@ try {
     for (let index = 0; index < raw.length; index += 1) {
       applicationServerKey[index] = raw.charCodeAt(index);
     }
-    const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-    await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
-    if (existing) await existing.unsubscribe();
-    const created = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey,
-    });
-    return created.toJSON();
+    const registration = await navigator.serviceWorker.ready;
+    return {
+      notification: Notification.permission,
+      permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
+      push: await registration.pushManager.permissionState({ userVisibleOnly: true, applicationServerKey }),
+    };
   }, capability.public_key);
+  assert.equal(
+    pushPermissionState.push,
+    "granted",
+    `Chromium PushManager permission is not granted: ${JSON.stringify(pushPermissionState)}`,
+  );
+
+  // Push subscription is initiated by a real click, not page.evaluate alone.
+  // This mirrors the caregiver's explicit opt-in and preserves transient user activation.
+  await page.evaluate((encodedPublicKey) => {
+    const padding = "=".repeat((4 - encodedPublicKey.length % 4) % 4);
+    const base64 = (encodedPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = atob(base64);
+    const applicationServerKey = new Uint8Array(raw.length);
+    for (let index = 0; index < raw.length; index += 1) {
+      applicationServerKey[index] = raw.charCodeAt(index);
+    }
+    const button = document.createElement("button");
+    button.id = "solenos-enable-push-e2e";
+    button.type = "button";
+    button.textContent = "Enable test notifications";
+    button.addEventListener("click", async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const existing = await registration.pushManager.getSubscription();
+        if (existing) await existing.unsubscribe();
+        const created = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        });
+        window.__solenosPushSubscriptionResult = { ok: true, subscription: created.toJSON() };
+      } catch (error) {
+        window.__solenosPushSubscriptionResult = {
+          ok: false,
+          error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+        };
+      }
+    });
+    document.body.append(button);
+  }, capability.public_key);
+  await page.locator("#solenos-enable-push-e2e").click();
+  await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, { timeout: 20_000 });
+  const subscriptionResult = await page.evaluate(() => window.__solenosPushSubscriptionResult);
+  assert.equal(
+    subscriptionResult.ok,
+    true,
+    `Chromium could not create a real push subscription. Permission state: ${JSON.stringify(pushPermissionState)}; error: ${subscriptionResult.error}`,
+  );
+  const subscription = subscriptionResult.subscription;
 
   assert.ok(subscription?.endpoint, "Chromium did not create a real push-service endpoint");
   assert.ok(subscription?.keys?.p256dh && subscription?.keys?.auth, "Browser subscription keys are missing");
