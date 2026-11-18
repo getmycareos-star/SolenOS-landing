@@ -85,11 +85,13 @@ export function GlobalDisplayPreferences() {
   useEffect(() => {
     if (!position) return;
     const handleResize = () => {
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
       setPosition((current) => current ? clampPosition(current, rect.width, rect.height) : current);
     };
-    handleResize();\n    window.addEventListener("resize", handleResize);
+    handleResize();
+    window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [position]);
 
@@ -164,8 +166,8 @@ export function GlobalDisplayPreferences() {
 
   const placement = position
     ? {
-        vertical: position.top < window.innerHeight / 2 ? "below" : "above",
-        horizontal: position.left < window.innerWidth / 2 ? "left" : "right",
+        vertical: position.top < viewport.height / 2 ? "below" : "above",
+        horizontal: position.left < viewport.width / 2 ? "left" : "right",
       }
     : { vertical: "above", horizontal: "right" };
 
