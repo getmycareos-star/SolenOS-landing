@@ -48,7 +48,9 @@ assert.equal(capability.available, true, "CI VAPID configuration must enable bro
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext();
+// Seed the permission into Chromium's isolated context at creation time; later
+// grants can update Permissions API state without updating Notification.permission.
+const context = await browser.newContext({ permissions: ["notifications"] });
 try {
   // Use the browser-level CDP session and the isolated context ID. Omitting
   // browserContextId applies Browser.grantPermissions to Chromium's default
@@ -96,6 +98,7 @@ try {
     notification: Notification.permission,
     permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
     origin: location.origin,
+    secureContext: window.isSecureContext,
   }));
   assert.equal(
     permissionState.notification,
