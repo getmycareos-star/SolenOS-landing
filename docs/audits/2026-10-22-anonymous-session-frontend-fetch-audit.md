@@ -1,5 +1,7 @@
 # Anonymous session and direct-fetch audit — 2026-10-22
 
+> **SUPERSEDED — historical Vite-era audit.** The active frontend on current `main` is Next.js App Router. Do not use the Vite/React Router entrypoint, proxy, or deployment descriptions below as current architecture or release evidence. See the current source and the active frontend/backend contract audit for present behavior.
+
 ## Active Vite application path
 
 The deployed Vite entry is `src/main.tsx` → `src/App.tsx` → React Router pages. The main capture widget is `src/components/CareCapture.tsx`; it calls `postJSON('/situation', ...)`, which resolves to `/api/situation`. The legacy Next-style `src/app/**` and `src/lib/workspace-context.tsx` code is not the Vite entrypoint, but its direct situation reads were also updated to avoid leaving an unscoped alternate path in source.
