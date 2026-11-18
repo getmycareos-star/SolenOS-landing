@@ -50,7 +50,11 @@ assert.ok(capability.public_key, "The server must return its configured VAPID pu
 const browser = await chromium.launch({ headless: true });
 // Grant the browser permission at context creation, before any page or redirect
 // can trigger permission checks. This isolated CI context is used only for push E2E.
-const context = await browser.newContext({ permissions: ["notifications"] });
+const context = await browser.newContext();
+// Chromium can retain its default denied notification permission even when the
+// permission is supplied in newContext options. Grant it explicitly for the
+// exact local app origin before creating or navigating the page.
+await context.grantPermissions(["notifications"], { origin: new URL(frontend).origin });
 try {
   const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
