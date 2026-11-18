@@ -45,6 +45,13 @@
   status = 200
   force = true
 
+# LCR orientation is a backend-owned root route, not part of /api/v1.
+[[redirects]]
+  from = "/api/lcr/orientation"
+  to = "https://solenosbackend-production.up.railway.app/api/lcr/orientation"
+  status = 200
+  force = true
+
 # Security headers
 [[headers]]
   for = "/*"
