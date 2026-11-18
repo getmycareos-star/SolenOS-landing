@@ -24,8 +24,15 @@ assert.doesNotMatch(initialLoad, /postJSON\(/, "opening the LCR must not trigger
 assert.match(initialLoad, /getJSON\("\/care-continuity\/situation-understanding"\)/, "the last saved assessment must be reused rather than recomputed during initial load");
 assert.match(workspace, /const CareContinuityIntegrityPanel = dynamic/, "advanced integrity tools must be code-split");
 assert.match(workspace, /const EvidenceReviewPanel = dynamic/, "evidence review must be code-split");
-assert.match(workspace, /onToggle=\{\(event\) => setAdvancedPanelsOpen\(event\.currentTarget\.open\)\}/, "advanced review components must mount only after explicit expansion");
-assert.match(workspace, /advancedPanelsOpen \? <EvidenceReviewPanel/, "evidence review must not mount before the caregiver expands the source section");
+assert.match(workspace, /evidenceReviewOpen \? <EvidenceReviewPanel/, "evidence review must mount only when its own subsection is opened");
+assert.match(workspace, /claimAssessmentOpen \? <ClaimAssessmentPanel/, "claim assessment must mount only when its own subsection is opened");
+assert.match(workspace, /conflictReviewOpen \? <ConflictResolutionPanel/, "conflict review must mount only when its own subsection is opened");
+assert.match(workspace, /recordHistoryOpen \? <CareContinuityIntegrityPanel/, "record history must mount only when its own subsection is opened");
+assert.doesNotMatch(workspace, /advancedPanelsOpen|setAdvancedPanelsOpen/, "opening the outer source section must not mount all advanced review panels");
+assert.match(workspace, /setEvidenceReviewOpen\(event\.currentTarget\.open\)/, "evidence review loading follows its own disclosure");
+assert.match(workspace, /setClaimAssessmentOpen\(event\.currentTarget\.open\)/, "claim assessment loading follows its own disclosure");
+assert.match(workspace, /setConflictReviewOpen\(event\.currentTarget\.open\)/, "conflict review loading follows its own disclosure");
+assert.match(workspace, /setRecordHistoryOpen\(event\.currentTarget\.open\)/, "record history loading follows its own disclosure");
 assert.match(workspace, /solenos\.workspace\.first-care-ready/, "first validated care readiness must be measurable");
 assert.match(workspace, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable");
 
