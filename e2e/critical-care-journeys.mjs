@@ -102,7 +102,15 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
       // page.isClosed(). Ignore only that explicit target-closed teardown error.
       const message = String(error?.message || error);
       const targetClosedDuringTeardown = /Target page, context or browser has been closed|TargetClosedError/.test(message);
-      if (page.isClosed() || context.pages().length === 0 || targetClosedDuringTeardown) return;
+      const requestFailure = route.request().failure();
+      const responseDisposedAfterRequestAbort =
+        /Fetch response has been disposed/.test(message) && Boolean(requestFailure);
+      if (
+        page.isClosed() ||
+        context.pages().length === 0 ||
+        targetClosedDuringTeardown ||
+        responseDisposedAfterRequestAbort
+      ) return;
       throw error;
     }
   });
@@ -213,6 +221,13 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(
+    await page.locator(".care-card-understanding").count(),
+    0,
+    "first capture must not show Clarity when no grounded interpretation is available",
+  );
+  await page.getByText("What else have you noticed alongside this?", { exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
   const firstCaptureUnderstanding = await page.locator(".lcr-recognition").innerText();
   assert.match(
     firstCaptureUnderstanding,
