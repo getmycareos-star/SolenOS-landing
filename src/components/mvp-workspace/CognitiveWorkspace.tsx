@@ -486,12 +486,10 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         throw new Error("The update was not attached to the selected care thread. The original thread remains unchanged.");
       }
 
-      // A successful POST is a write receipt. Prefer the read-after-write
-      // projection; if no active situation was inferred, verify the event by ID
-      // rather than treating a valid saved event as a failed capture.
-      setLastSharedDisplay(sharedDisplay);
-      setRawInput("");
-      setDocuments([]);
+      // A successful POST is only an acknowledgement. Keep the caregiver's
+      // note and attachments in the form until the saved event can be read back.
+      // This prevents a transient projection/read failure from silently losing
+      // the only copy of an update still held by the browser.
       let hydrated = situationData;
       if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn) {
         const hydrationUrl = new URL(apiUrl("/api/situation"), window.location.origin);
@@ -573,11 +571,18 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         }
       }
 
-      if (!hydrated.active_care_situation && !hydrated.active_care_situation_turn && !verifiedReceipt) {
+      if (!savedId || !verifiedReceipt?.readbackVerified) {
         throw new Error(
-          "The server accepted the capture but returned no event ID and no persisted view. Do not submit the same information again; refresh the record before retrying.",
+          "SolenOS received the update but could not confirm it in your saved Care Record. Your note and attachments are still here. Check your connection and try again after refreshing the record.",
         );
       }
+
+      // Clear local input only after the server has returned the exact event
+      // that was just created. A later browser session can then restore it from
+      // the durable record rather than depending on local component state.
+      setLastSharedDisplay(sharedDisplay);
+      setRawInput("");
+      setDocuments([]);
       setSavedEventReceipt(verifiedReceipt);
       if (verifiedReceipt?.id) {
         window.dispatchEvent(new Event("careRecordUpdated"));
