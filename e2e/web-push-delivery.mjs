@@ -48,8 +48,10 @@ assert.equal(capability.available, true, "CI VAPID configuration must enable bro
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ permissions: ["notifications"] });
+const context = await browser.newContext();
 try {
+  // Grant against the exact secure localhost origin before reading Notification.permission.
+  await context.grantPermissions(["notifications"], { origin: frontend });
   const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
 
