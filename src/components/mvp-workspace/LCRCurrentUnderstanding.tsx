@@ -670,7 +670,10 @@ export function LCRCurrentUnderstanding() {
   const [actionHistory, setActionHistory] = useState<Record<string, RegisteredActionAudit[]>>({});
   const [actionHistoryErrors, setActionHistoryErrors] = useState<Record<string, string>>({});
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
-  const [advancedPanelsOpen, setAdvancedPanelsOpen] = useState(false);
+  const [evidenceReviewOpen, setEvidenceReviewOpen] = useState(false);
+  const [claimAssessmentOpen, setClaimAssessmentOpen] = useState(false);
+  const [conflictReviewOpen, setConflictReviewOpen] = useState(false);
+  const [recordHistoryOpen, setRecordHistoryOpen] = useState(false);
   const [clarificationOpen, setClarificationOpen] = useState(false);
   const clarificationDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const openClarification = useCallback(() => {
@@ -2092,24 +2095,24 @@ export function LCRCurrentUnderstanding() {
           {clarificationOpen ? <ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /> : null}
         </details>
       </div>
-      <details className="lcr-advanced-integrity" onToggle={(event) => setAdvancedPanelsOpen(event.currentTarget.open)}>
+      <details className="lcr-advanced-integrity">
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
-        <details className="lcr-history-details">
+        <details className="lcr-history-details" onToggle={(event) => setEvidenceReviewOpen(event.currentTarget.open)}>
           <summary>Notes and documents behind this information</summary>
-          {advancedPanelsOpen ? <EvidenceReviewPanel personId={personId} /> : null}
+          {evidenceReviewOpen ? <EvidenceReviewPanel personId={personId} /> : null}
         </details>
-        <details className="lcr-history-details">
+        <details className="lcr-history-details" onToggle={(event) => setClaimAssessmentOpen(event.currentTarget.open)}>
           <summary>Review the notes behind a care detail</summary>
-          {advancedPanelsOpen ? <ClaimAssessmentPanel /> : null}
+          {claimAssessmentOpen ? <ClaimAssessmentPanel /> : null}
         </details>
-        <details className="lcr-history-details">
+        <details className="lcr-history-details" onToggle={(event) => setConflictReviewOpen(event.currentTarget.open)}>
           <summary>When information differs</summary>
-          {advancedPanelsOpen ? <ConflictResolutionPanel personId={personId} /> : null}
+          {conflictReviewOpen ? <ConflictResolutionPanel personId={personId} /> : null}
         </details>
-        <details className="lcr-history-details">
+        <details className="lcr-history-details" onToggle={(event) => setRecordHistoryOpen(event.currentTarget.open)}>
           <summary>Reported information and record history</summary>
-          {advancedPanelsOpen ? <CareContinuityIntegrityPanel personId={personId} /> : null}
+          {recordHistoryOpen ? <CareContinuityIntegrityPanel personId={personId} /> : null}
         </details>
       </details>
       </details>
