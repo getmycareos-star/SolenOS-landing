@@ -2528,8 +2528,15 @@ await record("17 Daily Care suggested-detail review actions preserve caregiver c
   await review.getByRole("button", { name: "Save correction", exact: true }).click();
   await review.getByText("Correction saved — waiting for approval", { exact: true }).waitFor();
   await review.getByText("Correction saved. It still needs approval before it becomes part of the care record.", { exact: true }).waitFor();
-  await review.getByRole("button", { name: "Dismiss", exact: true }).click();
-  await review.getByText("Dismissed", { exact: true }).waitFor();
+  const thirdCandidate = review.locator("article").nth(2);
+  await thirdCandidate.getByRole("button", { name: "Correct", exact: true }).click();
+  await thirdCandidate.getByRole("textbox", { name: "Suggested detail subject 3", exact: true }).fill("Unsaved subject change");
+  await thirdCandidate.getByRole("textbox", { name: "Suggested detail observation 3", exact: true }).fill("Unsaved observation change.");
+  await thirdCandidate.getByRole("button", { name: "Cancel", exact: true }).click();
+  await thirdCandidate.getByText("mood", { exact: true }).waitFor();
+  await thirdCandidate.getByText("Mum seemed unsettled this morning.", { exact: true }).waitFor();
+  await thirdCandidate.getByRole("button", { name: "Dismiss", exact: true }).click();
+  await thirdCandidate.getByText("Dismissed", { exact: true }).waitFor();
   assert.deepEqual(decisions.map((item) => item.decision), ["accept", "correct", "reject"]);
   assert.equal(decisions[1].corrected_subject, "Eating");
   assert.equal(decisions[1].corrected_observation, "Mum ate a small amount at lunch.");
