@@ -10,6 +10,15 @@ export const metadata: Metadata = {
   title: BRAND_NAME,
   description: `${BRAND_TAGLINE} — ${BRAND_PROMISE}`,
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/icon", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "SolenOS",
+    statusBarStyle: "default",
+  },
   openGraph: {
     title: BRAND_NAME,
     description: BRAND_TAGLINE,
