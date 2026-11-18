@@ -11,8 +11,9 @@ const response = await fetch(new URL("/api/v1/sessions/anonymous", backend), {
     caregiver_name: "Accessibility test caregiver",
   }),
 });
-assert.equal(response.status, 201, await response.text());
-const session = await response.json();
+const sessionBody = await response.text();
+assert.equal(response.status, 201, sessionBody);
+const session = JSON.parse(sessionBody);
 assert.ok(session.access_token && session.person?.id && session.caregiver?.id);
 
 const browser = await chromium.launch({ headless: true });
