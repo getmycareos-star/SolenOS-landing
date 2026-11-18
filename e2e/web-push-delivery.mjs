@@ -47,7 +47,7 @@ assert.equal(capabilityResponse.status, 200, JSON.stringify(capability));
 assert.equal(capability.available, true, "CI VAPID configuration must enable browser push");
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: false });
 // Grant the browser permission at context creation, before any page or redirect
 // can trigger permission checks. This isolated CI context is used only for push E2E.
 const context = await browser.newContext();
