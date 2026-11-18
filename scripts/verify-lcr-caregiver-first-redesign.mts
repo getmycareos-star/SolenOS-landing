@@ -65,6 +65,10 @@ assert.match(currentUnderstanding, /<details className="lcr-history-details" onT
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
 assert.match(captureReview, /These suggestions are not part of the care record until you accept them\./, "unapproved extraction suggestions stay outside the care record");
 assert.match(captureReview, /candidate\.source_quote/, "the caregiver can inspect the original quotation before deciding");
+assert.match(captureReview, /The original quotation is not available in this review\./, "missing source quotation is disclosed rather than silently omitted");
+assert.match(captureReview, /editingIndex === index \? \(/, "correction fields are hidden until the caregiver chooses Correct");
+assert.match(captureReview, /onClick=\{\(\) => setEditingIndex\(index\)\}/, "the caregiver explicitly enters correction mode");
+assert.match(captureReview, /onClick=\{\(\) => setEditingIndex\(null\)\}/, "the caregiver can leave correction mode without submitting a change");
 assert.match(captureReview, /written_to_lcr !== \(decision === "accept"\)/, "only an explicitly accepted suggestion may be confirmed as written to the care record");
 assert.match(captureReview, /review\(index, "accept"\)/, "caregivers can accept a suggested detail");
 assert.match(captureReview, /review\(index, "correct"\)/, "caregivers can correct a suggested detail");
