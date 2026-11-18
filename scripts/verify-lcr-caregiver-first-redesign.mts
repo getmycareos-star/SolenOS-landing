@@ -58,10 +58,14 @@ assert.match(currentUnderstanding, /claimAssessmentOpen \? <ClaimAssessmentPanel
 assert.match(currentUnderstanding, /conflictReviewOpen \? <ConflictResolutionPanel personId={personId} \/>/, "conflict review mounts only when its own disclosure is opened");
 assert.match(currentUnderstanding, /recordHistoryOpen \? <CareContinuityIntegrityPanel personId={personId} \/>/, "record history mounts only when its own disclosure is opened");
 assert.doesNotMatch(currentUnderstanding, /advancedPanelsOpen|setAdvancedPanelsOpen/, "opening the outer evidence disclosure must not mount every advanced panel");
-assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setEvidenceReviewOpen\(event.currentTarget.open\)\}>/, "evidence panel follows its own native disclosure state");
-assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setClaimAssessmentOpen\(event.currentTarget.open\)\}>/, "claim panel follows its own native disclosure state");
-assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setConflictReviewOpen\(event.currentTarget.open\)\}>/, "conflict panel follows its own native disclosure state");
-assert.match(currentUnderstanding, /<details className="lcr-history-details" onToggle=\{\(event\) => setRecordHistoryOpen\(event.currentTarget.open\)\}>/, "record-history panel follows its own native disclosure state");
+assert.match(currentUnderstanding, /if \(evidenceReviewDetailsRef\.current\?\.open\) setEvidenceReviewOpen\(true\)/, "an evidence section opened before hydration still mounts its panel");
+assert.match(currentUnderstanding, /if \(claimAssessmentDetailsRef\.current\?\.open\) setClaimAssessmentOpen\(true\)/, "a claim section opened before hydration still mounts its panel");
+assert.match(currentUnderstanding, /if \(conflictReviewDetailsRef\.current\?\.open\) setConflictReviewOpen\(true\)/, "a conflict section opened before hydration still mounts its panel");
+assert.match(currentUnderstanding, /if \(recordHistoryDetailsRef\.current\?\.open\) setRecordHistoryOpen\(true\)/, "a record-history section opened before hydration still mounts its panel");
+assert.match(currentUnderstanding, /<details ref=\{evidenceReviewDetailsRef\} className="lcr-history-details" onToggle=\{\(event\) => setEvidenceReviewOpen\(event.currentTarget.open\)\}>/, "evidence panel follows its own native disclosure state");
+assert.match(currentUnderstanding, /<details ref=\{claimAssessmentDetailsRef\} className="lcr-history-details" onToggle=\{\(event\) => setClaimAssessmentOpen\(event.currentTarget.open\)\}>/, "claim panel follows its own native disclosure state");
+assert.match(currentUnderstanding, /<details ref=\{conflictReviewDetailsRef\} className="lcr-history-details" onToggle=\{\(event\) => setConflictReviewOpen\(event.currentTarget.open\)\}>/, "conflict panel follows its own native disclosure state");
+assert.match(currentUnderstanding, /<details ref=\{recordHistoryDetailsRef\} className="lcr-history-details" onToggle=\{\(event\) => setRecordHistoryOpen\(event.currentTarget.open\)\}>/, "record-history panel follows its own native disclosure state");
 assert.doesNotMatch(currentUnderstanding, /allowRecordCreation|allowObservationCapture/, "review panels do not expose capture-mode overrides");
 assert.match(captureReview, /These suggestions are not part of the care record until you accept them\./, "unapproved extraction suggestions stay outside the care record");
 assert.match(captureReview, /candidate\.source_quote/, "the caregiver can inspect the original quotation before deciding");
