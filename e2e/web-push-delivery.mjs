@@ -50,26 +50,44 @@ assert.ok(capability.public_key, "The server must return its configured VAPID pu
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext();
 try {
-  const page = await context.newPage();
-  // Chromium caches Notification.permission for a document's execution
-  // context. Grant the permission against the exact app origin before the
-  // first navigation so the document starts with the granted state.
+  // Use the browser-level CDP session and the isolated context ID. Omitting
+  // browserContextId applies Browser.grantPermissions to Chromium's default
+  // context, not this Playwright-created context.
+  const browserCdp = await browser.newBrowserCDPSession();
+  const { browserContextIds } = await browserCdp.send("Target.getBrowserContexts");
+  assert.equal(browserContextIds.length, 1, "Expected one isolated Chromium context");
+  const browserContextId = browserContextIds[0];
   const requestedOrigin = new URL(frontend).origin;
-  const cdp = await context.newCDPSession(page);
-  await cdp.send("Browser.grantPermissions", {
+  await browserCdp.send("Browser.grantPermissions", {
     origin: requestedOrigin,
     permissions: ["notifications"],
+    browserContextId,
+  });
+  await browserCdp.send("Browser.setPermission", {
+    origin: requestedOrigin,
+    permission: { name: "notifications" },
+    setting: "granted",
+    browserContextId,
   });
   await context.grantPermissions(["notifications"], { origin: requestedOrigin });
+
+  const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
 
-  // Handle an unexpected redirect to a different origin explicitly. Reload
-  // so the new document observes the permission before any permission checks.
+  // Handle an unexpected redirect to a different origin explicitly. Grant
+  // permission in the same isolated context, then reload the new origin.
   const appOrigin = new URL(page.url()).origin;
   if (appOrigin !== requestedOrigin) {
-    await cdp.send("Browser.grantPermissions", {
+    await browserCdp.send("Browser.grantPermissions", {
       origin: appOrigin,
       permissions: ["notifications"],
+      browserContextId,
+    });
+    await browserCdp.send("Browser.setPermission", {
+      origin: appOrigin,
+      permission: { name: "notifications" },
+      setting: "granted",
+      browserContextId,
     });
     await context.grantPermissions(["notifications"], { origin: appOrigin });
     await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
