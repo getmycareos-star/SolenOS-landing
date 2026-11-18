@@ -4,14 +4,20 @@
   "description": "The care journey, remembered.",
   "start_url": "/?enter=1",
   "display": "standalone",
-  "background_color": "#f7f5f0",
-  "theme_color": "#3d4543",
+  "background_color": "#F7F5F0",
+  "theme_color": "#3D4543",
   "icons": [
     {
       "src": "/icon",
-      "sizes": "any",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "share_target": {
