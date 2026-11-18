@@ -153,7 +153,6 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
   width: max-content;
   max-width: calc(100vw - 16px);
   font-family: var(--font-solenos-sans, Arial, sans-serif);
-  touch-action: none;
 }
 .solenos-display-trigger {
   display: inline-flex;
