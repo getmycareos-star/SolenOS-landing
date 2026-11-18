@@ -276,8 +276,15 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.equal(feedbackPayload?.event_type, "feedback");
   assert.equal(feedbackPayload?.source_type, "feedback");
   await page.locator(".research-feedback-thanks").waitFor({ state: "visible", timeout: 10_000 });
+  const firstVisitPersonId = String(firstVisitSession.person?.id ?? "").trim();
+  assert.ok(firstVisitPersonId, "anonymous session must return its server-issued care-record ID");
+  const learningEventsPath = `/api/v1/learning-events/${encodeURIComponent(firstVisitPersonId)}?person_id=${encodeURIComponent(firstVisitPersonId)}`;
+  console.log("FIRST_VISIT_LEARNING_EVENTS_READ", JSON.stringify({
+    path: learningEventsPath,
+    session_person_id_present: Boolean(firstVisitPersonId),
+  }));
   const persistedFeedbackEvents = await request(
-    `/api/v1/learning-events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    learningEventsPath,
     { token: firstVisitSession.access_token },
   );
   assert.equal(persistedFeedbackEvents.status, 200, JSON.stringify(persistedFeedbackEvents.payload));
