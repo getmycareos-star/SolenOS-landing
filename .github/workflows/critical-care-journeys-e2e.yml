@@ -2,6 +2,11 @@ name: Critical care journeys — real backend and browser
 
 on:
   workflow_call:
+  pull_request:
+    branches: [main]
+    paths:
+      - "e2e/web-push-delivery.mjs"
+      - ".github/workflows/critical-care-journeys-e2e.yml"
   push:
     branches: [main]
     paths:
@@ -184,12 +189,19 @@ jobs:
           SOLENOS_REQUIRE_LIVE_QWEN: "0"
         run: node e2e/critical-care-journeys.mjs
 
+      - name: Ensure a virtual display is available for headed Chromium
+        run: |
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
+          fi
+
       - name: Verify real browser Web Push delivery through Chromium and PostgreSQL
         env:
           FRONTEND_URL: http://127.0.0.1:3000
           BACKEND_URL: http://127.0.0.1:8000
           BACKEND_SERVICE_DIR: ${{ github.workspace }}/backend-service/backend
-        run: node e2e/web-push-delivery.mjs
+        run: xvfb-run -a node e2e/web-push-delivery.mjs
 
       - name: Audit rendered dark mode on the isolated browser build
         if: always()
