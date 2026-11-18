@@ -62,7 +62,19 @@ try {
   // Re-grant against the final document origin after redirects. Chromium's
   // permission override can otherwise remain scoped away from the loaded app.
   const appOrigin = new URL(page.url()).origin;
-  await context.grantPermissions(["notifications"], { origin: appOrigin });
+  // Use Chromium's DevTools permission override directly. Playwright's
+  // context-level override can report "granted" through Permissions API while
+  // Notification.permission remains "denied" in headless CI.
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Browser.grantPermissions", {
+    origin: appOrigin,
+    permissions: ["notifications"],
+  });
+  await page.evaluate(async () => {
+    if (Notification.permission !== "granted") {
+      await Notification.requestPermission();
+    }
+  });
   const permissionState = await page.evaluate(async () => ({
     notification: Notification.permission,
     permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
