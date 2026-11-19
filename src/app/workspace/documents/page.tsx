@@ -476,7 +476,7 @@ export default function DocumentsPage() {
         </div>
 
 
-        {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid #8eae8a", borderRadius: 12, background: "var(--bg)" }}>
+        {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid var(--theme-panel-border), borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save your captured pages now. SolenOS will read them after upload." : "Save the original file now. SolenOS will read it after upload."} Original files are preserved.</p>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You do not need to read or correct the text before saving. SolenOS keeps the original and reads it in the background. Anything unclear stays marked as uncertain.</p>
@@ -542,7 +542,7 @@ export default function DocumentsPage() {
             {page.note && <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{page.note}</p>}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}><button type="button" onClick={() => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); setReviewPages((current) => current.filter((_, i) => i !== index)); }} disabled={uploading} style={{ justifySelf: "start", minHeight: 38, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", background: "var(--surface)", color: "var(--text)" }}>Remove</button></div>
           </article>)}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard selected files</button></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}><button type="button" onClick={() => void saveReviewedPages()} disabled={uploading || reviewPages.length === 0} style={{ minHeight: 44, display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid var(--theme-action-border), borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 750, padding: "10px 13px" }}>{uploading ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}Save files</button><button type="button" onClick={() => setReviewPages([])} disabled={uploading} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "10px 13px" }}>Discard selected files</button></div>
         </section>}
         {uploading && <div style={{ margin: "12px 0 0" }}><LivingArchiveMark size="sm" label="Saving the original document…" /><p style={{ margin: "6px 0 0", fontSize: 13 }}>Keep this page open until your files are saved. After that, SolenOS will keep reading them even if you leave.</p></div>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
@@ -586,11 +586,11 @@ export default function DocumentsPage() {
           </header>
           <video ref={cameraVideoRef} autoPlay playsInline muted aria-label="Live document camera preview" style={{ width: "100%", maxHeight: "55dvh", background: "#111", borderRadius: 10, objectFit: "contain" }} />
           {cameraStarting && <p role="status" style={{ margin: 0 }}>Starting camera…</p>}
-          {cameraError && <p role="alert" style={{ margin: 0, color: "var(--danger, #a22)" }}>{cameraError}</p>}
+          {cameraError && <p role="alert" style={{ margin: 0, color: "var(--theme-error-fg)" }}>{cameraError}</p>}
           <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>{capturedPages.length} page(s) captured</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={captureCameraPage} disabled={cameraStarting} style={{ minHeight: 44, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "9px 13px" }}>Take photo</button>
-            <button type="button" onClick={finishCameraScan} disabled={!capturedPages.length || cameraStarting} style={{ minHeight: 44, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "9px 13px" }}>Review {capturedPages.length || ""} page(s)</button>
+            <button type="button" onClick={captureCameraPage} disabled={cameraStarting} style={{ minHeight: 44, border: "1px solid var(--theme-action-border), borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Take photo</button>
+            <button type="button" onClick={finishCameraScan} disabled={!capturedPages.length || cameraStarting} style={{ minHeight: 44, border: "1px solid var(--theme-action-border), borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Review {capturedPages.length || ""} page(s)</button>
             <button type="button" onClick={closeCameraScanner} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "9px 13px" }}>Cancel</button>
           </div>
         </section>
@@ -604,7 +604,7 @@ export default function DocumentsPage() {
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button type="button" onClick={downloadOriginal} disabled={!previewUrl} aria-label="Download original document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><Download size={16} /> Download</button>
-              <button type="button" onClick={() => void deleteSelectedDocument()} disabled={deletingDocument} aria-label="Delete document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--danger, #a22)" }}>{deletingDocument ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />} Delete</button>
+              <button type="button" onClick={() => void deleteSelectedDocument()} disabled={deletingDocument} aria-label="Delete document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--theme-error-fg)" }}>{deletingDocument ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />} Delete</button>
               <button type="button" onClick={closePreview} aria-label="Close document preview" style={{ width: 42, minHeight: 42, display: "grid", placeItems: "center", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><X size={19} /></button>
             </div>
           </header>
@@ -617,7 +617,7 @@ export default function DocumentsPage() {
                   <option value="">Choose earlier document…</option>
                   {documents.filter((doc) => doc.id === selected.possibleVersionOfEvidenceId).map((doc) => <option key={doc.id} value={doc.id}>{doc.title} · {formatDate(doc.uploadedAt)}</option>)}
                 </select>
-                <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }}>{linkingVersion ? "Linking…" : "Link versions"}</button>
+                <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid var(--theme-action-border), borderRadius: 8, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700 }}>{linkingVersion ? "Linking…" : "Link versions"}</button>
               </div>
             </section>}
             {versionComparison && <section aria-label="Document version comparison" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
