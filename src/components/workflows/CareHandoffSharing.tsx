@@ -32,6 +32,10 @@ type DraftItem = {
 type DraftPayload = {
   draft_id: string;
   purpose: string;
+  source_of_truth?: "living_care_record" | string;
+  source_snapshot_id?: string;
+  source_snapshot_sha256?: string;
+  snapshot_at?: string;
   generation_status?: string;
   validation_status?: string;
   review_status?: string;
