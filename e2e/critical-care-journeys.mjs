@@ -1117,6 +1117,7 @@ await record("Daily Care saves and retrieves original reports without relying on
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
   assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
   await daily.page.reload({ waitUntil: "domcontentloaded" });
+  await daily.page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" }).click();
   await daily.page.getByRole("heading", { name: "Follow-ups", exact: true }).waitFor({ timeout: 15_000 });
   const savedFollowUps = daily.page.getByRole("list", { name: "Saved follow-ups" });
   await savedFollowUps.getByText("Contact the clinic about the appointment", { exact: true })
