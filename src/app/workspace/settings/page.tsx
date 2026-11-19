@@ -1005,6 +1005,7 @@ function ProductCard() {
 
 export default function WorkspaceSettingsPage() {
   const { hydrated, entryReady } = useWorkspace();
+  const [caregiverAccessOpen, setCaregiverAccessOpen] = useState(false);
 
   useEffect(() => {
     const openLinkedSection = () => {
@@ -1048,9 +1049,9 @@ export default function WorkspaceSettingsPage() {
           <summary className="settings-section-summary"><span className="settings-section-number">03</span><span className="settings-section-summary-copy"><strong>Account and sign-in</strong><small>Email, password and account access</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><AccountCard /></div>
         </details>
-        <details className="settings-section-wrap settings-section-disclosure" id="settings-caregivers">
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-caregivers" onToggle={(event) => setCaregiverAccessOpen(event.currentTarget.open)}>
           <summary className="settings-section-summary"><span className="settings-section-number">04</span><span className="settings-section-summary-copy"><strong>Caregiver access</strong><small>People who can access this care record</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="settings-section-content"><CaregiverAccessPanel /></div>
+          <div className="settings-section-content"><CaregiverAccessPanel enabled={caregiverAccessOpen} /></div>
         </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-security">
           <summary className="settings-section-summary"><span className="settings-section-number">05</span><span className="settings-section-summary-copy"><strong>Devices and recovery</strong><small>Connected devices and help getting back in</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
