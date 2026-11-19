@@ -375,8 +375,41 @@ await record("01 first caregiver session", async () => {
 });
 
 // Shared persisted session for the remaining independently scoped journey checks.
+// This matrix exercises the returning-caregiver workspace, so establish consent
+// and one durable care entry before opening Daily Care. The first-visit journey
+// above independently verifies the empty-record experience.
 let session = await newSession("critical journey matrix");
 const identity = auth(session);
+const matrixConsent = await request("/api/v1/consent", {
+  token: identity.token,
+  method: "POST",
+  body: {
+    person_id: identity.personId,
+    caregiver_id: identity.caregiverId,
+    medical_disclaimer_acknowledged: true,
+    privacy_model_acknowledged: true,
+    multi_caregiver_acknowledged: true,
+    no_advertising_acknowledged: true,
+    data_improvement_consent: true,
+    accepted_terms_version: "2026-10",
+  },
+});
+assert.equal(matrixConsent.status, 200, JSON.stringify(matrixConsent.payload));
+assert.equal(matrixConsent.payload.verified, true);
+const matrixSeed = await request("/api/v1/daily-care/entries", {
+  token: identity.token,
+  method: "POST",
+  body: {
+    person_id: identity.personId,
+    caregiver_id: identity.caregiverId,
+    capture_idempotency_key: randomUUID(),
+    capture_kind: "natural_language_update",
+    notes: "A saved care update for the returning caregiver journey checks.",
+  },
+});
+assert.equal(matrixSeed.status, 200, JSON.stringify(matrixSeed.payload));
+assert.equal(matrixSeed.payload.success, true, JSON.stringify(matrixSeed.payload));
+assert.ok(matrixSeed.payload.id, "the returning-caregiver journey requires one persisted care entry");
 const unique = (prefix) => `${prefix}-${randomUUID()}`;
 
 await record("01b visible Follow-ups button and mobile navigation", async () => {
