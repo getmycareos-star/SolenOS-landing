@@ -132,10 +132,31 @@ try {
     button.id = "solenos-enable-push-e2e";
     button.type = "button";
     button.textContent = "Enable test notifications";
+    window.__solenosPushSubscriptionDiagnostics = {
+      registrationScope: registration.scope,
+      activeWorker: registration.active?.scriptURL ?? null,
+      permission: Notification.permission,
+      secureContext: window.isSecureContext,
+      startedAt: null,
+      settledAt: null,
+      outcome: "not_started",
+    };
+    window.addEventListener("unhandledrejection", (event) => {
+      window.__solenosPushSubscriptionDiagnostics.unhandledRejection =
+        event.reason instanceof Error ? `${event.reason.name}: ${event.reason.message}` : String(event.reason);
+    });
     button.addEventListener("click", () => {
+      window.__solenosPushSubscriptionDiagnostics.startedAt = Date.now();
+      window.__solenosPushSubscriptionDiagnostics.outcome = "pending";
+      // Keep subscribe() directly inside the trusted click handler. Do not
+      // move it to an effect or a timer: browsers require transient activation.
       registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey }).then((created) => {
+        window.__solenosPushSubscriptionDiagnostics.settledAt = Date.now();
+        window.__solenosPushSubscriptionDiagnostics.outcome = "fulfilled";
         window.__solenosPushSubscriptionResult = { ok: true, subscription: created.toJSON() };
       }).catch((error) => {
+        window.__solenosPushSubscriptionDiagnostics.settledAt = Date.now();
+        window.__solenosPushSubscriptionDiagnostics.outcome = "rejected";
         window.__solenosPushSubscriptionResult = {
           ok: false,
           error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
@@ -144,8 +165,33 @@ try {
     });
     document.body.append(button);
   }, capability.public_key);
+  page.on("pageerror", (error) => console.log("WEB_PUSH_PAGE_ERROR", error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") console.log("WEB_PUSH_CONSOLE_ERROR", message.text());
+  });
   await page.locator("#solenos-enable-push-e2e").click();
-  await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, { timeout: 20_000 });
+  try {
+    await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, { timeout: 60_000 });
+  } catch (error) {
+    const diagnostics = await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      const existing = registration ? await registration.pushManager.getSubscription().catch((failure) => ({
+        lookupError: failure instanceof Error ? `${failure.name}: ${failure.message}` : String(failure),
+      })) : null;
+      return {
+        ...window.__solenosPushSubscriptionDiagnostics,
+        notificationPermission: Notification.permission,
+        serviceWorkerController: navigator.serviceWorker.controller?.scriptURL ?? null,
+        registrationState: registration?.active?.state ?? null,
+        existingSubscription: existing && "endpoint" in existing
+          ? { endpointOrigin: new URL(existing.endpoint).origin, hasP256dh: Boolean(existing.toJSON().keys?.p256dh), hasAuth: Boolean(existing.toJSON().keys?.auth) }
+          : existing,
+        online: navigator.onLine,
+      };
+    });
+    console.error("WEB_PUSH_SUBSCRIPTION_TIMEOUT_DIAGNOSTIC", JSON.stringify(diagnostics));
+    throw new Error(`Real Chrome PushManager.subscribe() did not settle within 60 seconds: ${JSON.stringify(diagnostics)}; ${error.message}`);
+  }
   const subscriptionResult = await page.evaluate(() => window.__solenosPushSubscriptionResult);
   assert.equal(subscriptionResult.ok, true, `Real Chrome push subscription failed: ${subscriptionResult.error}`);
   const subscription = subscriptionResult.subscription;
