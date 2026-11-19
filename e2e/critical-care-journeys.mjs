@@ -1164,25 +1164,36 @@ await record("Daily Care saves and retrieves original reports without relying on
       && url.searchParams.get("limit") === "100"
       && url.searchParams.get("offset") === "0";
   });
-  await daily.page.reload({ waitUntil: "domcontentloaded" });
-  const followUpsResponse = await followUpsResponsePromise;
-  const followUpsPayload = await followUpsResponse.json();
-  assert.equal(followUpsResponse.status(), 200, JSON.stringify(followUpsPayload));
-  const browserFollowUp = (followUpsPayload.items || []).find((item) => item.id === appointmentFollowUpId);
-  assert.ok(
-    browserFollowUp,
-    `Daily Care's browser request did not retrieve the pre-existing follow-up: ${JSON.stringify(followUpsPayload)}`,
-  );
-  console.log("DAILY_FOLLOWUPS_BROWSER_ITEM", JSON.stringify(browserFollowUp));
-  const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
-    has: daily.page.locator("#daily-care-follow-ups-title"),
+  let releaseHistory!: () => void;
+  const historyGate = new Promise<void>((resolve) => { releaseHistory = resolve; });
+  await daily.page.route("**/api/v1/daily-care/intelligence/history**", async (route) => {
+    await historyGate;
+    await route.continue();
   });
-  // The list is inside a collapsed native <details>. Use a DOM locator to
-  // wait for attachment, then open the panel before asserting accessibility.
-  const savedFollowUps = followUpsPanel.locator('ul[aria-label="Saved follow-ups"]');
-  await savedFollowUps.waitFor({ state: "attached", timeout: 15_000 });
-  await followUpsPanel.locator("summary").click();
-  await savedFollowUps.waitFor({ state: "visible", timeout: 5_000 });
+  try {
+    await daily.page.reload({ waitUntil: "domcontentloaded" });
+    const followUpsResponse = await followUpsResponsePromise;
+    const followUpsPayload = await followUpsResponse.json();
+    assert.equal(followUpsResponse.status(), 200, JSON.stringify(followUpsPayload));
+    const browserFollowUp = (followUpsPayload.items || []).find((item) => item.id === appointmentFollowUpId);
+    assert.ok(
+      browserFollowUp,
+      `Daily Care's browser request did not retrieve the pre-existing follow-up: ${JSON.stringify(followUpsPayload)}`,
+    );
+    const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
+      has: daily.page.locator("#daily-care-follow-ups-title"),
+    });
+    // The list is inside a collapsed native <details>. Wait for it in the DOM,
+    // then open it. The history request remains deliberately blocked until the
+    // saved follow-up is visible, proving the two reads are independent.
+    const savedFollowUps = followUpsPanel.locator('ul[aria-label="Saved follow-ups"]');
+    await savedFollowUps.waitFor({ state: "attached", timeout: 10_000 });
+    await followUpsPanel.locator("summary").click();
+    await savedFollowUps.waitFor({ state: "visible", timeout: 5_000 });
+  } finally {
+    releaseHistory();
+    await daily.page.unroute("**/api/v1/daily-care/intelligence/history**");
+  }
   const followUpsAlreadyOpen = await followUpsPanel.evaluate((element) =>
     element instanceof HTMLDetailsElement && element.open
   );
