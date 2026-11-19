@@ -63,6 +63,18 @@ type CurrentCareItem = {
   source_collection: string;
   source_type: string;
   source_label: string;
+  source_context?: {
+    kind?: string;
+    authority?: string;
+    document_candidate?: {
+      source_attribution?: string;
+      negation_status?: string;
+      modality?: string;
+      conditionality?: string;
+      temporal_context?: string;
+      statement_kind?: string;
+    };
+  } | null;
   occurred_at?: string | null;
   reported_at?: string | null;
   recorded_at?: string | null;
@@ -479,6 +491,22 @@ const CURRENT_CARE_TITLE_LABELS: Readonly<Record<string, string>> = {
   "daily care entry": "Daily care note",
   "daily capture": "Daily care update",
 };
+
+function documentStatementContextLabels(item: CurrentCareItem): string[] {
+  if (item.source_collection !== "assertions") return [];
+  const candidate = item.source_context?.document_candidate;
+  if (!candidate) return [];
+  const labels: string[] = [];
+  if (candidate.source_attribution === "patient_reported") labels.push("Reported by the patient");
+  if (candidate.source_attribution === "caregiver_reported") labels.push("Reported by a family caregiver");
+  if (candidate.source_attribution === "professional_observed") labels.push("Documented or observed by a care professional");
+  if (candidate.negation_status === "explicitly_negated") labels.push("Contains negative wording");
+  if (candidate.modality === "tentative") labels.push("Tentative wording");
+  if (candidate.conditionality === "conditional") labels.push("Conditional wording");
+  if (candidate.temporal_context === "historical") labels.push("Historical information");
+  if (candidate.statement_kind === "recommendation") labels.push("Recommendation — outcome not established here");
+  return labels;
+}
 
 function displayCurrentCareTitle(item: CurrentCareItem): string {
   const title = item.title?.trim().toLowerCase() || "";
@@ -1246,6 +1274,7 @@ export function LCRCurrentUnderstanding() {
                     <strong>{displayCurrentCareTitle(item)}</strong>
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
                     <small>{caregiverLabel(item.epistemic_status)} · Shared by {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
                     <a className="lcr-text-action" href={`#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View saved record</a>
                   </li>
                 ))}
@@ -2001,6 +2030,7 @@ export function LCRCurrentUnderstanding() {
                       <summary>Care details</summary>
                       <p>{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
                       <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"}</small>
+                      {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
                       <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                       {item.evidence_ids?.length > 0 ? (
                         <div>
