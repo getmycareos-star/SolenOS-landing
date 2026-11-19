@@ -234,6 +234,44 @@ async function main() {
     assert.equal(store.getItem("solenos_backend_person_id"), null, "late bootstrap must not restore a revoked record identity");
   }
 
+
+  // Deletion revocation blocks background identity recreation; explicit Care Record entry is required.
+  {
+    const store = makeStore();
+    store.setItem("solenos_anonymous_session_revoked", "revoked-1");
+    installBrowser(store, "https://solenos.test/start");
+    let requests = 0;
+    globalThis.fetch = (async () => {
+      requests += 1;
+      return jsonResponse(session());
+    }) as typeof fetch;
+    await assert.rejects(
+      () => getJSON("/events/person-server-1"),
+      /workspace was deleted from this device/i,
+    );
+    assert.equal(requests, 0, "background reads must not mint a replacement identity after deletion");
+    assert.equal(store.getItem("solenos_anonymous_session_revoked"), "revoked-1");
+  }
+
+  // Only explicit Care Record entry may clear the revocation and create a fresh session.
+  {
+    const store = makeStore();
+    store.setItem("solenos_anonymous_session_revoked", "revoked-2");
+    installBrowser(store, "https://solenos.test/workspace?enter=1");
+    let sessionCreates = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/v1/sessions/anonymous") {
+        sessionCreates += 1;
+        return jsonResponse(session());
+      }
+      return jsonResponse({ ok: true });
+    }) as typeof fetch;
+    await getJSON("/events/person-server-1");
+    assert.equal(sessionCreates, 1);
+    assert.equal(store.getItem("solenos_anonymous_session_revoked"), null);
+    assert.equal(store.getItem("solenos_anonymous_access_token"), "server-issued-token");
+  }
+
   console.log("Anonymous session identity race checks passed.");
 
 }
