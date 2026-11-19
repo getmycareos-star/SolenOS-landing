@@ -1164,8 +1164,8 @@ await record("Daily Care saves and retrieves original reports without relying on
       && url.searchParams.get("limit") === "100"
       && url.searchParams.get("offset") === "0";
   });
-  let releaseHistory!: () => void;
-  const historyGate = new Promise<void>((resolve) => { releaseHistory = resolve; });
+  let releaseHistory = () => {};
+  const historyGate = new Promise((resolve) => { releaseHistory = resolve; });
   await daily.page.route("**/api/v1/daily-care/intelligence/history**", async (route) => {
     await historyGate;
     await route.continue();
