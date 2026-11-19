@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
-import { chromium } from "playwright";
+import { firefox } from "playwright";
 
 const frontend = process.env.FRONTEND_URL;
 const backend = process.env.BACKEND_URL;
@@ -47,59 +47,15 @@ assert.equal(capabilityResponse.status, 200, JSON.stringify(capability));
 assert.equal(capability.available, true, "CI VAPID configuration must enable browser push");
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
-const browser = await chromium.launch({
-  headless: false,
-  channel: "chrome",
-  // Playwright disables background networking by default. Chrome needs its
-  // push-service network traffic enabled to register a real FCM endpoint.
-  ignoreDefaultArgs: ["--disable-background-networking"],
-});
-// Seed the permission into Chromium's isolated context at creation time; later
-// grants can update Permissions API state without updating Notification.permission.
+const browser = await firefox.launch({ headless: false });
 const context = await browser.newContext({ permissions: ["notifications"] });
+let appOrigin = new URL(frontend).origin;
 try {
-  // Use the browser-level CDP session and the isolated context ID. Omitting
-  // browserContextId applies Browser.grantPermissions to Chromium's default
-  // context, not this Playwright-created context.
-  const browserCdp = await browser.newBrowserCDPSession();
-  const { browserContextIds } = await browserCdp.send("Target.getBrowserContexts");
-  assert.equal(browserContextIds.length, 1, "Expected one isolated Chromium context");
-  const browserContextId = browserContextIds[0];
-  const requestedOrigin = new URL(frontend).origin;
-  await browserCdp.send("Browser.grantPermissions", {
-    origin: requestedOrigin,
-    permissions: ["notifications"],
-    browserContextId,
-  });
-  await browserCdp.send("Browser.setPermission", {
-    origin: requestedOrigin,
-    permission: { name: "notifications" },
-    setting: "granted",
-    browserContextId,
-  });
-  await context.grantPermissions(["notifications"], { origin: requestedOrigin });
-
   const page = await context.newPage();
   await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
-
-  // Handle an unexpected redirect to a different origin explicitly. Grant
-  // permission in the same isolated context, then reload the new origin.
-  const appOrigin = new URL(page.url()).origin;
-  if (appOrigin !== requestedOrigin) {
-    await browserCdp.send("Browser.grantPermissions", {
-      origin: appOrigin,
-      permissions: ["notifications"],
-      browserContextId,
-    });
-    await browserCdp.send("Browser.setPermission", {
-      origin: appOrigin,
-      permission: { name: "notifications" },
-      setting: "granted",
-      browserContextId,
-    });
-    await context.grantPermissions(["notifications"], { origin: appOrigin });
-    await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
-  }
+  appOrigin = new URL(page.url()).origin;
+  await context.grantPermissions(["notifications"], { origin: appOrigin });
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
   // Chromium headless can report Notification.permission as "denied" even
   // when Playwright has granted the notifications permission. The actual
   // PushManager subscription and delivered service-worker notification below
@@ -113,7 +69,7 @@ try {
   assert.equal(
     permissionState.permissionsApi,
     "granted",
-    `Chromium notifications permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
+    `Firefox notifications permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
   );
   assert.equal(permissionState.secureContext, true, "Web Push requires a secure browser context");
 
@@ -161,7 +117,7 @@ try {
       push: await registration.pushManager.permissionState({ userVisibleOnly: true, applicationServerKey }),
     };
   }, capability.public_key);
-  assert.equal(pushPermissionState.push, "granted", `Chromium PushManager permission is not granted: ${JSON.stringify(pushPermissionState)}`);
+  assert.equal(pushPermissionState.push, "granted", `Firefox PushManager permission is not granted: ${JSON.stringify(pushPermissionState)}`);
 
   // Prepare service-worker state before the gesture. subscribe() itself runs
   // synchronously in a genuine browser click handler.
@@ -193,10 +149,10 @@ try {
   await page.locator("#solenos-enable-push-e2e").click();
   await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, { timeout: 20_000 });
   const subscriptionResult = await page.evaluate(() => window.__solenosPushSubscriptionResult);
-  assert.equal(subscriptionResult.ok, true, `Real Chromium push subscription failed: ${subscriptionResult.error}`);
+  assert.equal(subscriptionResult.ok, true, `Real Firefox push subscription failed: ${subscriptionResult.error}`);
   const subscription = subscriptionResult.subscription;
 
-  assert.ok(subscription?.endpoint, "Chromium did not create a real push-service endpoint");
+  assert.ok(subscription?.endpoint, "Firefox did not create a real push-service endpoint");
   assert.ok(subscription?.keys?.p256dh && subscription?.keys?.auth, "Browser subscription keys are missing");
 
   const { response: registeredResponse, payload: registered } = await jsonRequest(
