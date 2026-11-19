@@ -1292,6 +1292,13 @@ await record("Daily Care saves and retrieves original reports without relying on
 
   await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
   await daily.page.reload({ waitUntil: "domcontentloaded" });
+  const appointmentFollowUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
+    has: daily.page.locator("#daily-care-follow-ups-title"),
+  });
+  if (await appointmentFollowUpsPanel.count()) {
+    const isOpen = await appointmentFollowUpsPanel.evaluate((element) => element.open);
+    if (!isOpen) await appointmentFollowUpsPanel.locator("summary").click();
+  }
   await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
   for (const report of scenarioReports) {
     await daily.page.getByText(report, { exact: false }).first().waitFor({ timeout: 15_000 });
