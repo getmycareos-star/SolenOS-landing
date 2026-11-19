@@ -439,6 +439,78 @@ assert.equal(matrixSeed.payload.success, true, JSON.stringify(matrixSeed.payload
 assert.ok(matrixSeed.payload.id, "the returning-caregiver journey requires one persisted care entry");
 const unique = (prefix) => `${prefix}-${randomUUID()}`;
 
+await record("01a dementia profile review window and observation persistence are person-scoped", async () => {
+  const foreignSession = await newSession("dementia observation isolation");
+  const foreign = auth(foreignSession);
+  const profileField = "dementia_profile.wandering_getting_lost";
+  const profileValue = `Caregiver report ${randomUUID()}`;
+  const profileWrite = await request("/api/v1/care-continuity/assertions", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      subject_type: "person",
+      subject_id: identity.personId,
+      field: profileField,
+      assertion_kind: "current_state",
+      epistemic_state: "reported",
+      asserted_value: profileValue,
+      source_label: "Caregiver-provided care profile",
+      source_text: profileValue,
+      review_after_days: 90,
+      // Caller-supplied identity must be ignored; the bearer session is authoritative.
+      person_id: foreign.personId,
+    },
+  });
+  assert.equal(profileWrite.status, 201, JSON.stringify(profileWrite.payload));
+  assert.equal(profileWrite.payload.person_id, identity.personId);
+  assert.equal(profileWrite.payload.review_after_days, 90);
+
+  const profileRead = await request(`/api/v1/care-continuity/assertions/${identity.personId}?limit=100`, {
+    token: identity.token,
+  });
+  assert.equal(profileRead.status, 200, JSON.stringify(profileRead.payload));
+  assert.ok(profileRead.payload.some((row) =>
+    row.field === profileField && row.asserted_value === profileValue && row.review_after_days === 90
+  ), "the caregiver-selected review window and profile value must persist");
+
+  const description = `Observed dementia-care event ${randomUUID()}`;
+  const occurredAt = new Date(Date.now() - 60_000).toISOString();
+  const observationWrite = await request("/api/v1/care-continuity/caregiver-observations", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      observation_category: "dementia.wandering",
+      description,
+      observation_type: "direct",
+      epistemic_status: "observed",
+      observed_at: occurredAt,
+      // A foreign person ID must not override the authenticated session.
+      person_id: foreign.personId,
+    },
+  });
+  assert.equal(observationWrite.status, 201, JSON.stringify(observationWrite.payload));
+  assert.equal(observationWrite.payload.person_id, identity.personId);
+  assert.equal(observationWrite.payload.recorded_by_caregiver_id, identity.caregiverId);
+  assert.ok(observationWrite.payload.recorded_at, "server receipt time must be recorded");
+  assert.ok(observationWrite.payload.observed_at, "event time must be preserved separately");
+  assert.equal(observationWrite.payload.observation_type, "DIRECT");
+
+  const observationRead = await request("/api/v1/care-continuity/caregiver-observations?limit=100", {
+    token: identity.token,
+  });
+  assert.equal(observationRead.status, 200, JSON.stringify(observationRead.payload));
+  assert.ok(observationRead.payload.some((row) =>
+    row.id === observationWrite.payload.id && row.description === description
+  ), "the original observation must be retrievable");
+
+  const foreignRead = await request("/api/v1/care-continuity/caregiver-observations?limit=100", {
+    token: foreign.token,
+  });
+  assert.equal(foreignRead.status, 200, JSON.stringify(foreignRead.payload));
+  assert.ok(!foreignRead.payload.some((row) => row.id === observationWrite.payload.id),
+    "another care record must not retrieve this observation");
+});
+
 await record("01b visible Follow-ups button and mobile navigation", async () => {
   const { context, page } = await createBrowserPage(
     session,
