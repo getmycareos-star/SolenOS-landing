@@ -840,3 +840,43 @@
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .lcr-first-screen-card small {
   color: var(--sn-muted) !important;
 }
+
+
+/* First-visit capture and follow-ups are part of the primary caregiver journey;
+   give their locally-authored surfaces explicit dark-theme tokens as well. */
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-first-visit .public-eyebrow {
+  color: #b6cbb6 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .lcr-capture-context {
+  border-left-color: #78977b;
+  background: #202d24 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .lcr-capture-context .workspace-muted {
+  color: #c1ccc3 !important;
+  background: transparent !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .followups-page {
+  --text: #edf3ed;
+  --text-secondary: #b6c2b8;
+  --surface: #1d2821;
+  --surface-muted: #2b3a30;
+  --border: #35443a;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .followups-page .followups-limitation {
+  border-color: var(--sn-line);
+  background: #202d24;
+  color: #c1ccc3;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .followups-page .followups-alert {
+  border-color: #815b4d;
+  background: #352b26;
+  color: #f2d9ce;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .followups-page .followups-notice {
+  border-color: #49684e;
+  background: #202d24;
+  color: #c9dfc9;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .followups-page .followup-reason {
+  color: #d5b28c;
+}
