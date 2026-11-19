@@ -45,7 +45,7 @@ function downloadBriefing(draft: BriefingDraft) {
     ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["AI briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
     "",
     "Important: AI-written wording is a draft. Each item includes wording from its saved source. Check the source and uncertainty labels before relying on or sharing it.",
-    ...sections.flatMap(item => [
+    ...sections.flatMap((item, index) => [
       "",
       item.section,
       item.summary || item.text,
