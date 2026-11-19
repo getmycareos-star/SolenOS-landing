@@ -58,8 +58,8 @@ async function connectRealBackend(page, { loseFirstAccountResponse = false } = {
   });
 }
 
-async function openAccountAccess(page) {
-  const section = page.locator("#settings-security");
+async function openSettingsSection(page, sectionId, headingName) {
+  const section = page.locator(`#${sectionId}`);
   await section.waitFor({ state: "visible", timeout: 20_000 });
   const isOpen = await section.evaluate((element) =>
     element instanceof HTMLDetailsElement && element.open
@@ -67,10 +67,10 @@ async function openAccountAccess(page) {
   if (!isOpen) await section.locator(":scope > summary").click();
   await section.evaluate((element) => {
     if (!(element instanceof HTMLDetailsElement) || !element.open) {
-      throw new Error("Security settings must be open before checking account access");
+      throw new Error(`Settings section ${sectionId} must be open before checking its contents`);
     }
   });
-  await section.getByRole("heading", { name: "Devices and account access", exact: true }).waitFor({ timeout: 20_000 });
+  await section.getByRole("heading", { name: headingName, exact: true }).waitFor({ timeout: 20_000 });
 }
 
 try {
@@ -79,7 +79,7 @@ try {
   const pageA = await contextA.newPage();
   await connectRealBackend(pageA, { loseFirstAccountResponse: true });
   await pageA.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await openAccountAccess(pageA);
+  await openSettingsSection(pageA, "settings-account", "Account");
   await pageA.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -141,7 +141,6 @@ try {
   const isolatedPage = await isolatedContext.newPage();
   await connectRealBackend(isolatedPage);
   await isolatedPage.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await openAccountAccess(isolatedPage);
   await isolatedPage.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -269,6 +268,7 @@ try {
   // Register the authenticated installation through the actual Settings UI.
   // The backend should bind the device to this account session and mark it
   // verified only because the session was issued by successful account login.
+  await openSettingsSection(pageA, "settings-security", "Devices and account access");
   await pageA.getByRole("button", { name: "Add this device", exact: true }).click();
   await pageA.getByText("This device is linked to your account.", { exact: true }).waitFor({ timeout: 20_000 });
   const registeredDevices = await backendRequest("/api/v1/identity/devices", { token: afterRegistration.token });
@@ -309,7 +309,7 @@ try {
   const pageB = await contextB.newPage();
   await connectRealBackend(pageB);
   await pageB.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await openAccountAccess(pageB);
+  await openSettingsSection(pageB, "settings-account", "Account");
   await pageB.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -324,6 +324,7 @@ try {
   await pageB.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
   const deviceBSession = await pageB.evaluate(() => localStorage.getItem("solenos_anonymous_access_token"));
   assert.ok(deviceBSession, "device B did not receive an authenticated session");
+  await openSettingsSection(pageB, "settings-security", "Devices and account access");
   await pageB.getByRole("button", { name: "Add this device", exact: true }).click();
   await pageB.getByText("This device is linked to your account.", { exact: true }).waitFor({ timeout: 20_000 });
   const devicesOnB = await backendRequest("/api/v1/identity/devices", { token: deviceBSession });
