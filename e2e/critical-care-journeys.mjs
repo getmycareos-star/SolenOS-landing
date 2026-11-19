@@ -767,13 +767,15 @@ await record("01c workspace links, browser back, More menu and account form vali
     ];
     const captureIfCleared = () => {
       if (identityKeys.every((identityKey) => window.localStorage.getItem(identityKey) === null)) {
-        window.sessionStorage.setItem("__solenosWorkspaceDeleteSnapshot", JSON.stringify({
+        // window.name survives the /start navigation; sessionStorage is
+        // intentionally cleared by the workspace deletion action.
+        window.name = JSON.stringify({
           token: null,
           personId: null,
           caregiverId: null,
           expiresAt: null,
           legacyPersonId: null,
-        }));
+        });
       }
     };
     const originalRemoveItem = Storage.prototype.removeItem;
@@ -802,7 +804,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await deleteClick;
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
   const clearedLocalData = await disposable.page.evaluate(() => {
-    const snapshot = window.sessionStorage.getItem("__solenosWorkspaceDeleteSnapshot");
+    const snapshot = window.name;
     return snapshot ? JSON.parse(snapshot) : null;
   });
   assert.ok(clearedLocalData, "the /start document must capture local identity before application bootstrap");
@@ -813,6 +815,11 @@ await record("01c workspace links, browser back, More menu and account form vali
     expiresAt: null,
     legacyPersonId: null,
   }, "workspace deletion must clear current and legacy browser identity data");
+  assert.equal(
+    await disposable.page.evaluate(() => window.sessionStorage.length),
+    0,
+    "workspace deletion must clear temporary browser-session state",
+  );
   assert.equal(deletionRequests.length, 0,
     "workspace deletion must not call an endpoint that deletes saved care information");
   const revokedSession = await request(
