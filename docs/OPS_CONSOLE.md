@@ -18,7 +18,7 @@ Production domain: https://solenosai.netlify.app
 ## Stack
 
 - Next.js App Router
-- PostgreSQL (`pg`) — server-side code can attempt writes to `solen_events`; the current repositories do not contain a migration that provisions this table. The writer falls back to process memory if the table is unavailable; durable production ingestion is therefore unverified.
+- PostgreSQL (`pg`) — server-side code attempts writes to `solen_events`, provisioned by `db/migrations/075_solen_ops_events.sql`. If the database is unavailable or the table is missing, the writer falls back to process memory and explicitly reports `memory_only`; durable production ingestion remains unverified until the migration is applied and a database-backed write is confirmed.
 - No Mixpanel / GA / Segment
 
 ## Layers
@@ -35,7 +35,7 @@ Every metric answers: *Is SolenOS becoming a caregiver's external memory system?
 
 ## Runtime requirements and limitation
 
-`OPS_SECRET` and `METRICS_SECRET` protect the internal pages. `DATABASE_URL` is required for database-backed reads. The current repositories do not include the historical migration `075_solen_ops_events.sql`; do not assume `solen_events` exists or that event writes are durable. Browser telemetry remains disabled.
+`OPS_SECRET` and `METRICS_SECRET` protect the internal pages. `DATABASE_URL` is required for database-backed reads and writes. The migration `db/migrations/075_solen_ops_events.sql` is present in this repository, but this code change does not prove it has been applied to any target database. Treat events as durable only when `insertSolenEvent()` returns `server_persisted`; `memory_only` is not durable. Browser telemetry remains disabled.
 
 ## Module
 
