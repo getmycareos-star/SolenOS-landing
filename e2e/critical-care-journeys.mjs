@@ -753,44 +753,6 @@ await record("01c workspace links, browser back, More menu and account form vali
       deletionRequests.push(request.url());
     }
   });
-  // Capture the deletion boundary itself. /start may legitimately create
-  // a fresh anonymous session after navigation, so a document-start snapshot
-  // can race with app bootstrap. Observe the actual localStorage removals and
-  // freeze the snapshot as soon as every identity key has been cleared.
-  await disposable.page.evaluate(() => {
-    const identityKeys = [
-      "solenos_anonymous_access_token",
-      "solenos_backend_person_id",
-      "solenos_backend_caregiver_id",
-      "solenos_anonymous_session_expires_at",
-      "solenos_person_id",
-    ];
-    const captureIfCleared = () => {
-      if (identityKeys.every((identityKey) => window.localStorage.getItem(identityKey) === null)) {
-        // window.name survives the /start navigation; sessionStorage is
-        // intentionally cleared by the workspace deletion action.
-        window.name = JSON.stringify({
-          token: null,
-          personId: null,
-          caregiverId: null,
-          expiresAt: null,
-          legacyPersonId: null,
-        });
-      }
-    };
-    const originalRemoveItem = Storage.prototype.removeItem;
-    Storage.prototype.removeItem = function (key) {
-      const result = originalRemoveItem.call(this, key);
-      if (this === window.localStorage) captureIfCleared();
-      return result;
-    };
-    const originalClear = Storage.prototype.clear;
-    Storage.prototype.clear = function () {
-      const result = originalClear.call(this);
-      if (this === window.localStorage) captureIfCleared();
-      return result;
-    };
-  });
   const deleteMenu = await disposable.page.getByRole("button", {
     name: "More care record actions", exact: true,
   }).click().then(() => disposable.page.getByRole("menu", { name: "Care record actions", exact: true }));
@@ -803,22 +765,28 @@ await record("01c workspace links, browser back, More menu and account form vali
   await deleteDialog.accept();
   await deleteClick;
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
-  const clearedLocalData = await disposable.page.evaluate(() => {
-    const snapshot = window.name;
-    return {
-      identity: snapshot ? JSON.parse(snapshot) : null,
-      deletionMarker: window.localStorage.getItem("solenos_anonymous_session_revoked"),
-      sessionStorageCount: window.sessionStorage.length,
-    };
-  });
-  assert.ok(clearedLocalData.identity, "the /start document must retain the deletion-boundary snapshot");
-  assert.deepEqual(clearedLocalData.identity, {
+  const clearedLocalData = await disposable.page.evaluate(() => ({
+    token: window.localStorage.getItem("solenos_anonymous_access_token"),
+    personId: window.localStorage.getItem("solenos_backend_person_id"),
+    caregiverId: window.localStorage.getItem("solenos_backend_caregiver_id"),
+    expiresAt: window.localStorage.getItem("solenos_anonymous_session_expires_at"),
+    legacyPersonId: window.localStorage.getItem("solenos_person_id"),
+    deletionMarker: window.localStorage.getItem("solenos_anonymous_session_revoked"),
+    sessionStorageCount: window.sessionStorage.length,
+  }));
+  assert.deepEqual({
+    token: clearedLocalData.token,
+    personId: clearedLocalData.personId,
+    caregiverId: clearedLocalData.caregiverId,
+    expiresAt: clearedLocalData.expiresAt,
+    legacyPersonId: clearedLocalData.legacyPersonId,
+  }, {
     token: null,
     personId: null,
     caregiverId: null,
     expiresAt: null,
     legacyPersonId: null,
-  }, "workspace deletion must clear current and legacy browser identity data");
+  }, "workspace deletion must clear current and legacy browser identity data without recreating a session on /start");
   assert.ok(clearedLocalData.deletionMarker, "workspace deletion must retain the local marker that blocks silent record recreation");
   assert.equal(clearedLocalData.sessionStorageCount, 0, "workspace deletion must clear temporary browser-session state");
   assert.equal(deletionRequests.length, 0,
