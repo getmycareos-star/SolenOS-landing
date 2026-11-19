@@ -2677,8 +2677,14 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
   const privacyBrowser = await createBrowserPage(deletionSession, "/workspace/settings");
   const privacySection = privacyBrowser.page.locator("#settings-privacy");
   await privacySection.waitFor({ state: "visible", timeout: 20_000 });
-  await privacySection.evaluate((element) => {
-    if (element instanceof HTMLDetailsElement) element.open = true;
+  const privacyDisclosure = privacySection.locator(":scope > summary");
+  const privacyIsOpen = await privacySection.evaluate((element) =>
+    element instanceof HTMLDetailsElement && element.open
+  );
+  if (!privacyIsOpen) await privacyDisclosure.click();
+  await privacySection.evaluate(async (element) => {
+    if (!(element instanceof HTMLDetailsElement)) throw new Error("Privacy settings must use a disclosure section");
+    if (!element.open) throw new Error("Privacy settings disclosure did not open after user interaction");
   });
   const authoritySelect = privacySection.locator("#erasure-authority");
   await authoritySelect.waitFor({ state: "visible", timeout: 10_000 });
