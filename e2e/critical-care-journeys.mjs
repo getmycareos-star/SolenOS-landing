@@ -687,7 +687,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 20_000 });
   await verifyMobile(page);
 
   const moreTrigger = page.getByRole("button", { name: "More care record actions", exact: true });
@@ -731,7 +731,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("heading", { name: "Workspace archived", exact: true }).waitFor({ timeout: 10_000 });
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Restore", exact: true }).click();
-  await page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 10_000 });
+  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 10_000 });
 
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "View record details", exact: true }).click();
@@ -868,7 +868,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
   await page.goBack({ waitUntil: "domcontentloaded" });
   await page.waitForURL("**/workspace", { timeout: 15_000 });
-  await page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 15_000 });
   await verifyMobile(page);
 
   await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
@@ -922,7 +922,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await disposable.page.getByRole("heading", { name: "Care Record", exact: true }).waitFor({ timeout: 20_000 });
+  await disposable.page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 20_000 });
   const identityBeforeDeletion = await disposable.page.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
     personId: localStorage.getItem("solenos_backend_person_id"),
