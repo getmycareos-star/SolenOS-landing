@@ -228,7 +228,7 @@ export default function FollowUpsPage() {
       monitored: unique(care?.can_wait_with_documented_basis || []).filter((item) => !linkedToSavedFollowUp(item)),
       needsClarification: unique(care?.needs_clarification || []).filter((item) => !linkedToSavedFollowUp(item)),
     };
-  }, [assessment]);
+  }, [assessment, loops]);
 
   const assessmentIsBounded = Boolean(assessment && (
     assessment.history_coverage !== "complete" || assessment.schema_status !== "complete"
