@@ -776,6 +776,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   const exportPurpose = exportDialog.locator("select").nth(1);
   await exportAudience.selectOption("professional");
   await exportPurpose.selectOption("professional_appointment");
+  await exportDialog.locator("select").nth(2).locator(`option[value="${shareAppointment.payload.id}"]`).waitFor({ state: "attached", timeout: 10_000 });
   await exportDialog.locator("select").nth(2).selectOption(shareAppointment.payload.id);
   await exportDialog.locator("select").nth(3).selectOption("30");
   const appointmentBriefingResponse = page.waitForResponse(response =>
