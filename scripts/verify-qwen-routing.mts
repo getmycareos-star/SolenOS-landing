@@ -143,7 +143,7 @@ requireText("src/components/workflows/AICompanion.tsx", [
   "response.ai_generated === true ? 'available' : 'unverified'",
   "error instanceof ApiResponseError && [502, 503, 504].includes(error.status)",
   "setAvailability(inferenceUnavailable ? 'unavailable' : 'unknown')",
-  "Your Care Record has not changed",
+  "your Care Record has not changed",
   "availability === 'available' || availability === 'unverified'",
   "availability !== \"available\" && availability !== \"unverified\"",
 ]);
