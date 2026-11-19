@@ -2675,7 +2675,10 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
   assert.ok(evidenceId, "the synthetic upload must have a persisted evidence identifier");
 
   const privacyBrowser = await createBrowserPage(deletionSession, "/workspace/settings");
-  await privacyBrowser.page.locator("#settings-privacy").waitFor({ state: "visible", timeout: 20_000 });
+  const privacySection = privacyBrowser.page.locator("#settings-privacy");
+  await privacySection.waitFor({ state: "visible", timeout: 20_000 });
+  await privacySection.locator(":scope > summary").click();
+  await privacyBrowser.page.getByLabel("Your authority for this care record").waitFor({ state: "visible", timeout: 10_000 });
   await privacyBrowser.page.getByLabel("Your authority for this care record").selectOption("self");
   await privacyBrowser.page.getByLabel(/I confirm that the authority information above is accurate/).check();
   const submitErasure = privacyBrowser.page.getByRole("button", { name: "Submit care-record erasure request", exact: true });
