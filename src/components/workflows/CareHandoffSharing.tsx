@@ -615,6 +615,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               {prepareAudience === "family" ? (
                 <>
                   <option value="family_transition">Taking over today</option>
+                  <option value="professional_appointment">Preparing for an appointment</option>
                   <option value="return_to_care">Returning to care</option>
                   <option value="hospital_discharge">Hospital discharge</option>
                   <option value="period_summary">Full care overview</option>
