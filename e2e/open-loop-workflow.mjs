@@ -7,6 +7,7 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 
 let simulatedLostOutcomeResponse = false;
+let simulatedLostCreateResponse = false;
 
 try {
   // The UI talks to the real FastAPI process. Only the initial system-owned
@@ -18,6 +19,19 @@ try {
     const headers = { ...request.headers() };
     delete headers.origin;
     const response = await route.fetch({ url: target.toString(), headers });
+    if (
+      !simulatedLostCreateResponse &&
+      request.method() === "POST" &&
+      requestUrl.pathname === "/api/v1/open-loops"
+    ) {
+      simulatedLostCreateResponse = true;
+      await route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "CI-only simulated lost response after follow-up creation committed" }),
+      });
+      return;
+    }
     if (
       !simulatedLostOutcomeResponse &&
       request.method() === "POST" &&
@@ -165,6 +179,10 @@ try {
     has: page.getByRole("heading", { name: candidateTitle, exact: true }),
   });
   await candidateCard.waitFor({ timeout: 20_000 });
+  await candidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).click();
+  await page.getByRole("alert").filter({
+    hasText: "The follow-up could not be confirmed. Keep this item open and try again.",
+  }).waitFor({ timeout: 15_000 });
   await candidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).click();
   await page.getByRole("status").filter({
     hasText: "Added to Follow-ups. The original care report remains unchanged.",
