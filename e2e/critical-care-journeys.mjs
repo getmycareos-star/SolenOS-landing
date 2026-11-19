@@ -1502,8 +1502,8 @@ await record("Daily Care capture survives secondary read failures", async () => 
   await resilient.page.reload({ waitUntil: "domcontentloaded" });
 
   const originalReport = `Daily Care capture survives secondary service failures ${randomUUID()}`;
-  await resilient.page.getByRole("button", { name: "Share something", exact: true }).waitFor({ timeout: 15_000 });
-  await resilient.page.getByRole("button", { name: /Something happened/ }).click();
+  await resilient.page.getByRole("button", { name: "Share something", exact: true }).click();
+  await resilient.page.getByRole("button", { name: "Something happened", exact: true }).click();
   const reportField = resilient.page.locator("#natural-daily-update-report");
   await reportField.waitFor({ state: "visible", timeout: 15_000 });
   await reportField.fill(originalReport);
