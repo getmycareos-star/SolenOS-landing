@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getJSON } from "@/api/client";
 import { X } from "lucide-react";
 import {
   CareHandoffSharing,
@@ -95,15 +96,19 @@ export function ShareCareSummaryPanel({
   const [purpose, setPurpose] = useState<CareHandoffSharingProps["purpose"]>(null);
   const [exportReviewed, setExportReviewed] = useState(false);
   const [exportReviewedSourceRefs, setExportReviewedSourceRefs] = useState<string[]>([]);
+  const [exportChecking, setExportChecking] = useState(false);
+  const [exportError, setExportError] = useState("");
   const exportableDraft = draft !== null &&
     ["generated", "source_only_fallback"].includes(draft.generation_status || "") &&
-    draft.validation_status === "exact_quote_reference_validation_passed"
+    draft.validation_status === "exact_quote_reference_validation_passed" &&
+    draft.source_freshness?.status === "current"
       ? draft
       : null;
 
   function resumeDraft(next: BriefingDraft) {
     setExportReviewed(false);
     setExportReviewedSourceRefs([]);
+    setExportError("");
     setDraft(next);
     setAudience(next.audience === "professional" ? "professional" : "family");
     setPurpose(
@@ -113,6 +118,40 @@ export function ShareCareSummaryPanel({
           ? "overview"
           : "today",
     );
+  }
+
+  async function verifyAndDownloadBriefing() {
+    if (!exportableDraft || exportChecking) return;
+    setExportChecking(true);
+    setExportError("");
+    try {
+      const latest = await getJSON("/handoff-drafts/" + encodeURIComponent(exportableDraft.draft_id)) as BriefingDraft;
+      const sameSnapshot = typeof latest.source_snapshot_sha256 === "string" &&
+        latest.source_snapshot_sha256.length === 64 &&
+        latest.source_snapshot_sha256 === exportableDraft.source_snapshot_sha256;
+      const sameRevision = latest.revision_number === exportableDraft.revision_number;
+      const sameReviewedSections = JSON.stringify(latest.generation?.sections ?? []) ===
+        JSON.stringify(exportableDraft.generation?.sections ?? []);
+      if (latest.source_freshness?.status !== "current" || !sameSnapshot || !sameRevision || !sameReviewedSections) {
+        setDraft(latest);
+        setExportReviewed(false);
+        setExportReviewedSourceRefs([]);
+        setExportError(latest.source_freshness?.status === "current"
+          ? "This briefing changed after you reviewed it. Check the updated source items before exporting."
+          : "The saved sources changed or could not be checked. Prepare a new briefing before exporting.");
+        return;
+      }
+      const requiredRefs = [...new Set((latest.generation?.sections ?? []).map(item => item.source_ref))];
+      if (!exportReviewed || requiredRefs.length === 0 || requiredRefs.some(ref => !exportReviewedSourceRefs.includes(ref))) {
+        setExportError("Check every source item and the briefing notice before exporting.");
+        return;
+      }
+      downloadBriefing(latest);
+    } catch {
+      setExportError("SolenOS could not confirm that this briefing is up to date. No file was exported.");
+    } finally {
+      setExportChecking(false);
+    }
   }
 
   return (
@@ -166,6 +205,14 @@ export function ShareCareSummaryPanel({
           purpose={purpose}
           onResumeDraft={resumeDraft}
         />
+        {intent === "export" && draft && draft.source_freshness?.status !== "current" && (
+          <p role="alert" style={{ color: "#8d2d2d", fontSize: 12, lineHeight: 1.5 }}>
+            This briefing is out of date or its saved sources could not be checked. Prepare a new briefing before exporting.
+          </p>
+        )}
+        {intent === "export" && exportError && (
+          <p role="alert" style={{ color: "#8d2d2d", fontSize: 12, lineHeight: 1.5 }}>{exportError}</p>
+        )}
         {intent === "export" && exportableDraft && (
           <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
             <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Check each briefing item before exporting</strong>
@@ -187,11 +234,11 @@ export function ShareCareSummaryPanel({
             </label>
             <button
               type="button"
-              disabled={!exportReviewed || (exportableDraft.generation?.sections ?? []).length === 0 || [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].some(ref => !exportReviewedSourceRefs.includes(ref))}
-              onClick={() => downloadBriefing(exportableDraft)}
+              disabled={exportChecking || !exportReviewed || (exportableDraft.generation?.sections ?? []).length === 0 || [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].some(ref => !exportReviewedSourceRefs.includes(ref))}
+              onClick={() => void verifyAndDownloadBriefing()}
               style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: exportReviewed && (exportableDraft.generation?.sections ?? []).length > 0 && [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "#dce9dc" : "#eef1ec", color: "#172117", fontWeight: 650, cursor: exportReviewed && (exportableDraft.generation?.sections ?? []).length > 0 && [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "pointer" : "not-allowed" }}
             >
-              Download summary (.txt)
+              {exportChecking ? "Checking saved sources…" : "Download summary (.txt)"}
             </button>
           </div>
         )}
