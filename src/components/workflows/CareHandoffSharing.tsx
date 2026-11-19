@@ -472,7 +472,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setError("SolenOS cannot yet confirm that a recipient is a healthcare professional, so professional sharing is not available.");
       return;
     }
-    if (draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed") {
+    if (!["generated", "source_only_fallback"].includes(draft.generation_status ?? "") || draft.validation_status !== "exact_quote_reference_validation_passed") {
       setError("This summary is not ready to share yet.");
       return;
     }
@@ -719,7 +719,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
               </article>
             ))}
-            {draft.generation?.status !== "generated" && <p style={{ fontSize: 12 }}>AI drafting was not completed. The saved source records and retrieval limitations remain available for review.</p>}
+            {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: 12, lineHeight: 1.5 }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized or interpreted. Check each detail and its dates before using it.</p>}
+            {draft.generation?.status !== "generated" && draft.generation?.status !== "source_only_fallback" && <p style={{ fontSize: 12 }}>Draft preparation could not be completed. The saved source records and retrieval limitations remain available for review.</p>}
           </section>
         </>
       )}
@@ -728,6 +729,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         <section style={panel} aria-labelledby="family-share-heading">
           <h4 id="family-share-heading" style={{ margin: "0 0 8px", fontSize: 15 }}>Review and share with family</h4>
           <p style={{ marginTop: 0, fontSize: 12, lineHeight: 1.55 }}>Only caregivers who can access this Care Record are listed. You must review the summary before sharing. The link expires automatically, you can stop sharing it, and it does not change your Care Record.</p>
+          {draft.generation?.status === "source_only_fallback" && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized. Check each detail and its dates before sharing.</p>}
           {consentRequired && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
             You cannot receive or share care summaries until you save the required privacy and shared-care choices for this Care Record. Review them in <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Settings → Privacy</Link>, then refresh this panel. Your care record remains available.
           </p>}
@@ -821,7 +823,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement.</span>
           </label>
-          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
+          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || !["generated", "source_only_fallback"].includes(draft.generation_status ?? "") || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing…" : "Share with selected caregivers"}
           </button>
         </section>
