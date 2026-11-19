@@ -184,6 +184,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "Important: Information that has not been checked, was not accepted, or may be out of date is labelled. This summary is not a medical opinion.",
     ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["Briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
     caregiverSafeAssistantText(draft.warning) ?? "Some information may be incomplete. Review the details before sharing.",
+    ...(draft.template_sections ?? []).filter(item => /medication/i.test(item.title)).map(item => item.coverage_note),
     "",
   ];
   let truncated = false;
