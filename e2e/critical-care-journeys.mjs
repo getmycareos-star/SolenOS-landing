@@ -680,6 +680,22 @@ const shareSeed = await request("/api/v1/daily/log", {
   },
 });
 assert.ok([200, 201].includes(shareSeed.status), JSON.stringify(shareSeed.payload));
+const shareAppointment = await request("/api/v1/appointments", {
+  token: shareIdentity.token,
+  method: "POST",
+  body: {
+    person_id: shareIdentity.personId,
+    title: "Primary care follow-up",
+    scheduled_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    provider: "Primary care clinician",
+    healthcare_org: "E2E clinic",
+    preparation_notes: "Discuss recent sleep and appetite observations.",
+    status: "scheduled",
+    created_by_caregiver_id: shareIdentity.caregiverId,
+  },
+});
+assert.equal(shareAppointment.status, 200, JSON.stringify(shareAppointment.payload));
+assert.ok(shareAppointment.payload.id, "appointment briefing journey must start with a persisted appointment");
 
 await record("01c workspace links, browser back, More menu and account form validation", async () => {
   const { context, page, observed } = await createBrowserPage(
@@ -758,10 +774,10 @@ await record("01c workspace links, browser back, More menu and account form vali
   await exportDialog.getByRole("heading", { name: "Prepare a care briefing", exact: true }).waitFor({ timeout: 10_000 });
   const exportAudience = exportDialog.locator("select").nth(0);
   const exportPurpose = exportDialog.locator("select").nth(1);
-  const exportWindow = exportDialog.locator("select").nth(2);
   await exportAudience.selectOption("professional");
   await exportPurpose.selectOption("professional_appointment");
-  await exportWindow.selectOption("30");
+  await exportDialog.locator("select").nth(2).selectOption(shareAppointment.payload.id);
+  await exportDialog.locator("select").nth(3).selectOption("30");
   const appointmentBriefingResponse = page.waitForResponse(response =>
     response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
   await exportDialog.getByRole("button", { name: "Prepare summary to share", exact: true }).click();
@@ -772,6 +788,9 @@ await record("01c workspace links, browser back, More menu and account form vali
     "Qwen briefing must declare the Living Care Record as its source of truth");
   assert.ok(appointmentDraft.source_snapshot_id && appointmentDraft.source_snapshot_sha256,
     "the appointment briefing must be bound to a versioned LCR source snapshot");
+  assert.equal(appointmentDraft.appointment_id, shareAppointment.payload.id,
+    "appointment briefing must be bound to the selected persisted appointment");
+  assert.equal(appointmentDraft.selected_appointment.title, "Primary care follow-up");
   assert.ok(["generated", "source_only_fallback"].includes(appointmentDraft.generation_status),
     "appointment briefing must use Qwen or a clearly labelled exact-source fallback");
   if (appointmentDraft.generation_status === "source_only_fallback") {
