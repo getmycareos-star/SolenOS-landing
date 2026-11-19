@@ -790,8 +790,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       captureIdempotencyKey: string;
     }
   >({
-    mutationFn: ({ personId, caregiverId, medications, vitals, scales, notes, captureKind, occurredAt, captureIdempotencyKey }) =>
-      postJSON('/daily/log', {
+    mutationFn: async ({ personId, caregiverId, medications, vitals, scales, notes, captureKind, occurredAt, captureIdempotencyKey }) => {
+      const result = await postJSON('/daily/log', {
         person_id: personId,
         caregiver_id: caregiverId,
         capture_idempotency_key: captureIdempotencyKey,
@@ -811,7 +811,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           observed_at: new Date(scale.observed_at).toISOString(),
         })),
         notes: notes,
-      }),
+      }) as { success?: boolean; id?: string };
+      if (result?.success !== true || typeof result.id !== "string" || !result.id.trim()) {
+        throw new Error("The server did not confirm that your care update was saved.");
+      }
+      return result;
+    },
     onMutate: async (variables) => {
       // Return snapshot for potential rollback
       return { 
