@@ -89,7 +89,7 @@ function valueFromAssertion(value: string): string {
 
 export default function DementiaCareProfilePanel({ personId }: { personId: string }) {
   const [assertions, setAssertions] = useState<Assertion[]>([]);
-  const [statuses, setStatuses] = useState<Record<string, ProfileStatus>>({});
+  const [statuses, setStatuses] = useState<Record<string, ProfileStatus | "">>({});
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [savingField, setSavingField] = useState<string | null>(null);
@@ -149,7 +149,12 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
   }, [assertions]);
 
   async function saveField(field: ProfileField) {
-    const status = statuses[field.key] ?? "unknown";
+    const selectedStatus = statuses[field.key] ?? "";
+    if (!selectedStatus) {
+      setError(`Choose a status for “${field.label}” before saving.`);
+      return;
+    }
+    const status: ProfileStatus = selectedStatus;
     const value = (values[field.key] ?? "").trim();
     if (status === "known" && !value) {
       setError(`Add the information for “${field.label}” or choose another status.`);
@@ -208,7 +213,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
           <summary className="cursor-pointer text-sm font-medium text-[var(--text)]">{section}</summary>
           <div className="mt-3 space-y-4">
             {FIELDS.filter((field) => field.section === section).map((field) => {
-              const status = statuses[field.key] ?? "unknown";
+              const status = statuses[field.key] ?? "";
               const historyCount = historyCounts.get(field.key) ?? 0;
               return (
                 <div key={field.key} className="grid gap-2">
@@ -222,6 +227,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
                     onChange={(event) => setStatuses((current) => ({ ...current, [field.key]: event.target.value as ProfileStatus }))}
                     className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)]"
                   >
+                    <option value="">Not recorded</option>
                     {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                   <textarea
@@ -230,7 +236,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
                     disabled={savingField !== null || status !== "known"}
                     onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
                     rows={2}
-                    placeholder={status === "known" ? "Add the information in your own words" : "No details needed for this status"}
+                    placeholder={status === "known" ? "Add the information in your own words" : "Choose a status first"}
                     className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] disabled:opacity-60"
                   />
                   <div className="flex items-center justify-between gap-3">
@@ -239,7 +245,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
                       : <span />}
                     <button
                       type="button"
-                      disabled={savingField !== null}
+                      disabled={savingField !== null || !status}
                       onClick={() => void saveField(field)}
                       className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--text)] disabled:opacity-50"
                     >
