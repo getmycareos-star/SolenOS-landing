@@ -12,6 +12,7 @@ import { RecordState } from "@/components/ui/RecordState";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
 const DementiaCareProfilePanel = dynamic(() => import("@/components/mvp-workspace/DementiaCareProfilePanel"), { ssr: false, loading: () => <p role="status">Loading care profile…</p> });
+const DementiaObservationPanel = dynamic(() => import("@/components/mvp-workspace/DementiaObservationPanel"), { ssr: false, loading: () => <p role="status">Loading observations…</p> });
 const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <RecordState kind="loading" title="Loading your care information" /> });
 const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <RecordState kind="loading" title="Loading your care information" /> });
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
@@ -2131,6 +2132,7 @@ export function LCRCurrentUnderstanding() {
         <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
           <summary>About the person and their care</summary>
           {dementiaProfileOpen ? <DementiaCareProfilePanel personId={personId} /> : null}
+          {dementiaProfileOpen ? <DementiaObservationPanel personId={personId} /> : null}
         </details>
         <details ref={recordHistoryDetailsRef} className="lcr-history-details" onToggle={(event) => setRecordHistoryOpen(event.currentTarget.open)}>
           <summary>Reported information and record history</summary>
