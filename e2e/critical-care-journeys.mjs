@@ -1526,9 +1526,11 @@ await record("Daily Care capture survives secondary read failures", async () => 
 
   const persisted = await request(`/api/v1/events/${resilientIdentity.personId}`, { token: resilientIdentity.token });
   assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
-  assert.ok(persisted.payload.some((event) =>
-    event.id === savePayload.id && JSON.stringify(event).includes(originalReport)
-  ), "the saved report must be retrievable even when all secondary context reads fail");
+  const matchingPersistedEvent = persisted.payload.find((event) => event.id === savePayload.id);
+  assert.ok(
+    matchingPersistedEvent && JSON.stringify(matchingPersistedEvent).includes(originalReport),
+    `saved report must be retrievable despite secondary read failures; receipt=${JSON.stringify(savePayload)}; returned_count=${Array.isArray(persisted.payload) ? persisted.payload.length : "not-an-array"}; matching_event=${JSON.stringify(matchingPersistedEvent ?? null)}; returned_ids=${JSON.stringify(Array.isArray(persisted.payload) ? persisted.payload.map((event) => ({ id: event.id, event_type: event.event_type, title: event.title })) : persisted.payload)}`
+  );
   assert.ok(resilient.observed.some((item) =>
     item.status === 503 && [
       "/api/v1/care-continuity/current-care",
