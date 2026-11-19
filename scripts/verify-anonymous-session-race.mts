@@ -195,14 +195,14 @@ async function main() {
   // bootstrap starts but before the server responds.
   {
     const store = makeStore();
-    store.setItem("solenos_anonymous_session_revoked", "revocation-1");
     installBrowser(store, "https://solenos.test/workspace?enter=1");
+    // Simulate deletion through the same production path used by the UI. This
+    // also invalidates any in-flight bootstrap retained by the test module.
+    markAnonymousSessionRevokedLocally();
     let resolveCreate!: (response: Response) => void;
     globalThis.fetch = (async (input: RequestInfo | URL) => {
-      if (String(input) === "/api/v1/sessions/anonymous") {
-        return new Promise<Response>((resolve) => { resolveCreate = resolve; });
-      }
-      return jsonResponse({ ok: true });
+      assert.equal(String(input), "/api/v1/sessions/anonymous");
+      return new Promise<Response>((resolve) => { resolveCreate = resolve; });
     }) as typeof fetch;
 
     const pending = getJSON("/events/person-server-1");
