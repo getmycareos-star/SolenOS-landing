@@ -820,6 +820,228 @@
 }
 
 /* Documents: keep original files visually distinct from extracted suggestions. */
+/* Care history: a readable chronology with source context, not a generic activity feed. */
+.solenos-chat-app .solenos-chat-main .timeline-workspace {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  padding-bottom: 48px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-eyebrow {
+  margin: 0 0 6px;
+  color: var(--sn-muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+.solenos-chat-app .solenos-chat-main .timeline-page-title { margin-bottom: 8px; }
+.solenos-chat-app .solenos-chat-main .timeline-page-description {
+  max-width: 620px;
+  margin-top: 0;
+  color: var(--sn-muted);
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .timeline-latest {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid var(--sn-line);
+  border-radius: 16px;
+  background: var(--sn-surface);
+  box-shadow: var(--sn-shadow-soft);
+}
+.solenos-chat-app .solenos-chat-main .timeline-latest-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: var(--sn-forest);
+}
+.solenos-chat-app .solenos-chat-main .timeline-latest-title { margin: 0; font-size: 17px; }
+.solenos-chat-app .solenos-chat-main .timeline-muted {
+  margin: 0;
+  color: var(--sn-muted);
+  font-size: 13px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-latest-event-title {
+  margin: 0 0 6px;
+  color: var(--sn-forest);
+  font-size: 18px;
+  letter-spacing: -.02em;
+}
+.solenos-chat-app .solenos-chat-main .timeline-latest-meta {
+  margin: 0 0 8px;
+  color: var(--sn-muted);
+  font-size: 12px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-latest-description {
+  margin: 0;
+  color: var(--sn-ink);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.solenos-chat-app .solenos-chat-main .timeline-controls { margin-bottom: 20px; }
+.solenos-chat-app .solenos-chat-main .timeline-search-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--sn-ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+.solenos-chat-app .solenos-chat-main .timeline-search {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--sn-line);
+  border-radius: 12px;
+  background: var(--sn-surface);
+  color: var(--sn-muted);
+}
+.solenos-chat-app .solenos-chat-main .timeline-search:focus-within {
+  border-color: var(--sn-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sn-focus) 18%, transparent);
+}
+.solenos-chat-app .solenos-chat-main .timeline-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sn-ink);
+  font: inherit;
+}
+.solenos-chat-app .solenos-chat-main .timeline-search-note {
+  margin: 6px 0 0;
+  color: var(--sn-muted);
+  font-size: 12px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-clear-search {
+  margin-left: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .timeline-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-filter {
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 1px solid var(--sn-line);
+  border-radius: 999px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .timeline-filter.is-active {
+  border-color: var(--sn-sage-strong);
+  background: var(--sn-surface-soft);
+  color: var(--sn-forest);
+  font-weight: 750;
+}
+.solenos-chat-app .solenos-chat-main .timeline-error {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--sn-warning-line);
+  border-radius: 12px;
+  background: var(--sn-warning-surface);
+  color: var(--sn-warning-ink);
+}
+.solenos-chat-app .solenos-chat-main .timeline-error-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-error-copy { flex: 1; min-width: 0; }
+.solenos-chat-app .solenos-chat-main .timeline-error-title { margin: 0 0 6px; font-size: 16px; }
+.solenos-chat-app .solenos-chat-main .timeline-error-message {
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-empty { padding: 28px; }
+.solenos-chat-app .solenos-chat-main .timeline-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+  color: var(--sn-muted);
+  font-size: 13px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-load-more {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+.solenos-chat-app .solenos-chat-main .timeline-coverage { color: var(--sn-muted); font-size: 12px; }
+.solenos-chat-app .solenos-chat-main .timeline-change-history { margin-top: 24px; }
+.solenos-chat-app .solenos-chat-main .timeline-change-summary {
+  padding: 14px 0;
+  color: var(--sn-forest);
+  font-weight: 650;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .timeline-provenance-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sn-line);
+  color: var(--sn-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .timeline-provenance-icon { flex: 0 0 auto; margin-top: 1px; }
+.solenos-chat-app .solenos-chat-main .timeline-workspace :where(button,input,summary):focus-visible {
+  outline: 3px solid var(--sn-focus);
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .solenos-chat-app .solenos-chat-main .timeline-page-head { display: block; }
+  .solenos-chat-app .solenos-chat-main .timeline-latest { padding: 15px; }
+  .solenos-chat-app .solenos-chat-main .timeline-empty { padding: 20px 15px; }
+  .solenos-chat-app .solenos-chat-main .timeline-empty-actions > * { flex: 1 1 100%; }
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main :where(.timeline-latest,.timeline-search) {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main :where(.timeline-latest-title,.timeline-latest-event-title,.timeline-change-summary) {
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-filter.is-active {
+  border-color: #a7bda8;
+  background: #34483a;
+  color: #e7f0e7;
+}
+
 .solenos-chat-app .solenos-chat-main .documents-page {
   display: grid;
   gap: 18px;
