@@ -505,6 +505,320 @@
   color: var(--sn-ink);
 }
 
+/* Follow-ups: make the reason, evidence and next action legible without implying urgency. */
+.solenos-chat-app .solenos-chat-main .followups-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 18px 64px;
+  color: var(--sn-ink);
+}
+.solenos-chat-app .solenos-chat-main .followups-header { margin-bottom: 24px; }
+.solenos-chat-app .solenos-chat-main .followups-back {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 18px;
+  color: var(--sn-muted);
+  text-decoration: none;
+  font-size: 13px;
+}
+.solenos-chat-app .solenos-chat-main .followups-back:hover { color: var(--sn-forest); }
+.solenos-chat-app .solenos-chat-main .followups-kicker {
+  margin: 0 0 8px;
+  color: var(--sn-sage-strong);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .13em;
+}
+.solenos-chat-app .solenos-chat-main .followups-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.solenos-chat-app .solenos-chat-main .followups-title-row h1 {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: clamp(30px, 5vw, 40px);
+  font-weight: 680;
+  letter-spacing: -.045em;
+  line-height: 1.1;
+}
+.solenos-chat-app .solenos-chat-main .followups-title-row p {
+  max-width: 650px;
+  margin: 9px 0 0;
+  color: var(--sn-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.solenos-chat-app .solenos-chat-main .followups-refresh {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid var(--sn-line);
+  border-radius: 12px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .followups-refresh:disabled { cursor: wait; opacity: .55; }
+.solenos-chat-app .solenos-chat-main .followups-alert,
+.solenos-chat-app .solenos-chat-main .followups-notice,
+.solenos-chat-app .solenos-chat-main .followups-limitation {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--sn-line);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.solenos-chat-app .solenos-chat-main .followups-alert {
+  border-color: #c78d78;
+  background: #fff8f5;
+  color: #713d2b;
+}
+.solenos-chat-app .solenos-chat-main .followups-notice {
+  border-color: #a8c1a5;
+  background: #f4f8f2;
+  color: #29452d;
+}
+.solenos-chat-app .solenos-chat-main .followups-limitation {
+  background: var(--sn-surface-soft);
+  color: var(--sn-muted);
+}
+.solenos-chat-app .solenos-chat-main .followups-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+}
+.solenos-chat-app .solenos-chat-main .followups-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.solenos-chat-app .solenos-chat-main .followups-section-heading h2 {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: 19px;
+  font-weight: 680;
+  letter-spacing: -.025em;
+}
+.solenos-chat-app .solenos-chat-main .followups-section-heading p {
+  margin: 4px 0 0;
+  color: var(--sn-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-chat-main .followups-section-heading > span {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--sn-line);
+  border-radius: 999px;
+  background: var(--sn-surface-soft);
+  color: var(--sn-ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.solenos-chat-app .solenos-chat-main .followup-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid var(--sn-line);
+  border-radius: 15px;
+  background: var(--sn-surface);
+  box-shadow: var(--sn-shadow-soft);
+}
+.solenos-chat-app .solenos-chat-main .followup-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.solenos-chat-app .solenos-chat-main .followup-eyebrow {
+  margin: 0 0 5px;
+  color: var(--sn-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.solenos-chat-app .solenos-chat-main .followup-card h3 {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: 16px;
+  font-weight: 680;
+  line-height: 1.4;
+}
+.solenos-chat-app .solenos-chat-main .followup-status {
+  flex: 0 0 auto;
+  max-width: 160px;
+  padding: 5px 9px;
+  border: 1px solid var(--sn-line);
+  border-radius: 999px;
+  background: var(--sn-surface-soft);
+  color: var(--sn-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+.solenos-chat-app .solenos-chat-main .followup-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 13px;
+  color: var(--sn-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-chat-main .followup-meta span,
+.solenos-chat-app .solenos-chat-main .followup-reason {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.solenos-chat-app .solenos-chat-main .followup-reason {
+  margin: 0;
+  color: #81502f;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.solenos-chat-app .solenos-chat-main .followup-detail,
+.solenos-chat-app .solenos-chat-main .followup-history,
+.solenos-chat-app .solenos-chat-main .followup-update-area {
+  padding-top: 12px;
+  border-top: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .followup-detail {
+  display: grid;
+  gap: 9px;
+}
+.solenos-chat-app .solenos-chat-main .followup-detail p {
+  margin: 0;
+  color: var(--sn-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.solenos-chat-app .solenos-chat-main .followup-detail strong { color: var(--sn-ink); }
+.solenos-chat-app .solenos-chat-main .followup-history { color: var(--sn-muted); font-size: 12px; }
+.solenos-chat-app .solenos-chat-main .followup-history ol { padding-left: 20px; line-height: 1.6; }
+.solenos-chat-app .solenos-chat-main .followup-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.solenos-chat-app .solenos-chat-main :where(.followup-text-button,.followup-secondary-button,.followup-primary-button) {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: none;
+}
+.solenos-chat-app .solenos-chat-main .followup-text-button {
+  border: 0;
+  background: transparent;
+  color: var(--sn-forest);
+}
+.solenos-chat-app .solenos-chat-main .followup-secondary-button {
+  border: 1px solid var(--sn-line);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+.solenos-chat-app .solenos-chat-main .followup-primary-button {
+  border: 1px solid var(--sn-forest);
+  background: var(--sn-forest);
+  color: #fff;
+}
+.solenos-chat-app .solenos-chat-main .followup-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+.solenos-chat-app .solenos-chat-main .followup-update-area form {
+  display: grid;
+  gap: 9px;
+}
+.solenos-chat-app .solenos-chat-main .followup-update-area label {
+  color: var(--sn-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-chat-main .followup-update-area textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--sn-line);
+  border-radius: 9px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  font: inherit;
+  resize: vertical;
+}
+.solenos-chat-app .solenos-chat-main .followups-empty,
+.solenos-chat-app .solenos-chat-main .followups-empty-inline {
+  padding: 17px;
+  border: 1px dashed var(--sn-line);
+  border-radius: 13px;
+  color: var(--sn-muted);
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .followups-empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  background: var(--sn-surface);
+}
+.solenos-chat-app .solenos-chat-main .followups-empty h2 {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: 17px;
+}
+.solenos-chat-app .solenos-chat-main .followups-empty p { margin: 0 0 6px; }
+.solenos-chat-app .solenos-chat-main .followups-empty-inline { margin: 0; font-size: 12px; }
+@media (max-width: 560px) {
+  .solenos-chat-app .solenos-chat-main .followups-page { padding: 18px 13px 48px; }
+  .solenos-chat-app .solenos-chat-main .followup-card { padding: 14px; }
+  .solenos-chat-app .solenos-chat-main .followup-card-heading { display: grid; }
+  .solenos-chat-app .solenos-chat-main .followup-status { justify-self: start; }
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followup-card,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followups-empty {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followup-card h3,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followups-section-heading h2,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followups-empty h2 {
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followup-reason { color: #e0bd96; }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followup-detail,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followup-history,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followup-update-area {
+  border-color: var(--sn-line);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .followup-primary-button {
+  border-color: #9ab99d;
+  background: #9ab99d;
+  color: #17251c;
+}
+
 .solenos-chat-app .solenos-chat-main .daily-care-context-panel {
   padding: clamp(16px, 2.1vw, 22px);
   border: 1px solid var(--sn-line);
