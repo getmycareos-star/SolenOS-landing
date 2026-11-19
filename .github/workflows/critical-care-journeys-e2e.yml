@@ -42,9 +42,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: critical-care-journeys-${{ github.ref }}-no-model
-  # These real-backend journeys exercise durable state and the Companion's safe no-model fallback.
-  # Do not cancel an in-flight acceptance run when another main commit lands.
+  # Keep each commit's real-backend acceptance run queued independently. A later
+  # main push must not replace a pending release-validation run before it starts.
+  group: critical-care-journeys-${{ github.ref }}-${{ github.sha }}-no-model
   cancel-in-progress: false
 
 jobs:
