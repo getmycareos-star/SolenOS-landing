@@ -198,7 +198,11 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           // a replacement identity after this workspace is deleted.
           ownedKeys.delete("solenos_anonymous_session_revoked");
           ownedKeys.forEach((key) => window.localStorage.removeItem(key));
-          window.sessionStorage.clear();
+          try {
+            window.sessionStorage.clear();
+          } catch {
+            // The local deletion boundary remains in place if sessionStorage is unavailable.
+          }
         } catch {
           window.alert("We couldn't confirm your access to SolenOS, so nothing was cleared. Check your connection and try again.");
           return;
