@@ -499,11 +499,13 @@ function documentStatementContextLabels(item: CurrentCareItem): string[] {
   const labels: string[] = [];
   if (candidate.source_attribution === "patient_reported") labels.push("Reported by the patient");
   if (candidate.source_attribution === "caregiver_reported") labels.push("Reported by a family caregiver");
-  if (candidate.source_attribution === "professional_observed") labels.push("Documented or observed by a care professional");
+  if (candidate.source_attribution === "professional_observed") labels.push("Observed by a care professional");
+  if (candidate.source_attribution === "professional_documented") labels.push("Documented by a care professional");
   if (candidate.negation_status === "explicitly_negated") labels.push("Contains negative wording");
   if (candidate.modality === "tentative") labels.push("Tentative wording");
   if (candidate.conditionality === "conditional") labels.push("Conditional wording");
   if (candidate.temporal_context === "historical") labels.push("Historical information");
+  if (candidate.temporal_context === "changed_over_time") labels.push("Describes a change from an earlier state");
   if (candidate.statement_kind === "recommendation") labels.push("Recommendation — outcome not established here");
   return labels;
 }
