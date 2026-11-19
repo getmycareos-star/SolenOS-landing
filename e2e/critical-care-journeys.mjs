@@ -528,7 +528,7 @@ await record("01a dementia profile review window and observation persistence are
   });
   assert.equal(observationWrite.status, 201, JSON.stringify(observationWrite.payload));
   assert.equal(observationWrite.payload.person_id, identity.personId);
-  assert.equal(observationWrite.payload.recorded_by_caregiver_id, identity.caregiverId);
+  assert.equal(observationWrite.payload.reported_by_caregiver_id, identity.caregiverId);
   assert.ok(observationWrite.payload.recorded_at, "server receipt time must be recorded");
   assert.ok(observationWrite.payload.observed_at, "event time must be preserved separately");
   assert.equal(observationWrite.payload.observation_type, "DIRECT");
