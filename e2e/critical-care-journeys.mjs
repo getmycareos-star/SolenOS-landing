@@ -777,6 +777,9 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(appointmentDraft.validation_status, "exact_quote_reference_validation_passed",
     "each generated summary item must include an exact quote from its LCR source");
   await exportDialog.getByRole("heading", { name: "Professional briefing", exact: true }).waitFor({ timeout: 10_000 });
+  await exportDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
+  assert.equal(appointmentDraft.source_statuses.allergies.status, "unavailable",
+    "missing allergy integration must be explicit and must not be interpreted as no allergies");
   await exportDialog.getByRole("checkbox", { name: /I reviewed each generated summary item against its saved source wording/ }).check();
   const summaryDownloadPromise = page.waitForEvent("download");
   await exportDialog.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
@@ -809,6 +812,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(familyDraft.generation_status, "generated",
     "family briefing must be generated from saved LCR evidence");
   await familyDialog.getByRole("heading", { name: "Review and share with family", exact: true }).waitFor({ timeout: 10_000 });
+  await familyDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
     "family briefing must contain actual LCR-derived content");
   await familyDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
