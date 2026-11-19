@@ -47,6 +47,7 @@ type MultiCaregiverSummary = {
   active_handoffs?: unknown[];
   responsibility_gaps?: unknown[];
   perspective_conflicts?: unknown[];
+  duplicate_actions?: unknown[];
 };
 type InvitationResult = {
   invitation_id: string;
