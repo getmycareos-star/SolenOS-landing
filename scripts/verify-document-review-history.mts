@@ -80,3 +80,7 @@ assert(lcr.includes("Recommendation — outcome not established here") && lcr.in
 assert(lcr.includes("Reported by the patient") && lcr.includes("Historical information"), "the LCR must retain reporter attribution and historical context after acceptance");
 
 console.log("✓ accepted document qualifiers persist into and remain visible from the canonical LCR");
+
+
+assert(lcr.includes("professional_documented") && lcr.includes("Documented by a care professional"), "professional documentation must not be represented as direct observation");
+assert(lcr.includes("changed_over_time") && lcr.includes("Describes a change from an earlier state"), "a changed state must not be mislabeled as purely historical");
