@@ -98,7 +98,7 @@ assert.match(workspaceStyles, /:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "Care Record"],
+  ["src/app/workspace/page.tsx", "A clearer picture of care"],
   ["src/app/workspace/daily-care/page.tsx", "Daily Care"],
   ["src/app/workspace/open-loops/page.tsx", "Follow-ups"],
   ["src/app/workspace/timeline/page.tsx", "Care history"],
