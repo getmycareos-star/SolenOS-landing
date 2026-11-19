@@ -414,7 +414,6 @@ export default function AppointmentWorkspace() {
           </>}
           {appointmentId && <QwenAssistPanel
             appointmentId={appointmentId}
-            defaultWorkflow="appointment"
             contextText="Appointment details and unanswered questions. Help prepare for this scheduled appointment using the saved appointment and authorized care history."
             title="Get help preparing for this appointment"
             description="Ask about the saved appointment or questions you may want to raise. Suggestions need your review and do not change your Care Record automatically."
@@ -478,7 +477,6 @@ export default function AppointmentWorkspace() {
           {outcome?.limitations?.map((item, index) => <p className="guided-footnote" key={index}>{item}</p>)}
           {appointmentId && <QwenAssistPanel
             appointmentId={appointmentId}
-            defaultWorkflow="after_appointment"
             contextText={`After-appointment notes. ${note.trim() ? `Caregiver's unsaved note: ${note.trim()}` : "The caregiver has not added a note yet."}`}
             title="Organize what happened at the appointment"
             description="Ask for help organizing what the clinician told you. Your note remains a caregiver report, and nothing is added to your Care Record without your review."
