@@ -41,6 +41,14 @@ type Transfer = {
 };
 
 type PrimaryTransfer = { id: string; from_caregiver_id: string; to_caregiver_id: string; reason?: string | null; status: string; created_at: string | null };
+type MultiCaregiverSummary = {
+  caregivers?: unknown[];
+  active_responsibilities?: unknown[];
+  active_handoffs?: unknown[];
+  responsibility_gaps?: unknown[];
+  perspective_conflicts?: unknown[];
+  coverage_gaps?: unknown[];
+};
 type InvitationResult = {
   invitation_id: string;
   email: string;
@@ -53,6 +61,7 @@ export function CaregiverAccessPanel() {
   const [members, setMembers] = useState<Member[]>([]);
   const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
   const [openLoops, setOpenLoops] = useState<OpenLoop[]>([]);
+  const [networkSummary, setNetworkSummary] = useState<MultiCaregiverSummary | null>(null);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [primaryTransfers, setPrimaryTransfers] = useState<PrimaryTransfer[]>([]);
   const [selectedPrimaryRecipient, setSelectedPrimaryRecipient] = useState("");
@@ -90,16 +99,20 @@ export function CaregiverAccessPanel() {
         setAllowed(true);
         setMembers(memberResult.value ?? []);
         const personId = getPersonId();
-        const [responsibilityResult, loopResult] = await Promise.allSettled([
+        const [responsibilityResult, loopResult, networkResult] = await Promise.allSettled([
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
+          getJSON("/multi-caregiver-summary/" + encodeURIComponent(personId)) as Promise<MultiCaregiverSummary>,
         ]);
         if (responsibilityResult.status === "fulfilled") {
           setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
         }
         if (loopResult.status === "fulfilled") setOpenLoops(loopResult.value.items ?? []);
+        if (networkResult.status === "fulfilled") setNetworkSummary(networkResult.value);
+        else setNetworkSummary(null);
       } else {
         setAllowed(false);
+        setNetworkSummary(null);
         if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
       }
     } catch {
@@ -268,6 +281,28 @@ export function CaregiverAccessPanel() {
               <p>This invitation has not been sent. Share this one-time link privately. It expires {new Date(invitation.expires_at).toLocaleString()}.</p>
               
               <Button type="button" variant="secondary" onClick={() => { const link = window.location.origin + "/invite/caregiver#token=" + encodeURIComponent(invitation.invitation_token); void navigator.clipboard?.writeText(link); }}>Copy invitation link</Button>
+            </div>
+          )}
+
+          {networkSummary && (
+            <div style={{ display: "grid", gap: "0.55rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
+              <h3 className="mobile-settings-label">Care coverage at a glance</h3>
+              <p className="mobile-settings-hint" style={{ margin: 0 }}>A shared view of who is involved and where care responsibilities may need attention.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "0.55rem" }}>
+                {[
+                  ["Caregivers", networkSummary.caregivers],
+                  ["Active responsibilities", networkSummary.active_responsibilities],
+                  ["Active handovers", networkSummary.active_handoffs],
+                  ["Coverage gaps", networkSummary.coverage_gaps],
+                  ["Responsibility gaps", networkSummary.responsibility_gaps],
+                  ["Different views to review", networkSummary.perspective_conflicts],
+                ].map(([label, items]) => (
+                  <div key={String(label)} style={{ padding: "0.55rem", background: "var(--surface-muted, #f5f7f5)", borderRadius: "9px" }}>
+                    <strong style={{ display: "block", fontSize: "1.15rem" }}>{Array.isArray(items) ? items.length : 0}</strong>
+                    <span className="mobile-settings-hint">{String(label)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
