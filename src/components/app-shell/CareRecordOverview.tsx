@@ -139,7 +139,7 @@ export function CareRecordOverview() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <section className="care-record-overview" aria-labelledby="care-record-overview-title" className="care-record-overview">
+    <section className="care-record-overview" aria-labelledby="care-record-overview-title">
       <header className="care-record-overview__header">
         <div>
           <p className="care-record-overview__eyebrow">YOUR CARE INFORMATION</p>
