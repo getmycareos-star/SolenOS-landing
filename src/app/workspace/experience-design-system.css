@@ -310,18 +310,7 @@
 .solenos-chat-app .solenos-care-explore__links a { display: grid; gap: 3px; padding: 13px 14px; border: 1px solid var(--sn-line); border-radius: 12px; background: #fff; text-decoration: none; }
 .solenos-chat-app .solenos-care-explore__links strong { color: var(--sn-ink); font-size: 12px; }
 .solenos-chat-app .solenos-care-explore__links span { color: var(--sn-muted); font-size: 11px; line-height: 1.45; }
-.solenos-chat-app .care-record-overview { color: var(--sn-ink) !important; gap: 16px !important; }
-.solenos-chat-app .care-record-overview > header { align-items: center !important; padding-bottom: 15px; border-bottom: 1px solid var(--sn-line); }
-.solenos-chat-app .care-record-overview > header h2 { color: var(--sn-forest) !important; font-size: 22px !important; font-weight: 650 !important; letter-spacing: -.035em; }
-.solenos-chat-app .care-record-overview > header p { color: var(--sn-muted) !important; }
-.solenos-chat-app .care-record-overview > header button { border: 1px solid var(--sn-line) !important; border-radius: 11px !important; background: #fff !important; color: var(--sn-forest) !important; }
-.solenos-chat-app .care-record-overview > section { border-color: var(--sn-line) !important; border-radius: var(--sn-radius-lg) !important; padding: 20px !important; box-shadow: var(--sn-shadow-soft); }
-.solenos-chat-app .care-record-overview > section h3 { color: var(--sn-forest); font-size: 16px !important; font-weight: 650 !important; letter-spacing: -.02em; }
-.solenos-chat-app .care-record-overview > section article { border-color: var(--sn-line) !important; border-radius: 12px !important; background: #fbfcfa !important; }
-.solenos-chat-app .care-record-overview > section article strong { color: var(--sn-ink); }
-.solenos-chat-app .care-record-overview > section p,
-.solenos-chat-app .care-record-overview > p { color: var(--sn-muted) !important; }
-.solenos-chat-app .care-record-overview > section article span { border-radius: 999px !important; }
+/* Care Record overview presentation is owned by the token-based classes in experience-design-system-v2.css. */
 .solenos-chat-app .solenos-record-details-dialog { border-radius: 20px !important; box-shadow: 0 28px 90px rgba(23,43,31,.2) !important; }
 .solenos-chat-app .solenos-record-details-header { border-bottom-color: var(--sn-line) !important; }
 .solenos-chat-app .solenos-record-details-header h2 { color: var(--sn-forest) !important; letter-spacing: -.035em; }
