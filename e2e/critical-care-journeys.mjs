@@ -1489,6 +1489,7 @@ await record("Daily Care saves and retrieves original reports without relying on
 
 await record("Daily Care capture survives secondary read failures", async () => {
   const resilient = await createBrowserPage(firstVisitSession, "/workspace/daily-care");
+  const resilientIdentity = auth(firstVisitSession);
   const unavailable = (route) => route.fulfill({
     status: 503,
     contentType: "application/json",
@@ -1523,7 +1524,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
     .filter({ hasText: "Your update was saved to the care record." })
     .waitFor({ timeout: 10_000 });
 
-  const persisted = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
+  const persisted = await request(`/api/v1/events/${resilientIdentity.personId}`, { token: resilientIdentity.token });
   assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
   assert.ok(persisted.payload.some((event) =>
     event.id === savePayload.id && JSON.stringify(event).includes(originalReport)
