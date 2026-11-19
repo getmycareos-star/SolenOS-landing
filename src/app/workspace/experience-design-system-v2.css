@@ -1624,6 +1624,271 @@
   font-size: 12px;
   line-height: 1.6;
 }
+/* Appointment workflow: preparation, handoff and outcome share one calm surface. */
+.solenos-chat-app .solenos-chat-main .guided-appointment { color: var(--sn-ink); }
+.solenos-chat-app .solenos-chat-main .guided-stages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 0;
+}
+.solenos-chat-app .solenos-chat-main .guided-stages button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--sn-line);
+  border-radius: 11px;
+  background: var(--sn-surface);
+  color: var(--sn-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .guided-stages button.is-active {
+  border-color: var(--sn-sage-strong);
+  background: var(--sn-surface-soft);
+  color: var(--sn-forest);
+}
+.solenos-chat-app .solenos-chat-main .guided-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--sn-line);
+  border-radius: 14px;
+  background: var(--sn-surface-soft);
+}
+.solenos-chat-app .solenos-chat-main .guided-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.solenos-chat-app .solenos-chat-main .guided-panel h4 {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: 17px;
+  letter-spacing: -.025em;
+}
+.solenos-chat-app .solenos-chat-main :where(.guided-panel-heading p,.guided-muted) {
+  margin: 5px 0 0;
+  color: var(--sn-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .guided-state {
+  padding: 5px 8px;
+  border: 1px solid var(--sn-line);
+  border-radius: 99px;
+  color: var(--sn-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.solenos-chat-app .solenos-chat-main .guided-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+}
+.solenos-chat-app .solenos-chat-main :where(.guided-columns section,.guided-appointments) {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--sn-line);
+  border-radius: 11px;
+  background: var(--sn-surface);
+}
+.solenos-chat-app .solenos-chat-main .guided-panel h5 {
+  margin: 0 0 9px;
+  color: var(--sn-forest);
+  font-size: 12px;
+}
+.solenos-chat-app .solenos-chat-main :where(.guided-columns ul,.guided-appointments ul) { margin: 0; padding-left: 17px; }
+.solenos-chat-app .solenos-chat-main .guided-columns li {
+  margin: 0 0 11px;
+  color: var(--sn-ink);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.solenos-chat-app .solenos-chat-main .guided-columns li p { margin: 3px 0; }
+.solenos-chat-app .solenos-chat-main :where(.guided-columns li small,.guided-appointments li span) {
+  display: block;
+  color: var(--sn-muted);
+  font-size: 10px;
+}
+.solenos-chat-app .solenos-chat-main .guided-appointments { margin-top: 12px; }
+.solenos-chat-app .solenos-chat-main .guided-appointments li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 7px 0;
+  color: var(--sn-ink);
+  font-size: 12px;
+}
+.solenos-chat-app .solenos-chat-main .guided-footnote {
+  margin: 12px 0 0;
+  color: var(--sn-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.solenos-chat-app .solenos-chat-main .guided-capture-label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 14px;
+  color: var(--sn-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.solenos-chat-app .solenos-chat-main .guided-capture-label textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid var(--sn-line);
+  border-radius: 10px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.solenos-chat-app .solenos-chat-main .guided-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.solenos-chat-app .solenos-chat-main :where(.guided-primary,.guided-secondary) {
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--sn-forest);
+  border-radius: 10px;
+  background: var(--sn-forest);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .guided-secondary {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+.solenos-chat-app .solenos-chat-main :where(.guided-primary,.guided-secondary):disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+.solenos-chat-app .solenos-chat-main .guided-outcome {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--sn-line);
+  border-radius: 12px;
+  background: var(--sn-surface);
+}
+.solenos-chat-app .solenos-chat-main .guided-outcome h5 { margin: 0 0 12px; }
+.solenos-chat-app .solenos-chat-main .guided-outcome section {
+  padding: 10px 0;
+  border-top: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .guided-outcome h6 {
+  margin: 0 0 5px;
+  color: var(--sn-forest);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+.solenos-chat-app .solenos-chat-main .guided-outcome p {
+  margin: 0;
+  color: var(--sn-ink);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.solenos-chat-app .solenos-chat-main .guided-outcome small {
+  display: block;
+  margin-top: 4px;
+  color: var(--sn-muted);
+  font-size: 10px;
+}
+.solenos-chat-app .solenos-chat-main .guided-proposals {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .guided-proposal {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--sn-line);
+  border-radius: 10px;
+  background: var(--sn-surface-soft);
+}
+.solenos-chat-app .solenos-chat-main .guided-proposal strong,
+.solenos-chat-app .solenos-chat-main .guided-proposal p { color: var(--sn-ink); font-size: 12px; }
+.solenos-chat-app .solenos-chat-main .guided-proposal p {
+  margin: 7px 0;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.solenos-chat-app .solenos-chat-main .guided-proposal small { color: var(--sn-muted); font-size: 10px; }
+.solenos-chat-app .solenos-chat-main .guided-status { margin-top: 10px; color: var(--sn-muted); font-size: 11px; }
+.solenos-chat-app .solenos-chat-main .guided-status span { display: block; margin-top: 4px; color: #9b4a38; }
+.solenos-chat-app .solenos-chat-main .guided-details-toggle {
+  margin-top: 16px;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  color: var(--sn-forest);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .guided-detailed {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .guided-detailed > p {
+  color: var(--sn-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-chat-main .guided-appointment :where(button,textarea):focus-visible {
+  outline: 3px solid var(--sn-focus);
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .solenos-chat-app .solenos-chat-main .guided-columns { grid-template-columns: minmax(0, 1fr); }
+  .solenos-chat-app .solenos-chat-main .guided-appointments li { display: block; }
+  .solenos-chat-app .solenos-chat-main .guided-actions button { width: 100%; }
+  .solenos-chat-app .solenos-chat-main .guided-panel { padding: 13px; }
+  .solenos-chat-app .solenos-chat-main .guided-stages button { font-size: 11px; }
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .guided-panel,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .guided-proposal {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-soft);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main :where(.guided-panel h4,.guided-panel h5,.guided-outcome h6,.guided-details-toggle) {
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main :where(.guided-columns section,.guided-appointments,.guided-outcome,.guided-capture-label textarea,.guided-secondary) {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .guided-primary {
+  border-color: #a7bda8;
+  background: #a7bda8;
+  color: #17251c;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .guided-outcome p,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .guided-proposal strong,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .guided-proposal p {
+  color: var(--sn-ink);
+}
+
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .appointment-workspace {
   border-color: var(--sn-line);
   background: var(--sn-surface);
