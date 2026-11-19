@@ -449,28 +449,28 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="mobile-screen documents-page" style={{ gap: 18, paddingBottom: 28 }}>
-      <header className="mobile-page-head" style={{ marginBottom: 0 }}>
+    <div className="mobile-screen documents-page">
+      <header className="mobile-page-head documents-page-head">
         <h1>Documents</h1>
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
-      <section aria-label="Add care documents" style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))" }}>
-        <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.eml,.msg,.csv,.json,.xml,.yaml,.yml" style={{ display: "none" }} onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("upload"); void handleFiles(files); }} />
-        <input ref={snapInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("capture"); void handleFiles(files); }} />
-        <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Upload size={17} />Upload files</button>
-        <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><Camera size={17} />Snap a photo</button>
-        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading} style={{ minHeight: 46, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", fontWeight: 700, padding: "10px 12px" }}><ScanLine size={17} />Scan pages</button>
+      <section className="documents-upload-actions" aria-label="Add care documents">
+        <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.eml,.msg,.csv,.json,.xml,.yaml,.yml" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("upload"); void handleFiles(files); }} />
+        <input ref={snapInputRef} type="file" accept="image/*" capture="environment" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("capture"); void handleFiles(files); }} />
+        <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Upload size={17} />Upload files</button>
+        <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Camera size={17} />Snap a photo</button>
+        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
       </section>
 
       <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
 
-      <section aria-label="Saved documents" style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 16, background: "var(--surface)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <section className="documents-library" aria-label="Saved documents">
+        <div className="documents-library-heading">
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Your saved documents</h2>
-            <p style={{ margin: "5px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>Your original files are kept separate from suggested details.</p>
+            <h2>Your saved documents</h2>
+            <p>Your original files are kept separate from suggested details.</p>
           </div>
-          <button type="button" onClick={() => void loadDocuments(true)} disabled={refreshing || loading} style={{ minHeight: 42, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 12px", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }} aria-label="Refresh documents">
+          <button type="button" className="documents-refresh" onClick={() => void loadDocuments(true)} disabled={refreshing || loading} aria-label="Refresh documents">
             <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
@@ -548,9 +548,9 @@ export default function DocumentsPage() {
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
         {listError && <RecordState kind="error" description={listError} onAction={() => void loadDocuments(documents.length > 0)} />}
 
-        <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border)", borderRadius: 9, padding: "0 12px", minHeight: 44 }}>
+        <div className="documents-search">
           <Search size={17} aria-hidden="true" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search document names and available text" aria-label="Search documents" style={{ width: "100%", minWidth: 0, border: 0, outline: 0, background: "transparent", color: "var(--text)", fontSize: 15, minHeight: 42 }} />
+          <input className="documents-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search document names and available text" aria-label="Search documents" />
         </div>
 
         {loading ? <RecordState kind="loading" title="Loading saved documents" /> : listError && documents.length === 0 ? null : visibleDocuments.length === 0 ? (
@@ -562,16 +562,16 @@ export default function DocumentsPage() {
             onAction={documents.length === 0 ? () => uploadInputRef.current?.click() : () => setQuery("")}
           />
         ) : (
-          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+          <div className="documents-list">
             {visibleDocuments.map((doc) => (
-              <button key={doc.id} type="button" onClick={() => void openOriginal(doc)} style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)", color: "var(--text)", minWidth: 0 }}>
-                <span style={{ width: 42, height: 42, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 9, background: "var(--bg)" }}>{isImage(doc.mimeType) ? <FileImage size={21} /> : <FileText size={21} />}</span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "block", fontWeight: 700, overflowWrap: "anywhere", fontSize: 14 }}>{doc.title}</span>
-                  <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</span>
-                  <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--text-secondary)" }}>{doc.extractedText.trim() ? "Text available to review" : "Original saved · no readable text yet"}</span>
+              <button key={doc.id} type="button" className="documents-list-item" onClick={() => void openOriginal(doc)}>
+                <span className="documents-list-icon">{isImage(doc.mimeType) ? <FileImage size={21} /> : <FileText size={21} />}</span>
+                <span className="documents-list-copy">
+                  <span className="documents-list-title">{doc.title}</span>
+                  <span className="documents-list-meta">{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</span>
+                  <span className="documents-list-status">{doc.extractedText.trim() ? "Text available to review" : "Original saved · no readable text yet"}</span>
                 </span>
-                <span aria-hidden="true" style={{ flexShrink: 0, fontSize: 12, color: "var(--text-secondary)" }}>Open</span>
+                <span aria-hidden="true" className="documents-list-open">Open</span>
               </button>
             ))}
           </div>
