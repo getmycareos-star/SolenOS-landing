@@ -544,40 +544,40 @@ export default function TimelinePage() {
   const latestEvent = events[0] ?? null;
 
   return (
-    <div className="mobile-screen timeline-workspace" style={{ maxWidth: 920, margin: "0 auto", paddingBottom: 48 }}>
-      <header className="mobile-page-head" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+    <div className="mobile-screen timeline-workspace">
+      <header className="mobile-page-head timeline-page-head">
         <div>
-          <p style={{ margin: "0 0 6px", color: "var(--solenos-muted)", fontSize: 13, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>Care Record</p>
-          <h1 style={{ marginBottom: 8 }}>Care history</h1>
-          <p style={{ marginTop: 0, maxWidth: 620 }}>A history of saved care updates. Older reports remain separate from the latest care summary.</p>
+          <p className="timeline-eyebrow">Care Record</p>
+          <h1 className="timeline-page-title">Care history</h1>
+          <p className="timeline-page-description">A history of saved care updates. Older reports remain separate from the latest care summary.</p>
         </div>
         <Button variant="icon" aria-label="Refresh timeline" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
           <RefreshCw size={18} aria-hidden />
         </Button>
       </header>
 
-      <section aria-label="Latest recorded update" style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 16, background: "var(--theme-panel-bg)", padding: 20, marginBottom: 20 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+      <section className="timeline-latest" aria-label="Latest recorded update">
+        <div className="timeline-latest-heading">
           <History size={19} aria-hidden />
-          <h2 style={{ fontSize: 18, margin: 0 }}>Latest care update</h2>
+          <h2 className="timeline-latest-title">Latest care update</h2>
         </div>
         {loading ? (
-          <p aria-live="polite" style={{ margin: 0, color: "var(--solenos-muted)" }}>Loading saved care updates…</p>
+          <p className="timeline-muted" aria-live="polite">Loading saved care updates…</p>
         ) : error ? (
-          <p style={{ margin: 0, color: "var(--solenos-muted)" }}>The latest update is unavailable until the timeline loads.</p>
+          <p className="timeline-muted">The latest update is unavailable until the timeline loads.</p>
         ) : latestEvent ? (
           <>
-            <h3 style={{ margin: "0 0 6px", fontSize: 18 }}>{caregiverSafeAssistantText(latestEvent.title) || "Care update"}</h3>
-            <p style={{ margin: "0 0 8px", color: "var(--solenos-muted)" }}>{formatDateTime(latestEvent.occurred_at)} · {eventCategory(latestEvent)}</p>
-            <p style={{ margin: 0, lineHeight: 1.55 }}>{parseDescription(latestEvent.description) || "No event description was saved."}</p>
+            <h3 className="timeline-latest-event-title">{caregiverSafeAssistantText(latestEvent.title) || "Care update"}</h3>
+            <p className="timeline-latest-meta">{formatDateTime(latestEvent.occurred_at)} · {eventCategory(latestEvent)}</p>
+            <p className="timeline-latest-description">{parseDescription(latestEvent.description) || "No event description was saved."}</p>
           </>
         ) : (
-          <p style={{ margin: 0, lineHeight: 1.55 }}>No saved care updates are available for this record yet. Add a care note or observation to begin the history.</p>
+          <p className="timeline-latest-description">No saved care updates are available for this record yet. Add a care note or observation to begin the history.</p>
         )}
         <p className="timeline-event-provenance-note">This is the latest saved update. For the current care summary, return to your Care Record.</p>
       </section>
 
-      <section aria-label="Timeline controls" style={{ marginBottom: 20 }}>
+      <section className="timeline-controls" aria-label="Timeline controls">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -586,24 +586,24 @@ export default function TimelinePage() {
             void loadEvents(true, nextQuery);
           }}
         >
-          <label htmlFor="timeline-search" style={{ display: "block", fontWeight: 650, marginBottom: 8 }}>Search the care history</label>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--solenos-hairline)", background: "var(--theme-panel-bg)", borderRadius: 12, padding: "0 12px", minHeight: 48 }}>
+          <label className="timeline-search-label" htmlFor="timeline-search">Search the care history</label>
+          <div className="timeline-search">
             <Search size={18} aria-hidden />
-            <input id="timeline-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search all saved care records…" style={{ border: 0, outline: 0, flex: 1, minWidth: 0, padding: "12px 0", background: "transparent", color: "inherit", font: "inherit" }} />
+            <input id="timeline-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search all saved care records…" className="timeline-search-input" />
             <Button type="submit" variant="secondary" disabled={loading || refreshing}>Search</Button>
           </div>
           {appliedQuery && (
-            <p style={{ margin: "6px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>
+            <p className="timeline-search-note">
               Showing results for “{appliedQuery}”. Search includes older records, not just the items currently shown.
-              <button type="button" onClick={() => { setQuery(""); setAppliedQuery(""); void loadEvents(true, ""); }} style={{ marginLeft: 8, border: 0, background: "transparent", color: "inherit", textDecoration: "underline", cursor: "pointer" }}>Clear search</button>
+              <button type="button" onClick={() => { setQuery(""); setAppliedQuery(""); void loadEvents(true, ""); }} className="timeline-clear-search">Clear search</button>
             </p>
           )}
         </form>
-        <div role="group" aria-label="Filter timeline events" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+        <div className="timeline-filters" role="group" aria-label="Filter timeline events">
           {FILTERS.map((item) => {
             const active = filter === item.id;
             return (
-              <button key={item.id} type="button" aria-pressed={active} onClick={() => setFilter(item.id)} style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 999, padding: "9px 13px", minHeight: 40, background: active ? "var(--theme-selected-bg)" : "var(--theme-panel-bg)", color: "var(--theme-panel-fg)", font: "inherit", fontWeight: active ? 700 : 500, cursor: "pointer" }}>
+              <button key={item.id} type="button" aria-pressed={active} onClick={() => setFilter(item.id)} className={`timeline-filter${active ? " is-active" : ""}`}>
                 {item.label}
               </button>
             );
@@ -612,12 +612,12 @@ export default function TimelinePage() {
       </section>
 
       {error && (
-        <section role="alert" style={{ border: "1px solid var(--theme-warning-border)", borderRadius: 12, padding: 16, marginBottom: 20, background: "var(--theme-warning-bg)", color: "var(--theme-warning-fg)" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <section className="timeline-error" role="alert">
+          <div className="timeline-error-layout">
             <AlertCircle size={20} aria-hidden />
-            <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: 16, margin: "0 0 6px" }}>Timeline could not be loaded</h2>
-              <p style={{ margin: "0 0 12px", overflowWrap: "anywhere" }}>{error}</p>
+            <div className="timeline-error-copy">
+              <h2 className="timeline-error-title">Timeline could not be loaded</h2>
+              <p className="timeline-error-message">{error}</p>
               <Button variant="primary" onClick={() => void loadEvents(true, appliedQuery)} disabled={refreshing}>Try again</Button>
             </div>
           </div>
@@ -627,11 +627,11 @@ export default function TimelinePage() {
       {loading ? (
         <p aria-live="polite">Loading care history…</p>
       ) : !error && visibleEvents.length === 0 ? (
-        <section className="mobile-empty" style={{ padding: 28 }}>
+        <section className="mobile-empty timeline-empty">
           <div className="mobile-empty-icon" aria-hidden="true"><Activity size={36} /></div>
           <h2 className="mobile-empty-title">{events.length ? "No matching updates" : "Your care history starts here"}</h2>
           <p className="mobile-empty-body">{events.length ? "Try another filter or search term. No records were removed." : "SolenOS will show care updates here after they have been saved. This screen never adds example care history."}</p>
-          <div className="mobile-empty-actions" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          <div className="mobile-empty-actions timeline-empty-actions">
             <Button variant="primary" onClick={() => router.push("/workspace?compose=1")}><Plus size={18} aria-hidden /> Add a care update</Button>
             {(query || filter !== "all") && <Button variant="secondary" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</Button>}
           </div>
@@ -758,7 +758,7 @@ export default function TimelinePage() {
       )}
 
       {correctionMessage && (
-        <div role="status" style={{ margin: "12px 0", color: "var(--solenos-muted)", fontSize: 13, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+        <div className="timeline-correction-status" role="status">
           <span>{correctionMessage}</span>
           {(pendingCorrectionId || events.some((item) => item.source_type === "correction" && ["pending", "processing"].includes(item.processing_status || ""))) && (
             <Button variant="secondary" disabled={retryingCorrection} onClick={() => void retryPendingCorrection()}>
@@ -769,24 +769,24 @@ export default function TimelinePage() {
       )}
 
       {historyCoverage.hasMore && (
-        <div style={{ margin: "16px 0", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div className="timeline-load-more">
           <Button variant="secondary" disabled={loadingMore} onClick={() => void loadMoreEvents()}>
             {loadingMore ? "Loading older records…" : "Load older care records"}
           </Button>
-          <span role="status" style={{ color: "var(--solenos-muted)", fontSize: 12 }}>
+          <span className="timeline-coverage" role="status">
             Showing {events.length} of {historyCoverage.total} matching care updates.
           </span>
         </div>
       )}
 
       {personId && (
-        <section aria-label="Care changes over time" style={{ marginTop: 24 }}>
+        <section className="timeline-change-history" aria-label="Care changes over time">
           <details
             ref={changeHistoryDetailsRef}
             className="timeline-history-details"
             onToggle={(event) => setChangeHistoryOpen(event.currentTarget.open)}
           >
-            <summary style={{ cursor: "pointer", fontWeight: 600, padding: "14px 0" }}>How the care picture has changed</summary>
+            <summary className="timeline-change-summary">How the care picture has changed</summary>
             {changeHistoryOpen && (
               <>
                 <ChangeIntelligencePanel personId={personId} />
@@ -797,8 +797,8 @@ export default function TimelinePage() {
         </section>
       )}
 
-      <footer style={{ marginTop: 28, paddingTop: 14, borderTop: "1px solid var(--solenos-hairline)", color: "var(--solenos-muted)", fontSize: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
-        <ShieldCheck size={16} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
+      <footer className="timeline-provenance-footer">
+        <ShieldCheck className="timeline-provenance-icon" size={16} aria-hidden />
         <span>Updates are shown by when they happened, while keeping the date they were saved. A suggested interpretation is not treated as confirmed, and timing alone does not prove cause.{loadedAt ? ` Last loaded ${formatDateTime(loadedAt)}.` : ""}</span>
       </footer>
     </div>
