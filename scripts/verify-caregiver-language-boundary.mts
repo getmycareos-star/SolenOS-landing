@@ -346,6 +346,7 @@ assert.doesNotMatch(publicShellLanguage, /Living Care Record/,
 
 const documentExtractionRouteLanguage = read("../src/app/api/extract/route.ts");
 const shareSummaryLanguage = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
+const handoffSharingLanguage = read("../src/components/workflows/CareHandoffSharing.tsx");
 const shareSummaryData = read("../src/lib/share-summary.ts");
 assert.match(documentExtractionRouteLanguage, /We couldn’t confirm your access to SolenOS\. Refresh the page and try again\./,
   "document extraction access failures must use plain caregiver-facing language");
@@ -365,8 +366,10 @@ assert.match(reminders, /Reminders you add will appear here/,
 
 assert.doesNotMatch(shareSummaryLanguage, /server-issued care session|anonymous session|API error/i,
   "share-summary errors must not expose internal access or API terminology");
-assert.match(shareSummaryLanguage, /sanitizeCaregiverErrorMessage/,
-  "share-summary failures must pass through caregiver-safe error wording");
+assert.match(handoffSharingLanguage, /caregiverSafeAssistantText/,
+  "handoff content must use caregiver-safe wording for saved source text");
+assert.match(handoffSharingLanguage, /Your summary could not be shared\. Refresh the list to check before trying again\./,
+  "share failures must use clear caregiver-facing wording");
 assert.match(shareSummaryData, /function getShareEvents/,
   "share summaries must read the current persisted event response");
 assert.match(shareSummaryData, /current\.events/,
