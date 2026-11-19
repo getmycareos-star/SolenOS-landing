@@ -11,6 +11,7 @@ import { caregiverFieldLabel, caregiverInformationLabel, caregiverSafeAssistantT
 import { RecordState } from "@/components/ui/RecordState";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
+const DementiaCareProfilePanel = dynamic(() => import("@/components/mvp-workspace/DementiaCareProfilePanel"), { ssr: false, loading: () => <p role="status">Loading care profile…</p> });
 const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <RecordState kind="loading" title="Loading your care information" /> });
 const ClaimAssessmentPanel = dynamic(() => import("@/components/ClaimAssessmentPanel"), { ssr: false, loading: () => <RecordState kind="loading" title="Loading your care information" /> });
 const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel"), { ssr: false, loading: () => <p role="status">Loading conflict review…</p> });
@@ -674,6 +675,7 @@ export function LCRCurrentUnderstanding() {
   const [claimAssessmentOpen, setClaimAssessmentOpen] = useState(false);
   const [conflictReviewOpen, setConflictReviewOpen] = useState(false);
   const [recordHistoryOpen, setRecordHistoryOpen] = useState(false);
+  const [dementiaProfileOpen, setDementiaProfileOpen] = useState(false);
   const evidenceReviewDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const claimAssessmentDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const conflictReviewDetailsRef = useRef<HTMLDetailsElement | null>(null);
@@ -2125,6 +2127,10 @@ export function LCRCurrentUnderstanding() {
         <details ref={conflictReviewDetailsRef} className="lcr-history-details" onToggle={(event) => setConflictReviewOpen(event.currentTarget.open)}>
           <summary>When information differs</summary>
           {conflictReviewOpen ? <ConflictResolutionPanel personId={personId} /> : null}
+        </details>
+        <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
+          <summary>About the person and their care</summary>
+          {dementiaProfileOpen ? <DementiaCareProfilePanel personId={personId} /> : null}
         </details>
         <details ref={recordHistoryDetailsRef} className="lcr-history-details" onToggle={(event) => setRecordHistoryOpen(event.currentTarget.open)}>
           <summary>Reported information and record history</summary>
