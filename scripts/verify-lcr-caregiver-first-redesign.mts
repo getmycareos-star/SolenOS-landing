@@ -42,6 +42,8 @@ assert.match(currentUnderstanding, /lcr-first-screen-summary/, "workspace opens 
 assert.match(currentUnderstanding, /Where things stand/, "first screen explains the recorded care picture");
 assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces supported care priorities");
 assert.match(currentUnderstanding, /<strong>Still unclear:<\/strong>/, "the first-screen summary surfaces recorded uncertainty without turning it into a task");
+assert.match(currentUnderstanding, /This record reflects the care information saved here/, "the Care Record uses one concise scope statement instead of repeating its introduction");
+assert.doesNotMatch(currentUnderstanding, /Your care information, brought together/, "the redundant introductory headline is removed");
 assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed care information is progressively disclosed");
 assert.doesNotMatch(currentUnderstanding, /Missing information does not mean everything is fine|Do not assume there is nothing that needs attention/, "obsolete defensive disclaimers are removed from caregiver-facing copy");
