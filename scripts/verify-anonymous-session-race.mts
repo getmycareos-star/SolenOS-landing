@@ -258,6 +258,10 @@ async function main() {
   {
     const store = makeStore();
     store.setItem("solenos_anonymous_session_revoked", "revoked-2");
+    store.setItem("solenos_anonymous_access_token", "stale-revoked-token");
+    store.setItem("solenos_backend_person_id", "stale-person");
+    store.setItem("solenos_backend_caregiver_id", "stale-caregiver");
+    store.setItem("solenos_anonymous_session_expires_at", new Date(Date.now() + 86400000).toISOString());
     installBrowser(store, "https://solenos.test/workspace?enter=1");
     let sessionCreates = 0;
     globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -271,6 +275,8 @@ async function main() {
     assert.equal(sessionCreates, 1);
     assert.equal(store.getItem("solenos_anonymous_session_revoked"), null);
     assert.equal(store.getItem("solenos_anonymous_access_token"), "server-issued-token");
+    assert.equal(store.getItem("solenos_backend_person_id"), "person-server-1");
+    assert.notEqual(store.getItem("solenos_anonymous_access_token"), "stale-revoked-token");
   }
 
   // Device cleanup must persist a local tombstone even without server credentials.
