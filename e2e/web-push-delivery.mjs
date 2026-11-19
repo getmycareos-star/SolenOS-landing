@@ -115,7 +115,7 @@ try {
   );
 
   // Push subscription is initiated by a real click, not page.evaluate alone.
-  await page.evaluate((encodedPublicKey) => {
+  await page.evaluate(async (encodedPublicKey) => {
     const padding = "=".repeat((4 - encodedPublicKey.length % 4) % 4);
     const base64 = (encodedPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
     const raw = atob(base64);
