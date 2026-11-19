@@ -197,8 +197,35 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     response.request().method() === "POST",
     { timeout: 30_000 },
   );
-  await page.getByRole("button", { name: "Add to record", exact: true }).click();
-  const captureResponse = await captureResponsePromise;
+  const addToRecordButton = page.getByRole("button", { name: "Add to record", exact: true });
+  assert.equal(await addToRecordButton.isEnabled(), true, "the first care entry must be ready to save");
+  await addToRecordButton.click();
+  let captureResponse;
+  try {
+    captureResponse = await captureResponsePromise;
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => {
+      const button = document.querySelector('button[aria-label="Add to record"]');
+      const textarea = document.querySelector("textarea");
+      return {
+        buttonText: button?.innerText ?? null,
+        buttonDisabled: button instanceof HTMLButtonElement ? button.disabled : null,
+        noteLength: textarea instanceof HTMLTextAreaElement ? textarea.value.length : null,
+        accessTokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
+        accessTokenExpiry: localStorage.getItem("solenos_anonymous_access_expires_at"),
+        sessionStorageKeys: Object.keys(sessionStorage),
+        sessionRelatedLocalStorageKeys: Object.keys(localStorage).filter((key) =>
+          /session|care|person|caregiver|token|expires|revoke/i.test(key)
+        ),
+        visibleMessages: Array.from(document.querySelectorAll('[role="alert"], [role="status"]'))
+          .filter((element) => element.getClientRects().length > 0)
+          .map((element) => element.textContent?.trim())
+          .filter(Boolean),
+      };
+    });
+    console.error("FIRST_VISIT_SUBMIT_DIAGNOSTIC", JSON.stringify(diagnostic));
+    throw error;
+  }
   const capturePayload = await captureResponse.json().catch(() => null);
   console.log("FIRST_VISIT_CAPTURE_RESPONSE", JSON.stringify({
     status: captureResponse.status(),
