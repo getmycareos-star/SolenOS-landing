@@ -147,11 +147,14 @@ assert.ok(featureFlags.includes("community: false") && featureFlags.includes("pr
 assert.ok(communityPage.includes('redirect("/workspace")'));
 const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
 const naturalDailyUpdate = fs.readFileSync(path.join(root, "src/components/workflows/NaturalLanguageDailyUpdate.tsx"), "utf8");
+const documentsPage = fs.readFileSync(path.join(root, "src/app/workspace/documents/page.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert.ok(appointmentWorkflow.includes("guided-appointment") && !appointmentWorkflow.includes("<style jsx>"), "appointment workflow must use the shared design system");
 assert.ok(v2Styles.includes(".guided-appointment") && v2Styles.includes(".guided-panel") && v2Styles.includes(".guided-capture-label textarea"), "appointment workflow surfaces must be styled centrally");
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
+assert.doesNotMatch(documentsPage, /#(?:8eae8a|b9d5b5)|var\(--danger, #a22\)/i, "document actions and errors must use shared theme tokens");
+assert.ok(documentsPage.includes("var(--theme-action-bg)") && documentsPage.includes("var(--theme-error-fg)"));
 // Appointment styles are governed by semantic theme tokens; assert the required tokens above.
 const careRecordOverview = fs.readFileSync(path.join(root, "src/components/app-shell/CareRecordOverview.tsx"), "utf8");
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
