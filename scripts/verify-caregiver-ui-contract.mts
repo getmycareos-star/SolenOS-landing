@@ -151,6 +151,8 @@ const documentsPage = fs.readFileSync(path.join(root, "src/app/workspace/documen
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert.ok(appointmentWorkflow.includes("guided-appointment") && !appointmentWorkflow.includes("<style jsx>"), "appointment workflow must use the shared design system");
+assert.doesNotMatch(appointmentWorkflow, /style=\{\{/, "appointment briefing layout must not use inline styles");
+assert.ok(v2Styles.includes(".guided-full-span"), "appointment briefing must use the shared full-span layout utility");
 assert.ok(v2Styles.includes(".guided-appointment") && v2Styles.includes(".guided-panel") && v2Styles.includes(".guided-capture-label textarea"), "appointment workflow surfaces must be styled centrally");
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
 assert.doesNotMatch(documentsPage, /#(?:8eae8a|b9d5b5)|var\(--danger, #a22\)/i, "document actions and errors must use shared theme tokens");
