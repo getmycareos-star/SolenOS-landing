@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 
+const QWEN_JOB_POLL_INTERVAL_MS = 5_000;
+const QWEN_JOB_MAX_WAIT_MS = 12 * 60 * 1000;
+const QWEN_JOB_MAX_POLLS = Math.ceil(QWEN_JOB_MAX_WAIT_MS / QWEN_JOB_POLL_INTERVAL_MS);
+
 type SaveReceipt = {
   id: string;
   jobId: string | null;
@@ -61,7 +65,7 @@ export default function NaturalLanguageDailyUpdate() {
         // A temporary status-read failure must not turn a saved report into a failed save.
       }
       attempts += 1;
-      if (active && attempts < 60) timer = setTimeout(poll, 5000);
+      if (active && attempts < QWEN_JOB_MAX_POLLS) timer = setTimeout(poll, QWEN_JOB_POLL_INTERVAL_MS);
     };
 
     void poll();

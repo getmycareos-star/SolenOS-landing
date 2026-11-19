@@ -4,6 +4,10 @@ import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
 
+const QWEN_JOB_POLL_INTERVAL_MS = 2_000;
+const QWEN_JOB_MAX_WAIT_MS = 12 * 60 * 1000;
+const QWEN_JOB_MAX_POLLS = Math.ceil(QWEN_JOB_MAX_WAIT_MS / QWEN_JOB_POLL_INTERVAL_MS);
+
 const VITAL_TYPES = ['blood_pressure', 'heart_rate', 'oxygen_sat', 'temperature', 'weight', 'blood_glucose', 'other'];
 const VITAL_LABELS: Record<string, string> = {
   blood_pressure: 'Blood pressure',
@@ -138,7 +142,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           return;
         }
         attempts += 1;
-        if (attempts >= 90) {
+        if (attempts >= QWEN_JOB_MAX_POLLS) {
           setQwenAnalysis(current => current?.jobId === jobId
             ? { ...current, processingStatus: "unavailable" }
             : current);
@@ -148,17 +152,17 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         setQwenAnalysis(current => current?.jobId === jobId && current.processingStatus !== nextStatus
           ? { ...current, processingStatus: nextStatus }
           : current);
-        timer = setTimeout(() => { void poll(); }, 2000);
+        timer = setTimeout(() => { void poll(); }, QWEN_JOB_POLL_INTERVAL_MS);
       } catch {
         attempts += 1;
         if (!active) return;
-        if (attempts >= 90) {
+        if (attempts >= QWEN_JOB_MAX_POLLS) {
           setQwenAnalysis(current => current?.jobId === jobId
             ? { ...current, processingStatus: "unavailable" }
             : current);
           return;
         }
-        timer = setTimeout(() => { void poll(); }, 2000);
+        timer = setTimeout(() => { void poll(); }, QWEN_JOB_POLL_INTERVAL_MS);
       }
     };
     void poll();

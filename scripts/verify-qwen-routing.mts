@@ -91,6 +91,20 @@ assert(!read("src/components/workflows/StructuredDailyCapture.tsx").includes("{f
   "The saved receipt must not read from the draft after the draft has been reset.");
 assert(!capture.includes("QwenAssistPanel"), "Daily Capture must not expose a separate assistant workflow panel.");
 assert(!capture.includes("Qwen care analysis"), "Daily Capture must not expose the model name.");
+requireText("src/components/workflows/StructuredDailyCapture.tsx", [
+  "const QWEN_JOB_POLL_INTERVAL_MS = 2_000;",
+  "const QWEN_JOB_MAX_WAIT_MS = 12 * 60 * 1000;",
+  "const QWEN_JOB_MAX_POLLS = Math.ceil(QWEN_JOB_MAX_WAIT_MS / QWEN_JOB_POLL_INTERVAL_MS);",
+  "attempts >= QWEN_JOB_MAX_POLLS",
+  "setTimeout(() => { void poll(); }, QWEN_JOB_POLL_INTERVAL_MS)",
+]);
+requireText("src/components/workflows/NaturalLanguageDailyUpdate.tsx", [
+  "const QWEN_JOB_POLL_INTERVAL_MS = 5_000;",
+  "const QWEN_JOB_MAX_WAIT_MS = 12 * 60 * 1000;",
+  "const QWEN_JOB_MAX_POLLS = Math.ceil(QWEN_JOB_MAX_WAIT_MS / QWEN_JOB_POLL_INTERVAL_MS);",
+  "attempts < QWEN_JOB_MAX_POLLS",
+  "setTimeout(poll, QWEN_JOB_POLL_INTERVAL_MS)",
+]);
 
 requireText("src/components/workflows/Community.tsx", [
   "postJSON('/community/experience/summary'",
