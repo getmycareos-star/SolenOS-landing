@@ -133,6 +133,11 @@ requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
   'placeholder="Ask about saved care information, a recent change, or something that is unclear…"',
   "aria-label=\"Send a message to the Care Assistant\"",
+  "status.runtime_available === true && status.model_installed === true",
+  "setAvailability('unverified')",
+  "response.ai_generated === true ? 'available' : 'unverified'",
+  "availability === 'available' || availability === 'unverified'",
+  "availability !== \"available\" && availability !== \"unverified\"",
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
