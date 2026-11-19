@@ -355,8 +355,6 @@
   .solenos-chat-app .solenos-care-primary-action,
   .solenos-chat-app .solenos-care-secondary-action { width: 100%; min-height: 47px; }
   .solenos-chat-app .solenos-care-explore__links { grid-template-columns: 1fr; }
-  .solenos-chat-app .care-record-overview > section { padding: 16px !important; }
-  .solenos-chat-app .care-record-overview > header { align-items: flex-start !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .solenos-chat-app *,
@@ -815,10 +813,6 @@
 }
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-explore__links strong { color: var(--sn-ink); }
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-explore__links span { color: var(--sn-muted); }
-:root[data-solenos-theme="dark"] .solenos-chat-app .care-record-overview > section article {
-  background: #202d24 !important;
-  border-color: var(--sn-line) !important;
-}
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-first-screen-card,
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure,
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-history-details,
