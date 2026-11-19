@@ -148,7 +148,11 @@ export default function QwenAssistPanel({
       // The backend classifies the task and runs Qwen in its durable worker.
       // Poll the job resource; never fall back to a canned or guessed response.
       let completed: QwenBackgroundJobResult | null = null;
-      for (let attempt = 0; attempt < 60; attempt += 1) {
+      // Cold model starts and document-heavy jobs can take longer than a
+      // short request timeout. Keep polling the durable job for up to 12
+      // minutes; timing out here never cancels or overwrites the saved record.
+      const maxPolls = 360;
+      for (let attempt = 0; attempt < maxPolls; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 2_000));
         const status = (await getJSON("/assistant/jobs/" + encodeURIComponent(created.job_id))) as QwenBackgroundJobResult;
         if (status.status === "completed") {
