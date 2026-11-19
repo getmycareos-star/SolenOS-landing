@@ -118,6 +118,7 @@ requireText("src/components/workflows/Community.tsx", [
 assert(!read("src/components/workflows/Community.tsx").includes("QwenAssistPanel"), "Community must not expose internal assistant workflow controls.");
 assert(!read("src/components/workflows/Community.tsx").includes("Qwen support for Community"), "Community must not show internal model branding.");
 requireText("src/api/client.ts", [
+  'pathname.endsWith("/assistant/assist") && method === "POST") return 210_000',
   "export class ApiResponseError extends Error",
   "throw new ApiResponseError(res.status, message, detail)",
   "typeof detailMessage === 'string'",
