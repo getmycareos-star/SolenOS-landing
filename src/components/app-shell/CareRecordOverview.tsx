@@ -139,14 +139,14 @@ export function CareRecordOverview() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <section className="care-record-overview" aria-labelledby="care-record-overview-title" style={{ display: "grid", gap: 18, color: "#26392c" }}>
-      <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+    <section className="care-record-overview" aria-labelledby="care-record-overview-title" className="care-record-overview">
+      <header className="care-record-overview__header">
         <div>
-          <p style={{ margin: "0 0 5px", color: "#66816a", fontSize: 11, fontWeight: 800, letterSpacing: ".08em" }}>YOUR CARE INFORMATION</p>
-          <h2 id="care-record-overview-title" style={{ margin: 0, fontSize: 22 }}>Your Care Record</h2>
-          <p style={{ margin: "7px 0 0", color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>See what has been saved, who shared it and what may still need checking.</p>
+          <p className="care-record-overview__eyebrow">YOUR CARE INFORMATION</p>
+          <h2 id="care-record-overview-title" className="care-record-overview__title">Your Care Record</h2>
+          <p className="care-record-overview__intro">See what has been saved, who shared it and what may still need checking.</p>
         </div>
-        <button type="button" onClick={() => void load(true)} disabled={loading || refreshing} style={{ display: "inline-flex", alignItems: "center", gap: 7, minHeight: 42, padding: "8px 12px", border: "1px solid #dce6da", borderRadius: 10, background: "#f8fbf7", color: "#39533d", fontWeight: 700 }}>
+        <button type="button" onClick={() => void load(true)} disabled={loading || refreshing} className="care-record-overview__refresh">
           <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
         </button>
       </header>
@@ -154,46 +154,46 @@ export function CareRecordOverview() {
       {error && <RecordState kind={/\b(401|403|unauthori[sz]ed|forbidden|not authenticated|access denied|permission)\b/i.test(error) ? "forbidden" : /\b(502|503|504|network|fetch failed)\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
       {loading && !hasLoaded ? <RecordState kind="loading" /> : (hasLoaded || !error) && (
         <>
-          <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
-            <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>What is saved</h3>
-            <p style={{ margin: "0 0 12px", color: "#758276", fontSize: 12 }}>These are saved care details. A report is not automatically a confirmed fact.</p>
+          <section className="care-record-overview__section">
+            <h3 className="care-record-overview__section-title">What is saved</h3>
+            <p className="care-record-overview__section-note">These are saved care details. A report is not automatically a confirmed fact.</p>
             {items.length === 0 ? (
               <RecordState kind="first-empty" title="No care information recorded yet" description="Add a care update to begin building this record." onAction={() => router.push("/workspace/daily-care")} />
             ) : (
-              <div style={{ display: "grid", gap: 10 }}>
+              <div className="care-record-overview__items">
                 {items.map((item) => (
-                  <article key={item.id} style={{ padding: 12, border: "1px solid #e8eee6", borderRadius: 11, background: "#fbfdfb" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
-                      <strong style={{ fontSize: 14 }}>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
-                      <span style={{ padding: "3px 7px", borderRadius: 7, background: "#eef4ec", color: "#536e55", fontSize: 11 }}>{plainStatus(item.epistemic_status || item.status)}</span>
+                  <article key={item.id} className="care-record-overview__item">
+                    <div className="care-record-overview__item-heading">
+                      <strong className="care-record-overview__item-title">{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
+                      <span className="care-record-overview__status">{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
-                    {caregiverSafeAssistantText(item.description) && <p style={{ margin: "7px 0 0", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(item.description)}</p>}
-                    <p style={{ margin: "8px 0 0", color: "#758276", fontSize: 11 }}>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
+                    {caregiverSafeAssistantText(item.description) && <p className="care-record-overview__description">{caregiverSafeAssistantText(item.description)}</p>}
+                    <p className="care-record-overview__meta">Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
                   </article>
                 ))}
               </div>
             )}
           </section>
 
-          <section style={{ border: "1px solid #e1e9df", borderRadius: 14, padding: 15, background: "#fff" }}>
-            <h3 style={{ margin: "0 0 5px", fontSize: 16 }}>Changes in care over time</h3>
+          <section className="care-record-overview__section">
+            <h3 className="care-record-overview__section-title">Changes in care over time</h3>
             {historyLoading ? <RecordState kind="loading" title="Loading change history" /> : historyNote ? <RecordState kind="error" title="Change history could not be loaded" description={historyNote} /> : null}
             {!historyLoading && !historyNote && changes.length === 0 ? (
               <RecordState kind="period-empty" title="No changes recorded" description="Recorded changes will appear here when they are available." />
             ) : (
-              <div style={{ display: "grid", gap: 9 }}>
+              <div className="care-record-overview__changes">
                 {changes.map((change) => (
-                  <article key={change.id} style={{ padding: 11, border: "1px solid #e8eee6", borderRadius: 10 }}>
-                    <strong style={{ fontSize: 13 }}>{plainStatus(change.change_type)}{change.change_direction ? " · " + plainStatus(change.change_direction) : ""}</strong>
-                    <p style={{ margin: "5px 0 0", color: "#596b5d", fontSize: 13, lineHeight: 1.5 }}>{caregiverSafeAssistantText(change.previous_state) || "Earlier details not recorded"} → {caregiverSafeAssistantText(change.current_state) || "Latest details not recorded"}</p>
-                    <small style={{ color: "#7b887d" }}>{when(change.created_at)}</small>
+                  <article key={change.id} className="care-record-overview__change">
+                    <strong className="care-record-overview__change-title">{plainStatus(change.change_type)}{change.change_direction ? " · " + plainStatus(change.change_direction) : ""}</strong>
+                    <p className="care-record-overview__change-description">{caregiverSafeAssistantText(change.previous_state) || "Earlier details not recorded"} → {caregiverSafeAssistantText(change.current_state) || "Latest details not recorded"}</p>
+                    <small className="care-record-overview__change-date">{when(change.created_at)}</small>
                   </article>
                 ))}
               </div>
             )}
           </section>
 
-          <p style={{ margin: 0, color: "#788579", fontSize: 12, lineHeight: 1.6 }}>This view shows saved information only. It does not diagnose, decide which conflicting report is correct, or treat missing information as proof that nothing happened.</p>
+          <p className="care-record-overview__disclaimer">This view shows saved information only. It does not diagnose, decide which conflicting report is correct, or treat missing information as proof that nothing happened.</p>
         </>
       )}
     </section>
