@@ -777,6 +777,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(appointmentDraft.validation_status, "exact_quote_reference_validation_passed",
     "each generated summary item must include an exact quote from its LCR source");
   await exportDialog.getByRole("heading", { name: "Professional briefing", exact: true }).waitFor({ timeout: 10_000 });
+  await exportDialog.getByRole("checkbox", { name: /I reviewed each generated summary item against its saved source wording/ }).check();
   const summaryDownloadPromise = page.waitForEvent("download");
   await exportDialog.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
   const summaryDownload = await summaryDownloadPromise;
