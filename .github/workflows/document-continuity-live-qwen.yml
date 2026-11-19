@@ -8,13 +8,20 @@ on:
         required: true
         type: boolean
         default: false
+  # A self-only push trigger lets this workflow cancel any previously queued
+  # production-writing run when its safety policy changes. Application pushes
+  # never launch this synthetic-data workflow.
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/document-continuity-live-qwen.yml"
 
 permissions:
   contents: read
 
 concurrency:
   group: live-document-continuity-qwen
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   live-document-continuity:
