@@ -241,8 +241,20 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         setMyObservations([]);
         setMyPerspectives([]);
         setMyRoles([]);
-        setCurrentProfileId(null);
-        setResponsibilities([]);
+        const session = await ensureAnonymousSession();
+        const personId = session.person.id;
+        const caregiverId = session.caregiver.id;
+        setCurrentProfileId(caregiverId);
+        const [responsibilityResult, roleResult] = await Promise.allSettled([
+          getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
+          getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
+        ]);
+        if (responsibilityResult.status === "fulfilled") {
+          setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
+        } else setResponsibilities([]);
+        if (roleResult.status === "fulfilled") {
+          setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === caregiverId && item.is_current));
+        } else setMyRoles([]);
         if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
       }
     } catch {
@@ -714,49 +726,6 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   ))}
                 </div>
               )}
-              <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
-                <h4 className="mobile-settings-label" style={{ margin: 0 }}>Your care responsibilities</h4>
-                <p className="mobile-settings-hint" style={{ margin: 0 }}>Keep track of the care tasks you have agreed to handle. A task stays with you until it is handed over or ended.</p>
-                {responsibilities.filter((item) => item.caregiver_id === currentProfileId).map((item) => (
-                  <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "0.9rem" }}>
-                      {caregiverFieldLabel(item.responsibility_type) || item.responsibility_type}
-                      {item.scope ? <span className="mobile-settings-hint"> · {item.scope}</span> : null}
-                    </span>
-                    <Button type="button" variant="secondary" disabled={savingResponsibility} onClick={() => void endCareResponsibility(item)}>End responsibility</Button>
-                  </div>
-                ))}
-                <form onSubmit={createCareResponsibility} style={{ display: "grid", gap: "0.5rem" }}>
-                  <label className="mobile-settings-label" htmlFor="caregiver-responsibility-type">Add a care responsibility</label>
-                  <input id="caregiver-responsibility-type" className="mobile-settings-input" required maxLength={120} value={newResponsibilityType} onChange={(event) => setNewResponsibilityType(event.target.value)} placeholder="What will you take care of?" />
-                  <input className="mobile-settings-input" aria-label="Care responsibility details (optional)" maxLength={300} value={newResponsibilityScope} onChange={(event) => setNewResponsibilityScope(event.target.value)} placeholder="Optional: add a little detail" />
-                  <Button type="submit" variant="secondary" disabled={savingResponsibility || !newResponsibilityType.trim()} loading={savingResponsibility}>Save responsibility</Button>
-                </form>
-              </section>
-              <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
-                <h4 className="mobile-settings-label" style={{ margin: 0 }}>What you help with</h4>
-                <p className="mobile-settings-hint" style={{ margin: 0 }}>Share your care role so the team knows where you can help. This does not change your account access.</p>
-                {myRoles.map((role) => (
-                  <div key={role.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "0.9rem" }}>
-                      {role.custom_role_name || CARE_ROLE_OPTIONS.find((item) => item.value === role.role_type)?.label || "Care role"}
-                      {role.scope ? <span className="mobile-settings-hint"> · {role.scope}</span> : null}
-                    </span>
-                    <Button type="button" variant="secondary" disabled={savingCareRole} onClick={() => void endCareRole(role)}>End role</Button>
-                  </div>
-                ))}
-                <form onSubmit={saveCareRole} style={{ display: "grid", gap: "0.5rem" }}>
-                  <label className="mobile-settings-label" htmlFor="caregiver-role-type">Add a care role</label>
-                  <select id="caregiver-role-type" className="mobile-settings-input" value={selectedCareRole} onChange={(event) => setSelectedCareRole(event.target.value)}>
-                    {CARE_ROLE_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                  </select>
-                  {selectedCareRole === "custom" && (
-                    <input className="mobile-settings-input" aria-label="Custom care role" required maxLength={80} value={customCareRole} onChange={(event) => setCustomCareRole(event.target.value)} placeholder="Describe your care role" />
-                  )}
-                  <input className="mobile-settings-input" aria-label="Care role details (optional)" maxLength={300} value={careRoleScope} onChange={(event) => setCareRoleScope(event.target.value)} placeholder="Optional: what you help with" />
-                  <Button type="submit" variant="secondary" disabled={savingCareRole || (selectedCareRole === "custom" && !customCareRole.trim())} loading={savingCareRole}>Save care role</Button>
-                </form>
-              </section>
               {(networkSummary.caregivers ?? []).map((caregiver) => (
                 <section key={caregiver.caregiver_id} style={{ display: "grid", gap: "0.35rem", paddingTop: "0.65rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -848,7 +817,55 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           </div>
         </>
       ) : (
-        <p className="mobile-settings-hint">The main caregiver manages who can access this Care Record. You can still review and respond to care tasks handed to you.</p>
+        <p className="mobile-settings-hint">The main caregiver manages who can access this Care Record. You can still manage your own care responsibilities and care role.</p>
+      )}
+
+      {currentProfileId && (
+        <>
+          <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
+            <h4 className="mobile-settings-label" style={{ margin: 0 }}>Your care responsibilities</h4>
+            <p className="mobile-settings-hint" style={{ margin: 0 }}>Keep track of the care tasks you have agreed to handle. A task stays with you until it is handed over or ended.</p>
+            {responsibilities.filter((item) => item.caregiver_id === currentProfileId).map((item) => (
+              <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.9rem" }}>
+                  {caregiverFieldLabel(item.responsibility_type) || item.responsibility_type}
+                  {item.scope ? <span className="mobile-settings-hint"> · {item.scope}</span> : null}
+                </span>
+                <Button type="button" variant="secondary" disabled={savingResponsibility} onClick={() => void endCareResponsibility(item)}>End responsibility</Button>
+              </div>
+            ))}
+            <form onSubmit={createCareResponsibility} style={{ display: "grid", gap: "0.5rem" }}>
+              <label className="mobile-settings-label" htmlFor="caregiver-responsibility-type">Add a care responsibility</label>
+              <input id="caregiver-responsibility-type" className="mobile-settings-input" required maxLength={120} value={newResponsibilityType} onChange={(event) => setNewResponsibilityType(event.target.value)} placeholder="What will you take care of?" />
+              <input className="mobile-settings-input" aria-label="Care responsibility details (optional)" maxLength={300} value={newResponsibilityScope} onChange={(event) => setNewResponsibilityScope(event.target.value)} placeholder="Optional: add a little detail" />
+              <Button type="submit" variant="secondary" disabled={savingResponsibility || !newResponsibilityType.trim()} loading={savingResponsibility}>Save responsibility</Button>
+            </form>
+          </section>
+          <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
+            <h4 className="mobile-settings-label" style={{ margin: 0 }}>What you help with</h4>
+            <p className="mobile-settings-hint" style={{ margin: 0 }}>Share your care role so the team knows where you can help. This does not change your account access.</p>
+            {myRoles.map((role) => (
+              <div key={role.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.9rem" }}>
+                  {role.custom_role_name || CARE_ROLE_OPTIONS.find((item) => item.value === role.role_type)?.label || "Care role"}
+                  {role.scope ? <span className="mobile-settings-hint"> · {role.scope}</span> : null}
+                </span>
+                <Button type="button" variant="secondary" disabled={savingCareRole} onClick={() => void endCareRole(role)}>End role</Button>
+              </div>
+            ))}
+            <form onSubmit={saveCareRole} style={{ display: "grid", gap: "0.5rem" }}>
+              <label className="mobile-settings-label" htmlFor="caregiver-role-type">Add a care role</label>
+              <select id="caregiver-role-type" className="mobile-settings-input" value={selectedCareRole} onChange={(event) => setSelectedCareRole(event.target.value)}>
+                {CARE_ROLE_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+              {selectedCareRole === "custom" && (
+                <input className="mobile-settings-input" aria-label="Custom care role" required maxLength={80} value={customCareRole} onChange={(event) => setCustomCareRole(event.target.value)} placeholder="Describe your care role" />
+              )}
+              <input className="mobile-settings-input" aria-label="Care role details (optional)" maxLength={300} value={careRoleScope} onChange={(event) => setCareRoleScope(event.target.value)} placeholder="Optional: what you help with" />
+              <Button type="submit" variant="secondary" disabled={savingCareRole || (selectedCareRole === "custom" && !customCareRole.trim())} loading={savingCareRole}>Save care role</Button>
+            </form>
+          </section>
+        </>
       )}
 
       {primaryTransfers.length > 0 && (
