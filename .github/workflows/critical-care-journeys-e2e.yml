@@ -189,7 +189,7 @@ jobs:
           FRONTEND_URL: http://127.0.0.1:3000
           BACKEND_URL: http://127.0.0.1:8000
           BACKEND_SERVICE_DIR: ${{ github.workspace }}/backend-service/backend
-        run: node e2e/web-push-delivery.mjs
+        run: xvfb-run -a node e2e/web-push-delivery.mjs
 
       - name: Audit rendered dark mode on the isolated browser build
         if: always()
