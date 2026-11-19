@@ -909,7 +909,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                     shareRequestId.current = null;
                     shareExpiry.current = null;
                   }} />
-                  <span>I checked this summary item against the saved wording and its dates.</span>
+                  <span>I checked this summary item against the saved wording, dates and what is known or still uncertain.</span>
                 </label>
                 <button type="button" style={quietButton} onClick={() => {
                   const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
