@@ -22,6 +22,12 @@ assert.doesNotMatch(capture, /HelpImproveSolenos|QwenAssistPanel/, "capture work
 assert.match(capture, /Start with one thing you want to remember/);
 assert.match(capture, /Add a new detail to the care record/, "first-time and returning caregivers retain the shared care-record capture workflow");
 assert.match(dailyCare, /StructuredDailyCapture/, "Daily Care retains its structured capture workflow");
+assert.match(dailyCare, /<section aria-labelledby="daily-care-capture-title"/, "Daily Care keeps the capture workflow directly available");
+assert.match(dailyCare, /<section aria-labelledby="daily-care-today-title"/, "today's saved care updates remain visible without opening history");
+assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-documents-title">Recent documents<\/h2><\/summary>/, "documents remain accessible but no longer compete with capture on the Daily Care opening screen");
+assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-follow-ups-title">Follow-ups<\/h2><\/summary>/, "follow-up management is contextual rather than a second primary Daily Care responsibility");
+assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-since-last-title">Since you last opened Daily Care<\/h2><\/summary>/, "visit analytics stay available without crowding the capture and retrieval workflow");
+assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2>Need to review an earlier update\?<\/h2><\/summary>/, "historical navigation remains accessible through progressive disclosure");
 const dailySessionReady = dailyCare.indexOf("if (active) setReady(true);");
 const dailySecondaryReads = dailyCare.indexOf("const [careResult, historyResult, followUpsResult, notificationsResult, documentsResult] = await Promise.allSettled([");
 assert.ok(dailySessionReady >= 0 && dailySecondaryReads > dailySessionReady, "Daily Care capture becomes available after session authorization without waiting for secondary reads");
