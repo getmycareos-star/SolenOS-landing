@@ -607,19 +607,21 @@ export async function putJSON(path: string, body: unknown) {
 }
 
 /** Revoke the current server-issued bearer session; never silently replace it. */
+/** Preserve the local deletion boundary even when the server cannot be reached. */
+export function markAnonymousSessionRevokedLocally(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(ANONYMOUS_SESSION_REVOKED_KEY, createSessionRevocationMarker());
+  anonymousSessionPromise = null;
+  window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
+  window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
+  window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
+  window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
+  window.dispatchEvent(new Event("personIdChanged"));
+}
+
 export async function revokeAnonymousSession(): Promise<void> {
   await postJSON("/sessions/revoke", {});
-  if (typeof window !== "undefined") {
-    // Leave a durable local tombstone so background requests cannot silently
-    // create a replacement identity after the caregiver deletes this workspace.
-    window.localStorage.setItem(ANONYMOUS_SESSION_REVOKED_KEY, createSessionRevocationMarker());
-    anonymousSessionPromise = null;
-    window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
-    window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
-    window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
-    window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
-    window.dispatchEvent(new Event("personIdChanged"));
-  }
+  markAnonymousSessionRevokedLocally();
 }
 
 // Multipart uploads go directly to Railway to avoid Netlify's proxy body-size
