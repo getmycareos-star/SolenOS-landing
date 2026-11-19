@@ -22,6 +22,11 @@ assert.doesNotMatch(capture, /HelpImproveSolenos|QwenAssistPanel/, "capture work
 assert.match(capture, /Start with one thing you want to remember/);
 assert.match(capture, /Add a new detail to the care record/, "first-time and returning caregivers retain the shared care-record capture workflow");
 assert.match(dailyCare, /StructuredDailyCapture/, "Daily Care retains its structured capture workflow");
+const dailySessionReady = dailyCare.indexOf("if (active) setReady(true);");
+const dailySecondaryReads = dailyCare.indexOf("const [careResult, historyResult, followUpsResult, notificationsResult, documentsResult] = await Promise.allSettled([");
+assert.ok(dailySessionReady >= 0 && dailySecondaryReads > dailySessionReady, "Daily Care capture becomes available after session authorization without waiting for secondary reads");
+assert.match(dailyCare, /await ensureAnonymousSession\(\)/, "Daily Care requires a valid server-issued session before capture");
+assert.match(dailyCare, /Promise\.allSettled\(\[/, "failed history, follow-up, notification or document reads cannot reject the whole Daily Care context load");
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "Daily Care has no embedded AI agent");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
