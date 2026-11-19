@@ -1,6 +1,7 @@
 "use client";
 
 import "./../accessibility-overrides.css";
+import "./experience-design-system.css";
 import "./navigation-accessibility.css";
 import { AppShell } from "@/components/app-shell/AppShell";
 import { WorkspaceNavigationAccessibility } from "@/components/app-shell/WorkspaceNavigationAccessibility";
