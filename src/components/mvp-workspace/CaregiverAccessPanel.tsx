@@ -60,6 +60,29 @@ type MultiCaregiverSummary = {
   perspective_conflicts?: unknown[];
   duplicate_actions?: unknown[];
 };
+type CareNetworkState = {
+  active_caregiver_count?: number;
+  unresolved_handoff_count?: number;
+  gap_count?: number;
+  conflict_count?: number;
+  communication_relationships?: Array<{ id: string; type?: string; is_active?: boolean }>;
+};
+type CaregiverCommunication = {
+  id: string;
+  subject?: string | null;
+  content_summary?: string | null;
+  direction?: string;
+  communication_time?: string;
+  acknowledgment_level?: string | null;
+};
+type CaregiverContext = {
+  id: string;
+  caregiver_id: string;
+  proximity_category?: string | null;
+  observation_window_start?: string | null;
+  observation_window_end?: string | null;
+  availability_notes?: string | null;
+};
 type InvitationResult = {
   invitation_id: string;
   email: string;
@@ -73,6 +96,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
   const [openLoops, setOpenLoops] = useState<OpenLoop[]>([]);
   const [networkSummary, setNetworkSummary] = useState<MultiCaregiverSummary | null>(null);
+  const [networkState, setNetworkState] = useState<CareNetworkState | null>(null);
+  const [communications, setCommunications] = useState<CaregiverCommunication[]>([]);
+  const [careContexts, setCareContexts] = useState<CaregiverContext[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [primaryTransfers, setPrimaryTransfers] = useState<PrimaryTransfer[]>([]);
   const [selectedPrimaryRecipient, setSelectedPrimaryRecipient] = useState("");
@@ -110,10 +136,13 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         setAllowed(true);
         setMembers(memberResult.value ?? []);
         const personId = getPersonId();
-        const [responsibilityResult, loopResult, networkResult] = await Promise.allSettled([
+        const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult] = await Promise.allSettled([
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
           getJSON("/multi-caregiver-summary") as Promise<MultiCaregiverSummary>,
+          getJSON("/care-network-state") as Promise<CareNetworkState>,
+          getJSON("/caregiver-communications") as Promise<CaregiverCommunication[]>,
+          getJSON("/caregiver-contexts") as Promise<CaregiverContext[]>,
         ]);
         if (responsibilityResult.status === "fulfilled") {
           setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
@@ -121,9 +150,18 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         if (loopResult.status === "fulfilled") setOpenLoops(loopResult.value.items ?? []);
         if (networkResult.status === "fulfilled") setNetworkSummary(networkResult.value);
         else setNetworkSummary(null);
+        if (networkStateResult.status === "fulfilled") setNetworkState(networkStateResult.value);
+        else setNetworkState(null);
+        if (communicationResult.status === "fulfilled") setCommunications(communicationResult.value ?? []);
+        else setCommunications([]);
+        if (contextResult.status === "fulfilled") setCareContexts(contextResult.value ?? []);
+        else setCareContexts([]);
       } else {
         setAllowed(false);
         setNetworkSummary(null);
+        setNetworkState(null);
+        setCommunications([]);
+        setCareContexts([]);
         if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
       }
     } catch {
@@ -314,6 +352,33 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   </div>
                 ))}
               </div>
+              {networkState && (
+                <p className="mobile-settings-hint" style={{ margin: 0 }}>
+                  {networkState.active_caregiver_count ?? 0} active caregivers · {networkState.unresolved_handoff_count ?? 0} handovers awaiting confirmation · {networkState.gap_count ?? 0} responsibility gaps · {networkState.conflict_count ?? 0} differences to review
+                </p>
+              )}
+              {careContexts.length > 0 && (
+                <div>
+                  <span className="mobile-settings-hint">Care availability and context</span>
+                  {careContexts.slice(0, 5).map((item) => (
+                    <p key={item.id} style={{ margin: "0.2rem 0", fontSize: "0.88rem" }}>
+                      {item.proximity_category || "Care context"}{item.observation_window_start ? ` · ${item.observation_window_start}` : ""}{item.observation_window_end ? ` to ${item.observation_window_end}` : ""}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {communications.length > 0 && (
+                <div>
+                  <span className="mobile-settings-hint">Care-team updates</span>
+                  {communications.slice(0, 5).map((item) => (
+                    <div key={item.id} style={{ padding: "0.45rem 0", borderTop: "1px solid var(--border, #d8ded8)" }}>
+                      {item.subject && <strong style={{ display: "block", fontSize: "0.9rem" }}>{item.subject}</strong>}
+                      {item.content_summary && <p style={{ margin: "0.15rem 0", fontSize: "0.88rem" }}>{item.content_summary}</p>}
+                      <span className="mobile-settings-hint">{item.acknowledgment_level ? `Acknowledgment: ${item.acknowledgment_level}` : "Update"}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {(networkSummary.caregivers ?? []).map((caregiver) => (
                 <section key={caregiver.caregiver_id} style={{ display: "grid", gap: "0.35rem", paddingTop: "0.65rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
