@@ -766,7 +766,7 @@ export default function DailyCarePage() {
               </div>
             )}
             {deliveryStatusError && <p role="status">{deliveryStatusError}</p>}
-            <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>Open Follow-ups</Button>
+            <Button variant="secondary" asChild><Link href="/workspace/open-loops">Open Follow-ups</Link></Button>
           </details>
 
           <details className="daily-care-context-panel">
