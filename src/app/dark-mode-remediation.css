@@ -211,6 +211,13 @@
 ) {
   color: var(--theme-panel-fg) !important;
 }
+
+/* Keep the numbered Settings badges readable on their pale sage surface. */
+:root[data-solenos-theme="dark"] .settings-section-wrap .settings-section-number {
+  background: #e5eee5 !important;
+  color: #385642 !important;
+  -webkit-text-fill-color: #385642 !important;
+}
 :root[data-solenos-theme="dark"] .settings-section-intro > span {
   background: #34463a !important;
   color: #f3f7f3 !important;
