@@ -138,6 +138,10 @@ type InvitationResult = {
 export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
+  const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
+  const [newResponsibilityType, setNewResponsibilityType] = useState("");
+  const [newResponsibilityScope, setNewResponsibilityScope] = useState("");
+  const [savingResponsibility, setSavingResponsibility] = useState(false);
   const [openLoops, setOpenLoops] = useState<OpenLoop[]>([]);
   const [networkSummary, setNetworkSummary] = useState<MultiCaregiverSummary | null>(null);
   const [networkState, setNetworkState] = useState<CareNetworkState | null>(null);
@@ -196,6 +200,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         const session = await ensureAnonymousSession();
         const personId = session.person.id;
         const caregiverId = session.caregiver.id;
+        const ownProfileId = (memberResult.value ?? []).find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id ?? null;
+        setCurrentProfileId(ownProfileId);
         const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult, observationResult, perspectiveResult, roleResult] = await Promise.allSettled([
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
@@ -224,7 +230,6 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         if (perspectiveResult.status === "fulfilled") setMyPerspectives(perspectiveResult.value ?? []);
         else setMyPerspectives([]);
         if (roleResult.status === "fulfilled") {
-          const ownProfileId = (memberResult.value ?? []).find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id;
           setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === ownProfileId && item.is_current));
         } else setMyRoles([]);
       } else {
@@ -236,6 +241,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         setMyObservations([]);
         setMyPerspectives([]);
         setMyRoles([]);
+        setCurrentProfileId(null);
+        setResponsibilities([]);
         if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
       }
     } catch {
@@ -477,6 +484,51 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     }
   };
 
+  const createCareResponsibility = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!newResponsibilityType.trim()) return;
+    setSavingResponsibility(true);
+    setError("");
+    setNotice("");
+    try {
+      const session = await ensureAnonymousSession();
+      await postJSON("/caregiver-responsibilities", {
+        person_id: session.person.id,
+        caregiver_id: session.caregiver.id,
+        responsibility_type: newResponsibilityType.trim(),
+        scope: newResponsibilityScope.trim() || null,
+        effective_start: new Date().toISOString(),
+        status: "active",
+        acceptance_status: "explicit",
+        assignment_source: "caregiver_self_reported",
+        is_joint: false,
+      });
+      setNewResponsibilityType("");
+      setNewResponsibilityScope("");
+      setNotice("Your care responsibility has been saved. You can hand it over when another caregiver accepts.");
+      await load();
+    } catch {
+      setError("We couldn't save this care responsibility. No one else's responsibilities were changed.");
+    } finally {
+      setSavingResponsibility(false);
+    }
+  };
+
+  const endCareResponsibility = async (item: Responsibility) => {
+    setSavingResponsibility(true);
+    setError("");
+    setNotice("");
+    try {
+      await patchJSON("/caregiver-responsibilities/" + encodeURIComponent(item.id) + "/end", {});
+      setNotice("Your care responsibility has ended. Its history is kept.");
+      await load();
+    } catch {
+      setError("We couldn't end this care responsibility. It remains active.");
+    } finally {
+      setSavingResponsibility(false);
+    }
+  };
+
   const saveCareRole = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (selectedCareRole === "custom" && !customCareRole.trim()) return;
@@ -662,6 +714,25 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   ))}
                 </div>
               )}
+              <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
+                <h4 className="mobile-settings-label" style={{ margin: 0 }}>Your care responsibilities</h4>
+                <p className="mobile-settings-hint" style={{ margin: 0 }}>Keep track of the care tasks you have agreed to handle. A task stays with you until it is handed over or ended.</p>
+                {responsibilities.filter((item) => item.caregiver_id === currentProfileId).map((item) => (
+                  <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.9rem" }}>
+                      {caregiverFieldLabel(item.responsibility_type) || item.responsibility_type}
+                      {item.scope ? <span className="mobile-settings-hint"> · {item.scope}</span> : null}
+                    </span>
+                    <Button type="button" variant="secondary" disabled={savingResponsibility} onClick={() => void endCareResponsibility(item)}>End responsibility</Button>
+                  </div>
+                ))}
+                <form onSubmit={createCareResponsibility} style={{ display: "grid", gap: "0.5rem" }}>
+                  <label className="mobile-settings-label" htmlFor="caregiver-responsibility-type">Add a care responsibility</label>
+                  <input id="caregiver-responsibility-type" className="mobile-settings-input" required maxLength={120} value={newResponsibilityType} onChange={(event) => setNewResponsibilityType(event.target.value)} placeholder="What will you take care of?" />
+                  <input className="mobile-settings-input" aria-label="Care responsibility details (optional)" maxLength={300} value={newResponsibilityScope} onChange={(event) => setNewResponsibilityScope(event.target.value)} placeholder="Optional: add a little detail" />
+                  <Button type="submit" variant="secondary" disabled={savingResponsibility || !newResponsibilityType.trim()} loading={savingResponsibility}>Save responsibility</Button>
+                </form>
+              </section>
               <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                 <h4 className="mobile-settings-label" style={{ margin: 0 }}>What you help with</h4>
                 <p className="mobile-settings-hint" style={{ margin: 0 }}>Share your care role so the team knows where you can help. This does not change your account access.</p>
