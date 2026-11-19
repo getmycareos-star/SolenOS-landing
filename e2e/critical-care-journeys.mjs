@@ -688,8 +688,10 @@ await record("01c workspace links, browser back, More menu and account form vali
   await verifyMobile(page);
 
   await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Account access", exact: true }).waitFor({ timeout: 15_000 });
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  const accountSection = page.locator("#settings-account");
+  await accountSection.locator("summary").click();
+  await accountSection.getByRole("button", { name: "Create account", exact: true }).waitFor({ timeout: 15_000 });
+  await accountSection.getByRole("button", { name: "Create account", exact: true }).click();
   const email = page.locator("#account-email");
   const password = page.locator("#account-password");
   const accountForm = email.locator("xpath=ancestor::form");
