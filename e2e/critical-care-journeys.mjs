@@ -385,6 +385,7 @@ await record("01b visible Follow-ups button and mobile navigation", async () => 
     "/workspace/daily-care",
     { width: 390, height: 844 },
   );
+  await page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" }).click();
   const viewFollowups = page.getByRole("button", { name: "Open Follow-ups", exact: true });
   await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
   await viewFollowups.click();
