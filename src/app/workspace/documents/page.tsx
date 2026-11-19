@@ -476,7 +476,7 @@ export default function DocumentsPage() {
         </div>
 
 
-        {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid var(--theme-panel-border), borderRadius: 12, background: "var(--bg)" }}>
+        {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid var(--theme-panel-border)", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: 17 }}>Save your files</h3>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save your captured pages now. SolenOS will read them after upload." : "Save the original file now. SolenOS will read it after upload."} Original files are preserved.</p>
           <p style={{ margin: "6px 0 12px", fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>You do not need to read or correct the text before saving. SolenOS keeps the original and reads it in the background. Anything unclear stays marked as uncertain.</p>
