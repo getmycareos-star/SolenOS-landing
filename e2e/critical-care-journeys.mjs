@@ -792,6 +792,9 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(appointmentDraft.appointment_id, shareAppointment.payload.id,
     "appointment briefing must be bound to the selected persisted appointment");
   assert.equal(appointmentDraft.selected_appointment.title, "Primary care follow-up");
+  const appointmentSourceRefs = appointmentDraft.source_references.filter(item => item.source_table === "appointments");
+  assert.deepEqual(appointmentSourceRefs.map(item => item.source_id), [shareAppointment.payload.id],
+    "the appointment briefing must retrieve only the selected appointment, not unrelated visits");
   assert.ok(["generated", "source_only_fallback"].includes(appointmentDraft.generation_status),
     "appointment briefing must use Qwen or a clearly labelled exact-source fallback");
   if (appointmentDraft.generation_status === "source_only_fallback") {
