@@ -808,7 +808,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   await exportDialog.getByText(/No medication record does not mean none are being taken/).waitFor({ timeout: 10_000 });
   assert.equal(appointmentDraft.source_statuses.allergies.status, "unavailable",
     "missing allergy integration must be explicit and must not be interpreted as no allergies");
-  await exportDialog.getByRole("checkbox", { name: /I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement/ }).check();
+  assert.equal(await exportDialog.getByRole("checkbox", { name: /I checked each included detail against its saved source/ }).count(), 0,
+    "professional briefings remain private review/export and must not expose the family-sharing approval control");
   const summaryDownloadPromise = page.waitForEvent("download");
   await exportDialog.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
   const summaryDownload = await summaryDownloadPromise;
