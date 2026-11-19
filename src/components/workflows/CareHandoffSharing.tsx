@@ -42,6 +42,7 @@ type DraftPayload = {
   validation_status?: string;
   review_status?: string;
   revision_number?: number;
+  source_freshness?: { status: string; stale_source_count?: number; unknown_source_count?: number };
   generation?: { status: string; provider?: string | null; model?: string | null; interpretation_limit?: string | null; sources_considered?: number; sources_available?: number; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean; semantic_entailment_status?: string }> };
   caregiver_notes?: Array<{ text: string; attribution: string }>;
   audience?: "family" | "professional";
