@@ -1177,18 +1177,12 @@ await record("Daily Care saves and retrieves original reports without relying on
   const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
     has: daily.page.locator("#daily-care-follow-ups-title"),
   });
-  const savedFollowUps = followUpsPanel.getByRole("list", { name: "Saved follow-ups" });
-  await daily.page.waitForFunction(() => {
-    const panel = document.querySelector("#daily-care-follow-ups-title")?.closest("details");
-    return Boolean(
-      panel?.querySelector('ul[aria-label="Saved follow-ups"]')
-      || panel?.querySelector('[role="alert"]')
-      || panel?.querySelector(".daily-care-follow-up-empty"),
-    );
-  }, { timeout: 15_000 });
-  const followUpsPanelText = await followUpsPanel.innerText();
-  console.log("DAILY_FOLLOWUPS_PANEL_TEXT", followUpsPanelText);
-  assert.equal(await savedFollowUps.count(), 1, `Daily Care did not render the retrieved follow-up: ${followUpsPanelText}`);
+  // The list is inside a collapsed native <details>. Use a DOM locator to
+  // wait for attachment, then open the panel before asserting accessibility.
+  const savedFollowUps = followUpsPanel.locator('ul[aria-label="Saved follow-ups"]');
+  await savedFollowUps.waitFor({ state: "attached", timeout: 15_000 });
+  await followUpsPanel.locator("summary").click();
+  await savedFollowUps.waitFor({ state: "visible", timeout: 5_000 });
   const followUpsAlreadyOpen = await followUpsPanel.evaluate((element) =>
     element instanceof HTMLDetailsElement && element.open
   );
