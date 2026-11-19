@@ -329,139 +329,159 @@ export default function DailyCarePage() {
     if (!hasContextLoadedRef.current) setContextLoading(true);
     setContextError("");
     void ensureAnonymousSession()
-      .then(async () => {
-        // Do not make caregivers wait for current-care and history reads before
-        // they can record an update. The capture interface is useful as soon
-        // as the anonymous session is ready; context can finish loading below.
-        if (active) setReady(true);
-        const [careResult, historyResult, followUpsResult, notificationsResult, documentsResult] = await Promise.allSettled([
-          getJSON("/care-continuity/current-care?limit_per_source=20"),
-          getJSON("/daily-care/intelligence/history?limit=200&offset=0"),
-          getJSON("/open-loops?limit=100&offset=0"),
-          getJSON("/notifications?limit=100&offset=0"),
-          getJSON("/documents/status?limit=10"),
-        ]);
+      .then(() => {
         if (!active) return;
+        // Make capture and each persisted section independent. A slow history,
+        // notification or document read must not hide an already-saved follow-up.
+        setReady(true);
 
-        if (careResult.status === "fulfilled") {
-          const payload = careResult.value as { items?: unknown };
-          if (Array.isArray(payload?.items)) {
-            setCareItems(payload.items as CareItem[]);
-            hasContextLoadedRef.current = true;
-          } else {
+        const carePromise = getJSON("/care-continuity/current-care?limit_per_source=20")
+          .then((value) => {
+            if (!active) return false;
+            const payload = value as { items?: unknown };
+            if (Array.isArray(payload?.items)) {
+              setCareItems(payload.items as CareItem[]);
+              hasContextLoadedRef.current = true;
+              return true;
+            }
             setContextError("Saved care information could not be read. Your existing information is still shown.");
-          }
-        } else {
-          setContextError("Current care information could not be loaded. Try refreshing the record.");
-        }
+            return false;
+          })
+          .catch(() => {
+            if (active) setContextError("Current care information could not be loaded. Try refreshing the record.");
+            return false;
+          });
 
-        if (followUpsResult.status === "fulfilled") {
-          const payload = followUpsResult.value as { items?: unknown };
-          if (Array.isArray(payload?.items)) {
-            const items = payload.items as DailyCareFollowUp[];
-            setFollowUps(items.filter((item) => !["closed", "cancelled"].includes(item.status)));
-            setFollowUpsError("");
-          } else {
-            setFollowUpsError("The saved follow-up list could not be read. Check it before assuming nothing is outstanding.");
-          }
-        } else {
-          setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
-        }
-
-        if (documentsResult.status === "fulfilled") {
-          const payload = documentsResult.value as { items?: unknown };
-          if (Array.isArray(payload?.items)) {
-            setDocuments(payload.items as DailyCareDocumentStatus[]);
-            setDocumentsError("");
-          } else {
-            setDocumentsError("We couldn't check whether your document has finished. Open Documents to see its latest update.");
-          }
-        } else {
-          setDocumentsError("We couldn't check the document's progress. Open Documents to see its latest update.");
-        }
-
-        if (notificationsResult.status === "fulfilled") {
-          const payload = notificationsResult.value as {
-            items?: Array<{
-              id?: string;
-              title?: string;
-              status?: string;
-              push_delivery?: { status?: string; message?: string } | null;
-            }>;
-          };
-          if (Array.isArray(payload?.items)) {
-            const issues = payload.items.filter((item) =>
-              item.status === "active"
-              && ["failed", "expired"].includes(item.push_delivery?.status || "")
-            );
-            setDeliveryIssues(issues.map((item) => ({
-              id: item.id || `delivery-issue-${issues.indexOf(item)}`,
-              title: caregiverSafeAssistantText(item.title) || "Care notification",
-              message: caregiverSafeAssistantText(item.push_delivery?.message) || "This notification could not be sent to this device. It remains in your SolenOS inbox.",
-            })));
-            setDeliveryStatusError("");
-          } else {
-            setDeliveryStatusError("Notification delivery status could not be read just now.");
-          }
-        } else {
-          setDeliveryStatusError("Notification delivery status could not be checked just now.");
-        }
-
-        if (historyResult.status === "fulfilled") {
-          const payload = historyResult.value as {
-            records?: unknown;
-            page?: { has_more?: boolean };
-          };
-          if (!Array.isArray(payload?.records)) {
-            setHistoryError("Recent care history could not be read. The daily summary is unavailable.");
-          } else {
+        const historyPromise = getJSON("/daily-care/intelligence/history?limit=200&offset=0")
+          .then((value) => {
+            if (!active) return null;
+            const payload = value as { records?: unknown; page?: { has_more?: boolean } };
+            if (!Array.isArray(payload?.records)) {
+              setHistoryError("Recent care history could not be read. The daily summary is unavailable.");
+              return null;
+            }
             const records = payload.records as CareItem[];
             setHistoryError("");
             setHistoryItems(records);
             setHistoryMayBeTruncated(Boolean(payload.page?.has_more));
+            return records;
+          })
+          .catch(() => {
+            if (active) setHistoryError("Recent care history could not be loaded. The daily summary is unavailable.");
+            return null;
+          });
+
+        void getJSON("/open-loops?limit=100&offset=0")
+          .then((value) => {
+            if (!active) return;
+            const payload = value as { items?: unknown };
+            if (Array.isArray(payload?.items)) {
+              const items = payload.items as DailyCareFollowUp[];
+              setFollowUps(items.filter((item) => !["closed", "cancelled"].includes(item.status)));
+              setFollowUpsError("");
+            } else {
+              setFollowUpsError("The saved follow-up list could not be read. Check it before assuming nothing is outstanding.");
+            }
+          })
+          .catch(() => {
+            if (active) setFollowUpsError("Existing follow-ups could not be loaded. Check them before assuming nothing is outstanding.");
+          });
+
+        void getJSON("/documents/status?limit=10")
+          .then((value) => {
+            if (!active) return;
+            const payload = value as { items?: unknown };
+            if (Array.isArray(payload?.items)) {
+              setDocuments(payload.items as DailyCareDocumentStatus[]);
+              setDocumentsError("");
+            } else {
+              setDocumentsError("We couldn't check whether your document has finished. Open Documents to see its latest update.");
+            }
+          })
+          .catch(() => {
+            if (active) setDocumentsError("We couldn't check the document's progress. Open Documents to see its latest update.");
+          });
+
+        void getJSON("/notifications?limit=100&offset=0")
+          .then((value) => {
+            if (!active) return;
+            const payload = value as {
+              items?: Array<{
+                id?: string;
+                title?: string;
+                status?: string;
+                push_delivery?: { status?: string; message?: string } | null;
+              }>;
+            };
+            if (Array.isArray(payload?.items)) {
+              const issues = payload.items.filter((item) =>
+                item.status === "active"
+                && ["failed", "expired"].includes(item.push_delivery?.status || "")
+              );
+              setDeliveryIssues(issues.map((item) => ({
+                id: item.id || `delivery-issue-${issues.indexOf(item)}`,
+                title: caregiverSafeAssistantText(item.title) || "Care notification",
+                message: caregiverSafeAssistantText(item.push_delivery?.message) || "This notification could not be sent to this device. It remains in your SolenOS inbox.",
+              })));
+              setDeliveryStatusError("");
+            } else {
+              setDeliveryStatusError("Notification delivery status could not be read just now.");
+            }
+          })
+          .catch(() => {
+            if (active) setDeliveryStatusError("Notification delivery status could not be checked just now.");
+          });
+
+        // Current care and history control the page-level context loading state.
+        // Follow-ups, documents and notification status update as their own reads finish.
+        void Promise.all([carePromise, historyPromise]).then(([careLoaded, records]) => {
+          if (!active) return;
+          setContextLoading(false);
+          if (!careLoaded || !records) {
+            setSinceLastOpenItems(null);
+            setLastOpenedAt(null);
+            return;
+          }
 
           const personId = getPersonId();
           const caregiverId = getCaregiverId();
-          if (personId && caregiverId && careResult.status === "fulfilled") {
-            const visitKey = `solenos:daily-care:last-opened:${personId}:${caregiverId}`;
-            if (!visitBaselineRef.current.initialized) {
-              let previousVisit: string | null = null;
-              try {
-                previousVisit = window.localStorage.getItem(visitKey);
-              } catch {
-                previousVisit = null;
-              }
-              visitBaselineRef.current = { initialized: true, previousVisit };
-              setLastOpenedAt(previousVisit);
-              try {
-                window.localStorage.setItem(visitKey, new Date().toISOString());
-              } catch {
-                // History remains available if this browser blocks local storage.
-              }
-            }
-            const previousVisit = visitBaselineRef.current.previousVisit;
-            if (previousVisit) {
-              const previousTime = new Date(previousVisit).getTime();
-              const newlyRecorded = records.filter((item) => {
-                const recorded = item.recorded_at || item.uploaded_at || item.created_at;
-                if (!recorded) return false;
-                const recordedTime = new Date(recorded).getTime();
-                return Number.isFinite(recordedTime) && recordedTime > previousTime;
-              });
-              setSinceLastOpenItems(newlyRecorded);
-            } else {
-              setSinceLastOpenItems(null);
-            }
-          } else {
+          if (!personId || !caregiverId) {
             setSinceLastOpenItems(null);
             setLastOpenedAt(null);
+            return;
           }
+
+          const visitKey = `solenos:daily-care:last-opened:${personId}:${caregiverId}`;
+          if (!visitBaselineRef.current.initialized) {
+            let previousVisit: string | null = null;
+            try {
+              previousVisit = window.localStorage.getItem(visitKey);
+            } catch {
+              previousVisit = null;
+            }
+            visitBaselineRef.current = { initialized: true, previousVisit };
+            setLastOpenedAt(previousVisit);
+            try {
+              window.localStorage.setItem(visitKey, new Date().toISOString());
+            } catch {
+              // History remains available if this browser blocks local storage.
+            }
           }
-        } else {
-          setHistoryError("Recent care history could not be loaded. The daily summary is unavailable.");
-        }
-        setReady(true);
-        setContextLoading(false);
+
+          const previousVisit = visitBaselineRef.current.previousVisit;
+          if (previousVisit) {
+            const previousTime = new Date(previousVisit).getTime();
+            const newlyRecorded = records.filter((item) => {
+              const recorded = item.recorded_at || item.uploaded_at || item.created_at;
+              if (!recorded) return false;
+              const recordedTime = new Date(recorded).getTime();
+              return Number.isFinite(recordedTime) && recordedTime > previousTime;
+            });
+            setSinceLastOpenItems(newlyRecorded);
+          } else {
+            setSinceLastOpenItems(null);
+          }
+        });
       })
       .catch(() => {
         if (!active) return;
