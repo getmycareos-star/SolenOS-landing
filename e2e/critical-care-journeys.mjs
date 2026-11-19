@@ -509,6 +509,27 @@ await record("01a dementia profile review window and observation persistence are
   assert.equal(foreignRead.status, 200, JSON.stringify(foreignRead.payload));
   assert.ok(!foreignRead.payload.some((row) => row.id === observationWrite.payload.id),
     "another care record must not retrieve this observation");
+
+  const { context, page, observed, pageErrors } = await createBrowserPage(session, "/workspace/care-continuity");
+  await page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+  await page.getByText("Dementia care profile and observations", { exact: true }).click();
+  await page.getByRole("heading", { name: "Dementia observations" }).waitFor({ timeout: 15_000 });
+  await page.getByLabel("What was this about?").selectOption("wandering");
+  const uiDescription = `UI dementia observation ${randomUUID()}`;
+  await page.getByLabel("What happened?").fill(uiDescription);
+  await page.getByLabel("Who observed it?").selectOption("direct");
+  const uiWrite = page.waitForResponse((response) =>
+    response.url().includes("/care-continuity/caregiver-observations") &&
+    response.request().method() === "POST" && response.status() === 201,
+  { timeout: 20_000 });
+  await page.getByRole("button", { name: "Save observation" }).click();
+  await uiWrite;
+  await page.getByText(uiDescription, { exact: true }).waitFor({ timeout: 15_000 });
+  assert.deepEqual(pageErrors, [], `dementia observation UI must not throw: ${JSON.stringify(pageErrors)}`);
+  assert.ok(observed.some((item) => item.path.includes("/care-continuity/caregiver-observations") && item.status === 201),
+    "the browser must save the observation through the authenticated API proxy");
+  await verifyMobile(page);
+  await context.close();
 });
 
 await record("01b visible Follow-ups button and mobile navigation", async () => {
