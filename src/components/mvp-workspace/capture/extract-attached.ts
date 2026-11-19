@@ -90,10 +90,29 @@ export async function extractAttachedDocument(
   // The upload endpoint durably queues document extraction and understanding.
   // Do not make the caregiver wait for OCR or Qwen before using the saved source.
   window.dispatchEvent(new Event("careRecordUpdated"));
-  const processingQueued = entryMethod === "snap" || (
+  let processingQueued = entryMethod === "snap" || (
     !!uploadReceipt.processingJobId &&
     ["queued", "processing", "completed"].includes(uploadReceipt.processingStatus || "")
   );
+
+  // A saved original must not be stranded if the upload transaction committed
+  // but its best-effort queue insert did not return a durable job receipt.
+  // Reuse the server-issued evidence ID; never upload the file a second time.
+  if (!processingQueued && entryMethod !== "snap") {
+    try {
+      const retry = await postJSON(
+        "/documents/" + encodeURIComponent(uploadReceipt.evidenceId) + "/queue",
+        {},
+      ) as { job_id?: string; status?: string };
+      processingQueued = Boolean(
+        retry.job_id && ["queued", "processing"].includes(retry.status || ""),
+      );
+    } catch {
+      // Keep the original and expose the existing retry action if the queue
+      // remains unavailable. Do not turn a successful upload into a failed one.
+    }
+  }
+
   return {
     ...base,
     evidenceId: uploadReceipt.evidenceId,
