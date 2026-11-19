@@ -127,6 +127,7 @@ const dailyCarePage = fs.readFileSync(path.join(root, "src/app/workspace/daily-c
 const lcrCurrent = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
 const appLayout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
 assert.ok(appLayout.includes('import "./accessibility-overrides.css";'));
+const experienceStyles = fs.readFileSync(path.join(root, "src/app/workspace/experience-design-system.css"), "utf8");
 const v2Styles = fs.readFileSync(path.join(root, "src/app/workspace/experience-design-system-v2.css"), "utf8");
 const workspaceLayout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 const appShell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
@@ -169,6 +170,8 @@ assert.ok(timelinePage.includes("timeline-workspace"));
 assert.doesNotMatch(careRecordOverview, /style=\{\{/ , "Care Record overview must not use hard-coded inline presentation");
 assert.ok(careRecordOverview.includes("care-record-overview__section") && careRecordOverview.includes("care-record-overview__status"));
 assert.ok(v2Styles.includes(".care-record-overview__section") && v2Styles.includes("var(--theme-panel-bg)") && v2Styles.includes("var(--theme-field-bg)"), "Care Record overview must use shared light/dark theme tokens");
+assert.doesNotMatch(experienceStyles, /\.solenos-chat-app \.care-record-overview/, "legacy overview selectors must not override the shared theme classes");
+assert.doesNotMatch(themeOverrides, /:root\[data-solenos-theme="dark"\] \.care-record-overview/, "dark mode must not force light-card text colors on the Care Record overview");
 assert.ok(timelinePage.includes("timeline-event-toggle") && timelinePage.includes("timeline-event-details"));
 assert.ok(v2Styles.includes(".timeline-event-toggle") && v2Styles.includes(".timeline-event-details"), "care history must use the shared, theme-aware timeline styles");
 assert.ok(dailyCareQwen.includes("var(--theme-field-bg)"));
