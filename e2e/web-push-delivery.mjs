@@ -65,10 +65,9 @@ try {
   appOrigin = new URL(page.url()).origin;
   await context.grantPermissions(["notifications"], { origin: appOrigin });
   await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
-  // The test uses a persistent headed Chrome profile so Push API subscriptions are available even
-  // when Playwright has granted the notifications permission. The actual
-  // PushManager subscription and delivered service-worker notification below
-  // are the authoritative checks, not this known-buggy property.
+  // A persistent headed Chrome profile is required: Playwright isolated contexts
+  // behave like private browsing and Chrome refuses real Push API subscriptions.
+  // The permission and actual service-worker delivery are checked separately.
   const permissionState = await page.evaluate(async () => ({
     notification: Notification.permission,
     permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
