@@ -175,7 +175,7 @@ export default function LandingPage() {
           <div
             className="el-how-photo"
             role="img"
-            aria-label="A family caregiver and an older family member calmly reviewing care information together"
+            aria-label="An older couple reviewing important papers together at home"
           />
           <p className="el-how-caption">
             A clearer picture of care, built one moment at a time.
