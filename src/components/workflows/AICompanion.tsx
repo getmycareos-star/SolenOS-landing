@@ -524,7 +524,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
                                     <p><strong>Source review: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                     <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
-                                    <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review does not independently confirm a care detail."}</small>
+                                    <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review is not independent confirmation of a care detail."}</small>
                                   </div>)}
                                   {(!source.evidence_reviews_status || source.evidence_reviews_status === "unavailable" || source.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
                                   {source.evidence_reviews_status === "partial" && <p>We could not check all source reviews. The review history shown here may be incomplete.</p>}
@@ -546,7 +546,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
                                         <p><strong>Source review: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                         <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
-                                        <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review does not independently confirm a care detail."}</small>
+                                        <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review is not independent confirmation of a care detail."}</small>
                                       </div>)}
                                       {(!item.evidence_reviews_status || item.evidence_reviews_status === "unavailable" || item.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
                                       {item.evidence_reviews_status === "partial" && <p>We could not check all source reviews. The review history shown here may be incomplete.</p>}
