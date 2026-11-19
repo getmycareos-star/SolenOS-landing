@@ -536,3 +536,144 @@
   .solenos-chat-app .solenos-chat-main .documents-page > section[aria-label="Add care documents"] { grid-template-columns: 1fr !important; }
   .solenos-chat-app .solenos-chat-main .documents-page > section[aria-label="Add care documents"] button { width: 100%; }
 }
+
+
+/* Living Care Record: a calm, readable overview with deeper detail kept optional. */
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  margin: 18px 0 20px;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-card {
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid var(--sn-line);
+  border-radius: 17px;
+  background: var(--sn-surface);
+  box-shadow: var(--sn-shadow-soft);
+}
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-card h3 {
+  margin: 0 0 10px;
+  color: var(--sn-forest);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-card p,
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-card li {
+  color: #58675d;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-card ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 17px;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-card strong { color: var(--sn-ink); }
+.solenos-chat-app .solenos-lcr-home .lcr-first-screen-card :where(small,.lcr-entry-status) {
+  color: var(--sn-subtle);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure,
+.solenos-chat-app .solenos-lcr-home .lcr-history-details {
+  margin: 12px 0;
+  border: 1px solid var(--sn-line);
+  border-radius: 16px;
+  background: var(--sn-surface);
+  overflow: clip;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure > summary,
+.solenos-chat-app .solenos-lcr-home .lcr-history-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  padding: 14px 18px;
+  color: var(--sn-forest);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  list-style-position: inside;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure[open] > summary,
+.solenos-chat-app .solenos-lcr-home .lcr-history-details[open] > summary {
+  border-bottom: 1px solid var(--sn-line);
+  background: #f7faf6;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure > :not(summary),
+.solenos-chat-app .solenos-lcr-home .lcr-history-details > :not(summary) {
+  margin-inline: 16px;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-situation-assessment {
+  display: grid;
+  gap: 13px;
+  padding: 15px 0 18px;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-current-facts {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-current-fact,
+.solenos-chat-app .solenos-lcr-home .lcr-current-uncertainties > ul > li {
+  min-width: 0;
+  margin: 0;
+  padding: 14px 15px;
+  border: 1px solid #e7ece5;
+  border-radius: 13px;
+  background: #fcfdfb;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-current-fact :where(p,small,li) {
+  color: #58675d;
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-current-fact > strong,
+.solenos-chat-app .solenos-lcr-home .lcr-current-fact h4 {
+  color: var(--sn-forest);
+  font-size: 13px;
+  font-weight: 700;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-entry-heading {
+  align-items: flex-start;
+  gap: 10px;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-entry-heading :where(strong,h3) { color: var(--sn-forest); }
+.solenos-chat-app .solenos-lcr-home .lcr-text-action {
+  color: #456d4c;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+.solenos-chat-app .solenos-lcr-home .lcr-text-action:hover { color: #2e5137; }
+.solenos-chat-app .solenos-lcr-home .lcr-empty-state {
+  border: 1px solid var(--sn-line);
+  border-radius: 16px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+@media (max-width: 1000px) {
+  .solenos-chat-app .solenos-lcr-home .lcr-first-screen-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .solenos-chat-app .solenos-lcr-home .lcr-first-screen-card:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .solenos-chat-app .solenos-lcr-home .lcr-first-screen-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+    margin-top: 13px;
+  }
+  .solenos-chat-app .solenos-lcr-home .lcr-first-screen-card:first-child { grid-column: auto; }
+  .solenos-chat-app .solenos-lcr-home .lcr-first-screen-card { padding: 16px; border-radius: 14px; }
+  .solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure > summary,
+  .solenos-chat-app .solenos-lcr-home .lcr-history-details > summary { padding: 13px 14px; }
+  .solenos-chat-app .solenos-lcr-home .lcr-current-fact { padding: 12px; }
+}
