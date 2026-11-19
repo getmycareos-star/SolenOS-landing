@@ -1694,6 +1694,10 @@ await record("06 Companion context and Qwen output", async () => {
     Number(answer.payload.lcr_context_coverage?.direct_care_history_recall?.evidence_count || 0) >= 3,
     "Companion must retain the linked original evidence for the three caregiver reports",
   );
+  console.log("COMPANION_PROMPT_CONTEXT_DIAGNOSTIC", JSON.stringify({
+    coverage: answer.payload.lcr_context_coverage || {},
+    receipt: answer.payload.retrieval_receipt || {},
+  }));
   assert.equal(
     answer.payload.lcr_context_coverage?.prompt_context_complete,
     true,
