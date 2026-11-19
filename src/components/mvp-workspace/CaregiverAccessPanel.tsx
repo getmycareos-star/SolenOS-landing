@@ -47,7 +47,6 @@ type MultiCaregiverSummary = {
   active_handoffs?: unknown[];
   responsibility_gaps?: unknown[];
   perspective_conflicts?: unknown[];
-  coverage_gaps?: unknown[];
 };
 type InvitationResult = {
   invitation_id: string;
@@ -293,9 +292,9 @@ export function CaregiverAccessPanel() {
                   ["Caregivers", networkSummary.caregivers],
                   ["Active responsibilities", networkSummary.active_responsibilities],
                   ["Active handovers", networkSummary.active_handoffs],
-                  ["Coverage gaps", networkSummary.coverage_gaps],
                   ["Responsibility gaps", networkSummary.responsibility_gaps],
                   ["Different views to review", networkSummary.perspective_conflicts],
+                  ["Possible duplicate actions", networkSummary.duplicate_actions],
                 ].map(([label, items]) => (
                   <div key={String(label)} style={{ padding: "0.55rem", background: "var(--surface-muted, #f5f7f5)", borderRadius: "9px" }}>
                     <strong style={{ display: "block", fontSize: "1.15rem" }}>{Array.isArray(items) ? items.length : 0}</strong>
