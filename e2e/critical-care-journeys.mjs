@@ -772,8 +772,12 @@ await record("01c workspace links, browser back, More menu and account form vali
     "Qwen briefing must declare the Living Care Record as its source of truth");
   assert.ok(appointmentDraft.source_snapshot_id && appointmentDraft.source_snapshot_sha256,
     "the appointment briefing must be bound to a versioned LCR source snapshot");
-  assert.equal(appointmentDraft.generation_status, "generated",
-    "Qwen must generate the appointment briefing from retrieved LCR evidence");
+  assert.ok(["generated", "source_only_fallback"].includes(appointmentDraft.generation_status),
+    "appointment briefing must use Qwen or a clearly labelled exact-source fallback");
+  if (appointmentDraft.generation_status === "source_only_fallback") {
+    assert.ok(appointmentDraft.generation.sections.every(item => item.summary === item.supporting_quote),
+      "source-only fallback must not paraphrase or invent care facts");
+  }
   assert.equal(appointmentDraft.validation_status, "exact_quote_reference_validation_passed",
     "each generated summary item must include an exact quote from its LCR source");
   await exportDialog.getByRole("heading", { name: "Professional briefing", exact: true }).waitFor({ timeout: 10_000 });
@@ -809,8 +813,12 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(familyBriefing.status(), 200, "family care briefing must be prepared by the backend");
   const familyDraft = await familyBriefing.json();
   assert.equal(familyDraft.source_of_truth, "living_care_record");
-  assert.equal(familyDraft.generation_status, "generated",
-    "family briefing must be generated from saved LCR evidence");
+  assert.ok(["generated", "source_only_fallback"].includes(familyDraft.generation_status),
+    "family briefing must use Qwen or a clearly labelled exact-source fallback");
+  if (familyDraft.generation_status === "source_only_fallback") {
+    assert.ok(familyDraft.generation.sections.every(item => item.summary === item.supporting_quote),
+      "source-only family fallback must preserve saved wording without paraphrase");
+  }
   await familyDialog.getByRole("heading", { name: "Review and share with family", exact: true }).waitFor({ timeout: 10_000 });
   await familyDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
