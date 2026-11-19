@@ -382,7 +382,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Care Record", exact: true })
+  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   for (const heading of ["Your care, at a glance", "Care information on record", "What needs attention", "What has changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
