@@ -399,24 +399,49 @@ async function fetchGetWithRetry(input: RequestInfo | URL, init: RequestInit = {
   throw new Error("The SolenOS API read could not be completed.");
 }
 
+export class ApiResponseError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    readonly detail: unknown = null,
+  ) {
+    super(message)
+    this.name = 'ApiResponseError'
+  }
+}
+
 async function handleResponse(res: Response) {
   const contentType = res.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
 
   if (!res.ok) {
     let message = `API ${res.status}`
+    let detail: unknown = null
     if (isJson) {
       try {
         const err = await res.json()
-        message = err.detail || err.message || message
+        detail = err.detail ?? null
+        const detailMessage =
+          detail && typeof detail === 'object' && 'message' in detail
+            ? (detail as { message?: unknown }).message
+            : null
+        message =
+          typeof detail === 'string'
+            ? detail
+            : typeof detailMessage === 'string'
+              ? detailMessage
+              : typeof err.message === 'string'
+                ? err.message
+                : message
       } catch {
         // keep generic message
       }
     } else {
       const text = await res.text()
+      detail = text
       message = text || message
     }
-    throw new Error(message)
+    throw new ApiResponseError(res.status, message, detail)
   }
 
   if (!isJson) {
