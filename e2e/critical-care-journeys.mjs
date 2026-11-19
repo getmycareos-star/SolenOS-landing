@@ -813,7 +813,9 @@ await record("01c workspace links, browser back, More menu and account form vali
   const appointmentClaimReview = exportDialog.getByRole("checkbox", { name: /I checked .* against its saved source wording, dates and uncertainty labels/ });
   assert.equal(await appointmentClaimReview.count(), new Set(appointmentDraft.generation.sections.map(item => item.source_ref)).size,
     "professional appointment export must require a separate review for every source claim");
-  await appointmentClaimReview.check();
+  for (let index = 0; index < await appointmentClaimReview.count(); index += 1) {
+    await appointmentClaimReview.nth(index).check();
+  }
   await exportDialog.getByRole("checkbox", { name: /I understand this is an AI-assisted draft/ }).check();
   const summaryDownloadPromise = page.waitForEvent("download");
   await exportDialog.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
