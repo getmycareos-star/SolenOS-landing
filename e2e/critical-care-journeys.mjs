@@ -478,6 +478,7 @@ await record("01a dementia profile review window and observation persistence are
       source_label: "Caregiver-provided care profile",
       source_text: profileValue,
       review_after_days: 90,
+      person_id: identity.personId,
     },
   });
   assert.equal(profileWrite.status, 201, JSON.stringify(profileWrite.payload));
@@ -522,6 +523,7 @@ await record("01a dementia profile review window and observation persistence are
       observation_type: "direct",
       epistemic_status: "observed",
       observed_at: occurredAt,
+      person_id: identity.personId,
     },
   });
   assert.equal(observationWrite.status, 201, JSON.stringify(observationWrite.payload));
