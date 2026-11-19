@@ -94,6 +94,7 @@ export function ShareCareSummaryPanel({
   const [audience, setAudience] = useState<CareHandoffSharingProps["audience"]>(null);
   const [purpose, setPurpose] = useState<CareHandoffSharingProps["purpose"]>(null);
   const [exportReviewed, setExportReviewed] = useState(false);
+  const [exportReviewedSourceRefs, setExportReviewedSourceRefs] = useState<string[]>([]);
   const exportableDraft = draft !== null &&
     ["generated", "source_only_fallback"].includes(draft.generation_status || "") &&
     draft.validation_status === "exact_quote_reference_validation_passed"
@@ -102,6 +103,7 @@ export function ShareCareSummaryPanel({
 
   function resumeDraft(next: BriefingDraft) {
     setExportReviewed(false);
+    setExportReviewedSourceRefs([]);
     setDraft(next);
     setAudience(next.audience === "professional" ? "professional" : "family");
     setPurpose(
@@ -166,15 +168,28 @@ export function ShareCareSummaryPanel({
         />
         {intent === "export" && exportableDraft && (
           <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Check each briefing item before exporting</strong>
+            {(exportableDraft.generation?.sections ?? []).map((item, index) => (
+              <label key={item.source_ref + index} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, marginBottom: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={exportReviewedSourceRefs.includes(item.source_ref)}
+                  onChange={event => setExportReviewedSourceRefs(current => event.target.checked
+                    ? [...new Set([...current, item.source_ref])]
+                    : current.filter(ref => ref !== item.source_ref))}
+                />
+                <span>I checked “{item.section}” against its saved source wording, dates and uncertainty labels.</span>
+              </label>
+            ))}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
               <input type="checkbox" checked={exportReviewed} onChange={event => setExportReviewed(event.target.checked)} />
-              <span>I reviewed each briefing item against its saved source wording and checked the dates and uncertainty labels.</span>
+              <span>I understand this is an AI-assisted draft, not a medical opinion or a replacement for the full Care Record.</span>
             </label>
             <button
               type="button"
-              disabled={!exportReviewed}
+              disabled={!exportReviewed || (exportableDraft.generation?.sections ?? []).length === 0 || [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].some(ref => !exportReviewedSourceRefs.includes(ref))}
               onClick={() => downloadBriefing(exportableDraft)}
-              style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: exportReviewed ? "#dce9dc" : "#eef1ec", color: "#172117", fontWeight: 650, cursor: exportReviewed ? "pointer" : "not-allowed" }}
+              style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: exportReviewed && (exportableDraft.generation?.sections ?? []).length > 0 && [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "#dce9dc" : "#eef1ec", color: "#172117", fontWeight: 650, cursor: exportReviewed && (exportableDraft.generation?.sections ?? []).length > 0 && [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "pointer" : "not-allowed" }}
             >
               Download summary (.txt)
             </button>
