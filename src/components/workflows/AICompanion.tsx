@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
-import { ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
+import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 import { RecordState } from '@/components/ui/RecordState'
@@ -269,11 +269,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       void loadPendingCareUpdates()
 
 
-    } catch {
+    } catch (error) {
       setMessages(prev => prev.filter(message => message !== userMsg))
       setInput(submittedText)
-      setAvailability('unknown')
-      setRequestError('Your message could not be sent. It remains in the box below. Check your connection and try again.')
+      const inferenceUnavailable =
+        error instanceof ApiResponseError && [502, 503, 504].includes(error.status)
+      setAvailability(inferenceUnavailable ? 'unavailable' : 'unknown')
+      setRequestError(
+        inferenceUnavailable
+          ? 'The Care Assistant is temporarily unavailable. Your message is still in the box, and your Care Record has not changed. Check again shortly.'
+          : 'The Care Assistant could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.'
+      )
     } finally {
       setLoading(false)
     }
