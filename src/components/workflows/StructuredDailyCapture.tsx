@@ -719,6 +719,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         source_event_id?: string | null;
         written_to_lcr?: boolean;
         assertion_id?: string | null;
+        longitudinal_retrieval_status?: "verified" | "unavailable" | "not_applicable";
         care_continuity_execution?: { stages?: Record<string, string>; workflow?: string } | null;
       };
       if (result.care_continuity_execution) {
@@ -739,9 +740,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           const projection = await getJSON('/care-continuity/current-care?limit_per_source=50') as { items?: Array<{ id?: string }> };
           const visibleInLcr = Array.isArray(projection?.items) &&
             projection.items.some(item => item.id === result.assertion_id);
-          setReviewFeedback(visibleInLcr
+          const retrievalVerified = result.longitudinal_retrieval_status === 'verified' && visibleInLcr;
+          setReviewFeedback(retrievalVerified
             ? 'Your accepted detail is now in your Care Record.'
-            : 'Your choice was saved, but the detail is not showing in your Care Record yet. Refresh before relying on it.');
+            : 'Your choice was saved, but SolenOS could not confirm that the detail is available in your Care Record yet. Refresh before relying on it.');
         } catch {
           setReviewFeedback('Your choice was saved, but SolenOS could not refresh your Care Record. Reopen it to check that the detail appears.');
         }
