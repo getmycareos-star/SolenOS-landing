@@ -24,6 +24,7 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'postJSON("/assistant/jobs"',
   'getJSON("/assistant/jobs/"',
   "task_text: taskText.slice",
+  "appointment_id: appointmentId || undefined",
   "Explain the document text and answer only from uploaded document evidence.",
   "context_text: boundedContext",
   "source_document_analysis_ids: string[]",
