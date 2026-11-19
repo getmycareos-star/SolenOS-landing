@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
+const appShell = fs.readFileSync("src/components/app-shell/AppShell.tsx", "utf8");
 const legacyRecordRoute = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8");
 const companionHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const workspacePage = fs.readFileSync("src/app/workspace/care-continuity/page.tsx", "utf8");
@@ -38,6 +39,11 @@ console.log("✓ workspace routes mount without a privacy or early-version check
 console.log("✓ direct workspace entry does not disable server-side authentication or authorisation");
 
 const settings = fs.readFileSync("src/app/workspace/settings/page.tsx", "utf8");
+assert.match(appShell, /markAnonymousSessionRevokedLocally\(\)/,
+  "deleting a workspace without a bearer token must still retain the local deletion boundary");
+assert.match(appShell, /LOCAL_WORKSPACE_KEYS\.forEach/,
+  "the workspace delete action must clear only its declared local workspace keys");
+
 assert.match(settings, /await revokeAnonymousSession\(\)/,
   "clearing a device must attempt server-side revocation before local credentials are removed");
 assert.match(settings, /markAnonymousSessionRevokedLocally\(\)/,
