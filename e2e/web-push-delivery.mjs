@@ -115,9 +115,9 @@ try {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       throw new Error("Chromium does not expose the Web Push APIs required for this test");
     }
-    if (Notification.permission !== "granted") {
-      throw new Error(`Notification permission is ${Notification.permission}, not granted`);
-    }
+    // Do not gate on Notification.permission: Chromium headless can report
+    // "denied" while the browser permission API reports "granted". The
+    // actual PushManager subscription below is the end-to-end capability check.
     const padding = "=".repeat((4 - encodedPublicKey.length % 4) % 4);
     const base64 = (encodedPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
     const raw = atob(base64);
