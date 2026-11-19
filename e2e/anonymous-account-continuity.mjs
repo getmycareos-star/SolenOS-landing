@@ -58,13 +58,28 @@ async function connectRealBackend(page, { loseFirstAccountResponse = false } = {
   });
 }
 
+async function openAccountAccess(page) {
+  const section = page.locator("#settings-security");
+  await section.waitFor({ state: "visible", timeout: 20_000 });
+  const isOpen = await section.evaluate((element) =>
+    element instanceof HTMLDetailsElement && element.open
+  );
+  if (!isOpen) await section.locator(":scope > summary").click();
+  await section.evaluate((element) => {
+    if (!(element instanceof HTMLDetailsElement) || !element.open) {
+      throw new Error("Security settings must be open before checking account access");
+    }
+  });
+  await section.getByRole("heading", { name: "Account access", exact: true }).waitFor({ timeout: 20_000 });
+}
+
 try {
   // Browser context A: start anonymously and create a real backend evidence row.
   const contextA = await browser.newContext();
   const pageA = await contextA.newPage();
   await connectRealBackend(pageA, { loseFirstAccountResponse: true });
   await pageA.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await pageA.getByRole("heading", { name: "Account access", exact: true }).waitFor();
+  await openAccountAccess(pageA);
   await pageA.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -126,7 +141,7 @@ try {
   const isolatedPage = await isolatedContext.newPage();
   await connectRealBackend(isolatedPage);
   await isolatedPage.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await isolatedPage.getByRole("heading", { name: "Account access", exact: true }).waitFor();
+  await openAccountAccess(isolatedPage);
   await isolatedPage.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
@@ -294,7 +309,7 @@ try {
   const pageB = await contextB.newPage();
   await connectRealBackend(pageB);
   await pageB.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await pageB.getByRole("heading", { name: "Account access", exact: true }).waitFor();
+  await openAccountAccess(pageB);
   await pageB.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
