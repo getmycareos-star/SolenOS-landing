@@ -152,6 +152,7 @@ assert.ok(appointmentWorkflow.includes("guided-appointment") && !appointmentWork
 assert.ok(v2Styles.includes(".guided-appointment") && v2Styles.includes(".guided-panel") && v2Styles.includes(".guided-capture-label textarea"), "appointment workflow surfaces must be styled centrally");
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
 // Appointment styles are governed by semantic theme tokens; assert the required tokens above.
+const careRecordOverview = fs.readFileSync(path.join(root, "src/components/app-shell/CareRecordOverview.tsx"), "utf8");
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
 const dailyCareQwen = fs.readFileSync(path.join(root, "src/components/workflows/DailyCareQwen.tsx"), "utf8");
 
@@ -165,6 +166,9 @@ assert.ok(dailyCarePage.includes("var(--theme-field-fg)"));
 assert.ok(quickCheckIn.includes("var(--theme-selected-bg)") && quickCheckIn.includes('className="quick-daily-checkin"'));
 assert.ok(appointmentsPage.includes("appointments-page") && v2Styles.includes(".solenos-chat-main .appointments-page") && v2Styles.includes("var(--sn-muted)"));
 assert.ok(timelinePage.includes("timeline-workspace"));
+assert.doesNotMatch(careRecordOverview, /style=\{\{/ , "Care Record overview must not use hard-coded inline presentation");
+assert.ok(careRecordOverview.includes("care-record-overview__section") && careRecordOverview.includes("care-record-overview__status"));
+assert.ok(v2Styles.includes(".care-record-overview__section") && v2Styles.includes("var(--theme-panel-bg)") && v2Styles.includes("var(--theme-field-bg)"), "Care Record overview must use shared light/dark theme tokens");
 assert.ok(timelinePage.includes("timeline-event-toggle") && timelinePage.includes("timeline-event-details"));
 assert.ok(v2Styles.includes(".timeline-event-toggle") && v2Styles.includes(".timeline-event-details"), "care history must use the shared, theme-aware timeline styles");
 assert.ok(dailyCareQwen.includes("var(--theme-field-bg)"));
