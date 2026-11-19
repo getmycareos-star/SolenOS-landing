@@ -805,21 +805,22 @@ await record("01c workspace links, browser back, More menu and account form vali
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
   const clearedLocalData = await disposable.page.evaluate(() => {
     const snapshot = window.name;
-    return snapshot ? JSON.parse(snapshot) : null;
+    return {
+      identity: snapshot ? JSON.parse(snapshot) : null,
+      deletionMarker: window.localStorage.getItem("solenos_anonymous_session_revoked"),
+      sessionStorageCount: window.sessionStorage.length,
+    };
   });
-  assert.ok(clearedLocalData, "the /start document must capture local identity before application bootstrap");
-  assert.deepEqual(clearedLocalData, {
+  assert.ok(clearedLocalData.identity, "the /start document must retain the deletion-boundary snapshot");
+  assert.deepEqual(clearedLocalData.identity, {
     token: null,
     personId: null,
     caregiverId: null,
     expiresAt: null,
     legacyPersonId: null,
   }, "workspace deletion must clear current and legacy browser identity data");
-  assert.equal(
-    await disposable.page.evaluate(() => window.sessionStorage.length),
-    0,
-    "workspace deletion must clear temporary browser-session state",
-  );
+  assert.ok(clearedLocalData.deletionMarker, "workspace deletion must retain the local marker that blocks silent record recreation");
+  assert.equal(clearedLocalData.sessionStorageCount, 0, "workspace deletion must clear temporary browser-session state");
   assert.equal(deletionRequests.length, 0,
     "workspace deletion must not call an endpoint that deletes saved care information");
   const revokedSession = await request(
