@@ -102,7 +102,7 @@ export function CaregiverAccessPanel() {
         const [responsibilityResult, loopResult, networkResult] = await Promise.allSettled([
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
-          getJSON("/multi-caregiver-summary/" + encodeURIComponent(personId)) as Promise<MultiCaregiverSummary>,
+          getJSON("/multi-caregiver-summary") as Promise<MultiCaregiverSummary>,
         ]);
         if (responsibilityResult.status === "fulfilled") {
           setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
