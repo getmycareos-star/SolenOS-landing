@@ -41,6 +41,11 @@ function downloadBriefing(draft: BriefingDraft) {
     "Source of truth: Living Care Record",
     "Prepared: " + (draft.prepared_at || "Not recorded"),
     "Period: " + (draft.window?.from || "Not recorded") + " to " + (draft.window?.to || "Not recorded"),
+    ...(draft.selected_appointment ? [
+      "Appointment: " + draft.selected_appointment.title,
+      "Scheduled for: " + (draft.selected_appointment.scheduled_at || "Not recorded"),
+      ...(draft.selected_appointment.provider ? ["Provider: " + draft.selected_appointment.provider] : []),
+    ] : []),
     "Review status: " + (draft.review_status || "Needs review"),
     ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["Briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
     ...(draft.retrieval_complete === false ? [
