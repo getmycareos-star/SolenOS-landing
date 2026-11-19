@@ -11,6 +11,7 @@ on:
     branches: [main]
     paths:
       - "e2e/critical-care-journeys.mjs"
+      - "e2e/anonymous-account-continuity.mjs"
       - "e2e/web-push-delivery.mjs"
       - "e2e/dark-mode-audit.mjs"
       - "package.json"
@@ -189,6 +190,12 @@ jobs:
           BACKEND_URL: http://127.0.0.1:8000
           SOLENOS_REQUIRE_LIVE_QWEN: "0"
         run: node e2e/critical-care-journeys.mjs
+
+      - name: Verify anonymous account claiming and fresh-browser recovery against PostgreSQL
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+        run: node e2e/anonymous-account-continuity.mjs
 
       - name: Ensure a virtual display is available for headed Chromium
         run: |
