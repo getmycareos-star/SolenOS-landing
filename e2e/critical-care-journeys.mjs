@@ -2355,6 +2355,32 @@ await record("12b invited caregiver sees the shared care record in a separate br
   await page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
   await verifyMobile(page);
   assert.deepEqual(pageErrors, [], `invited caregiver browser must not throw: ${JSON.stringify(pageErrors)}`);
+
+  const settingsBrowser = await createBrowserPage({
+    access_token: accepted.payload.access_token,
+    person: { id: accepted.payload.person_id },
+    caregiver: { id: accepted.payload.caregiver_id },
+    expires_at: accepted.payload.expires_at,
+  }, "/workspace/settings");
+  const settingsPage = settingsBrowser.page;
+  await settingsPage.locator("#settings-caregivers summary").click();
+  await settingsPage.getByRole("heading", { name: "Your care responsibilities" }).waitFor({ timeout: 20_000 });
+  await settingsPage.getByLabel("Add a care responsibility").fill("Appointment follow-up");
+  await settingsPage.getByLabel("Care responsibility details (optional)").fill("Confirm the next clinic appointment.");
+  await settingsPage.getByRole("button", { name: "Save responsibility", exact: true }).click();
+  await settingsPage.getByRole("button", { name: "End responsibility", exact: true }).waitFor({ timeout: 20_000 });
+
+  await settingsPage.locator("#caregiver-role-type").selectOption("appointment_coordinator");
+  await settingsPage.getByRole("button", { name: "Save care role", exact: true }).click();
+  await settingsPage.getByRole("button", { name: "End role", exact: true }).waitFor({ timeout: 20_000 });
+  assert.deepEqual(settingsBrowser.pageErrors, [], "caregiver role and responsibility controls must not throw browser errors");
+  await verifyMobile(settingsPage);
+
+  await settingsPage.getByRole("button", { name: "End role", exact: true }).click();
+  await settingsPage.getByRole("button", { name: "End role", exact: true }).waitFor({ state: "detached", timeout: 20_000 });
+  await settingsPage.getByRole("button", { name: "End responsibility", exact: true }).click();
+  await settingsPage.getByRole("button", { name: "End responsibility", exact: true }).waitFor({ state: "detached", timeout: 20_000 });
+  await settingsBrowser.context.close();
   await context.close();
 
   const revoked = await request(
