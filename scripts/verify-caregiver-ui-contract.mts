@@ -153,7 +153,7 @@ assert.ok(themeOverrides.includes("--theme-action-disabled-fg: #e6eee7") && them
 assert.ok(dailyCarePage.includes("var(--theme-panel-bg)"));
 assert.ok(dailyCarePage.includes("var(--theme-field-fg)"));
 assert.ok(quickCheckIn.includes("var(--theme-selected-bg)") && quickCheckIn.includes('className="quick-daily-checkin"'));
-assert.ok(appointmentsPage.includes("var(--theme-panel-fg)") && appointmentsPage.includes("var(--theme-panel-muted)"));
+assert.ok(appointmentsPage.includes("appointments-page") && v2Styles.includes(".solenos-chat-main .appointments-page") && v2Styles.includes("var(--sn-muted)"));
 assert.ok(timelinePage.includes("timeline-workspace"));
 assert.ok(timelinePage.includes("var(--theme-selected-bg)"));
 assert.ok(dailyCareQwen.includes("var(--theme-field-bg)"));
