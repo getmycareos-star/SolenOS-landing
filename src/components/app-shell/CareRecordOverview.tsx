@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, getPersonId } from "@/api/client";
-import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSituationStateLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 type CareItem = {
@@ -35,21 +35,12 @@ function when(value?: string | null): string {
 }
 
 function plainStatus(value?: string | null): string {
-  const labels: Record<string, string> = {
-    reported: "Reported",
-    observed: "Observed",
-    confirmed: "Marked as confirmed",
-    uncertain: "Still unclear",
-    disputed: "Different accounts",
-    needs_clarification: "Needs checking",
-    active: "Current",
-    resolved: "Resolved",
-    open: "Still open",
-    closed: "Closed",
-    not_recorded: "Not recorded",
-  };
   if (!value) return "Not recorded";
-  return labels[value] || "Not available";
+  if (value === "active") return "Current";
+  return caregiverStatusLabel(value)
+    || caregiverInformationLabel(value)
+    || caregiverSituationStateLabel(value)
+    || "Not available";
 }
 
 export function CareRecordOverview() {
