@@ -138,6 +138,10 @@ assert.match(settings, /Clear saved information from this device/);
 assert.doesNotMatch(companion, /distinct, dated|The same wording appears in .*saved item/);
 
 assert.match(companion, /Based on saved information/);
+assert.match(companion, /source\.evidence_reviews/);
+assert.match(companion, /item\.evidence_reviews/);
+assert.match(companion, /not independent confirmation/);
+assert.match(companion, /Only the latest source reviews are shown here/);
 
 assert.match(companion, /caregiverSafeAssistantText\(response\.reply\)/);
 assert.doesNotMatch(companion, /text: response\.reply/);
