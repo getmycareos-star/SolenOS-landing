@@ -563,7 +563,10 @@ await record("01a dementia profile review window and observation persistence are
   const dementiaDisclosure = page.locator("details.lcr-history-details").filter({
     has: page.getByText("Dementia care profile and observations", { exact: true }),
   });
-  await dementiaDisclosure.locator(":scope > summary").click({ force: true });
+  const dementiaSummary = dementiaDisclosure.locator(":scope > summary");
+  await dementiaSummary.waitFor({ state: "visible", timeout: 10_000 });
+  await dementiaSummary.scrollIntoViewIfNeeded();
+  await dementiaSummary.click();
   await page.waitForFunction(() => {
     const summary = [...document.querySelectorAll("details.lcr-history-details > summary")]
       .find((item) => item.textContent?.trim() === "Dementia care profile and observations");
