@@ -57,7 +57,7 @@ type InvitationResult = {
   delivery_status: "not_sent" | string;
 };
 
-export function CaregiverAccessPanel() {
+export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
   const [openLoops, setOpenLoops] = useState<OpenLoop[]>([]);
@@ -122,7 +122,7 @@ export function CaregiverAccessPanel() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { if (enabled) void load(); }, [enabled, load]);
 
   const invite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
