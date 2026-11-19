@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
-import { firefox } from "playwright";
+import { chromium } from "playwright";
 
 const frontend = process.env.FRONTEND_URL;
 const backend = process.env.BACKEND_URL;
@@ -52,8 +52,10 @@ assert.ok(capability.public_key, "The server must return its configured VAPID pu
  // creates an isolated private context and makes PushManager.subscribe() fail
  // with Chromium's misleading "Registration failed - permission denied".
 const profileDir = fs.mkdtempSync(path.join("/tmp", "solenos-web-push-profile-"));
-const context = await firefox.launchPersistentContext(profileDir, {
+const context = await chromium.launchPersistentContext(profileDir, {
   headless: false,
+  channel: "chrome",
+  ignoreDefaultArgs: ["--disable-background-networking"],
   permissions: ["notifications"],
 });
 let appOrigin = new URL(frontend).origin;
@@ -63,7 +65,7 @@ try {
   appOrigin = new URL(page.url()).origin;
   await context.grantPermissions(["notifications"], { origin: appOrigin });
   await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
-  // Chromium headless can report Notification.permission as "denied" even
+  // The test uses a persistent headed Chrome profile so Push API subscriptions are available even
   // when Playwright has granted the notifications permission. The actual
   // PushManager subscription and delivered service-worker notification below
   // are the authoritative checks, not this known-buggy property.
@@ -76,7 +78,7 @@ try {
   assert.equal(
     permissionState.permissionsApi,
     "granted",
-    `Firefox notifications permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
+    `Chrome notifications permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
   );
   assert.equal(permissionState.secureContext, true, "Web Push requires a secure browser context");
 
@@ -124,7 +126,7 @@ try {
       push: await registration.pushManager.permissionState({ userVisibleOnly: true, applicationServerKey }),
     };
   }, capability.public_key);
-  assert.equal(pushPermissionState.push, "granted", `Firefox PushManager permission is not granted: ${JSON.stringify(pushPermissionState)}`);
+  assert.equal(pushPermissionState.push, "granted", `Chrome PushManager permission is not granted: ${JSON.stringify(pushPermissionState)}`);
 
   // Prepare service-worker state before the gesture. subscribe() itself runs
   // synchronously in a genuine browser click handler.
@@ -156,10 +158,10 @@ try {
   await page.locator("#solenos-enable-push-e2e").click();
   await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, { timeout: 20_000 });
   const subscriptionResult = await page.evaluate(() => window.__solenosPushSubscriptionResult);
-  assert.equal(subscriptionResult.ok, true, `Real Firefox push subscription failed: ${subscriptionResult.error}`);
+  assert.equal(subscriptionResult.ok, true, `Real Chrome push subscription failed: ${subscriptionResult.error}`);
   const subscription = subscriptionResult.subscription;
 
-  assert.ok(subscription?.endpoint, "Firefox did not create a real push-service endpoint");
+  assert.ok(subscription?.endpoint, "Chrome did not create a real push-service endpoint");
   assert.ok(subscription?.keys?.p256dh && subscription?.keys?.auth, "Browser subscription keys are missing");
 
   const { response: registeredResponse, payload: registered } = await jsonRequest(
