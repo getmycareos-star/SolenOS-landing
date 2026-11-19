@@ -64,6 +64,8 @@ assert.match(drawer, /time_provenance/);
 assert.match(drawer, /Search care history/);
 assert.match(drawer, /<aside/);
 assert.match(drawer, /aria-label="Care history"/);
+assert.doesNotMatch(drawer, /related item\(s\)/, "care history must not expose placeholder pluralization");
+assert.match(drawer, /selectedRecord\.evidence_ids\.length === 1 \? "note or document" : "notes or documents"/, "linked evidence count must use readable singular and plural labels");
 assert.match(drawer, /className=\{`history-drawer/);
 assert.doesNotMatch(drawer, /history-action-menu|history-event-menu-trigger|Share care summary|Add to Home|Edit record|View record details|Download \/ Export|Pin to Home|Archive record|Restore record|Delete record|history-detail-actions|copyRecord|downloadRecord|shareRecord/, "History is browse-only and exposes none of the main-screen care actions");
 assert.match(drawer, /error && records.length === 0 \? \(/, "an unavailable history must render an error, not an empty state");
