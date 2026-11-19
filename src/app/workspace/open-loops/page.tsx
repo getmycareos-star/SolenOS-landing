@@ -74,6 +74,13 @@ type LoopHistoryEvent = {
   evidence: Array<Record<string, unknown>>;
   created_at: string;
 };
+type LoopOccurrence = {
+  id: string;
+  source_type: string;
+  source_id: string;
+  occurred_at: string;
+  created_at: string;
+};
 
 function dateLabel(value?: string | null): string {
   if (!value) return "Date not recorded";
@@ -96,7 +103,7 @@ function uniqueEvidenceIds(item: AttentionDecision): string[] {
   ])];
 }
 
-function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, busy, history }: {
+function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, busy, history, occurrences }: {
   item: AttentionDecision;
   loops: OpenLoop[];
   onUpdate: (loop: OpenLoop, text: string) => Promise<void>;
@@ -105,6 +112,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
   onCreate: (item: AttentionDecision) => Promise<void>;
   busy: boolean;
   history?: LoopHistoryEvent[];
+  occurrences?: LoopOccurrence[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
@@ -136,6 +144,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
       {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Review requested" : "Next review date"}</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
+      {occurrences && occurrences.length > 0 && <section className="followup-history"><strong>Repeated events</strong><ol>{occurrences.map((item) => <li key={item.id}>{caregiverInformationAreaLabel(item.source_type) || "Care event"} · {dateLabel(item.occurred_at)}</li>)}</ol></section>}
     </div>}
     {loop && !["closed", "cancelled"].includes(loop.status) && <div className="followup-update-area">
       {showUpdate ? <form onSubmit={(event) => { event.preventDefault(); if (updateText.trim()) void onUpdate(loop, updateText.trim()).then(() => { setUpdateText(""); setShowUpdate(false); }).catch(() => { /* Keep the exact report text available for a safe retry. */ }); }}>
@@ -166,6 +175,7 @@ export default function FollowUpsPage() {
   const [loops, setLoops] = useState<OpenLoop[]>([]);
   const [assessment, setAssessment] = useState<SituationAssessment | null>(null);
   const [historyById, setHistoryById] = useState<Record<string, LoopHistoryEvent[]>>({});
+  const [occurrencesById, setOccurrencesById] = useState<Record<string, LoopOccurrence[]>>({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const pendingUpdateKeys = useRef<Record<string, { signature: string; key: string }>>({});
@@ -179,6 +189,11 @@ export default function FollowUpsPage() {
     const session = await ensureAnonymousSession();
     const personId = session.person?.id;
     if (!personId) throw new Error("The active care record could not be confirmed.");
+    try {
+      await postJSON("/open-loops/reassess", {});
+    } catch {
+      setAttentionWarning("SolenOS could not refresh the status of every follow-up. Previously saved information is still shown.");
+    }
     const [loopResult, assessmentResult] = await Promise.allSettled([
       getJSON("/open-loops?limit=100"),
       getJSON("/care-continuity/situation-understanding"),
@@ -337,9 +352,13 @@ export default function FollowUpsPage() {
   async function loadHistory(loop: OpenLoop) {
     setBusyId(loop.id);
     try {
-      const result = await getJSON("/open-loops/" + encodeURIComponent(loop.id) + "/history?limit=100");
-      if (!Array.isArray(result)) throw new Error("History response was invalid.");
+      const [result, occurrenceResult] = await Promise.all([
+        getJSON("/open-loops/" + encodeURIComponent(loop.id) + "/history?limit=100"),
+        getJSON("/open-loops/" + encodeURIComponent(loop.id) + "/occurrences?limit=100"),
+      ]);
+      if (!Array.isArray(result) || !Array.isArray(occurrenceResult)) throw new Error("Follow-up history response was invalid.");
       setHistoryById((current) => ({ ...current, [loop.id]: result as LoopHistoryEvent[] }));
+      setOccurrencesById((current) => ({ ...current, [loop.id]: occurrenceResult as LoopOccurrence[] }));
       setNotice("Previous updates loaded.");
     } catch {
       setError("Previous updates could not be loaded. The saved follow-up itself has not changed.");
@@ -369,18 +388,18 @@ export default function FollowUpsPage() {
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
-        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
+        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} occurrences={loops.find((loop) => loop.id === item.record_id) ? occurrencesById[item.record_id || ""] : undefined} />)}
         {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention in the latest review." : "SolenOS could not check what needs attention. Your saved follow-ups remain visible below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
-        {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} occurrences={item.record_id ? occurrencesById[item.record_id] : undefined} />)}
         {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, review_at: loop.review_at, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === loop.id} history={historyById[loop.id]} />)}
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">There are no other items to show from the information reviewed.</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs checking</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length}</span></div>
-        {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} occurrences={item.record_id ? occurrencesById[item.record_id] : undefined} />)}
         {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">Nothing needs checking based on the information reviewed.</p>}
       </section>
       <section className="followups-section">
