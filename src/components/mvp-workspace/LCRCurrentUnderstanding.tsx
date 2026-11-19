@@ -1355,7 +1355,13 @@ export function LCRCurrentUnderstanding() {
         </div>
       </section>
 
-            <details className="lcr-history-details lcr-progressive-disclosure">
+      <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
+        <summary>Dementia care profile and observations</summary>
+        {dementiaProfileOpen ? <DementiaCareProfilePanel personId={personId} /> : null}
+        {dementiaProfileOpen ? <DementiaObservationPanel personId={personId} /> : null}
+      </details>
+
+      <details className="lcr-history-details lcr-progressive-disclosure">
         <summary>More about this care record — actions, details and history</summary>
       <section className="lcr-situation-assessment" aria-labelledby="lcr-attention-now-heading">
         <div className="lcr-entry-heading">
@@ -2114,11 +2120,7 @@ export function LCRCurrentUnderstanding() {
           {clarificationOpen ? <ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /> : null}
         </details>
       </div>
-      <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
-        <summary>Dementia care profile and observations</summary>
-        {dementiaProfileOpen ? <DementiaCareProfilePanel personId={personId} /> : null}
-        {dementiaProfileOpen ? <DementiaObservationPanel personId={personId} /> : null}
-      </details>
+
       <details className="lcr-advanced-integrity">
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
