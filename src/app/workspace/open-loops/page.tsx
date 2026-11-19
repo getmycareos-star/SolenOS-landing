@@ -96,11 +96,12 @@ function uniqueEvidenceIds(item: AttentionDecision): string[] {
   ])];
 }
 
-function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
+function AttentionCard({ item, loops, onUpdate, onHistory, onCreate, busy, history }: {
   item: AttentionDecision;
   loops: OpenLoop[];
   onUpdate: (loop: OpenLoop, text: string) => Promise<void>;
   onHistory: (loop: OpenLoop) => Promise<void>;
+  onCreate: (item: AttentionDecision) => Promise<void>;
   busy: boolean;
   history?: LoopHistoryEvent[];
 }) {
@@ -143,6 +144,11 @@ function AttentionCard({ item, loops, onUpdate, onHistory, busy, history }: {
     <div className="followup-actions">
       <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
       {loop && <button type="button" className="followup-text-button" onClick={() => void onHistory(loop)}>View previous updates</button>}
+      {!loop && item.source === "events" && item.record_id && (
+        <button type="button" className="followup-primary-button" onClick={() => void onCreate(item)} disabled={busy}>
+          {busy ? "Adding…" : "Add to Follow-ups"}
+        </button>
+      )}
       <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care information: " + item.title + ". Explain what is known, what is not clear yet and what still needs attention.")}><MessageCircle size={15} /> Ask Care Assistant</Link>
     </div>
   </article>;
@@ -155,6 +161,7 @@ export default function FollowUpsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const pendingUpdateKeys = useRef<Record<string, { signature: string; key: string }>>({});
+  const pendingCreateKeys = useRef<Record<string, string>>({});
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [attentionWarning, setAttentionWarning] = useState("");
@@ -252,6 +259,40 @@ export default function FollowUpsPage() {
     }
   }
 
+  async function createFollowUp(item: AttentionDecision) {
+    if (item.source !== "events" || !item.record_id) return;
+    const sourceKey = item.source + ":" + item.record_id;
+    setBusyId(sourceKey);
+    setError("");
+    setNotice("");
+    const idempotencyKey = pendingCreateKeys.current[sourceKey] || crypto.randomUUID();
+    pendingCreateKeys.current[sourceKey] = idempotencyKey;
+    const description = [
+      item.reason,
+      ...(item.priority_basis || []),
+    ].filter((value): value is string => Boolean(value && value.trim())).join("\\n")
+      || "This saved care event was marked for follow-up during the latest review.";
+    try {
+      await postJSON("/open-loops", {
+        loop_type: "follow_up",
+        title: caregiverSafeAssistantText(item.title) || "Care follow-up",
+        description,
+        source_type: item.source,
+        source_id: item.record_id,
+        evidence: uniqueEvidenceIds(item).map((evidenceId) => ({ evidence_id: evidenceId })),
+        uncertainty: "unknown",
+        idempotency_key: idempotencyKey,
+      });
+      await refresh();
+      delete pendingCreateKeys.current[sourceKey];
+      setNotice("Added to Follow-ups. The original care report remains unchanged.");
+    } catch {
+      setError("The follow-up could not be confirmed. Keep this item open and try again.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
   async function loadHistory(loop: OpenLoop) {
     setBusyId(loop.id);
     try {
@@ -287,18 +328,18 @@ export default function FollowUpsPage() {
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
-        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
+        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
         {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention in the latest review." : "SolenOS could not check what needs attention. Your saved follow-ups remain visible below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
-        {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
-        {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, review_at: loop.review_at, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === loop.id} history={historyById[loop.id]} />)}
+        {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, review_at: loop.review_at, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === loop.id} history={historyById[loop.id]} />)}
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">There are no other items to show from the information reviewed.</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs checking</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length}</span></div>
-        {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
         {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">Nothing needs checking based on the information reviewed.</p>}
       </section>
       <section className="followups-section">
