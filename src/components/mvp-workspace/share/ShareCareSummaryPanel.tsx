@@ -88,6 +88,11 @@ export function ShareCareSummaryPanel({
   const [audience, setAudience] = useState<CareHandoffSharingProps["audience"]>(null);
   const [purpose, setPurpose] = useState<CareHandoffSharingProps["purpose"]>(null);
   const [exportReviewed, setExportReviewed] = useState(false);
+  const exportableDraft = draft !== null &&
+    ["generated", "source_only_fallback"].includes(draft.generation_status || "") &&
+    draft.validation_status === "exact_quote_reference_validation_passed"
+      ? draft
+      : null;
 
   function resumeDraft(next: BriefingDraft) {
     setExportReviewed(false);
@@ -153,7 +158,7 @@ export function ShareCareSummaryPanel({
           purpose={purpose}
           onResumeDraft={resumeDraft}
         />
-        {intent === "export" && draft !== null && ["generated", "source_only_fallback"].includes(draft.generation_status || "") && draft.validation_status === "exact_quote_reference_validation_passed" && (
+        {intent === "export" && exportableDraft && (
           <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
               <input type="checkbox" checked={exportReviewed} onChange={event => setExportReviewed(event.target.checked)} />
@@ -162,7 +167,7 @@ export function ShareCareSummaryPanel({
             <button
               type="button"
               disabled={!exportReviewed}
-              onClick={() => downloadBriefing(draft)}
+              onClick={() => downloadBriefing(exportableDraft)}
               style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: exportReviewed ? "#dce9dc" : "#eef1ec", color: "#172117", fontWeight: 650, cursor: exportReviewed ? "pointer" : "not-allowed" }}
             >
               Download summary (.txt)
