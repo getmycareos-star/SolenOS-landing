@@ -42,9 +42,18 @@ function downloadBriefing(draft: BriefingDraft) {
     "Prepared: " + (draft.prepared_at || "Not recorded"),
     "Period: " + (draft.window?.from || "Not recorded") + " to " + (draft.window?.to || "Not recorded"),
     "Review status: " + (draft.review_status || "Needs review"),
-    ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["AI briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
+    ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["Briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
+    ...(draft.retrieval_complete === false ? [
+      "Retrieval warning: this briefing does not include all available Care Record information.",
+      ...(draft.partial_sources ?? []).map(item => item.source + ": at least " + item.returned_count + " records were retrieved; more may be available."),
+      ...(draft.limitations ?? []).map(item => item.source === "allergies"
+        ? "Allergy information could not be checked from a connected source. This does not mean there are no allergies."
+        : item.source + ": " + item.status + (item.reason ? " (" + item.reason + ")" : "")),
+    ] : []),
     "",
-    "Important: AI-written wording is a draft. Each item includes wording from its saved source. Check the source and uncertainty labels before relying on or sharing it.",
+    draft.generation?.status === "source_only_fallback"
+      ? "Important: The writing assistant was unavailable. This draft contains saved source wording only and has not been summarized or interpreted. Check each source and date before relying on or sharing it."
+      : "Important: AI-written wording is a draft. Each item includes wording from its saved source. Check the source and uncertainty labels before relying on or sharing it.",
     ...sections.flatMap((item, index) => [
       "",
       item.section,
