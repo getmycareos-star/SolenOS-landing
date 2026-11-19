@@ -2182,7 +2182,25 @@ await record("09A appointment outcome requires caregiver review before LCR retri
 let handoffDraftId;
 await record("10 evidence-backed handoff", async () => {
   const requestId = unique("handoff-request");
-  const handoffBody = { purpose: "professional_appointment", audience: "professional", window_days: 30 };
+  const handoffAppointment = await request("/api/v1/appointments", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      title: "Care coordination follow-up",
+      scheduled_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+      provider: "Care team",
+      status: "scheduled",
+      created_by_caregiver_id: identity.caregiverId,
+    },
+  });
+  assert.equal(handoffAppointment.status, 200, JSON.stringify(handoffAppointment.payload));
+  const handoffBody = {
+    purpose: "professional_appointment",
+    audience: "professional",
+    window_days: 30,
+    appointment_id: handoffAppointment.payload.id,
+  };
   const draft = await request("/api/v1/handoff-drafts/prepare", {
     token: identity.token, method: "POST", body: handoffBody,
     extraHeaders: { "x-request-id": requestId },
@@ -2190,6 +2208,8 @@ await record("10 evidence-backed handoff", async () => {
   assert.equal(draft.status, 200, JSON.stringify(draft.payload));
   assert.equal(draft.payload.draft_persisted, true);
   assert.equal(draft.payload.updates_lcr, false);
+  assert.equal(draft.payload.appointment_id, handoffAppointment.payload.id);
+  assert.equal(draft.payload.selected_appointment.title, "Care coordination follow-up");
   assert.equal(typeof draft.payload.retrieval_complete, "boolean");
   assert.ok(draft.payload.source_statuses.daily_care.status === "available");
   assert.ok(draft.payload.source_statuses.documents.status === "available");
