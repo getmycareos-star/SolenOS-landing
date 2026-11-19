@@ -785,6 +785,10 @@ await record("01c workspace links, browser back, More menu and account form vali
     buttons: Array.from(document.querySelectorAll("[role=dialog] button")).map(button => ({ text: button.textContent?.trim(), disabled: button.disabled })),
   }));
   assert.equal(await appointmentPrepareButton.isEnabled(), true, "appointment briefing preparation must be enabled after choosing a saved appointment: " + JSON.stringify(appointmentPrepareState));
+  assert.equal(appointmentPrepareState.selects[0]?.value, "professional", "the briefing audience must be set to professional");
+  assert.equal(appointmentPrepareState.selects[1]?.value, "professional_appointment", "the briefing purpose must be set to appointment");
+  assert.equal(appointmentPrepareState.selects[2]?.value, shareAppointment.payload.id, "the selected appointment must be bound to the draft");
+  assert.equal(appointmentPrepareState.selects[3]?.value, "30", "the selected history window must be retained");
   const appointmentBriefingResponse = page.waitForResponse(response =>
     response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
   await appointmentPrepareButton.click();
