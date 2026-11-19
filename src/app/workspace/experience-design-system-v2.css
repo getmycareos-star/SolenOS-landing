@@ -236,6 +236,153 @@
   border-radius: 10px;
   font-weight: 650;
 }
+.solenos-chat-app .solenos-chat-main .daily-care-context-panel {
+  padding: clamp(16px, 2.1vw, 22px);
+  border: 1px solid var(--sn-line);
+  background: var(--sn-surface);
+}
+.solenos-chat-app .solenos-chat-main .daily-care-context-panel > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--sn-forest);
+}
+.solenos-chat-app .solenos-chat-main .daily-care-context-panel > summary h2 {
+  margin: 0;
+  color: inherit;
+  font-size: 17px;
+  font-weight: 680;
+  letter-spacing: -.025em;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-muted {
+  color: var(--sn-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-record-list {
+  display: grid;
+  gap: 10px;
+  margin: 13px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-record-list > li {
+  min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid var(--sn-line);
+  border-radius: 12px;
+  background: var(--sn-surface-soft);
+  overflow-wrap: anywhere;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-record-list > li > strong {
+  display: block;
+  color: var(--sn-ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-record-list > li > p {
+  margin: 6px 0;
+  color: var(--sn-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-record-list > li > span {
+  color: var(--sn-subtle);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-capture-state {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--sn-line);
+  border-radius: 14px;
+  background: var(--sn-surface-soft);
+}
+.solenos-chat-app .solenos-chat-main .daily-care-capture-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-capture-option {
+  display: flex;
+  min-width: 0;
+  min-height: 78px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid var(--sn-line);
+  border-radius: 11px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  text-align: left;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-capture-option:hover {
+  border-color: var(--sn-sage-strong);
+  background: var(--sn-surface-hover);
+}
+.solenos-chat-app .solenos-chat-main .daily-care-capture-option strong {
+  color: var(--sn-forest);
+  font-size: 13px;
+  font-weight: 680;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-capture-option span {
+  color: var(--sn-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-capture-mode-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--sn-forest);
+}
+.solenos-chat-app .solenos-chat-main .daily-care-follow-up-list {
+  display: grid;
+  gap: 9px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-follow-up-item {
+  padding: 12px 14px;
+  border: 1px solid var(--sn-line);
+  border-radius: 12px;
+  background: var(--sn-surface-soft);
+}
+.solenos-chat-app .solenos-chat-main .daily-care-follow-up-item strong {
+  color: var(--sn-ink);
+  font-size: 13px;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-follow-up-item p {
+  margin: 5px 0;
+  color: var(--sn-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-follow-up-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-follow-up-meta span {
+  color: var(--sn-subtle);
+  font-size: 10px;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-day-period {
+  margin-top: 18px;
+}
+.solenos-chat-app .solenos-chat-main .daily-care-day-period h3 {
+  margin: 0 0 8px;
+  color: var(--sn-forest);
+  font-size: 13px;
+  font-weight: 700;
+}
 .solenos-chat-app .solenos-chat-main .documents-page > section[aria-label="Saved documents"],
 .solenos-chat-app .solenos-chat-main .documents-page > section[aria-label="Add care documents"] {
   padding: clamp(16px, 2.2vw, 23px);
@@ -555,6 +702,39 @@
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Latest recorded update"] :where(p,span,small) {
   color: #c1ccc3;
 }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-record-list > li,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-follow-up-item {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-soft);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-record-list > li > strong,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-follow-up-item strong {
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-record-list > li > p,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-follow-up-item p {
+  color: var(--sn-muted);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-capture-state {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-soft);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-capture-option {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-capture-option:hover {
+  background: var(--sn-surface-hover);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-capture-option strong,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-capture-mode-heading,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-day-period h3 {
+  color: var(--sn-forest);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-capture-option span {
+  color: var(--sn-muted);
+}
 
 /* Small screens: keep the caregiver's next action reachable and uncluttered. */
 @media (max-width: 900px) {
@@ -602,6 +782,12 @@
     padding: 15px;
   }
   .solenos-chat-app .solenos-chat-main :where(.care-reminder-form button,.care-reminder-actions button) { width: 100%; }
+  .solenos-chat-app .solenos-chat-main .daily-care-capture-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .solenos-chat-app .solenos-chat-main .daily-care-capture-state {
+    padding: 12px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .solenos-chat-app *,
