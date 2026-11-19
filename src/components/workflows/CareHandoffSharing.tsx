@@ -687,6 +687,18 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         </section>
       )}
 
+      {draft && (
+        <section role="status" aria-label="Care Record coverage and missing information" style={{ ...panel, marginTop: 0, background: "#fbf8ef", borderColor: "#d8c9a5" }}>
+          <strong style={{ fontSize: 13 }}>Check what information is missing</strong>
+          {draft.retrieval_complete === false && <p style={{ fontSize: 12, lineHeight: 1.5, margin: "6px 0" }}>This briefing does not include all available Care Record information. Review the listed gaps before relying on or sharing it.</p>}
+          {draft.partial_sources?.map(item => <p key={item.source} style={{ fontSize: 12, lineHeight: 1.45, margin: "4px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were retrieved; more may be available.</p>)}
+          {draft.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 12, lineHeight: 1.45, margin: "4px 0" }}>
+            {item.source === "allergies"
+              ? "Allergy information could not be checked from a connected source. This does not mean there are no allergies."
+              : `${readableSection(item.source)}: this information could not be fully checked (${readableStatus(item.status)}).`}
+          </p>)}
+        </section>
+      )}
       {draft && audience === "professional" && (
         <>
           <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
