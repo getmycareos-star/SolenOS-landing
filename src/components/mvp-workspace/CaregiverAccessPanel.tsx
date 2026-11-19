@@ -75,6 +75,33 @@ type CaregiverCommunication = {
   communication_time?: string;
   acknowledgment_level?: string | null;
 };
+type CaregiverRole = {
+  id: string;
+  caregiver_id: string;
+  role_type: string;
+  custom_role_name?: string | null;
+  scope?: string | null;
+  is_current: boolean;
+  effective_start: string;
+};
+const CARE_ROLE_OPTIONS = [
+  { value: "medication_manager", label: "Medication support" },
+  { value: "appointment_coordinator", label: "Appointments" },
+  { value: "transportation_coordinator", label: "Transportation" },
+  { value: "overnight_caregiver", label: "Overnight care" },
+  { value: "emergency_contact", label: "Emergency contact" },
+  { value: "primary_family_caregiver", label: "Main family caregiver" },
+  { value: "secondary_caregiver", label: "Additional caregiver" },
+  { value: "occasional_caregiver", label: "Occasional care" },
+  { value: "paid_caregiver", label: "Paid caregiver" },
+  { value: "home_health_worker", label: "Home health support" },
+  { value: "financial_coordinator", label: "Finances" },
+  { value: "temporary_caregiver", label: "Temporary care" },
+  { value: "facility_staff", label: "Facility staff" },
+  { value: "legal_guardian", label: "Legal guardian" },
+  { value: "healthcare_proxy", label: "Health care proxy" },
+  { value: "custom", label: "Other" },
+] as const;
 type CaregiverContext = {
   id: string;
   caregiver_id: string;
@@ -116,6 +143,11 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [networkState, setNetworkState] = useState<CareNetworkState | null>(null);
   const [communications, setCommunications] = useState<CaregiverCommunication[]>([]);
   const [careContexts, setCareContexts] = useState<CaregiverContext[]>([]);
+  const [myRoles, setMyRoles] = useState<CaregiverRole[]>([]);
+  const [selectedCareRole, setSelectedCareRole] = useState<string>("appointment_coordinator");
+  const [customCareRole, setCustomCareRole] = useState("");
+  const [careRoleScope, setCareRoleScope] = useState("");
+  const [savingCareRole, setSavingCareRole] = useState(false);
   const [communicationSubject, setCommunicationSubject] = useState("");
   const [communicationBody, setCommunicationBody] = useState("");
   const [sendingCommunication, setSendingCommunication] = useState(false);
@@ -164,7 +196,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         const session = await ensureAnonymousSession();
         const personId = session.person.id;
         const caregiverId = session.caregiver.id;
-        const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult, observationResult, perspectiveResult] = await Promise.allSettled([
+        const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult, observationResult, perspectiveResult, roleResult] = await Promise.allSettled([
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
           getJSON("/multi-caregiver-summary") as Promise<MultiCaregiverSummary>,
@@ -173,6 +205,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           getJSON("/caregiver-contexts") as Promise<CaregiverContext[]>,
           getJSON("/caregiver-observations/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivateObservation[]>,
           getJSON("/caregiver-perspectives/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivatePerspective[]>,
+          getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
         ]);
         if (responsibilityResult.status === "fulfilled") {
           setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
@@ -190,6 +223,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         else setMyObservations([]);
         if (perspectiveResult.status === "fulfilled") setMyPerspectives(perspectiveResult.value ?? []);
         else setMyPerspectives([]);
+        if (roleResult.status === "fulfilled") {
+          const ownProfileId = (memberResult.value ?? []).find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id;
+          setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === ownProfileId && item.is_current));
+        } else setMyRoles([]);
       } else {
         setAllowed(false);
         setNetworkSummary(null);
@@ -198,6 +235,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         setCareContexts([]);
         setMyObservations([]);
         setMyPerspectives([]);
+        setMyRoles([]);
         if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
       }
     } catch {
@@ -439,6 +477,50 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     }
   };
 
+  const saveCareRole = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (selectedCareRole === "custom" && !customCareRole.trim()) return;
+    setSavingCareRole(true);
+    setError("");
+    setNotice("");
+    try {
+      const session = await ensureAnonymousSession();
+      await postJSON("/caregiver-roles", {
+        person_id: session.person.id,
+        caregiver_id: session.caregiver.id,
+        role_type: selectedCareRole,
+        custom_role_name: selectedCareRole === "custom" ? customCareRole.trim() : null,
+        scope: careRoleScope.trim() || null,
+        effective_start: new Date().toISOString(),
+        is_current: true,
+        assignment_source: "caregiver_self_reported",
+      });
+      setCustomCareRole("");
+      setCareRoleScope("");
+      setNotice("Your care role has been shared with the care circle. It does not change anyone's account access.");
+      await load();
+    } catch {
+      setError("We couldn't save this care role. No access permissions were changed.");
+    } finally {
+      setSavingCareRole(false);
+    }
+  };
+
+  const endCareRole = async (role: CaregiverRole) => {
+    setSavingCareRole(true);
+    setError("");
+    setNotice("");
+    try {
+      await patchJSON("/caregiver-roles/" + encodeURIComponent(role.id) + "/end", {});
+      setNotice("Your care role has ended. Its history is kept.");
+      await load();
+    } catch {
+      setError("We couldn't end this care role. It remains active.");
+    } finally {
+      setSavingCareRole(false);
+    }
+  };
+
   const revoke = async (member: Member) => {
     if (!window.confirm("Remove " + member.name + "'s access to this Care Record? Notes they added in the past will stay.")) return;
     setBusy(true);
@@ -580,6 +662,30 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   ))}
                 </div>
               )}
+              <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
+                <h4 className="mobile-settings-label" style={{ margin: 0 }}>What you help with</h4>
+                <p className="mobile-settings-hint" style={{ margin: 0 }}>Share your care role so the team knows where you can help. This does not change your account access.</p>
+                {myRoles.map((role) => (
+                  <div key={role.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.9rem" }}>
+                      {role.custom_role_name || CARE_ROLE_OPTIONS.find((item) => item.value === role.role_type)?.label || "Care role"}
+                      {role.scope ? <span className="mobile-settings-hint"> · {role.scope}</span> : null}
+                    </span>
+                    <Button type="button" variant="secondary" disabled={savingCareRole} onClick={() => void endCareRole(role)}>End role</Button>
+                  </div>
+                ))}
+                <form onSubmit={saveCareRole} style={{ display: "grid", gap: "0.5rem" }}>
+                  <label className="mobile-settings-label" htmlFor="caregiver-role-type">Add a care role</label>
+                  <select id="caregiver-role-type" className="mobile-settings-input" value={selectedCareRole} onChange={(event) => setSelectedCareRole(event.target.value)}>
+                    {CARE_ROLE_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                  </select>
+                  {selectedCareRole === "custom" && (
+                    <input className="mobile-settings-input" aria-label="Custom care role" required maxLength={80} value={customCareRole} onChange={(event) => setCustomCareRole(event.target.value)} placeholder="Describe your care role" />
+                  )}
+                  <input className="mobile-settings-input" aria-label="Care role details (optional)" maxLength={300} value={careRoleScope} onChange={(event) => setCareRoleScope(event.target.value)} placeholder="Optional: what you help with" />
+                  <Button type="submit" variant="secondary" disabled={savingCareRole || (selectedCareRole === "custom" && !customCareRole.trim())} loading={savingCareRole}>Save care role</Button>
+                </form>
+              </section>
               {(networkSummary.caregivers ?? []).map((caregiver) => (
                 <section key={caregiver.caregiver_id} style={{ display: "grid", gap: "0.35rem", paddingTop: "0.65rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
