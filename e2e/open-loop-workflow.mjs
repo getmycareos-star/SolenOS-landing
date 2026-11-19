@@ -145,16 +145,6 @@ try {
     1,
     "retry after a lost response must not duplicate the caregiver response",
   );
-  assert.ok(
-    (saved.action_evidence ?? []).some((item) => item.text === actionText),
-    "the caregiver's action report must be durably recorded",
-  );
-  assert.equal(
-    (saved.action_evidence ?? []).filter((item) => item.text === actionText).length,
-    1,
-    "retry after a lost action response must not duplicate the caregiver action",
-  );
-
   await page.reload({ waitUntil: "domcontentloaded" });
   const afterReload = page.locator("article.followup-card").filter({
     has: page.getByRole("heading", { name: title, exact: true }),
@@ -174,6 +164,27 @@ try {
   await page.getByRole("status").filter({
     hasText: "Your action was recorded as a caregiver report. The outcome has not been marked as verified.",
   }).waitFor({ timeout: 15_000 });
+
+  // Read after the action succeeds. The earlier snapshot only proves the
+  // response report; it cannot prove an action that has not been submitted yet.
+  const actionPersistenceResponse = await fetch(new URL("/api/v1/open-loops?limit=100", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  assert.equal(actionPersistenceResponse.status, 200, "the follow-up with the action report must remain retrievable");
+  const actionPersistence = await actionPersistenceResponse.json();
+  const actionSaved = (actionPersistence.items ?? []).find((item) => item.id === seededLoop.id);
+  assert.ok(actionSaved, "the original follow-up must remain saved after the action report");
+  assert.equal(actionSaved.status, "open", "recording an action must not resolve the follow-up");
+  assert.equal(actionSaved.outcome_status, "outcome_unknown", "recording an action must not verify the outcome");
+  assert.ok(
+    (actionSaved.action_evidence ?? []).some((item) => item.text === actionText),
+    "the caregiver's action report must be durably recorded",
+  );
+  assert.equal(
+    (actionSaved.action_evidence ?? []).filter((item) => item.text === actionText).length,
+    1,
+    "retry after a lost action response must not duplicate the caregiver action",
+  );
 
   const candidateTitle = "CI E2E event-derived follow-up candidate";
   const eventResponse = await fetch(new URL("/api/v1/events", backend), {
