@@ -83,8 +83,8 @@ assert.doesNotMatch(currentUnderstanding, /Missing information does not mean eve
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "an empty care record is described as insufficient information, not a reassuring finding");
 assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) => void load\(true\)\}/s, "failed current-care retrieval renders an actionable error state with a real retry");
 assert.ok(
-  workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf("What would you like to do next?") &&
-  workspaceHome.indexOf("What would you like to do?") < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
+  workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf('className="solenos-care-next-step"') &&
+  workspaceHome.indexOf('className="solenos-care-next-step"') < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
   "workspace order is care orientation, primary actions, then handover inbox"
 );
 assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Ask SolenOS remains directly accessible");
