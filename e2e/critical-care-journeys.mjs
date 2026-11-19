@@ -341,7 +341,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Care Record", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  for (const heading of ["Your care, at a glance", "Where things stand", "What needs attention", "What has changed"]) {
+  for (const heading of ["Your care, at a glance", "Care information on record", "What needs attention", "What has changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
       .waitFor({ state: "visible", timeout: 15_000 });
   }
