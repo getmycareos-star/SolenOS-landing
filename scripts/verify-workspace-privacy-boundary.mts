@@ -40,6 +40,10 @@ console.log("✓ direct workspace entry does not disable server-side authenticat
 const settings = fs.readFileSync("src/app/workspace/settings/page.tsx", "utf8");
 assert.match(settings, /await revokeAnonymousSession\(\)/,
   "clearing a device must attempt server-side revocation before local credentials are removed");
+assert.match(settings, /markAnonymousSessionRevokedLocally\(\)/,
+  "device clearing must retain a local deletion boundary even when no token exists or server revocation fails");
+assert.match(settings, /key !== "solenos_anonymous_session_revoked"/,
+  "the device cleanup sweep must preserve the local session-revocation marker");
 assert.match(settings, /key\.startsWith\("solenos_"\)/,
   "clearing a device must remove underscore-prefixed SolenOS localStorage keys");
 assert.match(settings, /key\.startsWith\("solenos:"\)/,
