@@ -62,6 +62,29 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     if (location.origin === "null" || location.protocol === "about:") return;
     if (window.name === "solenos-e2e-identity-seeded") return;
     window.name = "solenos-e2e-identity-seeded";
+    // Content-free request tracing distinguishes a blocked session bootstrap
+    // from a request that reached the backend during browser acceptance.
+    if (!window.__solenosE2ETraceInstalled) {
+      window.__solenosE2ETraceInstalled = true;
+      window.__solenosE2EFetchTrace = [];
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = async (input, init = {}) => {
+        const raw = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+        const url = new URL(raw, location.origin);
+        const entry = { method: (init.method || (input instanceof Request ? input.method : "GET")).toUpperCase(), path: url.pathname, startedAt: Date.now(), status: null, error: null };
+        window.__solenosE2EFetchTrace.push(entry);
+        try {
+          const response = await originalFetch(input, init);
+          entry.status = response.status;
+          entry.finishedAt = Date.now();
+          return response;
+        } catch (error) {
+          entry.error = String(error?.message || error).slice(0, 180);
+          entry.finishedAt = Date.now();
+          throw error;
+        }
+      };
+    }
     localStorage.setItem("solenos_anonymous_access_token", identity.token);
     localStorage.setItem("solenos_backend_person_id", identity.personId);
     localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
@@ -221,6 +244,8 @@ await record("00 first-time caregiver capture and persisted return", async () =>
           .filter((element) => element.getClientRects().length > 0)
           .map((element) => element.textContent?.trim())
           .filter(Boolean),
+        fetchTrace: window.__solenosE2EFetchTrace ?? [],
+        sessionBootstrapMeasures: performance.getEntriesByName("solenos.session.bootstrap").map((entry) => ({ duration: entry.duration, startTime: entry.startTime })),
       };
     });
     console.error("FIRST_VISIT_SUBMIT_DIAGNOSTIC", JSON.stringify(diagnostic));
