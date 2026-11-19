@@ -128,9 +128,10 @@ const lcrCurrent = fs.readFileSync(path.join(root, "src/components/mvp-workspace
 const appLayout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
 assert.ok(appLayout.includes('import "./accessibility-overrides.css";'));
 const v2Styles = fs.readFileSync(path.join(root, "src/app/workspace/experience-design-system-v2.css"), "utf8");
+const workspaceLayout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 const appShell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
 const navigationRegistry = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
-assert.ok(appLayout.includes('import "./experience-design-system-v2.css";'));
+assert.ok(workspaceLayout.includes('import "./experience-design-system-v2.css";'));
 assert.ok(v2Styles.includes(".solenos-chat-app.is-sidebar-collapsed"));
 assert.ok(appShell.includes("solenos_sidebar_collapsed") && appShell.includes("Collapse navigation"));
 assert.ok(!navigationRegistry.includes('href: "/workspace/community"') && !navigationRegistry.includes('id: "community"'));
