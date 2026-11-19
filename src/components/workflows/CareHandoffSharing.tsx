@@ -500,6 +500,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         recipient_caregiver_ids: selectedRecipients,
         scope: [...selectedScope].sort(),
         expires_at: expiresAt,
+        reviewed_source_refs: editedSections.map(item => item.source_ref),
+        semantic_review_acknowledged: true,
       }) as {
         care_continuity_execution?: { stages?: Record<string, string> } | null;
       };
@@ -817,7 +819,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </section>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
-            <span>I have checked the full summary and agree to share it with the selected caregiver(s).</span>
+            <span>I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement.</span>
           </label>
           <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || draft.generation_status !== "generated" || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing…" : "Share with selected caregivers"}
