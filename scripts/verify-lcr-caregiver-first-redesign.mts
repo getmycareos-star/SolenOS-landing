@@ -15,6 +15,7 @@ const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8
 const structuredDailyCapture = fs.readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
 const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
+const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 
 assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR home must redirect to the Companion");
 assert.doesNotMatch(legacyRoute, /SOLENOS · LIVING CARE RECORD|Record timeline|Add to record|CognitiveWorkspace/, "old LCR interface must not be rendered as a separate home");
@@ -59,6 +60,13 @@ assert.match(currentUnderstanding, /<strong>Still unclear:<\/strong>/, "the firs
 assert.match(currentUnderstanding, /This record reflects the care information saved here/, "the Care Record uses one concise scope statement instead of repeating its introduction");
 assert.doesNotMatch(currentUnderstanding, /Your care information, brought together/, "the redundant introductory headline is removed");
 assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
+assert.match(followUps, /item\.source === "events" && item\.record_id/, "event-derived follow-up candidates require an explicit caregiver action before becoming a responsibility");
+assert.match(followUps, /postJSON\("\/open-loops"/, "adding an event follow-up persists it through the authoritative open-loop API");
+assert.match(followUps, /source_type: item\.source,\s*source_id: item\.record_id/, "a persisted follow-up retains its source record link");
+assert.match(followUps, /evidence: uniqueEvidenceIds\(item\)\.map\(\(evidenceId\) => \(\{ evidence_id: evidenceId \}\)\)/, "follow-up creation preserves authorized source evidence links");
+assert.match(followUps, /pendingCreateKeys\.current\[sourceKey\] \|\| crypto\.randomUUID\(\)/, "uncertain follow-up creation retries reuse an idempotency key");
+assert.match(followUps, /linkedToSavedFollowUp/, "an event suggestion already linked to a saved follow-up is not shown as a second responsibility");
+assert.match(followUps, /candidate\.source_type === item\.source && candidate\.source_id === item\.record_id/, "a source-linked saved follow-up remains actionable from its original source");
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed care information is progressively disclosed");
 assert.doesNotMatch(currentUnderstanding, /Missing information does not mean everything is fine|Do not assume there is nothing that needs attention/, "obsolete defensive disclaimers are removed from caregiver-facing copy");
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "an empty care record is described as insufficient information, not a reassuring finding");
