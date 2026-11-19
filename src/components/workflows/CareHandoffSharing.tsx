@@ -94,7 +94,7 @@ type Snapshot = {
   content_sha256?: string;
   source_id_validation?: string;
 };
-type Props = {
+export type CareHandoffSharingProps = {
   draft: DraftPayload | null;
   audience: "family" | "professional" | null;
   purpose: "today" | "appointment" | "overview" | null;
@@ -244,7 +244,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
   return { text: lines.join("\n").slice(0, 18000) };
 }
 
-export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: Props) {
+export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: CareHandoffSharingProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [preparePurpose, setPreparePurpose] = useState<HandoffDraftPurpose>("family_transition");
   const [prepareAudience, setPrepareAudience] = useState<"family" | "professional">("family");
@@ -422,7 +422,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       ].slice(0, 10));
       prepareRequestId.current = null;
       setPrepareNotice(
-        prepared.generation_status === "generated" && prepared.validation_status === "validated"
+        prepared.generation_status === "generated" && prepared.validation_status === "exact_quote_reference_validation_passed"
           ? "Draft saved for your review. Nothing has been shared or added to the Care Record."
           : "Draft saved with source availability and limitations. Review the available records; no information has been shared or added to the Care Record."
       );
@@ -734,7 +734,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
                 <strong style={{ display: "block", fontSize: 12 }}>{readableSection(item.section)}</strong>
                 <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
-                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.text) ?? "Some details could not be shown in this preview."}</p>
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown in this preview."}</p>
+                {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 10px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
                 <button type="button" style={quietButton} onClick={() => {
                   const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
                   setEditedSections(remaining);
