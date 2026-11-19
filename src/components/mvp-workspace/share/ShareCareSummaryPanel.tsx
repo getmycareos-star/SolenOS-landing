@@ -153,11 +153,11 @@ export function ShareCareSummaryPanel({
           purpose={purpose}
           onResumeDraft={resumeDraft}
         />
-        {intent === "export" && draft?.generation_status === "generated" && draft.validation_status === "exact_quote_reference_validation_passed" && (
+        {intent === "export" && ["generated", "source_only_fallback"].includes(draft?.generation_status || "") && draft.validation_status === "exact_quote_reference_validation_passed" && (
           <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
               <input type="checkbox" checked={exportReviewed} onChange={event => setExportReviewed(event.target.checked)} />
-              <span>I reviewed each generated summary item against its saved source wording and checked the dates and uncertainty labels.</span>
+              <span>I reviewed each briefing item against its saved source wording and checked the dates and uncertainty labels.</span>
             </label>
             <button
               type="button"
