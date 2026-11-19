@@ -677,3 +677,97 @@
   .solenos-chat-app .solenos-lcr-home .lcr-history-details > summary { padding: 13px 14px; }
   .solenos-chat-app .solenos-lcr-home .lcr-current-fact { padding: 12px; }
 }
+
+
+/* Timeline and appointments: readable records, not an administrative console. */
+.solenos-chat-app .solenos-chat-main .timeline-workspace {
+  width: 100%;
+  max-width: 1080px !important;
+  margin-inline: auto !important;
+  padding: 22px 0 46px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > header.mobile-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > header.mobile-page-head h1 {
+  color: var(--sn-forest);
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 650;
+  letter-spacing: -.05em;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > header.mobile-page-head p {
+  color: var(--sn-muted);
+  line-height: 1.65;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Latest recorded update"] {
+  border-color: var(--sn-line) !important;
+  border-radius: 18px !important;
+  background: #f0f5ef !important;
+  box-shadow: none !important;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Latest recorded update"] h2,
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Latest recorded update"] h3 {
+  color: var(--sn-forest);
+  letter-spacing: -.025em;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Timeline controls"] {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Timeline controls"] label {
+  color: var(--sn-forest);
+  font-size: 13px;
+  font-weight: 700;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Timeline controls"] input {
+  min-height: 46px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article {
+  border-color: var(--sn-line) !important;
+  border-radius: 15px !important;
+  background: var(--sn-surface) !important;
+  box-shadow: var(--sn-shadow-soft);
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article > button {
+  padding: 17px !important;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article strong {
+  color: var(--sn-forest);
+  font-weight: 700;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article > div[id^="timeline-details-"] {
+  border-top-color: var(--sn-line) !important;
+  background: #f8faf7 !important;
+}
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article dl dt { color: var(--sn-subtle) !important; }
+.solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article dl dd { color: var(--sn-ink); line-height: 1.55; }
+.solenos-chat-app .solenos-chat-main .timeline-workspace > footer {
+  border-top-color: var(--sn-line) !important;
+  color: var(--sn-subtle) !important;
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .appointments-page {
+  width: 100%;
+  max-width: 1060px;
+  margin-inline: auto;
+  padding: 24px 0 44px;
+}
+.solenos-chat-app .solenos-chat-main .appointments-page .appointments-eyebrow {
+  margin: 0;
+  color: #718b74;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .13em;
+}
+@media (max-width: 600px) {
+  .solenos-chat-app .solenos-chat-main .timeline-workspace,
+  .solenos-chat-app .solenos-chat-main .appointments-page { padding-top: 15px; }
+  .solenos-chat-app .solenos-chat-main .timeline-workspace > header.mobile-page-head { gap: 8px; }
+  .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Latest recorded update"] { padding: 16px !important; }
+  .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article > button { padding: 13px !important; }
+  .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article dl { grid-template-columns: minmax(0,1fr) !important; }
+}
