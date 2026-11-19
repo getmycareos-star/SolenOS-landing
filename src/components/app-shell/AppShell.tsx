@@ -181,7 +181,24 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         try {
           if (getAnonymousAccessToken()) await revokeAnonymousSession();
           else markAnonymousSessionRevokedLocally();
-          LOCAL_WORKSPACE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+          const ownedKeys = new Set<string>(LOCAL_WORKSPACE_KEYS);
+          for (let index = 0; index < window.localStorage.length; index += 1) {
+            const key = window.localStorage.key(index);
+            if (
+              key &&
+              (key.startsWith("solenos_") ||
+                key.startsWith("solenos:") ||
+                key === "onboarding_complete" ||
+                key === "onboarding_complete_at")
+            ) {
+              ownedKeys.add(key);
+            }
+          }
+          // Keep the tombstone: only an explicit Care Record entry may create
+          // a replacement identity after this workspace is deleted.
+          ownedKeys.delete("solenos_anonymous_session_revoked");
+          ownedKeys.forEach((key) => window.localStorage.removeItem(key));
+          window.sessionStorage.clear();
         } catch {
           window.alert("We couldn't confirm your access to SolenOS, so nothing was cleared. Check your connection and try again.");
           return;
