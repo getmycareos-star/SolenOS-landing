@@ -50,7 +50,7 @@ function downloadBriefing(draft: BriefingDraft) {
       item.section,
       item.summary || item.text,
       item.supporting_quote ? "Saved source wording: " + item.supporting_quote : "Saved source wording unavailable.",
-      "Source reference: " + item.source_ref,
+      "Related care detail: " + (index + 1),
       "Evidence status: " + (item.epistemic_status || "Not recorded"),
       "Record status: " + (item.record_status || "Not recorded"),
       "Event date: " + (item.event_at || "Not recorded"),
@@ -78,8 +78,10 @@ export function ShareCareSummaryPanel({
   const [draft, setDraft] = useState<CareHandoffSharingProps["draft"]>(null);
   const [audience, setAudience] = useState<CareHandoffSharingProps["audience"]>(null);
   const [purpose, setPurpose] = useState<CareHandoffSharingProps["purpose"]>(null);
+  const [exportReviewed, setExportReviewed] = useState(false);
 
   function resumeDraft(next: BriefingDraft) {
+    setExportReviewed(false);
     setDraft(next);
     setAudience(next.audience === "professional" ? "professional" : "family");
     setPurpose(
@@ -144,10 +146,15 @@ export function ShareCareSummaryPanel({
         />
         {intent === "export" && draft?.generation_status === "generated" && draft.validation_status === "exact_quote_reference_validation_passed" && (
           <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+              <input type="checkbox" checked={exportReviewed} onChange={event => setExportReviewed(event.target.checked)} />
+              <span>I reviewed each generated summary item against its saved source wording and checked the dates and uncertainty labels.</span>
+            </label>
             <button
               type="button"
+              disabled={!exportReviewed}
               onClick={() => downloadBriefing(draft)}
-              style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: "#dce9dc", color: "#172117", fontWeight: 650, cursor: "pointer" }}
+              style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: exportReviewed ? "#dce9dc" : "#eef1ec", color: "#172117", fontWeight: 650, cursor: exportReviewed ? "pointer" : "not-allowed" }}
             >
               Download summary (.txt)
             </button>
