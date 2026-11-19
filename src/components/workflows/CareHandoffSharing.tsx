@@ -141,6 +141,9 @@ function readableSection(value: string): string {
     care_decisions: "Care decisions", decision_outcomes: "What happened next", care_transitions: "Care changes",
     care_timeline_entries: "Care history", daily_care: "Daily Care", documents: "Documents",
     appointments: "Appointments", actions: "Follow-up actions", care_action_outcomes: "Follow-up outcomes",
+    medications: "Medication reports", allergies: "Allergy information",
+    evidence_review_records: "Source reviews", evidence_claim_assessments: "Care claim reviews",
+    evidence_freshness_assessments: "Source freshness reviews", evidence_completeness_assessments: "Record completeness reviews",
     open_questions: "Questions that still need answers", information_gaps: "Information still needed",
     uncertainty_assessments: "Information that needs checking", medications_and_allergies: "Medications and allergies",
   };
