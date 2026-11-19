@@ -331,6 +331,7 @@ function apiRequestTimeoutMs(input: RequestInfo | URL, method: string): number {
         : input.url;
     const pathname = new URL(raw, "http://solenos.local").pathname;
     if (pathname.endsWith("/assistant/assist") && method === "POST") return 210_000;
+    if (pathname.endsWith("/handoff-drafts/prepare") && method === "POST") return 210_000;
     if (pathname.endsWith("/conversation/message") && method === "POST") return 210_000;
     if (pathname.endsWith("/lcr/orientation") && method === "POST") return 210_000;
     if (pathname.includes("/documents/") && pathname.endsWith("/extract") && method === "POST") return 180_000;
