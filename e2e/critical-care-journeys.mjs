@@ -1681,7 +1681,7 @@ await record("06 Companion context and Qwen output", async () => {
   assert.equal(
     answer.payload.lcr_context_coverage?.prompt_context_complete,
     true,
-    "Companion must disclose a complete prompt context for this bounded care-history question",
+    `Companion must disclose a complete prompt context for this bounded care-history question: ${JSON.stringify(answer.payload.lcr_context_coverage || {})}`,
   );
   assert.ok(
     Number(answer.payload.lcr_context_coverage?.prompt_context_chars || 0)
