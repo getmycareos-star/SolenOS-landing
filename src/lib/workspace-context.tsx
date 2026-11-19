@@ -85,12 +85,8 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     const freshEnter = params.get(ENTER_CARE_QUERY) === "1";
     const previousKey = window.localStorage.getItem(DURABLE_CARE_KEY_STORAGE);
 
-    if (freshEnter) {
-      markEnteredCareRecord();
-      params.delete(ENTER_CARE_QUERY);
-      const next = params.toString();
-      window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
-    }
+    // Keep explicit new-record intent in the URL until the session client
+    // has captured it and the server has successfully issued a replacement.
 
     // Interface language selection is intentionally disabled for the MVP.
     setLanguage("en");
@@ -154,12 +150,20 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     }
 
     void ensureAnonymousSession()
-      .then((session) =>
-        fetch(
+      .then((session) => {
+        // The session client has now persisted the server-issued identity and
+        // cleared any deletion marker. It is safe to consume the explicit-entry URL.
+        if (freshEnter) {
+          markEnteredCareRecord();
+          params.delete(ENTER_CARE_QUERY);
+          const next = params.toString();
+          window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
+        }
+        return fetch(
           `/api/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
           { headers: { Authorization: `Bearer ${session.access_token}` } },
-        ),
-      )
+        );
+      })
       .then((r) => (r && r.ok ? r.json() : null))
       .then((data) => {
         const fromServer = openSituationsFromSituationApi(data);
