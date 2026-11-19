@@ -73,3 +73,10 @@ assert(source.includes("Reported by the patient") && source.includes("Reported b
 assert(source.includes("Contains negative wording") && source.includes("Tentative wording") && source.includes("Conditional wording") && source.includes("Historical information"), "caregivers must see qualifiers before accepting document-derived details");
 
 console.log("✓ negation, uncertainty, conditionality, historical context and attribution remain visible in review");
+
+
+assert(lcr.includes("source_context") && lcr.includes("documentStatementContextLabels"), "the canonical LCR view must render source qualifiers persisted with accepted document assertions");
+assert(lcr.includes("Recommendation — outcome not established here") && lcr.includes("Contains negative wording"), "the LCR must preserve recommendation and negation boundaries after acceptance");
+assert(lcr.includes("Reported by the patient") && lcr.includes("Historical information"), "the LCR must retain reporter attribution and historical context after acceptance");
+
+console.log("✓ accepted document qualifiers persist into and remain visible from the canonical LCR");
