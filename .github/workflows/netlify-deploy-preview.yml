@@ -9,6 +9,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "netlify.toml"
+      - "scripts/verify-qwen-routing.mts"
       - ".github/workflows/netlify-deploy-preview.yml"
 
 permissions:
