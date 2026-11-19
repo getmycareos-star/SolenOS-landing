@@ -2,20 +2,12 @@ name: Live document continuity — real Qwen and caregiver acceptance
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "e2e/document-continuity-live-qwen.mjs"
-      - "e2e/critical-care-journeys.mjs"
-      - "src/components/DocumentIntelligenceReview.tsx"
-      - "src/components/ClarificationWorkflowPanel.tsx"
-      - "src/app/workspace/documents/**"
-      - "src/api/**"
-      - "src/lib/**"
-      - "src/services/**"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/document-continuity-live-qwen.yml"
+    inputs:
+      acknowledge_production_test_data:
+        description: "Acknowledge this test writes synthetic caregiver, document and care-record data to production without automatic cleanup"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -26,6 +18,7 @@ concurrency:
 
 jobs:
   live-document-continuity:
+    if: github.event_name == 'workflow_dispatch' && inputs.acknowledge_production_test_data == true
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
