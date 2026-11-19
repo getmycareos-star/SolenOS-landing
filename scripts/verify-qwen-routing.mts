@@ -75,7 +75,7 @@ requireText("src/app/workspace/page.tsx", [
   'import Link from "next/link";',
   'href="/workspace/companion"',
   "Ask SolenOS",
-  "Add a care update to keep this record up to date, or ask SolenOS about information already saved.",
+  "Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.",
 ]);
 assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
   "The caregiver home must route questions through the conversational Companion, not a separate care-management assistant panel.");
