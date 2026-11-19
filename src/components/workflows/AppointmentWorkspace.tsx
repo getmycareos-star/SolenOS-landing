@@ -487,50 +487,7 @@ export default function AppointmentWorkspace() {
         <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => { if (showDetailed) void refreshSavedWorkspace(); setShowDetailed(value => !value) }}>{showDetailed ? 'Close detailed appointment controls' : 'Open detailed appointment and follow-up controls (optional)'}</button>
         {showDetailed && <div className="guided-detailed"><p>Use these additional controls only when you need to review individual sections or manage follow-up actions. The guided appointment stages above remain the normal path.</p><DetailedAppointmentWorkspace /></div>}
       </>}
-      <style jsx>{`
-        .guided-appointment { color:var(--theme-panel-fg); }
-        .guided-stages { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 0; }
-        .guided-stages button { min-height:44px; border:1px solid var(--theme-panel-border); border-radius:11px; background:var(--theme-panel-bg); color:var(--theme-panel-muted); font:inherit; font-size:13px; font-weight:750; cursor:pointer; }
-        .guided-stages button.is-active { border-color:var(--theme-success-border); background:var(--theme-selected-bg); color:var(--theme-panel-fg); }
-        .guided-panel { margin-top:16px; padding:16px; border:1px solid var(--theme-panel-border); border-radius:14px; background:var(--theme-subtle-bg); }
-        .guided-panel-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
-        .guided-panel h4 { margin:0; color:var(--theme-panel-fg); font-size:17px; }
-        .guided-panel-heading p,.guided-muted { margin:5px 0 0; color:var(--theme-panel-muted); font-size:12px; line-height:1.6; }
-        .guided-state { padding:5px 8px; border:1px solid var(--theme-panel-border); border-radius:99px; color:var(--theme-panel-muted); font-size:10px; white-space:nowrap; }
-        .guided-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:15px; }
-        .guided-columns section,.guided-appointments { min-width:0; padding:12px; border:1px solid var(--theme-panel-border); border-radius:11px; background:var(--theme-panel-bg); }
-        .guided-panel h5 { margin:0 0 9px; color:var(--theme-panel-fg); font-size:12px; }
-        .guided-columns ul,.guided-appointments ul { margin:0; padding-left:17px; }
-        .guided-columns li { margin:0 0 11px; color:var(--theme-panel-fg); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
-        .guided-columns li p { margin:3px 0; }
-        .guided-columns li small,.guided-appointments li span { display:block; color:var(--theme-panel-muted); font-size:10px; }
-        .guided-appointments { margin-top:12px; }
-        .guided-appointments li { display:flex; justify-content:space-between; gap:10px; margin:7px 0; font-size:12px; }
-        .guided-footnote { margin:12px 0 0; color:var(--theme-panel-muted); font-size:10px; line-height:1.55; }
-        .guided-capture-label { display:flex; flex-direction:column; gap:7px; margin-top:14px; color:var(--theme-panel-fg); font-size:12px; font-weight:750; }
-        .guided-capture-label textarea { width:100%; box-sizing:border-box; min-height:100px; padding:12px; border:1px solid var(--theme-panel-border); border-radius:10px; background:var(--theme-field-bg); color:var(--theme-field-fg); font:inherit; font-size:14px; line-height:1.55; resize:vertical; }
-        .guided-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-        .guided-primary,.guided-secondary { min-height:42px; padding:10px 14px; border:1px solid var(--theme-action-border); border-radius:11px; background:var(--theme-action-bg); color:var(--theme-action-fg); font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
-        .guided-secondary { background:var(--theme-panel-bg); }
-        .guided-primary:disabled,.guided-secondary:disabled { opacity:.6; cursor:not-allowed; }
-        .guided-outcome { margin-top:16px; padding:14px; border:1px solid var(--theme-panel-border); border-radius:12px; background:var(--theme-panel-bg); }
-        .guided-outcome h5 { margin:0 0 12px; }
-        .guided-outcome section { padding:10px 0; border-top:1px solid var(--theme-panel-border); }
-        .guided-outcome h6 { margin:0 0 5px; color:#526653; font-size:11px; text-transform:capitalize; }
-        .guided-outcome p { margin:0; color:var(--theme-panel-fg); font-size:12px; line-height:1.55; white-space:pre-wrap; }
-        .guided-outcome small { display:block; margin-top:4px; color:var(--theme-panel-muted); font-size:10px; }
-        .guided-proposals { margin-top:16px; padding-top:12px; border-top:1px solid var(--theme-panel-border); }
-        .guided-proposal { margin-top:10px; padding:12px; border:1px solid var(--theme-panel-border); border-radius:10px; background:var(--theme-subtle-bg); }
-        .guided-proposal strong { color:var(--theme-panel-fg); font-size:12px; }
-        .guided-proposal p { margin:7px 0; color:var(--theme-panel-fg); font-size:12px; line-height:1.55; white-space:pre-wrap; }
-        .guided-proposal small { color:var(--theme-panel-muted); font-size:10px; }
-        .guided-status { margin-top:10px; color:var(--theme-panel-muted); font-size:11px; }
-        .guided-status span { display:block; color:var(--theme-error-fg); margin-top:4px; }
-        .guided-details-toggle { margin-top:16px; padding:9px 0; border:0; background:transparent; color:var(--theme-link); font:inherit; font-size:12px; font-weight:750; text-decoration:underline; cursor:pointer; }
-        .guided-detailed { margin-top:12px; padding-top:12px; border-top:1px solid var(--theme-panel-border); }
-        .guided-detailed > p { color:var(--theme-panel-muted); font-size:11px; line-height:1.5; }
-        @media(max-width:640px) { .guided-columns { grid-template-columns:minmax(0,1fr); } .guided-appointments li { display:block; } .guided-actions button,.guided-primary { width:100%; } .guided-panel { padding:13px; } }
-      `}</style>
+
     </section>
   )
 }
