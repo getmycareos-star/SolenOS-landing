@@ -47,7 +47,13 @@ assert.equal(capabilityResponse.status, 200, JSON.stringify(capability));
 assert.equal(capability.available, true, "CI VAPID configuration must enable browser push");
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
-const browser = await chromium.launch({ headless: false });
+const browser = await chromium.launch({
+  headless: false,
+  channel: "chrome",
+  // Playwright disables background networking by default. Chrome needs its
+  // push-service network traffic enabled to register a real FCM endpoint.
+  ignoreDefaultArgs: ["--disable-background-networking"],
+});
 // Seed the permission into Chromium's isolated context at creation time; later
 // grants can update Permissions API state without updating Notification.permission.
 const context = await browser.newContext({ permissions: ["notifications"] });
