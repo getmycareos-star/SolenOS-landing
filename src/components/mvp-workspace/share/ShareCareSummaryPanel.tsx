@@ -47,6 +47,7 @@ function downloadBriefing(draft: BriefingDraft) {
       ...(draft.selected_appointment.provider ? ["Provider: " + draft.selected_appointment.provider] : []),
     ] : []),
     "Review status: " + (draft.review_status || "Needs review"),
+    ...(draft.template_sections ?? []).filter(item => /medication/i.test(item.title)).map(item => item.coverage_note),
     ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["Briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
     ...(draft.retrieval_complete === false ? [
       "Retrieval warning: this briefing does not include all available Care Record information.",
