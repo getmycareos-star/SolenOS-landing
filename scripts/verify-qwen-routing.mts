@@ -117,6 +117,11 @@ requireText("src/components/workflows/Community.tsx", [
 ]);
 assert(!read("src/components/workflows/Community.tsx").includes("QwenAssistPanel"), "Community must not expose internal assistant workflow controls.");
 assert(!read("src/components/workflows/Community.tsx").includes("Qwen support for Community"), "Community must not show internal model branding.");
+requireText("src/api/client.ts", [
+  "export class ApiResponseError extends Error",
+  "throw new ApiResponseError(res.status, message, detail)",
+  "typeof detailMessage === 'string'",
+]);
 requireText("src/components/workflows/AICompanion.tsx", [
   "matched_validated_aggregate",
   "aggregate_count_mismatch",
@@ -136,6 +141,9 @@ requireText("src/components/workflows/AICompanion.tsx", [
   "status.runtime_available === true && status.model_installed === true",
   "setAvailability('unverified')",
   "response.ai_generated === true ? 'available' : 'unverified'",
+  "error instanceof ApiResponseError && [502, 503, 504].includes(error.status)",
+  "setAvailability(inferenceUnavailable ? 'unavailable' : 'unknown')",
+  "your Care Record has not changed",
   "availability === 'available' || availability === 'unverified'",
   "availability !== \"available\" && availability !== \"unverified\"",
 ]);
