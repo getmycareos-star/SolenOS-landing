@@ -22,7 +22,10 @@ const required: Array<[string, RegExp]> = [
   ["shows linked notes and documents", /Related notes and documents[\s\S]*?uniqueEvidenceIds/],
   ["passes a linked follow-up review date into its card", /review_at: loop\.review_at/],
   ["labels a due review as requested rather than as a future date", /Review requested/],
-  ["does not expose manual task creation or a parallel open-loop writer", /function shareUpdate[\s\S]*?postJSON\("\/open-loops\/"[\s\S]*?\/outcomes/],
+  ["records caregiver actions without claiming the outcome is verified", /function recordAction[\s\S]*?postJSON\("\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/actions"[\s\S]*?outcome has not been marked as verified/],
+  ["does not expose a second general-purpose follow-up writer", /function shareUpdate[\s\S]*?const endpoint =[\s\S]*?await postJSON\(endpoint/],
+  ["reassesses saved follow-ups before refreshing the page", /postJSON\("\/open-loops\/reassess"/],
+  ["loads repeat occurrences alongside update history", /\/occurrences\?limit=100/],
 ];
 
 for (const [label, pattern] of required) {
