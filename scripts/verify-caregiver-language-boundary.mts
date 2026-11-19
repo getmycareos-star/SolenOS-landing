@@ -263,7 +263,7 @@ assert.match(followUps, /Why this needs attention/);
 assert.match(followUps, /Information that is missing, unclear or does not match/);
 assert.match(timeline, /return to your Care Record/);
 assert.match(statusCareDelta, /Compare with saved care information/);
-assert.match(workspaceHome, /ask SolenOS about information already saved/);
+assert.match(workspaceHome, /ask a question about information already saved/);
 assert.doesNotMatch(workspaceHome, /AI Companion/);
 assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Send a message to Companion|Companion is responding/);
 assert.doesNotMatch(persistedOrientation, /Your Living Care Record|source information|care record item/);
