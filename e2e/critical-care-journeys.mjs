@@ -2727,7 +2727,7 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
   assert.ok(evidenceId, "the synthetic upload must have a persisted evidence identifier");
 
   const privacyBrowser = await createBrowserPage(deletionSession, "/workspace/settings");
-  const privacySection = privacyBrowser.page.locator("#settings-privacy");
+  const privacySection = privacyBrowser.page.locator("#settings-privacy:visible");
   await privacySection.waitFor({ state: "visible", timeout: 20_000 });
   const privacyDisclosure = privacySection.locator(":scope > summary");
   const privacyIsOpen = await privacySection.evaluate((element) =>
@@ -2778,8 +2778,8 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
       throw new Error("Privacy settings disclosure must be reopened after reload before checking its contents");
     }
   });
-  await privacyBrowser.page.getByText("Request history", { exact: true }).waitFor({ timeout: 20_000 });
-  await privacyBrowser.page.getByText("You already have an erasure request awaiting review.", { exact: false }).waitFor();
+  await privacySection.getByText("Request history", { exact: true }).waitFor({ state: "visible", timeout: 20_000 });
+  await privacySection.getByText("You already have an erasure request awaiting review.", { exact: false }).waitFor({ state: "visible" });
   assert.equal(await submitErasure.isDisabled(), true, "an open erasure request must block duplicate UI submission after reload");
   await privacyBrowser.context.close();
 
