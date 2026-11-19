@@ -40,7 +40,7 @@ type DraftPayload = {
   validation_status?: string;
   review_status?: string;
   revision_number?: number;
-  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
+  generation?: { status: string; provider?: string | null; model?: string | null; interpretation_limit?: string | null; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
   caregiver_notes?: Array<{ text: string; attribution: string }>;
   audience?: "family" | "professional";
   prepared_at: string;
