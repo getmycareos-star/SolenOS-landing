@@ -131,6 +131,20 @@ async function requestAuthorizationHeaders(path: string): Promise<Record<string,
   const isPublicTimeUtility = /^\/time\/(?:now|ago|until)(?:\?|$)/.test(normalized);
   if (isPublicTimeUtility) return authorizationHeaders();
 
+  // The deletion marker is shared across tabs. Check it before reusing an
+  // otherwise-valid cached token so a second tab cannot keep using a record
+  // after this browser has been cleared. Explicit new-record entry bootstraps
+  // a fresh server-issued identity before any protected request is sent.
+  if (window.localStorage.getItem(ANONYMOUS_SESSION_REVOKED_KEY) !== null) {
+    const url = new URL(window.location.href);
+    const explicitNewRecordIntent =
+      url.pathname === "/workspace" && url.searchParams.get("enter") === "1";
+    if (!explicitNewRecordIntent) {
+      throw new Error("This workspace was deleted from this device. Choose Care Record to start a new record.");
+    }
+    await ensureAnonymousSession();
+  }
+
   const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
