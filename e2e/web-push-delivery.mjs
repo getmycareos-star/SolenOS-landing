@@ -112,20 +112,10 @@ try {
   });
   assert.ok(serviceWorker.activeScript?.endsWith("/sw.js"), JSON.stringify(serviceWorker));
 
-  const pushPermissionState = await page.evaluate(async (encodedPublicKey) => {
-    const padding = "=".repeat((4 - encodedPublicKey.length % 4) % 4);
-    const base64 = (encodedPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const raw = atob(base64);
-    const applicationServerKey = new Uint8Array(raw.length);
-    for (let index = 0; index < raw.length; index += 1) applicationServerKey[index] = raw.charCodeAt(index);
-    const registration = await navigator.serviceWorker.ready;
-    return {
-      notification: Notification.permission,
-      permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
-      push: await registration.pushManager.permissionState({ userVisibleOnly: true, applicationServerKey }),
-    };
-  }, capability.public_key);
-  assert.equal(pushPermissionState.push, "granted", `Chrome PushManager permission is not granted: ${JSON.stringify(pushPermissionState)}`);
+  // Do not call PushManager.permissionState() as a preflight: Chromium can
+  // reject that query with "Error retrieving push subscription" even when
+  // the browser can create a subscription. The real subscribe() call below
+  // is the authoritative capability check and its error is captured.
 
   // Prepare service-worker state before the gesture. subscribe() itself runs
   // synchronously in a genuine browser click handler.
