@@ -357,6 +357,88 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     }
   };
 
+  const savePrivateObservation = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!observationDraft.trim()) return;
+    setSavingPrivateContext(true);
+    setError("");
+    setNotice("");
+    try {
+      const session = await ensureAnonymousSession();
+      await postJSON("/caregiver-observations", {
+        person_id: session.person.id,
+        caregiver_id: session.caregiver.id,
+        observation_content: observationDraft.trim(),
+        observation_type: "direct",
+        information_visibility: "private",
+        is_promoted_to_shared: false,
+      });
+      setObservationDraft("");
+      setNotice("Your observation is saved privately. It has not been added to the shared Care Record.");
+      await load();
+    } catch {
+      setError("We couldn't save this private observation. No care information was shared.");
+    } finally {
+      setSavingPrivateContext(false);
+    }
+  };
+
+  const savePrivatePerspective = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!perspectiveDraft.trim()) return;
+    setSavingPrivateContext(true);
+    setError("");
+    setNotice("");
+    try {
+      const session = await ensureAnonymousSession();
+      await postJSON("/caregiver-perspectives", {
+        person_id: session.person.id,
+        caregiver_id: session.caregiver.id,
+        claim_type: perspectiveType,
+        claim_content: perspectiveDraft.trim(),
+        information_visibility: "private",
+        is_promoted_to_shared: false,
+      });
+      setPerspectiveDraft("");
+      setNotice("Your perspective is saved privately. It has not been added to the shared Care Record.");
+      await load();
+    } catch {
+      setError("We couldn't save this private perspective. No care information was shared.");
+    } finally {
+      setSavingPrivateContext(false);
+    }
+  };
+
+  const promotePrivateObservation = async (item: CaregiverPrivateObservation) => {
+    setSavingPrivateContext(true);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/caregiver-observations/" + encodeURIComponent(item.id) + "/promote", {});
+      setNotice("Your observation is now shared with the care circle.");
+      await load();
+    } catch {
+      setError("We couldn't share this observation. It remains private.");
+    } finally {
+      setSavingPrivateContext(false);
+    }
+  };
+
+  const promotePrivatePerspective = async (item: CaregiverPrivatePerspective) => {
+    setSavingPrivateContext(true);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/caregiver-perspectives/" + encodeURIComponent(item.id) + "/promote", {});
+      setNotice("Your perspective is now shared with the care circle.");
+      await load();
+    } catch {
+      setError("We couldn't share this perspective. It remains private.");
+    } finally {
+      setSavingPrivateContext(false);
+    }
+  };
+
   const revoke = async (member: Member) => {
     if (!window.confirm("Remove " + member.name + "'s access to this Care Record? Notes they added in the past will stay.")) return;
     setBusy(true);
@@ -408,6 +490,49 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               {sendingCommunication ? undefined : "Share with caregivers"}
             </Button>
           </form>
+
+          <section style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
+            <div>
+              <h3 className="mobile-settings-label" style={{ margin: 0 }}>Your private care notes</h3>
+              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0 0" }}>These notes belong to you. They are not evidence in the Living Care Record and are not shared unless you choose to share them with the care circle.</p>
+            </div>
+            <form onSubmit={(event) => void savePrivateObservation(event)} style={{ display: "grid", gap: "0.5rem" }}>
+              <label className="mobile-settings-label" htmlFor="private-care-observation">Record an observation</label>
+              <textarea id="private-care-observation" className="mobile-settings-input" rows={3} maxLength={2000} required value={observationDraft} onChange={(event) => setObservationDraft(event.target.value)} placeholder="What did you personally notice?" />
+              <Button type="submit" variant="secondary" disabled={savingPrivateContext || !observationDraft.trim()} loading={savingPrivateContext}>Save privately</Button>
+            </form>
+            <form onSubmit={(event) => void savePrivatePerspective(event)} style={{ display: "grid", gap: "0.5rem" }}>
+              <label className="mobile-settings-label" htmlFor="private-care-perspective">Record your perspective</label>
+              <select id="private-care-perspective-type" className="mobile-settings-input" value={perspectiveType} onChange={(event) => setPerspectiveType(event.target.value as "belief" | "interpretation")}>
+                <option value="interpretation">My interpretation</option>
+                <option value="belief">What I believe</option>
+              </select>
+              <textarea id="private-care-perspective" className="mobile-settings-input" rows={3} maxLength={2000} required value={perspectiveDraft} onChange={(event) => setPerspectiveDraft(event.target.value)} placeholder="Add context about how you understand what happened…" />
+              <Button type="submit" variant="secondary" disabled={savingPrivateContext || !perspectiveDraft.trim()} loading={savingPrivateContext}>Save privately</Button>
+            </form>
+            {(myObservations.length > 0 || myPerspectives.length > 0) && (
+              <div style={{ display: "grid", gap: "0.65rem" }}>
+                {myObservations.slice(0, 8).map((item) => (
+                  <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.55rem" }}>
+                    <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem" }}>{item.observation_content}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <span className="mobile-settings-hint">{item.is_promoted_to_shared ? "Shared with care circle" : "Private to you"}</span>
+                      {!item.is_promoted_to_shared && <Button type="button" variant="secondary" disabled={savingPrivateContext} onClick={() => void promotePrivateObservation(item)}>Share with care circle</Button>}
+                    </div>
+                  </div>
+                ))}
+                {myPerspectives.slice(0, 8).map((item) => (
+                  <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.55rem" }}>
+                    <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem" }}>{item.claim_content}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <span className="mobile-settings-hint">{item.is_promoted_to_shared ? "Shared with care circle" : "Private to you"}</span>
+                      {!item.is_promoted_to_shared && <Button type="button" variant="secondary" disabled={savingPrivateContext} onClick={() => void promotePrivatePerspective(item)}>Share with care circle</Button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
           {networkSummary && (
             <div style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
