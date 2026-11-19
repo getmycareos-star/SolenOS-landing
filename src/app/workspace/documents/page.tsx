@@ -449,7 +449,7 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="mobile-screen" style={{ gap: 18, paddingBottom: 28 }}>
+    <div className="mobile-screen documents-page" style={{ gap: 18, paddingBottom: 28 }}>
       <header className="mobile-page-head" style={{ marginBottom: 0 }}>
         <h1>Documents</h1>
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
