@@ -27,6 +27,15 @@ interface ClaimSourceReference {
   correction_rationale?: string | null
   previous_source_excerpt?: string | null
   related_evidence_ids?: string[]
+  evidence_reviews_status?: string
+  evidence_reviews_has_more?: boolean
+  evidence_reviews?: Array<{
+    review_type: string
+    outcome: string
+    rationale: string
+    created_at?: string | null
+    interpretation_limit: string
+  }>
   related_evidence?: Array<{
     label: string
     record_id: string
@@ -38,6 +47,15 @@ interface ClaimSourceReference {
     record_status?: string | null
     source_independence_status?: string | null
     exact_wording_duplicate_count?: number
+    evidence_reviews_status?: string
+    evidence_reviews_has_more?: boolean
+    evidence_reviews?: Array<{
+      review_type: string
+      outcome: string
+      rationale: string
+      created_at?: string | null
+      interpretation_limit: string
+    }>
     observations?: Array<{
       label?: string
       attribute?: string
@@ -503,6 +521,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
                                   {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                                  {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
+                                    <p><strong>Source review: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
+                                    <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
+                                    <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review does not independently confirm a care detail."}</small>
+                                  </div>)}
+                                  {(source.evidence_reviews_status === "unavailable" || source.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Supporting note or document</strong>
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
@@ -516,6 +540,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
                                       {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
+                                      {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
+                                        <p><strong>Source review: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
+                                        <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
+                                        <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review does not independently confirm a care detail."}</small>
+                                      </div>)}
+                                      {(item.evidence_reviews_status === "unavailable" || item.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
                                       {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
                                         <p>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
                                         {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
