@@ -503,6 +503,14 @@ await record("01a dementia profile review window and observation persistence are
     row.id === observationWrite.payload.id && row.description === description
   ), "the original observation must be retrievable");
 
+  const currentCare = await request("/api/v1/care-continuity/current-care", {
+    token: identity.token,
+  });
+  assert.equal(currentCare.status, 200, JSON.stringify(currentCare.payload));
+  assert.ok(currentCare.payload.items.some((item) =>
+    item.id === observationWrite.payload.id && item.source_collection === "caregiver_observations"
+  ), "the saved dementia observation must appear in the existing Living Care Record projection");
+
   const foreignRead = await request("/api/v1/care-continuity/caregiver-observations?limit=100", {
     token: foreign.token,
   });
