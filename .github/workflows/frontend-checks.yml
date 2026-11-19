@@ -10,6 +10,7 @@ on:
       - "netlify.toml"
       - "tsconfig*.json"
       - "scripts/verify-care-situation-understanding.mts"
+      - "scripts/verify-lcr-caregiver-first-redesign.mts"
       - "scripts/verify-ops-console.mts"
       - "db/migrations/**"
       - ".github/workflows/frontend-checks.yml"
@@ -18,6 +19,7 @@ on:
     paths:
       - "src/**"
       - "scripts/verify-care-situation-understanding.mts"
+      - "scripts/verify-lcr-caregiver-first-redesign.mts"
       - "package.json"
       - "package-lock.json"
       - "netlify.toml"
