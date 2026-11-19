@@ -54,6 +54,25 @@ const ANONYMOUS_TOKEN_KEY = "solenos_anonymous_access_token";
 const ANONYMOUS_PERSON_KEY = "solenos_backend_person_id";
 const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
+const ANONYMOUS_SESSION_REVOKED_KEY = "solenos_anonymous_session_revoked";
+
+/**
+ * A revoked local workspace must remain revoked until the caregiver explicitly
+ * enters /workspace?enter=1. Check both before bootstrap and after network waits
+ * so an in-flight create/refresh cannot repopulate credentials after deletion.
+ */
+function assertAnonymousSessionMayBeCreated(): void {
+  if (typeof window === "undefined") return;
+  if (window.sessionStorage.getItem(ANONYMOUS_SESSION_REVOKED_KEY) !== "1") return;
+
+  const url = new URL(window.location.href);
+  const explicitNewRecordIntent =
+    url.pathname === "/workspace" && url.searchParams.get("enter") === "1";
+  if (!explicitNewRecordIntent) {
+    throw new Error("This workspace was deleted from this device. Choose Care Record to start a new record.");
+  }
+  window.sessionStorage.removeItem(ANONYMOUS_SESSION_REVOKED_KEY);
+}
 
 export type AnonymousSession = {
   session_id?: string;
@@ -114,6 +133,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     throw new Error("Anonymous care sessions can only be created in the browser.");
   }
 
+  assertAnonymousSessionMayBeCreated();
   const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
@@ -159,6 +179,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       expires_at: string;
       expires_in_seconds: number;
     };
+    assertAnonymousSessionMayBeCreated();
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
     window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
     window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
@@ -190,6 +211,7 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     body: JSON.stringify({ caregiver_name: "Caregiver" }),
   });
   const created = (await handleResponse(response)) as AnonymousSession;
+  assertAnonymousSessionMayBeCreated();
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, created.access_token);
   window.localStorage.setItem(ANONYMOUS_PERSON_KEY, created.person.id);
   window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, created.caregiver.id);
@@ -554,6 +576,9 @@ export async function putJSON(path: string, body: unknown) {
 export async function revokeAnonymousSession(): Promise<void> {
   await postJSON("/sessions/revoke", {});
   if (typeof window !== "undefined") {
+    // Prevent background or in-flight bootstrap from silently replacing a deleted identity.
+    window.sessionStorage.setItem(ANONYMOUS_SESSION_REVOKED_KEY, "1");
+    anonymousSessionPromise = null;
     window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
     window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
     window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
