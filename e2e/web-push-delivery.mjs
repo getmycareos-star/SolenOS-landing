@@ -111,6 +111,30 @@ try {
   );
   assert.equal(permissionState.secureContext, true, "Web Push requires a secure browser context");
 
+  // Exercise the browser's permission prompt from a genuine user activation.
+  // This distinguishes a missing user gesture from a broken CI permission grant.
+  await page.evaluate(() => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = "solenos-request-notification-permission";
+    button.textContent = "Enable notifications";
+    button.addEventListener("click", async () => {
+      button.dataset.permissionResult = await Notification.requestPermission();
+    });
+    document.body.append(button);
+  });
+  await page.locator("#solenos-request-notification-permission").click();
+  await page.waitForFunction(() => Boolean(document.querySelector("#solenos-request-notification-permission")?.dataset.permissionResult), { timeout: 5_000 });
+  const activatedPermissionState = await page.evaluate(async () => ({
+    notification: Notification.permission,
+    requestResult: document.querySelector("#solenos-request-notification-permission")?.dataset.permissionResult,
+    permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
+    origin: location.origin,
+  }));
+  console.log("WEB_PUSH_PERMISSION_DIAGNOSTIC", JSON.stringify({ beforeUserActivation: permissionState, afterUserActivation: activatedPermissionState }));
+  assert.equal(activatedPermissionState.notification, "granted", "Notification.permission must be granted after an actual user activation");
+  assert.equal(activatedPermissionState.permissionsApi, "granted", "Permissions API must report granted after user activation");
+
   const subscription = await page.evaluate(async (encodedPublicKey) => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       throw new Error("Chromium does not expose the Web Push APIs required for this test");
