@@ -527,6 +527,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                     <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review does not independently confirm a care detail."}</small>
                                   </div>)}
                                   {(source.evidence_reviews_status === "unavailable" || source.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
+                                  {source.evidence_reviews_status === "empty" && <p>No source review has been recorded for this note or document.</p>}
                                   {source.evidence_reviews_has_more && <p>Only the latest source reviews are shown here. Earlier reviews remain in the care history.</p>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Supporting note or document</strong>
@@ -547,6 +548,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                         <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review does not independently confirm a care detail."}</small>
                                       </div>)}
                                       {(item.evidence_reviews_status === "unavailable" || item.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
+                                      {item.evidence_reviews_status === "empty" && <p>No source review has been recorded for this note or document.</p>}
                                       {item.evidence_reviews_has_more && <p>Only the latest source reviews are shown here. Earlier reviews remain in the care history.</p>}
                                       {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
                                         <p>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
