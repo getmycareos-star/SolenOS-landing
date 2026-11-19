@@ -2717,6 +2717,15 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
   assert.equal(duplicate.payload.detail.request.id, requestId);
 
   await privacyBrowser.page.reload({ waitUntil: "domcontentloaded" });
+  const privacyIsOpenAfterReload = await privacySection.evaluate((element) =>
+    element instanceof HTMLDetailsElement && element.open
+  );
+  if (!privacyIsOpenAfterReload) await privacyDisclosure.click();
+  await privacySection.evaluate((element) => {
+    if (!(element instanceof HTMLDetailsElement) || !element.open) {
+      throw new Error("Privacy settings disclosure must be reopened after reload before checking its contents");
+    }
+  });
   await privacyBrowser.page.getByText("Request history", { exact: true }).waitFor({ timeout: 20_000 });
   await privacyBrowser.page.getByText("You already have an erasure request awaiting review.", { exact: false }).waitFor();
   assert.equal(await submitErasure.isDisabled(), true, "an open erasure request must block duplicate UI submission after reload");
