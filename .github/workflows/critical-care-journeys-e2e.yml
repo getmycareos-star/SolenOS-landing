@@ -87,7 +87,7 @@ jobs:
           repository: getmycareos-star/SolenOS_backend
           ref: main
           path: backend-service
-      - name: Record backend revision under test
+      - name: Record exact backend main revision under test
         run: |
           git -C backend-service rev-parse HEAD
           git -C backend-service log -1 --oneline
