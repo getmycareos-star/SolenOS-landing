@@ -1024,23 +1024,35 @@ export default function WorkspaceSettingsPage() {
         <h1>Settings</h1>
         <p>Keep your care space personal, protected, and working the way you need.</p>
       </div>
-      <nav className="settings-section-nav" aria-label="Settings sections">
-        <a href="#settings-profile">Profile</a>
-        <a href="#settings-notifications">Notifications</a>
-        <a href="#settings-account">Account</a>
-        <a href="#settings-caregivers">Caregivers</a>
-        <a href="#settings-security">Security</a>
-        <a href="#settings-privacy">Privacy &amp; data</a>
-        <a href="#settings-help">Help</a>
-      </nav>
-      <div className="mobile-settings settings-page-grid">
-        <div className="settings-section-wrap" id="settings-profile"><div className="settings-section-intro"><span>01</span><div><h2>Your care profile</h2><p>Personal details used to make your care space easier to recognize.</p></div></div><ProfileCard /></div>
-        <div className="settings-section-wrap" id="settings-notifications"><div className="settings-section-intro"><span>02</span><div><h2>Notifications</h2><p>Choose how routine care updates reach you.</p></div></div><NotificationsCard /></div>
-        <div className="settings-section-wrap" id="settings-account"><div className="settings-section-intro"><span>03</span><div><h2>Account access</h2><p>You can use SolenOS without creating an account.</p></div></div><AccountCard /></div>
-        <div className="settings-section-wrap" id="settings-caregivers"><div className="settings-section-intro"><span>04</span><div><h2>Caregiver access</h2><p>Invite family members and manage who can access this care record.</p></div></div><CaregiverAccessPanel /></div>
-        <div className="settings-section-wrap" id="settings-security"><div className="settings-section-intro"><span>05</span><div><h2>Devices and account access</h2><p>See which devices can access your account and get help if you lose access.</p></div></div><IdentityDeviceRecoveryPanel /></div>
-        <div className="settings-section-wrap" id="settings-privacy"><div className="settings-section-intro"><span>06</span><div><h2>Privacy &amp; data</h2><p>Choose whether to share information that helps improve SolenOS and manage what is saved on this device.</p></div></div><PrivacyCard /></div>
-        <div className="settings-section-wrap" id="settings-help"><div className="settings-section-intro"><span>07</span><div><h2>Help &amp; information</h2><p>Find support, policies, and information about SolenOS.</p></div></div><LegalCard /><ProductCard /></div>
+      <div className="mobile-settings settings-page-grid settings-accordion">
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-profile">
+          <summary className="settings-section-summary"><span className="settings-section-number">01</span><span className="settings-section-summary-copy"><strong>Profile</strong><small>Personal details for your care space</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><ProfileCard /></div>
+        </details>
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-notifications">
+          <summary className="settings-section-summary"><span className="settings-section-number">02</span><span className="settings-section-summary-copy"><strong>Notifications</strong><small>Care updates, reminders and alerts</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><NotificationsCard /></div>
+        </details>
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-account">
+          <summary className="settings-section-summary"><span className="settings-section-number">03</span><span className="settings-section-summary-copy"><strong>Account and sign-in</strong><small>Email, password and account access</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><AccountCard /></div>
+        </details>
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-caregivers">
+          <summary className="settings-section-summary"><span className="settings-section-number">04</span><span className="settings-section-summary-copy"><strong>Caregiver access</strong><small>People who can access this care record</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><CaregiverAccessPanel /></div>
+        </details>
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-security">
+          <summary className="settings-section-summary"><span className="settings-section-number">05</span><span className="settings-section-summary-copy"><strong>Devices and recovery</strong><small>Connected devices and help getting back in</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><IdentityDeviceRecoveryPanel /></div>
+        </details>
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-privacy">
+          <summary className="settings-section-summary"><span className="settings-section-number">06</span><span className="settings-section-summary-copy"><strong>Privacy and data</strong><small>Privacy choices and saved information</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><PrivacyCard /></div>
+        </details>
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-help">
+          <summary className="settings-section-summary"><span className="settings-section-number">07</span><span className="settings-section-summary-copy"><strong>Help and information</strong><small>Support, policies and product information</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><LegalCard /><ProductCard /></div>
+        </details>
       </div>
     </div>
   );
