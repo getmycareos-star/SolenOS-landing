@@ -5392,6 +5392,26 @@ input[type="file"] { width: 100%; white-space: normal; }
 .settings-section-nav a { display: inline-flex; align-items: center; min-height: 42px; padding: .55rem .85rem; border-radius: 10px; color: #24362b; font-size: .92rem; font-weight: 650; text-decoration: none; }
 .settings-section-nav a:hover, .settings-section-nav a:focus-visible { background: #e4eee5; outline: 2px solid #7e9c84; outline-offset: 1px; }
 .settings-page-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; max-width: 58rem; margin-inline: auto; }
+.settings-accordion { gap: .65rem; }
+.settings-section-disclosure { overflow: clip; border: 1px solid var(--border, #dce5dc); border-radius: 14px; background: var(--card, #fff); }
+.settings-section-summary { display: flex; align-items: center; gap: .8rem; min-height: 76px; padding: .85rem 1rem; cursor: pointer; list-style: none; }
+.settings-section-summary::-webkit-details-marker { display: none; }
+.settings-section-summary:focus-visible { outline: 3px solid #7e9c84; outline-offset: -3px; border-radius: 12px; }
+.settings-section-number { display: inline-flex; flex: 0 0 2.2rem; width: 2.2rem; height: 2.2rem; align-items: center; justify-content: center; border-radius: 10px; background: #e5eee5; color: #385642; font-size: .82rem; font-weight: 750; }
+.settings-section-summary-copy { display: grid; flex: 1; min-width: 0; gap: .18rem; color: var(--foreground, #1d2b22); }
+.settings-section-summary-copy strong { font-size: 1rem; line-height: 1.35; }
+.settings-section-summary-copy small { color: var(--muted-foreground, #647267); font-size: .82rem; line-height: 1.4; }
+.settings-section-chevron { color: #526b58; font-size: 1.35rem; transition: transform .18s ease; }
+.settings-section-disclosure[open] .settings-section-chevron { transform: rotate(180deg); }
+.settings-section-content { padding: 0 .8rem .85rem; }
+.settings-section-content > .mobile-settings-card { margin: 0; border: 0; box-shadow: none; }
+@media (max-width: 640px) {
+  .settings-section-summary { min-height: 70px; padding: .75rem .8rem; }
+  .settings-section-content { padding: 0 .55rem .65rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-section-chevron { transition: none; }
+}
 .settings-section-wrap { min-width: 0; scroll-margin-top: 1rem; }
 .settings-section-intro { display: flex; align-items: flex-start; gap: .85rem; margin: 0 0 .65rem; }
 .settings-section-intro > span { display: inline-flex; flex: 0 0 2.25rem; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; border-radius: 10px; background: #e5eee5; color: #385642; font-size: .85rem; font-weight: 750; }
