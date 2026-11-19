@@ -42,7 +42,7 @@ type DraftPayload = {
   validation_status?: string;
   review_status?: string;
   revision_number?: number;
-  generation?: { status: string; provider?: string | null; model?: string | null; interpretation_limit?: string | null; sources_considered?: number; sources_available?: number; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
+  generation?: { status: string; provider?: string | null; model?: string | null; interpretation_limit?: string | null; sources_considered?: number; sources_available?: number; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean; semantic_entailment_status?: string }> };
   caregiver_notes?: Array<{ text: string; attribution: string }>;
   audience?: "family" | "professional";
   prepared_at: string;
@@ -780,6 +780,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <strong style={{ fontSize: 13 }}>{readableSection(item.section)}</strong>
                 <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown."}</p>
                 {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Saved source wording: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording unavailable."}</p>}
+                <p style={{ fontSize: 11, lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Validation: exact saved wording; no AI paraphrase." : "Validation: source quote matched. The summary wording still needs your review; quote matching does not prove the paraphrase is fully supported."}</p>
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
               </article>
             ))}
@@ -832,7 +833,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <strong style={{ display: "block", fontSize: 12 }}>{readableSection(item.section)}</strong>
                 <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
                 <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown in this preview."}</p>
-                {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 10px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
+                {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 6px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
+                <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Exact saved wording; no AI paraphrase." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
                 <button type="button" style={quietButton} onClick={() => {
                   const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
                   setEditedSections(remaining);
