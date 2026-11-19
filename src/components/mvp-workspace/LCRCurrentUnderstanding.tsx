@@ -1308,6 +1308,15 @@ export function LCRCurrentUnderstanding() {
           ) : (
             <RecordState kind="period-empty" title="No immediate follow-ups recorded" description="The information reviewed does not currently show an immediate follow-up." />
           )}
+          {watchUncertainties.length > 0 && (
+            <p className="lcr-entry-status">
+              <strong>Still unclear:</strong>{" "}
+              {caregiverSafeAssistantText(watchUncertainties[0].title) || "Some care information still needs checking."}
+              {watchUncertainties.length > 1
+                ? ` ${watchUncertainties.length - 1} more item(s) may need checking.`
+                : ""}
+            </p>
+          )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
         </div>
 
