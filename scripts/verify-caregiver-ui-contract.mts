@@ -132,9 +132,9 @@ const careOverviewStyles = experienceStyles.slice(
   experienceStyles.indexOf(".solenos-chat-app .solenos-care-next-step"),
   experienceStyles.indexOf("/* Care Record overview presentation"),
 );
-assert.match(careOverviewStyles, /background: var\\(--sn-surface-soft\\)/, "Care Overview action panel must follow the active surface theme");
-assert.match(careOverviewStyles, /\.solenos-care-primary-action \\{ background: var\\(--sn-sage\\); border-color: var\\(--sn-sage\\); color: #17251c; \\}/, "primary Care Overview action must retain sage-and-ink contrast in both themes");
-assert.match(careOverviewStyles, /\.solenos-care-secondary-action \\{ background: var\\(--sn-surface\\); color: var\\(--sn-forest\\); \\}/, "secondary Care Overview action must use the active surface and text tokens");
+assert.match(careOverviewStyles, /background: var\(--sn-surface-soft\)/, "Care Overview action panel must follow the active surface theme");
+assert.match(careOverviewStyles, /\.solenos-care-primary-action \{ background: var\(--sn-sage\); border-color: var\(--sn-sage\); color: #17251c; \}/, "primary Care Overview action must retain sage-and-ink contrast in both themes");
+assert.match(careOverviewStyles, /\.solenos-care-secondary-action \{ background: var\(--sn-surface\); color: var\(--sn-forest\); \}/, "secondary Care Overview action must use the active surface and text tokens");
 const v2Styles = fs.readFileSync(path.join(root, "src/app/workspace/experience-design-system-v2.css"), "utf8");
 const workspaceLayout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 const appShell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
