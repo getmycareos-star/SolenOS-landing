@@ -171,7 +171,6 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
       setError(`Add the information for “${field.label}” or choose another status.`);
       return;
     }
-    setSavingField(field.key);
     setError("");
     setNotice("");
     const assertedValue = status === "known" ? value : STATUS_TEXT[status];
@@ -186,6 +185,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
       setNotice("No change to save for " + field.label + ".");
       return;
     }
+    setSavingField(field.key);
     const sourceText = status === "known"
       ? value
       : "Caregiver marked this information as " + STATUS_TEXT[status].toLowerCase() + ".";
