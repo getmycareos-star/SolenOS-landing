@@ -687,10 +687,25 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       )}
 
       {draft && audience === "professional" && (
-        <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
-          <strong>Healthcare professional summary — private review only</strong>
-          <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>SolenOS cannot yet confirm that a recipient is a healthcare professional. This draft cannot be shared with professionals from this screen.</p>
-        </div>
+        <>
+          <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
+            <strong>Healthcare professional briefing — private review only</strong>
+            <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>This briefing is prepared from the saved Living Care Record. SolenOS cannot yet confirm a professional recipient's identity and role, so professional sharing is not available from this screen.</p>
+            {draft.generation?.interpretation_limit && <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(draft.generation.interpretation_limit) ?? "Check each generated statement against its saved source."}</p>}
+          </div>
+          <section style={{ ...panel, marginTop: 0 }} aria-label="Professional briefing review">
+            <h4 style={{ marginTop: 0 }}>Professional briefing</h4>
+            {(draft.generation?.sections ?? []).map((item, index) => (
+              <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
+                <strong style={{ fontSize: 13 }}>{readableSection(item.section)}</strong>
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown."}</p>
+                {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Saved source wording: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording unavailable."}</p>}
+                <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
+              </article>
+            ))}
+            {draft.generation?.status !== "generated" && <p style={{ fontSize: 12 }}>AI drafting was not completed. The saved source records and retrieval limitations remain available for review.</p>}
+          </section>
+        </>
       )}
 
       {draft && audience === "family" && (
