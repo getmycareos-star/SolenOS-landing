@@ -270,7 +270,7 @@ export default function FollowUpsPage() {
     const description = [
       item.reason,
       ...(item.priority_basis || []),
-    ].filter((value): value is string => Boolean(value && value.trim())).join("\\n")
+    ].filter((value): value is string => Boolean(value && value.trim())).join(" · ")
       || "This saved care event was marked for follow-up during the latest review.";
     try {
       await postJSON("/open-loops", {
