@@ -478,7 +478,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         template_sections: draft.template_sections ?? [],
         sections: draft.sections,
         generation: draft.generation ? { ...draft.generation, sections: editedSections } : draft.generation,
-        caregiver_notes: caregiverNote.trim() ? [caregiverNote.trim()] : [],
+        caregiver_notes: caregiverNote.trim()
+          ? [{ text: caregiverNote.trim(), attribution: "caregiver_authored_unverified" }]
+          : [],
       };
       await putJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id), { content });
       const saved = await getJSON("/handoff-drafts/" + encodeURIComponent(draft.draft_id)) as {
