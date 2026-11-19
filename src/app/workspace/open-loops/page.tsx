@@ -96,10 +96,11 @@ function uniqueEvidenceIds(item: AttentionDecision): string[] {
   ])];
 }
 
-function AttentionCard({ item, loops, onUpdate, onHistory, onCreate, busy, history }: {
+function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, busy, history }: {
   item: AttentionDecision;
   loops: OpenLoop[];
   onUpdate: (loop: OpenLoop, text: string) => Promise<void>;
+  onAction: (loop: OpenLoop, text: string) => Promise<void>;
   onHistory: (loop: OpenLoop) => Promise<void>;
   onCreate: (item: AttentionDecision) => Promise<void>;
   busy: boolean;
@@ -108,6 +109,8 @@ function AttentionCard({ item, loops, onUpdate, onHistory, onCreate, busy, histo
   const [expanded, setExpanded] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [updateText, setUpdateText] = useState("");
+  const [showAction, setShowAction] = useState(false);
+  const [actionText, setActionText] = useState("");
   const loop = loops.find((candidate) => candidate.id === item.record_id || (candidate.source_type === item.source && candidate.source_id === item.record_id));
   const evidenceIds = uniqueEvidenceIds(item);
   const reasonLines = [...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])].filter(Boolean);
@@ -140,6 +143,11 @@ function AttentionCard({ item, loops, onUpdate, onHistory, onCreate, busy, histo
         <textarea id={"followup-update-" + loop.id} rows={3} value={updateText} onChange={(event) => setUpdateText(event.target.value)} maxLength={12000} placeholder="Share an update in your own words…" />
         <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowUpdate(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !updateText.trim()}>{busy ? "Saving…" : "Share update"}</button></div>
       </form> : <button type="button" className="followup-text-button" onClick={() => setShowUpdate(true)}>Share what changed</button>}
+      {showAction ? <form onSubmit={(event) => { event.preventDefault(); if (actionText.trim()) void onAction(loop, actionText.trim()).then(() => { setActionText(""); setShowAction(false); }).catch(() => { /* Keep the caregiver's action report available for retry. */ }); }}>
+        <label htmlFor={"followup-action-" + loop.id}>What action did you take? This records your report; it does not verify the outcome.</label>
+        <textarea id={"followup-action-" + loop.id} rows={3} value={actionText} onChange={(event) => setActionText(event.target.value)} maxLength={12000} placeholder="Describe the action in your own words…" />
+        <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowAction(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !actionText.trim()}>{busy ? "Saving…" : "Record action"}</button></div>
+      </form> : <button type="button" className="followup-text-button" onClick={() => setShowAction(true)}>Record action taken</button>}
     </div>}
     <div className="followup-actions">
       <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
@@ -162,6 +170,7 @@ export default function FollowUpsPage() {
   const [busyId, setBusyId] = useState("");
   const pendingUpdateKeys = useRef<Record<string, { signature: string; key: string }>>({});
   const pendingCreateKeys = useRef<Record<string, string>>({});
+  const pendingActionKeys = useRef<Record<string, { signature: string; key: string }>>({});
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [attentionWarning, setAttentionWarning] = useState("");
@@ -244,9 +253,13 @@ export default function FollowUpsPage() {
     const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
     pendingUpdateKeys.current[loop.id] = { signature, key: idempotencyKey };
     try {
-      await postJSON("/open-loops/" + encodeURIComponent(loop.id) + "/outcomes", {
+      const endpoint = ["awaiting_response", "follow_up"].includes(loop.loop_type)
+        ? "/open-loops/" + encodeURIComponent(loop.id) + "/responses"
+        : "/open-loops/" + encodeURIComponent(loop.id) + "/outcomes";
+      await postJSON(endpoint, {
         text: signature,
         evidence: [],
+        response_outcome: "response_received",
         idempotency_key: idempotencyKey,
       });
       await refresh();
@@ -296,6 +309,31 @@ export default function FollowUpsPage() {
     }
   }
 
+  async function recordAction(loop: OpenLoop, text: string) {
+    setBusyId(loop.id);
+    setError("");
+    setNotice("");
+    const signature = text.trim();
+    const pending = pendingActionKeys.current[loop.id];
+    const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
+    pendingActionKeys.current[loop.id] = { signature, key: idempotencyKey };
+    try {
+      await postJSON("/open-loops/" + encodeURIComponent(loop.id) + "/actions", {
+        text: signature,
+        evidence: [],
+        idempotency_key: idempotencyKey,
+      });
+      await refresh();
+      delete pendingActionKeys.current[loop.id];
+      setNotice("Your action was recorded as a caregiver report. The outcome has not been marked as verified.");
+    } catch {
+      setError("The action could not be confirmed. Keep the report available and try again.");
+      throw new Error("Caregiver action was not confirmed; preserve the draft for retry.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
   async function loadHistory(loop: OpenLoop) {
     setBusyId(loop.id);
     try {
@@ -331,18 +369,18 @@ export default function FollowUpsPage() {
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>SolenOS cannot tell what still needs attention until your saved care information can be loaded.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
-        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
+        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} />)}
         {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention in the latest review." : "SolenOS could not check what needs attention. Your saved follow-ups remain visible below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length + unclassifiedLoops.length}</span></div>
-        {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
-        {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, review_at: loop.review_at, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === loop.id} history={historyById[loop.id]} />)}
+        {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {unclassifiedLoops.map((loop) => <AttentionCard key={loop.id} item={{ title: loop.title, category: "unclassified", record_id: loop.id, reason: loop.description, review_at: loop.review_at, evidence_ids: [] }} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === loop.id} history={historyById[loop.id]} />)}
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">There are no other items to show from the information reviewed.</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs checking</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length}</span></div>
-        {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
+        {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} />)}
         {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">Nothing needs checking based on the information reviewed.</p>}
       </section>
       <section className="followups-section">
