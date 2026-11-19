@@ -169,6 +169,10 @@
   color: #172b35 !important;
   -webkit-text-fill-color: #172b35 !important;
 }
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-first-screen-card:not(:first-child) h3 {
+  color: var(--theme-panel-fg) !important;
+  -webkit-text-fill-color: var(--theme-panel-fg) !important;
+}
 :root[data-solenos-theme="dark"] .lcr-record-section :is(.lcr-empty-state, .lcr-empty, [data-empty-state]) {
   background: var(--theme-panel-bg);
   color: var(--theme-panel-fg);
