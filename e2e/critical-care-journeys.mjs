@@ -1298,6 +1298,7 @@ await record("Daily Care saves and retrieves original reports without relying on
   if (await appointmentFollowUpsPanel.count()) {
     const isOpen = await appointmentFollowUpsPanel.evaluate((element) => element.open);
     if (!isOpen) await appointmentFollowUpsPanel.locator("summary").click();
+    await appointmentFollowUpsPanel.getByRole("button", { name: "Open Follow-ups", exact: true }).click();
   }
   await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
   for (const report of scenarioReports) {
