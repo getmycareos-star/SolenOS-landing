@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: frontend-validation-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     timeout-minutes: 45
