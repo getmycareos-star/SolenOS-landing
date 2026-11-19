@@ -13,8 +13,8 @@
   background: var(--el-paper);
   color: var(--el-ink);
   font-family: var(--font-solenos-sans, "DM Sans", sans-serif);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.6;
 }
 .editorial-landing * { box-sizing: border-box; }
 .editorial-landing h1, .editorial-landing h2, .editorial-landing h3 {
