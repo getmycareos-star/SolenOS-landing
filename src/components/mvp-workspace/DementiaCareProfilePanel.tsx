@@ -113,6 +113,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
       );
       const latestByField = new Map<string, Assertion>();
       for (const row of profileRows) {
+        if (["superseded", "retracted"].includes(row.assertion_status)) continue;
         const key = row.field.slice("dementia_profile.".length);
         const previous = latestByField.get(key);
         if (!previous || Date.parse(row.recorded_at) > Date.parse(previous.recorded_at)) {
@@ -169,7 +170,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
         ? "uncertain"
         : "reported";
     const existing = assertions
-      .filter((row) => row.field === "dementia_profile." + field.key)
+      .filter((row) => row.field === "dementia_profile." + field.key && !["superseded", "retracted"].includes(row.assertion_status))
       .sort((left, right) => Date.parse(right.recorded_at) - Date.parse(left.recorded_at))[0];
     if (existing?.asserted_value === assertedValue && existing.epistemic_state === epistemicState) {
       setNotice("No change to save for " + field.label + ".");
@@ -224,8 +225,9 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
             {FIELDS.filter((field) => field.section === section).map((field) => {
               const status = statuses[field.key] ?? "";
               const fieldRows = assertions.filter((row) => row.field === "dementia_profile." + field.key);
+              const activeFieldRows = fieldRows.filter((row) => !["superseded", "retracted"].includes(row.assertion_status));
               const historyCount = historyCounts.get(field.key) ?? 0;
-              const hasDifferentReports = new Set(fieldRows.map((row) => row.asserted_value.trim().toLowerCase())).size > 1;
+              const hasDifferentReports = new Set(activeFieldRows.map((row) => row.asserted_value.trim().toLowerCase())).size > 1;
               return (
                 <div key={field.key} className="grid gap-2">
                   <label htmlFor={`dementia-profile-${field.key}`} className="text-sm font-medium text-[var(--text)]">
