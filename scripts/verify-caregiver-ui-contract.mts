@@ -131,6 +131,11 @@ const v2Styles = fs.readFileSync(path.join(root, "src/app/workspace/experience-d
 const workspaceLayout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 const appShell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
 const navigationRegistry = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
+const settingsPageSource = fs.readFileSync(path.join(root, "src/app/workspace/settings/page.tsx"), "utf8");
+const caregiverAccessSource = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CaregiverAccessPanel.tsx"), "utf8");
+assert.ok(settingsPageSource.includes("onToggle={(event) => setCaregiverAccessOpen(event.currentTarget.open)}"));
+assert.ok(settingsPageSource.includes("<CaregiverAccessPanel enabled={caregiverAccessOpen} />"));
+assert.match(caregiverAccessSource, /if \(enabled\) void load\(\)/);
 assert.ok(workspaceLayout.includes('import "./experience-design-system-v2.css";'));
 assert.ok(v2Styles.includes(".solenos-chat-app.is-sidebar-collapsed"));
 assert.ok(appShell.includes("solenos_sidebar_collapsed") && appShell.includes("Collapse navigation"));
