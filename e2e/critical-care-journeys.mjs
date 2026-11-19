@@ -2384,6 +2384,10 @@ await record("12b invited caregiver sees the shared care record in a separate br
   assert.equal(accepted.status, 201, JSON.stringify(accepted.payload));
   assert.equal(accepted.payload.person_id, identity.personId);
   assert.notEqual(accepted.payload.caregiver_id, identity.caregiverId);
+  const currentCaregiverProfile = await request("/api/v1/caregiver-profiles/current", { token: accepted.payload.access_token });
+  assert.equal(currentCaregiverProfile.status, 200, JSON.stringify(currentCaregiverProfile.payload));
+  assert.equal(currentCaregiverProfile.payload.person_id, identity.personId);
+  assert.ok(currentCaregiverProfile.payload.id);
 
   const sharedEvents = await request(`/api/v1/events/${encodeURIComponent(identity.personId)}`, {
     token: accepted.payload.access_token,
