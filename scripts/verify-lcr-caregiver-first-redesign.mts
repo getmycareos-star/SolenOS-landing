@@ -65,7 +65,7 @@ assert.doesNotMatch(careContinuity, /situation\.openQuestions\.map/, "care quest
 assert.doesNotMatch(careContinuity, /Winner selected: no|Supporting information:/, "raw conflict evidence counts and audit flags are not shown in the default timeline");
 assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligencePanel/, "duplicate overview and standalone observation-coverage editor are not mounted on Care Continuity");
 assert.match(currentUnderstanding, /lcr-first-screen-summary/, "workspace opens with a concise three-part care orientation");
-assert.match(currentUnderstanding, /Where things stand/, "first screen explains the recorded care picture");
+assert.match(currentUnderstanding, /Care information on record/, "first screen explains the recorded care picture");
 assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces supported care priorities");
 assert.match(currentUnderstanding, /<strong>Still unclear:<\/strong>/, "the first-screen summary surfaces recorded uncertainty without turning it into a task");
 assert.match(currentUnderstanding, /This record reflects the care information saved here/, "the Care Record uses one concise scope statement instead of repeating its introduction");
