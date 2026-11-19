@@ -148,7 +148,8 @@ const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/Q
 const naturalDailyUpdate = fs.readFileSync(path.join(root, "src/components/workflows/NaturalLanguageDailyUpdate.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert.ok(appointmentWorkflow.includes("var(--theme-panel-bg)") && appointmentWorkflow.includes("var(--theme-field-bg)"));
+assert.ok(appointmentWorkflow.includes('className="guided-appointment"') && !appointmentWorkflow.includes("<style jsx>"), "appointment workflow must use the shared design system");
+assert.ok(v2Styles.includes(".guided-appointment") && v2Styles.includes(".guided-panel") && v2Styles.includes(".guided-capture-label textarea"), "appointment workflow surfaces must be styled centrally");
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
 // Appointment styles are governed by semantic theme tokens; assert the required tokens above.
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
@@ -164,7 +165,8 @@ assert.ok(dailyCarePage.includes("var(--theme-field-fg)"));
 assert.ok(quickCheckIn.includes("var(--theme-selected-bg)") && quickCheckIn.includes('className="quick-daily-checkin"'));
 assert.ok(appointmentsPage.includes("appointments-page") && v2Styles.includes(".solenos-chat-main .appointments-page") && v2Styles.includes("var(--sn-muted)"));
 assert.ok(timelinePage.includes("timeline-workspace"));
-assert.ok(timelinePage.includes("var(--theme-selected-bg)"));
+assert.ok(timelinePage.includes("timeline-event-toggle") && timelinePage.includes("timeline-event-details"));
+assert.ok(v2Styles.includes(".timeline-event-toggle") && v2Styles.includes(".timeline-event-details"), "care history must use the shared, theme-aware timeline styles");
 assert.ok(dailyCareQwen.includes("var(--theme-field-bg)"));
 assert.ok(assistPanel.includes('className="qwen-assist-panel"'));
 assert.ok(!assistPanel.includes('background: "#ffffff", color: "#172b35"'));
