@@ -1157,7 +1157,21 @@ await record("Daily Care saves and retrieves original reports without relying on
   assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
   assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
+  const followUpsResponsePromise = daily.page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith("/api/v1/open-loops")
+      && response.request().method() === "GET"
+      && url.searchParams.get("limit") === "100"
+      && url.searchParams.get("offset") === "0";
+  });
   await daily.page.reload({ waitUntil: "domcontentloaded" });
+  const followUpsResponse = await followUpsResponsePromise;
+  const followUpsPayload = await followUpsResponse.json();
+  assert.equal(followUpsResponse.status(), 200, JSON.stringify(followUpsPayload));
+  assert.ok(
+    (followUpsPayload.items || []).some((item) => item.id === appointmentFollowUpId),
+    `Daily Care's browser request did not retrieve the pre-existing follow-up: ${JSON.stringify(followUpsPayload)}`,
+  );
   const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
     has: daily.page.locator("#daily-care-follow-ups-title"),
   });
