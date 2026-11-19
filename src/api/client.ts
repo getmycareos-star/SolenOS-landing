@@ -54,6 +54,48 @@ const ANONYMOUS_TOKEN_KEY = "solenos_anonymous_access_token";
 const ANONYMOUS_PERSON_KEY = "solenos_backend_person_id";
 const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
+const ANONYMOUS_SESSION_REVOKED_KEY = "solenos_anonymous_session_revoked";
+
+/**
+ * A local deletion revokes this browser's ability to silently create another
+ * identity. Explicit /workspace?enter=1 is the only replacement path.
+ *
+ * Capture the marker before the first network await. Comparing its value after
+ * the request detects a revoke from another tab while the request was pending.
+ */
+function captureSessionBootstrapRevocation(): string | null {
+  if (typeof window === "undefined") return null;
+  const marker = window.localStorage.getItem(ANONYMOUS_SESSION_REVOKED_KEY);
+  if (marker === null) return null;
+
+  const url = new URL(window.location.href);
+  const explicitNewRecordIntent =
+    url.pathname === "/workspace" && url.searchParams.get("enter") === "1";
+  if (!explicitNewRecordIntent) {
+    throw new Error("This workspace was deleted from this device. Choose Care Record to start a new record.");
+  }
+
+  return marker;
+}
+
+function assertSessionBootstrapNotRevoked(markerAtStart: string | null): void {
+  if (typeof window !== "undefined" &&
+      window.localStorage.getItem(ANONYMOUS_SESSION_REVOKED_KEY) !== markerAtStart) {
+    throw new Error("This workspace was deleted while access was being restored. Choose Care Record to start a new record.");
+  }
+}
+
+function completeExplicitSessionBootstrap(markerAtStart: string | null): void {
+  assertSessionBootstrapNotRevoked(markerAtStart);
+  if (markerAtStart !== null) {
+    window.localStorage.removeItem(ANONYMOUS_SESSION_REVOKED_KEY);
+  }
+}
+
+function createSessionRevocationMarker(): string {
+  // This is a cross-tab race version, not an authentication secret.
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
 
 export type AnonymousSession = {
   session_id?: string;
@@ -114,6 +156,16 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     throw new Error("Anonymous care sessions can only be created in the browser.");
   }
 
+  const revocationMarkerAtStart = captureSessionBootstrapRevocation();
+  if (revocationMarkerAtStart !== null) {
+    // The caregiver explicitly chose a new record. Do not reuse any stale
+    // browser credentials or identifiers from the deleted workspace.
+    window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
+    window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
+    window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
+    window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
+  }
+
   const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
@@ -159,10 +211,12 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       expires_at: string;
       expires_in_seconds: number;
     };
+    assertSessionBootstrapNotRevoked(revocationMarkerAtStart);
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
     window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
     window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
     window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
+    completeExplicitSessionBootstrap(revocationMarkerAtStart);
     setPersonId(refreshed.person_id);
     return {
       session_id: refreshed.session_id,
@@ -190,10 +244,12 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     body: JSON.stringify({ caregiver_name: "Caregiver" }),
   });
   const created = (await handleResponse(response)) as AnonymousSession;
+  assertSessionBootstrapNotRevoked(revocationMarkerAtStart);
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, created.access_token);
   window.localStorage.setItem(ANONYMOUS_PERSON_KEY, created.person.id);
   window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, created.caregiver.id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, created.expires_at);
+  completeExplicitSessionBootstrap(revocationMarkerAtStart);
   setPersonId(created.person.id);
   return created;
 }
@@ -554,6 +610,10 @@ export async function putJSON(path: string, body: unknown) {
 export async function revokeAnonymousSession(): Promise<void> {
   await postJSON("/sessions/revoke", {});
   if (typeof window !== "undefined") {
+    // Leave a durable local tombstone so background requests cannot silently
+    // create a replacement identity after the caregiver deletes this workspace.
+    window.localStorage.setItem(ANONYMOUS_SESSION_REVOKED_KEY, createSessionRevocationMarker());
+    anonymousSessionPromise = null;
     window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
     window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
     window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
