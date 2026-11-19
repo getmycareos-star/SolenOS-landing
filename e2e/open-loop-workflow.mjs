@@ -7,6 +7,7 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 
 let simulatedLostOutcomeResponse = false;
+let simulatedLostActionResponse = false;
 let simulatedLostCreateResponse = false;
 
 try {
@@ -42,6 +43,19 @@ try {
         status: 502,
         contentType: "application/json",
         body: JSON.stringify({ detail: "CI-only simulated lost response after backend commit" }),
+      });
+      return;
+    }
+    if (
+      !simulatedLostActionResponse &&
+      request.method() === "POST" &&
+      /\/api\/v1\/open-loops\/[^/]+\/actions$/.test(requestUrl.pathname)
+    ) {
+      simulatedLostActionResponse = true;
+      await route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "CI-only simulated lost action response after backend commit" }),
       });
       return;
     }
@@ -131,6 +145,15 @@ try {
     1,
     "retry after a lost response must not duplicate the caregiver response",
   );
+  assert.ok(
+    (saved.action_evidence ?? []).some((item) => item.text === actionText),
+    "the caregiver's action report must be durably recorded",
+  );
+  assert.equal(
+    (saved.action_evidence ?? []).filter((item) => item.text === actionText).length,
+    1,
+    "retry after a lost action response must not duplicate the caregiver action",
+  );
 
   await page.reload({ waitUntil: "domcontentloaded" });
   const afterReload = page.locator("article.followup-card").filter({
@@ -138,6 +161,19 @@ try {
   });
   await afterReload.waitFor({ timeout: 20_000 });
   assert.ok(await afterReload.isVisible(), "the unresolved follow-up must remain visible after a fresh page load");
+
+  // An action report is distinct from a response and still cannot verify the outcome.
+  await afterReload.getByRole("button", { name: "Record action taken" }).click();
+  const actionText = "CI-only caregiver action: I called the clinic to request the updated appointment date.";
+  await afterReload.getByLabel(/What action did you take/).fill(actionText);
+  await afterReload.getByRole("button", { name: "Record action" }).click();
+  await page.getByRole("alert").filter({
+    hasText: "The action could not be confirmed. Keep the report available and try again.",
+  }).waitFor({ timeout: 15_000 });
+  await afterReload.getByRole("button", { name: "Record action" }).click();
+  await page.getByRole("status").filter({
+    hasText: "Your action was recorded as a caregiver report. The outcome has not been marked as verified.",
+  }).waitFor({ timeout: 15_000 });
 
   const candidateTitle = "CI E2E event-derived follow-up candidate";
   const eventResponse = await fetch(new URL("/api/v1/events", backend), {
