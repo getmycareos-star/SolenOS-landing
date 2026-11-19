@@ -86,10 +86,8 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     const previousKey = window.localStorage.getItem(DURABLE_CARE_KEY_STORAGE);
 
     if (freshEnter) {
+      // Keep explicit new-record intent available to the session client until it validates it.
       markEnteredCareRecord();
-      params.delete(ENTER_CARE_QUERY);
-      const next = params.toString();
-      window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
     }
 
     // Interface language selection is intentionally disabled for the MVP.
@@ -153,7 +151,17 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       }
     }
 
-    void ensureAnonymousSession()
+    const sessionBootstrap = ensureAnonymousSession();
+
+    // ensureAnonymousSession validates /workspace?enter=1 synchronously before its first await.
+    // Remove the URL marker only after the client has consumed the explicit-entry authorization.
+    if (freshEnter) {
+      params.delete(ENTER_CARE_QUERY);
+      const next = params.toString();
+      window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
+    }
+
+    void sessionBootstrap
       .then((session) =>
         fetch(
           `/api/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
