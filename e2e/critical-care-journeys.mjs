@@ -314,6 +314,10 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Care Record", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
+  for (const heading of ["Your care, at a glance", "Where things stand", "What needs attention", "What has changed"]) {
+    await page.getByRole("heading", { name: heading, exact: true })
+      .waitFor({ state: "visible", timeout: 15_000 });
+  }
   await page.waitForFunction(() => !document.documentElement.classList.contains("solenos-first-visit-mode"));
   assert.equal(
     await page.getByRole("heading", { name: "Your care journey starts here.", exact: true }).count(),
