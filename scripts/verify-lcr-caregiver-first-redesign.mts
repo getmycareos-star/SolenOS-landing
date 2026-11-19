@@ -12,6 +12,7 @@ const changeIntelligence = fs.readFileSync("src/components/mvp-workspace/ChangeI
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
+const structuredDailyCapture = fs.readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
 const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 
@@ -22,6 +23,8 @@ assert.doesNotMatch(capture, /HelpImproveSolenos|QwenAssistPanel/, "capture work
 assert.match(capture, /Start with one thing you want to remember/);
 assert.match(capture, /Add a new detail to the care record/, "first-time and returning caregivers retain the shared care-record capture workflow");
 assert.match(dailyCare, /StructuredDailyCapture/, "Daily Care retains its structured capture workflow");
+assert.match(structuredDailyCapture, /result\?\.success !== true \|\| typeof result\.id !== "string" \|\| !result\.id\.trim\(\)/, "structured capture cannot show success without a persisted server event receipt");
+assert.match(structuredDailyCapture, /The server did not confirm that your care update was saved\./, "uncertain save outcomes remain explicit instead of displaying a false success");
 assert.match(dailyCare, /<section aria-labelledby="daily-care-capture-title"/, "Daily Care keeps the capture workflow directly available");
 assert.match(dailyCare, /<section aria-labelledby="daily-care-today-title"/, "today's saved care updates remain visible without opening history");
 assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-documents-title">Recent documents<\/h2><\/summary>/, "documents remain accessible but no longer compete with capture on the Daily Care opening screen");
