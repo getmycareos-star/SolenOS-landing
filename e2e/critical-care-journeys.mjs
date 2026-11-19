@@ -1170,6 +1170,10 @@ await record("Daily Care saves and retrieves original reports without relying on
     await historyGate;
     await route.continue();
   });
+  const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
+    has: daily.page.locator("#daily-care-follow-ups-title"),
+  });
+  const savedFollowUps = followUpsPanel.locator('ul[aria-label="Saved follow-ups"]');
   try {
     await daily.page.reload({ waitUntil: "domcontentloaded" });
     const followUpsResponse = await followUpsResponsePromise;
@@ -1180,13 +1184,9 @@ await record("Daily Care saves and retrieves original reports without relying on
       browserFollowUp,
       `Daily Care's browser request did not retrieve the pre-existing follow-up: ${JSON.stringify(followUpsPayload)}`,
     );
-    const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
-      has: daily.page.locator("#daily-care-follow-ups-title"),
-    });
     // The list is inside a collapsed native <details>. Wait for it in the DOM,
     // then open it. The history request remains deliberately blocked until the
     // saved follow-up is visible, proving the two reads are independent.
-    const savedFollowUps = followUpsPanel.locator('ul[aria-label="Saved follow-ups"]');
     await savedFollowUps.waitFor({ state: "attached", timeout: 10_000 });
     await followUpsPanel.locator("summary").click();
     await savedFollowUps.waitFor({ state: "visible", timeout: 5_000 });
