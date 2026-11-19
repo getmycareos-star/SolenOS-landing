@@ -3,6 +3,7 @@ import {
   getJSON,
   getPersonId,
   markAnonymousSessionRevokedLocally,
+  revokeAnonymousSession,
 } from "../src/api/client";
 
 type Store = {
@@ -295,6 +296,22 @@ async function main() {
       /workspace was deleted from this device/i,
     );
     assert.equal(requests, 0, "background access must not create a new session after device cleanup");
+  }
+
+
+  // Clearing a device with no bearer must not create a disposable replacement session.
+  {
+    const store = makeStore();
+    installBrowser(store);
+    let requests = 0;
+    globalThis.fetch = (async () => {
+      requests += 1;
+      return jsonResponse(session());
+    }) as typeof fetch;
+    await revokeAnonymousSession();
+    assert.equal(requests, 0, "cleanup without a bearer must not call anonymous session creation");
+    assert.ok(store.getItem("solenos_anonymous_session_revoked"));
+    assert.equal(store.getItem("solenos_anonymous_access_token"), null);
   }
 
   console.log("Anonymous session identity race checks passed.");
