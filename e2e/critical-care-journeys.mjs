@@ -2041,6 +2041,58 @@ await record("09 appointment summary persistence", async () => {
   assert.ok(list.payload.items.some((item) => item.id === appointmentWorkspaceId));
 });
 
+// 09A. Appointment outcome: caregiver review is required before an assertion enters the LCR.
+await record("09A appointment outcome requires caregiver review before LCR retrieval", async () => {
+  const caregiverReport = "Caregiver reports that Mum woke twice overnight after the clinic visit.";
+  const created = await request("/api/v1/appointment-workspaces", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      status: "outcome_pending",
+      payload: {
+        caregiverReport,
+        actualVisitDate: new Date().toISOString(),
+      },
+      change_reason: "Browser acceptance test for caregiver-reviewed appointment outcomes",
+      idempotency_key: unique("appointment-outcome-review"),
+    },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.payload));
+  const recordId = created.payload.id;
+  assert.ok(recordId);
+
+  const appointmentPage = await createBrowserPage(identity, "/workspace/appointments");
+  await appointmentPage.page.getByRole("heading", { name: "Your appointment, supported by SolenOS" }).waitFor({ timeout: 20_000 });
+  await appointmentPage.page.getByRole("button", { name: "Open appointment support", exact: true }).click();
+  await appointmentPage.page.getByRole("button", { name: "After", exact: true }).click();
+  await appointmentPage.page.getByRole("heading", { name: "Appointment information gathered", exact: true }).waitFor({ timeout: 20_000 });
+  await appointmentPage.page.getByText(caregiverReport, { exact: true }).waitFor({ timeout: 15_000 });
+  await appointmentPage.page.getByRole("button", { name: "Review care information", exact: true }).click();
+
+  const proposal = appointmentPage.page.locator(".guided-proposal").filter({ hasText: caregiverReport }).first();
+  await proposal.waitFor({ state: "visible", timeout: 20_000 });
+  await proposal.getByRole("button", { name: "Accept as caregiver report", exact: true }).click();
+  await appointmentPage.page.getByText(/Accepted as a caregiver-reviewed care record detail|Added to your Care Record as your report/).waitFor({ timeout: 20_000 });
+
+  const assertions = await request(
+    `/api/v1/care-continuity/assertions/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(assertions.status, 200, JSON.stringify(assertions.payload));
+  const accepted = assertions.payload.find((item) =>
+    item.asserted_value === caregiverReport &&
+    item.assertion_status === "caregiver_reviewed" &&
+    item.epistemic_state === "reported"
+  );
+  assert.ok(accepted, "the caregiver-approved appointment report must be retrievable as a caregiver-reviewed, reported LCR assertion");
+  assert.equal(accepted.created_by_caregiver_id, identity.caregiverId);
+  assert.ok(accepted.source_proposal_id, "the accepted LCR assertion must retain its appointment proposal provenance");
+  assert.equal(accepted.source_conversation_id, null);
+  assert.equal(accepted.source_message_id, null);
+  await verifyMobile(appointmentPage.page);
+  await appointmentPage.context.close();
+});
+
 // 10. Handoff: prepare a source-referenced draft and confirm it remains persisted/read-only.
 let handoffDraftId;
 await record("10 evidence-backed handoff", async () => {
