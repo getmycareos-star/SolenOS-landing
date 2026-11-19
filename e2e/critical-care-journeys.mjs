@@ -821,6 +821,28 @@ await record("01c workspace links, browser back, More menu and account form vali
   await exportDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
 
   actionMenu = await openMoreMenu();
+  await actionMenu.getByRole("menuitem", { name: "Download / Export", exact: true }).click();
+  const professionalDialog = page.getByRole("dialog");
+  await professionalDialog.getByRole("heading", { name: "Prepare a care briefing", exact: true }).waitFor({ timeout: 10_000 });
+  await professionalDialog.locator("select").nth(0).selectOption("professional");
+  await professionalDialog.locator("select").nth(1).selectOption("period_summary");
+  await professionalDialog.locator("select").nth(2).selectOption("30");
+  const professionalBriefingResponse = page.waitForResponse(response =>
+    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
+  await professionalDialog.getByRole("button", { name: "Prepare summary to share", exact: true }).click();
+  const professionalBriefing = await professionalBriefingResponse;
+  assert.equal(professionalBriefing.status(), 200, "professional care briefing must be prepared by the backend");
+  const professionalDraft = await professionalBriefing.json();
+  assert.equal(professionalDraft.audience, "professional");
+  assert.equal(professionalDraft.purpose, "period_summary");
+  assert.equal(professionalDraft.source_of_truth, "living_care_record");
+  assert.ok(["generated", "source_only_fallback"].includes(professionalDraft.generation_status));
+  assert.equal(professionalDraft.appointment_id, null,
+    "a general professional briefing must not be silently bound to an appointment");
+  await professionalDialog.getByRole("heading", { name: "Professional briefing", exact: true }).waitFor({ timeout: 10_000 });
+  await professionalDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
+
+  actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Share care summary", exact: true }).click();
   const familyDialog = page.getByRole("dialog");
   await familyDialog.getByRole("heading", { name: "Prepare a care briefing", exact: true }).waitFor({ timeout: 10_000 });
