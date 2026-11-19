@@ -5,6 +5,7 @@ import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/clie
 import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverRoleLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { CalendarDays, ShieldCheck } from 'lucide-react'
 import DetailedAppointmentWorkspace from './DetailedAppointmentWorkspace'
+import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 type Stage = 'prepare' | 'during' | 'after'
 type PreparationBrief = {
@@ -411,6 +412,13 @@ export default function AppointmentWorkspace() {
             </section>
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknown details are kept separate.</p>
           </>}
+          {appointmentId && <QwenAssistPanel
+            appointmentId={appointmentId}
+            defaultWorkflow="appointment"
+            contextText="Appointment details and unanswered questions. Help prepare for this scheduled appointment using the saved appointment and authorized care history."
+            title="Get help preparing for this appointment"
+            description="Ask about the saved appointment or questions you may want to raise. Suggestions need your review and do not change your Care Record automatically."
+          />}
         </div>}
 
         {stage === 'during' && <div className="guided-panel">
@@ -468,6 +476,13 @@ export default function AppointmentWorkspace() {
           </div>}
           {(!outcome || outcome.status === 'no_outcome_information') && <p className="guided-muted">No appointment outcome has been recorded yet. You can return later; SolenOS will not invent what happened.</p>}
           {outcome?.limitations?.map((item, index) => <p className="guided-footnote" key={index}>{item}</p>)}
+          {appointmentId && <QwenAssistPanel
+            appointmentId={appointmentId}
+            defaultWorkflow="after_appointment"
+            contextText={`After-appointment notes. ${note.trim() ? `Caregiver's unsaved note: ${note.trim()}` : "The caregiver has not added a note yet."}`}
+            title="Organize what happened at the appointment"
+            description="Ask for help organizing what the clinician told you. Your note remains a caregiver report, and nothing is added to your Care Record without your review."
+          />}
         </div>}
 
         <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error}</span>}</div>
