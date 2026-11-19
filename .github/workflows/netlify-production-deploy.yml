@@ -84,7 +84,7 @@ jobs:
           const checks = [
             {
               name: "Backend tests",
-              paths: ["backend/", "ci/", "Dockerfile", "start-with-qwen.sh", "railway.json", ".dockerignore"],
+              paths: ["backend/app/", "backend/alembic/", "backend/tests/", "backend/scripts/", "backend/pyproject.toml", "backend/alembic.ini", "ci/", "Dockerfile", "start-with-qwen.sh", "railway.json", ".dockerignore"],
             },
             {
               name: "PostgreSQL migration validation",
@@ -96,11 +96,11 @@ jobs:
             },
             {
               name: "Backend validation",
-              paths: ["backend/", "ci/", "Dockerfile", "railway.json"],
+              paths: ["backend/app/", "backend/alembic/", "backend/tests/", "backend/scripts/", "backend/pyproject.toml", "backend/alembic.ini", "ci/", "Dockerfile", "start-with-qwen.sh", "railway.json", ".dockerignore"],
             },
             {
               name: "Document lifecycle PostgreSQL integration",
-              paths: ["backend/"],
+              paths: ["backend/app/", "backend/alembic/", "backend/tests/", "backend/scripts/", "backend/pyproject.toml", "backend/alembic.ini", "ci/", "Dockerfile", "start-with-qwen.sh", "railway.json", ".dockerignore"],
             },
             {
               name: "Production readiness monitor",
