@@ -215,7 +215,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         ]);
         if (responsibilityResult.status === "fulfilled") {
           setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
-        }
+        } else setResponsibilities([]);
         if (loopResult.status === "fulfilled") setOpenLoops(loopResult.value.items ?? []);
         if (networkResult.status === "fulfilled") setNetworkSummary(networkResult.value);
         else setNetworkSummary(null);
