@@ -175,14 +175,24 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const status = await getJSON('/assistant/status') as {
         available?: boolean
         operational?: boolean
+        runtime_available?: boolean
+        model_installed?: boolean
       }
-      if (status.operational === true) {
+      if (status.operational === true && status.available === true) {
         setAvailability('available')
         setRequestError(null)
-      } else if (status.available === false) {
+      } else if (status.runtime_available === true && status.model_installed === true) {
+        // The model is installed, but only a real response can verify inference.
+        // Allow the caregiver's first request to perform that verification.
+        setAvailability('unverified')
+      } else if (
+        status.runtime_available === false ||
+        status.model_installed === false ||
+        status.available === false
+      ) {
         setAvailability('unavailable')
       } else {
-        setAvailability('unverified')
+        setAvailability('unknown')
       }
     } catch {
       setAvailability('unknown')
@@ -221,7 +231,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       const caregiverReply = caregiverSafeAssistantText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
-      setAvailability('available')
+      // A successful HTTP response may be a deterministic support fallback.
+      // Only the explicit AI-generated flag proves that Qwen produced this answer.
+      setAvailability(response.ai_generated === true ? 'available' : 'unverified')
       setInput('')
       pendingTurnId.current = null
       pendingTurnText.current = null
@@ -383,10 +395,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {messages.length === 0 ? (
             availability === 'checking' ? (
               <RecordState kind="loading" title="Checking whether the Care Assistant is available" />
-            ) : availability === 'available' && !requestError ? (
+            ) : (availability === 'available' || availability === 'unverified') && !requestError ? (
               <div className="companion-empty">
                 <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
                 <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
+                {availability === 'unverified' && <p className="companion-empty-footnote" role="status">The Care Assistant has not completed a response yet. Send your first question to check that it is working.</p>}
                 <div className="companion-starters">
                   {STARTER_PROMPTS.map(item => {
                     const Icon = item.icon
@@ -401,8 +414,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               </div>
             ) : availability === 'unavailable' ? (
               <RecordState kind="unavailable" title="The Care Assistant is temporarily unavailable" description="Responses are not available right now. Your Care Record, Daily Care and Documents remain available." actionLabel="Check again" onAction={() => void checkAvailability()} />
-            ) : availability === 'unverified' ? (
-              <RecordState kind="incomplete" title="The Care Assistant hasn't been confirmed as ready" description="We couldn't confirm that responses are working right now. Check again before starting a conversation." actionLabel="Check again" onAction={() => void checkAvailability()} />
             ) : (
               <RecordState kind="error" title="We couldn't check the Care Assistant" description={requestError || "We couldn't confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
             )
@@ -550,9 +561,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading || availability !== "available"} rows={2} />
+          }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading || (availability !== "available" && availability !== "unverified")} rows={2} />
           <div className="companion-composer-footer">
-            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || availability !== "available" || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || (availability !== "available" && availability !== "unverified") || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
