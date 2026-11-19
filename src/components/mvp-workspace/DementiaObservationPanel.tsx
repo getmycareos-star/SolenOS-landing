@@ -90,6 +90,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
         observation_category: "dementia." + category,
         description: text,
         observation_type: observationType,
+        epistemic_status: observationType === "direct" ? "observed" : "reported",
         ...(observedAt ? { observed_at: new Date(observedAt).toISOString() } : {}),
       });
       setDescription("");
