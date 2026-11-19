@@ -748,8 +748,9 @@ await record("01c workspace links, browser back, More menu and account form vali
 
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Share care summary", exact: true }).click();
-  await page.getByRole("heading", { name: "Share care summary", exact: true }).waitFor({ timeout: 10_000 });
-  await page.locator(".share-panel-close").click();
+  const shareEntryDialog = page.getByRole("dialog");
+  await shareEntryDialog.getByRole("heading", { name: "Prepare a care briefing", exact: true }).waitFor({ timeout: 10_000 });
+  await shareEntryDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
 
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Download / Export", exact: true }).click();
