@@ -753,80 +753,63 @@ await record("01c workspace links, browser back, More menu and account form vali
 
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Download / Export", exact: true }).click();
-  await page.getByRole("heading", { name: "Download / Export care summary", exact: true }).waitFor({ timeout: 10_000 });
-  const exportPanel = page.locator(".share-care-summary-panel");
-  const limitedReadiness = exportPanel.getByRole("button", { name: "Continue anyway", exact: true });
-  if (await limitedReadiness.isVisible().catch(() => false)) {
-    await limitedReadiness.click();
-  }
-  const shareContextDiagnostic = await page.evaluate(() => ({
-    tokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
-    personPresent: Boolean(localStorage.getItem("solenos_backend_person_id")),
-    caregiverPresent: Boolean(localStorage.getItem("solenos_backend_caregiver_id")),
-    careSessionIdPresent: Boolean(localStorage.getItem("solenos_care_session_id")),
-    careSessionId: localStorage.getItem("solenos_care_session_id"),
-  }));
-  const situationDiagnostic = await request(
-    `/api/situation?caregiver_id=${encodeURIComponent(shareSession.caregiver.id)}&care_session_id=${encodeURIComponent(shareContextDiagnostic.careSessionId ?? "e2e-share")}`,
-    { token: shareSession.access_token },
-  );
-  console.log("SHARE_EXPORT_DIAGNOSTIC", JSON.stringify({
-    tokenPresent: shareContextDiagnostic.tokenPresent,
-    personPresent: shareContextDiagnostic.personPresent,
-    caregiverPresent: shareContextDiagnostic.caregiverPresent,
-    careSessionIdPresent: shareContextDiagnostic.careSessionIdPresent,
-    status: situationDiagnostic.status,
-    responseKeys: Object.keys(situationDiagnostic.payload ?? {}),
-    events: Array.isArray(situationDiagnostic.payload?.events) ? situationDiagnostic.payload.events.length : null,
-    contextEvents: Array.isArray(situationDiagnostic.payload?.context?.events) ? situationDiagnostic.payload.context.events.length : null,
-    totalEvents: situationDiagnostic.payload?.total_events ?? null,
-    observations: Array.isArray(situationDiagnostic.payload?.active_care_situation?.observations)
-      ? situationDiagnostic.payload.active_care_situation.observations.length : null,
-  }));
-  assert.ok((situationDiagnostic.payload?.total_events ?? situationDiagnostic.payload?.events?.length ?? 0) > 0,
-    "the seeded caregiver report must be visible to the share-summary readiness check");
-  console.log("SHARE_EXPORT_PANEL_TEXT", (await exportPanel.innerText()).slice(0, 1200));
-  console.log("SHARE_NETWORK_REQUESTS", JSON.stringify(observed.filter((item) => item.path.includes("situation"))));
-  await exportPanel.getByRole("radio", { name: /Doctor \/ clinician/ }).click();
-  await exportPanel.getByText("Prepared for: Doctor / clinician", { exact: true }).waitFor({ timeout: 10_000 });
-  await exportPanel.getByRole("button", { name: "Continue", exact: true }).click();
-  await exportPanel.getByText("Review the summary, then download it or save it as a PDF.", { exact: true })
-    .waitFor({ timeout: 10_000 });
+  const exportDialog = page.getByRole("dialog");
+  await exportDialog.getByRole("heading", { name: "Prepare a care briefing", exact: true }).waitFor({ timeout: 10_000 });
+  const exportAudience = exportDialog.locator("select").nth(0);
+  const exportPurpose = exportDialog.locator("select").nth(1);
+  const exportWindow = exportDialog.locator("select").nth(2);
+  await exportAudience.selectOption("professional");
+  await exportPurpose.selectOption("professional_appointment");
+  await exportWindow.selectOption("30");
+  const appointmentBriefingResponse = page.waitForResponse(response =>
+    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
+  await exportDialog.getByRole("button", { name: "Prepare summary to share", exact: true }).click();
+  const appointmentBriefing = await appointmentBriefingResponse;
+  assert.equal(appointmentBriefing.status(), 200, "professional appointment briefing must be prepared by the backend");
+  const appointmentDraft = await appointmentBriefing.json();
+  assert.equal(appointmentDraft.source_of_truth, "living_care_record",
+    "Qwen briefing must declare the Living Care Record as its source of truth");
+  assert.ok(appointmentDraft.source_snapshot_id && appointmentDraft.source_snapshot_sha256,
+    "the appointment briefing must be bound to a versioned LCR source snapshot");
+  assert.equal(appointmentDraft.generation_status, "generated",
+    "Qwen must generate the appointment briefing from retrieved LCR evidence");
+  assert.equal(appointmentDraft.validation_status, "exact_quote_reference_validation_passed",
+    "each generated summary item must include an exact quote from its LCR source");
+  await exportDialog.getByRole("heading", { name: "Professional briefing", exact: true }).waitFor({ timeout: 10_000 });
   const summaryDownloadPromise = page.waitForEvent("download");
-  await exportPanel.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
+  await exportDialog.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
   const summaryDownload = await summaryDownloadPromise;
-  assert.match(summaryDownload.suggestedFilename(), /^care-summary-\d{4}-\d{2}-\d{2}\.txt$/,
-    "the export action must create a dated care summary file");
+  assert.match(summaryDownload.suggestedFilename(), /^solenos-care-briefing-\d{4}-\d{2}-\d{2}\.txt$/,
+    "the professional appointment briefing export must have a dated filename");
   const summaryPath = await summaryDownload.path();
   const summaryText = await readFile(summaryPath, "utf8");
-  assert.ok(summaryText.length > 100, "the downloaded summary must contain actual reviewed content");
-  assert.match(summaryText, /Prepared for: Doctor \/ clinician/,
-    "the downloaded file must retain its selected recipient");
-  await exportPanel.getByText("Summary downloaded.", { exact: true }).waitFor({ timeout: 10_000 });
-  await page.locator(".share-panel-close").click();
+  assert.match(summaryText, /Source of truth: Living Care Record/,
+    "the exported briefing must identify the LCR as its source");
+  assert.match(summaryText, /Saved source wording:/,
+    "the exported briefing must preserve supporting LCR wording");
+  assert.ok(summaryText.length > 100, "the downloaded professional briefing must contain reviewed care information");
+  await exportDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
 
-  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: frontend });
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Share care summary", exact: true }).click();
-  const sharePanel = page.locator(".share-care-summary-panel");
-  await sharePanel.getByRole("heading", { name: "Share care summary", exact: true }).waitFor({ timeout: 10_000 });
-  const shareLimitedReadiness = sharePanel.getByRole("button", { name: "Continue anyway", exact: true });
-  if (await shareLimitedReadiness.isVisible().catch(() => false)) {
-    await shareLimitedReadiness.click();
-  }
-  await sharePanel.getByRole("radio", { name: /^Family/ }).click();
-  await sharePanel.getByText("Prepared for: Family", { exact: true }).waitFor({ timeout: 10_000 });
-  await sharePanel.getByRole("button", { name: "Continue", exact: true }).click();
-  await sharePanel.locator(".share-format-option").filter({ hasText: "Copy text" }).click();
-  await sharePanel.locator(".share-confirm-actions")
-    .getByRole("button", { name: "Share", exact: true }).click();
-  await sharePanel.getByText("Summary copied to clipboard.", { exact: true }).waitFor({ timeout: 10_000 });
-  const copiedSummary = await page.evaluate(() => navigator.clipboard.readText());
-  assert.match(copiedSummary, /Prepared for: Family/,
-    "the share action must place the reviewed family summary on the clipboard");
-  assert.ok(copiedSummary.length > 100,
-    "the copied summary must contain actual care information");
-  await page.locator(".share-panel-close").click();
+  const familyDialog = page.getByRole("dialog");
+  await familyDialog.getByRole("heading", { name: "Prepare a care briefing", exact: true }).waitFor({ timeout: 10_000 });
+  await familyDialog.locator("select").nth(0).selectOption("family");
+  await familyDialog.locator("select").nth(1).selectOption("period_summary");
+  await familyDialog.locator("select").nth(2).selectOption("30");
+  const familyBriefingResponse = page.waitForResponse(response =>
+    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
+  await familyDialog.getByRole("button", { name: "Prepare summary to share", exact: true }).click();
+  const familyBriefing = await familyBriefingResponse;
+  assert.equal(familyBriefing.status(), 200, "family care briefing must be prepared by the backend");
+  const familyDraft = await familyBriefing.json();
+  assert.equal(familyDraft.source_of_truth, "living_care_record");
+  assert.equal(familyDraft.generation_status, "generated",
+    "family briefing must be generated from saved LCR evidence");
+  await familyDialog.getByRole("heading", { name: "Review and share with family", exact: true }).waitFor({ timeout: 10_000 });
+  assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
+    "family briefing must contain actual LCR-derived content");
+  await familyDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
 
   await page.evaluate(() => {
     const installEvent = new Event("beforeinstallprompt", { cancelable: true });
