@@ -1056,3 +1056,24 @@
     width: 100%;
   }
 }
+
+
+.solenos-chat-app .solenos-chat-main .cognitive-workspace.theme-white_input {
+  --input-bg: #ffffff;
+  --input-fg: #26342d;
+  --output-bg: #f0f5ef;
+  --output-fg: #26342d;
+}
+.solenos-chat-app .solenos-chat-main .cognitive-workspace.theme-white_input .panel-output {
+  border-left: 3px solid #8ba98d;
+  border-radius: 0 14px 14px 0;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .cognitive-workspace.theme-white_input {
+  --input-bg: #1d2821;
+  --input-fg: #edf3ed;
+  --output-bg: #202d24;
+  --output-fg: #edf3ed;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .cognitive-workspace.theme-white_input .panel-output {
+  border-left-color: #78977b;
+}
