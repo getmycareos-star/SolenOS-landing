@@ -823,3 +823,20 @@
   /* The page title already sits below the bar; don't repeat a generic label. */
   .solenos-chat-app .care-context-meta { display: none; }
 }
+
+
+/* The same LCR component is reused on the dedicated Care Record route, not only
+   the home workspace. Theme its first-screen cards globally within the shell. */
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .lcr-first-screen-card {
+  border-color: var(--sn-line) !important;
+  background: var(--sn-surface) !important;
+  color: var(--sn-ink) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .lcr-first-screen-card h3 {
+  color: var(--sn-forest) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .lcr-first-screen-card > p,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .lcr-first-screen-card li,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .lcr-first-screen-card small {
+  color: var(--sn-muted) !important;
+}
