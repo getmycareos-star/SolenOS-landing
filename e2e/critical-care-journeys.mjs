@@ -596,18 +596,18 @@ await record("01a dementia profile review window and observation persistence are
   await context.close();
 });
 
-await record("01b visible Follow-ups button and mobile navigation", async () => {
+await record("01b visible Follow-ups link and mobile navigation", async () => {
   const { context, page } = await createBrowserPage(
     session,
     "/workspace/daily-care",
     { width: 390, height: 844 },
   );
   await page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" }).click();
-  const viewFollowups = page.getByRole("button", { name: "Open Follow-ups", exact: true });
+  const viewFollowups = page.getByRole("link", { name: "Open Follow-ups", exact: true });
   await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
   await viewFollowups.click();
   await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
-  await page.getByRole("heading", { name: "Follow-ups", exact: true })
+  await page.locator(".followups-page h1").getByText("Follow-ups", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await verifyMobile(page);
   const navigationToggle = page.getByRole("button", { name: "Open navigation", exact: true });
