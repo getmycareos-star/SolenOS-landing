@@ -135,6 +135,10 @@ assert.ok(workspaceLayout.includes('import "./experience-design-system-v2.css";'
 assert.ok(v2Styles.includes(".solenos-chat-app.is-sidebar-collapsed"));
 assert.ok(appShell.includes("solenos_sidebar_collapsed") && appShell.includes("Collapse navigation"));
 assert.ok(!navigationRegistry.includes('href: "/workspace/community"') && !navigationRegistry.includes('id: "community"'));
+const communityPage = fs.readFileSync(path.join(root, "src/app/workspace/community/page.tsx"), "utf8");
+const featureFlags = fs.readFileSync(path.join(root, "src/lib/feature-flags.ts"), "utf8");
+assert.ok(featureFlags.includes("community: false") && featureFlags.includes("professionalCommunity: false"));
+assert.ok(communityPage.includes('redirect("/workspace")'));
 const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
 const naturalDailyUpdate = fs.readFileSync(path.join(root, "src/components/workflows/NaturalLanguageDailyUpdate.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
