@@ -803,7 +803,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await exportDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
   assert.equal(appointmentDraft.source_statuses.allergies.status, "unavailable",
     "missing allergy integration must be explicit and must not be interpreted as no allergies");
-  await exportDialog.getByRole("checkbox", { name: /I reviewed each generated summary item against its saved source wording/ }).check();
+  await exportDialog.getByRole("checkbox", { name: /I reviewed each briefing item against its saved source wording/ }).check();
   const summaryDownloadPromise = page.waitForEvent("download");
   await exportDialog.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
   const summaryDownload = await summaryDownloadPromise;
