@@ -870,6 +870,9 @@ await record("01c workspace links, browser back, More menu and account form vali
   await familyDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
     "family briefing must contain actual LCR-derived content");
+  assert.equal(await familyDialog.getByRole("checkbox", {
+    name: /I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement/,
+  }).count(), 1, "family sharing must require explicit review of the source-linked statements");
   await familyDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
 
   await page.evaluate(() => {
