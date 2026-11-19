@@ -38,8 +38,8 @@ function WorkspaceHomeInner() {
           <p>Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.</p>
         </div>
         <div className="solenos-care-next-step__actions">
-          <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add an update</Link>
-          <Link href="/workspace/companion" className="solenos-care-secondary-action">Ask a question</Link>
+          <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
+          <Link href="/workspace/companion" className="solenos-care-secondary-action">Ask SolenOS</Link>
         </div>
       </section>
       <details className="solenos-care-explore">
