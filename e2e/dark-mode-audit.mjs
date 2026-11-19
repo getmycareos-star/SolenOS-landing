@@ -7,6 +7,8 @@ const targets = [
   { label: "isolated-main", url: process.env.FRONTEND_URL ?? "http://127.0.0.1:3000" },
 ];
 const routes = [
+  "/workspace",
+  "/workspace/open-loops",
   "/workspace/timeline",
   "/workspace/care-continuity",
   "/workspace/companion",
@@ -319,7 +321,7 @@ try {
           results.push(result);
           if (!routeLoaded || rendered.issues.length || routeIssues.length || !themeApplied) failures.push(result);
 
-          if (viewport.label === "desktop" || rendered.issues.length || routeIssues.length || !themeApplied) {
+          {
             const screenshotPath = `${artifactDir}/${slug(target.label)}-${slug(routePath)}-${viewport.label}.png`;
             await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
           }
