@@ -172,6 +172,8 @@ assert.ok(appointmentsPage.includes("appointments-page") && v2Styles.includes(".
 assert.ok(timelinePage.includes("timeline-workspace"));
 assert.doesNotMatch(careRecordOverview, /style=\{\{/ , "Care Record overview must not use hard-coded inline presentation");
 assert.ok(careRecordOverview.includes("care-record-overview__section") && careRecordOverview.includes("care-record-overview__status"));
+assert.ok(careRecordOverview.includes("caregiverInformationLabel") && careRecordOverview.includes("caregiverStatusLabel"), "Care Record overview must use shared caregiver-safe evidence and status labels");
+assert.doesNotMatch(careRecordOverview, /const labels: Record<string, string>/, "Care Record overview must not maintain a duplicate status dictionary");
 assert.ok(v2Styles.includes(".care-record-overview__section") && v2Styles.includes("var(--theme-panel-bg)") && v2Styles.includes("var(--theme-field-bg)"), "Care Record overview must use shared light/dark theme tokens");
 assert.doesNotMatch(experienceStyles, /\.solenos-chat-app \.care-record-overview/, "legacy overview selectors must not override the shared theme classes");
 assert.doesNotMatch(themeOverrides, /:root\[data-solenos-theme="dark"\] \.care-record-overview/, "dark mode must not force light-card text colors on the Care Record overview");
