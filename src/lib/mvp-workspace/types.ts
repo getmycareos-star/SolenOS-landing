@@ -65,8 +65,8 @@ export type AccessibilityPrefs = {
 };
 
 export const DEFAULT_ACCESSIBILITY: AccessibilityPrefs = {
-  themeLayout: "black_input",
-  typography: "serif",
+  themeLayout: "white_input",
+  typography: "sans",
   textScale: "standard",
 };
 
