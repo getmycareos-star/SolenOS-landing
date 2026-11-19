@@ -47,8 +47,8 @@ type CaregiverNetworkMember = {
   relationship: string;
   involvement_status: string;
   roles?: Array<{ role_type?: string; custom_role_name?: string; scope?: string }>;
-  responsibilities?: Array<{ responsibility_type?: string; scope?: string; status?: string }>;
-  recent_observations?: Array<{ observation_content?: string; observation_type?: string; is_promoted_to_shared?: boolean }>;
+  responsibilities?: Array<{ type?: string; scope?: string; status?: string }>;
+  recent_observations?: Array<{ content?: string; observation_type?: string; is_shared?: boolean }>;
   recent_perspectives?: Array<{ claim_type?: string; claim_content?: string; is_promoted_to_shared?: boolean }>;
   recent_activities?: Array<{ activity_type?: string; description?: string; occurred_at?: string }>;
 };
@@ -321,9 +321,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                     <span className="mobile-settings-hint">{caregiver.relationship} · {caregiver.involvement_status}</span>
                   </div>
                   {(caregiver.roles?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Roles: {caregiver.roles?.map((role) => role.custom_role_name || role.role_type || "Care role").join(", ")}</p>}
-                  {(caregiver.responsibilities?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Responsibilities: {caregiver.responsibilities?.map((item) => item.responsibility_type).filter(Boolean).join(", ")}</p>}
+                  {(caregiver.responsibilities?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Responsibilities: {caregiver.responsibilities?.map((item) => item.type).filter(Boolean).join(", ")}</p>}
                   {(caregiver.recent_observations?.length ?? 0) > 0 && (
-                    <div><span className="mobile-settings-hint">Shared observations</span>{caregiver.recent_observations?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.observation_content}</p>)}</div>
+                    <div><span className="mobile-settings-hint">Shared observations</span>{caregiver.recent_observations?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.content}</p>)}</div>
                   )}
                   {(caregiver.recent_perspectives?.length ?? 0) > 0 && (
                     <div><span className="mobile-settings-hint">Shared perspectives</span>{caregiver.recent_perspectives?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.claim_content}</p>)}</div>
