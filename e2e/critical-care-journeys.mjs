@@ -1217,6 +1217,60 @@ await record("Daily Care saves and retrieves original reports without relying on
 
 });
 
+await record("Daily Care capture survives secondary read failures", async () => {
+  const resilient = await createBrowserPage(session, "/workspace/daily-care");
+  const unavailable = (route) => route.fulfill({
+    status: 503,
+    contentType: "application/json",
+    body: JSON.stringify({ detail: "Temporary secondary read failure for acceptance testing." }),
+  });
+  await resilient.page.route("**/api/v1/care-continuity/current-care*", unavailable);
+  await resilient.page.route("**/api/v1/daily-care/intelligence/history*", unavailable);
+  await resilient.page.route("**/api/v1/open-loops*", unavailable);
+  await resilient.page.route("**/api/v1/notifications*", unavailable);
+  await resilient.page.route("**/api/v1/documents/status*", unavailable);
+  await resilient.page.reload({ waitUntil: "domcontentloaded" });
+
+  const originalReport = `Daily Care capture survives secondary service failures ${randomUUID()}`;
+  await resilient.page.getByRole("button", { name: "Share something", exact: true }).waitFor({ timeout: 15_000 });
+  await resilient.page.getByRole("button", { name: /Something happened/ }).click();
+  const reportField = resilient.page.locator("#natural-daily-update-report");
+  await reportField.waitFor({ state: "visible", timeout: 15_000 });
+  await reportField.fill(originalReport);
+
+  const saveResponsePromise = resilient.page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
+    && response.request().method() === "POST"
+  );
+  await resilient.page.getByRole("button", { name: "Save update", exact: true }).click();
+  const saveResponse = await saveResponsePromise;
+  const savePayload = await saveResponse.json();
+  assert.equal(saveResponse.status(), 200, JSON.stringify(savePayload));
+  assert.equal(savePayload.success, true, JSON.stringify(savePayload));
+  assert.ok(typeof savePayload.id === "string" && savePayload.id,
+    "a save receipt must contain the persisted event ID");
+  await resilient.page.getByRole("status")
+    .filter({ hasText: "Your update was saved to the care record." })
+    .waitFor({ timeout: 10_000 });
+
+  const persisted = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
+  assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
+  assert.ok(persisted.payload.some((event) =>
+    event.id === savePayload.id && JSON.stringify(event).includes(originalReport)
+  ), "the saved report must be retrievable even when all secondary context reads fail");
+  assert.ok(resilient.observed.some((item) =>
+    item.status === 503 && [
+      "/api/v1/care-continuity/current-care",
+      "/api/v1/daily-care/intelligence/history",
+      "/api/v1/open-loops",
+      "/api/v1/notifications",
+      "/api/v1/documents/status",
+    ].includes(item.path)
+  ), "the browser journey must confirm that a secondary read actually failed");
+  await verifyMobile(resilient.page);
+  await resilient.context.close();
+});
+
 await record("Care history opens the original caregiver report and its source details", async () => {
   const history = await createBrowserPage(session, "/workspace/care-continuity");
   await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
