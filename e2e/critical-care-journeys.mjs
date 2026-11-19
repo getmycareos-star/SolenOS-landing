@@ -252,6 +252,17 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     throw error;
   }
   const capturePayload = await captureResponse.json().catch(() => null);
+  assert.equal(capturePayload?.qwen_extraction_status, "queued", "a saved free-text care report must receive a durable extraction job");
+  assert.equal(typeof capturePayload?.qwen_analysis_id, "string", "the capture receipt must identify its persisted analysis");
+  assert.ok(capturePayload.qwen_analysis_id, "the persisted analysis ID must not be empty");
+  assert.equal(typeof capturePayload?.qwen_job_id, "string", "the capture receipt must identify its durable background job");
+  assert.ok(capturePayload.qwen_job_id, "the durable background job ID must not be empty");
+  assert.deepEqual(capturePayload?.qwen_job_ids, [capturePayload.qwen_job_id], "the response must expose the complete queued job list");
+  assert.equal(capturePayload?.care_continuity_execution?.workflow, "situation_capture");
+  assert.equal(capturePayload?.care_continuity_execution?.stages?.extraction, "queued");
+  assert.equal(capturePayload?.care_continuity_execution?.stages?.reconciliation, "pending");
+  assert.equal(capturePayload?.care_continuity_execution?.stages?.longitudinal_retrieval, "not_verified");
+  assert.equal(capturePayload?.qwen_written_to_lcr, false, "model suggestions must not be written directly to the Living Care Record");
   console.log("FIRST_VISIT_CAPTURE_RESPONSE", JSON.stringify({
     status: captureResponse.status(),
     keys: Object.keys(capturePayload ?? {}),
