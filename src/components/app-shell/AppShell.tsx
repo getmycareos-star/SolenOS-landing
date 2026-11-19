@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Menu, PanelLeftClose, Search, X } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { WORKSPACE_NAVIGATION } from "@/lib/workspace-navigation";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
@@ -63,6 +63,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -70,6 +71,14 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const [sharePanelIntent, setSharePanelIntent] = useState<"share" | "export">("share");
   const [recordDetailsOpen, setRecordDetailsOpen] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      setSidebarCollapsed(window.localStorage.getItem("solenos_sidebar_collapsed") === "1");
+    } catch {
+      setSidebarCollapsed(false);
+    }
+  }, []);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -239,7 +248,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
       : pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <div className="solenos-chat-app">
+    <div className={`solenos-chat-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
       {sidebarOpen && (
         <button
           type="button"
@@ -257,16 +266,27 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             </Link>
             <button
               type="button"
-              className="solenos-sidebar-icon-button"
-              aria-label="Close navigation"
-              onClick={() => setSidebarOpen(false)}
+              className="solenos-sidebar-icon-button solenos-sidebar-collapse-button"
+              aria-label={sidebarOpen ? "Close navigation" : sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+              title={sidebarOpen ? "Close navigation" : sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+              onClick={() => {
+                if (window.matchMedia("(max-width: 900px)").matches) {
+                  setSidebarOpen(false);
+                  return;
+                }
+                setSidebarCollapsed((value) => {
+                  const next = !value;
+                  try { window.localStorage.setItem("solenos_sidebar_collapsed", next ? "1" : "0"); } catch { /* Optional preference only. */ }
+                  return next;
+                });
+              }}
             >
-              <PanelLeftClose size={19} />
+              {sidebarOpen || !sidebarCollapsed ? <PanelLeftClose size={19} /> : <PanelLeftOpen size={19} />}
             </button>
           </div>
 
           <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
-            <button type="button" className="solenos-chat-nav-item solenos-chat-history-search" onClick={() => {
+            <button type="button" aria-label="Search care history" title="Search care history" className="solenos-chat-nav-item solenos-chat-history-search" onClick={() => {
               const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
               input?.focus();
               input?.scrollIntoView({ block: "nearest" });
@@ -285,6 +305,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                   key={id}
                   href={href}
                   prefetch={false}
+                  title={label}
                   className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                   aria-current={active(href) ? "page" : undefined}
                   onMouseEnter={() => router.prefetch(href)}
@@ -308,6 +329,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                   key={id}
                   href={href}
                   prefetch={false}
+                  title={label}
                   className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                   aria-current={active(href) ? "page" : undefined}
                   onMouseEnter={() => router.prefetch(href)}
@@ -336,7 +358,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 key={id}
                 href={href}
                 prefetch={false}
-                className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
+                title={label}
+                  className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                 aria-current={active(href) ? "page" : undefined}
                 onMouseEnter={() => router.prefetch(href)}
                 onFocus={() => router.prefetch(href)}
