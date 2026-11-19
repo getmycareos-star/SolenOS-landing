@@ -233,6 +233,7 @@ try {
 
   // Register from the actual settings UI. Registration must attach to context A's
   // already-existing anonymous care identity, not create a replacement record.
+  await openSettingsSection(pageA, "settings-account", "Account");
   await pageA.getByRole("button", { name: "Create account", exact: true }).click();
   await pageA.locator("#account-email").fill(email);
   await pageA.locator("#account-password").fill(password);
