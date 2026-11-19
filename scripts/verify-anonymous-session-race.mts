@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   getJSON,
   getPersonId,
+  markAnonymousSessionRevokedLocally,
 } from "../src/api/client";
 
 type Store = {
@@ -270,6 +271,24 @@ async function main() {
     assert.equal(sessionCreates, 1);
     assert.equal(store.getItem("solenos_anonymous_session_revoked"), null);
     assert.equal(store.getItem("solenos_anonymous_access_token"), "server-issued-token");
+  }
+
+  // Device cleanup must persist a local tombstone even without server credentials.
+  {
+    const store = makeStore();
+    installBrowser(store);
+    markAnonymousSessionRevokedLocally();
+    assert.ok(store.getItem("solenos_anonymous_session_revoked"), "local deletion marker must be written");
+    let requests = 0;
+    globalThis.fetch = (async () => {
+      requests += 1;
+      return jsonResponse(session());
+    }) as typeof fetch;
+    await assert.rejects(
+      getJSON("/events/person-server-1"),
+      /workspace was deleted from this device/i,
+    );
+    assert.equal(requests, 0, "background access must not create a new session after device cleanup");
   }
 
   console.log("Anonymous session identity race checks passed.");
