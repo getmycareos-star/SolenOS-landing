@@ -17,6 +17,7 @@ const assist = read("src/components/qwen/QwenAssistPanel.tsx");
 requireText("src/components/workflows/AppointmentWorkspace.tsx", [
   "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'",
   "appointmentId={appointmentId}",
+  "Appointment details and unanswered questions.",
   "After-appointment notes.",
 ]);
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
