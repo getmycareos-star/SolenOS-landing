@@ -1168,17 +1168,27 @@ await record("Daily Care saves and retrieves original reports without relying on
   const followUpsResponse = await followUpsResponsePromise;
   const followUpsPayload = await followUpsResponse.json();
   assert.equal(followUpsResponse.status(), 200, JSON.stringify(followUpsPayload));
+  const browserFollowUp = (followUpsPayload.items || []).find((item) => item.id === appointmentFollowUpId);
   assert.ok(
-    (followUpsPayload.items || []).some((item) => item.id === appointmentFollowUpId),
+    browserFollowUp,
     `Daily Care's browser request did not retrieve the pre-existing follow-up: ${JSON.stringify(followUpsPayload)}`,
   );
+  console.log("DAILY_FOLLOWUPS_BROWSER_ITEM", JSON.stringify(browserFollowUp));
   const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
     has: daily.page.locator("#daily-care-follow-ups-title"),
   });
   const savedFollowUps = followUpsPanel.getByRole("list", { name: "Saved follow-ups" });
-  // Wait for the async follow-up request before opening the native details panel.
-  // Otherwise a late data render can race the click and leave the list collapsed.
-  await savedFollowUps.waitFor({ state: "attached", timeout: 15_000 });
+  await daily.page.waitForFunction(() => {
+    const panel = document.querySelector("#daily-care-follow-ups-title")?.closest("details");
+    return Boolean(
+      panel?.querySelector('ul[aria-label="Saved follow-ups"]')
+      || panel?.querySelector('[role="alert"]')
+      || panel?.querySelector(".daily-care-follow-up-empty"),
+    );
+  }, { timeout: 15_000 });
+  const followUpsPanelText = await followUpsPanel.innerText();
+  console.log("DAILY_FOLLOWUPS_PANEL_TEXT", followUpsPanelText);
+  assert.equal(await savedFollowUps.count(), 1, `Daily Care did not render the retrieved follow-up: ${followUpsPanelText}`);
   const followUpsAlreadyOpen = await followUpsPanel.evaluate((element) =>
     element instanceof HTMLDetailsElement && element.open
   );
