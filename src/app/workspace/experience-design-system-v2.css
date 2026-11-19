@@ -2722,3 +2722,162 @@
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .cognitive-workspace.theme-white_input .panel-output {
   border-left-color: #78977b;
 }
+
+/* Care Record overview: token-driven surfaces shared by light and dark themes. */
+.care-record-overview {
+  display: grid;
+  gap: 18px;
+  color: var(--theme-panel-fg);
+}
+.care-record-overview__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.care-record-overview__eyebrow {
+  margin: 0 0 5px;
+  color: var(--theme-panel-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.care-record-overview__title {
+  margin: 0;
+  color: var(--theme-panel-fg);
+  font-size: 24px;
+  line-height: 1.25;
+}
+.care-record-overview__intro {
+  margin: 7px 0 0;
+  color: var(--theme-panel-muted);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 62ch;
+}
+.care-record-overview__refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 13px;
+  border: 1px solid var(--theme-action-border);
+  border-radius: 10px;
+  background: var(--theme-action-bg);
+  color: var(--theme-action-fg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.care-record-overview__refresh:hover:not(:disabled) {
+  filter: brightness(.97);
+}
+.care-record-overview__refresh:disabled {
+  background: var(--theme-action-disabled-bg);
+  color: var(--theme-action-disabled-fg);
+  cursor: not-allowed;
+}
+.care-record-overview__section {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 14px;
+  background: var(--theme-panel-bg);
+  color: var(--theme-panel-fg);
+}
+.care-record-overview__section-title {
+  margin: 0 0 5px;
+  color: var(--theme-panel-fg);
+  font-size: 17px;
+  line-height: 1.35;
+}
+.care-record-overview__section-note {
+  margin: 0 0 12px;
+  color: var(--theme-panel-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.care-record-overview__items,
+.care-record-overview__changes {
+  display: grid;
+  gap: 10px;
+}
+.care-record-overview__item,
+.care-record-overview__change {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 11px;
+  background: var(--theme-field-bg);
+  color: var(--theme-field-fg);
+}
+.care-record-overview__item-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.care-record-overview__item-title,
+.care-record-overview__change-title {
+  color: var(--theme-panel-fg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.care-record-overview__status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 7px;
+  background: var(--theme-selected-bg);
+  color: var(--theme-panel-fg);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.care-record-overview__description {
+  margin: 7px 0 0;
+  color: var(--theme-field-fg);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.care-record-overview__meta,
+.care-record-overview__change-date {
+  display: block;
+  margin: 8px 0 0;
+  color: var(--theme-panel-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.care-record-overview__change {
+  padding: 12px;
+}
+.care-record-overview__change-description {
+  margin: 5px 0 0;
+  color: var(--theme-panel-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.care-record-overview__disclaimer {
+  margin: 0;
+  color: var(--theme-panel-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.care-record-overview button:focus-visible {
+  outline: 3px solid var(--theme-link);
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .care-record-overview { gap: 14px; }
+  .care-record-overview__header { align-items: stretch; }
+  .care-record-overview__refresh { width: 100%; }
+  .care-record-overview__section { padding: 13px; }
+  .care-record-overview__title { font-size: 22px; }
+}
