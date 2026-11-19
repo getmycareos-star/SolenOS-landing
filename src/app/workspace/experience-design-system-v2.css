@@ -810,3 +810,16 @@
     white-space: normal;
   }
 }
+
+
+/* Dark breadcrumb foreground must meet normal-text contrast, not decorative contrast. */
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-workspace-breadcrumbs [aria-current="page"] {
+  color: #c1ccc3;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-workspace-breadcrumbs a {
+  color: #b6c2b8;
+}
+@media (max-width: 600px) {
+  /* The page title already sits below the bar; don't repeat a generic label. */
+  .solenos-chat-app .care-context-meta { display: none; }
+}
