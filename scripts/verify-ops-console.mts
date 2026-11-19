@@ -30,6 +30,7 @@ async function main(): Promise<void> {
   assert(!fs.existsSync(path.join(root, "src/app/api/track/route.ts")), "no unsupported browser telemetry route");
   const clientTelemetry = fs.readFileSync(path.join(root, "src/lib/trackEvent.ts"), "utf8");
   assert(clientTelemetry.includes("Intentionally no network request"), "browser telemetry must remain disabled until a scoped backend endpoint exists");
+  assert(fs.existsSync(path.join(root, "db/migrations/075_solen_ops_events.sql")), "durable Ops Console events migration");
   assert(fs.existsSync(path.join(root, "src/app/ops/page.tsx")), "ops page");
   assert(fs.existsSync(path.join(root, "src/app/metrics/page.tsx")), "metrics page");
   assert(fs.existsSync(path.join(root, "public/robots.txt")), "robots.txt");
