@@ -178,6 +178,11 @@ function readableSection(value: string): string {
   return labels[value] ?? "Care information";
 }
 
+function claimSourceFor(draft: DraftPayload, item: { source_ref: string }, index: number) {
+  const claim = draft.claim_provenance?.claims?.[index];
+  return claim?.source_references?.find(source => source.source_ref === item.source_ref) ?? null;
+}
+
 function scopeForSourceType(sourceType: string): string {
   if (sourceType.startsWith("document_") || sourceType === "uploaded_document") return "documents";
   if (sourceType === "appointment") return "appointments";
@@ -815,6 +820,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Saved source wording: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording unavailable."}</p>}
                 <p style={{ fontSize: 11, lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Validation: exact saved wording; no AI paraphrase." : "Validation: source quote matched. The summary wording still needs your review; quote matching does not prove the paraphrase is fully supported."}</p>
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
+                {claimSourceFor(draft, item, index)?.reporter_label && <p style={{ fontSize: 11, color: "#667267", margin: "4px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</p>}
+                {claimSourceFor(draft, item, index)?.source_state_label && <p style={{ fontSize: 11, color: "#765b2b", margin: "4px 0" }}>{claimSourceFor(draft, item, index)?.source_state_label}</p>}
+                {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: 11, color: "#667267", margin: "4px 0" }}>Linked evidence: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => source.type || source.source_type || "Saved evidence").join(", ")}</p>}
               </article>
             ))}
             {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: 12, lineHeight: 1.5 }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized or interpreted. Check each detail and its dates before using it.</p>}
@@ -865,6 +873,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
                 <strong style={{ display: "block", fontSize: 12 }}>{readableSection(item.section)}</strong>
                 <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
+                {claimSourceFor(draft, item, index)?.reporter_label && <small style={{ display: "block", color: "#667267", margin: "3px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</small>}
+                {claimSourceFor(draft, item, index)?.source_state_label && <small style={{ display: "block", color: "#765b2b", margin: "3px 0" }}>{claimSourceFor(draft, item, index)?.source_state_label}</small>}
                 <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown in this preview."}</p>
                 {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 6px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
                 <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Exact saved wording; no AI paraphrase." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
