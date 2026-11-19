@@ -1224,7 +1224,7 @@ export function LCRCurrentUnderstanding() {
 
       <section className="lcr-first-screen-summary" aria-label="Care at a glance">
         <div className="lcr-first-screen-card">
-          <h3>Where things stand</h3>
+          <h3>Care information on record</h3>
           {loading ? (
             <RecordState kind="loading" title="Loading your care information" />
           ) : error ? (
@@ -1234,7 +1234,7 @@ export function LCRCurrentUnderstanding() {
               <p>
                 {projection.schema_status !== "complete" || projection.missing_required_sources.length > 0
                   ? "This picture is based on the information currently available and may be incomplete."
-                  : "This is what has been recorded about care. It is not a medical assessment."}
+                  : "These are saved care details, not a ranked list or a medical assessment."}
                 {projection.as_of ? ` Updated ${formatWhen(projection.as_of)}.` : ""}
               </p>
               <ul className="lcr-first-screen-list">
@@ -1305,7 +1305,7 @@ export function LCRCurrentUnderstanding() {
 
             </p>
           ) : (
-            <RecordState kind="period-empty" title="No immediate follow-ups recorded" description="The information reviewed does not currently show an immediate follow-up." />
+            <RecordState kind="period-empty" title="No immediate follow-up is shown" description={assessment.coverage.is_complete ? "The information reviewed does not currently show an immediate follow-up." : "Some care information may not have been available for this review, so this is not a complete picture."} />
           )}
           {watchUncertainties.length > 0 && (
             <p className="lcr-entry-status">
