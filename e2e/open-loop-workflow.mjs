@@ -116,19 +116,20 @@ try {
   const saved = (persisted.items ?? []).find((item) => item.id === seededLoop.id);
   assert.ok(saved, "the original system-managed follow-up must still exist");
   assert.equal(saved.status, "open", "a caregiver report must not close or resolve the follow-up");
-  assert.equal(saved.outcome_status, "outcome_reported", "the update must remain explicitly reported, not verified");
+  assert.equal(saved.outcome_status, "outcome_unknown", "a response report must not be promoted into an outcome or verification");
   assert.ok(
-    (saved.outcome_evidence ?? []).some((item) =>
+    (saved.response_evidence ?? []).some((item) =>
       item.text === "CI-only caregiver report: I contacted the clinic and was told the appointment date is still being checked."
+      && item.independently_verified === false
     ),
-    "the caregiver's exact update must be durably recorded",
+    "the caregiver's exact response must be durably recorded as unverified",
   );
   assert.equal(
-    (saved.outcome_evidence ?? []).filter((item) =>
+    (saved.response_evidence ?? []).filter((item) =>
       item.text === "CI-only caregiver report: I contacted the clinic and was told the appointment date is still being checked."
     ).length,
     1,
-    "retry after a lost response must not duplicate the caregiver report",
+    "retry after a lost response must not duplicate the caregiver response",
   );
 
   await page.reload({ waitUntil: "domcontentloaded" });
