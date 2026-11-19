@@ -2891,14 +2891,20 @@ await record("16 clearing this device revokes the session and removes SolenOS br
     element instanceof HTMLDetailsElement && element.open
   );
   if (!privacySettingsOpen) await privacySettings.locator(":scope > summary").click();
-  await privacySettings.getByRole("button", { name: "Clear saved information from this device", exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+  await privacySettings.evaluate((element) => {
+    if (!(element instanceof HTMLDetailsElement) || !element.open) {
+      throw new Error("Privacy settings must be open before checking local device cleanup");
+    }
+  });
+  const clearDeviceButton = privacySettings.getByRole("button", { name: "Clear saved information from this device", exact: true });
+  await clearDeviceButton.waitFor({ state: "visible", timeout: 10_000 });
   await page.evaluate(() => {
     localStorage.setItem("solenos:daily-care:last-opened:synthetic:caregiver", "synthetic");
     localStorage.setItem("unrelated-test-key", "preserve");
     sessionStorage.setItem("temporary-test-key", "clear");
   });
-  await page.getByRole("button", { name: "Clear saved information from this device", exact: true }).click();
-  await page.getByRole("button", { name: "Clear now", exact: true }).click();
+  await clearDeviceButton.click();
+  await privacySettings.getByRole("button", { name: "Clear now", exact: true }).click();
   await page.getByText("Saved SolenOS information and this browser's push subscription were cleared.", { exact: true }).waitFor({ timeout: 10_000 });
 
   const remaining = await page.evaluate(() => ({
