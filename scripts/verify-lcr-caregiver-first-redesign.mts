@@ -41,6 +41,7 @@ assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligence
 assert.match(currentUnderstanding, /lcr-first-screen-summary/, "workspace opens with a concise three-part care orientation");
 assert.match(currentUnderstanding, /Where things stand/, "first screen explains the recorded care picture");
 assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces supported care priorities");
+assert.match(currentUnderstanding, /<strong>Still unclear:<\/strong>/, "the first-screen summary surfaces recorded uncertainty without turning it into a task");
 assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed care information is progressively disclosed");
 assert.doesNotMatch(currentUnderstanding, /Missing information does not mean everything is fine|Do not assume there is nothing that needs attention/, "obsolete defensive disclaimers are removed from caregiver-facing copy");
