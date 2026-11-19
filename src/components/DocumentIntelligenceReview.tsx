@@ -11,6 +11,7 @@ type Candidate = {
   source_quote: string;
   review_status: string;
   review_decision?: string;
+  longitudinal_retrieval_status?: "verified" | "unavailable" | "not_applicable";
   page_number?: number | null;
   field_type?: string;
   professional_confirmation_question_id?: string | null;
@@ -215,7 +216,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           corrected_subject: correction?.subject ?? candidate.subject,
           corrected_observation: correction?.observation ?? candidate.observation,
         } : {}),
-      }) as { written_to_lcr?: boolean; source_record_ref?: { record_id?: string } | null };
+      }) as {
+        written_to_lcr?: boolean;
+        source_record_ref?: { record_id?: string } | null;
+        longitudinal_retrieval_status?: "verified" | "unavailable" | "not_applicable";
+      };
       if (decision === "accept") {
         if (reviewResult.written_to_lcr !== true || !reviewResult.source_record_ref?.record_id) {
           throw new Error("SolenOS could not confirm that this detail was saved to your Care Record.");
@@ -223,6 +228,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         window.dispatchEvent(new Event("careRecordUpdated"));
       }
       await load();
+      if (decision === "accept" && reviewResult.longitudinal_retrieval_status !== "verified") {
+        setError("Your choice was saved, but SolenOS could not confirm that it appears in your Care Record. Refresh your Care Record before relying on it.");
+      }
     } catch {
       setError("The review decision was not saved. Check the connection and retry; the original document remains unchanged.");
     } finally {
@@ -316,8 +324,10 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               ? { label: candidate.review_status === "corrected_pending_approval" ? "Correction saved — waiting for approval" : "Waiting for your review", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
               : candidate.review_status === "accepted_by_caregiver" && candidate.professional_confirmation_question_id
                 ? { label: "Saved as a report — not confirmed by a healthcare professional", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
-                : candidate.review_status === "accepted_by_caregiver"
-                  ? { label: "Added to Care Record", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
+                : candidate.review_status === "accepted_by_caregiver" && candidate.longitudinal_retrieval_status !== "verified"
+                  ? { label: "Saved — Care Record display not confirmed", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
+                  : candidate.review_status === "accepted_by_caregiver"
+                    ? { label: "Added to Care Record", border: "#8eae8a", background: "#e4eee1", color: "#243b27" }
                   : candidate.review_status === "rejected_by_caregiver"
                   ? { label: "Not added", border: "#999999", background: "#eeeeee", color: "#444444" }
                   : { label: "Status unavailable", border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
@@ -362,7 +372,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 </div>
               </>}
               {candidate.review_status === "accepted_by_caregiver" && candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>This was saved as a report, but your medicine list was not changed. A healthcare professional or pharmacist must confirm the current instructions.</p>}
-              {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && <p style={{ margin: 0, fontSize: 12 }}>You approved this detail. It was added to your Care Record with a link to the original document. This does not mean a healthcare professional has confirmed it.</p>}
+              {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && candidate.longitudinal_retrieval_status === "verified" && <p style={{ margin: 0, fontSize: 12 }}>You approved this detail. It is visible in your Care Record with a link to the original document. This does not mean a healthcare professional has confirmed it.</p>}
+              {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && candidate.longitudinal_retrieval_status !== "verified" && <p role="status" style={{ margin: 0, fontSize: 12 }}>Your choice was saved, but SolenOS could not confirm that this detail is visible in your Care Record yet. Refresh your Care Record before relying on it.</p>}
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: 12 }}>You chose not to add this detail to your Care Record.</p>}
             </div>;
           }) : analysis.extraction_status === "partial" ? <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>We couldn't read every page, so there are no details to review yet. Try those pages again or upload a clearer copy.</p> : null}
