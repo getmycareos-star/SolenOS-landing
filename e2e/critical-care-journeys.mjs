@@ -2582,11 +2582,13 @@ await record("16 clearing this device revokes the session and removes SolenOS br
 
   const remaining = await page.evaluate(() => ({
     solenosKeys: Object.keys(localStorage).filter((key) => key.startsWith("solenos_") || key.startsWith("solenos:")),
+    deletionMarker: localStorage.getItem("solenos_anonymous_session_revoked"),
     onboarding: localStorage.getItem("onboarding_complete"),
     unrelated: localStorage.getItem("unrelated-test-key"),
     sessionStorageCount: sessionStorage.length,
   }));
-  assert.deepEqual(remaining.solenosKeys, [], JSON.stringify(remaining));
+  assert.deepEqual(remaining.solenosKeys, ["solenos_anonymous_session_revoked"], JSON.stringify(remaining));
+  assert.ok(remaining.deletionMarker, "device cleanup must retain a local tombstone that blocks silent record recreation");
   assert.equal(remaining.onboarding, null, JSON.stringify(remaining));
   assert.equal(remaining.unrelated, "preserve", JSON.stringify(remaining));
   assert.equal(remaining.sessionStorageCount, 0, JSON.stringify(remaining));
