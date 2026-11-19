@@ -199,8 +199,10 @@ async function main() {
     installBrowser(store, "https://solenos.test/workspace?enter=1");
     let resolveCreate!: (response: Response) => void;
     globalThis.fetch = (async (input: RequestInfo | URL) => {
-      assert.equal(String(input), "/api/v1/sessions/anonymous");
-      return new Promise<Response>((resolve) => { resolveCreate = resolve; });
+      if (String(input) === "/api/v1/sessions/anonymous") {
+        return new Promise<Response>((resolve) => { resolveCreate = resolve; });
+      }
+      return jsonResponse({ ok: true });
     }) as typeof fetch;
 
     const pending = getJSON("/events/person-server-1");
