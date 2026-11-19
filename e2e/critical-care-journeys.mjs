@@ -779,9 +779,15 @@ await record("01c workspace links, browser back, More menu and account form vali
   await exportDialog.locator("select").nth(2).locator(`option[value="${shareAppointment.payload.id}"]`).waitFor({ state: "attached", timeout: 10_000 });
   await exportDialog.locator("select").nth(2).selectOption(shareAppointment.payload.id);
   await exportDialog.locator("select").nth(3).selectOption("30");
+  const appointmentPrepareButton = exportDialog.getByRole("button", { name: "Prepare summary to share", exact: true });
+  const appointmentPrepareState = await page.evaluate(() => ({
+    selects: Array.from(document.querySelectorAll("[role=dialog] select")).map(select => ({ value: select.value, disabled: select.disabled, options: Array.from(select.options).map(option => option.value) })),
+    buttons: Array.from(document.querySelectorAll("[role=dialog] button")).map(button => ({ text: button.textContent?.trim(), disabled: button.disabled })),
+  }));
+  assert.equal(await appointmentPrepareButton.isEnabled(), true, "appointment briefing preparation must be enabled after choosing a saved appointment: " + JSON.stringify(appointmentPrepareState));
   const appointmentBriefingResponse = page.waitForResponse(response =>
     response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
-  await exportDialog.getByRole("button", { name: "Prepare summary to share", exact: true }).click();
+  await appointmentPrepareButton.click();
   const appointmentBriefing = await appointmentBriefingResponse;
   assert.equal(appointmentBriefing.status(), 200, "professional appointment briefing must be prepared by the backend");
   const appointmentDraft = await appointmentBriefing.json();
