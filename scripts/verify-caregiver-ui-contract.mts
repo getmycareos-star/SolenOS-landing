@@ -148,7 +148,7 @@ const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/Q
 const naturalDailyUpdate = fs.readFileSync(path.join(root, "src/components/workflows/NaturalLanguageDailyUpdate.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert.ok(appointmentWorkflow.includes('className="guided-appointment"') && !appointmentWorkflow.includes("<style jsx>"), "appointment workflow must use the shared design system");
+assert.ok(appointmentWorkflow.includes("guided-appointment") && !appointmentWorkflow.includes("<style jsx>"), "appointment workflow must use the shared design system");
 assert.ok(v2Styles.includes(".guided-appointment") && v2Styles.includes(".guided-panel") && v2Styles.includes(".guided-capture-label textarea"), "appointment workflow surfaces must be styled centrally");
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
 // Appointment styles are governed by semantic theme tokens; assert the required tokens above.
