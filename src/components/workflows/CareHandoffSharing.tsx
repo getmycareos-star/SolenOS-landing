@@ -755,7 +755,18 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {prepareAudience === "professional" && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5 }}>We have not confirmed this person's identity or professional role. You can review this draft privately, but you cannot share it with a healthcare professional yet.</p>}
           {prepareError && <p role="alert" style={{ margin: 0, color: "#8d2d2d", fontSize: 12 }}>{prepareError}</p>}
           {prepareNotice && <p role="status" style={{ margin: 0, color: "#356441", fontSize: 12 }}>{prepareNotice}</p>}
-          <button type="submit" style={button} disabled={preparing || loading || (preparePurpose === "professional_appointment" && (!prepareAppointmentId || appointmentOptions.length === 0))}>
+          <button
+            type="submit"
+            style={button}
+            disabled={preparing || loading || (preparePurpose === "professional_appointment" && (!prepareAppointmentId || appointmentOptions.length === 0))}
+            onClick={event => {
+              // Invoke the action directly as well as supporting Enter-key form
+              // submission. This avoids nested/portaled dialog form semantics
+              // silently swallowing a caregiver's explicit button click.
+              event.preventDefault();
+              void prepareHandoffDraft();
+            }}
+          >
             {preparing ? "Preparing your summary…" : "Prepare summary to share"}
           </button>
         </form>
