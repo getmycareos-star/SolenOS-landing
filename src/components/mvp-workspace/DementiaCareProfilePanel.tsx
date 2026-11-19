@@ -17,6 +17,7 @@ type Assertion = {
   assertion_status: string;
   source_text?: string | null;
   recorded_at: string;
+  review_after_days?: number | null;
 };
 
 const FIELDS: ProfileField[] = [
@@ -91,6 +92,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
   const [assertions, setAssertions] = useState<Assertion[]>([]);
   const [statuses, setStatuses] = useState<Record<string, ProfileStatus | "">>({});
   const [values, setValues] = useState<Record<string, string>>({});
+  const [reviewDays, setReviewDays] = useState<Record<string, number | "">>({});
   const [loading, setLoading] = useState(true);
   const [savingField, setSavingField] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -122,13 +124,16 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
       }
       const nextStatuses: Record<string, ProfileStatus> = {};
       const nextValues: Record<string, string> = {};
+      const nextReviewDays: Record<string, number | ""> = {};
       for (const [key, row] of latestByField) {
         nextStatuses[key] = statusFromAssertion(row.asserted_value, row.epistemic_state);
         nextValues[key] = valueFromAssertion(row.asserted_value);
+        nextReviewDays[key] = typeof row.review_after_days === "number" ? row.review_after_days : "";
       }
       setAssertions(profileRows);
       setStatuses(nextStatuses);
       setValues(nextValues);
+      setReviewDays(nextReviewDays);
     } catch {
       setError("We couldn’t load this care profile. Check your connection and try again.");
     } finally {
@@ -156,6 +161,11 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
       return;
     }
     const status: ProfileStatus = selectedStatus;
+    const selectedReviewDays = reviewDays[field.key] ?? "";
+    if (selectedReviewDays === "" || !Number.isInteger(selectedReviewDays) || selectedReviewDays < 1 || selectedReviewDays > 3650) {
+      setError(`Choose when to review “${field.label}” again before saving.`);
+      return;
+    }
     const value = (values[field.key] ?? "").trim();
     if (status === "known" && !value) {
       setError(`Add the information for “${field.label}” or choose another status.`);
@@ -172,7 +182,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
     const existing = assertions
       .filter((row) => row.field === "dementia_profile." + field.key && !["superseded", "retracted"].includes(row.assertion_status))
       .sort((left, right) => Date.parse(right.recorded_at) - Date.parse(left.recorded_at))[0];
-    if (existing?.asserted_value === assertedValue && existing.epistemic_state === epistemicState) {
+    if (existing?.asserted_value === assertedValue && existing.epistemic_state === epistemicState && existing.review_after_days === selectedReviewDays) {
       setNotice("No change to save for " + field.label + ".");
       return;
     }
@@ -193,6 +203,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
         asserted_value: assertedValue,
         source_label: "Caregiver-provided care profile",
         source_text: sourceText,
+        review_after_days: selectedReviewDays,
       });
       window.dispatchEvent(new Event("careRecordUpdated"));
       setNotice(`Saved: ${field.label}.`);
@@ -243,6 +254,21 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
                     <option value="">Not recorded</option>
                     {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
+                  <label htmlFor={`dementia-profile-review-${field.key}`} className="text-xs font-medium text-[var(--muted)]">Review this information again after</label>
+                  <select
+                    id={`dementia-profile-review-${field.key}`}
+                    aria-label={`${field.label} review interval`}
+                    value={reviewDays[field.key] ?? ""}
+                    disabled={savingField !== null}
+                    onChange={(event) => setReviewDays((current) => ({ ...current, [field.key]: event.target.value ? Number(event.target.value) : "" }))}
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)]"
+                  >
+                    <option value="">Choose a review interval</option>
+                    <option value="30">30 days</option>
+                    <option value="90">90 days</option>
+                    <option value="180">6 months</option>
+                    <option value="365">1 year</option>
+                  </select>
                   <textarea
                     id={`dementia-profile-${field.key}`}
                     value={values[field.key] ?? ""}
@@ -260,7 +286,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
                         : <span />}
                     <button
                       type="button"
-                      disabled={savingField !== null || !status}
+                      disabled={savingField !== null || !status || reviewDays[field.key] === undefined || reviewDays[field.key] === ""}
                       onClick={() => void saveField(field)}
                       className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--text)] disabled:opacity-50"
                     >
