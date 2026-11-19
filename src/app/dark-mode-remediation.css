@@ -163,6 +163,12 @@
 :root[data-solenos-theme="dark"] .lcr-record-section .lcr-text-action :is(span, svg) {
   color: #17251c !important;
 }
+
+/* The first-screen summary keeps a pale card in dark mode; its heading needs dark ink. */
+:root[data-solenos-theme="dark"] .lcr-record-section .lcr-first-screen-card h3 {
+  color: #172b35 !important;
+  -webkit-text-fill-color: #172b35 !important;
+}
 :root[data-solenos-theme="dark"] .lcr-record-section :is(.lcr-empty-state, .lcr-empty, [data-empty-state]) {
   background: var(--theme-panel-bg);
   color: var(--theme-panel-fg);
