@@ -513,6 +513,11 @@ await record("01a dementia profile review window and observation persistence are
   const { context, page, observed, pageErrors } = await createBrowserPage(session, "/workspace/care-continuity");
   await page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
   await page.getByText("Dementia care profile and observations", { exact: true }).click();
+  await page.getByText("Background and care", { exact: true }).click();
+  await page.getByLabel("Diagnosis information, if provided status").selectOption("unknown");
+  await page.getByLabel("Diagnosis information, if provided review interval").selectOption("90");
+  await page.getByRole("button", { name: "Save" }).first().click();
+  await page.getByText("Saved: Diagnosis information, if provided.", { exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("heading", { name: "Dementia observations" }).waitFor({ timeout: 15_000 });
   await page.getByLabel("What was this about?").selectOption("wandering");
   const uiDescription = `UI dementia observation ${randomUUID()}`;
