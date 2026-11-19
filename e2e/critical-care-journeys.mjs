@@ -895,7 +895,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     name: /I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement/,
   }).count(), 1, "family sharing must require explicit review of the source-linked statements");
   const familyClaimReviewCount = await familyDialog.getByRole("checkbox", {
-    name: "I checked this summary item against the saved wording and its dates.",
+    name: /I checked this summary item against the saved wording, dates and what is known or still uncertain/,
   }).count();
   assert.equal(familyClaimReviewCount, new Set(familyDraft.generation.sections.map(item => item.source_ref)).size,
     "every distinct LCR source claim must have its own review acknowledgement before sharing");
