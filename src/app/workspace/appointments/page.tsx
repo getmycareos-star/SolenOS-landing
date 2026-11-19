@@ -4,10 +4,12 @@ import AppointmentWorkspace from "@/components/workflows/AppointmentWorkspace";
 
 export default function AppointmentsPage() {
   return (
-    <section className="mobile-screen" style={{ width: "100%", maxWidth: "960px", margin: "0 auto", padding: "24px 20px" }}>
-      <p style={{ margin: "0 0 8px", color: "var(--theme-panel-muted)", fontSize: "12px", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>Appointments</p>
-      <h1 style={{ margin: "0 0 8px", color: "var(--theme-panel-fg)", fontSize: "clamp(1.6rem, 3vw, 2rem)", lineHeight: 1.2 }}>Appointments</h1>
-      <p style={{ maxWidth: "680px", margin: "0 0 20px", color: "var(--theme-panel-muted)", lineHeight: 1.6 }}>Get ready for visits, keep notes from them together, and track questions and follow-ups.</p>
+    <section className="mobile-screen appointments-page">
+      <header className="mobile-page-head">
+        <p className="appointments-eyebrow">KEEP THE IMPORTANT DETAILS CLOSE</p>
+        <h1>Appointments</h1>
+        <p>Prepare for a visit, keep notes from it together, and remember the questions or next steps that matter.</p>
+      </header>
       <AppointmentWorkspace />
     </section>
   );
