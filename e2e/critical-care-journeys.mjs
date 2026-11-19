@@ -1155,11 +1155,23 @@ await record("Daily Care saves and retrieves original reports without relying on
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
   assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
   await daily.page.reload({ waitUntil: "domcontentloaded" });
-  await daily.page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" }).click();
-  await daily.page.getByRole("heading", { name: "Follow-ups", exact: true }).waitFor({ timeout: 15_000 });
-  const savedFollowUps = daily.page.getByRole("list", { name: "Saved follow-ups" });
+  const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
+    has: daily.page.locator("#daily-care-follow-ups-title"),
+  });
+  const savedFollowUps = followUpsPanel.getByRole("list", { name: "Saved follow-ups" });
+  // Wait for the async follow-up request before opening the native details panel.
+  // Otherwise a late data render can race the click and leave the list collapsed.
+  await savedFollowUps.waitFor({ state: "attached", timeout: 15_000 });
+  const followUpsAlreadyOpen = await followUpsPanel.evaluate((element) =>
+    element instanceof HTMLDetailsElement && element.open
+  );
+  if (!followUpsAlreadyOpen) {
+    await followUpsPanel.locator("summary").click();
+  }
+  await followUpsPanel.getByRole("heading", { name: "Follow-ups", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
   await savedFollowUps.getByText("Contact the clinic about the appointment", { exact: true })
-    .waitFor({ timeout: 15_000 });
+    .waitFor({ state: "visible", timeout: 15_000 });
   const dailyCaptureJobs = [];
   for (const [index, report] of scenarioReports.entries()) {
     dailyCaptureJobs.push(await saveFreeTextUpdate(report, index === 2 ? async () => {
