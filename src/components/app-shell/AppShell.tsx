@@ -268,6 +268,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               type="button"
               className="solenos-sidebar-icon-button solenos-sidebar-collapse-button"
               aria-label={sidebarOpen ? "Close navigation" : sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+              aria-expanded={sidebarOpen || !sidebarCollapsed}
+              aria-controls="solenos-navigation"
               title={sidebarOpen ? "Close navigation" : sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
               onClick={() => {
                 if (window.matchMedia("(max-width: 900px)").matches) {
