@@ -259,7 +259,7 @@
 .solenos-chat-app .solenos-workspace-page-heading { margin: 0 0 22px; }
 .solenos-chat-app .solenos-workspace-page-heading .solenos-home-eyebrow {
   margin: 0 0 9px;
-  color: #718b74;
+  color: var(--sn-sage-strong);
   font-size: 10px;
   font-weight: 750;
   letter-spacing: .14em;
@@ -287,9 +287,9 @@
   gap: 24px;
   margin: 22px 0;
   padding: 22px 24px;
-  border: 1px solid #e1e9df;
+  border: 1px solid var(--sn-line);
   border-radius: var(--sn-radius-lg);
-  background: #f0f5ef;
+  background: var(--sn-surface-soft);
 }
 .solenos-chat-app .solenos-care-next-step h2 { margin: 0 0 5px; color: var(--sn-forest); font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
 .solenos-chat-app .solenos-care-next-step p { max-width: 540px; margin: 0; color: var(--sn-muted); font-size: 13px; line-height: 1.6; }
@@ -297,17 +297,17 @@
 .solenos-chat-app .solenos-care-primary-action,
 .solenos-chat-app .solenos-care-secondary-action {
   display: inline-flex; align-items: center; justify-content: center; min-height: 43px; padding: 10px 15px;
-  border: 1px solid #d7e2d5; border-radius: 11px; font-size: 12px; font-weight: 700; text-decoration: none;
+  border: 1px solid var(--sn-line); border-radius: 11px; font-size: 12px; font-weight: 700; text-decoration: none;
   transition: transform var(--sn-motion), background var(--sn-motion), border-color var(--sn-motion);
 }
-.solenos-chat-app .solenos-care-primary-action { background: var(--sn-forest); border-color: var(--sn-forest); color: #fff; }
-.solenos-chat-app .solenos-care-primary-action:hover { background: #365843; transform: translateY(-1px); }
-.solenos-chat-app .solenos-care-secondary-action { background: #fff; color: var(--sn-forest); }
+.solenos-chat-app .solenos-care-primary-action { background: var(--sn-sage); border-color: var(--sn-sage); color: #17251c; }
+.solenos-chat-app .solenos-care-primary-action:hover { background: var(--sn-sage-strong); border-color: var(--sn-sage-strong); transform: translateY(-1px); }
+.solenos-chat-app .solenos-care-secondary-action { background: var(--sn-surface); color: var(--sn-forest); }
 .solenos-chat-app .solenos-care-secondary-action:hover { background: var(--sn-surface-soft); transform: translateY(-1px); }
 .solenos-chat-app .solenos-care-explore { margin: 20px 0; border-top: 1px solid var(--sn-line); border-bottom: 1px solid var(--sn-line); }
 .solenos-chat-app .solenos-care-explore summary { padding: 15px 2px; color: var(--sn-forest); font-size: 13px; font-weight: 650; cursor: pointer; }
 .solenos-chat-app .solenos-care-explore__links { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; padding: 0 0 16px; }
-.solenos-chat-app .solenos-care-explore__links a { display: grid; gap: 3px; padding: 13px 14px; border: 1px solid var(--sn-line); border-radius: 12px; background: #fff; text-decoration: none; }
+.solenos-chat-app .solenos-care-explore__links a { display: grid; gap: 3px; padding: 13px 14px; border: 1px solid var(--sn-line); border-radius: 12px; background: var(--sn-surface); text-decoration: none; }
 .solenos-chat-app .solenos-care-explore__links strong { color: var(--sn-ink); font-size: 12px; }
 .solenos-chat-app .solenos-care-explore__links span { color: var(--sn-muted); font-size: 11px; line-height: 1.45; }
 /* Care Record overview presentation is owned by the token-based classes in experience-design-system-v2.css. */
