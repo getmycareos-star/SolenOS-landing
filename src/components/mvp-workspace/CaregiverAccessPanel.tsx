@@ -243,18 +243,20 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         setMyRoles([]);
         const session = await ensureAnonymousSession();
         const personId = session.person.id;
-        const caregiverId = session.caregiver.id;
-        setCurrentProfileId(caregiverId);
-        const [responsibilityResult, roleResult] = await Promise.allSettled([
+        const [profileResult, responsibilityResult, roleResult] = await Promise.allSettled([
+          getJSON("/caregiver-profiles/current") as Promise<{ id: string }>,
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
         ]);
+        const currentProfileId = profileResult.status === "fulfilled" ? profileResult.value.id : null;
+        setCurrentProfileId(currentProfileId);
         if (responsibilityResult.status === "fulfilled") {
           setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
         } else setResponsibilities([]);
-        if (roleResult.status === "fulfilled") {
-          setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === caregiverId && item.is_current));
+        if (roleResult.status === "fulfilled" && currentProfileId) {
+          setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === currentProfileId && item.is_current));
         } else setMyRoles([]);
+        if (profileResult.status === "rejected") setError("We couldn't confirm your caregiver profile. Your personal care details are hidden until it can be checked.");
         if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
       }
     } catch {
