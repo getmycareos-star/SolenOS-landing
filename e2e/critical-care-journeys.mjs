@@ -2793,7 +2793,19 @@ await record("15 synthetic privacy deletion erases the caregiver record and orig
   assert.equal(duplicate.payload.detail.code, "deletion_request_already_open");
   assert.equal(duplicate.payload.detail.request.id, requestId);
 
+  const privacyHistoryResponsePromise = privacyBrowser.page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/v1/privacy/requests" && response.request().method() === "GET";
+  }, { timeout: 20_000 });
   await privacyBrowser.page.reload({ waitUntil: "domcontentloaded" });
+  const privacyHistoryResponse = await privacyHistoryResponsePromise;
+  const privacyHistoryPayload = await privacyHistoryResponse.json();
+  assert.equal(privacyHistoryResponse.status(), 200, JSON.stringify(privacyHistoryPayload));
+  assert.ok(
+    privacyHistoryPayload.requests?.some((item) => item.id === requestId),
+    `Reloaded browser session did not retrieve its persisted erasure request. Payload=${JSON.stringify(privacyHistoryPayload)}; fetchTrace=${JSON.stringify(await privacyBrowser.page.evaluate(() => window.__solenosE2EFetchTrace ?? []))}`,
+  );
+  await privacyBrowser.page.getByText("Loading previous requests…", { exact: true }).waitFor({ state: "hidden", timeout: 20_000 });
   const privacyIsOpenAfterReload = await privacySection.evaluate((element) =>
     element instanceof HTMLDetailsElement && element.open
   );
