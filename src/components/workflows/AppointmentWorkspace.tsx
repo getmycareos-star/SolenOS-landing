@@ -463,7 +463,7 @@ export default function AppointmentWorkspace() {
                 ? <p className="guided-muted">Claim review history could not be loaded.</p>
                 : brief.claim_assessments?.length
                   ? <ul>{brief.claim_assessments.slice(0, 8).map(item => <li key={item.assessment_id}>
-                    <strong>Care detail · {caregiverStatusLabel(item.status) || "Review status not available"}</strong>
+                    <strong>Care detail · {caregiverStatusLabel(item.status) || "Needs checking"}</strong>
                     <p>{caregiverSafeAssistantText(item.rationale) || "No review explanation was recorded."}</p>
                     <small>{caregiverSafeAssistantText(item.interpretation_limit) || "This review does not independently confirm a clinical fact."}</small>
                   </li>)}</ul>
