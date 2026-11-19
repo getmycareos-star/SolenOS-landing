@@ -623,8 +623,15 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <select value={prepareAudience} onChange={event => {
               const next = event.target.value as "family" | "professional";
               setPrepareAudience(next);
-              if (next === "professional" && preparePurpose === "family_transition") setPreparePurpose("professional_appointment");
-              if (next === "family" && preparePurpose === "professional_appointment") setPreparePurpose("family_transition");
+              prepareRequestId.current = null;
+              setPrepareError("");
+              if (next === "professional" && preparePurpose === "family_transition") {
+                setPreparePurpose("professional_appointment");
+              }
+              if (next === "family" && preparePurpose === "professional_appointment") {
+                setPreparePurpose("family_transition");
+                setPrepareAppointmentId("");
+              }
             }} style={field} disabled={preparing}>
               <option value="family">Family caregiver</option>
               <option value="professional">Healthcare professional — private review only</option>
@@ -635,6 +642,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <select value={preparePurpose} onChange={event => {
               const next = event.target.value as HandoffDraftPurpose;
               setPreparePurpose(next);
+              prepareRequestId.current = null;
+              setPrepareError("");
               if (next !== "professional_appointment") setPrepareAppointmentId("");
             }} style={field} disabled={preparing}>
               {prepareAudience === "family" ? (
@@ -657,7 +666,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {preparePurpose === "professional_appointment" && (
             <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
               Which saved appointment is this briefing for?
-              <select value={prepareAppointmentId} onChange={event => setPrepareAppointmentId(event.target.value)} style={field} disabled={preparing || appointmentOptions.length === 0}>
+              <select value={prepareAppointmentId} onChange={event => {
+                setPrepareAppointmentId(event.target.value);
+                prepareRequestId.current = null;
+                setPrepareError("");
+              }} style={field} disabled={preparing || appointmentOptions.length === 0}>
                 <option value="">Choose an appointment</option>
                 {appointmentOptions.map(item => (
                   <option key={item.id} value={item.id}>
@@ -670,7 +683,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           )}
           <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
             How much care history should be included?
-            <select value={prepareWindowDays} onChange={event => setPrepareWindowDays(event.target.value)} style={field} disabled={preparing}>
+            <select value={prepareWindowDays} onChange={event => {
+              setPrepareWindowDays(event.target.value);
+              prepareRequestId.current = null;
+              setPrepareError("");
+            }} style={field} disabled={preparing}>
               <option value="7">Past 7 days</option>
               <option value="14">Past 14 days</option>
               <option value="30">Past 30 days</option>
