@@ -450,7 +450,7 @@ export default function AppointmentWorkspace() {
             </section>
             <section className="guided-freshness" aria-label="What has been checked about these notes and claims">
               <h5>What has been checked about these notes</h5>
-              {brief.source_coverage.evidence_review_records === "unavailable" || brief.source_coverage.evidence_review_records === "failed"
+              {!brief.source_coverage?.evidence_review_records || brief.source_coverage.evidence_review_records === "unavailable" || brief.source_coverage.evidence_review_records === "failed"
                 ? <p className="guided-muted">Source review history could not be loaded. That does not mean the notes have been checked.</p>
                 : brief.evidence_review_records?.length
                   ? <ul>{brief.evidence_review_records.slice(0, 8).map(item => <li key={item.review_id}>
@@ -459,7 +459,7 @@ export default function AppointmentWorkspace() {
                     <small>{caregiverSafeAssistantText(item.interpretation_limit) || "A source review does not independently confirm a care fact."}</small>
                   </li>)}</ul>
                   : <p className="guided-muted">No source review is recorded for the linked notes. They remain reports or source material, not confirmed facts.</p>}
-              {brief.source_coverage.evidence_claim_assessments === "unavailable" || brief.source_coverage.evidence_claim_assessments === "failed"
+              {!brief.source_coverage?.evidence_claim_assessments || brief.source_coverage.evidence_claim_assessments === "unavailable" || brief.source_coverage.evidence_claim_assessments === "failed"
                 ? <p className="guided-muted">Claim review history could not be loaded.</p>
                 : brief.claim_assessments?.length
                   ? <ul>{brief.claim_assessments.slice(0, 8).map(item => <li key={item.assessment_id}>
@@ -468,7 +468,7 @@ export default function AppointmentWorkspace() {
                     <small>{caregiverSafeAssistantText(item.interpretation_limit) || "This review does not independently confirm a clinical fact."}</small>
                   </li>)}</ul>
                   : <p className="guided-muted">No claim review is recorded for the saved reports shown here.</p>}
-              {brief.source_coverage.evidence_completeness_assessments === "unavailable" || brief.source_coverage.evidence_completeness_assessments === "failed"
+              {!brief.source_coverage?.evidence_completeness_assessments || brief.source_coverage.evidence_completeness_assessments === "unavailable" || brief.source_coverage.evidence_completeness_assessments === "failed"
                 ? <p className="guided-muted">The check for missing source details is not available.</p>
                 : brief.completeness_assessments?.length
                   ? <ul>{brief.completeness_assessments.slice(0, 8).map(item => <li key={item.assessment_id}>
