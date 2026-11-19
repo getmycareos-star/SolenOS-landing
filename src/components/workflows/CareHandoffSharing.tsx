@@ -175,6 +175,11 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "Purpose: " + handoffPurposeLabel(purpose),
     "Prepared at: " + formatDate(draft.prepared_at),
     "Period covered: " + draft.window.days + " days (" + draft.window.from + " to " + draft.window.to + ")",
+    ...(draft.selected_appointment ? [
+      "Appointment: " + draft.selected_appointment.title,
+      "Scheduled for: " + formatDate(draft.selected_appointment.scheduled_at),
+      ...(draft.selected_appointment.provider ? ["Provider: " + draft.selected_appointment.provider] : []),
+    ] : []),
     "",
     "Important: Information that has not been checked, was not accepted, or may be out of date is labelled. This summary is not a medical opinion.",
     ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["AI briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
@@ -744,6 +749,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
       {draft && (
         <section role="status" aria-label="Care Record coverage and missing information" style={{ ...panel, marginTop: 0, background: "#fbf8ef", borderColor: "#d8c9a5" }}>
+          {draft.selected_appointment && <p style={{ fontSize: 12, lineHeight: 1.5, margin: "6px 0" }}><b>Appointment:</b> {draft.selected_appointment.title} · {formatDate(draft.selected_appointment.scheduled_at)}{draft.selected_appointment.provider ? " · " + draft.selected_appointment.provider : ""}</p>}
           <strong style={{ fontSize: 13 }}>Check what information is missing</strong>
           {draft.retrieval_complete === false && <p style={{ fontSize: 12, lineHeight: 1.5, margin: "6px 0" }}>This briefing does not include all available Care Record information. Review the listed gaps before relying on or sharing it.</p>}
           {draft.partial_sources?.map(item => <p key={item.source} style={{ fontSize: 12, lineHeight: 1.45, margin: "4px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were retrieved; more may be available.</p>)}
