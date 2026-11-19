@@ -1681,6 +1681,20 @@ await record("06 Companion context and Qwen output", async () => {
     "the sleep/appetite question must not pull an unrelated medication report into its source set",
   );
   assert.equal(
+    answer.payload.lcr_context_coverage?.direct_care_history_recall?.history_complete,
+    true,
+    `Direct caregiver-history lookup must finish its bounded topic scan: ${JSON.stringify(answer.payload.lcr_context_coverage?.direct_care_history_recall || {})}`,
+  );
+  assert.equal(
+    Number(answer.payload.lcr_context_coverage?.direct_care_history_recall?.event_count || 0),
+    3,
+    "Companion must retrieve all three caregiver-reported sleep, lunch and dinner events",
+  );
+  assert.ok(
+    Number(answer.payload.lcr_context_coverage?.direct_care_history_recall?.evidence_count || 0) >= 3,
+    "Companion must retain the linked original evidence for the three caregiver reports",
+  );
+  assert.equal(
     answer.payload.lcr_context_coverage?.prompt_context_complete,
     true,
     `Companion must disclose a complete prompt context for this bounded care-history question: ${JSON.stringify(answer.payload.lcr_context_coverage || {})}`,
