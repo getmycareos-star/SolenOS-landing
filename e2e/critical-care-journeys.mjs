@@ -2885,7 +2885,13 @@ await record("16 clearing this device revokes the session and removes SolenOS br
   const cleanupSession = await newSession("local device cleanup");
   const cleanupIdentity = auth(cleanupSession);
   const { context, page } = await createBrowserPage(cleanupSession, "/workspace/settings");
-  await page.locator("#settings-privacy").waitFor({ state: "visible", timeout: 20_000 });
+  const privacySettings = page.locator("#settings-privacy");
+  await privacySettings.waitFor({ state: "visible", timeout: 20_000 });
+  const privacySettingsOpen = await privacySettings.evaluate((element) =>
+    element instanceof HTMLDetailsElement && element.open
+  );
+  if (!privacySettingsOpen) await privacySettings.locator(":scope > summary").click();
+  await privacySettings.getByRole("button", { name: "Clear saved information from this device", exact: true }).waitFor({ state: "visible", timeout: 10_000 });
   await page.evaluate(() => {
     localStorage.setItem("solenos:daily-care:last-opened:synthetic:caregiver", "synthetic");
     localStorage.setItem("unrelated-test-key", "preserve");
