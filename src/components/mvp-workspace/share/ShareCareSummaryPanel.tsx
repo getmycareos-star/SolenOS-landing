@@ -73,7 +73,7 @@ function downloadBriefing(draft: BriefingDraft) {
       item.stale_warning ? "Warning: This information may be out of date." : "",
     ]),
     "",
-    "This briefing does not update the Living Care Record.",
+    "This briefing does not update the Care Record.",
   ].filter(Boolean).join("\n");
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -146,7 +146,7 @@ export function ShareCareSummaryPanel({
               Prepare a care briefing
             </h2>
             <p style={{ margin: "4px 0 0", color: "#59665a", fontSize: 12 }}>
-              Built from the saved Living Care Record. Review the sources before sharing.
+              Built from the saved Care Record. Review the sources before sharing.
             </p>
           </div>
           <button
