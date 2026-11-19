@@ -70,7 +70,7 @@ async function openAccountAccess(page) {
       throw new Error("Security settings must be open before checking account access");
     }
   });
-  await section.getByRole("heading", { name: "Account access", exact: true }).waitFor({ timeout: 20_000 });
+  await section.getByRole("heading", { name: "Devices and account access", exact: true }).waitFor({ timeout: 20_000 });
 }
 
 try {
