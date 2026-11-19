@@ -95,7 +95,7 @@ assert(reminders.includes('onAction={reminders.length > 0 ? () => setFilter("all
 assert(documents.includes('actionLabel={documents.length === 0 ? "Add a document" : "Clear search"}'), "document empty-state actions must use accurate caregiver-facing labels");
 
 const lcr = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
-assert(lcr.includes("SolenOS brings together the care information you and your care team record"), "the Care Record must explain once what its information represents");
+assert(lcr.includes("This record reflects the care information saved here. It may not include everything happening in care."), "the Care Record must explain once what its information represents without repeating its introduction");
 assert(lcr.includes('<RecordState kind="first-empty" title="No care updates recorded yet"'), "the Care Record must distinguish a genuine first-time empty state");
 assert(lcr.includes('<RecordState kind="incomplete"'), "insufficient information must remain distinct from an empty record");
 assert(lcr.includes('<RecordState kind="period-empty" title="No recent changes recorded"'), "recent changes must have a distinct empty state");
