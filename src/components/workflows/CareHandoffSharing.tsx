@@ -326,6 +326,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const loadedPersonIdRef = useRef<string | null>(null);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [reviewedSourceRefs, setReviewedSourceRefs] = useState<string[]>([]);
   const [activeInbox, setActiveInbox] = useState<InboxItem | null>(null);
   const [activeSnapshot, setActiveSnapshot] = useState<Snapshot | null>(null);
   const [incomingReviewConfirmed, setIncomingReviewConfirmed] = useState(false);
@@ -417,7 +418,15 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   useEffect(() => {
     setCaregiverNote("");
     setEditedSections(draft?.generation?.sections ?? []);
+    setReviewedSourceRefs([]);
+    setReviewConfirmed(false);
   }, [draft?.draft_id]);
+
+  useEffect(() => {
+    const currentRefs = new Set(editedSections.map(item => item.source_ref));
+    setReviewedSourceRefs(current => current.filter(ref => currentRefs.has(ref)));
+    setReviewConfirmed(false);
+  }, [editedSections]);
 
   useEffect(() => {
     if (!draft || !audience || !purpose) {
@@ -541,7 +550,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       setError("This summary is not ready to share yet.");
       return;
     }
-    if (!reviewConfirmed || !summaryText.trim() || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0) {
+    const expectedSourceRefs = [...new Set(editedSections.map(item => item.source_ref))];
+    if (!reviewConfirmed || expectedSourceRefs.length === 0 || expectedSourceRefs.some(ref => !reviewedSourceRefs.includes(ref)) || !summaryText.trim() || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0) {
       setError("Check the full summary and choose at least one caregiver before sharing.");
       return;
     }
@@ -565,7 +575,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         recipient_caregiver_ids: selectedRecipients,
         scope: [...selectedScope].sort(),
         expires_at: expiresAt,
-        reviewed_source_refs: editedSections.map(item => item.source_ref),
+        reviewed_source_refs: expectedSourceRefs.filter(ref => reviewedSourceRefs.includes(ref)),
         semantic_review_acknowledged: true,
       }) as {
         care_continuity_execution?: { stages?: Record<string, string> } | null;
@@ -878,6 +888,17 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown in this preview."}</p>
                 {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 6px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
                 <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Exact saved wording; no AI paraphrase." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 11, lineHeight: 1.45, margin: "0 0 9px" }}>
+                  <input type="checkbox" checked={reviewedSourceRefs.includes(item.source_ref)} disabled={busy} onChange={event => {
+                    setReviewedSourceRefs(current => event.target.checked
+                      ? [...new Set([...current, item.source_ref])]
+                      : current.filter(ref => ref !== item.source_ref));
+                    setReviewConfirmed(false);
+                    shareRequestId.current = null;
+                    shareExpiry.current = null;
+                  }} />
+                  <span>I checked this summary item against the saved wording and its dates.</span>
+                </label>
                 <button type="button" style={quietButton} onClick={() => {
                   const remaining = editedSections.filter((_, sectionIndex) => sectionIndex !== index);
                   setEditedSections(remaining);
@@ -932,7 +953,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement.</span>
           </label>
-          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || !["generated", "source_only_fallback"].includes(draft.generation_status ?? "") || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
+          <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || !["generated", "source_only_fallback"].includes(draft.generation_status ?? "") || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || [...new Set(editedSections.map(item => item.source_ref))].some(ref => !reviewedSourceRefs.includes(ref)) || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing…" : "Share with selected caregivers"}
           </button>
         </section>
