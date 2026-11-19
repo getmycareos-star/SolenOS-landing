@@ -164,9 +164,20 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
     setError("");
     setNotice("");
     const assertedValue = status === "known" ? value : STATUS_TEXT[status];
+    const epistemicState =
+      status === "uncertain" || status === "unknown" || status === "needs_clarification"
+        ? "uncertain"
+        : "reported";
+    const existing = assertions
+      .filter((row) => row.field === "dementia_profile." + field.key)
+      .sort((left, right) => Date.parse(right.recorded_at) - Date.parse(left.recorded_at))[0];
+    if (existing?.asserted_value === assertedValue && existing.epistemic_state === epistemicState) {
+      setNotice("No change to save for " + field.label + ".");
+      return;
+    }
     const sourceText = status === "known"
       ? value
-      : `Caregiver marked this information as ${STATUS_TEXT[status].toLowerCase()}.`;
+      : "Caregiver marked this information as " + STATUS_TEXT[status].toLowerCase() + ".";
     try {
       const session = await ensureAnonymousSession();
       if (session.person?.id !== personId) {
@@ -177,9 +188,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
         subject_id: personId,
         field: `dementia_profile.${field.key}`,
         assertion_kind: "current_state",
-        epistemic_state: status === "uncertain" || status === "unknown" || status === "needs_clarification"
-          ? "uncertain"
-          : "reported",
+        epistemic_state: epistemicState,
         asserted_value: assertedValue,
         source_label: "Caregiver-provided care profile",
         source_text: sourceText,
@@ -214,7 +223,9 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
           <div className="mt-3 space-y-4">
             {FIELDS.filter((field) => field.section === section).map((field) => {
               const status = statuses[field.key] ?? "";
+              const fieldRows = assertions.filter((row) => row.field === "dementia_profile." + field.key);
               const historyCount = historyCounts.get(field.key) ?? 0;
+              const hasDifferentReports = new Set(fieldRows.map((row) => row.asserted_value.trim().toLowerCase())).size > 1;
               return (
                 <div key={field.key} className="grid gap-2">
                   <label htmlFor={`dementia-profile-${field.key}`} className="text-sm font-medium text-[var(--text)]">
@@ -240,9 +251,11 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
                     className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] disabled:opacity-60"
                   />
                   <div className="flex items-center justify-between gap-3">
-                    {historyCount > 1
-                      ? <span className="text-xs text-[var(--muted)]">Earlier reports are also kept in the care history.</span>
-                      : <span />}
+                    {hasDifferentReports
+                      ? <span className="text-xs text-amber-700">Different reports are saved for this item. Check the care history before treating it as settled.</span>
+                      : historyCount > 1
+                        ? <span className="text-xs text-[var(--muted)]">Earlier reports are also kept in the care history.</span>
+                        : <span />}
                     <button
                       type="button"
                       disabled={savingField !== null || !status}
