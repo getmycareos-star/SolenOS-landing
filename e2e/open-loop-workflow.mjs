@@ -35,7 +35,7 @@ try {
     if (
       !simulatedLostOutcomeResponse &&
       request.method() === "POST" &&
-      /\/api\/v1\/open-loops\/[^/]+\/outcomes$/.test(requestUrl.pathname)
+      /\/api\/v1\/open-loops\/[^/]+\/(?:outcomes|responses)$/.test(requestUrl.pathname)
     ) {
       simulatedLostOutcomeResponse = true;
       await route.fulfill({
