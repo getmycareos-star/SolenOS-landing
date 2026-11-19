@@ -802,6 +802,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "each generated summary item must include an exact quote from its LCR source");
   await exportDialog.getByRole("heading", { name: "Professional briefing", exact: true }).waitFor({ timeout: 10_000 });
   await exportDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
+  await exportDialog.getByText(/No medication record does not mean none are being taken/).waitFor({ timeout: 10_000 });
   assert.equal(appointmentDraft.source_statuses.allergies.status, "unavailable",
     "missing allergy integration must be explicit and must not be interpreted as no allergies");
   await exportDialog.getByRole("checkbox", { name: /I reviewed each briefing item against its saved source wording/ }).check();
