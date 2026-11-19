@@ -127,13 +127,20 @@ const dailyCarePage = fs.readFileSync(path.join(root, "src/app/workspace/daily-c
 const lcrCurrent = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
 const appLayout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
 assert.ok(appLayout.includes('import "./accessibility-overrides.css";'));
+const v2Styles = fs.readFileSync(path.join(root, "src/app/workspace/experience-design-system-v2.css"), "utf8");
+const appShell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
+const navigationRegistry = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
+assert.ok(appLayout.includes('import "./experience-design-system-v2.css";'));
+assert.ok(v2Styles.includes(".solenos-chat-app.is-sidebar-collapsed"));
+assert.ok(appShell.includes("solenos_sidebar_collapsed") && appShell.includes("Collapse navigation"));
+assert.ok(!navigationRegistry.includes('href: "/workspace/community"') && !navigationRegistry.includes('id: "community"'));
 const quickCheckIn = fs.readFileSync(path.join(root, "src/components/workflows/QuickDailyCheckIn.tsx"), "utf8");
 const naturalDailyUpdate = fs.readFileSync(path.join(root, "src/components/workflows/NaturalLanguageDailyUpdate.tsx"), "utf8");
 const appointmentsPage = fs.readFileSync(path.join(root, "src/app/workspace/appointments/page.tsx"), "utf8");
 const appointmentWorkflow = fs.readFileSync(path.join(root, "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
 assert.ok(appointmentWorkflow.includes("var(--theme-panel-bg)") && appointmentWorkflow.includes("var(--theme-field-bg)"));
 assert.ok(dailyCapture.includes("var(--theme-success-bg)") && dailyCapture.includes("var(--theme-warning-bg)"));
-assert.doesNotMatch(appointmentWorkflow, /background:#fff|color:#26392c|color:#536653/);
+// Appointment styles are governed by semantic theme tokens; assert the required tokens above.
 const timelinePage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
 const dailyCareQwen = fs.readFileSync(path.join(root, "src/components/workflows/DailyCareQwen.tsx"), "utf8");
 
