@@ -241,6 +241,10 @@ async function main() {
   {
     const store = makeStore();
     store.setItem("solenos_anonymous_session_revoked", "revoked-1");
+    store.setItem("solenos_anonymous_access_token", "stale-revoked-token");
+    store.setItem("solenos_backend_person_id", "stale-person");
+    store.setItem("solenos_backend_caregiver_id", "stale-caregiver");
+    store.setItem("solenos_anonymous_session_expires_at", new Date(Date.now() + 86400000).toISOString());
     installBrowser(store, "https://solenos.test/start");
     let requests = 0;
     globalThis.fetch = (async () => {
