@@ -61,6 +61,7 @@ type DraftPayload = {
   warning: string;
 };
 type Recipient = { caregiver_id: string; name: string; relationship: string; can_receive_handoff: boolean };
+type AppointmentOption = { id: string; title: string; scheduled_at: string | null; provider?: string | null; healthcare_org?: string | null; status?: string | null };
 type InboxItem = {
   id: string; from_caregiver_id: string; from_caregiver_name: string;
   from_caregiver_relationship?: string | null; scope: string[]; status: string;
@@ -250,6 +251,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [preparePurpose, setPreparePurpose] = useState<HandoffDraftPurpose>("family_transition");
   const [prepareAudience, setPrepareAudience] = useState<"family" | "professional">("family");
   const [prepareWindowDays, setPrepareWindowDays] = useState("30");
+  const [appointmentOptions, setAppointmentOptions] = useState<AppointmentOption[]>([]);
+  const [prepareAppointmentId, setPrepareAppointmentId] = useState("");
   const [preparing, setPreparing] = useState(false);
   const [prepareError, setPrepareError] = useState("");
   const [prepareNotice, setPrepareNotice] = useState("");
@@ -300,6 +303,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         setInbox([]);
         setOutbox([]);
         setSavedDrafts([]);
+        setAppointmentOptions([]);
+        setPrepareAppointmentId("");
         setSelectedRecipients([]);
         setSelectedScope([]);
       }
@@ -310,7 +315,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       const consent = await getJSON("/consent") as { verified?: boolean; required?: boolean };
       const canUseHandoffs = consent.verified === true && consent.required === false;
       setConsentRequired(!canUseHandoffs);
-      const [directoryResult, inboxResult, outboxResult, draftsResult] = await Promise.allSettled([
+      const [directoryResult, inboxResult, outboxResult, draftsResult, appointmentsResult] = await Promise.allSettled([
         canUseHandoffs
           ? getJSON("/handoffs/directory/recipients") as Promise<{ items?: Recipient[] }>
           : Promise.resolve({ items: [] as Recipient[] }),
@@ -321,6 +326,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           ? getJSON("/handoffs/outbox") as Promise<{ items?: OutboxItem[] }>
           : Promise.resolve({ items: [] as OutboxItem[] }),
         getJSON("/handoff-drafts?limit=10") as Promise<{ items?: Array<DraftPayload & { updated_at?: string }> }>,
+        getJSON("/handoff-drafts/appointments") as Promise<{ items?: AppointmentOption[] }>,
       ]);
       if (directoryResult.status === "fulfilled" && Array.isArray(directoryResult.value.items)) setDirectory(directoryResult.value.items);
       else setDirectoryError(true);
@@ -330,6 +336,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       else setHistoryError(true);
       if (draftsResult.status === "fulfilled" && Array.isArray(draftsResult.value.items)) setSavedDrafts(draftsResult.value.items);
       else setDraftsError(true);
+      if (appointmentsResult.status === "fulfilled" && Array.isArray(appointmentsResult.value.items)) {
+        setAppointmentOptions(appointmentsResult.value.items);
+      } else {
+        setAppointmentOptions([]);
+      }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
       const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
@@ -398,6 +409,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
   async function prepareHandoffDraft() {
     if (preparing) return;
+    if (preparePurpose === "professional_appointment" && !prepareAppointmentId) {
+      setPrepareError("Choose the saved appointment this briefing is for.");
+      return;
+    }
     setPreparing(true);
     setPrepareError("");
     setPrepareNotice("");
@@ -413,6 +428,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         purpose: preparePurpose,
         audience: prepareAudience,
         window_days: Number(prepareWindowDays),
+        appointment_id: preparePurpose === "professional_appointment" ? prepareAppointmentId : null,
       }, { "X-Request-ID": requestId }) as DraftPayload;
       if (!prepared?.draft_id || !Array.isArray(prepared.sections)) {
         throw new Error("The saved summary could not be confirmed.");
@@ -423,7 +439,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       ].slice(0, 10));
       prepareRequestId.current = null;
       setPrepareNotice(
-        prepared.generation_status === "generated" && prepared.validation_status === "exact_quote_reference_validation_passed"
+        ["generated", "source_only_fallback"].includes(prepared.generation_status ?? "") && prepared.validation_status === "exact_quote_reference_validation_passed"
           ? "Draft saved for your review. Nothing has been shared or added to the Care Record."
           : "Draft saved with source availability and limitations. Review the available records; no information has been shared or added to the Care Record."
       );
@@ -614,7 +630,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </label>
           <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
             Why are you sharing it?
-            <select value={preparePurpose} onChange={event => setPreparePurpose(event.target.value as HandoffDraftPurpose)} style={field} disabled={preparing}>
+            <select value={preparePurpose} onChange={event => {
+              const next = event.target.value as HandoffDraftPurpose;
+              setPreparePurpose(next);
+              if (next !== "professional_appointment") setPrepareAppointmentId("");
+            }} style={field} disabled={preparing}>
               {prepareAudience === "family" ? (
                 <>
                   <option value="family_transition">Taking over today</option>
@@ -632,6 +652,20 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               )}
             </select>
           </label>
+          {preparePurpose === "professional_appointment" && (
+            <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+              Which saved appointment is this briefing for?
+              <select value={prepareAppointmentId} onChange={event => setPrepareAppointmentId(event.target.value)} style={field} disabled={preparing || appointmentOptions.length === 0}>
+                <option value="">Choose an appointment</option>
+                {appointmentOptions.map(item => (
+                  <option key={item.id} value={item.id}>
+                    {(item.title || "Appointment") + " · " + formatDate(item.scheduled_at) + (item.provider ? " · " + item.provider : "")}
+                  </option>
+                ))}
+              </select>
+              {appointmentOptions.length === 0 && <span style={{ color: "#667267" }}>No saved appointments are available. Add the appointment to this Care Record before preparing its briefing.</span>}
+            </label>
+          )}
           <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
             How much care history should be included?
             <select value={prepareWindowDays} onChange={event => setPrepareWindowDays(event.target.value)} style={field} disabled={preparing}>
