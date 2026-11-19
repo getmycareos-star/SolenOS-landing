@@ -108,7 +108,7 @@ function AttentionCard({ item, loops, onUpdate, onHistory, onCreate, busy, histo
   const [expanded, setExpanded] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [updateText, setUpdateText] = useState("");
-  const loop = loops.find((candidate) => candidate.id === item.record_id);
+  const loop = loops.find((candidate) => candidate.id === item.record_id || (candidate.source_type === item.source && candidate.source_id === item.record_id));
   const evidenceIds = uniqueEvidenceIds(item);
   const reasonLines = [...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])].filter(Boolean);
   const categoryLabel = item.category === "needs_attention_now" ? "Needs attention now"
@@ -220,10 +220,13 @@ export default function FollowUpsPage() {
       const seen = new Set<string>();
       return items.filter((item) => { const key = decisionKey(item); if (seen.has(key)) return false; seen.add(key); return true; });
     };
+    const linkedToSavedFollowUp = (item: AttentionDecision) => loops.some((loop) =>
+      loop.source_type === item.source && loop.source_id === item.record_id
+    );
     return {
-      needsAttention: unique([...(care?.needs_attention_now || []), ...(care?.important_to_address || [])]),
-      monitored: unique(care?.can_wait_with_documented_basis || []),
-      needsClarification: unique(care?.needs_clarification || []),
+      needsAttention: unique([...(care?.needs_attention_now || []), ...(care?.important_to_address || [])]).filter((item) => !linkedToSavedFollowUp(item)),
+      monitored: unique(care?.can_wait_with_documented_basis || []).filter((item) => !linkedToSavedFollowUp(item)),
+      needsClarification: unique(care?.needs_clarification || []).filter((item) => !linkedToSavedFollowUp(item)),
     };
   }, [assessment]);
 
