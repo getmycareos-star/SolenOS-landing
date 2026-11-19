@@ -2061,7 +2061,7 @@ await record("09A appointment outcome requires caregiver review before LCR retri
   const recordId = created.payload.id;
   assert.ok(recordId);
 
-  const appointmentPage = await createBrowserPage(identity, "/workspace/appointments");
+  const appointmentPage = await createBrowserPage(session, "/workspace/appointments");
   await appointmentPage.page.getByRole("heading", { name: "Your appointment, supported by SolenOS" }).waitFor({ timeout: 20_000 });
   await appointmentPage.page.getByRole("button", { name: "Open appointment support", exact: true }).click();
   await appointmentPage.page.getByRole("button", { name: "After", exact: true }).click();
