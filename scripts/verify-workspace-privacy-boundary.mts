@@ -41,8 +41,12 @@ console.log("✓ direct workspace entry does not disable server-side authenticat
 const settings = fs.readFileSync("src/app/workspace/settings/page.tsx", "utf8");
 assert.match(appShell, /markAnonymousSessionRevokedLocally\(\)/,
   "deleting a workspace without a bearer token must still retain the local deletion boundary");
-assert.match(appShell, /LOCAL_WORKSPACE_KEYS\.forEach/,
-  "the workspace delete action must clear only its declared local workspace keys");
+assert.match(appShell, /key\.startsWith\("solenos_"\)/,
+  "workspace deletion must clear dynamically added SolenOS-owned browser keys");
+assert.match(appShell, /ownedKeys\.delete\("solenos_anonymous_session_revoked"\)/,
+  "workspace deletion must preserve the local marker that blocks silent record recreation");
+assert.match(appShell, /window\.sessionStorage\.clear\(\)/,
+  "workspace deletion must clear temporary SolenOS browser-session state");
 
 assert.match(settings, /await revokeAnonymousSession\(\)/,
   "clearing a device must attempt server-side revocation before local credentials are removed");
