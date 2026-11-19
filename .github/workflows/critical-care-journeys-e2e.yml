@@ -2,6 +2,11 @@ name: Critical care journeys — real backend and browser
 
 on:
   workflow_call:
+  pull_request:
+    branches: [main]
+    paths:
+      - "e2e/web-push-delivery.mjs"
+      - ".github/workflows/critical-care-journeys-e2e.yml"
   push:
     branches: [main]
     paths:
@@ -105,6 +110,7 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false playwright
           npx playwright install chromium
+          npx playwright install chrome
           python -m pip install --upgrade pip
           python -m pip install -e ./backend-service/backend
 
