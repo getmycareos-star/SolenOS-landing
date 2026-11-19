@@ -29,12 +29,16 @@ function jsonResponse(value: unknown, status = 200): Response {
     blob: async () => new Blob([body]),
   } as unknown as Response;
 }
-function installBrowser(store: Store): void {
+function installBrowser(
+  store: Store,
+  href = "https://solenos.test/workspace",
+): void {
   Object.defineProperty(globalThis, "localStorage", { configurable: true, value: store });
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
       localStorage: store,
+      location: { href, origin: "https://solenos.test" },
       dispatchEvent: () => true,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
@@ -166,6 +170,71 @@ async function main() {
     assert.equal(store.getItem("solenos_anonymous_access_token"), "rotated-server-token");
   }
 
+  // A deleted workspace cannot mint a new identity from background requests.
+  {
+    const store = makeStore();
+    store.setItem("solenos_anonymous_session_revoked", "revocation-1");
+    installBrowser(store);
+    let requests = 0;
+    globalThis.fetch = (async () => {
+      requests += 1;
+      return jsonResponse(session());
+    }) as typeof fetch;
+
+    await assert.rejects(
+      getJSON("/events/person-server-1"),
+      /workspace was deleted from this device/i,
+    );
+    assert.equal(requests, 0, "background reads must not create a replacement identity after deletion");
+    assert.equal(store.getItem("solenos_anonymous_session_revoked"), "revocation-1");
+  }
+
+  // Explicit Care Record entry remains authorized if the URL is cleaned after
+  // bootstrap starts but before the server responds.
+  {
+    const store = makeStore();
+    store.setItem("solenos_anonymous_session_revoked", "revocation-1");
+    installBrowser(store, "https://solenos.test/workspace?enter=1");
+    let resolveCreate!: (response: Response) => void;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      assert.equal(String(input), "/api/v1/sessions/anonymous");
+      return new Promise<Response>((resolve) => { resolveCreate = resolve; });
+    }) as typeof fetch;
+
+    const pending = getJSON("/events/person-server-1");
+    await Promise.resolve();
+    (globalThis.window as unknown as { location: { href: string } }).location.href = "https://solenos.test/workspace";
+    resolveCreate(jsonResponse(session()));
+    await pending;
+
+    assert.equal(store.getItem("solenos_anonymous_session_revoked"), null, "successful explicit replacement clears the deletion marker");
+    assert.equal(store.getItem("solenos_anonymous_access_token"), "server-issued-token");
+    assert.equal(store.getItem("solenos_backend_person_id"), "person-server-1");
+  }
+
+  // A revoke in another tab while bootstrap is pending must win; the late
+  // response cannot repopulate credentials or clear the newer revocation.
+  {
+    const store = makeStore();
+    installBrowser(store);
+    let resolveCreate!: (response: Response) => void;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      assert.equal(String(input), "/api/v1/sessions/anonymous");
+      return new Promise<Response>((resolve) => { resolveCreate = resolve; });
+    }) as typeof fetch;
+
+    const pending = getJSON("/events/person-server-1");
+    await Promise.resolve();
+    store.setItem("solenos_anonymous_session_revoked", "revocation-from-another-tab");
+    resolveCreate(jsonResponse(session()));
+
+    await assert.rejects(pending, /workspace was deleted while access was being restored/i);
+    assert.equal(store.getItem("solenos_anonymous_session_revoked"), "revocation-from-another-tab");
+    assert.equal(store.getItem("solenos_anonymous_access_token"), null, "late bootstrap must not restore a revoked bearer token");
+    assert.equal(store.getItem("solenos_backend_person_id"), null, "late bootstrap must not restore a revoked record identity");
+  }
+
   console.log("Anonymous session identity race checks passed.");
+
 }
 void main();
