@@ -1684,7 +1684,7 @@ await record("Care history opens the original caregiver report and its source de
     "the history detail must distinguish the saved time");
   assert.match(sourceDetails, /Who shared it\s+Caregiver/,
     "the history detail must identify the caregiver as the source");
-  assert.match(sourceDetails, /Related notes or documents\s+1 related item/,
+  assert.match(sourceDetails, /Related notes or documents\s+1 related note or document/,
     "the history detail must show its linked source record");
 
   const evidenceList = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, {
