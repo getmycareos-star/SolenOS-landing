@@ -6156,3 +6156,198 @@ html:not([data-solenos-theme="dark"]) [role="button"][style*="var(--trust)"]:hov
     transition: none;
   }
 }
+
+
+/* Caregiver home: one clear care picture, with actions and destinations kept secondary. */
+.lcr-first-screen-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.lcr-first-screen-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e2e9e2;
+  border-radius: 15px;
+  background: #fff;
+  color: #26372b;
+}
+.lcr-first-screen-card:first-child {
+  grid-column: 1 / -1;
+  padding: 20px;
+  background: #fbfdfb;
+}
+.lcr-first-screen-card h3 {
+  margin: 0 0 10px;
+  color: #2c4432;
+  font-size: 16px;
+  line-height: 1.35;
+}
+.lcr-first-screen-card:first-child h3 {
+  font-size: 18px;
+}
+.lcr-first-screen-card > p {
+  color: #657468;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.lcr-first-screen-card .lcr-first-screen-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lcr-first-screen-card:first-child .lcr-first-screen-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.lcr-first-screen-card .lcr-first-screen-list > li {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid #e7ece7;
+  border-radius: 11px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+.lcr-first-screen-card .lcr-first-screen-list > li > strong {
+  color: #2c4031;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.lcr-first-screen-card .lcr-first-screen-list > li > p {
+  margin: 6px 0;
+  color: #4e5e51;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.lcr-first-screen-card .lcr-first-screen-list > li > small {
+  color: #778278;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.solenos-care-next-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0 10px;
+  padding: 18px 20px;
+  border: 1px solid #e1e9e1;
+  border-radius: 14px;
+  background: #fbfdfb;
+}
+.solenos-care-next-step h2 {
+  margin: 0;
+  color: #2c4432;
+  font-size: 17px;
+}
+.solenos-care-next-step p {
+  margin: 6px 0 0;
+  color: #657468;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.solenos-care-next-step__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.solenos-care-primary-action,
+.solenos-care-secondary-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.solenos-care-primary-action {
+  border: 1px solid #8eae8a;
+  background: #b9d5b5;
+  color: #17251c;
+}
+.solenos-care-secondary-action {
+  border: 1px solid #dce6dc;
+  background: #fff;
+  color: #2d4934;
+}
+.solenos-care-explore {
+  margin: 10px 0 20px;
+  border: 1px solid #e1e9e1;
+  border-radius: 12px;
+  background: #fff;
+}
+.solenos-care-explore > summary {
+  min-height: 48px;
+  padding: 14px 16px;
+  color: #344d39;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.solenos-care-explore[open] > summary {
+  border-bottom: 1px solid #e8eee8;
+}
+.solenos-care-explore__links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+.solenos-care-explore__links > a {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  color: #2d4934;
+  text-decoration: none;
+}
+.solenos-care-explore__links > a:hover {
+  background: #f4f8f4;
+}
+.solenos-care-explore__links > a strong {
+  font-size: 13px;
+}
+.solenos-care-explore__links > a span {
+  color: #657468;
+  font-size: 12px;
+  line-height: 1.45;
+}
+@media (max-width: 640px) {
+  .lcr-first-screen-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .lcr-first-screen-card:first-child {
+    grid-column: auto;
+    padding: 16px;
+  }
+  .lcr-first-screen-card:first-child .lcr-first-screen-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lcr-first-screen-card {
+    padding: 15px;
+  }
+  .solenos-care-next-step {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 16px;
+  }
+  .solenos-care-next-step__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .solenos-care-primary-action,
+  .solenos-care-secondary-action {
+    width: 100%;
+  }
+  .solenos-care-explore__links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
