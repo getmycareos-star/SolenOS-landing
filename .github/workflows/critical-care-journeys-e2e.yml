@@ -1,4 +1,4 @@
-name: Critical care journeys — real backend and browser
+name: Critical care journeys — real backend and browser (main validation)
 
 on:
   workflow_call:
