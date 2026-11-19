@@ -560,7 +560,15 @@ await record("01a dementia profile review window and observation persistence are
 
   const { context, page, observed, pageErrors } = await createBrowserPage(session, "/workspace/care-continuity");
   await page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
-  await page.getByText("Dementia care profile and observations", { exact: true }).click();
+  const dementiaDisclosure = page.locator("details.lcr-history-details").filter({
+    has: page.getByText("Dementia care profile and observations", { exact: true }),
+  });
+  await dementiaDisclosure.locator(":scope > summary").click({ force: true });
+  await page.waitForFunction(() => {
+    const summary = [...document.querySelectorAll("details.lcr-history-details > summary")]
+      .find((item) => item.textContent?.trim() === "Dementia care profile and observations");
+    return summary?.parentElement instanceof HTMLDetailsElement && summary.parentElement.open;
+  }, undefined, { timeout: 10_000 });
   await page.getByText("Background and care", { exact: true }).click();
   await page.getByLabel("Diagnosis information, if provided status").selectOption("unknown");
   await page.getByLabel("Diagnosis information, if provided review interval").selectOption("90");
