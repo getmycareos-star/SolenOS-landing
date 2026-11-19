@@ -32,6 +32,12 @@ type Candidate = {
     confidence: number | null;
     review_status: string;
     warnings: string[];
+    source_attribution?: "patient_reported" | "caregiver_reported" | "professional_observed" | "not_stated";
+    negation_status?: "explicitly_negated" | "not_explicitly_marked";
+    modality?: "tentative" | "not_explicitly_marked";
+    conditionality?: "conditional" | "not_explicitly_marked";
+    temporal_context?: "historical" | "not_established";
+    statement_kind?: "recommendation" | "not_detected";
     medication_details?: { strength: string | null; dosage_instructions: string | null } | null;
   };
 };
@@ -326,6 +332,16 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <span>Date shown on document: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Not stated in document"}</span>
                 {candidate.extracted_at && <span>Text saved: {new Date(candidate.extracted_at).toLocaleString()}</span>}
               </div>
+              {!!candidate.canonical_candidate && <div role="note" aria-label="How this statement is worded" style={{ display: "flex", flexWrap: "wrap", gap: 6, fontSize: 11, color: "var(--text-secondary)" }}>
+                {candidate.canonical_candidate.source_attribution === "patient_reported" && <span>Reported by the patient</span>}
+                {candidate.canonical_candidate.source_attribution === "caregiver_reported" && <span>Reported by a family caregiver</span>}
+                {candidate.canonical_candidate.source_attribution === "professional_observed" && <span>Documented or observed by a care professional</span>}
+                {candidate.canonical_candidate.negation_status === "explicitly_negated" && <span>Contains negative wording</span>}
+                {candidate.canonical_candidate.modality === "tentative" && <span>Tentative wording</span>}
+                {candidate.canonical_candidate.conditionality === "conditional" && <span>Conditional wording</span>}
+                {candidate.canonical_candidate.temporal_context === "historical" && <span>Historical information</span>}
+                {candidate.canonical_candidate.statement_kind === "recommendation" && <span>Recommendation — outcome not established here</span>}
+              </div>}
               {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: 12 }}>
                 <strong>Medicine details — not changed</strong>
                 <span>Strength: {candidate.canonical_candidate.medication_details.strength || "Not stated"}</span>
