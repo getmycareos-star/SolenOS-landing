@@ -2872,3 +2872,5 @@
   .care-record-overview__section { padding: 13px; }
   .care-record-overview__title { font-size: 22px; }
 }
+
+.guided-full-span { grid-column: 1 / -1; }
