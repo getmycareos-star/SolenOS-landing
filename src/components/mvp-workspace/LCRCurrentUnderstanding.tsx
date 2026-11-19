@@ -1215,8 +1215,7 @@ export function LCRCurrentUnderstanding() {
         <div>
           <p className="lcr-eyebrow">YOUR CARE</p>
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
-          <p>The latest care information, what needs attention, and what is still unknown.</p>
-          <p className="lcr-record-introduction"><strong>Your care information, brought together.</strong> SolenOS brings together the care information you and your care team record. Some things may happen without being documented here. Your record reflects the information currently available to you. The information in this record depends on what has been added and confirmed.</p>
+          <p className="lcr-record-introduction">This record reflects the care information saved here. It may not include everything happening in care.</p>
         </div>
         <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh care summary">
           <RefreshCw size={16} aria-hidden="true" /> Refresh care summary
