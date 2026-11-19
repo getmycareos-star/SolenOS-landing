@@ -147,7 +147,7 @@ assert.ok(lcrHome.includes('href="/workspace/open-loops"'), "Follow-ups is direc
 assert.ok(lcrHome.includes('href="/workspace/timeline"'), "the Care Timeline is directly reachable from the Care Record");
 assert.ok(lcrHome.includes('href="/workspace/documents"'), "Documents is directly reachable from the Care Record");
 assert.ok(lcrHome.includes('href="/workspace/companion"'), "Care Assistant is directly reachable from the Care Record");
-assert.match(lcrHome, /see how recorded corrections affect the current Care Record/i, "the Timeline explains how corrections affect the current Care Record");
+assert.match(lcrHome, /Review earlier updates and corrections\./, "the Care Timeline link describes its current browsing purpose");
 assert.match(lcrHome, /LCRCurrentUnderstanding/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
