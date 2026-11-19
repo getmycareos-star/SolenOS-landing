@@ -443,6 +443,27 @@ await record("01a dementia profile review window and observation persistence are
   const foreignSession = await newSession("dementia observation isolation");
   const foreign = auth(foreignSession);
   const profileField = "dementia_profile.wandering_getting_lost";
+  const conflictingProfileValue = `Conflicting-scope attempt ${randomUUID()}`;
+  const conflictingProfileWrite = await request("/api/v1/care-continuity/assertions", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      subject_type: "person",
+      subject_id: identity.personId,
+      field: profileField,
+      assertion_kind: "current_state",
+      epistemic_state: "reported",
+      asserted_value: conflictingProfileValue,
+      source_label: "Caregiver-provided care profile",
+      source_text: conflictingProfileValue,
+      review_after_days: 90,
+      // A conflicting client identity is rejected; it cannot override the bearer session.
+      person_id: foreign.personId,
+    },
+  });
+  assert.equal(conflictingProfileWrite.status, 403, JSON.stringify(conflictingProfileWrite.payload));
+  assert.match(JSON.stringify(conflictingProfileWrite.payload), /Conflicting care-record scope/);
+
   const profileValue = `Caregiver report ${randomUUID()}`;
   const profileWrite = await request("/api/v1/care-continuity/assertions", {
     token: identity.token,
@@ -457,8 +478,6 @@ await record("01a dementia profile review window and observation persistence are
       source_label: "Caregiver-provided care profile",
       source_text: profileValue,
       review_after_days: 90,
-      // Caller-supplied identity must be ignored; the bearer session is authoritative.
-      person_id: foreign.personId,
     },
   });
   assert.equal(profileWrite.status, 201, JSON.stringify(profileWrite.payload));
@@ -472,9 +491,28 @@ await record("01a dementia profile review window and observation persistence are
   assert.ok(profileRead.payload.some((row) =>
     row.field === profileField && row.asserted_value === profileValue && row.review_after_days === 90
   ), "the caregiver-selected review window and profile value must persist");
+  assert.ok(!profileRead.payload.some((row) => row.asserted_value === conflictingProfileValue),
+    "a conflicting client identity must not create a care assertion");
+
+  const occurredAt = new Date(Date.now() - 60_000).toISOString();
+  const conflictingDescription = `Conflicting-scope observation attempt ${randomUUID()}`;
+  const conflictingObservationWrite = await request("/api/v1/care-continuity/caregiver-observations", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      observation_category: "dementia.wandering",
+      description: conflictingDescription,
+      observation_type: "direct",
+      epistemic_status: "observed",
+      observed_at: occurredAt,
+      // A conflicting client identity must be rejected, not used for authorization.
+      person_id: foreign.personId,
+    },
+  });
+  assert.equal(conflictingObservationWrite.status, 403, JSON.stringify(conflictingObservationWrite.payload));
+  assert.match(JSON.stringify(conflictingObservationWrite.payload), /Conflicting care-record scope/);
 
   const description = `Observed dementia-care event ${randomUUID()}`;
-  const occurredAt = new Date(Date.now() - 60_000).toISOString();
   const observationWrite = await request("/api/v1/care-continuity/caregiver-observations", {
     token: identity.token,
     method: "POST",
@@ -484,8 +522,6 @@ await record("01a dementia profile review window and observation persistence are
       observation_type: "direct",
       epistemic_status: "observed",
       observed_at: occurredAt,
-      // A foreign person ID must not override the authenticated session.
-      person_id: foreign.personId,
     },
   });
   assert.equal(observationWrite.status, 201, JSON.stringify(observationWrite.payload));
@@ -502,6 +538,8 @@ await record("01a dementia profile review window and observation persistence are
   assert.ok(observationRead.payload.some((row) =>
     row.id === observationWrite.payload.id && row.description === description
   ), "the original observation must be retrievable");
+  assert.ok(!observationRead.payload.some((row) => row.description === conflictingDescription),
+    "a conflicting client identity must not create an observation");
 
   const currentCare = await request("/api/v1/care-continuity/current-care", {
     token: identity.token,
