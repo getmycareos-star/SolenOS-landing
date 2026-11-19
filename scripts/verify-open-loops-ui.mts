@@ -29,7 +29,10 @@ for (const [label, pattern] of required) {
   assert.match(page, pattern, `Follow-ups contract missing: ${label}`);
 }
 
-assert.doesNotMatch(page, /function createLoop|postJSON\("\/open-loops",/, "caregivers must report changes to existing care matters; SolenOS manages the unresolved follow-up lifecycle");
+const openLoopCreateWrites = page.match(/postJSON\("\/open-loops",/g) ?? [];
+assert.equal(openLoopCreateWrites.length, 1, "event-derived follow-ups must use one canonical create writer");
+assert.match(page, /async function createFollowUp\(item: AttentionDecision\)[\s\S]*?if \(item\.source !== "events" \|\| !item\.record_id\) return;[\s\S]*?postJSON\("\/open-loops",\s*\{[\s\S]*?source_type: item\.source,[\s\S]*?source_id: item\.record_id,[\s\S]*?idempotency_key: idempotencyKey/s, "follow-up creation must remain bound to a saved care event and retry-safe");
+assert.doesNotMatch(page, /function createLoop/, "do not add a second general-purpose follow-up writer");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
 assert.ok(page.includes("SolenOS checks the care information you have saved and keeps follow-ups easy to find"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
