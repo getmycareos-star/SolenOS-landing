@@ -142,6 +142,7 @@ assert.match(companion, /source\.evidence_reviews/);
 assert.match(companion, /item\.evidence_reviews/);
 assert.match(companion, /not independent confirmation/);
 assert.match(companion, /Only the latest source reviews are shown here/);
+assert.match(companion, /No source review has been recorded for this note or document/);
 
 assert.match(companion, /caregiverSafeAssistantText\(response\.reply\)/);
 assert.doesNotMatch(companion, /text: response\.reply/);
