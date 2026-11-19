@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { X } from "lucide-react";
-import { CareHandoffSharing } from "@/components/workflows/CareHandoffSharing";
+import {
+  CareHandoffSharing,
+  type CareHandoffSharingProps,
+} from "@/components/workflows/CareHandoffSharing";
 
 export type ShareRequestState =
   | "idle"
@@ -26,14 +30,66 @@ interface ShareCareSummaryPanelProps {
   onShared?: () => void;
 }
 
-/**
- * All share/export briefings now use the backend LCR handoff pipeline.
- * The former browser-side /api/situation summary composer is intentionally
- * removed from this entry point so it cannot become a competing source of truth.
- */
+type BriefingDraft = NonNullable<CareHandoffSharingProps["draft"]>;
+
+function downloadBriefing(draft: BriefingDraft) {
+  const sections = draft.generation?.sections ?? [];
+  const content = [
+    draft.audience === "family"
+      ? "SolenOS Family Care Briefing"
+      : "SolenOS Professional Care Briefing",
+    "Source of truth: Living Care Record",
+    "Prepared: " + (draft.prepared_at || "Not recorded"),
+    "Period: " + (draft.window?.from || "Not recorded") + " to " + (draft.window?.to || "Not recorded"),
+    "Review status: " + (draft.review_status || "Needs review"),
+    "",
+    "Important: AI-written wording is a draft. Each item includes wording from its saved source. Check the source and uncertainty labels before relying on or sharing it.",
+    ...sections.flatMap(item => [
+      "",
+      item.section,
+      item.summary || item.text,
+      item.supporting_quote ? "Saved source wording: " + item.supporting_quote : "Saved source wording unavailable.",
+      "Source reference: " + item.source_ref,
+      "Evidence status: " + (item.epistemic_status || "Not recorded"),
+      "Record status: " + (item.record_status || "Not recorded"),
+      "Event date: " + (item.event_at || "Not recorded"),
+      "Recorded date: " + (item.recorded_at || "Not recorded"),
+      item.stale_warning ? "Warning: This information may be out of date." : "",
+    ]),
+    "",
+    "This briefing does not update the Living Care Record.",
+  ].filter(Boolean).join("\n");
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "solenos-care-briefing-" + new Date().toISOString().slice(0, 10) + ".txt";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function ShareCareSummaryPanel({
+  intent = "share",
   onClose,
 }: ShareCareSummaryPanelProps) {
+  const [draft, setDraft] = useState<CareHandoffSharingProps["draft"]>(null);
+  const [audience, setAudience] = useState<CareHandoffSharingProps["audience"]>(null);
+  const [purpose, setPurpose] = useState<CareHandoffSharingProps["purpose"]>(null);
+
+  function resumeDraft(next: BriefingDraft) {
+    setDraft(next);
+    setAudience(next.audience === "professional" ? "professional" : "family");
+    setPurpose(
+      next.purpose === "professional_appointment"
+        ? "appointment"
+        : next.purpose === "period_summary"
+          ? "overview"
+          : "today",
+    );
+  }
+
   return (
     <div
       role="dialog"
@@ -79,7 +135,23 @@ export function ShareCareSummaryPanel({
             <X size={18} aria-hidden />
           </button>
         </header>
-        <CareHandoffSharing draft={null} audience={null} purpose={null} />
+        <CareHandoffSharing
+          draft={draft}
+          audience={audience}
+          purpose={purpose}
+          onResumeDraft={resumeDraft}
+        />
+        {intent === "export" && draft?.generation_status === "generated" && draft.validation_status === "exact_quote_reference_validation_passed" && (
+          <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => downloadBriefing(draft)}
+              style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: "#dce9dc", color: "#172117", fontWeight: 650, cursor: "pointer" }}
+            >
+              Download summary (.txt)
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );
