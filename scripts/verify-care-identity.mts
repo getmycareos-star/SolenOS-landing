@@ -196,7 +196,9 @@ assert(consentGate.includes("/api/v1/consent") && consentGate.includes("session.
 assert(policySettings.includes("/api/v1/consent") && policySettings.includes("session.access_token"), "privacy settings use the scoped backend consent contract");
 
 const shareSummary = fs.readFileSync(path.join(root, "src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx"), "utf8");
-assert(shareSummary.includes("session.caregiver.id"), "care-summary hydration uses the backend-issued caregiver identity");
+const handoffSharing = fs.readFileSync(path.join(root, "src/components/workflows/CareHandoffSharing.tsx"), "utf8");
+assert(shareSummary.includes("CareHandoffSharing"), "care-summary sharing uses the canonical backend LCR handoff pipeline");
+assert(handoffSharing.includes("ensureAnonymousSession()") && handoffSharing.includes("session.person.id"), "handoff preparation uses the backend-issued care identity and session");
 
 const feedbackPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/HelpImproveSolenos.tsx"), "utf8");
 const validationLoop = fs.readFileSync(path.join(root, "src/components/HumanValidationLoop.tsx"), "utf8");
