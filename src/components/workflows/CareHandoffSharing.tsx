@@ -212,6 +212,9 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
       ...(item.supporting_quote ? ["Source wording: " + (caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable in this preview.")] : []),
       "How it was reported: " + readableStatus(item.epistemic_status || "not_recorded"),
       "Review: " + readableStatus(item.record_status || "not_recorded"),
+      "Meaning check: " + (item.semantic_entailment_status === "source_text_only_no_paraphrase"
+        ? "Exact saved wording; no AI paraphrase."
+        : "Needs caregiver review. Exact quote matching does not prove the summary paraphrase is fully supported."),
       "When it happened: " + formatDate(item.event_at),
       "When it was saved: " + formatDate(item.recorded_at),
       "Date note: " + (item.stale_warning ? "This information may be old. Check it before relying on it." : "No warning that this information is old."),
