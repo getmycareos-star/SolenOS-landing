@@ -1268,7 +1268,7 @@ await record("Daily Care saves and retrieves original reports without relying on
 });
 
 await record("Daily Care capture survives secondary read failures", async () => {
-  const resilient = await createBrowserPage(session, "/workspace/daily-care");
+  const resilient = await createBrowserPage(firstVisitSession, "/workspace/daily-care");
   const unavailable = (route) => route.fulfill({
     status: 503,
     contentType: "application/json",
