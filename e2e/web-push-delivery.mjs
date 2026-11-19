@@ -47,8 +47,15 @@ assert.equal(capabilityResponse.status, 200, JSON.stringify(capability));
 assert.equal(capability.available, true, "CI VAPID configuration must enable browser push");
 assert.ok(capability.public_key, "The server must return its configured VAPID public key");
 
-const browser = await firefox.launch({ headless: false });
-const context = await browser.newContext({ permissions: ["notifications"] });
+// Web Push subscriptions are prohibited in private/incognito browser profiles.
+ // launchPersistentContext creates a regular browser profile; browser.newContext()
+ // creates an isolated private context and makes PushManager.subscribe() fail
+ // with Chromium's misleading "Registration failed - permission denied".
+const profileDir = fs.mkdtempSync(path.join("/tmp", "solenos-web-push-profile-"));
+const context = await firefox.launchPersistentContext(profileDir, {
+  headless: false,
+  permissions: ["notifications"],
+});
 let appOrigin = new URL(frontend).origin;
 try {
   const page = await context.newPage();
@@ -333,5 +340,5 @@ try {
   console.log("PASS: saved reminder became due; PostgreSQL notification was created; real Chromium Web Push displayed the generic alert; snooze and completion persisted across a backend process restart.");
 } finally {
   await context.close();
-  await browser.close();
+  fs.rmSync(profileDir, { recursive: true, force: true });
 }
