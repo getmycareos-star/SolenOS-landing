@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
-import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { RecordState } from '@/components/ui/RecordState'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
 
