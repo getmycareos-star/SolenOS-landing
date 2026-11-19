@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Shield, UserPlus, Users, X, Check, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { ensureAnonymousSession, getAnonymousAccessToken, getPersonId, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Member = {
@@ -83,6 +83,23 @@ type CaregiverContext = {
   observation_window_end?: string | null;
   availability_notes?: string | null;
 };
+type CaregiverPrivateObservation = {
+  id: string;
+  observation_content: string;
+  observation_type: string;
+  information_visibility: string;
+  is_promoted_to_shared: boolean;
+  report_time?: string;
+};
+type CaregiverPrivatePerspective = {
+  id: string;
+  claim_type: string;
+  claim_content: string;
+  context?: string | null;
+  information_visibility: string;
+  is_promoted_to_shared: boolean;
+  timestamp?: string;
+};
 type InvitationResult = {
   invitation_id: string;
   email: string;
@@ -102,6 +119,12 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [communicationSubject, setCommunicationSubject] = useState("");
   const [communicationBody, setCommunicationBody] = useState("");
   const [sendingCommunication, setSendingCommunication] = useState(false);
+  const [myObservations, setMyObservations] = useState<CaregiverPrivateObservation[]>([]);
+  const [myPerspectives, setMyPerspectives] = useState<CaregiverPrivatePerspective[]>([]);
+  const [observationDraft, setObservationDraft] = useState("");
+  const [perspectiveDraft, setPerspectiveDraft] = useState("");
+  const [perspectiveType, setPerspectiveType] = useState<"belief" | "interpretation">("interpretation");
+  const [savingPrivateContext, setSavingPrivateContext] = useState(false);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [primaryTransfers, setPrimaryTransfers] = useState<PrimaryTransfer[]>([]);
   const [selectedPrimaryRecipient, setSelectedPrimaryRecipient] = useState("");
@@ -138,14 +161,18 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       if (memberResult.status === "fulfilled") {
         setAllowed(true);
         setMembers(memberResult.value ?? []);
-        const personId = getPersonId();
-        const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult] = await Promise.allSettled([
+        const session = await ensureAnonymousSession();
+        const personId = session.person.id;
+        const caregiverId = session.caregiver.id;
+        const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult, observationResult, perspectiveResult] = await Promise.allSettled([
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
           getJSON("/multi-caregiver-summary") as Promise<MultiCaregiverSummary>,
           getJSON("/care-network-state") as Promise<CareNetworkState>,
           getJSON("/caregiver-communications") as Promise<CaregiverCommunication[]>,
           getJSON("/caregiver-contexts") as Promise<CaregiverContext[]>,
+          getJSON("/caregiver-observations/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivateObservation[]>,
+          getJSON("/caregiver-perspectives/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivatePerspective[]>,
         ]);
         if (responsibilityResult.status === "fulfilled") {
           setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
@@ -159,12 +186,18 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         else setCommunications([]);
         if (contextResult.status === "fulfilled") setCareContexts(contextResult.value ?? []);
         else setCareContexts([]);
+        if (observationResult.status === "fulfilled") setMyObservations(observationResult.value ?? []);
+        else setMyObservations([]);
+        if (perspectiveResult.status === "fulfilled") setMyPerspectives(perspectiveResult.value ?? []);
+        else setMyPerspectives([]);
       } else {
         setAllowed(false);
         setNetworkSummary(null);
         setNetworkState(null);
         setCommunications([]);
         setCareContexts([]);
+        setMyObservations([]);
+        setMyPerspectives([]);
         if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
       }
     } catch {
