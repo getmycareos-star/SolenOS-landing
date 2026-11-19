@@ -36,7 +36,7 @@ type DraftPayload = {
   validation_status?: string;
   review_status?: string;
   revision_number?: number;
-  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
+  generation?: { status: string; provider?: string | null; model?: string | null; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
   caregiver_notes?: Array<{ text: string; attribution: string }>;
   audience?: "family" | "professional";
   prepared_at: string;
@@ -72,7 +72,7 @@ type DraftRevision = {
   change_type: string;
   created_at: string | null;
   content?: {
-    generation?: { sections?: Array<{ section: string; text: string; source_ref: string }> };
+    generation?: { sections?: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string }> };
     caregiver_notes?: Array<{ text: string; attribution: string }>;
   };
   source_snapshot?: { source_records?: unknown[] };
@@ -191,7 +191,8 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     if (lines.join("\n").length + sectionHeader.length > 16500) { truncated = true; break; }
     lines.push(sectionHeader);
     const itemText = [
-      "- " + (caregiverSafeAssistantText(item.text) ?? "Some details are not available in this preview."),
+      "- " + (caregiverSafeAssistantText(item.summary || item.text) ?? "Some details are not available in this preview."),
+      ...(item.supporting_quote ? ["Source wording: " + (caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable in this preview.")] : []),
       "How it was reported: " + readableStatus(item.epistemic_status || "not_recorded"),
       "Review: " + readableStatus(item.record_status || "not_recorded"),
       "When it happened: " + formatDate(item.event_at),
