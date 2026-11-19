@@ -32,6 +32,8 @@ type DraftItem = {
 type DraftPayload = {
   draft_id: string;
   purpose: string;
+  appointment_id?: string | null;
+  selected_appointment?: { id: string; title: string; scheduled_at: string | null; provider?: string | null; healthcare_org?: string | null; status?: string | null } | null;
   source_of_truth?: "living_care_record" | string;
   source_snapshot_id?: string;
   source_snapshot_sha256?: string;
@@ -679,7 +681,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {prepareAudience === "professional" && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5 }}>We have not confirmed this person's identity or professional role. You can review this draft privately, but you cannot share it with a healthcare professional yet.</p>}
           {prepareError && <p role="alert" style={{ margin: 0, color: "#8d2d2d", fontSize: 12 }}>{prepareError}</p>}
           {prepareNotice && <p role="status" style={{ margin: 0, color: "#356441", fontSize: 12 }}>{prepareNotice}</p>}
-          <button type="submit" style={button} disabled={preparing || loading}>
+          <button type="submit" style={button} disabled={preparing || loading || (preparePurpose === "professional_appointment" && (!prepareAppointmentId || appointmentOptions.length === 0))}>
             {preparing ? "Preparing your summary…" : "Prepare summary to share"}
           </button>
         </form>
