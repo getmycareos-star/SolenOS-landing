@@ -2114,6 +2114,11 @@ export function LCRCurrentUnderstanding() {
           {clarificationOpen ? <ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /> : null}
         </details>
       </div>
+      <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
+        <summary>Dementia care profile and observations</summary>
+        {dementiaProfileOpen ? <DementiaCareProfilePanel personId={personId} /> : null}
+        {dementiaProfileOpen ? <DementiaObservationPanel personId={personId} /> : null}
+      </details>
       <details className="lcr-advanced-integrity">
         <summary>Where this information came from</summary>
         <p className="lcr-footer-note">Review the sources behind recorded information, what remains uncertain and how corrections are preserved. A caregiver report is not automatically a verified fact.</p>
@@ -2128,11 +2133,6 @@ export function LCRCurrentUnderstanding() {
         <details ref={conflictReviewDetailsRef} className="lcr-history-details" onToggle={(event) => setConflictReviewOpen(event.currentTarget.open)}>
           <summary>When information differs</summary>
           {conflictReviewOpen ? <ConflictResolutionPanel personId={personId} /> : null}
-        </details>
-        <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
-          <summary>About the person and their care</summary>
-          {dementiaProfileOpen ? <DementiaCareProfilePanel personId={personId} /> : null}
-          {dementiaProfileOpen ? <DementiaObservationPanel personId={personId} /> : null}
         </details>
         <details ref={recordHistoryDetailsRef} className="lcr-history-details" onToggle={(event) => setRecordHistoryOpen(event.currentTarget.open)}>
           <summary>Reported information and record history</summary>
