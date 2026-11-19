@@ -665,8 +665,8 @@ export default function DailyCarePage() {
             )}
           </section>
 
-          <section aria-labelledby="daily-care-documents-title" className="daily-care-context-panel">
-            <h2 id="daily-care-documents-title">Recent documents</h2>
+          <details className="daily-care-context-panel">
+            <summary><h2 id="daily-care-documents-title">Recent documents</h2></summary>
             <p className="daily-care-muted">SolenOS keeps the original files and shows what it could read from them.</p>
             {documentsError ? (
               <p role="alert">{caregiverSafeAssistantText(documentsError) || "Your documents could not be loaded. Try again."}</p>
@@ -709,10 +709,10 @@ export default function DailyCarePage() {
               <p>No documents have been uploaded from this account yet.</p>
             )}
             <Button variant="secondary" onClick={() => router.push("/workspace/documents")}>Open documents</Button>
-          </section>
+          </details>
 
-          <section aria-labelledby="daily-care-follow-ups-title" className="daily-care-context-panel">
-            <h2 id="daily-care-follow-ups-title">Follow-ups</h2>
+          <details className="daily-care-context-panel">
+            <summary><h2 id="daily-care-follow-ups-title">Follow-ups</h2></summary>
             <p className="daily-care-muted">
               {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} that may need checking.
               Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, Daily Care will use it instead of creating a duplicate.
@@ -747,10 +747,10 @@ export default function DailyCarePage() {
             )}
             {deliveryStatusError && <p role="status">{deliveryStatusError}</p>}
             <Button variant="secondary" onClick={() => router.push("/workspace/open-loops")}>Open Follow-ups</Button>
-          </section>
+          </details>
 
-          <section aria-labelledby="daily-care-since-last-title" className="daily-care-context-panel">
-            <h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2>
+          <details className="daily-care-context-panel">
+            <summary><h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2></summary>
             <p className="daily-care-muted">
               Shows care updates added since your previous visit on this device.
             </p>
@@ -791,7 +791,7 @@ export default function DailyCarePage() {
               <RecordState kind="period-empty" title="No new care updates recorded" description="Care updates added since your last visit will appear here." />
             )}
             {historyMayBeTruncated && <p className="daily-care-muted">This summary shows the latest 200 saved updates. Open full care history to see older ones.</p>}
-          </section>
+          </details>
 
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
             <h2 id="daily-care-today-title">Care today</h2>
@@ -829,11 +829,11 @@ export default function DailyCarePage() {
             )}
           </section>
 
-          <section aria-label="Care history" className="daily-care-context-panel">
-            <h2>Need to review an earlier update?</h2>
+          <details className="daily-care-context-panel">
+            <summary><h2>Need to review an earlier update?</h2></summary>
             <p className="daily-care-muted">Use Daily Care to share new information. Care history shows all saved updates and corrections.</p>
             <Link href="/workspace/timeline" className="care-reminders-inline-link">Open care history</Link>
-          </section>
+          </details>
           {reviewAnalysisId && (
             <CaptureAnalysisReview
               analysisId={reviewAnalysisId}
@@ -893,6 +893,17 @@ export default function DailyCarePage() {
           border-radius: 16px;
           background: var(--theme-panel-bg);
           color: var(--theme-panel-fg);
+        }
+        .daily-care-context-panel > summary {
+          cursor: pointer;
+          list-style-position: inside;
+        }
+        .daily-care-context-panel > summary h2 {
+          display: inline;
+          margin: 0;
+        }
+        .daily-care-context-panel[open] > summary {
+          margin-bottom: .75rem;
         }
         .daily-care-context-panel h2 {
           margin: 0 0 .35rem;
