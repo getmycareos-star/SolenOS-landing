@@ -574,7 +574,7 @@ export default function TimelinePage() {
         ) : (
           <p style={{ margin: 0, lineHeight: 1.55 }}>No saved care updates are available for this record yet. Add a care note or observation to begin the history.</p>
         )}
-        <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This is the latest saved update. For the current care summary, return to your Care Record.</p>
+        <p className="timeline-event-provenance-note">This is the latest saved update. For the current care summary, return to your Care Record.</p>
       </section>
 
       <section aria-label="Timeline controls" style={{ marginBottom: 20 }}>
@@ -638,46 +638,46 @@ export default function TimelinePage() {
         </section>
       ) : (
         <section aria-label="Care history in date order">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-            <h2 style={{ fontSize: 19, margin: 0 }}>Earlier care updates</h2>
-            <span style={{ color: "var(--solenos-muted)", fontSize: 13 }}>{visibleEvents.length} {visibleEvents.length === 1 ? "event" : "events"}</span>
+          <div className="timeline-history-heading">
+            <h2 className="timeline-history-title">Earlier care updates</h2>
+            <span className="timeline-event-count">{visibleEvents.length} {visibleEvents.length === 1 ? "event" : "events"}</span>
           </div>
           {groupedEvents.map((group) => (
-            <div key={group.label} style={{ marginBottom: 22 }}>
-              <h3 style={{ fontSize: 13, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--solenos-muted)", margin: "18px 0 12px" }}>{group.label}</h3>
-              <div style={{ borderLeft: "2px solid var(--solenos-hairline)", marginLeft: 8, paddingLeft: 18, display: "grid", gap: 12 }}>
+            <div key={group.label} className="timeline-day-group">
+              <h3 className="timeline-day-label">{group.label}</h3>
+              <div className="timeline-event-list">
                 {group.events.map((event) => {
                   const expanded = expandedId === event.id;
                   const category = eventCategory(event);
                   const description = parseDescription(event.description);
                   return (
-                    <article id={`timeline-event-${event.id}`} key={event.id} style={{ position: "relative", border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "var(--theme-panel-bg)", overflow: "hidden" }}>
-                      <span aria-hidden="true" style={{ position: "absolute", width: 10, height: 10, borderRadius: "50%", background: "#64866b", left: -24, top: 22, boxShadow: "0 0 0 4px var(--paper)" }} />
-                      <button type="button" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)} style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", padding: 16, display: "block", color: "inherit", cursor: "pointer", font: "inherit" }}>
-                        <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, background: "#e4ede5", borderRadius: 999, padding: "5px 9px" }}><Clock3 size={13} aria-hidden />{category}</span>
-                          <span style={{ color: "var(--solenos-muted)", fontSize: 12 }}>{formatDateTime(event.occurred_at)}</span>
-                          {event.follow_up_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>May need follow-up</span>}
-                          {event.attention_candidate && <span style={{ fontSize: 12, fontWeight: 650 }}>May need attention</span>}
-                          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--solenos-muted)" }}>{expanded ? "Hide details" : "Details"} <ChevronDown size={16} aria-hidden style={{ transform: expanded ? "rotate(180deg)" : undefined }} /></span>
+                    <article id={`timeline-event-${event.id}`} key={event.id} className="timeline-event">
+                      <span className="timeline-event-dot" aria-hidden="true" />
+                      <button type="button" className="timeline-event-toggle" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)}>
+                        <span className="timeline-event-meta">
+                          <span className="timeline-event-category"><Clock3 size={13} aria-hidden />{category}</span>
+                          <span className="timeline-event-date">{formatDateTime(event.occurred_at)}</span>
+                          {event.follow_up_candidate && <span className="timeline-event-flag">May need follow-up</span>}
+                          {event.attention_candidate && <span className="timeline-event-flag">May need attention</span>}
+                          <span className="timeline-event-disclosure">{expanded ? "Hide details" : "Details"} <ChevronDown size={16} aria-hidden className={expanded ? "is-expanded" : ""} /></span>
                         </span>
-                        <strong style={{ display: "block", fontSize: 17, lineHeight: 1.4, marginBottom: 5 }}>{caregiverSafeAssistantText(event.title) || "Care update"}</strong>
-                        {description && <span style={{ display: "-webkit-box", WebkitLineClamp: expanded ? "unset" : 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-wrap", lineHeight: 1.5, overflowWrap: "anywhere" }}>{description}</span>}
+                        <strong className="timeline-event-title">{caregiverSafeAssistantText(event.title) || "Care update"}</strong>
+                        {description && <span className={`timeline-event-description${expanded ? " is-expanded" : ""}`}>{description}</span>}
                       </button>
                       {expanded && (
-                        <div id={`timeline-details-${event.id}`} style={{ borderTop: "1px solid var(--solenos-hairline)", padding: 16, background: "#fbfcfc" }}>
-                          <h4 style={{ margin: "0 0 10px", fontSize: 14 }}>More details</h4>
-                          <dl style={{ display: "grid", gridTemplateColumns: "minmax(110px, 0.7fr) minmax(0, 1.3fr)", gap: "9px 12px", margin: 0, fontSize: 13 }}>
-                            <dt style={{ color: "var(--solenos-muted)" }}>When it happened</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>When it was saved</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{formatDateTime(event.recorded_at)}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>What is known</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>How the date was described</dt><dd style={{ margin: 0 }}>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Who shared it</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Type of update</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.source_type === "correction" ? "Correction" : event.source_type === "evidence" ? "Document" : event.source_type === "appointment" ? "Appointment" : event.source_type === "professional" ? "Healthcare professional" : event.created_by_caregiver_id ? "Caregiver" : "Care update"}</dd>
+                        <div id={`timeline-details-${event.id}`} className="timeline-event-details">
+                          <h4 className="timeline-event-details-title">More details</h4>
+                          <dl className="timeline-event-facts">
+                            <dt>When it happened</dt><dd>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
+                            <dt>When it was saved</dt><dd>{formatDateTime(event.recorded_at)}</dd>
+                            <dt>What is known</dt><dd>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
+                            <dt>How the date was described</dt><dd>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
+                            <dt>Who shared it</dt><dd>{caregiverSafeAssistantText(event.source_label) || (event.created_by_caregiver_id ? "Caregiver" : "Not recorded")}</dd>
+                            <dt>Type of update</dt><dd>{event.source_type === "correction" ? "Correction" : event.source_type === "evidence" ? "Document" : event.source_type === "appointment" ? "Appointment" : event.source_type === "professional" ? "Healthcare professional" : event.created_by_caregiver_id ? "Caregiver" : "Care update"}</dd>
                             {event.source_type === "correction" && event.target_id && (
                               <>
-                                <dt style={{ color: "var(--solenos-muted)" }}>Related update</dt>
-                                <dd style={{ margin: 0, overflowWrap: "anywhere" }}>
+                                <dt>Related update</dt>
+                                <dd>
                                   {event.target_type === "care_event" || event.target_type === "care_assertion" ? (
                                     <a href={`#timeline-event-${event.target_id}`}>Original care event</a>
                                   ) : (
@@ -687,17 +687,17 @@ export default function TimelinePage() {
                                 </dd>
                               </>
                             )}
-                            <dt style={{ color: "var(--solenos-muted)" }}>Related care topic</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.situation_id ? "Available" : "Not recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Related notes or documents</dt><dd style={{ margin: 0, overflowWrap: "anywhere" }}>{event.evidence_ids?.length ? `${event.evidence_ids.length} saved item(s)` : "None attached"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Labels</dt><dd style={{ margin: 0 }}>{event.tags?.length ? event.tags.map(tag => caregiverStatusLabel(tag) || "Care update").join(", ") : "None recorded"}</dd>
-                            <dt style={{ color: "var(--solenos-muted)" }}>Updated</dt><dd style={{ margin: 0 }}>{formatDateTime(event.updated_at)}</dd>
+                            <dt>Related care topic</dt><dd>{event.situation_id ? "Available" : "Not recorded"}</dd>
+                            <dt>Related notes or documents</dt><dd>{event.evidence_ids?.length ? `${event.evidence_ids.length} saved item(s)` : "None attached"}</dd>
+                            <dt>Labels</dt><dd>{event.tags?.length ? event.tags.map(tag => caregiverStatusLabel(tag) || "Care update").join(", ") : "None recorded"}</dd>
+                            <dt>Updated</dt><dd>{formatDateTime(event.updated_at)}</dd>
                           </dl>
-                          {event.significance_verdict && <p style={{ margin: "12px 0 0" }}><strong>Why this may matter:</strong> {caregiverSafeAssistantText(event.significance_verdict) || "No further explanation is available."}</p>}
+                          {event.significance_verdict && <p className="timeline-event-significance"><strong>Why this may matter:</strong> {caregiverSafeAssistantText(event.significance_verdict) || "No further explanation is available."}</p>}
                           {(event.source_type === "care_event" || (
                             event.source_type === "care_assertion" &&
                             !["superseded", "retracted"].includes(event.status.toLowerCase())
                           )) && (
-                            <div style={{ marginTop: 16, borderTop: "1px solid var(--solenos-hairline)", paddingTop: 14 }}>
+                            <div className="timeline-correction-area">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -707,16 +707,16 @@ export default function TimelinePage() {
                                   setCorrectionIdempotencyKey(null);
                                   setCorrectionMessage("");
                                 }}
-                                style={{ border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: "9px 12px", background: "var(--theme-panel-bg)", color: "inherit", font: "inherit", cursor: "pointer" }}
+                                className="timeline-correction-trigger"
                               >
                                 {correctionTargetId === event.id ? "Close correction" : "Suggest a correction"}
                               </button>
                               {correctionTargetId === event.id && (
-                                <form onSubmit={(submitEvent) => { submitEvent.preventDefault(); void submitCorrection(event); }} style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                                  <p style={{ margin: 0, color: "var(--solenos-muted)", fontSize: 13 }}>
+                                <form className="timeline-correction-form" onSubmit={(submitEvent) => { submitEvent.preventDefault(); void submitCorrection(event); }}>
+                                  <p className="timeline-correction-note">
                                     This adds a separate correction record. It does not erase or silently rewrite the original entry.
                                   </p>
-                                  <label style={{ display: "grid", gap: 5, fontSize: 13, fontWeight: 650 }}>
+                                  <label className="timeline-correction-label">
                                     What should be corrected?
                                     <textarea
                                       value={correctionText}
@@ -725,27 +725,27 @@ export default function TimelinePage() {
                                       maxLength={4000}
                                       required
                                       placeholder="Describe the accurate information."
-                                      style={{ width: "100%", border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, background: "var(--theme-panel-bg)", color: "inherit", font: "inherit", resize: "vertical" }}
+                                      className="timeline-correction-input"
                                     />
                                   </label>
-                                  <label style={{ display: "grid", gap: 5, fontSize: 13, fontWeight: 650 }}>
+                                  <label className="timeline-correction-label">
                                     Reason (optional)
                                     <input
                                       value={correctionReason}
                                       onChange={(inputEvent) => { setCorrectionReason(inputEvent.target.value); setCorrectionIdempotencyKey(null); }}
                                       maxLength={1000}
                                       placeholder="Why is this correction needed?"
-                                      style={{ width: "100%", border: "1px solid var(--solenos-hairline)", borderRadius: 8, padding: 10, background: "var(--theme-panel-bg)", color: "inherit", font: "inherit" }}
+                                      className="timeline-correction-input"
                                     />
                                   </label>
-                                  <button type="submit" disabled={correctionSaving || !correctionText.trim()} style={{ justifySelf: "start", border: 0, borderRadius: 8, padding: "10px 14px", background: "var(--theme-selected-bg)", color: "var(--theme-panel-fg)", font: "inherit", fontWeight: 700, cursor: correctionSaving ? "wait" : "pointer" }}>
+                                  <button type="submit" disabled={correctionSaving || !correctionText.trim()} className="timeline-correction-submit">
                                     {correctionSaving ? "Saving correction…" : "Save correction"}
                                   </button>
                                 </form>
                               )}
                             </div>
                           )}
-                          <p style={{ margin: "12px 0 0", color: "var(--solenos-muted)", fontSize: 12 }}>This update shows only the details saved at the time. Missing information is not guessed.</p>
+                          <p className="timeline-event-provenance-note">This update shows only the details saved at the time. Missing information is not guessed.</p>
                         </div>
                       )}
                     </article>
