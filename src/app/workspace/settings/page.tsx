@@ -20,7 +20,7 @@ import { useToast } from "@/components/ui/Toast";
 import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
-import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
+import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 import { CaregiverAccessPanel } from "@/components/mvp-workspace/CaregiverAccessPanel";
@@ -739,22 +739,39 @@ function PrivacyCard() {
     }
 
     let serverSessionRevoked = !getAnonymousAccessToken();
+    let localRevocationMarkerSaved = false;
     if (!serverSessionRevoked) {
       try {
         await revokeAnonymousSession();
         serverSessionRevoked = true;
+        localRevocationMarkerSaved = true;
       } catch {
         // Still clear local data, but do not claim that the server session was revoked.
       }
     }
 
-    // Clear every SolenOS-owned browser key, including keys added by newer
-    // features, without deleting unrelated data stored by other apps on this origin.
+    // A local deletion marker is required even when no bearer token exists or
+    // server revocation fails. Otherwise the next background request could
+    // silently mint a replacement care record on this device.
+    if (!localRevocationMarkerSaved) {
+      try {
+        markAnonymousSessionRevokedLocally();
+        localRevocationMarkerSaved = true;
+      } catch {
+        // Report the limitation below; never claim the local deletion boundary was retained.
+      }
+    }
+
+    // Clear every SolenOS-owned browser key except the deletion marker. That
+    // marker must survive this sweep so only explicit Care Record entry can
+    // create a replacement session. Unrelated origin data is preserved.
     try {
       const ownedKeys = Array.from({ length: window.localStorage.length }, (_, index) =>
         window.localStorage.key(index)
       ).filter((key): key is string =>
-        Boolean(key && (key.startsWith("solenos_") || key.startsWith("solenos:") || key === "onboarding_complete" || key === "onboarding_complete_at"))
+        Boolean(key &&
+          key !== "solenos_anonymous_session_revoked" &&
+          (key.startsWith("solenos_") || key.startsWith("solenos:") || key === "onboarding_complete" || key === "onboarding_complete_at"))
       );
       ownedKeys.forEach((key) => window.localStorage.removeItem(key));
     } catch {
@@ -781,6 +798,7 @@ function PrivacyCard() {
 
     const cleanupWarnings = [
       ...(!serverSessionRevoked ? ["server sign-out could not be confirmed; the previous session may remain valid until it expires"] : []),
+      ...(!localRevocationMarkerSaved ? ["this browser could not retain its deletion marker; automatic record creation may remain possible on a later visit"] : []),
       ...(!pushSubscriptionRemoved ? ["push notification removal could not be confirmed; check Notification settings and your browser permissions"] : []),
     ];
     show(
