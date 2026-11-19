@@ -1006,6 +1006,17 @@ function ProductCard() {
 export default function WorkspaceSettingsPage() {
   const { hydrated, entryReady } = useWorkspace();
 
+  useEffect(() => {
+    const openLinkedSection = () => {
+      const sectionId = window.location.hash.slice(1);
+      const section = sectionId ? document.getElementById(sectionId) : null;
+      if (section instanceof HTMLDetailsElement) section.open = true;
+    };
+    openLinkedSection();
+    window.addEventListener("hashchange", openLinkedSection);
+    return () => window.removeEventListener("hashchange", openLinkedSection);
+  }, []);
+
   if (!hydrated || !entryReady) {
     return (
       <div className="mobile-screen">
