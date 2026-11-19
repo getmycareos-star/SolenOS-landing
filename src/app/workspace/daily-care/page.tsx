@@ -1123,8 +1123,8 @@ export default function DailyCarePage() {
         .structured-daily-capture input:focus,
         .structured-daily-capture select:focus,
         .structured-daily-capture textarea:focus {
-          border-color: #267c78 !important;
-          outline: 3px solid rgba(38, 124, 120, .18);
+          border-color: var(--theme-link) !important;
+          outline: 3px solid color-mix(in srgb, var(--theme-link) 18%, transparent);
           outline-offset: 1px;
         }
         .structured-daily-capture button {
