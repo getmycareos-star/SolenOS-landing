@@ -690,7 +690,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         <>
           <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
             <strong>Healthcare professional briefing — private review only</strong>
-            <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>This briefing is prepared from the saved Living Care Record. SolenOS cannot yet confirm a professional recipient's identity and role, so professional sharing is not available from this screen.</p>
+            <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>This briefing is prepared from the saved Care Record. SolenOS cannot yet confirm a professional recipient's identity and role, so professional sharing is not available from this screen.</p>
             {draft.generation?.interpretation_limit && <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(draft.generation.interpretation_limit) ?? "Check each generated statement against its saved source."}</p>}
           </div>
           <section style={{ ...panel, marginTop: 0 }} aria-label="Professional briefing review">
