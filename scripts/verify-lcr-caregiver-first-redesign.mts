@@ -32,11 +32,22 @@ assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summa
 assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-follow-ups-title">Follow-ups<\/h2><\/summary>/, "follow-up management is contextual rather than a second primary Daily Care responsibility");
 assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2 id="daily-care-since-last-title">Since you last opened Daily Care<\/h2><\/summary>/, "visit analytics stay available without crowding the capture and retrieval workflow");
 assert.match(dailyCare, /<details className="daily-care-context-panel">\s*<summary><h2>Need to review an earlier update\?<\/h2><\/summary>/, "historical navigation remains accessible through progressive disclosure");
-const dailySessionReady = dailyCare.indexOf("if (active) setReady(true);");
-const dailySecondaryReads = dailyCare.indexOf("const [careResult, historyResult, followUpsResult, notificationsResult, documentsResult] = await Promise.allSettled([");
-assert.ok(dailySessionReady >= 0 && dailySecondaryReads > dailySessionReady, "Daily Care capture becomes available after session authorization without waiting for secondary reads");
+const dailySessionAuthorization = dailyCare.indexOf("void ensureAnonymousSession()");
+const dailySessionReady = dailyCare.indexOf("setReady(true);");
+const dailyFollowUpRead = dailyCare.indexOf('void getJSON("/open-loops?limit=100&offset=0")');
+const dailyContextReads = dailyCare.indexOf("const carePromise = getJSON(");
+assert.ok(
+  dailySessionAuthorization >= 0
+    && dailySessionReady > dailySessionAuthorization
+    && dailyFollowUpRead > dailySessionReady
+    && dailyContextReads > dailySessionReady,
+  "Daily Care capture becomes available after session authorization, then loads follow-ups independently of secondary context reads",
+);
 assert.match(dailyCare, /ensureAnonymousSession\(\)/, "Daily Care requires a valid server-issued session before capture");
-assert.match(dailyCare, /Promise\.allSettled\(\[/, "failed history, follow-up, notification or document reads cannot reject the whole Daily Care context load");
+assert.match(dailyCare, /Promise\.all\(\[carePromise, historyPromise\]\)/, "only current care and history determine the page-level context loading state");
+assert.doesNotMatch(dailyCare, /Promise\.allSettled\(\[/, "follow-ups, documents and notification status are not blocked behind unrelated secondary reads");
+assert.match(dailyCare, /void getJSON\("\/documents\/status\?limit=10"\)/, "document status loads independently");
+assert.match(dailyCare, /void getJSON\("\/notifications\?limit=100&offset=0"\)/, "notification status loads independently");
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "Daily Care has no embedded AI agent");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
