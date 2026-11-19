@@ -821,6 +821,111 @@
 
 /* Documents: keep original files visually distinct from extracted suggestions. */
 /* Care history: a readable chronology with source context, not a generic activity feed. */
+/* Companion: align its conversation and care handoff surfaces with the shared theme. */
+.solenos-chat-app .solenos-chat-main .companion-shell {
+  color: var(--sn-ink);
+  --cc-ink: var(--sn-ink);
+  --cc-muted: var(--sn-muted);
+  --cc-line: var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .companion-shell :where(button,textarea):focus-visible {
+  outline: 3px solid var(--sn-focus);
+  outline-offset: 3px;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-conversation,.companion-handoff,.companion-handoff-draft,
+  .companion-handoff-source-item,.companion-care-updates,.companion-care-update,
+  .companion-care-report-confirm,.companion-composer,.companion-boundary,
+  .companion-side-note,.companion-starter,.companion-new,.companion-handoff-option,
+  .companion-handoff-purpose,.companion-handoff-close,.companion-handoff-back,
+  .companion-care-refresh,.companion-care-report-action>button,
+  .companion-care-report-confirm button.is-secondary,.companion-error button
+) {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-purpose,.companion-boundary,.companion-empty,.companion-care-updates,
+  .companion-handoff-draft-warning,.companion-handoff-selection
+) {
+  background: var(--sn-surface-soft);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-purpose h3,.companion-boundary strong,.companion-empty-heading h3,
+  .companion-care-updates-heading h3,.companion-handoff-copy h3,
+  .companion-handoff-step h4,.companion-handoff-draft-heading h4,
+  .companion-handoff-source-section h5,.companion-handoff-coverage-row strong,
+  .companion-handoff-option strong,.companion-handoff-purpose strong,
+  .companion-care-update strong,.companion-care-update p,
+  .companion-bubble p,.companion-message-meta strong,.companion-side-note strong
+) { color: var(--sn-ink); }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-purpose-copy p,.companion-boundary span,.companion-empty-heading p,
+  .companion-empty-footnote,.companion-starter-copy>span,.companion-handoff-copy p,
+  .companion-handoff-step>p,.companion-handoff-step-top p,.companion-handoff-option small,
+  .companion-handoff-purpose small,.companion-handoff-draft-heading p,
+  .companion-handoff-empty-source,.companion-handoff-section-note,
+  .companion-handoff-source-meta,.companion-handoff-coverage-row small,
+  .companion-care-updates-heading p,.companion-care-update small,
+  .companion-side-note p,.companion-footer-note,.companion-input-hint,
+  .companion-provenance,.companion-message-meta
+) { color: var(--sn-muted); }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-mark,.companion-empty-icon,.companion-starter-icon,
+  .companion-handoff-icon,.companion-handoff-option-icon,
+  .companion-handoff-purpose-icon,.companion-side-note-icon,.companion-avatar
+) {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-hover);
+  color: #c6ddc8;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-bubble,.companion-typing
+) {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-soft);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell .companion-message.is-user .companion-bubble {
+  border-color: #526c55;
+  background: #304636;
+  color: #eef5ee;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-composer textarea,.companion-handoff-source-item p
+) { color: var(--sn-ink); }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell .companion-composer textarea::placeholder {
+  color: var(--sn-subtle);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-send,.companion-handoff-primary,
+  .companion-care-update-actions button:not(.is-secondary),
+  .companion-care-report-confirm button:first-of-type
+) {
+  border-color: #a7bda8;
+  background: #a7bda8;
+  color: #17251c;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell .companion-send:disabled {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-soft);
+  color: var(--sn-muted);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell :where(
+  .companion-handoff-status,.companion-handoff-selection
+) { background: var(--sn-surface-hover); color: var(--sn-ink); }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell .companion-error {
+  border-color: #785b3c;
+  background: #392d20;
+  color: #f0d9bd;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-shell .companion-emergency {
+  border-color: #87514a;
+  background: #402725;
+  color: #f2d4cf;
+}
+
 .solenos-chat-app .solenos-chat-main .timeline-workspace {
   width: min(100%, 920px);
   margin: 0 auto;
