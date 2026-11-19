@@ -1302,7 +1302,7 @@ await record("Daily Care saves and retrieves original reports without relying on
     await daily.page.waitForURL("**/workspace/open-loops", { timeout: 15_000 });
   }
   await daily.page.getByRole("heading", { name: "Follow-ups", exact: true }).waitFor({ timeout: 15_000 });
-  await daily.page.getByText("Contact the clinic about the appointment", { exact: true }).waitFor({ timeout: 15_000 });
+  await daily.page.getByRole("heading", { name: "Contact the clinic about the appointment", exact: true }).waitFor({ timeout: 15_000 });
   for (const report of scenarioReports) {
     await daily.page.getByText(report, { exact: false }).first().waitFor({ timeout: 15_000 });
   }
