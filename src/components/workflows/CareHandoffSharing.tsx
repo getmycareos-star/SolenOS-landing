@@ -40,7 +40,7 @@ type DraftPayload = {
   validation_status?: string;
   review_status?: string;
   revision_number?: number;
-  generation?: { status: string; provider?: string | null; model?: string | null; interpretation_limit?: string | null; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
+  generation?: { status: string; provider?: string | null; model?: string | null; interpretation_limit?: string | null; sources_considered?: number; sources_available?: number; sections: Array<{ section: string; text: string; summary?: string; supporting_quote?: string; source_ref: string; epistemic_status?: string; record_status?: string; event_at?: string | null; recorded_at?: string | null; stale_warning?: boolean }> };
   caregiver_notes?: Array<{ text: string; attribution: string }>;
   audience?: "family" | "professional";
   prepared_at: string;
@@ -174,6 +174,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     "Period covered: " + draft.window.days + " days (" + draft.window.from + " to " + draft.window.to + ")",
     "",
     "Important: Information that has not been checked, was not accepted, or may be out of date is labelled. This summary is not a medical opinion.",
+    ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["AI briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
     caregiverSafeAssistantText(draft.warning) ?? "Some information may be incomplete. Review the details before sharing.",
     "",
   ];
@@ -692,6 +693,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <strong>Healthcare professional briefing — private review only</strong>
             <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>This briefing is prepared from the saved Care Record. SolenOS cannot yet confirm a professional recipient's identity and role, so professional sharing is not available from this screen.</p>
             {draft.generation?.interpretation_limit && <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(draft.generation.interpretation_limit) ?? "Check each generated statement against its saved source."}</p>}
+            {typeof draft.generation?.sources_available === "number" && typeof draft.generation?.sources_considered === "number" && draft.generation.sources_available > draft.generation.sources_considered && <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5 }}>This briefing highlights {draft.generation.sources_considered} of {draft.generation.sources_available} available source records. It does not replace the full Care Record.</p>}
           </div>
           <section style={{ ...panel, marginTop: 0 }} aria-label="Professional briefing review">
             <h4 style={{ marginTop: 0 }}>Professional briefing</h4>
