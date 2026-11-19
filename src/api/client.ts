@@ -61,9 +61,9 @@ const ANONYMOUS_SESSION_REVOKED_KEY = "solenos_anonymous_session_revoked";
  * enters /workspace?enter=1. Check both before bootstrap and after network waits
  * so an in-flight create/refresh cannot repopulate credentials after deletion.
  */
-function assertAnonymousSessionMayBeCreated(): void {
-  if (typeof window === "undefined") return;
-  if (window.sessionStorage.getItem(ANONYMOUS_SESSION_REVOKED_KEY) !== "1") return;
+function assertAnonymousSessionMayBeCreated(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.localStorage.getItem(ANONYMOUS_SESSION_REVOKED_KEY) !== "1") return false;
 
   const url = new URL(window.location.href);
   const explicitNewRecordIntent =
@@ -71,7 +71,8 @@ function assertAnonymousSessionMayBeCreated(): void {
   if (!explicitNewRecordIntent) {
     throw new Error("This workspace was deleted from this device. Choose Care Record to start a new record.");
   }
-  window.sessionStorage.removeItem(ANONYMOUS_SESSION_REVOKED_KEY);
+  // Keep the revocation marker until a new server-issued session is successfully stored.
+  return true;
 }
 
 export type AnonymousSession = {
@@ -133,7 +134,13 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     throw new Error("Anonymous care sessions can only be created in the browser.");
   }
 
-  assertAnonymousSessionMayBeCreated();
+  const explicitNewRecordIntent = assertAnonymousSessionMayBeCreated();
+  if (explicitNewRecordIntent) {
+    window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
+    window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
+    window.localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
+    window.localStorage.removeItem(ANONYMOUS_EXPIRY_KEY);
+  }
   const token = window.localStorage.getItem(ANONYMOUS_TOKEN_KEY);
   const personId = window.localStorage.getItem(ANONYMOUS_PERSON_KEY);
   const caregiverId = window.localStorage.getItem(ANONYMOUS_CAREGIVER_KEY);
@@ -179,11 +186,14 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
       expires_at: string;
       expires_in_seconds: number;
     };
-    assertAnonymousSessionMayBeCreated();
+    const explicitIntentStillValid = assertAnonymousSessionMayBeCreated();
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
     window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
     window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
     window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
+    if (explicitNewRecordIntent || explicitIntentStillValid) {
+      window.localStorage.removeItem(ANONYMOUS_SESSION_REVOKED_KEY);
+    }
     setPersonId(refreshed.person_id);
     return {
       session_id: refreshed.session_id,
@@ -211,11 +221,14 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     body: JSON.stringify({ caregiver_name: "Caregiver" }),
   });
   const created = (await handleResponse(response)) as AnonymousSession;
-  assertAnonymousSessionMayBeCreated();
+  const explicitIntentStillValid = assertAnonymousSessionMayBeCreated();
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, created.access_token);
   window.localStorage.setItem(ANONYMOUS_PERSON_KEY, created.person.id);
   window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, created.caregiver.id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, created.expires_at);
+  if (explicitNewRecordIntent || explicitIntentStillValid) {
+    window.localStorage.removeItem(ANONYMOUS_SESSION_REVOKED_KEY);
+  }
   setPersonId(created.person.id);
   return created;
 }
@@ -577,7 +590,7 @@ export async function revokeAnonymousSession(): Promise<void> {
   await postJSON("/sessions/revoke", {});
   if (typeof window !== "undefined") {
     // Prevent background or in-flight bootstrap from silently replacing a deleted identity.
-    window.sessionStorage.setItem(ANONYMOUS_SESSION_REVOKED_KEY, "1");
+    window.localStorage.setItem(ANONYMOUS_SESSION_REVOKED_KEY, "1");
     anonymousSessionPromise = null;
     window.localStorage.removeItem(ANONYMOUS_TOKEN_KEY);
     window.localStorage.removeItem(ANONYMOUS_PERSON_KEY);
