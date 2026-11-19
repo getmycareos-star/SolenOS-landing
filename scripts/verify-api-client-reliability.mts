@@ -12,10 +12,24 @@ const store = {
   setItem: (key: string, value: string) => values.set(key, String(value)),
   removeItem: (key: string) => values.delete(key),
 };
+const sessionValues = new Map<string, string>();
+const sessionStore = {
+  getItem: (key: string) => sessionValues.get(key) ?? null,
+  setItem: (key: string, value: string) => sessionValues.set(key, String(value)),
+  removeItem: (key: string) => sessionValues.delete(key),
+};
 Object.defineProperty(globalThis, "localStorage", { configurable: true, value: store });
+Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: sessionStore });
 Object.defineProperty(globalThis, "window", {
   configurable: true,
-  value: { localStorage: store, dispatchEvent: () => true, addEventListener: () => undefined, removeEventListener: () => undefined },
+  value: {
+    localStorage: store,
+    sessionStorage: sessionStore,
+    location: { href: "https://solenos.test/workspace" },
+    dispatchEvent: () => true,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  },
 });
 function response(payload: unknown, status = 200): Response {
   return {
