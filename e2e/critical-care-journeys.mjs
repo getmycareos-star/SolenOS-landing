@@ -799,6 +799,8 @@ await record("01c workspace links, browser back, More menu and account form vali
     "Qwen briefing must declare the Living Care Record as its source of truth");
   assert.ok(appointmentDraft.source_snapshot_id && appointmentDraft.source_snapshot_sha256,
     "the appointment briefing must be bound to a versioned LCR source snapshot");
+  assert.equal(appointmentDraft.source_freshness?.status, "current",
+    "a newly prepared appointment briefing must return its verified source freshness");
   assert.equal(appointmentDraft.appointment_id, shareAppointment.payload.id,
     "appointment briefing must be bound to the selected persisted appointment");
   assert.equal(appointmentDraft.selected_appointment.title, "Primary care follow-up");
@@ -877,6 +879,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(familyBriefing.status(), 200, "family care briefing must be prepared by the backend");
   const familyDraft = await familyBriefing.json();
   assert.equal(familyDraft.source_of_truth, "living_care_record");
+  assert.equal(familyDraft.source_freshness?.status, "current",
+    "a newly prepared family briefing must return its verified source freshness");
   assert.ok(["generated", "source_only_fallback"].includes(familyDraft.generation_status),
     "family briefing must use Qwen or a clearly labelled exact-source fallback");
   if (familyDraft.generation_status === "source_only_fallback") {
