@@ -1200,7 +1200,7 @@ export function HistoryDrawer() {
                         <dt>Status</dt><dd>{caregiverStatusLabel(selectedRecord.status) || "Not available"}</dd>
                         <dt>Who shared it</dt><dd>{selectedRecord.created_by_caregiver_id ? "Caregiver" : "Not recorded"}</dd>
                         
-                        <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? `${selectedRecord.evidence_ids.length} related item(s)` : "No related notes or documents attached"}</dd>
+                        <dt>Related notes or documents</dt><dd>{selectedRecord.evidence_ids?.length ? `${selectedRecord.evidence_ids.length} related ${selectedRecord.evidence_ids.length === 1 ? "note or document" : "notes or documents"}` : "No related notes or documents attached"}</dd>
                         <dt>Labels</dt><dd>{selectedRecord.tags?.length ? selectedRecord.tags.map((tag) => caregiverStatusLabel(tag) || caregiverInformationAreaLabel(tag) || (tag.includes("_") ? null : caregiverSafeAssistantText(tag))).filter(Boolean).join(", ") || "No labels available" : "No labels recorded"}</dd>
                         <dt>Last updated</dt><dd>{formatDateTime(selectedRecord.updated_at)}</dd>
                       </>
