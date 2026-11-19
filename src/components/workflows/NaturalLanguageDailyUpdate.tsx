@@ -65,7 +65,18 @@ export default function NaturalLanguageDailyUpdate() {
         // A temporary status-read failure must not turn a saved report into a failed save.
       }
       attempts += 1;
-      if (active && attempts < QWEN_JOB_MAX_POLLS) timer = setTimeout(poll, QWEN_JOB_POLL_INTERVAL_MS);
+      if (active && attempts < QWEN_JOB_MAX_POLLS) {
+        timer = setTimeout(poll, QWEN_JOB_POLL_INTERVAL_MS);
+      } else if (active) {
+        setReceipt((current) => current?.jobId === jobId
+          ? {
+              ...current,
+              processingStatus: "unavailable",
+              extractionStatus: "unavailable",
+              assessmentStatus: "unavailable",
+            }
+          : current);
+      }
     };
 
     void poll();

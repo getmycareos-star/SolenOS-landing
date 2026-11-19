@@ -104,6 +104,9 @@ requireText("src/components/workflows/NaturalLanguageDailyUpdate.tsx", [
   "const QWEN_JOB_MAX_POLLS = Math.ceil(QWEN_JOB_MAX_WAIT_MS / QWEN_JOB_POLL_INTERVAL_MS);",
   "attempts < QWEN_JOB_MAX_POLLS",
   "setTimeout(poll, QWEN_JOB_POLL_INTERVAL_MS)",
+  "processingStatus: \"unavailable\"",
+  "extractionStatus: \"unavailable\"",
+
 ]);
 
 requireText("src/components/workflows/Community.tsx", [
