@@ -634,6 +634,12 @@ export function markAnonymousSessionRevokedLocally(): void {
 }
 
 export async function revokeAnonymousSession(): Promise<void> {
+  // A browser with no bearer has no server session to revoke. Do not let the
+  // generic protected-request path silently create one just to delete it.
+  if (!getAnonymousAccessToken()) {
+    markAnonymousSessionRevokedLocally();
+    return;
+  }
   await postJSON("/sessions/revoke", {});
   markAnonymousSessionRevokedLocally();
 }
