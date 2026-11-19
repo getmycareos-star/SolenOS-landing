@@ -236,6 +236,275 @@
   border-radius: 10px;
   font-weight: 650;
 }
+/* Care history: evidence-first chronology with details revealed on demand. */
+.solenos-chat-app .solenos-chat-main .timeline-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-history-title {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: 19px;
+  letter-spacing: -.03em;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-count,
+.solenos-chat-app .solenos-chat-main .timeline-event-date {
+  color: var(--sn-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.solenos-chat-app .solenos-chat-main .timeline-day-group { margin-bottom: 22px; }
+.solenos-chat-app .solenos-chat-main .timeline-day-label {
+  margin: 18px 0 12px;
+  color: var(--sn-muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-list {
+  display: grid;
+  gap: 12px;
+  margin-left: 8px;
+  padding-left: 18px;
+  border-left: 2px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .timeline-event {
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid var(--sn-line);
+  border-radius: 14px;
+  background: var(--sn-surface);
+  box-shadow: var(--sn-shadow-soft);
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-dot {
+  position: absolute;
+  top: 22px;
+  left: -24px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--sn-canvas);
+  border-radius: 50%;
+  background: var(--sn-sage-strong);
+  box-shadow: 0 0 0 2px var(--sn-sage);
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-toggle {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 16px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--sn-ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-toggle:focus-visible,
+.solenos-chat-app .solenos-chat-main .timeline-correction-trigger:focus-visible,
+.solenos-chat-app .solenos-chat-main .timeline-correction-submit:focus-visible {
+  outline: 3px solid var(--sn-focus);
+  outline-offset: 3px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--sn-line);
+  border-radius: 999px;
+  background: var(--sn-surface-soft);
+  color: var(--sn-forest);
+  font-size: 11px;
+  font-weight: 700;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-flag {
+  padding: 4px 8px;
+  border: 1px solid var(--sn-line);
+  border-radius: 999px;
+  color: var(--sn-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--sn-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-disclosure svg {
+  transition: transform var(--sn-motion);
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-disclosure svg.is-expanded { transform: rotate(180deg); }
+.solenos-chat-app .solenos-chat-main .timeline-event-title {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--sn-forest);
+  font-size: 16px;
+  font-weight: 680;
+  line-height: 1.4;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--sn-muted);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-description.is-expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-details {
+  padding: 16px;
+  border-top: 1px solid var(--sn-line);
+  border-radius: 0 0 14px 14px;
+  background: var(--sn-surface-soft);
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-details-title {
+  margin: 0 0 10px;
+  color: var(--sn-forest);
+  font-size: 14px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-facts {
+  display: grid;
+  grid-template-columns: minmax(110px, .7fr) minmax(0, 1.3fr);
+  gap: 9px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-facts dt { color: var(--sn-muted); }
+.solenos-chat-app .solenos-chat-main .timeline-event-facts dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--sn-ink);
+  overflow-wrap: anywhere;
+}
+.solenos-chat-app .solenos-chat-main .timeline-event-significance {
+  margin: 12px 0 0;
+  color: var(--sn-ink);
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-area {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-trigger {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--sn-line);
+  border-radius: 9px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  cursor: pointer;
+  font: inherit;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-note,
+.solenos-chat-app .solenos-chat-main .timeline-event-provenance-note {
+  margin: 0;
+  color: var(--sn-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-label {
+  display: grid;
+  gap: 5px;
+  color: var(--sn-ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px;
+  border: 1px solid var(--sn-line);
+  border-radius: 9px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  font: inherit;
+}
+.solenos-chat-app .solenos-chat-main textarea.timeline-correction-input { resize: vertical; }
+.solenos-chat-app .solenos-chat-main .timeline-correction-input:focus-visible {
+  outline: 3px solid var(--sn-focus);
+  outline-offset: 2px;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-submit {
+  justify-self: start;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--sn-forest);
+  border-radius: 9px;
+  background: var(--sn-forest);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-main .timeline-correction-submit:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+@media (max-width: 600px) {
+  .solenos-chat-app .solenos-chat-main .timeline-event-list {
+    margin-left: 5px;
+    padding-left: 15px;
+  }
+  .solenos-chat-app .solenos-chat-main .timeline-event-dot { left: -21px; }
+  .solenos-chat-app .solenos-chat-main .timeline-event-toggle { padding: 14px; }
+  .solenos-chat-app .solenos-chat-main .timeline-event-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+  .solenos-chat-app .solenos-chat-main .timeline-event-facts dd { margin-bottom: 8px; }
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-event,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-correction-input,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-correction-trigger {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-event-details {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-soft);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-event-category {
+  border-color: var(--sn-line);
+  background: var(--sn-surface-hover);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-event-title,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-event-details-title,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-event-facts dd,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-event-significance {
+  color: var(--sn-ink);
+}
+
 .solenos-chat-app .solenos-chat-main .daily-care-context-panel {
   padding: clamp(16px, 2.1vw, 22px);
   border: 1px solid var(--sn-line);
