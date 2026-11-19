@@ -124,6 +124,82 @@ try {
   await afterReload.waitFor({ timeout: 20_000 });
   assert.ok(await afterReload.isVisible(), "the unresolved follow-up must remain visible after a fresh page load");
 
+  const candidateTitle = "CI E2E event-derived follow-up candidate";
+  const eventResponse = await fetch(new URL("/api/v1/events", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      person_id: session.personId,
+      event_type: "care_follow_up_candidate",
+      status: "recorded",
+      occurred_at: new Date().toISOString(),
+      title: candidateTitle,
+      description: "A saved care event requires a caregiver decision about whether a follow-up is needed.",
+      created_by_caregiver_id: session.caregiverId,
+      attention_candidate: true,
+      follow_up_candidate: true,
+      tags: ["ci_followup_e2e"],
+    }),
+  });
+  if (!eventResponse.ok) {
+    throw new Error(`event follow-up candidate seed failed: HTTP ${eventResponse.status} ${await eventResponse.text()}`);
+  }
+  const candidateEvent = await eventResponse.json();
+  assert.ok(candidateEvent.id, "the source care event must be persisted before a follow-up can be created");
+
+  const reassessment = await fetch(new URL("/api/v1/care-continuity/situation-understanding/reassess", backend), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${session.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+  assert.equal(reassessment.status, 200, `the source event must be included in a real care assessment: ${await reassessment.text()}`);
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const candidateCard = page.locator("article.followup-card").filter({
+    has: page.getByRole("heading", { name: candidateTitle, exact: true }),
+  });
+  await candidateCard.waitFor({ timeout: 20_000 });
+  await candidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).click();
+  await page.getByRole("status").filter({
+    hasText: "Added to Follow-ups. The original care report remains unchanged.",
+  }).waitFor({ timeout: 15_000 });
+
+  const createdLoopsResponse = await fetch(new URL("/api/v1/open-loops?limit=100", backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  assert.equal(createdLoopsResponse.status, 200);
+  const createdLoops = await createdLoopsResponse.json();
+  const sourceLinkedLoops = (createdLoops.items ?? []).filter((item) =>
+    item.source_type === "events" && item.source_id === candidateEvent.id
+  );
+  assert.equal(sourceLinkedLoops.length, 1, "one source event must produce exactly one persisted follow-up");
+  assert.equal(sourceLinkedLoops[0].status, "open");
+  assert.equal(sourceLinkedLoops[0].outcome_status, "outcome_unknown");
+  const sourceEventAfterCreate = await fetch(new URL(`/api/v1/events/${encodeURIComponent(session.personId)}`, backend), {
+    headers: { authorization: `Bearer ${session.token}` },
+  });
+  assert.equal(sourceEventAfterCreate.status, 200);
+  const sourceEvents = await sourceEventAfterCreate.json();
+  assert.ok(sourceEvents.some((event) => event.id === candidateEvent.id),
+    "creating a follow-up must preserve the original source event");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const linkedCandidateCard = page.locator("article.followup-card").filter({
+    has: page.getByRole("heading", { name: candidateTitle, exact: true }),
+  });
+  await linkedCandidateCard.waitFor({ timeout: 20_000 });
+  assert.equal(
+    await linkedCandidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).count(),
+    0,
+    "a source-linked persisted follow-up must not remain as a second untracked responsibility",
+  );
+
   console.log("PASS: visible Follow-ups page loads the persisted care assessment");
   console.log("PASS: caregiver update is written to the existing person-scoped follow-up");
   console.log("PASS: caregiver-reported update remains unverified and does not close the follow-up");
