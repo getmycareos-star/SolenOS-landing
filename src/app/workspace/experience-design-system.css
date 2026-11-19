@@ -771,3 +771,106 @@
   .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article > button { padding: 13px !important; }
   .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article dl { grid-template-columns: minmax(0,1fr) !important; }
 }
+
+
+/* Explicit dark-theme mapping; workspace tokens follow the user's theme choice. */
+:root[data-solenos-theme="dark"] .solenos-chat-app {
+  --sn-canvas: #151d18;
+  --sn-surface: #1d2821;
+  --sn-surface-soft: #243129;
+  --sn-surface-hover: #2b3a30;
+  --sn-ink: #edf3ed;
+  --sn-muted: #b6c2b8;
+  --sn-subtle: #8d9b91;
+  --sn-line: #35443a;
+  --sn-sage: #a7bda8;
+  --sn-sage-strong: #b6cbb6;
+  --sn-forest: #dce9dd;
+  --sn-focus: #b1cfb5;
+  --sn-shadow-soft: 0 10px 32px rgba(0,0,0,.2);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-sidebar,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-sidebar-host {
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+  border-color: var(--sn-line);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-item { color: #c1ccc3; }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-item:hover { background: var(--sn-surface-soft); color: var(--sn-ink); }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-item.is-active {
+  background: #2a3a2f;
+  border-color: #3b5140;
+  color: #e3eee3;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-item.is-active .solenos-chat-nav-icon { color: #c1d7c2; }
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-context-status { background: #2b3d30; color: #d5e5d6; }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-next-step {
+  background: #202d24;
+  border-color: var(--sn-line);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-primary-action {
+  background: #b9d0ba;
+  border-color: #b9d0ba;
+  color: #1b2b20;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-primary-action:hover { background: #c9ddc9; }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-secondary-action {
+  background: var(--sn-surface);
+  border-color: var(--sn-line);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-explore__links a,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .companion-conversation {
+  background: var(--sn-surface);
+  border-color: var(--sn-line);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-explore__links strong { color: var(--sn-ink); }
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-explore__links span { color: var(--sn-muted); }
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-record-overview > section article {
+  background: #202d24 !important;
+  border-color: var(--sn-line) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-first-screen-card,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-history-details,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-current-fact,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-current-uncertainties > ul > li {
+  background: var(--sn-surface);
+  border-color: var(--sn-line);
+  color: var(--sn-ink);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-progressive-disclosure[open] > summary,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-history-details[open] > summary {
+  background: #26352b;
+  border-bottom-color: var(--sn-line);
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-first-screen-card p,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-first-screen-card li,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-lcr-home .lcr-current-fact :where(p,small,li) {
+  color: #c1ccc3;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Latest recorded update"] {
+  background: #202d24 !important;
+  border-color: var(--sn-line) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article {
+  background: var(--sn-surface) !important;
+  border-color: var(--sn-line) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .timeline-workspace > section[aria-label="Care history in date order"] article > div[id^="timeline-details-"] {
+  background: #202d24 !important;
+  border-top-color: var(--sn-line) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .documents-page > section[aria-label="Add care documents"] button {
+  background: #314638 !important;
+  border-color: #4d6b52 !important;
+  color: #e6f0e6 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .documents-page > section[aria-label="Saved documents"] > div[style*="display: grid"] > button {
+  background: var(--sn-surface) !important;
+  border-color: var(--sn-line) !important;
+  color: var(--sn-ink) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .documents-page > section[aria-label="Saved documents"] > div[style*="display: grid"] > button:hover {
+  background: var(--sn-surface-soft) !important;
+}
