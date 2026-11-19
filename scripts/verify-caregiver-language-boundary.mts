@@ -286,7 +286,7 @@ assert.match(careRecordOverview, /caregiverSafeAssistantText/);
 assert.doesNotMatch(careRecordOverview, /Confirmed by a source|item\.kind \|\|/);
 assert.doesNotMatch(followUps, /evidenceIds\.join|uniqueEvidenceIds\(item\)\.join/);
 assert.match(followUps, /related \$\{uniqueEvidenceIds\(item\)\.length === 1/);
-assert.match(timeline, /<h1 style=\{\{ marginBottom: 8 \}\}>Care history<\/h1>/);
+assert.match(timeline, /<h1 className="timeline-page-title">Care history<\/h1>/);
 assert.doesNotMatch(timeline, /Care Timeline|Follow-ups & open items/);
 assert.match(handoff, /Check what will be shared/);
 assert.doesNotMatch(handoff, /Saved information item:|Caregiver-added note \(not independently verified\)|Sharing reviewed handoff/);
