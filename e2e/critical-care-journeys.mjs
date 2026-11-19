@@ -1449,27 +1449,28 @@ await record("Daily Care saves and retrieves original reports without relying on
 
   await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
   await daily.page.reload({ waitUntil: "domcontentloaded" });
+  assert.equal(new URL(daily.page.url()).pathname, "/workspace/daily-care", "Daily Care must remain the active route before opening Follow-ups");
+  await daily.page.locator("#daily-care-follow-ups-title").waitFor({ state: "attached", timeout: 15_000 });
   const appointmentFollowUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
     has: daily.page.locator("#daily-care-follow-ups-title"),
   });
-  if (await appointmentFollowUpsPanel.count()) {
-    const isOpen = await appointmentFollowUpsPanel.evaluate((element) => element.open);
-    if (!isOpen) await appointmentFollowUpsPanel.locator("summary").click();
-    const openLoopsUiResponsePromise = daily.page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return url.pathname.endsWith("/api/v1/open-loops") && response.request().method() === "GET";
-    }, { timeout: 15_000 });
-    await appointmentFollowUpsPanel.getByRole("button", { name: "Open Follow-ups", exact: true }).click();
-    await daily.page.waitForURL("**/workspace/open-loops", { timeout: 15_000 });
-    const openLoopsUiResponse = await openLoopsUiResponsePromise;
-    const openLoopsUiPayload = await openLoopsUiResponse.json().catch(() => null);
-    console.log("OPEN_LOOPS_UI_RESPONSE", JSON.stringify({
-      status: openLoopsUiResponse.status(),
-      titles: (openLoopsUiPayload?.items || []).map((item) => item.title),
-      ids: (openLoopsUiPayload?.items || []).map((item) => item.id),
-      expectedId: appointmentFollowUpId,
-    }));
-  }
+  await appointmentFollowUpsPanel.waitFor({ state: "attached", timeout: 15_000 });
+  const isOpen = await appointmentFollowUpsPanel.evaluate((element) => element.open);
+  if (!isOpen) await appointmentFollowUpsPanel.locator("summary").click();
+  const openLoopsUiResponsePromise = daily.page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith("/api/v1/open-loops") && response.request().method() === "GET";
+  }, { timeout: 15_000 });
+  await appointmentFollowUpsPanel.getByRole("button", { name: "Open Follow-ups", exact: true }).click();
+  await daily.page.waitForURL("**/workspace/open-loops", { timeout: 15_000 });
+  const openLoopsUiResponse = await openLoopsUiResponsePromise;
+  const openLoopsUiPayload = await openLoopsUiResponse.json().catch(() => null);
+  console.log("OPEN_LOOPS_UI_RESPONSE", JSON.stringify({
+    status: openLoopsUiResponse.status(),
+    titles: (openLoopsUiPayload?.items || []).map((item) => item.title),
+    ids: (openLoopsUiPayload?.items || []).map((item) => item.id),
+    expectedId: appointmentFollowUpId,
+  }));
   await daily.page.getByRole("heading", { name: "Follow-ups", exact: true }).waitFor({ timeout: 15_000 });
   console.log("OPEN_LOOPS_UI_TEXT", (await daily.page.locator("body").innerText()).slice(0, 3500));
   await daily.page.getByRole("heading", { name: "Contact the clinic about the appointment", exact: true }).waitFor({ timeout: 15_000 });
