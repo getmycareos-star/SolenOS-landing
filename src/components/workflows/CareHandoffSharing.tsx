@@ -60,6 +60,34 @@ type DraftPayload = {
     interpretation_limit: string;
   };
   limitations: Array<{ source: string; status: string; reason?: string }>;
+  claim_provenance?: {
+    version?: string;
+    coverage?: string;
+    unmatched_statement_count?: number;
+    interpretation_limit?: string;
+    claims: Array<{
+      claim_id: string;
+      text: string;
+      supporting_quote: string;
+      support_status: string;
+      validation_basis: string;
+      semantic_entailment_status: string;
+      source_references: Array<{
+        source_ref: string;
+        label: string;
+        record_type?: string | null;
+        reporter_label?: string | null;
+        occurred_at?: string | null;
+        recorded_at?: string | null;
+        epistemic_state?: string | null;
+        epistemic_status?: string | null;
+        assertion_status?: string | null;
+        record_status?: string | null;
+        source_state_label?: string | null;
+        related_evidence?: Array<{ source_type?: string; type?: string; original_author?: string | null; reported_by_label?: string | null }>;
+      }>;
+    }>;
+  };
   warning: string;
 };
 type Recipient = { caregiver_id: string; name: string; relationship: string; can_receive_handoff: boolean };
