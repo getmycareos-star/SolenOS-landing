@@ -171,7 +171,7 @@ try {
   });
   await page.locator("#solenos-enable-push-e2e").click();
   try {
-    await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, { timeout: 60_000 });
+    await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, undefined, { timeout: 60_000 });
   } catch (error) {
     const diagnostics = await page.evaluate(async () => {
       const registration = await navigator.serviceWorker.getRegistration("/");
