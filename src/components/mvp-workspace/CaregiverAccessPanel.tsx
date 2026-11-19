@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Shield, UserPlus, Users, X, Check, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getAnonymousAccessToken, getPersonId, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, getPersonId, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Member = {
@@ -99,6 +99,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [networkState, setNetworkState] = useState<CareNetworkState | null>(null);
   const [communications, setCommunications] = useState<CaregiverCommunication[]>([]);
   const [careContexts, setCareContexts] = useState<CaregiverContext[]>([]);
+  const [communicationSubject, setCommunicationSubject] = useState("");
+  const [communicationBody, setCommunicationBody] = useState("");
+  const [sendingCommunication, setSendingCommunication] = useState(false);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [primaryTransfers, setPrimaryTransfers] = useState<PrimaryTransfer[]>([]);
   const [selectedPrimaryRecipient, setSelectedPrimaryRecipient] = useState("");
@@ -293,6 +296,34 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     }
   };
 
+  const sendCareCircleUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!communicationBody.trim()) return;
+    setSendingCommunication(true);
+    setError("");
+    setNotice("");
+    try {
+      const session = await ensureAnonymousSession();
+      await postJSON("/caregiver-communications", {
+        person_id: session.person.id,
+        from_caregiver_id: session.caregiver.id,
+        direction: "broadcast",
+        subject: communicationSubject.trim() || null,
+        content_summary: communicationBody.trim(),
+        is_private: false,
+        visibility: "shared",
+      });
+      setCommunicationSubject("");
+      setCommunicationBody("");
+      setNotice("Your update has been shared with the care circle.");
+      await load();
+    } catch {
+      setError("We couldn't share this update. Nothing was sent to the care circle.");
+    } finally {
+      setSendingCommunication(false);
+    }
+  };
+
   const revoke = async (member: Member) => {
     if (!window.confirm("Remove " + member.name + "'s access to this Care Record? Notes they added in the past will stay.")) return;
     setBusy(true);
@@ -332,6 +363,18 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               <Button type="button" variant="secondary" onClick={() => { const link = window.location.origin + "/invite/caregiver#token=" + encodeURIComponent(invitation.invitation_token); void navigator.clipboard?.writeText(link); }}>Copy invitation link</Button>
             </div>
           )}
+
+          <form onSubmit={(event) => void sendCareCircleUpdate(event)} style={{ display: "grid", gap: "0.6rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
+            <h3 className="mobile-settings-label" style={{ margin: 0 }}>Share an update with the care circle</h3>
+            <p className="mobile-settings-hint" style={{ margin: 0 }}>This update will be visible to caregivers who have access to this Care Record. Do not include information you want to keep private.</p>
+            <label className="mobile-settings-label" htmlFor="care-circle-update-subject">Subject (optional)</label>
+            <input id="care-circle-update-subject" className="mobile-settings-input" maxLength={160} value={communicationSubject} onChange={(event) => setCommunicationSubject(event.target.value)} placeholder="e.g. Update after today's visit" />
+            <label className="mobile-settings-label" htmlFor="care-circle-update-body">Update</label>
+            <textarea id="care-circle-update-body" className="mobile-settings-input" required maxLength={2000} rows={3} value={communicationBody} onChange={(event) => setCommunicationBody(event.target.value)} placeholder="Share what the other caregivers should know…" />
+            <Button type="submit" variant="secondary" disabled={sendingCommunication || !communicationBody.trim()} loading={sendingCommunication}>
+              {sendingCommunication ? undefined : "Share with caregivers"}
+            </Button>
+          </form>
 
           {networkSummary && (
             <div style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
