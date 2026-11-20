@@ -2574,6 +2574,46 @@ await record("12b invited caregiver sees the shared care record in a separate br
     ),
     "an explicitly shared caregiver context must persist and be visible to another authorized caregiver",
   );
+
+  const activityDescription = "Coordinated transport for the next appointment.";
+  await settingsPage.getByLabel("What kind of activity was it?").selectOption("coordinated_appointment");
+  await settingsPage.getByLabel("What did you do?").fill(activityDescription);
+  await settingsPage.getByRole("button", { name: "Save activity", exact: true }).click();
+  await settingsPage.getByText(activityDescription, { exact: true }).waitFor({ timeout: 20_000 });
+  const savedCaregiverActivities = await request(
+    `/api/v1/caregiver-activities/${encodeURIComponent(identity.personId)}?limit=30`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(savedCaregiverActivities.status, 200, JSON.stringify(savedCaregiverActivities.payload));
+  assert(
+    savedCaregiverActivities.payload.some((item) =>
+      item.caregiver_id === currentCaregiverProfile.payload.id
+      && item.activity_type === "coordinated_appointment"
+      && item.description === activityDescription
+    ),
+    "caregiver activity must persist under the authenticated caregiver profile",
+  );
+  const sharedActivitySummary = await request(
+    `/api/v1/multi-caregiver-summary?person_id=${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(sharedActivitySummary.status, 200, JSON.stringify(sharedActivitySummary.payload));
+  assert(
+    sharedActivitySummary.payload.caregivers.some((caregiver) =>
+      caregiver.recent_activities?.some((item) => item.description === activityDescription)
+    ),
+    "authorized caregivers must see the activity in the shared caregiver network",
+  );
+  const careRecordAfterActivity = await request(
+    "/api/v1/care-continuity/current-care?limit_per_source=50",
+    { token: identity.token },
+  );
+  assert.equal(careRecordAfterActivity.status, 200, JSON.stringify(careRecordAfterActivity.payload));
+  assert(
+    !careRecordAfterActivity.payload.items.some((item) => JSON.stringify(item).includes(activityDescription)),
+    "caregiver activity history must not silently become a canonical care fact",
+  );
+
   const invitedCrossRecordSummary = await request(
     "/api/v1/multi-caregiver-summary?person_id=another-person",
     { token: accepted.payload.access_token },
