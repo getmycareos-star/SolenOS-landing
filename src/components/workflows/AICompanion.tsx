@@ -385,6 +385,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setCareUpdateNotice(decision === 'accept'
         ? 'Your report was added to the Care Record. A healthcare professional has not confirmed it.'
         : 'This suggestion was declined. Nothing was added to the Care Record.')
+      if (showReviewedCareUpdates) await loadReviewedCareUpdates()
     } catch {
       setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
     } finally {
@@ -421,6 +422,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setCareUpdateCorrectionContext('')
       setCareUpdateNotice('Correction saved as a new review item. Nothing has been added to your Care Record yet.')
       await loadPendingCareUpdates()
+      if (showReviewedCareUpdates) await loadReviewedCareUpdates()
     } catch {
       setCareUpdateError('The correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.')
     } finally {
