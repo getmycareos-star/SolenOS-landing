@@ -37,6 +37,14 @@ async function resolveTelemetryStore(): Promise<TelemetryStore> {
 
   }
 
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "PostgreSQL DATABASE_URL is required for production telemetry persistence; in-memory storage is disabled.",
+    );
+  }
+
+  // Memory storage is strictly a local development/test adapter. It must
+  // never masquerade as durable production persistence.
   return getMemoryTelemetryStore();
 
 }
