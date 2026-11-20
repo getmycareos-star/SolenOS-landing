@@ -3053,7 +3053,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
   const reviewedCard = companion.page.locator(".companion-reviewed-care-updates .companion-care-update").filter({ hasText: observationText }).first();
   await reviewedCard.waitFor({ timeout: 15_000 });
   await reviewedCard.getByRole("button", { name: "Review history" }).click();
-  await reviewedCard.getByText("accepted", { exact: true }).waitFor({ timeout: 15_000 });
+  await reviewedCard.getByText("accepted", { exact: true }).first().waitFor({ timeout: 15_000 });
 
   // A correction creates a new pending version and must not update the LCR
   // until that corrected version receives a separate explicit acceptance.
@@ -3095,11 +3095,10 @@ await record("browser renders caregiver surfaces and submits Companion through t
   assert.ok(JSON.stringify(afterCorrectedAcceptance.payload).includes(correctedSource));
   assert.equal(JSON.stringify(afterCorrectedAcceptance.payload).includes(correctionSource), false);
 
-  await companion.page.getByRole("button", { name: "Previous decisions" }).click();
   const correctedHistoryCard = companion.page.locator(".companion-reviewed-care-updates .companion-care-update").filter({ hasText: correctionSource }).first();
   await correctedHistoryCard.waitFor({ timeout: 15_000 });
   await correctedHistoryCard.getByRole("button", { name: "Review history" }).click();
-  await correctedHistoryCard.getByText("corrected", { exact: true }).waitFor({ timeout: 15_000 });
+  await correctedHistoryCard.getByText("corrected", { exact: true }).first().waitFor({ timeout: 15_000 });
   }
   await companion.context.close();
 });
