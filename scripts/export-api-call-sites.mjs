@@ -50,6 +50,13 @@ function routeExpression(node) {
       dynamic: true,
     };
   }
+  if (ts.isCallExpression(node) && node.arguments.length > 0) {
+    const callee = ts.isIdentifier(node.expression) ? node.expression.text
+      : ts.isPropertyAccessExpression(node.expression) ? node.expression.name.text : '';
+    if (callee === 'apiUrl' || callee === 'resolveApiUrl' || callee === 'buildApiUrl') {
+      return routeExpression(node.arguments[0]);
+    }
+  }
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.Plus) {
     const left = routeExpression(node.left);
     const right = routeExpression(node.right);
