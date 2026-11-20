@@ -36,7 +36,7 @@ const careSteps = [
   {
     number: "05",
     title: "Ask about the record",
-    body: "Ask the Care Assistant about information saved in SolenOS. It should be clear when the record has no answer.",
+    body: "Ask the AI Companion about information saved in SolenOS. It should be clear when the record has no answer.",
   },
   {
     number: "06",
@@ -238,7 +238,7 @@ export default function LandingPage() {
             <p className="el-kicker">THE CARE ASSISTANT</p>
             <h2>Ask about what has been recorded.</h2>
             <p>
-              The Care Assistant is designed to help find relevant details
+              The AI Companion is designed to help find relevant details
               in the care record, including information you may not remember
               exactly.
             </p>
