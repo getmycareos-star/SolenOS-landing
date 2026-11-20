@@ -1,5 +1,7 @@
 "use client";
 
+// The non-extractable AES-GCM key protects queued payloads at rest in the
+// browser profile. It is not a substitute for XSS protection or backend access control.
 const DATABASE_NAME = "solenos-durable-write-queue";
 const DATABASE_VERSION = 1;
 const WRITE_STORE = "writes";
