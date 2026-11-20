@@ -106,7 +106,10 @@ async function loadAllOpenLoops(): Promise<OpenLoop[]> {
     if (!Array.isArray(response.items) || typeof response.count !== "number" || !Number.isInteger(response.count) || response.count < 0) {
       throw new Error("The saved follow-up history returned an incomplete page.");
     }
-    expectedCount = response.count;
+    if (expectedCount === null) expectedCount = response.count;
+    else if (response.count !== expectedCount) {
+      throw new Error("The saved follow-up history changed while it was being loaded. Refresh to try again.");
+    }
     const rows = response.items as OpenLoop[];
     if (rows.some((row) => !row || typeof row.id !== "string" || !row.id)) {
       throw new Error("The saved follow-up history contained an invalid record.");
