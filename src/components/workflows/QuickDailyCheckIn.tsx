@@ -60,6 +60,7 @@ export default function QuickDailyCheckIn() {
 
   useEffect(() => {
     let active = true;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const send = async (endpoint: string, payload: unknown) => {
       const response = await postJSON(endpoint, payload) as { success?: boolean; id?: string | number };
       if (response?.success !== true || response.id === undefined || response.id === null) {
@@ -80,6 +81,10 @@ export default function QuickDailyCheckIn() {
         const afterSync = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
         setPendingCount(afterSync.pending + afterSync.blocked + afterSync.failed_recoverable);
+        if (afterSync.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
+          if (retryTimer) clearTimeout(retryTimer);
+          retryTimer = setTimeout(sync, 5_000);
+        }
         if (pendingQueueId.current) {
           const stillQueued = await hasDurableWrite(pendingQueueId.current);
           if (!stillQueued) {
@@ -106,6 +111,7 @@ export default function QuickDailyCheckIn() {
     window.addEventListener("solenos:offline-queue-updated", sync);
     return () => {
       active = false;
+      if (retryTimer) clearTimeout(retryTimer);
       window.removeEventListener("online", sync);
       window.removeEventListener("personIdChanged", sync);
       window.removeEventListener("solenos:offline-queue-updated", sync);
