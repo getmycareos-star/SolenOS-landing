@@ -344,8 +344,7 @@ export default function AppointmentWorkspace() {
     const nextAppointment = selectNextAppointment(briefResult)
     const selectedAppointmentId = nextAppointment?.source_id || null
     setAppointmentId(selectedAppointmentId || '')
-    if (!selectedAppointmentId) setStage('prepare')
-    else if (['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) setStage('after')
+    if (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) setStage('after')
     else setStage('prepare')
 
     const items = workspaceResult.items || []
