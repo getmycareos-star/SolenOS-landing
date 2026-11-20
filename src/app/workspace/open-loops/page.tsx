@@ -43,6 +43,10 @@ type AttentionDecision = {
   recorded_at?: string | null;
   due_at?: string | null;
   review_at?: string | null;
+  evidence_status?: string;
+  history_completeness?: string;
+  action_status?: string;
+  care_significance?: string;
   records?: Array<{ source: string; record_id: string; title: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
 };
 
@@ -137,6 +141,9 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
       {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
+      {item.evidence_status && <span>Evidence: {caregiverStatusLabel(item.evidence_status) || "Not established"}</span>}
+      {item.history_completeness && item.history_completeness !== "complete" && <span>Some earlier care information may be missing.</span>}
+      {item.action_status === "not_recorded" && <span>No follow-up action has been saved yet.</span>}
     </div>
     {expanded && <div className="followup-detail">
       <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
