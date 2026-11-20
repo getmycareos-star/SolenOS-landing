@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import {
   deliverDurableWrite,
@@ -244,12 +245,7 @@ export default function QuickDailyCheckIn() {
           setError("This check-in is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.");
         }
       } else {
-        const reason = cause instanceof Error ? cause.message : "";
-        setError(
-          reason && reason.length < 180 && !/sql|traceback|stack/i.test(reason)
-            ? reason
-            : "We couldn’t confirm whether this check-in was saved. Your selection is still here. Check the care record before retrying.",
-        );
+        setError(caregiverSafeErrorMessage());
       }
     } finally {
       setSaving(false);
