@@ -124,7 +124,7 @@ export function UnderstandingFeedbackPrompt({
           );
         }
         setStep("thanks");
-      } catch (error) {
+      } catch {
         setSubmitError(
           caregiverSafeErrorMessage(),
         );
