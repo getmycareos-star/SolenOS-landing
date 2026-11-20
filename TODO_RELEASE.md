@@ -1,3 +1,5 @@
+> **Persistence audit notice (2026-11-20):** This file contains historical checklist entries that predate the current PostgreSQL-backed account, care-profile, document, reminder and companion implementations. Do not treat old checked localStorage items or old disabled-account statements below as current verification. The current category-by-category persistence status and release gates are maintained in `SolenOS_backend/backend/docs/DATABASE_PERSISTENCE_INVENTORY.md`.
+
 # SolenOS — Historical Production Release TODO (Restructure & Trust Audit)
 
 > **Superseded checklist — do not use its historical [x] marks as current release evidence.** This file contains claims from earlier deployments and architectures. Current source of truth is the Next.js App Router frontend on `main` and the FastAPI backend on `main`. In particular, the backend does **not** register `/api/research-feedback` or `/api/track`; feedback is `POST /api/v1/feedback`, while telemetry in `src/lib/trackEvent.ts` is intentionally a no-op. The active backend is `https://solenosbackend-production.up.railway.app`. Verify current workflows and production deployment independently before release.
