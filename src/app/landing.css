@@ -688,3 +688,267 @@
   .editorial-landing .el-companion-principle { grid-column: 1; }
   .editorial-landing .el-early-access { padding: 2.5rem 1.25rem; }
 }
+
+
+/* Final homepage readability pass — one consistent type scale across breakpoints. */
+.editorial-landing {
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+.editorial-landing p,
+.editorial-landing li {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.editorial-landing p {
+  max-width: 68ch;
+  margin: .8rem 0;
+}
+.editorial-landing h1,
+.editorial-landing h2,
+.editorial-landing h3 {
+  text-wrap: balance;
+}
+.editorial-landing h2 {
+  font-size: clamp(1.9rem, 3.2vw, 2.8rem);
+  line-height: 1.16;
+  margin: 0 0 1rem;
+}
+.editorial-landing .el-kicker {
+  font-size: .75rem;
+  line-height: 1.5;
+  letter-spacing: .11em;
+  font-weight: 700;
+}
+.editorial-landing .el-hero-copy {
+  max-width: 760px;
+}
+.editorial-landing .el-hero h1 {
+  max-width: 12ch;
+  font-size: clamp(2.75rem, 4.8vw, 4.65rem);
+  line-height: 1.08;
+  letter-spacing: -.04em;
+}
+.editorial-landing .el-hero-copy > p:not(.el-kicker) {
+  max-width: 42rem;
+  font-size: clamp(1.0625rem, 1.25vw, 1.2rem);
+  line-height: 1.75;
+}
+.editorial-landing .el-early-note {
+  font-size: .98rem !important;
+  line-height: 1.6 !important;
+}
+.editorial-landing .el-button {
+  min-height: 52px;
+  padding: .9rem 1.35rem;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+.editorial-landing .el-two-lists {
+  gap: clamp(1rem, 3vw, 2.5rem);
+}
+.editorial-landing .el-burden li,
+.editorial-landing .el-appointment-copy li {
+  font-size: 1rem;
+  line-height: 1.65;
+  margin: .45rem 0;
+}
+.editorial-landing .el-how-heading {
+  max-width: 48rem;
+}
+.editorial-landing .el-how-heading h2 {
+  max-width: 19ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+.editorial-landing .el-how-heading > p:not(.el-kicker) {
+  font-size: 1.1rem;
+}
+.editorial-landing .el-how-card {
+  padding: clamp(1.25rem, 2.5vw, 1.8rem);
+}
+.editorial-landing .el-how-card h3 {
+  font-size: 1.2rem;
+  line-height: 1.35;
+  margin: .65rem 0;
+}
+.editorial-landing .el-how-card p,
+.editorial-landing .el-truth-grid p {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.editorial-landing .el-truth h2 {
+  max-width: 22ch;
+}
+.editorial-landing .el-truth-intro,
+.editorial-landing .el-truth-close {
+  max-width: 66ch;
+  font-size: 1.1rem;
+}
+.editorial-landing .el-truth-grid h3 {
+  font-size: 1.15rem;
+  line-height: 1.35;
+}
+.editorial-landing .el-handoff-copy,
+.editorial-landing .el-appointment-copy,
+.editorial-landing .el-dementia-copy,
+.editorial-landing .el-dementia-note,
+.editorial-landing .el-companion-copy,
+.editorial-landing .el-companion-principle {
+  min-width: 0;
+}
+.editorial-landing .el-handoff h2,
+.editorial-landing .el-appointment-copy h2,
+.editorial-landing .el-dementia-copy h2,
+.editorial-landing .el-companion-copy h2,
+.editorial-landing .el-companion-principle h2 {
+  max-width: 23ch;
+}
+.editorial-landing .el-handoff p,
+.editorial-landing .el-appointment-copy p,
+.editorial-landing .el-dementia-copy p,
+.editorial-landing .el-dementia-note p,
+.editorial-landing .el-companion-copy p,
+.editorial-landing .el-companion-principle p,
+.editorial-landing .el-early-access p,
+.editorial-landing .el-final-cta p {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.editorial-landing .el-process-step small {
+  font-size: .95rem;
+}
+.editorial-landing .el-early-access {
+  padding: clamp(2.5rem, 5vw, 5rem) clamp(1.25rem, 6vw, 6rem);
+}
+.editorial-landing .el-early-access h2 {
+  max-width: 22ch;
+}
+.editorial-landing .el-early-access > p:not(.el-kicker) {
+  max-width: 62ch;
+}
+.editorial-landing .el-final-copy {
+  max-width: 46rem;
+}
+.editorial-landing .el-final-copy h2 {
+  max-width: 16ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+.editorial-landing .el-final-cta aside {
+  font-size: .98rem;
+  line-height: 1.7;
+}
+.editorial-landing .el-more-links {
+  font-size: 1rem;
+}
+.editorial-landing a:focus-visible {
+  outline: 3px solid #626e58;
+  outline-offset: 4px;
+}
+@media (max-width: 900px) {
+  .editorial-landing .el-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .editorial-landing .el-hero h1 {
+    font-size: clamp(2.5rem, 5.5vw, 3.6rem);
+  }
+}
+@media (max-width: 600px) {
+  .editorial-landing {
+    font-size: 16px;
+  }
+  .editorial-landing p,
+  .editorial-landing li {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+  .editorial-landing .el-hero-copy {
+    padding: 2.5rem 1.25rem 2rem;
+  }
+  .editorial-landing .el-hero h1 {
+    max-width: 13ch;
+    font-size: clamp(2.35rem, 10vw, 3.2rem);
+    line-height: 1.1;
+  }
+  .editorial-landing .el-hero-photo {
+    min-height: 300px;
+  }
+  .editorial-landing .el-burden-copy,
+  .editorial-landing .el-reassurance-copy,
+  .editorial-landing .el-appointment-copy,
+  .editorial-landing .el-dementia-copy,
+  .editorial-landing .el-dementia-note,
+  .editorial-landing .el-companion-copy,
+  .editorial-landing .el-companion-principle {
+    padding: 2rem 1.25rem;
+  }
+  .editorial-landing .el-two-lists {
+    grid-template-columns: 1fr;
+    gap: .2rem;
+  }
+  .editorial-landing .el-how {
+    padding: 2.75rem 1.25rem;
+  }
+  .editorial-landing .el-how-heading {
+    text-align: left;
+    margin-bottom: 1.75rem;
+  }
+  .editorial-landing .el-how-heading h2 {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .editorial-landing .el-how-grid {
+    grid-template-columns: 1fr;
+    gap: .85rem;
+  }
+  .editorial-landing .el-how-card {
+    min-height: 0;
+    padding: 1.2rem;
+  }
+  .editorial-landing .el-truth {
+    padding: 2.75rem 1.25rem;
+  }
+  .editorial-landing .el-truth-grid {
+    grid-template-columns: 1fr;
+    gap: .75rem;
+  }
+  .editorial-landing .el-handoff {
+    grid-template-columns: 1fr;
+  }
+  .editorial-landing .el-process {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    justify-content: space-around;
+  }
+  .editorial-landing .el-process-step {
+    flex: 1 1 5rem;
+  }
+  .editorial-landing .el-process-step small {
+    font-size: .875rem;
+  }
+  .editorial-landing .el-appointments,
+  .editorial-landing .el-companion {
+    grid-template-columns: 1fr;
+  }
+  .editorial-landing .el-appointment-photo,
+  .editorial-landing .el-trust-photo {
+    min-height: 260px;
+  }
+  .editorial-landing .el-early-access {
+    padding: 2.75rem 1.25rem;
+  }
+  .editorial-landing .el-final-cta {
+    padding: 3rem 1.25rem;
+  }
+  .editorial-landing .el-final-copy h2 {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .editorial-landing .el-final-cta aside {
+    margin-top: 1.75rem;
+    text-align: center;
+  }
+}
