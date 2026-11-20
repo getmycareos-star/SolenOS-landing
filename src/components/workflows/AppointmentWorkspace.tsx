@@ -827,7 +827,7 @@ export default function AppointmentWorkspace() {
               <textarea value={unansweredQuestions} onChange={event => setUnansweredQuestions(event.target.value)} rows={3} placeholder="Optional. What still needs clarification?" />
             </label>
             <label className="guided-capture-label">Attach an existing document or visit document
-              <input type="file" accept=".pdf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.log,image/*" disabled={documentBusy || !appointmentId} onChange={async event => {
+              <input type="file" accept=".pdf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.log,image/*" disabled={documentBusy || !appointmentId || brief.source_coverage?.documents === 'restricted'} onChange={async event => {
                 const file = event.currentTarget.files?.[0]
                 event.currentTarget.value = ''
                 if (!file) return
@@ -851,7 +851,8 @@ export default function AppointmentWorkspace() {
                 }
               }} />
             </label>
-            {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>}
+            {brief.source_coverage?.documents === 'restricted' && <p className="guided-muted" role="status">Document access is restricted for this caregiver. No document content or metadata is shown here.</p>}
+            {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>
             {documentMessage && <p className="guided-muted" role="status">{documentMessage}</p>}
             {pendingDocumentEvidenceId && <div className="guided-actions"><span className="guided-muted">Saved file: {caregiverSafeAssistantText(pendingDocumentName) || 'Document'}</span><button type="button" className="guided-secondary" disabled={documentBusy} onClick={() => void retryDocumentLink()}>Retry linking saved document</button></div>}
             {attachedEvidenceIds.length > 0 && <p className="guided-footnote">{attachedEvidenceIds.length} document {attachedEvidenceIds.length === 1 ? 'is' : 'items are'} linked to this appointment.</p>}
