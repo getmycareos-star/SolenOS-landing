@@ -1,13 +1,8 @@
 /**
- * Raw Evidence Store — immutable persistence of caregiver input BEFORE extraction.
+ * Legacy raw-capture recovery types.
  *
- * Spec §3: USER INPUT → SAVE RAW EVIDENCE → CONFIRM PERSISTENCE → START EXTRACTION
- *
- * Raw evidence is the immutable foundation. If extraction fails, the
- * evidence must remain retrievable. This module persists to an in-memory
- * Map (process-lifetime) and optionally to Postgres (when DATABASE_URL is
- * set). File-based durability is used as a local queue for offline resilience
- * (spec §20).
+ * A local queue is not a care-record write. Only an explicitly confirmed
+ * write to the canonical SolenOS backend may set persisted=true.
  */
 
 import { createHash } from "node:crypto";
@@ -60,9 +55,10 @@ export type RawEvidencePersistenceStatus =
 
 export type SaveRawEvidenceResult = {
   evidence: RawEvidence;
-  /** True only when PostgreSQL or the local recovery queue accepted the record. */
+  /** True only when the canonical SolenOS backend confirmed the write. */
   persisted: boolean;
   persistence_status: RawEvidencePersistenceStatus;
+  persistence_error?: string;
 };
 
 export type RawEvidenceStoreOptions = {
