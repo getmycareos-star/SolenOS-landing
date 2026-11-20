@@ -10,8 +10,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: frontend-validation-${{ github.ref }}
-  cancel-in-progress: true
+  # Keep validation for each exact main commit. A later push must not cancel
+  # the only full PostgreSQL-backed frontend validation run for an earlier commit.
+  group: frontend-validation-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   build-and-test:
