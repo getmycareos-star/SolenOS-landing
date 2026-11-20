@@ -2610,6 +2610,55 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await verifyMobile(details.page);
   await details.context.close();
 
+  await record("mobile and tablet navigation drawer contains keyboard focus", async () => {
+    for (const viewport of [
+      { width: 900, height: 900 },
+      { width: 761, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      const navigation = await createBrowserPage(session, "/workspace", viewport);
+      const trigger = navigation.page.getByRole("button", { name: "Open navigation", exact: true });
+      await trigger.waitFor({ state: "visible", timeout: 10_000 });
+      await trigger.click();
+      const sidebar = navigation.page.locator("#solenos-navigation");
+      await navigation.page.waitForFunction(() => {
+        const element = document.getElementById("solenos-navigation");
+        return element?.getAttribute("aria-modal") === "true";
+      }, undefined, { timeout: 5_000 });
+      assert.equal(
+        await navigation.page.locator(".solenos-chat-workspace").evaluate((element) => element.inert),
+        true,
+        `workspace must be inert behind the navigation drawer at ${viewport.width}px`,
+      );
+      await navigation.page.waitForFunction(
+        () => document.activeElement?.closest("#solenos-navigation") !== null,
+        undefined,
+        { timeout: 5_000 },
+      );
+      const lastNavigationControl = sidebar.locator('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])').last();
+      await lastNavigationControl.focus();
+      await navigation.page.keyboard.press("Tab");
+      await navigation.page.waitForFunction(
+        () => document.activeElement?.closest("#solenos-navigation") !== null,
+        undefined,
+        { timeout: 5_000 },
+      );
+      await navigation.page.keyboard.press("Escape");
+      await navigation.page.waitForFunction(
+        () => document.getElementById("solenos-navigation")?.getAttribute("aria-modal") !== "true",
+        undefined,
+        { timeout: 5_000 },
+      );
+      assert.equal(
+        await trigger.evaluate((element) => element === document.activeElement),
+        true,
+        `closing the drawer must restore focus to its trigger at ${viewport.width}px`,
+      );
+      await verifyMobile(navigation.page);
+      await navigation.context.close();
+    }
+  });
+
   await record("Care record details distinguish denied access from service outage", async () => {
     for (const scenario of [
       { status: 403, expected: "forbidden" },
