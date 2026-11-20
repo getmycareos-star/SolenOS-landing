@@ -210,6 +210,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "view_record_details": {
+        recordDetailsReturnFocusRef.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setRecordDetailsOpen(true);
         return;
       }
