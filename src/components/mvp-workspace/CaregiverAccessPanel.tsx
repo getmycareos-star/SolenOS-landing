@@ -138,6 +138,7 @@ const CARE_ACTIVITY_OPTIONS = [
 const CARE_PERMISSION_OPTIONS = [
   { value: "view_lcr", label: "View the Care Record" },
   { value: "add_evidence", label: "Add care notes and observations" },
+  { value: "correct_records", label: "Submit corrections to care information" },
   { value: "manage_responsibilities", label: "Assign and change care responsibilities" },
   { value: "manage_reminders", label: "Create and manage reminders" },
   { value: "complete_assigned_reminders", label: "Complete assigned reminders" },
