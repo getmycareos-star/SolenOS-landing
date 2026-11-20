@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { BrandLoading } from "@/components/brand";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const Community = dynamic(() => import("@/components/workflows/Community"), {
   ssr: false,
@@ -9,6 +10,21 @@ const Community = dynamic(() => import("@/components/workflows/Community"), {
 });
 
 export default function CommunityClient() {
+  if (!FEATURE_FLAGS.community) {
+    return (
+      <div className="mobile-screen feature-page" role="status">
+        <section style={{ maxWidth: 560, margin: "0 auto", padding: 24 }}>
+          <h1>Community is not available yet</h1>
+          <p>
+            Peer posts, reactions, and saved stories are disabled until moderation,
+            caregiver-scoped persistence, and privacy controls are ready.
+          </p>
+          <p>Community experiences are separate from the Living Care Record and are never added to it automatically.</p>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="mobile-screen feature-page">
       <Community />
