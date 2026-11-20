@@ -396,7 +396,7 @@ for (const [term, expected] of [
   ["retrieval", "Finding past care information"],
   ["open loops", "Things that still need attention"],
   ["longitudinal history", "Care history over time"],
-  ["AI Companion", "Care Assistant"],
+  ["AI Companion", "AI Companion"],
   ["epistemic status", "What is known, not sure yet, or not recorded"],
   ["assessment_coverage", "What information was checked"],
   ["source attribution", "Who reported it and where it came from"],
