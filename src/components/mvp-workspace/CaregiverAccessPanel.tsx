@@ -241,7 +241,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
           getJSON("/multi-caregiver-summary/" + encodeURIComponent(personId)) as Promise<MultiCaregiverSummary>,
-          getJSON("/care-network-state") as Promise<CareNetworkState>,
+          getJSON("/care-network-state/" + encodeURIComponent(personId)) as Promise<CareNetworkState>,
           getJSON("/caregiver-communications") as Promise<CaregiverCommunication[]>,
           getJSON("/caregiver-contexts") as Promise<CaregiverContext[]>,
           getJSON("/caregiver-observations/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivateObservation[]>,
