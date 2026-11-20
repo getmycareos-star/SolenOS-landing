@@ -535,14 +535,35 @@ export async function getBlob(path: string): Promise<Blob> {
   return res.blob()
 }
 
+function hasStableIdempotencyKey(body: unknown): boolean {
+  if (!body || typeof body !== "object") return false;
+  const value = body as Record<string, unknown>;
+  return [value.ingestion_key, value.idempotency_key].some(
+    (key) => typeof key === "string" && key.trim().length > 0,
+  );
+}
+
 export async function postJSON(path: string, body: unknown, extraHeaders: Record<string, string> = {}) {
   const authHeaders = await requestAuthorizationHeaders(path);
-  const res = await fetchWithTimeout(resolveApiUrl(path), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders, ...extraHeaders },
-    body: JSON.stringify(body),
-  })
-  return handleResponse(res)
+  const url = resolveApiUrl(path);
+  const requestBody = JSON.stringify(body);
+  let res = await fetchWithTimeout(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders, ...extraHeaders },
+    body: requestBody,
+  });
+  // Retry a rejected bearer only when the write carries a stable server-side
+  // idempotency key. Never replay an arbitrary POST after an ambiguous outcome.
+  if (res.status === 401 && authHeaders.Authorization && hasStableIdempotencyKey(body)) {
+    const previousToken = authHeaders.Authorization.replace(/^Bearer\\s+/i, "");
+    const nextToken = await refreshSessionAfterUnauthorized(previousToken);
+    res = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders, ...extraHeaders, Authorization: `Bearer ${nextToken}` },
+      body: requestBody,
+    });
+  }
+  return handleResponse(res);
 }
 
 export async function patchJSON(path: string, body: unknown) {
@@ -679,11 +700,22 @@ export async function postFormData(path: string, body: FormData) {
     ? normalized
     : `/api/v1${normalized}`;
   const headers = await requestAuthorizationHeaders(backendPath);
-  const res = await fetchWithTimeout(apiUrl(backendPath), {
+  const url = apiUrl(backendPath);
+  let res = await fetchWithTimeout(url, {
     method: "POST",
     headers,
     body,
   });
+  const ingestionKey = body.get("ingestion_key");
+  if (res.status === 401 && headers.Authorization && typeof ingestionKey === "string" && ingestionKey.trim()) {
+    const previousToken = headers.Authorization.replace(/^Bearer\\s+/i, "");
+    const nextToken = await refreshSessionAfterUnauthorized(previousToken);
+    res = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: { ...headers, Authorization: `Bearer ${nextToken}` },
+      body,
+    });
+  }
   return handleResponse(res);
 }
 
