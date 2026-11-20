@@ -489,6 +489,7 @@ function ProfileCard() {
           onChange={(e) => setCondition(e.target.value)}
           placeholder="Only enter a confirmed condition or stage (optional)"
         />
+        <p className="mobile-settings-hint">This is retained as caregiver-reported context, not an independently verified clinical fact.</p>
       </div>
       <div className="mobile-settings-actions">
         <Button variant="primary" loading={saving} disabled={loading || Boolean(loadError) || !name.trim()} onClick={save}>
