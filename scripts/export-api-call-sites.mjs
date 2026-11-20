@@ -127,7 +127,8 @@ function escapeRegex(value) {
 
 function routeRegex(routePath) {
   const parts = routePath.split('/').map(segment =>
-    /^\{[^}]+\}$/.test(segment) ? '[^/]+' : escapeRegex(segment)
+    /^\{[^}]+:path\}$/.test(segment) ? '.+' :
+      /^\{[^}]+\}$/.test(segment) ? '[^/]+' : escapeRegex(segment)
   );
   return new RegExp('^' + parts.join('/') + '/?$');
 }
