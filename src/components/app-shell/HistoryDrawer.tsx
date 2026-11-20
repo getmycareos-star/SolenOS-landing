@@ -1090,14 +1090,14 @@ export function HistoryDrawer() {
       const followUpResult = results[8];
       const followUpPayload = followUpResult.status === "fulfilled" && followUpResult.value &&
         typeof followUpResult.value === "object"
-        ? followUpResult.value as { items?: unknown; has_more?: boolean }
+        ? followUpResult.value as { items?: unknown; count?: number; limit?: number; offset?: number }
         : null;
       if (followUpPayload && Array.isArray(followUpPayload.items)) {
         availableSources += 1;
         const followUps = (followUpPayload.items as FollowUpHistoryItem[])
           .filter((item) => item && typeof item.id === "string");
         nextRecords.push(...followUps.map(mapFollowUp));
-        if (followUpPayload.has_more === true) {
+        if (typeof followUpPayload.count === "number" && followUpPayload.count > followUps.length) {
           warnings.push("Only the latest saved follow-ups are shown here. Open Follow-ups to review the full list.");
         }
       } else {
