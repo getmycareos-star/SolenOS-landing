@@ -482,6 +482,7 @@ export default function AppointmentWorkspace() {
               </details>
 
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknown details are kept separate.</p>
+            </section>
           </>}
           {appointmentId && <QwenAssistPanel
             appointmentId={appointmentId}
