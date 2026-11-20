@@ -17,7 +17,9 @@ const outputArg = process.argv.indexOf('--output');
 const outputPath = outputArg >= 0 ? process.argv[outputArg + 1] : null;
 const wrappers = new Map([
   ['getJSON', 'GET'],
+  ['getBlob', 'GET'],
   ['postJSON', 'POST'],
+  ['postFormData', 'POST'],
   ['putJSON', 'PUT'],
   ['patchJSON', 'PATCH'],
   ['deleteJSON', 'DELETE'],
