@@ -13,6 +13,7 @@ const helpers = new Map([
   ["putJSON", "PUT"],
   ["patchJSON", "PATCH"],
   ["deleteJSON", "DELETE"],
+  ["fetchWithTimeout", "GET"],
 ]);
 
 type Callsite = {
@@ -31,6 +32,22 @@ function filesUnder(directory: string): string[] {
     if (entry.isDirectory()) return filesUnder(full);
     return /\.(?:ts|tsx)$/.test(entry.name) && !/\.d\.ts$/.test(entry.name) ? [full] : [];
   });
+}
+
+function methodForCall(node: ts.CallExpression, helper: string): string {
+  if (helper !== "fetchWithTimeout") return helpers.get(helper)!;
+  const options = node.arguments[1];
+  if (options && ts.isObjectLiteralExpression(options)) {
+    const method = options.properties.find(property =>
+      ts.isPropertyAssignment(property) &&
+      ((ts.isIdentifier(property.name) && property.name.text === "method") ||
+       (ts.isStringLiteral(property.name) && property.name.text === "method"))
+    );
+    if (method && ts.isPropertyAssignment(method) && ts.isStringLiteralLike(method.initializer)) {
+      return method.initializer.text.toUpperCase();
+    }
+  }
+  return "GET";
 }
 
 function pathExpression(node: ts.Expression): { value: string; dynamic: boolean } | null {
@@ -87,13 +104,13 @@ for (const file of filesUnder(sourceRoot)) {
         const parsed = node.arguments[0] ? pathExpression(node.arguments[0]) : null;
         const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
         if (!parsed || !parsed.value.trim()) {
-          unsupported.push({ file: relative(root, file), line, helper });
+          if (helper !== "fetchWithTimeout") unsupported.push({ file: relative(root, file), line, helper });
         } else {
           callsites.push({
             file: relative(root, file),
             line,
             helper,
-            method: helpers.get(helper)!,
+            method: methodForCall(node, helper),
             declared_path: parsed.value,
             resolved_path: resolvedPath(parsed.value),
             dynamic: parsed.dynamic,
