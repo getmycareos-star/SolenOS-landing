@@ -18,6 +18,13 @@ type CareReminderAssignmentEvent = {
   occurred_at: string;
 };
 
+type CareReminderLifecycleEvent = {
+  action: string;
+  actor_caregiver_id: string;
+  occurred_at: string;
+  details: { new_due_at?: string | null; previous_due_at?: string | null };
+};
+
 type CareReminder = {
   id: string;
   person_id: string;
@@ -25,6 +32,7 @@ type CareReminder = {
   assigned_to_caregiver_id: string | null;
   version: number;
   assignment_history: CareReminderAssignmentEvent[];
+  lifecycle_history: CareReminderLifecycleEvent[];
   title: string;
   note: string | null;
   due_at: string;
@@ -345,13 +353,19 @@ export default function CareRemindersPage() {
                       ))}
                     </select>
                   </label>
-                  {reminder.assignment_history?.length > 1 && (
+                  {(reminder.assignment_history?.length > 1 || reminder.lifecycle_history?.length > 0) && (
                     <details className="care-reminder-footnote">
-                      <summary>Responsibility history</summary>
+                      <summary>Reminder history</summary>
                       <ol>
-                        {reminder.assignment_history.map((entry, index) => (
-                          <li key={`${entry.occurred_at}-${index}`}>
+                        {reminder.assignment_history.slice(1).map((entry, index) => (
+                          <li key={`assignment-${entry.occurred_at}-${index}`}>
                             {assignableMembers.find((member) => member.caregiver_id === entry.assigned_to_caregiver_id)?.name || "Caregiver"} assigned by {assignableMembers.find((member) => member.caregiver_id === entry.actor_caregiver_id)?.name || "a caregiver"} · {formatDateTime(entry.occurred_at)}
+                          </li>
+                        ))}
+                        {reminder.lifecycle_history.map((entry, index) => (
+                          <li key={`lifecycle-${entry.occurred_at}-${index}`}>
+                            {entry.action.endsWith(".completed") ? "Completed" : entry.action.endsWith(".cancelled") ? "Cancelled" : "Snoozed"} by {assignableMembers.find((member) => member.caregiver_id === entry.actor_caregiver_id)?.name || "a caregiver"} · {formatDateTime(entry.occurred_at)}
+                            {entry.details.new_due_at ? ` · New due date: ${formatDateTime(entry.details.new_due_at)}` : ""}
                           </li>
                         ))}
                       </ol>
