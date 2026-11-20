@@ -12,6 +12,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   action_recorded: "Action recorded",
   contradiction_reconciled: "Different reports reviewed",
   outcome_reported: "Outcome reported",
+  outcome_unknown: "Outcome not recorded",
   outcome_attested: "Outcome checked by caregiver",
   outcome_corroborated: "Compared with another report",
   closure_verified: "Marked as complete",
