@@ -16,8 +16,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: solenos-netlify-preview-main
-  cancel-in-progress: true
+  group: solenos-netlify-preview-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   verify:
