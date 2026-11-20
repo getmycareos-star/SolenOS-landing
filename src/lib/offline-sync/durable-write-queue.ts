@@ -253,8 +253,12 @@ export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
     updated_at: now,
     last_error: null,
   });
-  dispatchQueueUpdated();
   return id;
+}
+
+export async function hasDurableWrite(id: string): Promise<boolean> {
+  const db = await openDatabase();
+  return Boolean(await readWrite(db, id));
 }
 
 export async function completeDurableWrite(id: string): Promise<void> {
