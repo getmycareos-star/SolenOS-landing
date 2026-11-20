@@ -55,7 +55,7 @@
 .solenos-chat-nav-heading {
   color: #536158;
 }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .solenos-chat-sidebar {
     overflow-y: auto;
     overscroll-behavior: contain;
