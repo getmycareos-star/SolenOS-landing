@@ -165,7 +165,15 @@ jobs:
         env:
           DATABASE_URL: ""
           SOLENOS_OPENAPI_URL: http://127.0.0.1:8000/openapi.json
+          SOLENOS_API_INVENTORY_OUTPUT: reports/frontend-api-callsite-inventory.json
         run: npm test
+      - name: Upload frontend-to-backend API callsite inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-api-callsite-inventory
+          path: reports/frontend-api-callsite-inventory.json
+          if-no-files-found: ignore
       - name: Verify caregiver-facing language boundary
         run: npm run verify:caregiver-language-boundary
       - name: Stop isolated application processes and retain failure logs
