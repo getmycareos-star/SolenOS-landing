@@ -82,8 +82,8 @@ assert.match(evidenceReview, /item\.observation_method !== 'Daily Care form'/, "
 assert.match(evidenceReview, /<summary>Details recorded from this information \(\{observations\.length\}\)<\/summary>/, "source details use caregiver-facing language and remain grouped under a clear disclosure");
 assert.match(evidenceReview, /caregiver_form: 'Entered in Daily Care'/, "caregiver form metadata is translated into natural language");
 assert.match(evidenceReview, /note: 'Care update'/, "internal evidence type values are not exposed");
-assert.match(language, /capture\.axis === "string" && capture\.score !== undefined/, "a single rating source passage is readable");
-assert.match(language, /capture\.vital_type === "string" && capture\.value !== undefined/, "a single measurement source passage is readable");
+assert.match(caregiverLanguage, /capture\.axis === "string" && capture\.score !== undefined/, "a single rating source passage is readable");
+assert.match(caregiverLanguage, /capture\.vital_type === "string" && capture\.value !== undefined/, "a single measurement source passage is readable");
 assert.match(evidenceReview, /<summary>More about this note or document<\/summary>/, "detailed source metadata is progressively disclosed");
 assert.doesNotMatch(evidenceReview, /How this information was added<\/dt>/, "duplicate collection-method labels are removed");
 assert.match(evidenceReview, /structured_daily_capture: 'Daily care update'/, "internal capture types receive caregiver-friendly labels");
