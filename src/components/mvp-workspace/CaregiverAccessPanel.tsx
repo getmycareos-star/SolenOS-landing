@@ -848,6 +848,33 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     }
   };
 
+  const updateMemberStatus = async (member: Member, status: "active" | "suspended") => {
+    const message = status === "suspended"
+      ? "Pause " + member.name + "'s access? Their current sessions will stop working. Their past care notes will remain."
+      : "Restore " + member.name + "'s access? They will need to sign in again.";
+    if (!window.confirm(message)) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await patchJSON(
+        "/caregiver-access/members/" + encodeURIComponent(member.caregiver_id) + "/status",
+        { status },
+      );
+      if (status === "suspended" && result?.sessions_revoked !== true) {
+        throw new Error("The server did not confirm session revocation.");
+      }
+      setNotice(status === "suspended"
+        ? member.name + "'s access is paused. Their earlier care notes remain saved."
+        : member.name + "'s access is restored. They need to sign in again.");
+      await load();
+    } catch {
+      setError("We couldn't change this caregiver's access. No change has been made.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (loading) return <section className="mobile-settings-card"><p className="mobile-settings-hint" role="status">Loading caregiver access…</p></section>;
 
   return (
@@ -1177,8 +1204,17 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                     </select>
                   )}
                 </div>
-                {member.status === "active" && !member.can_manage_members && (
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => void revoke(member)}><X size={15} aria-hidden /> Remove</Button>
+                {!member.can_manage_members && member.status === "active" && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                    <Button type="button" variant="secondary" disabled={busy} onClick={() => void updateMemberStatus(member, "suspended")}><Shield size={15} aria-hidden /> Pause access</Button>
+                    <Button type="button" variant="secondary" disabled={busy} onClick={() => void revoke(member)}><X size={15} aria-hidden /> Remove</Button>
+                  </div>
+                )}
+                {!member.can_manage_members && member.status === "suspended" && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                    <Button type="button" variant="secondary" disabled={busy} onClick={() => void updateMemberStatus(member, "active")}><Check size={15} aria-hidden /> Restore access</Button>
+                    <Button type="button" variant="secondary" disabled={busy} onClick={() => void revoke(member)}><X size={15} aria-hidden /> Remove</Button>
+                  </div>
                 )}
               </div>
             ))}
