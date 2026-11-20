@@ -5,6 +5,9 @@ import path from "node:path";
 const root = process.cwd();
 const workspace = fs.readFileSync(path.join(root, "src/lib/workspace-context.tsx"), "utf8");
 const layout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
+const runtimeExports = fs.readFileSync(path.join(root, "src/lib/ui-runtime/index.ts"), "utf8");
+const situationStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/situation-store.ts"), "utf8");
+const timelineStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/timeline-store.ts"), "utf8");
 
 assert.match(workspace, /openSituationsFromSituationApi\(data\)/);
 assert.match(workspace, /situations:\s*fromServer/);
@@ -14,6 +17,9 @@ assert.doesNotMatch(workspace, /situations:\s*localSituations/);
 assert.doesNotMatch(workspace, /persistSituations\(|persistTimeline\(|persistActiveSituationId\(/);
 assert.doesNotMatch(workspace, /loadTimelineFromStorage\(|loadActiveSituationId\(/);
 assert.doesNotMatch(workspace, /loadSituationsFromStorage\(|localSituations/);
+assert.doesNotMatch(runtimeExports, /loadSituationsFromStorage|persistSituations|loadActiveSituationId|persistActiveSituationId|loadTimelineFromStorage|persistTimeline/);
+assert.doesNotMatch(situationStore, /localStorage/);
+assert.doesNotMatch(timelineStore, /localStorage/);
 assert.match(
   workspace,
   /Always replace the visible projection with the server result[\s\S]*?including an empty result/,
