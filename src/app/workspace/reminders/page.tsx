@@ -9,7 +9,7 @@ import { RecordState } from "@/components/ui/RecordState";
 
 type ReminderStatus = "open" | "completed" | "cancelled";
 
-type CaregiverMember = { caregiver_id: string; name: string; role: string };
+type CaregiverMember = { caregiver_id: string; name: string; role: string; can_complete_assigned_reminders: boolean };
 
 type CareReminderAssignmentEvent = {
   actor_caregiver_id: string;
@@ -99,7 +99,8 @@ export default function CareRemindersPage() {
     setReminders(items);
     const memberRows = Array.isArray(members) ? members as CaregiverMember[] : [];
     setAssignableMembers(memberRows);
-    setAssignedTo((current) => memberRows.some((member) => member.caregiver_id === current) ? current : session.caregiver.id);
+    const eligibleRows = memberRows.filter((member) => member.can_complete_assigned_reminders);
+    setAssignedTo((current) => eligibleRows.some((member) => member.caregiver_id === current) ? current : (eligibleRows[0]?.caregiver_id || ""));
     hasLoadedRef.current = true;
     setSnoozeSupported(items.length > 0 && items.every((item) => typeof item.snooze_count === "number"));
   }, []);
@@ -119,6 +120,11 @@ export default function CareRemindersPage() {
       active = false;
     };
   }, [refresh]);
+
+  const reminderAssignableMembers = useMemo(
+    () => assignableMembers.filter((member) => member.can_complete_assigned_reminders),
+    [assignableMembers],
+  );
 
   const visibleReminders = useMemo(() => {
     const items = filter === "all" ? reminders : reminders.filter((item) => item.status === filter);
@@ -256,8 +262,9 @@ export default function CareRemindersPage() {
         </label>
         <label>
           <span>Who is responsible?</span>
-          <select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>
-            {assignableMembers.map((member) => (
+          <select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)} disabled={reminderAssignableMembers.length === 0}>
+            {reminderAssignableMembers.length === 0 ? <option value="">No caregiver is currently eligible</option> : null}
+            {reminderAssignableMembers.map((member) => (
               <option key={member.caregiver_id} value={member.caregiver_id}>{member.name}</option>
             ))}
           </select>
@@ -272,7 +279,8 @@ export default function CareRemindersPage() {
             placeholder="What should be checked or clarified?"
           />
         </label>
-        <Button type="submit" variant="primary" disabled={saving || !title.trim() || !dueAt}>
+        {reminderAssignableMembers.length === 0 ? <p role="status">No active caregiver currently has permission to take responsibility for reminders. Update caregiver access before creating one.</p> : null}
+        <Button type="submit" variant="primary" disabled={saving || !title.trim() || !dueAt || reminderAssignableMembers.length === 0}>
           {saving ? "Saving…" : "Save reminder"}
         </Button>
       </form>
@@ -348,7 +356,7 @@ export default function CareRemindersPage() {
                       disabled={reminder.status !== "open" || busyId === reminder.id || assignableMembers.length === 0}
                       onChange={(event) => void reassignReminder(reminder, event.target.value)}
                     >
-                      {assignableMembers.map((member) => (
+                      {reminderAssignableMembers.map((member) => (
                         <option key={member.caregiver_id} value={member.caregiver_id}>{member.name}</option>
                       ))}
                     </select>
