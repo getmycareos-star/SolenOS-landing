@@ -57,3 +57,6 @@ console.log("Scope=frontend source contract; not a browser or deployed-system te
 
 assert.match(page, /The API paginates by immutable creation order[\s\S]*?displayOrdered[\s\S]*?deadline_at[\s\S]*?setLoops\(displayOrdered\)/,
   "caregiver priority ordering is restored only after the complete paginated list has been retrieved");
+
+assert.match(page, /response\.count !== expectedCount[\s\S]*?changed while it was being loaded/,
+  "follow-up pagination must fail visibly if the collection changes between pages");
