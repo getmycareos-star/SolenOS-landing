@@ -90,6 +90,44 @@ type LoopOccurrence = {
   created_at: string;
 };
 
+async function loadAllOpenLoops(): Promise<OpenLoop[]> {
+  const pageSize = 100;
+  const maximumPages = 100;
+  const records: OpenLoop[] = [];
+  const seenIds = new Set<string>();
+  let offset = 0;
+  let expectedCount: number | null = null;
+
+  for (let page = 0; page < maximumPages; page += 1) {
+    const response = await getJSON(`/open-loops?limit=${pageSize}&offset=${offset}`) as {
+      items?: unknown;
+      count?: unknown;
+    };
+    if (!Array.isArray(response.items) || typeof response.count !== "number" || !Number.isInteger(response.count) || response.count < 0) {
+      throw new Error("The saved follow-up history returned an incomplete page.");
+    }
+    expectedCount = response.count;
+    const rows = response.items as OpenLoop[];
+    if (rows.some((row) => !row || typeof row.id !== "string" || !row.id)) {
+      throw new Error("The saved follow-up history contained an invalid record.");
+    }
+    for (const row of rows) {
+      if (seenIds.has(row.id)) {
+        throw new Error("The saved follow-up history changed while it was being loaded. Refresh to try again.");
+      }
+      seenIds.add(row.id);
+      records.push(row);
+    }
+    if (records.length >= expectedCount) return records;
+    if (rows.length === 0) {
+      throw new Error("The saved follow-up history could not be fully retrieved.");
+    }
+    offset += rows.length;
+  }
+
+  throw new Error("The saved follow-up history is larger than the available page limit. No incomplete list was presented as complete.");
+}
+
 function dateLabel(value?: string | null): string {
   if (!value) return "Date not recorded";
   const date = new Date(value);
@@ -210,11 +248,11 @@ export default function FollowUpsPage() {
       setAttentionWarning("SolenOS could not refresh the status of every follow-up. Previously saved information is still shown.");
     }
     const [loopResult, assessmentResult] = await Promise.allSettled([
-      getJSON("/open-loops?limit=100"),
+      loadAllOpenLoops(),
       getJSON("/care-continuity/situation-understanding"),
     ]);
-    const nextLoops = loopResult.status === "fulfilled" && Array.isArray((loopResult.value as { items?: unknown }).items)
-      ? (loopResult.value as { items: OpenLoop[] }).items : null;
+    const nextLoops = loopResult.status === "fulfilled" && Array.isArray(loopResult.value)
+      ? loopResult.value : null;
     let nextAssessmentResponse = assessmentResult.status === "fulfilled" ? assessmentResult.value as SituationAssessmentResponse : null;
     let reassessmentFailed = false;
     if (nextAssessmentResponse && (nextAssessmentResponse.status === "not_assessed" || nextAssessmentResponse.source_freshness?.reassessment_recommended === true)) {
