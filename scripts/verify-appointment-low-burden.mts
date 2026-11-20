@@ -44,3 +44,8 @@ assert.ok(component.includes('!(brief.decision_outcomes?.length)'), 'outcome-onl
 
 assert.ok(component.includes('selectNextAppointment'), 'appointment support must target the nearest scheduled visit rather than the furthest future visit')
 assert.ok(component.includes('brief.next_appointment'), 'the caregiver summary must identify the next scheduled visit from the backend')
+
+assert.ok(component.includes("if (stage === 'after')"), 'saving an after-visit note must trigger outcome preparation automatically')
+assert.ok(component.includes('SolenOS prepared possible care updates for your review'), 'automatic preparation must keep suggestions pending caregiver review')
+assert.ok(component.includes('items.length === 0') && component.includes("latest.payload?.captureStage === 'after'"), 'reopening an after-visit record must recover missing review proposals')
+assert.ok(component.includes('outcomeProposals.length === 0'), 'manual retry must only appear when automatic proposal preparation produced no suggestions')
