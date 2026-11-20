@@ -286,6 +286,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ) {
           throw new Error('The saved conversation history did not match the active care session.')
         }
+        setConversationRestoreError(null)
         setSessionId(savedSessionId)
         setMessages(response.messages.map(message => ({
           role: message.role,
@@ -317,6 +318,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     const submittedText = (textOverride ?? input).trim()
       if (!submittedText || loading) return
     setRequestError(null)
+    setConversationRestoreError(null)
     setLoading(true)
     setEmergency(false)
     if (!pendingTurnId.current || pendingTurnText.current !== submittedText) {
@@ -588,6 +590,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     pendingTurnText.current = null
     setEmergency(false)
     setRequestError(null)
+    setConversationRestoreError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     textareaRef.current?.focus()
   }
