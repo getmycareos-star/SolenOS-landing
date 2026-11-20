@@ -980,21 +980,51 @@ export function LCRCurrentUnderstanding() {
       if (!session.person?.id || session.person.id !== change.person_id) {
         throw new Error("The selected change does not belong to the active care-record session.");
       }
-      const reason = (confirmationReason[change.id] || "").trim();
-      if ((status === "rejected" || status === "inconclusive") && !reason) {
-        throw new Error("Enter a reason before disputing this change or marking it as not confirmed.");
+      const enteredReason = (confirmationReason[change.id] || "").trim();
+      if ((status === "rejected" || status === "inconclusive") && !enteredReason) {
+        throw new Error("Add a note before disputing this change or saying you cannot confirm it.");
       }
-      await postJSON(
+      if (status === "confirmed" && (!Array.isArray(change.evidence_ids) || change.evidence_ids.length === 0)) {
+        throw new Error("This change has no linked saved information to review yet.");
+      }
+      // The API requires an auditable rationale for a confirmation. When the
+      // caregiver chooses Confirm without adding a note, record the action itself
+      // rather than forcing another piece of work onto the caregiver.
+      const reason = enteredReason || (status === "confirmed"
+        ? "Caregiver selected Confirm after reviewing the available saved information."
+        : "");
+      const saved = await postJSON(
         `/change/changes/${encodeURIComponent(session.person.id)}/${encodeURIComponent(change.id)}/confirmation`,
         { status, reason: reason || null, evidence_ids: change.evidence_ids },
-      );
-      const refreshed = await getJSON(
-        `/change/changes/${encodeURIComponent(session.person.id)}`
-      ) as PersistedChange[];
-      if (!Array.isArray(refreshed) || refreshed.some((item) => item.person_id !== session.person.id)) {
-        throw new Error("The refreshed change history did not match the active care-record session.");
+      ) as { change?: PersistedChange; new_status?: string };
+      if (!saved?.change || saved.change.id !== change.id ||
+          saved.change.person_id !== session.person.id ||
+          saved.change.confirmation_status !== status || saved.new_status !== status) {
+        throw new Error("The saved review could not be verified.");
       }
-      setChanges(refreshed);
+      // The write response is authoritative for this operation. Reflect it before
+      // attempting a separate history refresh, so a refresh outage cannot turn a
+      // successful save into a false "could not save" message.
+      setChanges((previous) => {
+        const found = previous.some((item) => item.id === change.id);
+        return found
+          ? previous.map((item) => item.id === change.id ? saved.change! : item)
+          : [saved.change!, ...previous];
+      });
+      try {
+        const refreshed = await getJSON(
+          `/change/changes/${encodeURIComponent(session.person.id)}`
+        ) as PersistedChange[];
+        if (!Array.isArray(refreshed) || refreshed.some((item) => item.person_id !== session.person.id)) {
+          throw new Error("The refreshed change history did not match the active care-record session.");
+        }
+        setChanges(refreshed);
+      } catch {
+        setConfirmationError((previous) => ({
+          ...previous,
+          [change.id]: "Your review was saved, but the care history could not be refreshed. Refresh the page to see the latest information.",
+        }));
+      }
     } catch (cause) {
       setConfirmationError((previous) => ({
         ...previous,
@@ -1913,7 +1943,7 @@ export function LCRCurrentUnderstanding() {
                     rows={2}
                     maxLength={2000}
                   />
-                  <small>Add context or explain why this change may be incorrect or uncertain.</small>
+                  <small>Add context if it would help. A note is required if you dispute this change or cannot confirm it. Your confirmation records your review; it does not independently verify a medical fact.</small>
                 </label>
                 {confirmationError[change.id] && <p role="alert">{confirmationError[change.id]}</p>}
                 {change.is_active !== false && !change.superseded_by_change_id ? (
@@ -1999,10 +2029,10 @@ export function LCRCurrentUnderstanding() {
                     )}
                   </div>
                 )}
-                {change.is_persistent === true && <small>Persistence: recorded as persistent{change.persistence_days != null ? ` for ${change.persistence_days} days` : ""}</small>}
-                {change.is_persistent === false && <small>Persistence: not established</small>}
+                {change.is_persistent === true && <small>Recorded on more than one occasion{change.persistence_days != null ? ` across ${change.persistence_days} days` : ""}</small>}
+                {change.is_persistent === false && <small>There is not enough information to tell whether this continued.</small>}
                 {(change.attention_candidate || change.follow_up_candidate) && (
-                  <small>{[change.attention_candidate ? "Attention candidate" : null, change.follow_up_candidate ? "Follow-up candidate" : null].filter(Boolean).join(" · ")}</small>
+                  <small>{[change.attention_candidate ? "May need attention" : null, change.follow_up_candidate ? "May need follow-up" : null].filter(Boolean).join(" · ")}</small>
                 )}
               </li>
             ))}

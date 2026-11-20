@@ -70,6 +70,29 @@ assert(
   "arch map documents regression durability",
 );
 
+// ─── Confirmation write contract ────────────────────────────────────────────
+const confirmationSource = fs.readFileSync(
+  path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"),
+  "utf8",
+);
+assert(
+  confirmationSource.includes("Caregiver selected Confirm after reviewing the available saved information."),
+  "Confirm supplies the backend-required audit rationale when the caregiver leaves the note blank",
+);
+assert(
+  confirmationSource.includes("saved.change.confirmation_status !== status || saved.new_status !== status"),
+  "confirmation write response is checked before treating the review as saved",
+);
+assert(
+  confirmationSource.includes("Your review was saved, but the care history could not be refreshed."),
+  "a post-save history refresh failure is not reported as a failed save",
+);
+assert(
+  confirmationSource.includes("does not independently verify a medical fact"),
+  "caregiver copy distinguishes review from independent medical verification",
+);
+console.log("✓ confirmation contract: rationale, persisted response, refresh failure and caregiver wording");
+
 // ─── 1) Refresh persistence ─────────────────────────────────────────────────
 resetAll("cg_lcr_persist");
 
