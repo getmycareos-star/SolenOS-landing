@@ -29,7 +29,8 @@ const required: Array<[string, RegExp]> = [
   ["records caregiver actions without claiming the outcome is verified", /function recordAction[\s\S]*?postJSON\("\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/actions"[\s\S]*?outcome has not been marked as verified/],
   ["does not expose a second general-purpose follow-up writer", /function shareUpdate[\s\S]*?const updatePayload =[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/outcomes`, updatePayload\)/],
   ["reassesses saved follow-ups before refreshing the page", /postJSON\("\/open-loops\/reassess"/],
-  ["loads repeat occurrences alongside update history", /\/occurrences\?limit=100/],
+  ["loads all follow-up event and occurrence history pages", /loadAllLoopRecords<LoopHistoryEvent>[\s\S]*?\/history[\s\S]*?loadAllLoopRecords<LoopOccurrence>[\s\S]*?\/occurrences/],
+  ["uses offset pagination and rejects duplicate or incomplete history pages", /async function loadAllLoopRecords[\s\S]*?offset=\$\{page \* pageSize\}[\s\S]*?seenIds\.has\(row\.id\)[\s\S]*?rows\.length < pageSize/],
 ];
 
 for (const [label, pattern] of required) {
