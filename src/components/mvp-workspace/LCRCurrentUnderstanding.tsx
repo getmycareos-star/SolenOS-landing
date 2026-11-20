@@ -1374,6 +1374,8 @@ export function LCRCurrentUnderstanding() {
               </ul>
               {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open your full care history to review the rest.</p>}
             </>
+          ) : projection && (projection.missing_required_sources.length > 0 || projection.missing_optional_sources.length > 0) ? (
+            <RecordState kind="incomplete" title="Some care history could not be loaded" description="We could not check every saved source just now. Refresh to try again." onAction={() => void load(true)} />
           ) : projection ? (
             <RecordState kind="first-empty" title="No care updates recorded yet" description="Care information added to this record will appear here." />
           ) : (
@@ -1998,8 +2000,8 @@ export function LCRCurrentUnderstanding() {
             </ul>
             {projection.outcomes_has_more && <p>More saved care history is available in your full care history.</p>}
           </>
-        ) : projection?.missing_optional_sources?.some((source) => ["decision_outcomes", "action_outcomes", "follow_up_links"].includes(source)) ? (
-          <p>Some saved outcomes are not available right now. Try refreshing later.</p>
+        ) : !projection || projection.missing_required_sources.length > 0 || projection.missing_optional_sources.some((source) => ["decision_outcomes", "action_outcomes", "follow_up_links"].includes(source)) ? (
+          <p>Some saved outcomes may not be available right now. Refresh your care history to try again.</p>
         ) : (
           <p>No follow-up outcomes have been recorded yet.</p>
         )}
