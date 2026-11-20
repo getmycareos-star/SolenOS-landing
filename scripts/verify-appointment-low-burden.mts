@@ -55,5 +55,7 @@ assert.ok(component.includes('Your saved appointment note is still stored, but i
 assert.ok(component.includes('Some saved appointment details could not be refreshed. Your saved information has not been changed. Try again.'))
 assert.ok(component.includes('setReloadToken(value => value + 1)'))
 assert.ok(component.includes('Try again'))
+assert.ok(component.includes("getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-proposals')"), 'manual refresh must reload saved review proposals as well as the outcome draft')
+assert.ok(component.includes('Saved appointment information could not be fully refreshed. Your saved notes have not been changed. Try again.'), 'refresh failures must be visible without implying saved notes were lost')
 
 console.log('PASS: low-burden appointment preparation, optional capture, linked follow-ups, review boundaries and retry handling')
