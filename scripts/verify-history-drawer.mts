@@ -53,7 +53,7 @@ assert.match(drawer, /shouldShowLcrRevision/);
 assert.match(drawer, /REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE/);
 assert.match(drawer, /mapDecision/);
 assert.match(drawer, /mapOutcome/);
-assert.match(drawer, /getJSON\("\\/open-loops\?limit=100"\)/, "saved follow-ups must be retrieved from the authenticated follow-up service");
+assert.ok(drawer.includes('getJSON("/open-loops?limit=100")'), "saved follow-ups must be retrieved from the authenticated follow-up service");
 assert.match(drawer, /mapFollowUp/, "persisted follow-ups must be represented in care history using their saved fields");
 assert.match(drawer, /const followUpResult = results\[8\]/, "follow-up retrieval must have an independent result state");
 assert.match(drawer, /Previous saved details/);
