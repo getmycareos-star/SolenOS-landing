@@ -2471,6 +2471,98 @@ await record("12b invited caregiver sees the shared care record in a separate br
   await settingsPage.getByRole("button", { name: "End role", exact: true }).waitFor({ state: "detached", timeout: 20_000 });
   await settingsPage.getByRole("button", { name: "End responsibility", exact: true }).click();
   await settingsPage.getByRole("button", { name: "End responsibility", exact: true }).waitFor({ state: "detached", timeout: 20_000 });
+  // Explicit sharing is the boundary for cross-caregiver perspective comparison.
+  const primaryProfile = await request("/api/v1/caregiver-profiles/current", { token: identity.token });
+  assert.equal(primaryProfile.status, 200, JSON.stringify(primaryProfile.payload));
+  const primaryPerspective = await request("/api/v1/caregiver-perspectives", {
+    token: identity.token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      caregiver_id: primaryProfile.payload.id,
+      claim_type: "observation",
+      claim_content: "Primary caregiver reports that Mum fell yesterday.",
+    },
+  });
+  const invitedPerspective = await request("/api/v1/caregiver-perspectives", {
+    token: accepted.payload.access_token,
+    method: "POST",
+    body: {
+      person_id: identity.personId,
+      caregiver_id: currentCaregiverProfile.payload.id,
+      claim_type: "observation",
+      claim_content: "Invited caregiver reports that Mum did not fall.",
+    },
+  });
+  assert.equal(primaryPerspective.status, 200, JSON.stringify(primaryPerspective.payload));
+  assert.equal(invitedPerspective.status, 200, JSON.stringify(invitedPerspective.payload));
+
+  const privateSummary = await request("/api/v1/multi-caregiver-summary", { token: identity.token });
+  assert.equal(privateSummary.status, 200, JSON.stringify(privateSummary.payload));
+  assert.equal(privateSummary.payload.perspective_conflicts.length, 0,
+    "private caregiver perspectives must not create or expose network conflicts");
+  const privateSharedRead = await request(
+    `/api/v1/caregiver-perspectives/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(privateSharedRead.status, 200, JSON.stringify(privateSharedRead.payload));
+  assert.equal(privateSharedRead.payload.length, 0,
+    "private perspectives must not appear in the shared perspective endpoint");
+
+  const primaryPromotion = await request(
+    `/api/v1/caregiver-perspectives/${encodeURIComponent(primaryPerspective.payload.id)}/promote`,
+    { token: identity.token, method: "POST", body: {} },
+  );
+  assert.equal(primaryPromotion.status, 200, JSON.stringify(primaryPromotion.payload));
+  const oneSharedSummary = await request("/api/v1/multi-caregiver-summary", { token: identity.token });
+  assert.equal(oneSharedSummary.payload.perspective_conflicts.length, 0,
+    "one shared perspective is not enough to establish a cross-caregiver difference");
+
+  const invitedPromotion = await request(
+    `/api/v1/caregiver-perspectives/${encodeURIComponent(invitedPerspective.payload.id)}/promote`,
+    { token: accepted.payload.access_token, method: "POST", body: {} },
+  );
+  assert.equal(invitedPromotion.status, 200, JSON.stringify(invitedPromotion.payload));
+  const sharedSummary = await request("/api/v1/multi-caregiver-summary", { token: identity.token });
+  assert.equal(sharedSummary.status, 200, JSON.stringify(sharedSummary.payload));
+  assert.equal(sharedSummary.payload.perspective_conflicts.length, 1,
+    "the conflict must appear only after both caregivers explicitly share their accounts");
+  const sharedConflict = sharedSummary.payload.perspective_conflicts[0];
+  assert.equal(sharedConflict.status, "conflicting");
+  assert.deepEqual(
+    new Set([sharedConflict.claim_a, sharedConflict.claim_b]),
+    new Set([
+      "Primary caregiver reports that Mum fell yesterday.",
+      "Invited caregiver reports that Mum did not fall.",
+    ]),
+  );
+
+  await settingsPage.reload();
+  await settingsPage.locator("#settings-caregivers summary").click();
+  await settingsPage.getByText("Different caregiver accounts", { exact: true }).waitFor({ timeout: 20_000 });
+  await settingsPage.getByLabel("Perspective review explanation").fill(
+    "The caregivers describe different accounts. Keep both reports separately attributed; do not choose either as an established care fact.",
+  );
+  await settingsPage.getByRole("button", { name: "Complete review", exact: true }).click();
+  await settingsPage.getByText("Different caregiver accounts", { exact: true }).waitFor({ state: "detached", timeout: 20_000 });
+  const resolvedConflictRead = await request(
+    `/api/v1/perspective-conflicts/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(resolvedConflictRead.status, 200, JSON.stringify(resolvedConflictRead.payload));
+  assert.equal(resolvedConflictRead.payload.length, 0,
+    "the completed review must close the network review item without deleting either report");
+  const preservedPrimaryPerspective = await request(
+    `/api/v1/caregiver-perspectives/${encodeURIComponent(identity.personId)}?caregiver_id=${encodeURIComponent(primaryProfile.payload.id)}`,
+    { token: identity.token },
+  );
+  const preservedInvitedPerspective = await request(
+    `/api/v1/caregiver-perspectives/${encodeURIComponent(identity.personId)}?caregiver_id=${encodeURIComponent(currentCaregiverProfile.payload.id)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.ok(preservedPrimaryPerspective.payload.some((item) => item.id === primaryPerspective.payload.id));
+  assert.ok(preservedInvitedPerspective.payload.some((item) => item.id === invitedPerspective.payload.id));
+
   await settingsBrowser.context.close();
   await context.close();
 
