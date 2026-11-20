@@ -22,7 +22,7 @@ assert.ok(component.includes('setRecord(null)'))
 // Follow-ups retain their appointment/workspace lineage in the caregiver view.
 assert.ok(component.includes('appointment_id?: string | null'))
 assert.ok(component.includes('source_workspace_id?: string | null'))
-assert.ok(component.includes('Linked to this care record\'s appointment'))
+assert.ok(component.includes('brief.appointments.find(appointment => appointment.source_id === item.appointment_id)'))
 
 // Capture is optional. Voice capture is intentionally not part of this release.
 assert.ok(component.includes('You can leave this empty and return later.'))
