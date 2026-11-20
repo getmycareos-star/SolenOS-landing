@@ -27,12 +27,14 @@ assert.ok(component.includes("await load(true);") && component.includes("await r
 assert.match(loadBody, /solenos\.workspace\.first-care-ready/, "first-care readiness must be measurable locally");
 assert.match(loadBody, /solenos\.journey\.landing-to-first-care/, "landing-to-care readiness must be measurable locally");
 
-const refreshStart = component.indexOf("const refreshSituationAssessment = useCallback(async () => {");
+const refreshStart = component.indexOf("const refreshSituationAssessment = useCallback(async (): Promise<boolean> => {");
 const refreshEnd = component.indexOf("}, []);", refreshStart);
 assert.ok(refreshStart >= 0 && refreshEnd > refreshStart, "manual care reassessment must be a stable callback");
 const refreshBody = component.slice(refreshStart, refreshEnd);
 assert.ok(refreshBody.includes("ensureAnonymousSession()"), "reassessment must resolve the active server session instead of capturing stale component state");
-assert.ok(component.includes("}, [load, refreshSituationAssessment]);"), "care-write listener must subscribe to the stable reassessment callback");
+assert.ok(component.includes("const refreshWholeRecord = useCallback(async () => {"), "care-write refresh orchestration must be memoized");
+assert.ok(component.includes("}, [refreshSituationAssessment, load]);"), "refresh orchestration must track its stable dependencies");
+assert.ok(component.includes("}, [load, refreshWholeRecord]);"), "care-write listener must subscribe to the stable refresh orchestration callback");
 
 assert.match(component, /schema_status !== "complete"/, "incomplete source coverage must be visible");
 assert.match(component, /missing_required_sources/, "required source gaps must not be hidden");
