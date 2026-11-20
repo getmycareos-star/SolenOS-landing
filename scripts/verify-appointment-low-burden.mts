@@ -49,3 +49,6 @@ assert.ok(component.includes("if (stage === 'after')"), 'saving an after-visit n
 assert.ok(component.includes('SolenOS prepared possible care updates for your review'), 'automatic preparation must keep suggestions pending caregiver review')
 assert.ok(component.includes('items.length === 0') && component.includes("latest.payload?.captureStage === 'after'"), 'reopening an after-visit record must recover missing review proposals')
 assert.ok(component.includes('outcomeProposals.length === 0'), 'manual retry must only appear when automatic proposal preparation produced no suggestions')
+
+assert.ok(component.includes('items.find(item => item.appointment_id === selectedAppointmentId)'), 'an upcoming visit must not inherit a previous appointment workspace')
+assert.ok(component.includes('setRecord(null)'), 'a new appointment with no saved workspace must not retain stale appointment notes')
