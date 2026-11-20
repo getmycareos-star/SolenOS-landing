@@ -161,13 +161,18 @@ const stageStatus: Record<Stage, string> = {
 
 const selectNextAppointment = (brief: PreparationBrief) => {
   if (brief.next_appointment) return brief.next_appointment
-  return [...brief.appointments]
+  const recorded = [...brief.appointments]
+  const upcoming = recorded
     .filter(item => ['scheduled', 'upcoming', 'today', 'rescheduled', 'date_unknown'].includes(item.status.toLowerCase()))
     .sort((a, b) => {
       const aTime = a.scheduled_at ? Date.parse(a.scheduled_at) : Number.MAX_SAFE_INTEGER
       const bTime = b.scheduled_at ? Date.parse(b.scheduled_at) : Number.MAX_SAFE_INTEGER
       return aTime - bTime
-    })[0] || null
+    })[0]
+  if (upcoming) return upcoming
+  // When there is no future visit, return to the most recent recorded
+  // completed visit so after-appointment continuity remains attached to it.
+  return recorded.find(item => ['completed', 'resolved', 'historical'].includes(item.status.toLowerCase())) || null
 }
 
 export default function AppointmentWorkspace() {
@@ -203,6 +208,7 @@ export default function AppointmentWorkspace() {
     if (!open) return
     let cancelled = false
     setLoading(true)
+    setStage('prepare')
     setError('')
     setMessage('')
     setBrief(null)
@@ -235,6 +241,9 @@ export default function AppointmentWorkspace() {
           const nextAppointment = selectNextAppointment(briefResult.value)
           selectedAppointmentId = nextAppointment?.source_id || null
           setAppointmentId(selectedAppointmentId || '')
+          if (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) {
+            setStage('after')
+          }
         } else {
           setError('Your visit summary could not be loaded. Your care record has not been changed.')
         }
@@ -242,7 +251,7 @@ export default function AppointmentWorkspace() {
           const items = workspaceResult.value.items || []
           let latest = selectedAppointmentId
             ? items.find(item => item.appointment_id === selectedAppointmentId) || null
-            : items.find(item => !item.appointment_id) || null
+            : null
           // Prepare and persist the workspace automatically for an existing
           // scheduled appointment. The caregiver does not complete a form.
           // This creates continuity workspace only; it does not book a visit.
@@ -501,6 +510,10 @@ export default function AppointmentWorkspace() {
   }
 
   const saveNote = async () => {
+    if (!appointmentId && !record?.appointment_id) {
+      setError('There is no existing appointment record to attach this note to. SolenOS has not created an unlinked appointment record.')
+      return
+    }
     if (!note.trim() && !professionalStatement.trim() && !recordedDecisions.trim() && !recordedInstructions.trim() && !unansweredQuestions.trim()) {
       setMessage('Nothing to save. You can continue without adding a note.')
       if (stage === 'after' && record) {
