@@ -102,6 +102,15 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
   await page.route("**/api/**", async (route) => {
     try {
+      // route.fetch() runs outside Chromium and otherwise bypasses
+      // browserContext.setOffline(true). Preserve the browser's offline
+      // semantics so offline-queue acceptance tests exercise a real failed
+      // browser request rather than a successful Node-side proxy request.
+      const browserOnline = await page.evaluate(() => navigator.onLine).catch(() => true);
+      if (!browserOnline) {
+        await route.abort("internetdisconnected");
+        return;
+      }
       const source = new URL(route.request().url());
       const target = new URL(source.pathname + source.search, backend);
       const headers = { ...route.request().headers() };
