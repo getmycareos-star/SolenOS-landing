@@ -232,3 +232,12 @@ assert.match(currentUnderstanding, /projection\.missing_required_sources\.length
 assert.match(currentUnderstanding, /!projection \|\| projection\.missing_required_sources\.length > 0[\s\S]*?Some saved outcomes may not be available right now/, "unavailable outcome history is distinguished from no recorded outcomes");
 
 assert.match(currentUnderstanding, /reported_by_caregiver_id[\s\S]*?another caregiver/, "the saved source shows whether it was shared by the current caregiver or another caregiver without exposing internal IDs");
+
+assert.match(currentUnderstanding, /retryHistorySource = useCallback[\s\S]*?current-care\?limit_per_source=12&source=/,
+  "each failed care-history source can be retried independently");
+assert.match(currentUnderstanding, /response\.requested_sources\?\.length !== 1[\s\S]*?response\.requested_sources\[0\] !== sourceName/,
+  "a source retry must return only the requested history category");
+assert.match(currentUnderstanding, /sourceRecoveryPanel[\s\S]*?Retrying…[\s\S]*?Retry/,
+  "failed and partial care-history sources expose a category-specific retry action");
+assert.match(currentUnderstanding, /failed_sources\?: string\[\]/,
+  "the caregiver UI consumes explicit failed-source coverage rather than treating it as an empty list");
