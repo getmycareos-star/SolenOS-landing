@@ -268,7 +268,7 @@ if (openApiUrl) {
       continue;
     }
     const pattern = new RegExp("^" + path.split("/").map(segment =>
-      segment === "{param}" ? "[^/]+" : escapeRegex(segment)
+      segment.split("{param}").map(escapeRegex).join("[^/]+")
     ).join("/") + "$");
     const matches = registered.filter(route => route.method === method && pattern.test(route.path));
     if (matches.length) {
@@ -282,6 +282,9 @@ if (openApiUrl) {
     .filter(route => !matchedOperationKeys.has(route.method + " " + route.path))
     .map(route => ({ method_path: route.method.toUpperCase() + " " + route.path }));
   const routeInventoryPath = process.env.SOLENOS_ROUTE_INVENTORY_PATH;
+  if (!routeInventoryPath) {
+    throw new Error("SOLENOS_ROUTE_INVENTORY_PATH is required when comparing frontend calls to the backend OpenAPI contract.");
+  }
   let unconsumedInternal: Array<{ method_path: string; consumer: string; source: string }> = [];
   let unconsumedFrontend: Array<{ method_path: string; consumer: string; source: string }> = [];
   let classificationGaps: Array<{ method_path: string }> = [];
