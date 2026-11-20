@@ -183,7 +183,7 @@ export default function CareContinuityIntegrityPanel({
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => void load()} disabled={loading}>
-          {loading ? 'Refreshing…' : 'Refresh Care Record details'}
+          {loading ? 'Refreshing…' : 'Refresh care information'}
         </button>
       </div>
 
@@ -192,7 +192,7 @@ export default function CareContinuityIntegrityPanel({
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Care details shared with SolenOS</h3>
-        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care details have been shared yet.</p> : data.assertions.map((item) => {
+        {data.assertions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care information has been added yet.</p> : data.assertions.map((item) => {
           const fresh = freshnessById.get(item.id)
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -200,14 +200,14 @@ export default function CareContinuityIntegrityPanel({
               <span style={{ fontSize: 12 }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Review: {simpleRecordLabel(item.assertion_status)}
+              Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Review progress: {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: 12, margin: '5px 0' }}>{caregiverSafeAssistantText(fresh.explanation) || 'No further explanation is available.'}</p>}
             {item.source_text && <><small>Original words</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12 }}>{caregiverSafeAssistantText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
-                ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as checked by a caregiver</button>
-                : <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No review date has been set for this report.</p>
+                ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as reviewed</button>
+                : <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No review date has been set.</p>
             )}
           </article>
         })}
@@ -216,8 +216,8 @@ export default function CareContinuityIntegrityPanel({
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>Care history</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>See how saved care information has changed over time.</p>
-        {caregiverVisibleRevisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No care changes are available to show here yet.</p> : caregiverVisibleRevisions.slice(0, 20).map((item) =>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>See when care information was added or updated.</p>
+        {caregiverVisibleRevisions.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No changes have been recorded yet.</p> : caregiverVisibleRevisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
             <strong>{item.target_type === 'person' || item.target_type === 'persons' ? 'Care recipient information' : item.target_type === 'caregiver' || item.target_type === 'caregivers' ? 'Caregiver information' : 'Care record information'}</strong>
             <p style={{ fontSize: 12, margin: '5px 0' }}>Updated {new Date(item.changed_at).toLocaleString()} · {simpleRecordLabel(item.change_kind)}</p>
@@ -228,10 +228,10 @@ export default function CareContinuityIntegrityPanel({
 
       <div style={cardStyle}>
         <h3 style={{ fontSize: 15, marginTop: 0 }}>What happened next and corrections</h3>
-        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No updates about what happened next are available yet.</p> : data.outcomes.slice(0, 20).map((item) =>
+        {data.outcomes.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No outcomes have been recorded yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>
             <strong>{simpleRecordLabel(item.outcome_status)}</strong> · {new Date(item.created_at).toLocaleString()}
-            {item.notes && <p>{caregiverSafeAssistantText(item.notes) || 'No further details are available.'}</p>}{item.correction_text && <p><strong>Correction shared:</strong> {caregiverSafeAssistantText(item.correction_text) || 'A correction was recorded.'}</p>}
+            {item.notes && <p>{caregiverSafeAssistantText(item.notes) || 'No further details are available.'}</p>}{item.correction_text && <p><strong>Correction:</strong> {caregiverSafeAssistantText(item.correction_text) || 'A correction was recorded.'}</p>}
           </div>
         )}
       </div>
