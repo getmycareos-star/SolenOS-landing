@@ -4,6 +4,7 @@ import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import {
   discardBlockedDurableWrites,
   getDurableWriteSummary,
@@ -656,7 +657,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       setMedicationRecordName(""); setMedicationRecordDose(""); setMedicationRecordNote("");
       setMedicationRecordMessage("Added as a caregiver report. Review it below before it appears as a current medication.");
       window.dispatchEvent(new Event("careRecordUpdated"));
-    } catch (error) { setMedicationRecordError(error instanceof Error ? error.message : "We couldn’t save this medication report. Try again."); }
+    } catch { setMedicationRecordError(caregiverSafeErrorMessage()); }
     finally { setMedicationRecordSaving(false); }
   };
 
@@ -667,7 +668,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       if (result?.record_status !== "caregiver_reviewed_current_report") throw new Error("The care record did not confirm the medication review.");
       setMedicationRecordMessage("Reviewed. This caregiver-reported medication is now available as a current choice.");
       window.dispatchEvent(new Event("careRecordUpdated"));
-    } catch (error) { setMedicationRecordError(error instanceof Error ? error.message : "We couldn’t save the medication review. Try again."); }
+    } catch { setMedicationRecordError(caregiverSafeErrorMessage()); }
     finally { setMedicationRecordReviewing(null); }
   };
   // Add a vital to the current daily-capture draft. It is persisted when the
