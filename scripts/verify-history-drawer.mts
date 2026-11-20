@@ -74,7 +74,8 @@ assert.ok(structuredCapture.indexOf("she's loosing weight") < structuredCapture.
 assert.ok(structuredCapture.indexOf("Mood: 5 — she's sad") < structuredCapture.indexOf("Blood pressure (top number): 10 mmHg — yes"));
 assert.match(structuredCapture, /not been independently checked/);
 assert.doesNotMatch(structuredCapture, /capture_idempotency_key|capture_request_fingerprint|internal-key|internal-fingerprint/);
-assert.match(drawer, /caregiverReadableCaptureText/, "history details use the shared caregiver-readable source formatter");
+assert.match(drawer, /caregiverFieldLabel/, "history details use shared caregiver-readable field labels");
+assert.match(drawer, /caregiverSafeAssistantText/, "history details sanitize caregiver-provided source text before display");
 assert.match(evidenceReview, /caregiverReadableCaptureText\(selected\.source_text\)/, "evidence review must not print serialized capture JSON to caregivers");
 assert.match(evidenceReview, /caregiverReadableCaptureText\(item\.source_passage\)/, "individual source passages must be shown in caregiver-readable language");
 assert.match(evidenceReview, /item\.observation_method !== 'Daily Care form'/, "structured source values are not redundantly repeated below their readable source passage");
