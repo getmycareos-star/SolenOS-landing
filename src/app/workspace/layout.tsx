@@ -72,11 +72,24 @@ function CareContextBar() {
  * Data authorization remains enforced by the API for every protected request.
  */
 function WorkspaceEntryGate({ children }: { children: ReactNode }) {
-  const { entryReady } = useWorkspace();
+  const { entryReady, recordLoadError } = useWorkspace();
   if (!entryReady) {
     return (
       <main className="workspace-route-loading" role="status" aria-live="polite">
         <BrandLoading animate message="Preparing your care workspace…" />
+      </main>
+    );
+  }
+  if (recordLoadError) {
+    return (
+      <main className="workspace-route-loading" role="alert" aria-live="assertive">
+        <section style={{ maxWidth: 440, padding: 24, textAlign: "center" }}>
+          <h1 style={{ fontSize: 20 }}>Your care information isn’t available right now.</h1>
+          <p>Check your connection and try again. Your saved care information has not been replaced.</p>
+          <button type="button" onClick={() => window.location.reload()}>
+            Try again
+          </button>
+        </section>
       </main>
     );
   }
