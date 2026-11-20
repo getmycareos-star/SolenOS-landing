@@ -918,6 +918,21 @@ await record("01c workspace links, browser back, More menu and account form vali
   }).count();
   assert.equal(familyClaimReviewCount, new Set(familyDraft.generation.sections.map(item => item.source_ref)).size,
     "every distinct LCR source claim must have its own review acknowledgement before sharing");
+  if (familyClaimReviewCount >= 2) {
+    const familySourceReviews = familyDialog.getByRole("checkbox", {
+      name: /I checked this summary item against the saved wording, dates and what is known or still uncertain/,
+    });
+    await familySourceReviews.first().check();
+    const removeSectionButtons = familyDialog.getByRole("button", { name: "Remove section from this draft", exact: true });
+    await removeSectionButtons.last().click();
+    await page.waitForFunction(() => {
+      const checks = Array.from(document.querySelectorAll('[role="dialog"] input[type="checkbox"]'))
+        .filter(input => input.parentElement?.textContent?.includes("I checked this summary item against the saved wording"));
+      return checks.length > 0 && checks.every(input => !input.checked);
+    }, undefined, { timeout: 5_000 });
+    assert.equal(await familySourceReviews.count(), familyClaimReviewCount - 1,
+      "removing a briefing item must remove it from the current review set");
+  }
   await familyDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
 
   await page.evaluate(() => {
