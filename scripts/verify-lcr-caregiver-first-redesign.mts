@@ -17,6 +17,10 @@ const durableWriteSender = fs.readFileSync("src/lib/offline-sync/send-queued-car
 const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
+const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
+const navigation = fs.readFileSync("src/lib/workspace-navigation.ts", "utf8");
+const howItWorks = fs.readFileSync("src/app/how-it-works/page.tsx", "utf8");
+const publicHome = fs.readFileSync("src/app/page.tsx", "utf8");
 
 assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR home must redirect to the Companion");
 assert.doesNotMatch(legacyRoute, /SOLENOS · LIVING CARE RECORD|Record timeline|Add to record|CognitiveWorkspace/, "old LCR interface must not be rendered as a separate home");
@@ -201,4 +205,10 @@ assert.doesNotMatch(currentUnderstanding, /Compared: Time not recorded.*Time not
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
+assert.match(companion, /AI Companion/, "the caregiver-facing assistant is named AI Companion");
+assert.doesNotMatch(companion, /Care Assistant/, "the old product name is not shown in the companion");
+assert.match(navigation, /label: "AI Companion"/, "workspace navigation uses the AI Companion name");
+assert.doesNotMatch(howItWorks, /Care Assistant/, "public product explanations use AI Companion");
+assert.doesNotMatch(publicHome, /Care Assistant/, "the public home page uses AI Companion");
+
 console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
