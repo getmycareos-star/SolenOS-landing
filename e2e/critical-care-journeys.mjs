@@ -1773,6 +1773,60 @@ await record("Daily Care capture survives secondary read failures", async () => 
       "/api/v1/documents/status",
     ].includes(item.path)
   ), "the browser journey must confirm that a secondary read actually failed");
+
+  // Original photo bytes use the same encrypted, identity-scoped queue.
+  const tinyPng = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p0cAAAAASUVORK5CYII=",
+    "base64",
+  );
+  await resilient.context.setOffline(true);
+  await resilient.page.locator("#daily-care-photo-file").setInputFiles({
+    name: "offline-care-photo.png",
+    mimeType: "image/png",
+    buffer: tinyPng,
+  });
+  await resilient.page.getByRole("button", { name: "Save photograph", exact: true }).click();
+  await resilient.page.getByRole("alert")
+    .filter({ hasText: "photo is encrypted and saved on this device" })
+    .waitFor({ timeout: 10_000 });
+  const photoQueueRows = await resilient.page.evaluate(async () => {
+    return await new Promise((resolve, reject) => {
+      const open = indexedDB.open("solenos-durable-write-queue", 1);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const transaction = open.result.transaction("writes", "readonly");
+        const request = transaction.objectStore("writes").getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      };
+    });
+  });
+  assert.ok(photoQueueRows.some((row) => row.endpoint === "/upload"),
+    "the original photo must be queued before the upload request is acknowledged");
+  assert.equal(JSON.stringify(photoQueueRows).includes("offline-care-photo.png"), false,
+    "the photo filename and bytes must remain inside the encrypted queue payload");
+  await resilient.page.waitForTimeout(1_200);
+  const photoSyncResponsePromise = resilient.page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/v1/upload")
+    && response.request().method() === "POST"
+  );
+  await resilient.context.setOffline(false);
+  const photoSyncResponse = await photoSyncResponsePromise;
+  const photoSyncPayload = await photoSyncResponse.json();
+  assert.equal(photoSyncResponse.status(), 201, JSON.stringify(photoSyncPayload));
+  assert.equal(photoSyncPayload.persisted, true, JSON.stringify(photoSyncPayload));
+  assert.ok(typeof photoSyncPayload.evidence_id === "string" && photoSyncPayload.evidence_id);
+  await resilient.page.getByRole("status")
+    .filter({ hasText: "Photograph saved as care-record evidence." })
+    .waitFor({ timeout: 15_000 });
+  const retrievedPhoto = await request(
+    `/api/v1/upload/${photoSyncPayload.evidence_id}`,
+    { token: resilientIdentity.token },
+  );
+  assert.equal(retrievedPhoto.status, 200, JSON.stringify(retrievedPhoto.payload));
+  assert.ok(typeof retrievedPhoto.payload === "string" && retrievedPhoto.payload.length > 0,
+    "the original uploaded photo bytes must remain retrievable after offline synchronization");
+
   await verifyMobile(resilient.page);
   await resilient.context.close();
 });
