@@ -2609,6 +2609,13 @@ await record("12b invited caregiver sees the shared care record in a separate br
   assert.equal(sharedSummary.status, 200, JSON.stringify(sharedSummary.payload));
   assert.equal(sharedSummary.payload.perspective_conflicts.length, 1,
     "the conflict must appear only after both caregivers explicitly share their accounts");
+  const invitedSharedSummary = await request(
+    `/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}?person_id=${encodeURIComponent(identity.personId)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(invitedSharedSummary.status, 200, JSON.stringify(invitedSharedSummary.payload));
+  assert.equal(invitedSharedSummary.payload.perspective_conflicts.length, 1,
+    "every authorized caregiver must retrieve the same explicitly shared conflict");
   const sharedConflict = sharedSummary.payload.perspective_conflicts[0];
   assert.equal(sharedConflict.status, "conflicting");
   assert.deepEqual(
