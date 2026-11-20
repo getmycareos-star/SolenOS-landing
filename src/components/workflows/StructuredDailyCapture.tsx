@@ -663,8 +663,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   const handleReviewMedicationRecord = async (medicationId: string) => {
     setMedicationRecordReviewing(medicationId); setMedicationRecordError(null); setMedicationRecordMessage(null);
     try {
-      const path = "/care-continuity/medications/" + encodeURIComponent(medicationId) + "/review";
-      const result = await postJSON(path, {}) as { record_status?: string };
+      const result = await postJSON(`/care-continuity/medications/${encodeURIComponent(medicationId)}/review`, {}) as { record_status?: string };
       if (result?.record_status !== "caregiver_reviewed_current_report") throw new Error("The care record did not confirm the medication review.");
       setMedicationRecordMessage("Reviewed. This caregiver-reported medication is now available as a current choice.");
       window.dispatchEvent(new Event("careRecordUpdated"));
