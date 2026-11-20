@@ -978,9 +978,14 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <div>
                   <span className="mobile-settings-hint">Care availability and context</span>
                   {careContexts.slice(0, 5).map((item) => (
-                    <p key={item.id} style={{ margin: "0.2rem 0", fontSize: "0.88rem" }}>
-                      {item.proximity_category || "Care context"}{item.observation_window_start ? ` · ${item.observation_window_start}` : ""}{item.observation_window_end ? ` to ${item.observation_window_end}` : ""}
-                    </p>
+                    <div key={item.id} style={{ margin: "0.35rem 0", fontSize: "0.88rem" }}>
+                      <p style={{ margin: 0 }}>
+                        {item.proximity_category ? caregiverFieldLabel(item.proximity_category) : "Care context"}
+                        {item.observation_window_start ? ` · ${item.observation_window_start}` : ""}
+                        {item.observation_window_end ? ` to ${item.observation_window_end}` : ""}
+                      </p>
+                      {item.availability_notes && <p style={{ margin: "0.15rem 0", color: "var(--muted-foreground, #5f6b63)" }}>{item.availability_notes}</p>}
+                    </div>
                   ))}
                 </div>
               )}
