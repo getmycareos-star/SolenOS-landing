@@ -242,6 +242,7 @@ let backendContract: {
   unconsumed_backend_operations?: Array<{ method_path: string }>;
   unconsumed_internal_operations?: Array<{ method_path: string; consumer: string; source: string }>;
   unconsumed_frontend_operations?: Array<{ method_path: string; consumer: string; source: string }>;
+  unconsumed_intentionally_unused_operations?: Array<{ method_path: string; reason: string; source: string }>;
   unconsumed_classification_gaps?: Array<{ method_path: string }>;
 } = { enabled: false };
 
@@ -309,6 +310,7 @@ if (openApiUrl) {
     .map(route => ({ method_path: route.method.toUpperCase() + " " + route.path }));
   let unconsumedInternal: Array<{ method_path: string; consumer: string; source: string }> = [];
   let unconsumedFrontend: Array<{ method_path: string; consumer: string; source: string }> = [];
+  let unconsumedIntentionallyUnused: Array<{ method_path: string; reason: string; source: string }> = [];
   let classificationGaps: Array<{ method_path: string }> = [];
   for (const operation of unconsumed) {
     const route = routeByKey.get(operation.method_path);
@@ -323,6 +325,8 @@ if (openApiUrl) {
       unconsumedInternal.push({ ...operation, consumer: consumerName, source });
     } else if (route.disposition === "frontend_product_workflow" && consumer.type === "frontend") {
       unconsumedFrontend.push({ ...operation, consumer: consumerName, source });
+    } else if (route.disposition === "intentionally_unused" && consumer.type === "intentionally_unused") {
+      unconsumedIntentionallyUnused.push({ ...operation, reason: consumerName, source });
     } else {
       classificationGaps.push(operation);
     }
@@ -341,6 +345,7 @@ if (openApiUrl) {
     unconsumed_backend_operations: unconsumed,
     unconsumed_internal_operations: unconsumedInternal,
     unconsumed_frontend_operations: unconsumedFrontend,
+    unconsumed_intentionally_unused_operations: unconsumedIntentionallyUnused,
     unconsumed_classification_gaps: classificationGaps,
   };
 }
@@ -359,6 +364,7 @@ const report = {
   unconsumed_backend_operations: backendContract.unconsumed_backend_operations ?? [],
   unconsumed_internal_operations: backendContract.unconsumed_internal_operations ?? [],
   unconsumed_frontend_operations: backendContract.unconsumed_frontend_operations ?? [],
+  unconsumed_intentionally_unused_operations: backendContract.unconsumed_intentionally_unused_operations ?? [],
   unconsumed_classification_gaps: backendContract.unconsumed_classification_gaps ?? [],
   endpoints: [...grouped.entries()].map(([key, items]) => ({
     method_path: key,
