@@ -381,6 +381,41 @@ type ChangeAssertionEvidence = {
   evidence_ids: string[];
 };
 
+type ChangeObservationEvidence = {
+  id: string;
+  evidence_id: string;
+  observation_kind: string;
+  epistemic_status: string;
+  subject_label: string;
+  attribute: string;
+  value_text?: string | null;
+  normalized_value?: string | null;
+  units?: string | null;
+  observed_at?: string | null;
+  occurred_at?: string | null;
+  reported_at?: string | null;
+  recorded_at?: string | null;
+  observer_label?: string | null;
+  observation_method?: string | null;
+  source_passage: string;
+};
+
+type ChangeSourceEvidence = {
+  id: string;
+  type: string;
+  evidence_kind?: string | null;
+  epistemic_status?: string | null;
+  source_text?: string | null;
+  occurred_at?: string | null;
+  uploaded_at?: string | null;
+  ingested_at?: string | null;
+  reported_at?: string | null;
+  collection_method?: string | null;
+  origin_channel?: string | null;
+  reported_by_label?: string | null;
+  original_author?: string | null;
+};
+
 type ChangeConfirmationHistoryItem = {
   id: string;
   previous_status: string;
@@ -395,6 +430,8 @@ type ChangeDetail = {
   change: PersistedChange;
   evidence: ChangeEvidence[];
   assertions: ChangeAssertionEvidence[];
+  observations: ChangeObservationEvidence[];
+  source_evidence: ChangeSourceEvidence[];
   confirmation_history: ChangeConfirmationHistoryItem[];
 };
 
@@ -700,7 +737,15 @@ export function LCRCurrentUnderstanding() {
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
   const [patternsError, setPatternsError] = useState<string | null>(null);
   const [expandedChangeId, setExpandedChangeId] = useState<string | null>(null);
-  const [changeEvidence, setChangeEvidence] = useState<Record<string, { evidence: ChangeEvidence[]; assertions: ChangeAssertionEvidence[]; confirmation_history: ChangeConfirmationHistoryItem[]; error?: string }>>({});
+  const [changeEvidence, setChangeEvidence] = useState<Record<string, {
+    evidence: ChangeEvidence[];
+    assertions: ChangeAssertionEvidence[];
+    observations: ChangeObservationEvidence[];
+    source_evidence: ChangeSourceEvidence[];
+    confirmation_history: ChangeConfirmationHistoryItem[];
+    missing_source_count?: number;
+    error?: string;
+  }>>({});
   const [evidenceLoadingId, setEvidenceLoadingId] = useState<string | null>(null);
   const [confirmationReason, setConfirmationReason] = useState<Record<string, string>>({});
   const [confirmationError, setConfirmationError] = useState<Record<string, string>>({});
@@ -1013,19 +1058,44 @@ export function LCRCurrentUnderstanding() {
         `/change/changes/${encodeURIComponent(session.person.id)}/${encodeURIComponent(change.id)}`
       ) as ChangeDetail;
       if (!result?.change || result.change.id !== change.id ||
-          result.change.person_id !== session.person.id || !Array.isArray(result.evidence) || !Array.isArray(result.assertions) || !Array.isArray(result.confirmation_history) ||
-          result.evidence.some((item) => !change.evidence_ids.includes(item.id))) {
+          result.change.person_id !== session.person.id || !Array.isArray(result.evidence) ||
+          !Array.isArray(result.assertions) || !Array.isArray(result.observations) ||
+          !Array.isArray(result.source_evidence) || !Array.isArray(result.confirmation_history)) {
         throw new Error("The returned source information did not match the saved change review.");
       }
-      setChangeEvidence((previous) => ({ ...previous, [change.id]: { evidence: result.evidence, assertions: result.assertions, confirmation_history: result.confirmation_history } }));
+      const returnedSourceIds = [
+        ...result.evidence.map((item) => item.id),
+        ...result.assertions.map((item) => item.id),
+        ...result.observations.map((item) => item.id),
+        ...result.source_evidence.map((item) => item.id),
+      ];
+      if (returnedSourceIds.some((id) => !change.evidence_ids.includes(id))) {
+        throw new Error("The returned source information did not match the saved change review.");
+      }
+      const returnedSourceIdSet = new Set(returnedSourceIds);
+      const missingSourceCount = change.evidence_ids.filter((id) => !returnedSourceIdSet.has(id)).length;
+      setChangeEvidence((previous) => ({
+        ...previous,
+        [change.id]: {
+          evidence: result.evidence,
+          assertions: result.assertions,
+          observations: result.observations,
+          source_evidence: result.source_evidence,
+          confirmation_history: result.confirmation_history,
+          missing_source_count: missingSourceCount,
+        },
+      }));
     } catch (cause) {
       setChangeEvidence((previous) => ({
         ...previous,
         [change.id]: {
           evidence: [],
           assertions: [],
+          observations: [],
+          source_evidence: [],
           confirmation_history: [],
-          error: "Supporting evidence could not be loaded.",
+          missing_source_count: change.evidence_ids.length,
+          error: "Supporting information could not be loaded.",
         },
       }));
     } finally {
@@ -1360,14 +1430,53 @@ export function LCRCurrentUnderstanding() {
                   <p>{caregiverSafeChangeText(change.explanation) || "A possible change was saved. Its importance has not been established."}</p>
                   <small>Compared {formatWhen(change.comparison_window_start)} – {formatWhen(change.comparison_window_end)}</small>
                   <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
-                    {evidenceLoadingId === change.id ? "Loading notes and documents…" : expandedChangeId === change.id ? "Hide notes and documents" : "Review the notes and documents"}
+                    {evidenceLoadingId === change.id ? "Loading supporting information…" : expandedChangeId === change.id ? "Hide supporting information" : "Review supporting information"}
                   </button>
                   {expandedChangeId === change.id && changeEvidence[change.id]?.error && <p role="status">{changeEvidence[change.id]?.error}</p>}
+                  {expandedChangeId === change.id && changeEvidence[change.id]?.missing_source_count ? (
+                    <p role="status">Some of the information linked to this change could not be found. The available sources are still shown.</p>
+                  ) : null}
                   {expandedChangeId === change.id && changeEvidence[change.id]?.evidence.map((source) => (
                     <article key={source.id}>
                       <strong>{caregiverSafeAssistantText(source.title) || "Saved care record"}</strong>
                       {displayDescription(source.description) && <p>{displayDescription(source.description)}</p>}
                       <small>Happened {formatWhen(source.occurred_at)} · Saved {formatWhen(source.recorded_at)}</small>
+                    </article>
+                  ))}
+                  {expandedChangeId === change.id && changeEvidence[change.id]?.source_evidence.map((source) => (
+                    <article key={source.id}>
+                      <strong>{caregiverStatusLabel(source.type) || "Care information"}</strong>
+                      <p>{caregiverReadableCaptureText(source.source_text) || "Original wording is not available."}</p>
+                      <small>{caregiverInformationLabel(source.evidence_kind || source.epistemic_status || "reported") || "Reported information"}</small>
+                      {source.reported_by_label && <small>Shared by {caregiverSafeAssistantText(source.reported_by_label) || "a caregiver"}</small>}
+                      <small>Happened {formatWhen(source.occurred_at)} · Saved {formatWhen(source.ingested_at || source.uploaded_at)}</small>
+                    </article>
+                  ))}
+                  {expandedChangeId === change.id && changeEvidence[change.id]?.assertions.map((item) => (
+                    <article key={item.id}>
+                      <strong>{caregiverFieldLabel(item.field) || caregiverLabel(item.field)}: {caregiverSafeAssistantText(item.asserted_value) || "Information was reported"}</strong>
+                      {item.source_text && <p>{caregiverReadableCaptureText(item.source_text) || "Original wording is saved."}</p>}
+                      <small>{caregiverInformationLabel(item.epistemic_state || "reported") || "Caregiver report"} · {caregiverSafeAssistantText(item.source_label) || "Saved care record"}</small>
+                      <small>Observed {formatWhen(item.observed_at)} · Saved {formatWhen(item.recorded_at)}</small>
+                    </article>
+                  ))}
+                  {expandedChangeId === change.id && changeEvidence[change.id]?.observations.map((item) => (
+                    <article key={item.id}>
+                      <strong>{caregiverFieldLabel(item.attribute) || caregiverLabel(item.attribute)}</strong>
+                      <p>{caregiverReadableCaptureText(item.source_passage) || "Original wording is not available."}</p>
+                      {item.observation_method !== "Daily Care form" && item.value_text && (
+                        <p>What was recorded: {caregiverSafeAssistantText(item.value_text)}{item.units ? ` ${item.units}` : ""}</p>
+                      )}
+                      <small>{caregiverInformationLabel(item.epistemic_status || "reported") || "Reported information"} · {caregiverLabel(item.observation_kind)}</small>
+                      <small>Observed {formatWhen(item.observed_at || item.occurred_at)} · Reported {formatWhen(item.reported_at)} · Saved {formatWhen(item.recorded_at)}</small>
+                    </article>
+                  ))}
+                  {expandedChangeId === change.id && changeEvidence[change.id]?.confirmation_history.map((transition) => (
+                    <article key={transition.id}>
+                      <strong>{caregiverLabel(transition.previous_status)} → {caregiverLabel(transition.new_status)}</strong>
+                      {transition.reason && <p>{caregiverSafeAssistantText(transition.reason)}</p>}
+                      <small>Reviewed by a caregiver · {formatWhen(transition.created_at)}</small>
+                      {transition.evidence_ids.length > 0 && <small>Information used for this review: {transition.evidence_ids.length} saved item(s)</small>}
                     </article>
                   ))}
                 </li>
