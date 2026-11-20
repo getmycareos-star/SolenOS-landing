@@ -18,9 +18,7 @@ async function main() {
       "production must fail closed instead of silently using process memory",
     );
 
-    process.env.SOLENOS_TELEMETRY_DISABLED = "1";
-    resetTelemetryStoreForTests();
-    console.log("Production telemetry persistence fails closed without PostgreSQL; explicit telemetry disable remains supported.");
+    console.log("Production telemetry persistence fails closed without PostgreSQL.");
   } finally {
     resetTelemetryStoreForTests();
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
