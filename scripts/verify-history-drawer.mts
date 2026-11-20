@@ -165,3 +165,6 @@ assert.match(drawer, /loadAllHistoryPages<CareDecision>\("\/care-continuity\/dec
 
 assert.match(drawer, /async function loadAllFollowUpHistoryPages[\s\S]*?limit=\$\{pageSize\}&offset=\$\{page \* pageSize\}[\s\S]*?expectedCount[\s\S]*?seenIds\.has\(row\.id\)[\s\S]*?records\.length >= expectedCount/,
   "the history timeline must retrieve every saved follow-up page and reject incomplete pagination");
+
+assert.match(drawer, /response\.count !== expectedCount[\s\S]*?changed while it was loading/,
+  "follow-up history must not be marked complete when the collection changes between pages");
