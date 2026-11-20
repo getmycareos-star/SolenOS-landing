@@ -1295,8 +1295,8 @@ export function HistoryDrawer() {
         if (category === "document") return /saved documents/.test(allWarnings);
         if (category === "appointment") return /appointment/.test(allWarnings);
         if (category === "handoff") return /handoff/.test(allWarnings);
-        if (category === "decision") return /care decisions/.test(allWarnings);
-        if (category === "outcome") return /outcomes/.test(allWarnings);
+        if (category === "decision") return /care decision/.test(allWarnings);
+        if (category === "outcome") return /outcome/.test(allWarnings);
         return /follow-ups/.test(allWarnings);
       };
       const nextStatuses = Object.fromEntries(HISTORY_STATUS_CATEGORIES.map((category) => {
