@@ -2566,6 +2566,11 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await details.page.getByRole("menuitem", { name: "View record details", exact: true }).click();
   const dialog = details.page.getByRole("dialog", { name: "Care record details" });
   await dialog.waitFor({ state: "visible", timeout: 15_000 });
+  const firstSavedItem = dialog.locator(".care-record-overview__item").first();
+  await firstSavedItem.waitFor({ state: "visible", timeout: 15_000 });
+  const temporalLabels = await firstSavedItem.locator(".care-record-overview__meta").innerText();
+  assert.match(temporalLabels, /Happened:/, "the original event time must be labelled separately");
+  assert.match(temporalLabels, /Saved:/, "the record time must be labelled separately");
   await details.page.waitForFunction(() => {
     const dialog = document.querySelector(".solenos-record-details-dialog");
     return dialog instanceof HTMLElement && dialog.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])').length > 0;
