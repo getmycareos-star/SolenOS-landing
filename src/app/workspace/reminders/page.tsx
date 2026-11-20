@@ -357,7 +357,7 @@ export default function CareRemindersPage() {
                     <details className="care-reminder-footnote">
                       <summary>Reminder history</summary>
                       <ol>
-                        {reminder.assignment_history.slice(1).map((entry, index) => (
+                        {reminder.assignment_history.map((entry, index) => (
                           <li key={`assignment-${entry.occurred_at}-${index}`}>
                             {assignableMembers.find((member) => member.caregiver_id === entry.assigned_to_caregiver_id)?.name || "Caregiver"} assigned by {assignableMembers.find((member) => member.caregiver_id === entry.actor_caregiver_id)?.name || "a caregiver"} · {formatDateTime(entry.occurred_at)}
                           </li>
