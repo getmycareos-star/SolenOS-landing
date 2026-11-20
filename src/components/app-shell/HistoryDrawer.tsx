@@ -1254,7 +1254,9 @@ export function HistoryDrawer() {
       setSourceStatuses((current) => Object.fromEntries(HISTORY_STATUS_CATEGORIES.map((category) => [
         category,
         current[category] === "loading"
-          ? "failed"
+          ? recordsRef.current.some((record) => categoryFor(record) === category)
+            ? "stale"
+            : "failed"
           : current[category] === "empty" || current[category] === "complete" || current[category] === "partial"
             ? "stale"
             : current[category],
