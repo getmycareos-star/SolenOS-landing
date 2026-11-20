@@ -48,11 +48,11 @@ describe("consistency gate persistence boundary", () => {
     expect(mockedRunExtractions).not.toHaveBeenCalled();
   });
 
-  it("does not start extraction while evidence is only in the local recovery queue", async () => {
+  it("does not start extraction while evidence is only in the local recovery queue and not in the canonical care record", async () => {
     mockedGetStore.mockReturnValue({
       save: jest.fn().mockResolvedValue({
         evidence: { id: "evidence-queued" },
-        persisted: true,
+        persisted: false,
         persistence_status: "local_queued",
       }),
     } as never);
@@ -66,7 +66,7 @@ describe("consistency gate persistence boundary", () => {
 
     expect(result.success).toBe(false);
     expect(result.persistence_status).toBe("local_queued");
-    expect(result.error).toContain("not yet confirmed in PostgreSQL");
+    expect(result.error).toContain("has not been saved to the care record");
     expect(result.run_a.run_id).toBe("not-started");
     expect(result.run_b.run_id).toBe("not-started");
     expect(mockedRunExtractions).not.toHaveBeenCalled();
