@@ -160,8 +160,11 @@ jobs:
       - name: Run continuity and production-safety checks
         # These source-contract scripts include isolated in-memory legacy-domain fixtures.
         # Real PostgreSQL durability is exercised by the preceding live FastAPI/Chromium E2E.
+        # The API inventory compares every discovered frontend helper call with this exact
+        # backend process's registered OpenAPI method/path table.
         env:
           DATABASE_URL: ""
+          SOLENOS_OPENAPI_URL: http://127.0.0.1:8000/openapi.json
         run: npm test
       - name: Verify caregiver-facing language boundary
         run: npm run verify:caregiver-language-boundary
