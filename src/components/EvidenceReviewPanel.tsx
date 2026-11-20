@@ -129,7 +129,12 @@ const reviewStatusLabel = (value: string) => ({
   heart_rate: 'Heart rate',
   mood: 'Mood',
   pain: 'Pain',
-  'Daily Care form': 'Daily Care',
+  'daily care form': 'Daily Care',
+  caregiver_form: 'Entered in Daily Care',
+  caregiver_check_in: 'Daily Care check-in',
+  daily_care_quick_checkin: 'Daily Care check-in',
+  note: 'Care update',
+  document: 'Document',
   structured_daily_capture: 'Daily care update',
   daily_care_entry: 'Daily care update',
   daily_capture: 'Daily care update',
@@ -760,7 +765,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Added to SolenOS</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was shared</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || selected.evidence_kind || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How much it has been checked</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How this information is known</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>More about this note or document</summary>
@@ -771,9 +776,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
             <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || selected.evidence_kind || 'not_recorded')}</dd></div>
             <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0 }}>{selected.origin_device_ref ? 'A device was used' : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Original source</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
             <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Related original note or document</dt><dd style={{ margin: 0 }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Related note or document</dt><dd style={{ margin: 0 }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
           </dl>
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>

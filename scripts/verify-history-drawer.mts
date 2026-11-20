@@ -77,6 +77,8 @@ assert.match(evidenceReview, /caregiverReadableCaptureText\(selected\.source_tex
 assert.match(evidenceReview, /caregiverReadableCaptureText\(item\.source_passage\)/, "individual source passages must be shown in caregiver-readable language");
 assert.match(evidenceReview, /item\.extraction_method !== 'structured_daily_capture'/, "structured source values are not redundantly repeated below their readable source passage");
 assert.match(evidenceReview, /Details recorded from this note or document/, "source details use caregiver-facing language");
+assert.match(evidenceReview, /caregiver_form: 'Entered in Daily Care'/, "caregiver form metadata is translated into natural language");
+assert.match(evidenceReview, /note: 'Care update'/, "internal evidence type values are not exposed");
 assert.match(language, /capture\.axis === "string" && capture\.score !== undefined/, "a single rating source passage is readable");
 assert.match(language, /capture\.vital_type === "string" && capture\.value !== undefined/, "a single measurement source passage is readable");
 assert.match(evidenceReview, /<summary>More about this note or document<\/summary>/, "detailed source metadata is progressively disclosed");
