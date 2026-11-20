@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ensureAnonymousSession } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { canSubmitEarlyAccessConsent } from "@/lib/trust-content/early-access-consent";
 
@@ -87,7 +88,7 @@ export function EarlyAccessConsentForm({
       onConsentDone?.();
       if (continueHref) window.location.assign(continueHref);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Your acknowledgement could not be saved. Please try again.");
+      setError(caregiverSafeErrorMessage());
     } finally {
       setSubmitting(false);
     }
