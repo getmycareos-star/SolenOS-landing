@@ -302,6 +302,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       } catch (error) {
         if (error instanceof ApiResponseError && error.status === 404 && storageKey) {
           window.localStorage.removeItem(storageKey)
+        } else if (!cancelled && !userInteractedRef.current) {
+          setRequestError('We could not restore the earlier conversation. Your saved Care Record has not changed. You can try again or start a new conversation.')
         }
       }
     }
