@@ -126,7 +126,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
-            {identityError || caregiverSafeErrorMessage()}
+            {identityError ? 'Your care session could not be confirmed. Reopen Daily Care and try again.' : caregiverSafeErrorMessage()}
           </span>
         )}
       </div>
