@@ -201,6 +201,11 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
 
   /** Workspace management state. */
 
+  useEffect(() => {
+    setSituationSubmissionKey(null);
+    setSituationSubmissionCapturedAt(null);
+  }, [targetSituationId]);
+
   const go = useCallback((next: WorkspaceState) => {
     setTransitionKey((k) => k + 1);
     setState(next);
