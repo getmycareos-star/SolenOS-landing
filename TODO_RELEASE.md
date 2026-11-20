@@ -117,18 +117,17 @@
 
 ## TRUST, RETENTION & PRODUCT INTEGRITY AUDIT (release-blocking standard)
 
-### A. Data trust & persistence (no user data may disappear)
-- [x] Care recipient profile persists — `CARE_RECIPIENT_NAME_STORAGE` + `solenos_care_profile` in localStorage (verified `settings/page.tsx` ProfileCard)
-- [x] Care situations persist — `persistSituations` -> `SITUATIONS_STORAGE_KEY` (verified `situation-store.ts`)
-- [x] Notes persist — `LAST_INPUT_STORAGE_KEY` (draft) + backend durable store (verified `CognitiveWorkspace.tsx`)
-- [x] Timeline events persist — append-only `persistTimeline` -> `TIMELINE_STORAGE_KEY` (verified `timeline-store.ts`)
-- [x] Documents/uploads persist — attached docs stored in situation documents + persisted situations (verified)
-- [x] Scan/snap results persist — scan/snap files go through `ingestFiles` -> `/api/extract` -> persisted situations (verified)
-- [x] SolenOS responses persist — `SituationResponse` restored from backend on mount (`GET /api/situation`), not just React state (verified `CognitiveWorkspace.tsx`)
-- [x] Preferences persist — `solenos_notif_prefs`, `solenos_data_training`, `solenos_language_preference` in localStorage (verified `settings/page.tsx`)
-- [x] Consent states persist — `solenos_research_preview_ack_v1` + `solenos_early_access_consent_v1` + `onboarding_complete` (verified `early-access-trust` + `onboarding.ts`)
-- [x] Settings persist — profile, notifications, data-training, legal all persist (verified `settings/page.tsx`)
-- [x] Confirm NO data stored ONLY in React state — all core data persisted to localStorage + backend durable store; React state is a view over persisted data (verified)
+### A. Data trust & persistence (current implementation status)
+- [x] Care recipient profile — authoritative name/condition context is read and written through the authenticated backend care-profile API; legacy browser values are not authoritative and are migrated only after confirmed server persistence.
+- [x] Care situations — caregiver-visible situations are hydrated from the authenticated, no-store `GET /api/situation` response. Browser-local situation caches are no longer read, written, or exported as a care-record source.
+- [x] Notes — unsent text may remain a device-local draft; submitted care information must be committed through the backend before the UI reports it saved.
+- [x] Timeline/history — caregiver-visible history is retrieved from backend history endpoints. The obsolete browser-local timeline persistence helpers have been removed from the active UI runtime exports.
+- [ ] Documents/uploads — verify object-storage binary durability, database metadata, ownership, review decisions, and retrieval after restart/new session against production infrastructure.
+- [ ] Scan/snap results — verify original binary and extraction lifecycle end-to-end; extraction suggestions must remain separate from accepted care assertions.
+- [x] SolenOS responses — the situation response is retrieved from the backend; failed authenticated record reads now show a recoverable error rather than silently rendering a local cache.
+- [ ] Preferences and consent — classify each preference by scope. Accessibility/display choices may remain device-local; account-wide notification and consent decisions require backend persistence and cross-session verification.
+- [ ] Settings — profile and notification writes require server readback; device display preferences are intentionally local and must not be described as account-wide.
+- [ ] No React-only authoritative data — React state may hold transient presentation state, but every authoritative care mutation must be confirmed by the backend and read back from the server.
 
 ### B. No fake success states / no fake functionality
 - [x] "Saved ✓" only shown when data actually saved — ProfileCard `save()` shows "Saved ✓" ONLY in try branch after localStorage.setItem succeeds; catch shows "Could not save" (verified `settings/page.tsx`)
