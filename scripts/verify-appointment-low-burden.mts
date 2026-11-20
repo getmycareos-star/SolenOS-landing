@@ -75,6 +75,8 @@ assert.ok(component.includes("brief.appointment_context_status?.code === 'visit_
 assert.ok(component.includes("updateAppointmentLifecycle('completed')"), 'caregiver confirmation must be required before an overdue appointment is marked as occurred');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'retrieval_failed'" ) || component.includes("brief.lcr_retrieval_status?.status === 'failed'"), 'technical retrieval failures must not appear as empty history');
 assert.ok(component.includes('professionalStatement') && component.includes('recordedDecisions') && component.includes('recordedInstructions') && component.includes('unansweredQuestions'), 'optional after-visit capture must preserve separate professional statements, decisions, instructions and unanswered questions');
+assert.ok(component.includes('followUps: appointmentFollowUpsFromText(followUps)'), 'explicit follow-ups must sync into the existing Open Loop records');
+assert.ok(component.includes('Unassigned work stays unassigned.'), 'SolenOS must not silently assign follow-up responsibility to the caregiver');
 assert.ok(component.includes('extractAttachedDocument(file, \'upload\')'), 'appointment documents must use the existing durable evidence upload workflow');
 assert.ok(component.includes('attachedEvidenceIds'), 'appointment document evidence IDs must persist with the workspace')
 assert.ok(component.includes('Retry linking saved document'), 'a failed appointment link must be recoverable without re-uploading the original')
