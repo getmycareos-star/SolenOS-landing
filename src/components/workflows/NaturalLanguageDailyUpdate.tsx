@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
+import { getCaregiverId, getPersonId, getJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from "@/lib/caregiver-language";
+import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import {
   deliverDurableWrite,
   discardDurableWrite,
@@ -103,13 +104,7 @@ export default function NaturalLanguageDailyUpdate() {
   useEffect(() => {
     let active = true;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    const send = async (endpoint: string, payload: unknown) => {
-      const response = await postJSON(endpoint, payload) as { success?: boolean; id?: string };
-      if (response?.success !== true || typeof response.id !== "string" || !response.id) {
-        throw new Error("The server did not confirm that this update was saved.");
-      }
-      return response;
-    };
+    const send = sendQueuedCareWrite;
     const sync = async () => {
       const personId = getPersonId();
       const caregiverId = getCaregiverId();
@@ -202,28 +197,21 @@ export default function NaturalLanguageDailyUpdate() {
           throw new Error("This device could not securely keep an offline copy. The update was not saved.");
         }
       }
-      const send = async (endpoint: string, body: unknown) => {
-        const response = await postJSON(endpoint, body) as {
-          success?: boolean;
-          id?: string;
-          qwen_extraction_status?: string;
-          qwen_job_id?: string | null;
-          execution_status?: { assessment?: string };
-        };
-        if (response?.success !== true || typeof response.id !== "string" || !response.id) {
-          throw new Error("The server did not confirm that your update was saved.");
-        }
-        return response;
-      };
-      const response = queueId
+      const response = (queueId
         ? await deliverDurableWrite<{
             success?: boolean;
             id?: string;
             qwen_extraction_status?: string;
             qwen_job_id?: string | null;
             execution_status?: { assessment?: string };
-          }>(queueId, send)
-        : await send("/daily-care/entries", payload);
+          }>(queueId, sendQueuedCareWrite)
+        : await sendQueuedCareWrite("/daily-care/entries", payload)) as {
+          success?: boolean;
+          id?: string;
+          qwen_extraction_status?: string;
+          qwen_job_id?: string | null;
+          execution_status?: { assessment?: string };
+        };
 
       const medicationMentioned = /\b(medication|medicine|dose|dosage|prescription)\b/i.test(report);
       const possibleChange = /\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\b/i.test(report);
