@@ -250,12 +250,34 @@ if (openApiUrl) {
   const response = await fetch(openApiUrl);
   if (!response.ok) throw new Error("Could not retrieve backend OpenAPI contract: HTTP " + response.status);
   const specification = await response.json() as { paths?: Record<string, Record<string, unknown>> };
-  const registered = Object.entries(specification.paths ?? {}).flatMap(([path, operations]) =>
+  const openApiOperations = Object.entries(specification.paths ?? {}).flatMap(([path, operations]) =>
     Object.keys(operations)
       .filter(method => ["get", "post", "put", "patch", "delete"].includes(method.toLowerCase()))
       .map(method => ({ path, method: method.toLowerCase() }))
   );
+  const routeInventoryPath = process.env.SOLENOS_ROUTE_INVENTORY_PATH;
+  if (!routeInventoryPath) {
+    throw new Error("SOLENOS_ROUTE_INVENTORY_PATH is required when comparing frontend calls to the backend OpenAPI contract.");
+  }
+  const routeInventory = JSON.parse(readFileSync(routeInventoryPath, "utf8")) as {
+    routes: Array<{
+      endpoint: string;
+      method: string;
+      include_in_schema: boolean;
+      included_in_openapi: boolean;
+      disposition: string;
+      consumer: { type?: string; workflow?: string; source?: string } | string;
+    }>;
+  };
+  const registered = routeInventory.routes
+    .filter(route => ["GET", "POST", "PUT", "PATCH", "DELETE"].includes(route.method.toUpperCase()))
+    .map(route => ({ path: route.endpoint, method: route.method.toLowerCase(), route }));
+  const routeByKey = new Map(registered.map(route => [
+    route.method.toUpperCase() + " " + route.path,
+    route.route,
+  ]));
   const missing: Array<{ method_path: string; callsites: Callsite[] }> = [];
+  const uncontractedFrontend: Array<{ method_path: string }> = [];
   const matchedOperationKeys = new Set<string>();
   let matched = 0;
   let intentionallyDisabled = 0;
@@ -273,50 +295,36 @@ if (openApiUrl) {
     const matches = registered.filter(route => route.method === method && pattern.test(route.path));
     if (matches.length) {
       matched += 1;
-      for (const route of matches) matchedOperationKeys.add(route.method + " " + route.path);
+      for (const route of matches) {
+        const key = route.method.toUpperCase() + " " + route.path;
+        matchedOperationKeys.add(key);
+        if (!route.route.included_in_openapi) uncontractedFrontend.push({ method_path: key });
+      }
     } else {
       missing.push({ method_path: key, callsites: items });
     }
   }
   const unconsumed = registered
-    .filter(route => !matchedOperationKeys.has(route.method + " " + route.path))
+    .filter(route => !matchedOperationKeys.has(route.method.toUpperCase() + " " + route.path))
     .map(route => ({ method_path: route.method.toUpperCase() + " " + route.path }));
-  const routeInventoryPath = process.env.SOLENOS_ROUTE_INVENTORY_PATH;
-  if (!routeInventoryPath) {
-    throw new Error("SOLENOS_ROUTE_INVENTORY_PATH is required when comparing frontend calls to the backend OpenAPI contract.");
-  }
   let unconsumedInternal: Array<{ method_path: string; consumer: string; source: string }> = [];
   let unconsumedFrontend: Array<{ method_path: string; consumer: string; source: string }> = [];
   let classificationGaps: Array<{ method_path: string }> = [];
-  if (routeInventoryPath) {
-    const routeInventory = JSON.parse(readFileSync(routeInventoryPath, "utf8")) as {
-      routes: Array<{
-        endpoint: string;
-        method: string;
-        disposition: string;
-        consumer: { type?: string; workflow?: string; source?: string } | string;
-      }>;
-    };
-    const routeByKey = new Map(routeInventory.routes.map(route => [
-      route.method.toUpperCase() + " " + route.endpoint,
-      route,
-    ]));
-    for (const operation of unconsumed) {
-      const route = routeByKey.get(operation.method_path);
-      if (!route) {
-        classificationGaps.push(operation);
-        continue;
-      }
-      const consumer = typeof route.consumer === "object" ? route.consumer : {};
-      const consumerName = consumer.workflow ?? "missing named consumer";
-      const source = consumer.source ?? "missing consumer source";
-      if (route.disposition === "internal_service_or_operations" && consumer.type === "internal") {
-        unconsumedInternal.push({ ...operation, consumer: consumerName, source });
-      } else if (route.disposition === "frontend_product_workflow" && consumer.type === "frontend") {
-        unconsumedFrontend.push({ ...operation, consumer: consumerName, source });
-      } else {
-        classificationGaps.push(operation);
-      }
+  for (const operation of unconsumed) {
+    const route = routeByKey.get(operation.method_path);
+    if (!route) {
+      classificationGaps.push(operation);
+      continue;
+    }
+    const consumer = typeof route.consumer === "object" ? route.consumer : {};
+    const consumerName = consumer.workflow ?? "missing named consumer";
+    const source = consumer.source ?? "missing consumer source";
+    if (route.disposition === "internal_service_or_operations" && consumer.type === "internal") {
+      unconsumedInternal.push({ ...operation, consumer: consumerName, source });
+    } else if (route.disposition === "frontend_product_workflow" && consumer.type === "frontend") {
+      unconsumedFrontend.push({ ...operation, consumer: consumerName, source });
+    } else {
+      classificationGaps.push(operation);
     }
   }
   backendContract = {
@@ -324,9 +332,12 @@ if (openApiUrl) {
     openapi_url: openApiUrl,
     route_inventory_path: routeInventoryPath,
     registered_operations: registered.length,
+    openapi_operations: openApiOperations.length,
+    hidden_registered_operations: registered.filter(route => !route.route.included_in_openapi).length,
     matched_callsite_pairs: matched,
     intentionally_disabled_pairs: intentionallyDisabled,
     missing_operations: missing,
+    uncontracted_frontend_operations: uncontractedFrontend,
     unconsumed_backend_operations: unconsumed,
     unconsumed_internal_operations: unconsumedInternal,
     unconsumed_frontend_operations: unconsumedFrontend,
