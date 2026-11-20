@@ -148,7 +148,7 @@ const caregiverAccessSource = fs.readFileSync(path.join(root, "src/components/mv
 assert.ok(settingsPageSource.includes("onToggle={(event) => setCaregiverAccessOpen(event.currentTarget.open)}"));
 assert.ok(settingsPageSource.includes("<CaregiverAccessPanel enabled={caregiverAccessOpen} />"));
 assert.match(caregiverAccessSource, /if \(enabled\) void load\(\)/);
-assert.match(caregiverAccessSource, /getJSON\("\/caregiver-responsibilities\/history\//, "caregiver responsibility history must be retrieved from the authenticated backend");
+assert.match(caregiverAccessSource, /getJSON\(\s*"\/caregiver-responsibilities\/history\//, "caregiver responsibility history must be retrieved from the authenticated backend");
 assert.match(caregiverAccessSource, /getJSON\("\/caregiver-activities\//, "caregiver activity history must be retrieved from the authenticated backend");
 assert.match(caregiverAccessSource, /postJSON\("\/caregiver-activities"/, "caregiver activity records must persist through the backend");
 assert.match(caregiverAccessSource, /does not change the Living Care Record/, "caregiver activity history must remain separate from canonical care facts");
