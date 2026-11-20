@@ -381,6 +381,9 @@ export default function DetailedAppointmentWorkspace() {
               <p className="appointment-brief-limitations">{lcrBrief.limitations.map(caregiverSafeAssistantText).filter(Boolean).join(' ')}</p>
             </>}
           </section>
+          <details className="appointment-optional-capture">
+            <summary>Add or correct appointment details (optional)</summary>
+            <p>You can use the prepared information without entering anything. Add details only when your knowledge would improve the brief.</p>
           <div className="appointment-fields appointment-fields-two">
             <label>Visit purpose<textarea value={visitPurpose} onChange={event => setVisitPurpose(event.target.value)} rows={2} placeholder="What does the family want help understanding?" /></label>
             <label>Healthcare professional's name<input value={clinician} onChange={event => setClinician(event.target.value)} placeholder="Name, if known" /></label>
@@ -405,6 +408,7 @@ export default function DetailedAppointmentWorkspace() {
             <p><strong>Changes:</strong> {changes.trim() || 'Not recorded'}</p>
             <p><strong>Medication questions:</strong> {medicationQuestions.trim() || 'Not recorded'}</p>
           </div>
+          </details>
         </div>}
 
         {stage === 'during' && <div className="appointment-stage-panel">
