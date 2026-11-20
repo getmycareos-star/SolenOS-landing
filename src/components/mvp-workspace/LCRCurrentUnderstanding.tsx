@@ -149,6 +149,11 @@ type CareAttentionDecision = {
   recorded_at?: string | null;
   due_at?: string | null;
   review_at?: string | null;
+  evidence_status?: string;
+  history_completeness?: string;
+  action_status?: string;
+  linked_follow_up_outcome_status?: string;
+  significance_assessment_status?: string;
   records?: CareAttentionEvidenceRef[];
 };
 
@@ -1569,6 +1574,10 @@ export function LCRCurrentUnderstanding() {
                       <li key={item.id || item.source + ":" + item.record_id} className="lcr-current-fact">
                         <strong>{caregiverSafeAssistantText(item.title) || "Care information to review"}</strong>
                         <p>{caregiverSafeAssistantText(item.reason || item.priority_basis?.join("; ")) || "The saved care information indicates this needs follow-up."}</p>
+                        {item.evidence_status && <small>Evidence: {caregiverStatusLabel(item.evidence_status) || "Not established"}</small>}
+                        {item.history_completeness && item.history_completeness !== "complete" && <small>Some earlier care information may be missing.</small>}
+                        {item.action_status && item.action_status !== "not_recorded" && <small>Follow-up: {caregiverStatusLabel(item.action_status) || "Status not recorded"}</small>}
+                        {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <small>Outcome: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</small>}
                         {item.records?.map((record) => (
                           <small key={record.source + ":" + record.record_id}>
                             {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened: {formatWhen(record.occurred_at)} · Saved: {formatWhen(record.recorded_at)}
