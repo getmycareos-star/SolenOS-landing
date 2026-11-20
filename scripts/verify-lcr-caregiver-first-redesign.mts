@@ -73,7 +73,8 @@ assert.match(currentUnderstanding, /<strong>Still unclear:<\/strong>/, "the firs
 assert.match(currentUnderstanding, /This record reflects the care information saved here/, "the Care Record uses one concise scope statement instead of repeating its introduction");
 assert.doesNotMatch(currentUnderstanding, /Your care information, brought together/, "the redundant introductory headline is removed");
 assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
-assert.match(followUps, /item\.source === "events" && item\.record_id/, "event-derived follow-up candidates require an explicit caregiver action before becoming a responsibility");
+assert.match(followUps, /item\.source === "events" \|\| item\.source === "persisted_change"\) && item\.record_id/, "event- and change-derived follow-up candidates require an explicit caregiver action before becoming a responsibility");
+assert.match(followUps, /onClick=\{\(\) => void onCreate\(item\)\}/, "a suggested follow-up becomes a responsibility only after the caregiver explicitly chooses to create it");
 assert.match(followUps, /postJSON\("\/open-loops"/, "adding an event follow-up persists it through the authoritative open-loop API");
 assert.match(followUps, /source_type: item\.source,\s*source_id: item\.record_id/, "a persisted follow-up retains its source record link");
 assert.match(followUps, /evidence: uniqueEvidenceIds\(item\)\.map\(\(evidenceId\) => \(\{ evidence_id: evidenceId \}\)\)/, "follow-up creation preserves authorized source evidence links");
