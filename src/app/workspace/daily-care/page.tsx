@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDailyUpdate";
+import DailyCareOfflineQueueNotice from "@/components/workflows/DailyCareOfflineQueueNotice";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
@@ -617,6 +618,7 @@ export default function DailyCarePage() {
             {contextError && careItems.length > 0 && <p role="status" className="daily-care-muted">{caregiverSafeAssistantText(contextError) || "Some care information could not be loaded. Your previously saved information is still shown."}</p>}
           </section>
 
+          <DailyCareOfflineQueueNotice />
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
             <h2 id="daily-care-capture-title">Anything different today?</h2>
             <p className="daily-care-muted">Share something, check in, or leave things as they are. Nothing is required.</p>
