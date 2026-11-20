@@ -24,6 +24,7 @@ type Callsite = {
   declared_path: string;
   resolved_path: string;
   dynamic: boolean;
+  source_kind?: string;
 };
 
 function filesUnder(directory: string): string[] {
@@ -78,7 +79,8 @@ function pathExpression(node: ts.Expression): { value: string; dynamic: boolean 
 function expressionPath(node: ts.Expression | undefined): { value: string; dynamic: boolean } | null {
   if (!node) return null;
   if (ts.isNewExpression(node) && node.expression.getText().endsWith("URL")) {
-    return pathExpression(node.arguments?.[0] as ts.Expression);
+    const firstArgument = node.arguments?.[0];
+    return firstArgument ? pathExpression(firstArgument) : null;
   }
   return pathExpression(node);
 }
