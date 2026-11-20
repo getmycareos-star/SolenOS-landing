@@ -41,7 +41,7 @@ export function WorkspaceNavigationAccessibility() {
     if (!host || !sidebar || !workspace || !trigger) return;
 
     sidebar.tabIndex = -1;
-    const media = window.matchMedia("(max-width: 760px)");
+    const media = window.matchMedia("(max-width: 900px)");
     let wasOpen = false;
     let originalOverflow = "";
     let keyHandler: ((event: KeyboardEvent) => void) | null = null;
