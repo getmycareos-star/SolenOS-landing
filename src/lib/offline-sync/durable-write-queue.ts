@@ -408,6 +408,7 @@ export async function syncDurableWrites(input: {
   caregiverId: string;
   send: SendWrite;
   endpoints?: string[];
+  onSynced?: (endpoint: string, payload: unknown, result: unknown) => void;
 }): Promise<DurableWriteSyncResult> {
   const identityKey = `${input.personId}:${input.caregiverId}`;
   const existingSync = syncPromises.get(identityKey);
@@ -427,8 +428,15 @@ export async function syncDurableWrites(input: {
       if (input.endpoints && !input.endpoints.includes(row.endpoint)) continue;
       if (!isEligible(row, now)) continue;
       try {
-        await deliverDurableWrite(row.id, input.send);
+        const payload = await decryptPayload(db, row);
+        const result = await deliverDurableWrite(row.id, input.send);
         synced += 1;
+        try {
+          input.onSynced?.(row.endpoint, payload, result);
+        } catch {
+          // The server receipt is already durable. A local UI callback must not
+          // turn a completed write back into a failed or retryable queue item.
+        }
       } catch {
         // The queue retains retryable and blocked records with the same idempotency key.
       }
