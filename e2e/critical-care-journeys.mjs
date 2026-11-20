@@ -2565,6 +2565,37 @@ await record("12b invited caregiver sees the shared care record in a separate br
     ),
     "ending a responsibility must preserve its historical record and end timestamp",
   );
+
+  const primarySettingsBrowser = await createBrowserPage({
+    access_token: identity.token,
+    person: { id: identity.personId },
+    caregiver: { id: identity.caregiverId },
+    expires_at: session.expires_at,
+  }, "/workspace/settings");
+  const primarySettingsPage = primarySettingsBrowser.page;
+  primarySettingsPage.on("dialog", (dialog) => dialog.accept());
+  await primarySettingsPage.locator("#settings-caregivers summary").click();
+  await primarySettingsPage.getByRole("heading", { name: "People with access" }).waitFor({ timeout: 20_000 });
+  await primarySettingsPage.getByRole("button", { name: "Pause access", exact: true }).click();
+  await primarySettingsPage.getByText(/access is paused/i).waitFor({ timeout: 20_000 });
+  const suspendedBearer = await request(
+    `/api/v1/evidence/${encodeURIComponent(identity.personId)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(suspendedBearer.status, 401, "suspension must revoke the invitee's existing session");
+
+  await primarySettingsPage.getByRole("button", { name: "Restore access", exact: true }).click();
+  await primarySettingsPage.getByText(/access is restored/i).waitFor({ timeout: 20_000 });
+  const restoredLogin = await request("/api/v1/accounts/login", {
+    method: "POST",
+    body: { email: invitedEmail, password: "shared-care-invite-passphrase-2026!" },
+  });
+  assert.equal(restoredLogin.status, 200, JSON.stringify(restoredLogin.payload));
+  accepted.payload.access_token = restoredLogin.payload.access_token;
+  accepted.payload.expires_at = restoredLogin.payload.expires_at;
+  assert.deepEqual(primarySettingsBrowser.pageErrors, [], "caregiver suspension and restoration must not throw browser errors");
+  await primarySettingsBrowser.context.close();
+
   // Explicit sharing is the boundary for cross-caregiver perspective comparison.
   const primaryProfile = await request("/api/v1/caregiver-profiles/current", { token: identity.token });
   assert.equal(primaryProfile.status, 200, JSON.stringify(primaryProfile.payload));
