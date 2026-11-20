@@ -54,3 +54,8 @@ assert.ok(component.includes('items.find(item => item.appointment_id === selecte
 assert.ok(component.includes('setRecord(null)'), 'a new appointment with no saved workspace must not retain stale appointment notes')
 
 assert.ok(component.includes('!brief.next_appointment'), 'the next visit must not be hidden by an empty-state branch when older appointment history is truncated')
+assert.ok(component.includes('More about the information in this summary'), 'technical source checks stay behind an optional caregiver disclosure');
+assert.ok(component.includes('Some care information is missing from this summary'), 'partial history is explained in plain language');
+assert.ok(component.includes('What was noticed or shared'), 'appointment source details use caregiver language');
+assert.ok(component.includes('Refresh appointment information'), 'appointment refresh actions use clear caregiver language');
+assert.ok(!component.includes('Review source details and information checks'), 'internal source-check wording is not exposed');
