@@ -29,6 +29,7 @@ export function GlobalDisplayPreferences() {
   const [prefs, setPrefs] = useState<Preferences>(DEFAULTS);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [saveState, setSaveState] = useState<"saved" | "session-only">("saved");
 
   useEffect(() => {
     try {
@@ -60,8 +61,10 @@ export function GlobalDisplayPreferences() {
     root.style.setProperty("--solenos-text-scale", String(Number(prefs.scale) / 100));
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+      setSaveState("saved");
     } catch {
       // The active preference still applies for this session.
+      setSaveState("session-only");
     }
 
     return () => {
@@ -110,7 +113,7 @@ export function GlobalDisplayPreferences() {
               </label>
             ))}
           </fieldset>
-          <p className="solenos-display-note" role="status">Your display preferences are saved on this device.</p>
+          <p className="solenos-display-note" role="status">{saveState === "saved" ? "Your display preferences are saved on this device." : "Your display preferences apply for this session but could not be saved on this device."}</p>
         </section>
       )}
     </div>
