@@ -1,14 +1,10 @@
 /**
- * Raw Evidence Store — dual persistence layer.
+ * Legacy raw-capture recovery queue.
  *
- * Priority: memory cache (primary for in-process) → Postgres (when DATABASE_URL
- * set) → file-based local queue (offline resilience, spec §20).
- *
- * The local queue is always written so that evidence survives process
- * termination and can be synced to Postgres when a network connection
- * becomes available.
+ * This module is not a care-record database. It can hold a local recovery copy
+ * and can only report server_persisted when an explicit writer confirms the
+ * canonical SolenOS backend write with the same evidence ID.
  */
-
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -19,8 +15,6 @@ import {
   writeFileSync,
 } from "fs";
 import { join } from "path";
-import type { Pool } from "pg";
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
 import { requireCaregiverId } from "../care-identity/durable-care-key";
 import { detectUrgencyLevel } from "../urgency-detection";
 import type {
@@ -31,6 +25,10 @@ import type {
   RawEvidenceInputType,
   UrgencyRiskLevel,
 } from "./types";
+
+export type CanonicalEvidenceWriter = (
+  evidence: RawEvidence,
+) => Promise<{ evidence_id: string; persisted: true }>;
 
 function nowISO(opts: RawEvidenceStoreOptions): string {
   return (opts.now ?? (() => new Date()))().toISOString();
@@ -44,65 +42,6 @@ function hashContent(content: string): string {
   return createHash("sha256").update(content).digest("hex");
 }
 
-/**
- * Insert immutable raw evidence and verify idempotent replays.
- *
- * ON CONFLICT DO NOTHING alone is not sufficient: a reused ID with different
- * content must never be reported as persisted. The caller may acknowledge a
- * replay only when the existing row has the same owner and content hash.
- */
-async function persistEvidence(pool: Pool, evidence: RawEvidence): Promise<void> {
-  const values = [
-    evidence.id,
-    evidence.caregiver_id,
-    evidence.person_id,
-    evidence.input_type,
-    evidence.content,
-    evidence.content_hash,
-    evidence.ocr_confidence,
-    evidence.document_id,
-    evidence.document_name,
-    evidence.captured_at,
-    evidence.urgency_risk_level,
-    evidence.urgency_signals,
-    evidence.metadata,
-  ];
-
-  const inserted = await pool.query(
-    `INSERT INTO raw_evidence (
-       id, caregiver_id, person_id, input_type, content, content_hash,
-       ocr_confidence, document_id, document_name, captured_at,
-       urgency_risk_level, urgency_signals, metadata
-     )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-     ON CONFLICT (id) DO NOTHING
-     RETURNING id`,
-    values,
-  );
-  if (inserted.rows.length === 1) return;
-
-  const existing = await pool.query(
-    `SELECT id, caregiver_id, person_id, content_hash
-       FROM raw_evidence
-      WHERE id = $1`,
-    [evidence.id],
-  );
-  const row = existing.rows[0] as
-    | { id: string; caregiver_id: string; person_id: string | null; content_hash: string }
-    | undefined;
-
-  if (
-    !row ||
-    row.caregiver_id !== evidence.caregiver_id ||
-    row.person_id !== evidence.person_id ||
-    row.content_hash !== evidence.content_hash
-  ) {
-    throw new Error(
-      "Raw evidence ID already exists with different content or ownership; persistence was not acknowledged.",
-    );
-  }
-}
-
 function dataDir(caregiverId: string): string {
   const validated = requireCaregiverId(caregiverId);
   const cleaned = validated.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
@@ -114,23 +53,49 @@ function queueFile(evidence: RawEvidence): string {
   return join(dataDir(evidence.caregiver_id), `${evidence.id}.json`);
 }
 
+function sameImmutableEvidence(left: RawEvidence, right: RawEvidence): boolean {
+  return (
+    left.id === right.id &&
+    left.caregiver_id === right.caregiver_id &&
+    left.person_id === right.person_id &&
+    left.content_hash === right.content_hash
+  );
+}
+
 export class RawEvidenceStore {
   private readonly memory = new Map<string, RawEvidence>();
   private readonly index = new Map<string, string[]>();
-  private pool: Pool | null;
   private readonly now: () => Date;
-  private readonly syncQueue: RawEvidence[] = [];
+  private readonly persistCanonical?: CanonicalEvidenceWriter;
 
-  constructor(options: { pool?: Pool | null; opts?: RawEvidenceStoreOptions }) {
-    this.pool = options.pool ?? null;
+  constructor(options: {
+    opts?: RawEvidenceStoreOptions;
+    persistCanonical?: CanonicalEvidenceWriter;
+  } = {}) {
     this.now = options.opts?.now ?? (() => new Date());
+    this.persistCanonical = options.persistCanonical;
   }
 
-  private async resolvePool(): Promise<Pool | null> {
-    if (this.pool) return this.pool;
-    if (!process.env.DATABASE_URL?.trim()) return null;
-    this.pool = await createPostgresPool();
-    return this.pool;
+  private assertNoIdentityCollision(evidence: RawEvidence): void {
+    const cached = this.memory.get(evidence.id);
+    if (cached && !sameImmutableEvidence(cached, evidence)) {
+      throw new Error("Raw evidence ID already exists with different content or ownership.");
+    }
+    try {
+      const path = queueFile(evidence);
+      if (existsSync(path)) {
+        const existing = JSON.parse(readFileSync(path, "utf8")) as RawEvidence;
+        if (!sameImmutableEvidence(existing, evidence)) {
+          throw new Error("Raw evidence ID already exists with different content or ownership.");
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("different content or ownership")) throw error;
+      // An unreadable queue file is not permission to overwrite it.
+      if (existsSync(queueFile(evidence))) {
+        throw new Error("An existing raw-evidence recovery entry could not be verified; it was not overwritten.");
+      }
+    }
   }
 
   async save(input: SaveRawEvidenceInput): Promise<SaveRawEvidenceResult> {
@@ -141,7 +106,6 @@ export class RawEvidenceStore {
     }
 
     const urgency = detectUrgencyLevel(content);
-
     const evidence: RawEvidence = {
       id: input.id ?? createEvidenceId(),
       caregiver_id: caregiverId,
@@ -152,52 +116,44 @@ export class RawEvidenceStore {
       ocr_confidence: input.ocr_confidence ?? null,
       document_id: input.document_id ?? null,
       document_name: input.document_name ?? null,
-      captured_at: input.captured_at ?? nowISO({}),
+      captured_at: input.captured_at ?? nowISO({ now: this.now }),
       urgency_risk_level: urgency.risk_level as UrgencyRiskLevel,
       urgency_signals: [...urgency.critical_signals, ...urgency.high_signals],
       metadata: input.metadata ?? {},
     };
 
+    this.assertNoIdentityCollision(evidence);
     this.memory.set(evidence.id, evidence);
     const ids = this.index.get(evidence.caregiver_id) ?? [];
-    ids.push(evidence.id);
+    if (!ids.includes(evidence.id)) ids.push(evidence.id);
     this.index.set(evidence.caregiver_id, ids);
 
     let filePersisted = false;
-    if (typeof writeFileSync === "function") {
-      try {
-        const dir = dataDir(evidence.caregiver_id);
-        mkdirSync(dir, { recursive: true });
-        writeFileSync(queueFile(evidence), JSON.stringify(evidence, null, 2), "utf8");
-        filePersisted = true;
-      } catch {
-        // The caller receives memory_only unless PostgreSQL confirms the write.
-      }
+    try {
+      const dir = dataDir(evidence.caregiver_id);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(queueFile(evidence), JSON.stringify(evidence, null, 2), "utf8");
+      filePersisted = true;
+    } catch {
+      // Local filesystem state is never represented as canonical persistence.
     }
 
     let serverPersisted = false;
     let persistence_error: string | undefined;
-    let activePool: Pool | null = null;
-    try {
-      activePool = await this.resolvePool();
-    } catch (error) {
-      persistence_error = "PostgreSQL storage could not be confirmed.";
-    }
-
-    if (activePool) {
+    if (this.persistCanonical) {
       try {
-        await persistEvidence(activePool, evidence);
+        const result = await this.persistCanonical(evidence);
+        if (result.persisted !== true || result.evidence_id !== evidence.id) {
+          throw new Error("Canonical backend did not confirm the same evidence identifier.");
+        }
         serverPersisted = true;
-        const queuedIndex = this.syncQueue.findIndex((queued) => queued.id === evidence.id);
-        if (queuedIndex >= 0) this.syncQueue.splice(queuedIndex, 1);
         try {
           rmSync(queueFile(evidence), { force: true });
         } catch {
-          // The database is confirmed; a stale local queue file is harmless because inserts are idempotent.
+          // A stale local copy is harmless after the canonical write is confirmed.
         }
-      } catch (error) {
-        persistence_error = "PostgreSQL storage could not be confirmed.";
-        if (!this.syncQueue.some((queued) => queued.id === evidence.id)) this.syncQueue.push(evidence);
+      } catch {
+        persistence_error = "Canonical backend persistence could not be confirmed.";
       }
     }
 
@@ -209,7 +165,8 @@ export class RawEvidenceStore {
 
     return {
       evidence,
-      persisted: persistence_status !== "memory_only",
+      // A local queue is recoverable input, not a saved care-record entry.
+      persisted: serverPersisted,
       persistence_status,
       ...(persistence_error ? { persistence_error } : {}),
     };
@@ -218,106 +175,106 @@ export class RawEvidenceStore {
   getById(id: string): RawEvidence | undefined {
     const cached = this.memory.get(id);
     if (cached) return cached;
-
     try {
-      for (const dir of readdirSync(join(process.cwd(), ".data", "raw-evidence-queue"))) {
-        const fullPath = join(process.cwd(), ".data", "raw-evidence-queue", dir, `${id}.json`);
+      const baseDir = join(process.cwd(), ".data", "raw-evidence-queue");
+      for (const dir of readdirSync(baseDir)) {
+        const fullPath = join(baseDir, dir, `${id}.json`);
         if (existsSync(fullPath)) {
-          const data = JSON.parse(readFileSync(fullPath, "utf8"));
+          const data = JSON.parse(readFileSync(fullPath, "utf8")) as RawEvidence;
           this.memory.set(data.id, data);
           return data;
         }
       }
     } catch {
-      // ignore
+      // Missing or unavailable local queue is not a canonical read.
     }
     return undefined;
   }
 
   listForCaregiver(caregiverId: string): RawEvidence[] {
-    const ids = this.index.get(caregiverId) ?? [];
+    const validated = requireCaregiverId(caregiverId);
+    const ids = this.index.get(validated) ?? [];
     const items = ids
       .map((id) => this.memory.get(id))
-      .filter((r): r is RawEvidence => r !== undefined);
+      .filter((row): row is RawEvidence => row !== undefined);
 
-    if (items.length === 0) {
-      // Try loading from file queue
-      try {
-        const dir = dataDir(caregiverId);
-        if (existsSync(dir)) {
-          const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
-          for (const file of files) {
-            const data = JSON.parse(readFileSync(join(dir, file), "utf8")) as RawEvidence;
-            this.memory.set(data.id, data);
-            items.push(data);
-          }
+    try {
+      const dir = dataDir(validated);
+      if (existsSync(dir)) {
+        const known = new Set(items.map((item) => item.id));
+        for (const file of readdirSync(dir).filter((name) => name.endsWith(".json"))) {
+          const data = JSON.parse(readFileSync(join(dir, file), "utf8")) as RawEvidence;
+          if (data.caregiver_id !== validated) continue;
+          this.memory.set(data.id, data);
+          if (!known.has(data.id)) items.push(data);
         }
-      } catch {
-        // ignore
       }
+    } catch {
+      // Local queue reads are best-effort and never substitute for backend history.
     }
 
     return items.sort((a, b) => (a.captured_at < b.captured_at ? 1 : -1));
   }
 
-  /** Retry both in-memory failures and files left by a prior process. */
-  async syncToPostgres(): Promise<{ synced: number; remaining: number }> {
-    const pool = await this.resolvePool();
-    if (!pool) return { synced: 0, remaining: this.syncQueue.length };
+  /** Synchronize only through an explicitly injected canonical backend writer. */
+  async syncToCanonicalBackend(): Promise<{ synced: number; remaining: number }> {
+    if (!this.persistCanonical) {
+      return { synced: 0, remaining: this.listAllQueued().length };
+    }
 
-    const queuedById = new Map<string, RawEvidence>();
-    for (const evidence of this.syncQueue) queuedById.set(evidence.id, evidence);
+    let synced = 0;
+    const queued = this.listAllQueued();
+    for (const evidence of queued) {
+      try {
+        const result = await this.persistCanonical(evidence);
+        if (result.persisted !== true || result.evidence_id !== evidence.id) {
+          throw new Error("Canonical backend did not confirm the same evidence identifier.");
+        }
+        synced += 1;
+        try {
+          rmSync(queueFile(evidence), { force: true });
+        } catch {
+          // Leave the stale local copy for an idempotent later cleanup.
+        }
+      } catch {
+        // Keep the queue item for a later retry with the same stable evidence ID.
+      }
+    }
+    return { synced, remaining: this.listAllQueued().length };
+  }
 
+  private listAllQueued(): RawEvidence[] {
     const baseDir = join(process.cwd(), ".data", "raw-evidence-queue");
-    if (existsSync(baseDir)) {
+    const queued = new Map<string, RawEvidence>();
+    try {
+      if (!existsSync(baseDir)) return [];
       for (const caregiverDir of readdirSync(baseDir)) {
         const fullDir = join(baseDir, caregiverDir);
         for (const file of readdirSync(fullDir).filter((name) => name.endsWith(".json"))) {
-          const raw = readFileSync(join(fullDir, file), "utf8");
-          const evidence = JSON.parse(raw) as RawEvidence;
+          const evidence = JSON.parse(readFileSync(join(fullDir, file), "utf8")) as RawEvidence;
           requireCaregiverId(evidence.caregiver_id);
           if (typeof evidence.id !== "string" || typeof evidence.content !== "string") {
             throw new Error("A raw-evidence recovery queue entry is malformed; it was not discarded.");
           }
-          queuedById.set(evidence.id, evidence);
+          queued.set(evidence.id, evidence);
         }
       }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("malformed")) throw error;
     }
-
-    const failed: RawEvidence[] = [];
-    let synced = 0;
-    for (const evidence of queuedById.values()) {
-      try {
-        await persistEvidence(pool, evidence);
-        synced++;
-        try {
-          rmSync(queueFile(evidence), { force: true });
-        } catch {
-          // Leave the file for a later idempotent retry if cleanup is unavailable.
-        }
-      } catch {
-        failed.push(evidence);
-      }
-    }
-
-    this.syncQueue.length = 0;
-    this.syncQueue.push(...failed);
-    return { synced, remaining: failed.length };
+    return [...queued.values()];
   }
 
   reset(): void {
     this.memory.clear();
     this.index.clear();
-    this.syncQueue.length = 0;
   }
 }
 
 let globalStore: RawEvidenceStore | null = null;
 
 export function getRawEvidenceStore(): RawEvidenceStore {
-  if (!globalStore) {
-    globalStore = new RawEvidenceStore({ pool: null });
-  }
+  if (!globalStore) globalStore = new RawEvidenceStore();
   return globalStore;
 }
 
@@ -326,9 +283,7 @@ export function setRawEvidenceStore(store: RawEvidenceStore): void {
 }
 
 export function resetRawEvidenceStore(): void {
-  if (globalStore) {
-    globalStore.reset();
-  }
+  if (globalStore) globalStore.reset();
   try {
     const baseDir = join(process.cwd(), ".data", "raw-evidence-queue");
     if (existsSync(baseDir)) {
