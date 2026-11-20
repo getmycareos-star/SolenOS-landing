@@ -188,7 +188,7 @@ export function CareRecordOverview() {
                   <article key={change.id} className="care-record-overview__change">
                     <strong className="care-record-overview__change-title">{plainStatus(change.change_type)}{change.change_direction ? " · " + plainStatus(change.change_direction) : ""}</strong>
                     <p className="care-record-overview__change-description">{caregiverSafeAssistantText(change.previous_state) || "Earlier details not recorded"} → {caregiverSafeAssistantText(change.current_state) || "Latest details not recorded"}</p>
-                    <small className="care-record-overview__change-date">{when(change.created_at)}</small>
+                    <small className="care-record-overview__change-date">Recorded: {when(change.created_at)}</small>
                   </article>
                 ))}
               </div>
