@@ -43,6 +43,10 @@ type AttentionDecision = {
   recorded_at?: string | null;
   due_at?: string | null;
   review_at?: string | null;
+  evidence_status?: string;
+  history_completeness?: string;
+  action_status?: string;
+  care_significance?: string;
   records?: Array<{ source: string; record_id: string; title: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
 };
 
@@ -137,6 +141,9 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
       {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
+      {item.evidence_status && <span>Evidence: {caregiverStatusLabel(item.evidence_status) || "Not established"}</span>}
+      {item.history_completeness && item.history_completeness !== "complete" && <span>Some earlier care information may be missing.</span>}
+      {item.action_status === "not_recorded" && <span>No follow-up action has been saved yet.</span>}
     </div>
     {expanded && <div className="followup-detail">
       <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
@@ -161,7 +168,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
     <div className="followup-actions">
       <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
       {loop && <button type="button" className="followup-text-button" onClick={() => void onHistory(loop)}>View previous updates</button>}
-      {!loop && item.source === "events" && item.record_id && (
+      {!loop && (item.source === "events" || item.source === "persisted_change") && item.record_id && (
         <button type="button" className="followup-primary-button" onClick={() => void onCreate(item)} disabled={busy}>
           {busy ? "Adding…" : "Add to Follow-ups"}
         </button>
@@ -293,7 +300,7 @@ export default function FollowUpsPage() {
   }
 
   async function createFollowUp(item: AttentionDecision) {
-    if (item.source !== "events" || !item.record_id) return;
+    if ((item.source !== "events" && item.source !== "persisted_change") || !item.record_id) return;
     const sourceKey = item.source + ":" + item.record_id;
     setBusyId(sourceKey);
     setError("");
@@ -304,7 +311,7 @@ export default function FollowUpsPage() {
       item.reason,
       ...(item.priority_basis || []),
     ].filter((value): value is string => Boolean(value && value.trim())).join(" · ")
-      || "This saved care event was marked for follow-up during the latest review.";
+      || "This saved care information was marked for follow-up during the latest review.";
     try {
       await postJSON("/open-loops", {
         loop_type: "follow_up",
