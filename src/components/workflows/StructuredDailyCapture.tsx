@@ -946,6 +946,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     },
     onSuccess: async (data, variables, context) => {
       captureSubmissionRef.current = null;
+      pendingQueueId.current = null;
+      setPendingLocal(false);
+      setPendingQueueCount(0);
+      setPendingAttentionCount(0);
+      setPendingMessage("");
       setChangeIntelligenceStatus(
         data?.change_intelligence_status === 'available'
           || data?.change_intelligence_status === 'unavailable'
@@ -1020,7 +1025,23 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       window.dispatchEvent(new Event('careRecordUpdated'));
     },
     onError: async (error, variables, context) => {
-      // On error, rollback to previous state
+      const localQueued = typeof error === "object" && error !== null && "localQueued" in error
+        && (error as { localQueued?: unknown }).localQueued === true;
+      if (localQueued) {
+        const status = "status" in error ? Number((error as { status?: unknown }).status) : null;
+        setPendingLocal(true);
+        setPendingMessage(
+          status === 401 || status === 403
+            ? "This update is encrypted on this device, but your care session must be verified before it can reach the care record."
+            : status === 400 || status === 409 || status === 422
+              ? "This update is encrypted on this device, but the server needs it reviewed before it can be saved."
+              : "This update is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.",
+        );
+        setSaveError(null);
+        setSaved(false);
+        return;
+      }
+      // On other errors, restore the previous form state.
       if (context && typeof context === 'object' && 'prevForm' in context) {
         const prevContext = context as {
           prevForm: typeof form;
