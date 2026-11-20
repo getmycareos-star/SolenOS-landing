@@ -209,7 +209,7 @@ export default function DocumentsPage() {
       const caregiverId = getCaregiverId();
       if (!personId || !caregiverId) return;
       try {
-        const summary = await getDurableWriteSummary(personId, caregiverId);
+        const summary = await getDurableWriteSummary(personId, caregiverId, ["/upload"]);
         if (!active) return;
         setPendingUploads(summary.pending);
         setAttentionUploads(summary.blocked + summary.failed_recoverable);
@@ -218,6 +218,7 @@ export default function DocumentsPage() {
           personId,
           caregiverId,
           send: sendQueuedCareWrite,
+          endpoints: ["/upload"],
         });
         const afterSync = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
@@ -545,6 +546,41 @@ export default function DocumentsPage() {
     }
   };
 
+  const retryPendingUploads = async () => {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    if (!personId || !caregiverId) return;
+    try {
+      await retryBlockedDurableWrites(personId, caregiverId, ["/upload"]);
+      const result = await syncDurableWrites({
+        personId,
+        caregiverId,
+        send: sendQueuedCareWrite,
+        endpoints: ["/upload"],
+      });
+      const summary = await getDurableWriteSummary(personId, caregiverId, ["/upload"]);
+      setPendingUploads(summary.pending);
+      setAttentionUploads(summary.blocked + summary.failed_recoverable);
+      if (result.synced > 0) {
+        setUploadMessage({ kind: "success", text: result.synced + " pending file upload" + (result.synced === 1 ? " has" : "s have") + " synced to the care record." });
+        await loadDocuments(true);
+        setDocumentIntelligenceRefresh((value) => value + 1);
+      }
+    } catch {
+      setUploadMessage({ kind: "error", text: "SolenOS could not retry the pending file uploads. The encrypted originals remain on this device." });
+    }
+  };
+
+  const removeBlockedUploads = async () => {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    if (!personId || !caregiverId) return;
+    await discardBlockedDurableWrites(personId, caregiverId, ["/upload"]);
+    const summary = await getDurableWriteSummary(personId, caregiverId, ["/upload"]);
+    setPendingUploads(summary.pending);
+    setAttentionUploads(summary.blocked + summary.failed_recoverable);
+  };
+
   const openOriginal = async (doc: DocumentItem) => {
     setSelectedId(doc.id);
     setPreviewError(null);
@@ -716,6 +752,20 @@ export default function DocumentsPage() {
         </section>}
         {uploading && <div style={{ margin: "12px 0 0" }}><LivingArchiveMark size="sm" label="Saving the original document…" /><p style={{ margin: "6px 0 0", fontSize: 13 }}>Keep this page open until your files are saved. After that, SolenOS will keep reading them even if you leave.</p></div>}
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: 14, lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
+        {pendingUploads > 0 && (
+          <p role="status" style={{ margin: "10px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+            {pendingUploads} original file{pendingUploads === 1 ? " is" : "s are"} encrypted on this device and waiting to sync. They are not in the care record until the server confirms them.
+          </p>
+        )}
+        {attentionUploads > 0 && (
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
+            <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--theme-danger-fg, #9b3434)" }}>
+              {attentionUploads} file upload{attentionUploads === 1 ? " needs" : "s need"} attention and has not been saved to the care record.
+            </p>
+            <button type="button" onClick={() => void retryPendingUploads()} style={{ border: 0, background: "transparent", textDecoration: "underline", cursor: "pointer" }}>Retry file uploads</button>
+            <button type="button" onClick={() => void removeBlockedUploads()} style={{ border: 0, background: "transparent", textDecoration: "underline", cursor: "pointer" }}>Remove unsaved uploads from this device</button>
+          </div>
+        )}
         {listError && <RecordState kind="error" description={listError} onAction={() => void loadDocuments(documents.length > 0)} />}
 
         <div className="documents-search">
