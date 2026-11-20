@@ -13,7 +13,7 @@ assert.ok(save.includes("setRecord(saved)"), "the confirmed durable record must 
 assert.ok(save.includes("setSaveRetry(null)"), "a confirmed write must release its pending retry key");
 assert.match(
   save,
-  /if \(stage === 'after'\) \{\s*try \{\s*await refreshOutcome\(saved\.id\)\s*await refreshSavedWorkspace\(\)\s*\} catch \{\s*setError\('Your note was saved\. The outcome view could not refresh; use Refresh outcome to retry\.'\)\s*\}\s*\}/s,
-  "an outcome/workspace refresh failure after a confirmed write must be reported as partial success, never as a failed save",
+  /try \{\s*await refreshSavedWorkspace\(\)\s*\} catch \{\s*setError\('Your note was saved\. Appointment details could not refresh; open appointment support again to retry\.'\)\s*\}/s,
+  "a workspace refresh failure after a confirmed write must be reported as partial success, never as a failed save",
 );
 console.log("Appointment save checks passed: idempotent retry and truthful partial-success state.");
