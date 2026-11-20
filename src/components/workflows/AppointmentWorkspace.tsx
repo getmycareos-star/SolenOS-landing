@@ -92,6 +92,7 @@ type PreparationBrief = {
     interpretation_limit: string
   }>
   source_coverage: {
+    documents?: string
     evidence_freshness_assessments: string
     evidence_review_records?: string
     evidence_claim_assessments?: string
