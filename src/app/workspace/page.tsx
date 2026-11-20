@@ -11,7 +11,7 @@ import { FirstVisitWorkspaceRouter } from "@/components/mvp-workspace/FirstVisit
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
-  loading: () => <BrandLoading animate message="Opening Care Assistant…" />,
+  loading: () => <BrandLoading animate message="Opening AI Companion…" />,
 });
 
 function WorkspaceHomeInner() {
@@ -48,7 +48,7 @@ function WorkspaceHomeInner() {
           <Link href="/workspace/open-loops"><strong>Follow-ups</strong><span>Review questions, decisions and agreed next steps.</span></Link>
           <Link href="/workspace/timeline"><strong>Care Timeline</strong><span>Review earlier updates and corrections.</span></Link>
           <Link href="/workspace/documents"><strong>Documents</strong><span>Open original care files and saved details.</span></Link>
-          <Link href="/workspace/companion"><strong>Care Assistant</strong><span>Ask about saved care information and its sources.</span></Link>
+          <Link href="/workspace/companion"><strong>AI Companion</strong><span>Ask about saved care information and its sources.</span></Link>
         </nav>
       </details>
       <CaregiverHandoverInbox />
