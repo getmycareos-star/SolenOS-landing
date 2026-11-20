@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
-import { getJSON, postJSON, putJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
