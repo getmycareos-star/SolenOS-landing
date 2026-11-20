@@ -52,13 +52,42 @@ type CaregiverNetworkMember = {
   recent_perspectives?: Array<{ claim_type?: string; claim_content?: string; is_promoted_to_shared?: boolean }>;
   recent_activities?: Array<{ activity_type?: string; description?: string; occurred_at?: string }>;
 };
+type ResponsibilityGapReviewItem = {
+  id: string;
+  type: string;
+  scope?: string | null;
+  status: string;
+  provenance?: string | null;
+};
+type PerspectiveConflictReviewItem = {
+  id: string;
+  caregiver_a: string;
+  caregiver_b: string;
+  claim_a: string;
+  claim_b: string;
+  context_a?: string | null;
+  context_b?: string | null;
+  status: string;
+};
+type DuplicateActionReviewItem = {
+  id: string;
+  caregiver_a: string;
+  caregiver_b: string;
+  action_type: string;
+  action_description_a: string;
+  action_description_b: string;
+  time_a?: string | null;
+  time_b?: string | null;
+  status: string;
+  resolution?: string | null;
+};
 type MultiCaregiverSummary = {
   caregivers?: CaregiverNetworkMember[];
   active_responsibilities?: unknown[];
   active_handoffs?: unknown[];
-  responsibility_gaps?: unknown[];
-  perspective_conflicts?: unknown[];
-  duplicate_actions?: unknown[];
+  responsibility_gaps?: ResponsibilityGapReviewItem[];
+  perspective_conflicts?: PerspectiveConflictReviewItem[];
+  duplicate_actions?: DuplicateActionReviewItem[];
 };
 type CareNetworkState = {
   active_caregiver_count?: number;
@@ -145,6 +174,12 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [openLoops, setOpenLoops] = useState<OpenLoop[]>([]);
   const [networkSummary, setNetworkSummary] = useState<MultiCaregiverSummary | null>(null);
   const [networkState, setNetworkState] = useState<CareNetworkState | null>(null);
+  const [gapReviewStatuses, setGapReviewStatuses] = useState<Record<string, "covered" | "partially_covered" | "resolved">>({});
+  const [gapReviewNotes, setGapReviewNotes] = useState<Record<string, string>>({});
+  const [conflictReviewNotes, setConflictReviewNotes] = useState<Record<string, string>>({});
+  const [duplicateReviewStatuses, setDuplicateReviewStatuses] = useState<Record<string, "confirmed_duplicate" | "appropriate_parallel">>({});
+  const [duplicateReviewNotes, setDuplicateReviewNotes] = useState<Record<string, string>>({});
+  const [reviewingNetworkItemId, setReviewingNetworkItemId] = useState<string | null>(null);
   const [communications, setCommunications] = useState<CaregiverCommunication[]>([]);
   const [careContexts, setCareContexts] = useState<CaregiverContext[]>([]);
   const [myRoles, setMyRoles] = useState<CaregiverRole[]>([]);
@@ -415,6 +450,75 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setSendingCommunication(false);
     }
   };
+
+  const reviewResponsibilityGap = async (item: ResponsibilityGapReviewItem) => {
+    const resolution = (gapReviewNotes[item.id] ?? "").trim();
+    if (resolution.length < 5) {
+      setError("Add a short explanation before saving this care coverage review.");
+      return;
+    }
+    setReviewingNetworkItemId(item.id);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/responsibility-gaps/" + encodeURIComponent(item.id) + "/review", {
+        status: gapReviewStatuses[item.id] ?? "resolved",
+        resolution,
+      });
+      setNotice("Care coverage review saved. The earlier gap remains in the care history.");
+      await load();
+    } catch {
+      setError("We couldn't save this care coverage review. The existing responsibility record has not been changed.");
+    } finally {
+      setReviewingNetworkItemId(null);
+    }
+  };
+
+  const resolvePerspectiveConflict = async (item: PerspectiveConflictReviewItem) => {
+    const resolution = (conflictReviewNotes[item.id] ?? "").trim();
+    if (resolution.length < 5) {
+      setError("Add a short explanation before completing this review.");
+      return;
+    }
+    setReviewingNetworkItemId(item.id);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/perspective-conflicts/" + encodeURIComponent(item.id) + "/resolve", { resolution });
+      setNotice("Review saved. Both caregiver accounts remain preserved; this does not change the Living Care Record.");
+      await load();
+    } catch {
+      setError("We couldn't complete this review. Both original caregiver accounts remain unchanged.");
+    } finally {
+      setReviewingNetworkItemId(null);
+    }
+  };
+
+  const reviewDuplicateAction = async (item: DuplicateActionReviewItem) => {
+    const resolution = (duplicateReviewNotes[item.id] ?? "").trim();
+    if (resolution.length < 5) {
+      setError("Add a short explanation before saving this review.");
+      return;
+    }
+    setReviewingNetworkItemId(item.id);
+    setError("");
+    setNotice("");
+    try {
+      await postJSON("/duplicate-actions/" + encodeURIComponent(item.id) + "/review", {
+        status: duplicateReviewStatuses[item.id] ?? "confirmed_duplicate",
+        resolution,
+      });
+      setNotice("Possible duplicate action reviewed. The original caregiver activity records remain unchanged.");
+      await load();
+    } catch {
+      setError("We couldn't save this review. The original caregiver activity records remain unchanged.");
+    } finally {
+      setReviewingNetworkItemId(null);
+    }
+  };
+
+  const caregiverNameFor = (caregiverId: string) =>
+    networkSummary?.caregivers?.find((item) => item.caregiver_id === caregiverId)?.name ?? "Caregiver";
 
   const savePrivateObservation = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -705,6 +809,86 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <p className="mobile-settings-hint" style={{ margin: 0 }}>
                   {networkState.active_caregiver_count ?? 0} active caregivers · {networkState.unresolved_handoff_count ?? 0} handovers awaiting confirmation · {networkState.gap_count ?? 0} responsibility gaps · {networkState.conflict_count ?? 0} differences to review
                 </p>
+              )}
+              {((networkSummary.responsibility_gaps?.length ?? 0) > 0
+                || (networkSummary.perspective_conflicts?.length ?? 0) > 0
+                || (networkSummary.duplicate_actions?.filter((item) => item.status === "potential_duplicate").length ?? 0) > 0) && (
+                <section style={{ display: "grid", gap: "0.75rem" }}>
+                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care network items to review</h4>
+                  {networkSummary.responsibility_gaps?.map((item) => (
+                    <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
+                      <strong style={{ fontSize: "0.9rem" }}>Care coverage: {caregiverFieldLabel(item.type)}</strong>
+                      <span className="mobile-settings-hint">{item.scope || "No responsibility scope recorded"} · {caregiverStatusLabel(item.status)}</span>
+                      <label className="mobile-settings-hint" htmlFor={"gap-review-status-" + item.id}>Review outcome</label>
+                      <select
+                        id={"gap-review-status-" + item.id}
+                        className="mobile-settings-input"
+                        value={gapReviewStatuses[item.id] ?? "resolved"}
+                        onChange={(event) => setGapReviewStatuses((current) => ({ ...current, [item.id]: event.target.value as "covered" | "partially_covered" | "resolved" }))}
+                      >
+                        <option value="partially_covered">Partly covered — some care is still unassigned</option>
+                        <option value="covered">Covered by an agreed caregiver</option>
+                        <option value="resolved">No longer a care coverage gap</option>
+                      </select>
+                      <textarea
+                        className="mobile-settings-input"
+                        rows={2}
+                        maxLength={2000}
+                        value={gapReviewNotes[item.id] ?? ""}
+                        onChange={(event) => setGapReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
+                        placeholder="Describe who is covering this responsibility or what remains open."
+                        aria-label="Care coverage review explanation"
+                      />
+                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (gapReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewResponsibilityGap(item)}>Save review</Button>
+                    </div>
+                  ))}
+                  {networkSummary.perspective_conflicts?.map((item) => (
+                    <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
+                      <strong style={{ fontSize: "0.9rem" }}>Different caregiver accounts</strong>
+                      <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_a)}:</strong> {item.claim_a}</p>
+                      <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_b)}:</strong> {item.claim_b}</p>
+                      {(item.context_a || item.context_b) && <p className="mobile-settings-hint" style={{ margin: 0 }}>Context: {item.context_a || "Not recorded"} / {item.context_b || "Not recorded"}</p>}
+                      <p className="mobile-settings-hint" style={{ margin: 0 }}>These accounts are kept separate. A difference does not establish which account is correct or change the Living Care Record.</p>
+                      <textarea
+                        className="mobile-settings-input"
+                        rows={2}
+                        maxLength={2000}
+                        value={conflictReviewNotes[item.id] ?? ""}
+                        onChange={(event) => setConflictReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
+                        placeholder="Record what was clarified, or why both accounts should remain."
+                        aria-label="Perspective review explanation"
+                      />
+                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (conflictReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void resolvePerspectiveConflict(item)}>Complete review</Button>
+                    </div>
+                  ))}
+                  {networkSummary.duplicate_actions?.filter((item) => item.status === "potential_duplicate").map((item) => (
+                    <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
+                      <strong style={{ fontSize: "0.9rem" }}>Possible duplicate: {caregiverFieldLabel(item.action_type)}</strong>
+                      <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_a)}:</strong> {item.action_description_a}</p>
+                      <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_b)}:</strong> {item.action_description_b}</p>
+                      <label className="mobile-settings-hint" htmlFor={"duplicate-review-status-" + item.id}>Review outcome</label>
+                      <select
+                        id={"duplicate-review-status-" + item.id}
+                        className="mobile-settings-input"
+                        value={duplicateReviewStatuses[item.id] ?? "confirmed_duplicate"}
+                        onChange={(event) => setDuplicateReviewStatuses((current) => ({ ...current, [item.id]: event.target.value as "confirmed_duplicate" | "appropriate_parallel" }))}
+                      >
+                        <option value="confirmed_duplicate">These are the same action</option>
+                        <option value="appropriate_parallel">These are separate, appropriate actions</option>
+                      </select>
+                      <textarea
+                        className="mobile-settings-input"
+                        rows={2}
+                        maxLength={2000}
+                        value={duplicateReviewNotes[item.id] ?? ""}
+                        onChange={(event) => setDuplicateReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
+                        placeholder="Explain the review outcome."
+                        aria-label="Possible duplicate review explanation"
+                      />
+                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (duplicateReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewDuplicateAction(item)}>Save review</Button>
+                    </div>
+                  ))}
+                </section>
               )}
               {careContexts.length > 0 && (
                 <div>
