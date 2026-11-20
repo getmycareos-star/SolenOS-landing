@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
+import { getCaregiverId, getPersonId } from "@/api/client";
+import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import {
   deliverDurableWrite,
   discardBlockedDurableWrites,
@@ -64,13 +65,7 @@ export default function QuickDailyCheckIn() {
   useEffect(() => {
     let active = true;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    const send = async (endpoint: string, payload: unknown) => {
-      const response = await postJSON(endpoint, payload) as { success?: boolean; id?: string | number };
-      if (response?.success !== true || response.id === undefined || response.id === null) {
-        throw new Error("The server did not confirm that this update was saved.");
-      }
-      return response;
-    };
+    const send = sendQueuedCareWrite;
     const sync = async () => {
       const personId = getPersonId();
       const caregiverId = getCaregiverId();
@@ -127,13 +122,7 @@ export default function QuickDailyCheckIn() {
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
     if (!personId || !caregiverId) return;
-    const send = async (endpoint: string, payload: unknown) => {
-      const response = await postJSON(endpoint, payload) as { success?: boolean; id?: string | number };
-      if (response?.success !== true || response.id === undefined || response.id === null) {
-        throw new Error("The server did not confirm that this update was saved.");
-      }
-      return response;
-    };
+    const send = sendQueuedCareWrite;
     await retryBlockedDurableWrites(personId, caregiverId);
     const result = await syncDurableWrites({ personId, caregiverId, send });
     const summary = await getDurableWriteSummary(personId, caregiverId);
@@ -219,20 +208,13 @@ export default function QuickDailyCheckIn() {
         }
       }
 
-      const send = async (endpoint: string, body: unknown) => {
-        const response = await postJSON(endpoint, body) as {
+      const response = (queueId
+        ? await deliverDurableWrite<{ success?: boolean; id?: string | number; recorded_at?: string | null }>(queueId, sendQueuedCareWrite)
+        : await sendQueuedCareWrite("/daily/log", payload)) as {
           success?: boolean;
           id?: string | number;
           recorded_at?: string | null;
         };
-        if (response?.success !== true || response.id === undefined || response.id === null) {
-          throw new Error("The server did not confirm that this check-in was saved.");
-        }
-        return response;
-      };
-      const response = queueId
-        ? await deliverDurableWrite<{ success?: boolean; id?: string | number; recorded_at?: string | null }>(queueId, send)
-        : await send("/daily/log", payload);
 
       setSavedAt(response.recorded_at || new Date().toISOString());
       pendingQueueId.current = null;
