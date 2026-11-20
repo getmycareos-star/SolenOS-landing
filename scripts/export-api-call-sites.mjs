@@ -183,6 +183,7 @@ const inventory = {
   format_version: 2,
   source: 'TypeScript AST scan of src/**/*.ts(x)',
   frontend_source_commit: process.env.GITHUB_SHA || null,
+  backend_source_commit: process.env.SOLENOS_BACKEND_SHA || null,
   backend_inventory_source: backendSource,
   backend_route_count: backendRoutes.length,
   call_site_count: entries.length,
