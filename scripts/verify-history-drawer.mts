@@ -75,6 +75,7 @@ assert.doesNotMatch(structuredCapture, /capture_idempotency_key|capture_request_
 assert.match(drawer, /caregiverReadableCaptureText/, "history details use the shared caregiver-readable source formatter");
 assert.match(evidenceReview, /caregiverReadableCaptureText\(selected\.source_text\)/, "evidence review must not print serialized capture JSON to caregivers");
 assert.match(evidenceReview, /caregiverReadableCaptureText\(item\.source_passage\)/, "individual source passages must be shown in caregiver-readable language");
+assert.match(evidenceReview, /item\.extraction_method !== 'structured_daily_capture'/, "structured source values are not redundantly repeated below their readable source passage");
 assert.match(evidenceReview, /Details recorded from this note or document/, "source details use caregiver-facing language");
 assert.match(language, /capture\.axis === "string" && capture\.score !== undefined/, "a single rating source passage is readable");
 assert.match(language, /capture\.vital_type === "string" && capture\.value !== undefined/, "a single measurement source passage is readable");
