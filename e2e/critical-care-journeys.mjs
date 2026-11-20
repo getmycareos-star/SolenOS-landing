@@ -3013,6 +3013,7 @@ await record("browser renders caregiver surfaces and submits Companion through t
     }).last();
     await restoredMessage.waitFor({ timeout: 20_000 });
     await restoredMessage.getByRole("button", { name: "Save as a care note" }).waitFor({ timeout: 10_000 });
+    await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
 
   // Companion messages remain conversation-only until the caregiver separately
   // confirms the exact message, reviews the proposal, and accepts it.
