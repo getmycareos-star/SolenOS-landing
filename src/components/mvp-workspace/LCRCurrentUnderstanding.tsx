@@ -2263,6 +2263,7 @@ export function LCRCurrentUnderstanding() {
                         )}
                       </div>
                     )}
+                    </details>
                   </li>
                 ))}
               </ul>
