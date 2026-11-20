@@ -36,6 +36,13 @@ import { observationCareFact } from "@/lib/care-epistemics";
 import { caregiverNoteMetaLabel } from "@/lib/care-memory-maturity";
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
+import {
+  deliverDurableWrite,
+  enqueueDurableWrite,
+  markDurableWritePending,
+  syncDurableWrites,
+} from "@/lib/offline-sync/durable-write-queue";
+import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import { EMERGENCY_BOUNDARY } from "@/lib/early-access-trust";
 
 function caregiverNoteMetaLabelFromResponse(response: SituationResponse): string {
@@ -145,6 +152,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
   const [state, setState] = useState<WorkspaceState>("REAL_MOMENT");
   const [rawInput, setRawInput] = useState("");
   const [documents, setDocuments] = useState<AttachedDocument[]>([]);
+  const [situationSubmissionKey, setSituationSubmissionKey] = useState<string | null>(null);
   /** Last successful share — used for CARRYING / LCR when composer is cleared. */
   const [lastSharedDisplay, setLastSharedDisplay] = useState("");
   const [loading, setLoading] = useState(false);
@@ -932,12 +940,14 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                     value={rawInput}
                     onChange={(value) => {
                       setRawInput(value);
+                      setSituationSubmissionKey(null);
                       setLcrOrientationReply(null);
                       setCaregiverError(null);
                     }}
                     documents={documents}
                     onDocumentsChange={(nextDocuments) => {
                       setDocuments(nextDocuments);
+                      setSituationSubmissionKey(null);
                       setLcrOrientationReply(null);
                       setCaregiverError(null);
                     }}
