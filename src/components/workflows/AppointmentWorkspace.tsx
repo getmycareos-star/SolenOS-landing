@@ -217,9 +217,20 @@ export default function AppointmentWorkspace() {
         }
         if (workspaceResult.status === 'fulfilled' && briefResult.status === 'fulfilled') {
           const items = workspaceResult.value.items || []
-          const latest = selectedAppointmentId
+          let latest = selectedAppointmentId
             ? items.find(item => item.appointment_id === selectedAppointmentId) || null
             : items.find(item => !item.appointment_id) || null
+          // Prepare and persist the workspace automatically for an existing
+          // scheduled appointment. The caregiver does not complete a form.
+          // This creates continuity workspace only; it does not book a visit.
+          if (!latest && selectedAppointmentId) {
+            try {
+              const generated = await postJSON('/appointment-workspaces/ensure-upcoming', {}) as { workspace?: WorkspaceRecord | null }
+              latest = generated.workspace || null
+            } catch {
+              if (!cancelled) setMessage('Your visit summary is ready. Its preparation workspace could not be saved just now; you can still review the summary and try again later.')
+            }
+          }
           if (latest) {
             setRecord(latest)
             if (latest.appointment_id) setAppointmentId(latest.appointment_id)
