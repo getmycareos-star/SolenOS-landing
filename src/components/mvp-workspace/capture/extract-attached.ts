@@ -69,7 +69,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
   }
 
   if (queuedId && typeof navigator !== "undefined" && !navigator.onLine) {
-    await markDurableWritePending(queuedId, new Error("Network unavailable"));
+    await markDurableWritePending(queuedId, new Error("Network unavailable"), { countAttempt: false });
     return {
       evidenceId: "",
       processingStatus: "queued",
