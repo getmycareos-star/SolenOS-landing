@@ -342,43 +342,102 @@ function NotificationsCard() {
   );
 }
 
-/** Profile — editable care-recipient fields (no internal identifiers). */
+/** Profile fields are read from and written to the bearer-scoped care record. */
 function ProfileCard() {
   const { show, render } = useToast();
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
   const [condition, setCondition] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE);
-      if (stored) setName(stored);
-      const meta = window.localStorage.getItem("solenos_care_profile");
-      if (meta) {
-        const p = JSON.parse(meta) as {
+    let active = true;
+    void (async () => {
+      setLoading(true);
+      setLoadError("");
+      try {
+        await ensureAnonymousSession();
+        const persisted = await getJSON("/care-profile") as {
+          name?: string;
           relationship?: string;
-          condition?: string;
+          condition?: string | null;
         };
-        if (p.relationship) setRelationship(p.relationship);
-        if (p.condition) setCondition(p.condition);
+
+        // One-time migration of older device-only profile values. They are
+        // removed only after the server confirms the durable write.
+        let legacyName = "";
+        let legacyRelationship = "";
+        let legacyCondition = "";
+        try {
+          legacyName = window.localStorage.getItem(CARE_RECIPIENT_NAME_STORAGE) ?? "";
+          const legacy = window.localStorage.getItem("solenos_care_profile");
+          if (legacy) {
+            const parsed = JSON.parse(legacy) as { relationship?: string; condition?: string };
+            legacyRelationship = parsed.relationship ?? "";
+            legacyCondition = parsed.condition ?? "";
+          }
+        } catch {
+          // Corrupt legacy device data is ignored; PostgreSQL remains authoritative.
+        }
+
+        const resolved = {
+          name: persisted.name?.trim() || legacyName.trim(),
+          relationship: persisted.relationship?.trim() || legacyRelationship.trim(),
+          condition: persisted.condition?.trim() || legacyCondition.trim(),
+        };
+        const needsLegacyMigration = Boolean(
+          legacyName.trim() || legacyRelationship.trim() || legacyCondition.trim(),
+        ) && Boolean(
+          (legacyName.trim() && (!persisted.name?.trim() || persisted.name === "Care recipient")) ||
+          (legacyRelationship.trim() && (!persisted.relationship?.trim() || persisted.relationship === "Family")) ||
+          (legacyCondition.trim() && !persisted.condition?.trim()),
+        );
+
+        let profile = persisted;
+        if (needsLegacyMigration && resolved.name) {
+          profile = await putJSON("/care-profile", {
+            name: resolved.name,
+            relationship: resolved.relationship,
+            condition: resolved.condition || null,
+          }) as typeof persisted;
+          try {
+            window.localStorage.removeItem(CARE_RECIPIENT_NAME_STORAGE);
+            window.localStorage.removeItem("solenos_care_profile");
+          } catch {
+            // The server write is already authoritative; stale legacy keys are harmless.
+          }
+        }
+
+        if (!active) return;
+        setName(profile.name ?? "");
+        setRelationship(profile.relationship ?? "");
+        setCondition(profile.condition ?? "");
+      } catch {
+        if (active) setLoadError("We couldn't load your saved profile. Your changes are not available until the care record reconnects.");
+      } finally {
+        if (active) setLoading(false);
       }
-    } catch {
-      /* ignore */
-    }
+    })();
+    return () => { active = false; };
   }, []);
 
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
     setSaving(true);
     try {
-      window.localStorage.setItem(CARE_RECIPIENT_NAME_STORAGE, name.trim());
-      window.localStorage.setItem(
-        "solenos_care_profile",
-        JSON.stringify({ relationship: relationship.trim(), condition: condition.trim() }),
-      );
-      show("Saved on this device", "success");
+      await ensureAnonymousSession();
+      const saved = await putJSON("/care-profile", {
+        name: name.trim(),
+        relationship: relationship.trim(),
+        condition: condition.trim() || null,
+      }) as { name: string; relationship: string; condition?: string | null };
+      setName(saved.name);
+      setRelationship(saved.relationship);
+      setCondition(saved.condition ?? "");
+      show("Care profile saved to your care record.", "success");
     } catch {
-      show("Could not save", "error");
+      show("Your care profile wasn't saved. Check your connection and try again.", "error");
     } finally {
       setSaving(false);
     }
@@ -389,6 +448,8 @@ function ProfileCard() {
       <h2 className="mobile-settings-card-title">
         <User size={16} aria-hidden /> Profile
       </h2>
+      {loading && <p className="mobile-settings-hint" role="status">Loading your saved care profile…</p>}
+      {loadError && <p className="mobile-settings-hint" role="alert">{loadError}</p>}
       <div className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.4rem" }}>
         <label className="mobile-settings-label" htmlFor="mob-name">
           Care recipient name
@@ -426,7 +487,7 @@ function ProfileCard() {
         />
       </div>
       <div className="mobile-settings-actions">
-        <Button variant="primary" loading={saving} onClick={save}>
+        <Button variant="primary" loading={saving} disabled={loading || Boolean(loadError) || !name.trim()} onClick={save}>
           {saving ? undefined : "Save"}
         </Button>
       </div>
