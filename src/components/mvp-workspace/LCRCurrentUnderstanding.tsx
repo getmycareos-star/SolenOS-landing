@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
-import { caregiverFieldLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
@@ -561,49 +561,7 @@ function displayCurrentCareDescription(item: CurrentCareItem): string | null {
 
 function displayDescription(value?: string | null): string {
   if (!value?.trim()) return "No description was recorded.";
-  try {
-    const parsed: unknown = JSON.parse(value);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      const parsedRecord = parsed as Record<string, unknown>;
-      const captureValue = parsedRecord.original_capture;
-      const captureRecord = captureValue && typeof captureValue === "object" && !Array.isArray(captureValue)
-        ? captureValue as Record<string, unknown>
-        : parsedRecord;
-      const quickValue = captureRecord.quick_check_in;
-      if (quickValue && typeof quickValue === "object" && !Array.isArray(quickValue)) {
-        const quick = quickValue as Record<string, unknown>;
-        const kindLabels: Record<string, string> = {
-          same_as_usual: "Same as usual",
-          change: "Something changed",
-          concern: "I have a concern",
-          care_completed: "Care was completed",
-          uncertain: "I’m not sure",
-        };
-        const areas = Array.isArray(quick.selected_areas)
-          ? quick.selected_areas.filter((item): item is string => typeof item === "string")
-               .map(caregiverLabel)
-          : [];
-        const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
-        .find((item): item is string => typeof item === "string" && item.trim().length > 0);
-      const safeSummary = summary ? caregiverSafeAssistantText(summary) || "" : "";
-        return [
-          safeSummary,
-          `Update type: ${kindLabels[String(quick.kind)] || "Caregiver check-in"}`,
-          areas.length ? `Areas selected: ${areas.join(", ")}` : "",
-          quick.scope === "selected_areas_only" ? "Scope: selected areas only" : "",
-        ].filter(Boolean).join("\n");
-      }
-      const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
-        .find((item): item is string => typeof item === "string" && item.trim().length > 0);
-      if (summary) return caregiverSafeAssistantText(summary) || "Saved care information";
-      return "Saved care information";
-    }
-    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || "Saved care information";
-  } catch {
-    // Malformed serialized payloads are not caregiver-readable source text.
-    if (/^[\\s]*[\\[{]/.test(value)) return "Saved care information";
-  }
-  return caregiverSafeAssistantText(value) || "Saved care information";
+  return caregiverReadableCaptureText(value) || "Saved care information";
 }
 
 function formatWhen(value?: string | null): string {

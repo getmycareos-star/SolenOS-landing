@@ -178,6 +178,9 @@ assert.doesNotMatch(careContinuity, /lcr-primary-actions|Capture how today is go
 assert.match(historyDrawer, /collapseDuplicateDailyCaptureWrappers/, "recent history groups capture wrappers linked to the exact same source evidence");
 assert.ok(historyDrawer.includes("source_record_ids: group.map"), "grouped history keeps the IDs of every original source event");
 
+assert.match(currentUnderstanding, /caregiverReadableCaptureText\(value\)/, "the Living Care Record uses the shared readable source formatter");
+assert.doesNotMatch(currentUnderstanding, /Scope: selected areas only/, "internal capture scope is not shown in the caregiver record");
+
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
 console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
