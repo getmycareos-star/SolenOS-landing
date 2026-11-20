@@ -1748,9 +1748,36 @@ await record("Daily Care capture survives secondary read failures", async () => 
   // Keep normal page navigation online; the route below blocks only the
   // care-write POST so the saved queue can be observed after a full reload.
   await resilient.page.reload({ waitUntil: "domcontentloaded" });
-  await resilient.page.getByRole("status")
-    .filter({ hasText: "update waiting to sync with the care record" })
-    .waitFor({ timeout: 15_000 });
+  try {
+    await resilient.page.getByRole("status")
+      .filter({ hasText: "update waiting to sync with the care record" })
+      .waitFor({ timeout: 15_000 });
+  } catch (error) {
+    const state = await resilient.page.evaluate(async () => {
+      const db = await new Promise((resolve, reject) => {
+        const open = indexedDB.open("solenos-durable-write-queue", 1);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => resolve(open.result);
+      });
+      const rows = await new Promise((resolve, reject) => {
+        const transaction = db.transaction("writes", "readonly");
+        const request = transaction.objectStore("writes").getAll();
+        request.onsuccess = () => resolve(request.result.map((row) => ({
+          id: row.id, endpoint: row.endpoint, status: row.status,
+          attempts: row.attempts, next_retry_at: row.next_retry_at,
+        })));
+        request.onerror = () => reject(request.error);
+      });
+      return {
+        online: navigator.onLine,
+        rows,
+        visibleText: document.body.innerText.slice(-1800),
+        personIdPresent: Boolean(localStorage.getItem("solenos_person_id") || localStorage.getItem("person_id")),
+      };
+    });
+    console.log("OFFLINE_RELOAD_DIAGNOSTIC", JSON.stringify(state));
+    throw error;
+  }
   await resilient.page.unroute("**/api/v1/daily-care/entries", abortFirstSync);
 
   const syncResponsePromise = resilient.page.waitForResponse((response) =>
