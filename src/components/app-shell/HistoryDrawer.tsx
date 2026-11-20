@@ -20,7 +20,8 @@ import { RecordState } from "@/components/ui/RecordState";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome" | "follow-up";
 type HistoryLoadStatus = "loading" | "complete" | "partial" | "failed" | "empty" | "stale";
-const HISTORY_STATUS_CATEGORIES: HistoryCategory[] = [
+type HistoryStatusCategory = "daily-care" | "document" | "appointment" | "handoff" | "decision" | "outcome" | "follow-up";
+const HISTORY_STATUS_CATEGORIES: HistoryStatusCategory[] = [
   "daily-care", "document", "appointment", "handoff", "decision", "outcome", "follow-up",
 ];
 
@@ -851,7 +852,7 @@ export function HistoryDrawer() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
-  const [sourceStatuses, setSourceStatuses] = useState<Record<HistoryCategory, HistoryLoadStatus>>({
+  const [sourceStatuses, setSourceStatuses] = useState<Record<HistoryStatusCategory, HistoryLoadStatus>>({
     "daily-care": "loading",
     document: "loading",
     appointment: "loading",
@@ -1209,7 +1210,7 @@ export function HistoryDrawer() {
       const caregiverRecords = nextRecords.filter((record) => record.source_kind !== "lcr-revision");
       const categoryHasRecords = (category: HistoryCategory) =>
         caregiverRecords.some((record) => categoryFor(record) === category);
-      const warningMatches = (category: HistoryCategory) => {
+      const warningMatches = (category: HistoryStatusCategory) => {
         const allWarnings = warnings.join(" ").toLowerCase();
         if (category === "daily-care") return /event history|saved care events|event history could not be verified/.test(allWarnings);
         if (category === "document") return /saved documents/.test(allWarnings);
@@ -1225,7 +1226,7 @@ export function HistoryDrawer() {
         }
         if (category === "handoff" && handoffConsentRequired) return [category, "partial"];
         return [category, categoryHasRecords(category) ? "complete" : "empty"];
-      })) as Record<HistoryCategory, HistoryLoadStatus>;
+      })) as Record<HistoryStatusCategory, HistoryLoadStatus>;
       setRecords(caregiverRecords);
       setSourceStatuses(nextStatuses);
       setSourceWarnings(warnings);
@@ -1238,7 +1239,7 @@ export function HistoryDrawer() {
           : current[category] === "empty" || current[category] === "complete" || current[category] === "partial"
             ? "stale"
             : current[category],
-      ])) as Record<HistoryCategory, HistoryLoadStatus>);
+      ])) as Record<HistoryStatusCategory, HistoryLoadStatus>);
       const message = cause instanceof Error ? cause.message : "";
       const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
       if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
