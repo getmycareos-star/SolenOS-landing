@@ -113,6 +113,25 @@ type CaregiverRole = {
   is_current: boolean;
   effective_start: string;
 };
+type CaregiverActivity = {
+  id: string;
+  activity_type: string;
+  description: string;
+  occurred_at: string;
+};
+const CARE_ACTIVITY_OPTIONS = [
+  { value: "performed_task", label: "Completed a care task" },
+  { value: "reported_observation", label: "Recorded an observation" },
+  { value: "communicated", label: "Communicated with another caregiver" },
+  { value: "coordinated_appointment", label: "Coordinated an appointment" },
+  { value: "uploaded_document", label: "Added a care document" },
+  { value: "acknowledged_instruction", label: "Acknowledged care information" },
+  { value: "delegated", label: "Assigned a care responsibility" },
+  { value: "handed_off", label: "Handed over a care responsibility" },
+  { value: "requested_clarification", label: "Requested clarification" },
+  { value: "updated_medication_info", label: "Updated medication information" },
+] as const;
+
 const CARE_ROLE_OPTIONS = [
   { value: "medication_manager", label: "Medication support" },
   { value: "appointment_coordinator", label: "Appointments" },
@@ -168,6 +187,11 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [members, setMembers] = useState<Member[]>([]);
   const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
   const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
+  const [currentPersonId, setCurrentPersonId] = useState<string | null>(null);
+  const [activities, setActivities] = useState<CaregiverActivity[]>([]);
+  const [activityType, setActivityType] = useState<(typeof CARE_ACTIVITY_OPTIONS)[number]["value"]>("performed_task");
+  const [activityDescription, setActivityDescription] = useState("");
+  const [savingActivity, setSavingActivity] = useState(false);
   const [newResponsibilityType, setNewResponsibilityType] = useState("");
   const [newResponsibilityScope, setNewResponsibilityScope] = useState("");
   const [savingResponsibility, setSavingResponsibility] = useState(false);
@@ -225,6 +249,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setAllowed(false);
       setCanManageMembers(false);
       setCurrentProfileId(null);
+      setCurrentPersonId(null);
+      setActivities([]);
       setCurrentSessionCaregiverId("");
       setLoading(false);
       return;
@@ -235,6 +261,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       const session = await ensureAnonymousSession();
       const personId = session.person.id;
       const caregiverId = session.caregiver.id;
+      setCurrentPersonId(personId);
       setCurrentSessionCaregiverId(caregiverId);
 
       const [
@@ -251,6 +278,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         observationResult,
         perspectiveResult,
         roleResult,
+        activityResult,
       ] = await Promise.allSettled([
         getJSON("/caregiver-access/responsibility-transfers") as Promise<Transfer[]>,
         getJSON("/caregiver-access/primary-transfers") as Promise<PrimaryTransfer[]>,
@@ -265,6 +293,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         getJSON("/caregiver-observations/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivateObservation[]>,
         getJSON("/caregiver-perspectives/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivatePerspective[]>,
         getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
+        getJSON("/caregiver-activities/" + encodeURIComponent(personId) + "?limit=30") as Promise<CaregiverActivity[]>,
       ]);
 
       if (transferResult.status === "fulfilled") setTransfers(transferResult.value ?? []);
@@ -307,6 +336,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       if (roleResult.status === "fulfilled" && ownProfileId) {
         setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === ownProfileId && item.is_current));
       } else setMyRoles([]);
+      if (activityResult.status === "fulfilled") setActivities(activityResult.value ?? []);
+      else setActivities([]);
 
       if (profileResult.status === "rejected") {
         setError("We couldn't confirm your caregiver profile. Your personal care details are hidden until it can be checked.");
@@ -323,6 +354,36 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   }, []);
 
   useEffect(() => { if (enabled) void load(); }, [enabled, load]);
+
+  const saveCaregiverActivity = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!currentPersonId || !currentProfileId || !activityDescription.trim()) return;
+    setSavingActivity(true);
+    setError("");
+    setNotice("");
+    try {
+      const created = await postJSON("/caregiver-activities", {
+        person_id: currentPersonId,
+        caregiver_id: currentProfileId,
+        activity_type: activityType,
+        description: activityDescription.trim(),
+        occurred_at: new Date().toISOString(),
+        is_anonymous: false,
+        shared_account_id: null,
+        related_entity_type: null,
+        related_entity_id: null,
+        extra_metadata: null,
+      }) as CaregiverActivity;
+      if (!created?.id) throw new Error("The server did not return a saved activity record.");
+      setActivities((current) => [created, ...current.filter((item) => item.id !== created.id)].slice(0, 30));
+      setActivityDescription("");
+      setNotice("Activity saved to the caregiver history. It does not change the Living Care Record.");
+    } catch {
+      setError("We couldn't confirm that this activity was saved. Refresh the caregiver history before trying again.");
+    } finally {
+      setSavingActivity(false);
+    }
+  };
 
   const invite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -800,6 +861,34 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               {sendingCommunication ? undefined : "Share with caregivers"}
             </Button>
           </form>
+
+          <section style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
+            <div>
+              <h3 className="mobile-settings-label" style={{ margin: 0 }}>Caregiver activity history</h3>
+              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0 0" }}>Record an action you took while helping with care. This history is separate from the Living Care Record and may be visible to caregivers who have access.</p>
+            </div>
+            <form onSubmit={(event) => void saveCaregiverActivity(event)} style={{ display: "grid", gap: "0.5rem" }}>
+              <label className="mobile-settings-label" htmlFor="caregiver-activity-type">What kind of activity was it?</label>
+              <select id="caregiver-activity-type" className="mobile-settings-input" value={activityType} onChange={(event) => setActivityType(event.target.value as (typeof CARE_ACTIVITY_OPTIONS)[number]["value"])}>
+                {CARE_ACTIVITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <label className="mobile-settings-label" htmlFor="caregiver-activity-description">What did you do?</label>
+              <textarea id="caregiver-activity-description" className="mobile-settings-input" rows={2} maxLength={500} required value={activityDescription} onChange={(event) => setActivityDescription(event.target.value)} placeholder="Add a short description of the activity." />
+              <Button type="submit" variant="secondary" disabled={savingActivity || !currentProfileId || !activityDescription.trim()} loading={savingActivity}>Save activity</Button>
+            </form>
+            {activities.length > 0 ? (
+              <div style={{ display: "grid", gap: "0.55rem" }}>
+                {activities.slice(0, 10).map((item) => (
+                  <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.55rem" }}>
+                    <p style={{ margin: "0 0 0.2rem", fontSize: "0.9rem" }}>{item.description}</p>
+                    <span className="mobile-settings-hint">{caregiverFieldLabel(item.activity_type)} · {new Date(item.occurred_at).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mobile-settings-hint" style={{ margin: 0 }}>No caregiver activities have been recorded yet.</p>
+            )}
+          </section>
 
           <section style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
             <div>
