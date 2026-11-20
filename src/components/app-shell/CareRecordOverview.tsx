@@ -50,6 +50,7 @@ export function CareRecordOverview() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<"error" | "forbidden" | "unavailable">("error");
   const [historyNote, setHistoryNote] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -68,6 +69,7 @@ export function CareRecordOverview() {
     if (manual) setRefreshing(true);
     else if (!hasLoadedRef.current) setLoading(true);
     setError(null);
+    setErrorKind("error");
     setHistoryNote(null);
     try {
       const session = await ensureAnonymousSession();
@@ -110,6 +112,8 @@ export function CareRecordOverview() {
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
       const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
+      const unavailable = /502|503|504|network|fetch failed|failed to fetch|timeout|timed out|ECONN/i.test(message);
+      setErrorKind(accessDenied ? "forbidden" : unavailable ? "unavailable" : "error");
       if (accessDenied) {
         setItems([]);
         setChanges([]);
@@ -142,7 +146,7 @@ export function CareRecordOverview() {
         </button>
       </header>
 
-      {error && <RecordState kind={/\b(401|403|unauthori[sz]ed|forbidden|not authenticated|access denied|permission)\b/i.test(error) ? "forbidden" : /\b(502|503|504|network|fetch failed)\b/i.test(error) ? "unavailable" : "error"} description={error} onAction={() => void load(true)} />}
+      {error && <RecordState kind={errorKind} description={error} onAction={() => void load(true)} />}
       {loading && !hasLoaded ? <RecordState kind="loading" /> : (hasLoaded || !error) && (
         <>
           <section className="care-record-overview__section">
