@@ -2502,6 +2502,8 @@ await record("12b invited caregiver sees the shared care record in a separate br
   sharedReminder = sharedReminderRows.payload.find((item) => item.title === sharedReminderTitle);
   assert.equal(sharedReminder.assigned_to_caregiver_id, identity.caregiverId);
   assert.equal(sharedReminder.version, 2, "reassignment must advance the optimistic version");
+  await sharedReminderItem.getByText("Responsibility history", { exact: true }).click();
+  await sharedReminderItem.getByText(/Assigned by/, { exact: false }).waitFor({ timeout: 10_000 });
   assert.deepEqual(primaryReminderBrowser.pageErrors, [], "shared reminder assignment must not throw browser errors");
   await primaryReminderBrowser.context.close();
 
