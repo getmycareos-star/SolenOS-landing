@@ -155,7 +155,7 @@ export default function DailyCarePhotoCapture() {
       setFile(null);
       setIngestionKey(null);
       window.dispatchEvent(new Event("careRecordUpdated"));
-    } catch (cause) {
+    } catch {
       if (queueId) {
         setPendingLocal(true);
         const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
