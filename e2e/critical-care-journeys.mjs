@@ -2513,6 +2513,34 @@ await record("12b invited caregiver sees the shared care record in a separate br
     { token: accepted.payload.access_token },
   );
   assert.equal(invitedSummary.status, 200, JSON.stringify(invitedSummary.payload));
+  await settingsPage.getByRole("button", { name: "Share care context", exact: true }).waitFor({ timeout: 20_000 });
+  await settingsPage.getByLabel("Where are you based relative to the person you help?").selectOption("remote");
+  await settingsPage.getByLabel("When are you usually available? (optional)").fill("Weekday evenings");
+  await settingsPage.getByLabel("Availability window end").fill("Weekends by arrangement");
+  await settingsPage.getByLabel("Anything else the care team should know? (optional)").fill(
+    "Can help with appointment transport when arranged in advance.",
+  );
+  await settingsPage.getByLabel("Care context sharing confirmation").check();
+  await settingsPage.getByRole("button", { name: "Share care context", exact: true }).click();
+  await settingsPage.getByText(
+    "Your care context was shared with caregivers who have access to this Care Record.",
+    { exact: true },
+  ).waitFor({ timeout: 20_000 });
+  const sharedCareContexts = await request(
+    `/api/v1/caregiver-contexts/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(sharedCareContexts.status, 200, JSON.stringify(sharedCareContexts.payload));
+  assert(
+    sharedCareContexts.payload.some((item) =>
+      item.caregiver_id === currentCaregiverProfile.payload.id
+      && item.proximity_category === "remote"
+      && item.observation_window_start === "Weekday evenings"
+      && item.observation_window_end === "Weekends by arrangement"
+      && item.availability_notes === "Can help with appointment transport when arranged in advance."
+    ),
+    "an explicitly shared caregiver context must persist and be visible to another authorized caregiver",
+  );
   const invitedCrossRecordSummary = await request(
     "/api/v1/multi-caregiver-summary?person_id=another-person",
     { token: accepted.payload.access_token },
