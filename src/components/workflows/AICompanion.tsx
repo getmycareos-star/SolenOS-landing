@@ -258,8 +258,30 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       try {
         const session = await ensureAnonymousSession()
         storageKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
-        const savedSessionId = window.localStorage.getItem(storageKey)
-        if (!savedSessionId) return
+        let savedSessionId = window.localStorage.getItem(storageKey)
+        if (!savedSessionId) {
+          // Browser storage is only a fast pointer. The authenticated server
+          // list is the durable source, so a new device can restore the latest
+          // conversation without the previous device's localStorage key.
+          const listing = await getJSON('/conversations?limit=1') as {
+            person_id?: string
+            items?: Array<{ session_id?: string; person_id?: string }>
+          }
+          if (listing.person_id !== session.person.id) {
+            throw new Error('The conversation list did not match the active care record.')
+          }
+          const latest = listing.items?.[0]
+          if (!latest) return
+          if (!latest.session_id || latest.person_id !== session.person.id) {
+            throw new Error('The latest conversation did not match the active care record.')
+          }
+          savedSessionId = latest.session_id
+          try {
+            window.localStorage.setItem(storageKey, savedSessionId)
+          } catch {
+            // Server-backed listing and history remain usable without a local cache.
+          }
+        }
         const response = await getJSON('/conversation/' + encodeURIComponent(savedSessionId)) as {
           session_id?: string
           person_id?: string
