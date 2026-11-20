@@ -376,6 +376,35 @@ export async function discardBlockedDurableWrites(
   return removed;
 }
 
+export async function retryPendingDurableWrites(
+  personId: string,
+  caregiverId: string,
+  endpoints?: string[],
+): Promise<number> {
+  const db = await openDatabase();
+  const rows = await getAllWrites(db);
+  let retried = 0;
+  const now = Date.now();
+  for (const row of rows) {
+    if (
+      row.person_id === personId &&
+      row.caregiver_id === caregiverId &&
+      (!endpoints || endpoints.includes(row.endpoint)) &&
+      row.status === "pending" &&
+      row.next_retry_at > now
+    ) {
+      await putWrite(db, {
+        ...row,
+        next_retry_at: now,
+        updated_at: now,
+      });
+      retried += 1;
+    }
+  }
+  if (retried > 0) dispatchQueueUpdated();
+  return retried;
+}
+
 export async function retryBlockedDurableWrites(
   personId: string,
   caregiverId: string,
