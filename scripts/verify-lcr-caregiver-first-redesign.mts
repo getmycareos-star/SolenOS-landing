@@ -225,3 +225,5 @@ assert.match(currentUnderstanding, /observation\.context[\s\S]*?observation\.sou
 assert.match(currentUnderstanding, /outcomes\?: CurrentCareItem\[\][\s\S]*?projection\.outcomes\.map/, "persisted outcomes have a dedicated caregiver-facing projection");
 assert.match(currentUnderstanding, /<h3 id="lcr-outcomes-heading">What happened<\/h3>/, "the Living Care Record shows recorded outcomes separately from agreed actions");
 assert.match(currentUnderstanding, /related_record_type[\s\S]*?Linked to/, "outcomes retain their link to the decision, action or follow-up that produced them");
+
+assert.match(currentUnderstanding, /<h3 id="lcr-history-heading">Your care history<\/h3>[\s\S]*?href="\/workspace\/timeline"/, "the caregiver can open the complete chronological care history");
