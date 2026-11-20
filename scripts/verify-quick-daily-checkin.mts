@@ -18,6 +18,10 @@ const detailedCapture = fs.readFileSync(
   `${root}/src/components/workflows/StructuredDailyCapture.tsx`,
   "utf8",
 );
+const durableWriteSender = fs.readFileSync(
+  `${root}/src/lib/offline-sync/send-queued-care-write.ts`,
+  "utf8",
+);
 
 assert.match(dailyCarePage, /<QuickDailyCheckIn\s*\/>/,
   "Daily Care mounts the optional quick check-in");
@@ -49,8 +53,10 @@ assert.match(checkIn, /epistemic_status:\s*"caregiver_reported"/,
   "the entry remains a caregiver report, not a verified clinical fact");
 assert.match(checkIn, /idempotency_key:\s*requestKey/,
   "an unchanged retry reuses its idempotency key");
-assert.match(checkIn, /response\?\.success !== true/,
-  "the interface requires a backend success receipt");
+assert.match(durableWriteSender, /response\?\.success !== true/,
+  "the shared durable sender requires an explicit backend success receipt");
+assert.match(durableWriteSender, /response\.id === undefined \|\| response\.id === null/,
+  "the shared durable sender requires a persisted record identifier before clearing the queue");
 assert.match(checkIn, /does not confirm medicines were given or measurements were taken/,
   "an overall impression cannot imply medication or measurement completion");
 assert.match(checkIn, /window\.dispatchEvent\(new Event\("careRecordUpdated"\)\)/,
