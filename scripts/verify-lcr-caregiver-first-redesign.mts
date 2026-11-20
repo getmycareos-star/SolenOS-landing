@@ -179,6 +179,8 @@ assert.match(historyDrawer, /collapseDuplicateDailyCaptureWrappers/, "recent his
 assert.ok(historyDrawer.includes("source_record_ids: group.map"), "grouped history keeps the IDs of every original source event");
 
 assert.match(currentUnderstanding, /caregiverReadableCaptureText\(value\)/, "the Living Care Record uses the shared readable source formatter");
+assert.match(currentUnderstanding, /const refreshWholeRecord = useCallback/, "the main refresh action runs care reassessment and reloads the record");
+assert.match(currentUnderstanding, /await refreshSituationAssessment\(\);\s*await load\(true\);/, "refresh backfills saved details before reloading the caregiver view");
 assert.doesNotMatch(currentUnderstanding, /Scope: selected areas only/, "internal capture scope is not shown in the caregiver record");
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");

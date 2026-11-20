@@ -726,7 +726,7 @@ export function LCRCurrentUnderstanding() {
     }
   }, []);
 
-  const refreshSituationAssessment = useCallback(async () => {
+  const refreshSituationAssessment = useCallback(async (): Promise<boolean> => {
     setAssessmentLoading(true);
     setAssessmentError(null);
     try {
@@ -743,11 +743,13 @@ export function LCRCurrentUnderstanding() {
         setAssessment(current.assessment);
         setSourceFreshness(current.source_freshness ?? null);
         setAssessmentError(null);
+        return true;
       } else {
         throw new Error("The refreshed care summary did not match the active care record.");
       }
     } catch {
       setAssessmentError("The latest care summary could not be refreshed. The last saved view is shown and may be out of date.");
+      return false;
     } finally {
       setAssessmentLoading(false);
     }
@@ -1031,6 +1033,14 @@ export function LCRCurrentUnderstanding() {
     }
   }, [changeEvidence, expandedChangeId]);
 
+  const refreshWholeRecord = useCallback(async () => {
+    const assessmentUpdated = await refreshSituationAssessment();
+    await load(true);
+    if (!assessmentUpdated) {
+      setAssessmentError("The latest care summary could not be refreshed. The last saved view is shown and may be out of date.");
+    }
+  }, [refreshWholeRecord]);
+
   const reassess = useCallback(async () => {
     setAssessmentLoading(true);
     setAssessmentError(null);
@@ -1053,8 +1063,7 @@ export function LCRCurrentUnderstanding() {
     void load();
     const refreshAfterCareRecordWrite = () => {
       void (async () => {
-        await load(true);
-        await refreshSituationAssessment();
+        await refreshWholeRecord();
       })();
     };
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
@@ -1254,8 +1263,8 @@ export function LCRCurrentUnderstanding() {
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
           <p className="lcr-record-introduction">This record reflects the care information saved here. It may not include everything happening in care.</p>
         </div>
-        <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh care summary">
-          <RefreshCw size={16} aria-hidden="true" /> Refresh care summary
+        <button type="button" className="lcr-text-action" onClick={() => void refreshWholeRecord()} disabled={loading || refreshing || assessmentLoading} aria-label="Refresh care summary">
+          <RefreshCw size={16} aria-hidden="true" /> {refreshing || assessmentLoading ? "Refreshing…" : "Refresh care summary"}
         </button>
       </div>
 
@@ -1411,7 +1420,7 @@ export function LCRCurrentUnderstanding() {
             <p>{sourceFreshness.status === "freshness_check_unavailable"
               ? "We couldn’t check whether this care summary is up to date. The last saved version is still available, but it may be out of date. Refresh before relying on it."
               : "Some information may have changed since this picture was last reviewed. Refresh to check for updates."}</p>
-            <button type="button" onClick={() => void refreshSituationAssessment()} disabled={assessmentLoading}>
+            <button type="button" onClick={() => void refreshWholeRecord()} disabled={assessmentLoading || refreshing}>
               {assessmentLoading ? "Refreshing…" : "Refresh care summary"}
             </button>
           </div>
