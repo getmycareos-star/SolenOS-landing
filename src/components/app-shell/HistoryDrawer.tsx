@@ -19,6 +19,11 @@ import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssist
 import { RecordState } from "@/components/ui/RecordState";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome" | "follow-up";
+type HistoryLoadStatus = "loading" | "complete" | "partial" | "failed" | "empty" | "stale";
+const HISTORY_STATUS_CATEGORIES: HistoryCategory[] = [
+  "care-event", "document", "appointment", "handoff", "decision", "outcome", "follow-up",
+];
+
 type HistoryCategory =
   | "daily-care"
   | "document"
@@ -846,6 +851,15 @@ export function HistoryDrawer() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
+  const [sourceStatuses, setSourceStatuses] = useState<Record<HistoryCategory, HistoryLoadStatus>>({
+    "care-event": "loading",
+    document: "loading",
+    appointment: "loading",
+    handoff: "loading",
+    decision: "loading",
+    outcome: "loading",
+    "follow-up": "loading",
+  });
   const [handoffConsentRequired, setHandoffConsentRequired] = useState(false);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const loadHistory = useCallback(async (manual = false) => {
@@ -853,6 +867,15 @@ export function HistoryDrawer() {
     else setLoading(true);
     setError(null);
     setSourceWarnings([]);
+    setSourceStatuses({
+      "care-event": "loading",
+      document: "loading",
+      appointment: "loading",
+      handoff: "loading",
+      decision: "loading",
+      outcome: "loading",
+      "follow-up": "loading",
+    });
     setHandoffConsentRequired(false);
     let requestPersonId: string | null = null;
 
@@ -1183,10 +1206,39 @@ export function HistoryDrawer() {
       });
 
       // Internal persistence revisions remain in the backend audit history, not the caregiver timeline.
-      setRecords(nextRecords.filter((record) => record.source_kind !== "lcr-revision"));
+      const caregiverRecords = nextRecords.filter((record) => record.source_kind !== "lcr-revision");
+      const categoryHasRecords = (category: HistoryCategory) =>
+        caregiverRecords.some((record) => categoryFor(record) === category);
+      const warningMatches = (category: HistoryCategory) => {
+        const allWarnings = warnings.join(" ").toLowerCase();
+        if (category === "care-event") return /event history|saved care events|event history could not be verified/.test(allWarnings);
+        if (category === "document") return /saved documents/.test(allWarnings);
+        if (category === "appointment") return /appointment/.test(allWarnings);
+        if (category === "handoff") return /handoff/.test(allWarnings) || handoffConsentRequired;
+        if (category === "decision") return /care decisions/.test(allWarnings);
+        if (category === "outcome") return /outcomes/.test(allWarnings);
+        return /follow-ups/.test(allWarnings);
+      };
+      const nextStatuses = Object.fromEntries(HISTORY_STATUS_CATEGORIES.map((category) => {
+        if (warningMatches(category)) {
+          return [category, categoryHasRecords(category) ? "partial" : "failed"];
+        }
+        if (category === "handoff" && handoffConsentRequired) return [category, "partial"];
+        return [category, categoryHasRecords(category) ? "complete" : "empty"];
+      })) as Record<HistoryCategory, HistoryLoadStatus>;
+      setRecords(caregiverRecords);
+      setSourceStatuses(nextStatuses);
       setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
+      setSourceStatuses((current) => Object.fromEntries(HISTORY_STATUS_CATEGORIES.map((category) => [
+        category,
+        current[category] === "loading"
+          ? "failed"
+          : current[category] === "empty" || current[category] === "complete" || current[category] === "partial"
+            ? "stale"
+            : current[category],
+      ])) as Record<HistoryCategory, HistoryLoadStatus>);
       const message = cause instanceof Error ? cause.message : "";
       const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
       if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
