@@ -294,7 +294,22 @@ export default function FollowUpsPage() {
     const nextAssessment = nextAssessmentResponse?.assessment && nextAssessmentResponse.assessment.person_id === personId
       ? nextAssessmentResponse.assessment : null;
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
-    if (nextLoops !== null) setLoops(nextLoops);
+    if (nextLoops !== null) {
+      // The API paginates by immutable creation order so edits cannot move
+      // records across page boundaries. Restore the caregiver-facing priority
+      // order only after the complete list has been retrieved.
+      const displayOrdered = [...nextLoops].sort((left, right) => {
+        const leftDeadline = left.deadline_at ? Date.parse(left.deadline_at) : Number.POSITIVE_INFINITY;
+        const rightDeadline = right.deadline_at ? Date.parse(right.deadline_at) : Number.POSITIVE_INFINITY;
+        const safeLeftDeadline = Number.isFinite(leftDeadline) ? leftDeadline : Number.POSITIVE_INFINITY;
+        const safeRightDeadline = Number.isFinite(rightDeadline) ? rightDeadline : Number.POSITIVE_INFINITY;
+        if (safeLeftDeadline !== safeRightDeadline) return safeLeftDeadline - safeRightDeadline;
+        const updatedDifference = Date.parse(right.updated_at) - Date.parse(left.updated_at);
+        if (Number.isFinite(updatedDifference) && updatedDifference !== 0) return updatedDifference;
+        return left.id.localeCompare(right.id);
+      });
+      setLoops(displayOrdered);
+    }
     if (nextAssessment !== null) setAssessment(nextAssessment);
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
     else if (!reassessmentFailed) setAttentionWarning("");
