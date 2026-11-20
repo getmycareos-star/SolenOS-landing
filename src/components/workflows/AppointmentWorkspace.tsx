@@ -233,7 +233,7 @@ export default function AppointmentWorkspace() {
               } catch {
                 if (!cancelled) {
                   setOutcomeProposals([])
-                  if (latest.payload?.captureStage === 'after') setError('Your appointment note is saved. SolenOS could not prepare its review suggestions just now.')
+                  if (latest.payload?.captureStage === 'after') setError('Your appointment note is saved. SolenOS could not prepare the suggested details just now.')
                 }
               }
             } catch {
@@ -492,8 +492,8 @@ export default function AppointmentWorkspace() {
                     {brief.decision_outcomes?.length ? <section><h6>What happened after those decisions</h6><ul>{brief.decision_outcomes.slice(0, 2).map(item => <li key={item.id}><p>{caregiverSafeAssistantText(item.description) || "An outcome was recorded."}</p><small>{caregiverStatusLabel(item.outcome_status || "recorded") || "Outcome recorded"}{item.observed_at ? ` · ${new Date(item.observed_at).toLocaleDateString()}` : ""}</small></li>)}</ul></section> : null}
                   </div>}
               <details className="appointment-source-review">
-                <summary>Review source details and information checks</summary>
-                <p className="guided-footnote">These details explain which records SolenOS could access and what checks were completed. They are here when you need them; you do not need to manage them to prepare for a visit.</p>
+                <summary>More about the information in this summary</summary>
+                <p className="guided-footnote">This section shows what information was available and what could not be checked. You do not need to manage these details to prepare for a visit.</p>
 <div className="guided-columns">
               {(Object.entries(brief.source_completeness ?? {}).some(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false) ||
                 brief.living_care_record_context == null ||
@@ -502,11 +502,11 @@ export default function AppointmentWorkspace() {
                 brief.living_care_record_context.schema_status !== "complete" ||
                 (brief.living_care_record_context.missing_required_sources?.length ?? 0) > 0 ||
                 (brief.living_care_record_context.missing_optional_sources?.length ?? 0) > 0) && <section className="guided-muted guided-full-span" role="status">
-                <h5>Some parts of your Care Record could not be fully checked</h5>
-                <p>This appointment summary shows only some saved care information. Check your full Care Record before relying on it as the complete history.</p>
-                {brief.living_care_record_context == null && <p>This service did not return the Care Record coverage details needed to confirm this summary is complete. Open the full Care Record before relying on it as the complete history.</p>}
+                <h5>Some care information is missing from this summary</h5>
+                <p>This appointment summary shows only some saved care information. Open your full Care Record if you need more information before the visit.</p>
+                {brief.living_care_record_context == null && <p>SolenOS could not check whether this summary includes all of your saved care information. Open the full Care Record before relying on it as the complete history.</p>}
                 {brief.living_care_record_context?.schema_status === "failed" && <p>We could not check the full Care Record just now. Refresh or open the Care Record before relying on this visit summary.</p>}
-                {brief.living_care_record_context?.missing_required_sources?.length ? <p>Sources that could not be checked: {brief.living_care_record_context.missing_required_sources.map(source => caregiverInformationAreaLabel(source) || "Other care information").join(", ")}.</p> : null}
+                {brief.living_care_record_context?.missing_required_sources?.length ? <p>Information that could not be checked: {brief.living_care_record_context.missing_required_sources.map(source => caregiverInformationAreaLabel(source) || "Other care information").join(", ")}.</p> : null}
                 {brief.living_care_record_context?.missing_optional_sources?.length ? <p>Some other saved care information is not available in this view.</p> : null}
                 <ul>{Object.entries(brief.source_completeness ?? {}).filter(([, coverage]) => coverage.has_more === true || coverage.retrieval_complete === false).map(([source, coverage]) => <li key={source}>{caregiverInformationAreaLabel(source) || "Other care information"}: {coverage.returned_count} {coverage.returned_count === 1 ? "detail" : "details"} shown{coverage.has_more ? "; more saved details are available" : ""}</li>)}</ul>
                 {Object.entries(brief.living_care_record_context?.sources ?? {}).filter(([, source]) => source.has_more === true || source.candidate_scan_complete === false).length > 0 && <ul>{Object.entries(brief.living_care_record_context?.sources ?? {}).filter(([, source]) => source.has_more === true || source.candidate_scan_complete === false).map(([source, coverage]) => <li key={source}>{caregiverInformationAreaLabel(source) || "Other care information"}: {coverage.returned_count ?? 0} {coverage.returned_count === 1 ? "detail" : "details"} shown{coverage.has_more ? "; more saved information remains" : ""}</li>)}</ul>}
@@ -515,15 +515,15 @@ export default function AppointmentWorkspace() {
               <section><h5>Recent care history</h5>{brief.events.length ? <ul>{brief.events.slice(0, 6).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || 'Care update'}</strong>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString() : 'Date not recorded'} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul> : <p className="guided-muted">No recent care updates are available for this summary.</p>}</section>
               <section><h5>Saved care details</h5>{brief.facts.length ? <ul>{brief.facts.slice(0, 6).map(item => <li key={item.source_id}><strong>Care information</strong><p>{caregiverSafeAssistantText(item.value) || 'No detail recorded'}</p><small>{caregiverInformationLabel(item.epistemic_status) || 'Status not available'}</small></li>)}</ul> : <p className="guided-muted">No saved care details are available for this summary.</p>}{brief.source_coverage.medications_and_allergies === "unavailable" && <p className="guided-muted">A separate medication and allergy list is not available. Only details recorded in the care information above are shown.</p>}</section>
             </div>
-            <section className="guided-assertions"><h5>What was noticed and reported</h5>{brief.assertions?.length ? <ul>{brief.assertions.slice(0, 10).map(item => <li key={item.source_id}><strong>Care detail</strong><p>{caregiverSafeAssistantText(item.asserted_value) || 'Saved care detail'}</p><small>{caregiverSafeAssistantText(item.source_label) || 'Saved care record'} · Information: {caregiverInformationLabel(item.epistemic_state || "reported") || "Caregiver report"} · Review: {caregiverStatusLabel(item.assertion_status) || "Status not available"} · {item.observed_at ? new Date(item.observed_at).toLocaleString() : caregiverSafeAssistantText(item.event_time_text) || "Event time not recorded"}</small>{item.source_text && item.source_text !== item.asserted_value && <p>{caregiverSafeAssistantText(item.source_text.slice(0, 280)) || 'The original wording is available in the saved note or document.'}</p>}<small>{caregiverSafeAssistantText(item.interpretation_limit) || 'The available information may not tell the whole story.'}{item.evidence_ids.length ? ` · ${item.evidence_ids.length} related ${item.evidence_ids.length === 1 ? "note or document" : "notes or documents"}` : " · No related note or document attached"}</small></li>)}</ul> : <p className="guided-muted">{brief.assertions ? "No care details could be matched to their original notes or reports in this summary." : "SolenOS could not load care details linked to their original notes or reports."}</p>}</section>
+            <section className="guided-assertions"><h5>What was noticed or shared</h5>{brief.assertions?.length ? <ul>{brief.assertions.slice(0, 10).map(item => <li key={item.source_id}><strong>Care detail</strong><p>{caregiverSafeAssistantText(item.asserted_value) || 'Saved care detail'}</p><small>{caregiverSafeAssistantText(item.source_label) || 'Saved care record'} · How it is known: {caregiverInformationLabel(item.epistemic_state || "reported") || "Caregiver report"} · Review progress: {caregiverStatusLabel(item.assertion_status) || "Status not available"} · {item.observed_at ? new Date(item.observed_at).toLocaleString() : caregiverSafeAssistantText(item.event_time_text) || "Event time not recorded"}</small>{item.source_text && item.source_text !== item.asserted_value && <p>{caregiverSafeAssistantText(item.source_text.slice(0, 280)) || 'The original wording is available in the saved note or document.'}</p>}<small>{caregiverSafeAssistantText(item.interpretation_limit) || 'The available information may not tell the whole story.'}{item.evidence_ids.length ? ` · ${item.evidence_ids.length} related ${item.evidence_ids.length === 1 ? "note or document" : "notes or documents"}` : " · No related note or document attached"}</small></li>)}</ul> : <p className="guided-muted">{brief.assertions ? "The original notes or reports for these care details could not be found in this summary." : "SolenOS could not load these care details and their original notes or reports."}</p>}</section>
             <section className="guided-questions"><h5>Questions to ask the healthcare professional</h5>{brief.source_coverage.open_questions === "failed" ? <p className="guided-muted">Questions that still need answers could not be loaded.</p> : brief.open_questions?.length ? <ul>{brief.open_questions.slice(0, 8).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.question) || 'A question needs an answer'}</strong><small>{caregiverSafeAssistantText(item.intended_answerer_label) || caregiverRoleLabel(item.intended_answerer_role) || "Who may know was not recorded"} · {caregiverStatusLabel(item.priority) || "Priority not available"} · {caregiverStatusLabel(item.status) || "Status not available"}</small>{item.necessity_rationale && <p>{caregiverSafeAssistantText(item.necessity_rationale) || 'More information may be needed.'}</p>}</li>)}</ul> : <p className="guided-muted">{brief.open_questions ? "No unanswered questions are shown here. This does not mean none exist." : "Questions that still need answers are not available in this summary."}</p>}</section>
-            <section className="guided-conflicts"><h5>Concerns and reports that do not match</h5>{brief.source_coverage.contradictions === "failed" ? <p className="guided-muted">Reports that do not match could not be loaded.</p> : brief.contradictions?.length ? <ul>{brief.contradictions.slice(0, 8).map(item => <li key={item.source_id}><strong>Care detail · {caregiverStatusLabel(item.resolution_status) || "Review needed"}</strong><p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>{item.unresolved_remainder && <p>{caregiverSafeAssistantText(item.unresolved_remainder) || 'What remains unclear was not recorded.'}</p>}<small>Related care details: {item.source_assertion_ids.length} · Notes and documents: {item.evidence_ids.length}</small></li>)}</ul> : <p className="guided-muted">{brief.contradictions ? "No reports that do not match were found in this summary." : "Information about reports that differ is not available in this summary."}</p>}</section>
+            <section className="guided-conflicts"><h5>Concerns and reports that do not match</h5>{brief.source_coverage.contradictions === "failed" ? <p className="guided-muted">Reports that do not match could not be loaded.</p> : brief.contradictions?.length ? <ul>{brief.contradictions.slice(0, 8).map(item => <li key={item.source_id}><strong>Care detail · {caregiverStatusLabel(item.resolution_status) || "Review needed"}</strong><p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>{item.unresolved_remainder && <p>{caregiverSafeAssistantText(item.unresolved_remainder) || 'What remains unclear was not recorded.'}</p>}<small>Related details: {item.source_assertion_ids.length} · Notes and documents: {item.evidence_ids.length}</small></li>)}</ul> : <p className="guided-muted">{brief.contradictions ? "No reports that do not match were found in this summary." : "Information about reports that differ is not available in this summary."}</p>}</section>
             <section className="guided-appointments"><h5>Appointments</h5>{brief.appointments.length ? <ul>{brief.appointments.slice(0, 5).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><span>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : 'Date not recorded'} · {caregiverStatusLabel(item.status) || "Status not available"}</span></li>)}</ul> : <p className="guided-muted">No appointment is recorded in this summary. This does not mean that no appointment exists.</p>}</section>
-            <section className="guided-lineage" aria-label="How the notes and documents are related">
-              <h5>How the notes and documents are related</h5>
+            <section className="guided-lineage" aria-label="Related notes and documents">
+              <h5>Related notes and documents</h5>
               {brief.evidence_lineage.groups.length ? <ul>{brief.evidence_lineage.groups.map(group => <li key={group.lineage_id}><strong>{group.source_independence_status === "shared_origin" ? "Same original" : group.source_independence_status === "independent" ? "Reported separately" : group.source_independence_status === "not_assessed" ? "Not checked" : "Not known"}</strong><p>{group.evidence_ids.length} {group.evidence_ids.length === 1 ? "note or document" : "notes or documents"}</p></li>)}</ul> : <p className="guided-muted">We could not check whether some of these notes or documents came from the same original. Do not assume they are separate.</p>}
-              <p className="guided-footnote">A connection between notes does not prove that a report is true or came from a separate person.</p>
-              {brief.evidence_lineage.scope_truncated && <p className="guided-muted">Only some connections between these notes and documents could be checked. We do not know whether the reports are separate.</p>}
+              <p className="guided-footnote">A link between notes does not prove that a report is true or that it was shared separately.</p>
+              {brief.evidence_lineage.scope_truncated && <p className="guided-muted">SolenOS could not check all the links between these notes and documents. It is not clear whether the reports were shared separately.</p>}
             </section>
             <section className="guided-freshness" aria-label="How recent this information is">
               <h5>How recent this information is</h5>
@@ -536,34 +536,34 @@ export default function AppointmentWorkspace() {
               </li>)}</ul> : brief.source_coverage.evidence_freshness_assessments !== 'unavailable' && <p className="guided-muted">We couldn’t check how recent the linked information is. This does not mean it is current.</p>}
               <p className="guided-footnote">{caregiverSafeAssistantText(brief.freshness_assessment_scope.interpretation_limit) || "The available dates may not tell the whole story."}</p>
             </section>
-            <section className="guided-freshness" aria-label="What has been checked about these notes and claims">
-              <h5>What has been checked about these notes</h5>
+            <section className="guided-freshness" aria-label="What has been reviewed so far and claims">
+              <h5>What has been reviewed so far</h5>
               {!brief.source_coverage?.evidence_review_records || brief.source_coverage.evidence_review_records === "unavailable" || brief.source_coverage.evidence_review_records === "failed"
-                ? <p className="guided-muted">Source review history could not be loaded. That does not mean the notes have been checked.</p>
+                ? <p className="guided-muted">Earlier reviews could not be loaded. This does not mean the notes were reviewed.</p>
                 : brief.evidence_review_records?.length
                   ? <ul>{brief.evidence_review_records.slice(0, 8).map(item => <li key={item.review_id}>
                     <strong>Source review · {caregiverStatusLabel(item.outcome) || "Status not available"}</strong>
                     <p>{caregiverSafeAssistantText(item.rationale) || "No review explanation was recorded."}</p>
                     <small>{caregiverSafeAssistantText(item.interpretation_limit) || "A source review does not independently confirm a care fact."}</small>
                   </li>)}</ul>
-                  : <p className="guided-muted">No source review is recorded for the linked notes. They remain reports or source material, not confirmed facts.</p>}
+                  : <p className="guided-muted">No one has reviewed these notes yet. They remain reports, not confirmed facts.</p>}
               {!brief.source_coverage?.evidence_claim_assessments || brief.source_coverage.evidence_claim_assessments === "unavailable" || brief.source_coverage.evidence_claim_assessments === "failed"
-                ? <p className="guided-muted">Claim review history could not be loaded.</p>
+                ? <p className="guided-muted">Earlier reviews of these care details could not be loaded.</p>
                 : brief.claim_assessments?.length
                   ? <ul>{brief.claim_assessments.slice(0, 8).map(item => <li key={item.assessment_id}>
                     <strong>Care detail · {caregiverStatusLabel(item.status) || "Needs checking"}</strong>
                     <p>{caregiverSafeAssistantText(item.rationale) || "No review explanation was recorded."}</p>
                     <small>{caregiverSafeAssistantText(item.interpretation_limit) || "This review does not independently confirm a clinical fact."}</small>
                   </li>)}</ul>
-                  : <p className="guided-muted">No claim review is recorded for the saved reports shown here.</p>}
+                  : <p className="guided-muted">These saved reports have not been reviewed yet.</p>}
               {!brief.source_coverage?.evidence_completeness_assessments || brief.source_coverage.evidence_completeness_assessments === "unavailable" || brief.source_coverage.evidence_completeness_assessments === "failed"
-                ? <p className="guided-muted">The check for missing source details is not available.</p>
+                ? <p className="guided-muted">SolenOS could not check whether any details are missing.</p>
                 : brief.completeness_assessments?.length
                   ? <ul>{brief.completeness_assessments.slice(0, 8).map(item => <li key={item.assessment_id}>
-                    <strong>Recorded source details · {caregiverStatusLabel(item.assessment_status) || "Status not available"}</strong>
+                    <strong>Details in the original information · {caregiverStatusLabel(item.assessment_status) || "Status not available"}</strong>
                     {item.missing_fields?.length ? <p>Not recorded: {item.missing_fields.map(field => caregiverSafeAssistantText(field)).filter(Boolean).join(", ")}</p> : null}
                     <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
-                    <small>{caregiverSafeAssistantText(item.interpretation_limit) || "A field checklist does not prove the information is complete enough to guide care."}</small>
+                    <small>{caregiverSafeAssistantText(item.interpretation_limit) || "A list of details does not prove that the information is complete enough to guide care."}</small>
                   </li>)}</ul>
                   : <p className="guided-muted">No check for missing source details is recorded for the linked notes.</p>}
             </section>
@@ -591,26 +591,26 @@ export default function AppointmentWorkspace() {
         </div>}
 
         {stage === 'after' && <div className="guided-panel">
-          <div className="guided-panel-heading"><div><h4>Appointment information gathered</h4><p>SolenOS organises what has actually been recorded. You can return later if nothing is available yet.</p></div><span className="guided-state">Review first</span></div>
+          <div className="guided-panel-heading"><div><h4>Information recorded after the appointment</h4><p>SolenOS organises what has actually been recorded. You can return later if nothing is available yet.</p></div><span className="guided-state">Review first</span></div>
           <label className="guided-capture-label">Add anything you remember, if you want to
             <textarea value={note} onChange={event => setNote(event.target.value)} rows={4} placeholder="A short note is enough. You can also leave this empty." />
           </label>
           <div className="guided-actions">
             <button className="guided-primary" type="button" onClick={() => void saveNote()} disabled={saving}>{saving ? 'Saving…' : 'Save what I remember'}</button>
-            <button className="guided-secondary" type="button" onClick={() => record && void refreshOutcome(record.id)} disabled={!record}>Refresh outcome</button>
+            <button className="guided-secondary" type="button" onClick={() => record && void refreshOutcome(record.id)} disabled={!record}>Refresh appointment information</button>
           </div>
           {outcome?.status === 'ready_for_review' && <div className="guided-outcome" aria-live="polite">
-            <h5>Information available for review</h5>
+            <h5>Information to check</h5>
             {Object.entries(outcome.sections).filter(([, items]) => items.length).map(([key, items]) => <section key={key}><h6>Appointment details</h6>{items.map((item, index) => <p key={key + index}>{caregiverSafeAssistantText(item.text) || "Saved appointment information"}<small>{caregiverInformationLabel(item.epistemic_status) || 'Recorded information'} · {item.source_type === 'document' ? 'Document' : item.source_type === 'professional' ? 'Care professional' : 'Caregiver report'}</small></p>)}</section>)}
             {outcome.missing_information.length > 0 && <p className="guided-muted">Not recorded: {outcome.missing_information.join(', ')}.</p>}
             <p className="guided-footnote">This is a draft for you to review. It has not been confirmed by a healthcare professional, and your saved care record has not been changed.</p>
             {outcomeProposals.length === 0 && <div className="guided-actions">
               <button className="guided-primary" type="button" onClick={() => void prepareOutcomeReview()} disabled={!record || proposalBusy}>
-                {proposalBusy ? 'Preparing…' : 'Retry review preparation'}
+                {proposalBusy ? 'Preparing…' : 'Try again'}
               </button>
             </div>}
             {outcomeProposals.length > 0 && <div className="guided-proposals">
-              <h5>Please review these care details</h5>
+              <h5>Check these care details</h5>
               <p className="guided-muted">Each item is linked to the appointment information it came from. Accepting adds it as a caregiver report; it does not mean a healthcare professional has confirmed it.</p>
               {outcomeProposals.filter(item => item.proposed_change.source_record_version === record?.version_number).map(item => <article key={item.id} className="guided-proposal">
                 <strong>{caregiverSafeAssistantText(item.proposed_change.label) || "Care detail"}</strong>
@@ -625,15 +625,15 @@ export default function AppointmentWorkspace() {
                     <textarea rows={2} value={correctionContexts[item.id] || ''} onChange={event => setCorrectionContexts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Record the caregiver's correction context. The corrected statement must appear here." />
                   </label>
                   <div className="guided-actions">
-                    <button className="guided-primary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'accept')}>Accept as caregiver report</button>
+                    <button className="guided-primary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'accept')}>Add as caregiver report</button>
                     <button className="guided-secondary" type="button" disabled={proposalBusy || !(correctionDrafts[item.id] || '').trim() || !(correctionContexts[item.id] || '').includes((correctionDrafts[item.id] || '').trim())} onClick={() => void reviewOutcomeProposal(item, 'correct')}>Save correction</button>
-                    <button className="guided-secondary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'reject')}>Reject</button>
+                    <button className="guided-secondary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'reject')}>Dismiss</button>
                   </div>
                 </>}
               </article>)}
             </div>}
           </div>}
-          {(!outcome || outcome.status === 'no_outcome_information') && <p className="guided-muted">No appointment outcome has been recorded yet. You can return later; SolenOS will not invent what happened.</p>}
+          {(!outcome || outcome.status === 'no_outcome_information') && <p className="guided-muted">Nothing has been recorded about what happened at the appointment yet. You can return later; SolenOS will not invent what happened.</p>}
           {outcome?.limitations?.map((item, index) => <p className="guided-footnote" key={index}>{item}</p>)}
           {appointmentId && <QwenAssistPanel
             appointmentId={appointmentId}
