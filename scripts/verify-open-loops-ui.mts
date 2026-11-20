@@ -20,6 +20,7 @@ const required: Array<[string, RegExp]> = [
   ["fails closed when the update cannot be confirmed", /The update could not be confirmed\. Nothing has been marked resolved\./],
   ["discloses bounded or incomplete source coverage", /assessmentIsBounded[\s\S]*?Some saved care information is missing or has not been checked/],
   ["renders the four explicit attention classifications", /needs_attention_now[\s\S]*?important_to_address[\s\S]*?can_wait_with_documented_basis[\s\S]*?needs_clarification/],
+  ["uses the three specified caregiver follow-up sections", /<h2>Needs attention<\/h2>[\s\S]*?<h2>Being monitored<\/h2>[\s\S]*?<h2>Needs clarification<\/h2>/],
   ["shows linked notes and documents", /Related notes and documents[\s\S]*?uniqueEvidenceIds/],
   ["reads the appointment ID from the persisted Open Loop projection", /appointment_id\?: string \| null/],
   ["shows appointment lineage in the caregiver-facing follow-up card", /Linked to an appointment in this care record/],
