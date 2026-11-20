@@ -406,7 +406,7 @@ if (backendContract.enabled) {
   assert.equal(
     backendContract.missing_operations?.length ?? 0,
     0,
-    "Every active frontend API helper call must match a registered backend method/path. Community routes are intentionally excluded.",
+    "Every active frontend API helper call must match a registered backend runtime route. Community routes are intentionally excluded.",
   );
   assert.equal(
     backendContract.uncontracted_frontend_operations?.length ?? 0,
@@ -417,5 +417,10 @@ if (backendContract.enabled) {
     backendContract.unconsumed_classification_gaps?.length ?? 0,
     0,
     "Every registered backend route must have an explicit frontend/internal disposition or remain an explicit inventory review failure.",
+  );
+  assert.equal(
+    backendContract.unconsumed_frontend_operations?.length ?? 0,
+    0,
+    "Every route classified as a frontend product workflow must have an actual frontend API callsite.",
   );
 }
