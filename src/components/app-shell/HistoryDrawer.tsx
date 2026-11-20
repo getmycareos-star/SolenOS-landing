@@ -1468,6 +1468,17 @@ export function HistoryDrawer() {
                     </button>
                   </div>
 
+                  <div className="history-source-info" role="status" aria-label="Care history source status">
+                    <strong>Care history sources</strong>
+                    <ul>
+                      {HISTORY_STATUS_CATEGORIES.map((category) => (
+                        <li key={category}>
+                          {categoryLabel(category)}: {sourceStatuses[category][0].toUpperCase() + sourceStatuses[category].slice(1)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
                   {handoffConsentRequired && !loading && (
                     <div className="history-source-info" role="status">
                       <strong>Handoff history is protected</strong>
