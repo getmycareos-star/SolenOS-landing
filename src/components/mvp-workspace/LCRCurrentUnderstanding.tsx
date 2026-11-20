@@ -430,8 +430,8 @@ type ChangeDetail = {
   change: PersistedChange;
   evidence: ChangeEvidence[];
   assertions: ChangeAssertionEvidence[];
-  observations: ChangeObservationEvidence[];
-  source_evidence: ChangeSourceEvidence[];
+  observations?: ChangeObservationEvidence[];
+  source_evidence?: ChangeSourceEvidence[];
   confirmation_history: ChangeConfirmationHistoryItem[];
 };
 
@@ -1059,15 +1059,16 @@ export function LCRCurrentUnderstanding() {
       ) as ChangeDetail;
       if (!result?.change || result.change.id !== change.id ||
           result.change.person_id !== session.person.id || !Array.isArray(result.evidence) ||
-          !Array.isArray(result.assertions) || !Array.isArray(result.observations) ||
-          !Array.isArray(result.source_evidence) || !Array.isArray(result.confirmation_history)) {
+          !Array.isArray(result.assertions) || !Array.isArray(result.confirmation_history)) {
         throw new Error("The returned source information did not match the saved change review.");
       }
+      const observations = Array.isArray(result.observations) ? result.observations : [];
+      const sourceEvidence = Array.isArray(result.source_evidence) ? result.source_evidence : [];
       const returnedSourceIds = [
         ...result.evidence.map((item) => item.id),
         ...result.assertions.map((item) => item.id),
-        ...result.observations.map((item) => item.id),
-        ...result.source_evidence.map((item) => item.id),
+        ...observations.map((item) => item.id),
+        ...sourceEvidence.map((item) => item.id),
       ];
       if (returnedSourceIds.some((id) => !change.evidence_ids.includes(id))) {
         throw new Error("The returned source information did not match the saved change review.");
@@ -1079,8 +1080,8 @@ export function LCRCurrentUnderstanding() {
         [change.id]: {
           evidence: result.evidence,
           assertions: result.assertions,
-          observations: result.observations,
-          source_evidence: result.source_evidence,
+          observations,
+          source_evidence: sourceEvidence,
           confirmation_history: result.confirmation_history,
           missing_source_count: missingSourceCount,
         },
