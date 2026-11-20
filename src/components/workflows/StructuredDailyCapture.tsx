@@ -867,7 +867,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     }
   >({
     mutationFn: async ({ personId, caregiverId, medications, vitals, scales, notes, captureKind, occurredAt, captureIdempotencyKey }) => {
-      const result = await postJSON('/daily/log', {
+      const payload = {
         person_id: personId,
         caregiver_id: caregiverId,
         capture_idempotency_key: captureIdempotencyKey,
@@ -886,12 +886,53 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           ...scale,
           observed_at: new Date(scale.observed_at).toISOString(),
         })),
-        notes: notes,
-      }) as { success?: boolean; id?: string };
-      if (result?.success !== true || typeof result.id !== "string" || !result.id.trim()) {
-        throw new Error("The server did not confirm that your care update was saved.");
+        notes,
+      };
+      let queueId: string | null = null;
+      try {
+        queueId = await enqueueDurableWrite({
+          person_id: personId,
+          caregiver_id: caregiverId,
+          endpoint: "/daily/log",
+          idempotency_key: captureIdempotencyKey,
+          payload,
+        });
+        pendingQueueId.current = queueId;
+      } catch {
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          throw new Error("This device could not securely keep an offline copy. The update was not saved.");
+        }
       }
-      return result;
+
+      if (queueId) {
+        try {
+          return await deliverDurableWrite<{ success?: boolean; id?: string; [key: string]: unknown }>(
+            queueId,
+            sendQueuedCareWrite,
+          );
+        } catch (cause) {
+          if (await hasDurableWrite(queueId)) {
+            const queuedError = new Error("The update is waiting to sync from this device.") as Error & {
+              localQueued?: boolean;
+              queueId?: string;
+              status?: number;
+            };
+            queuedError.localQueued = true;
+            queuedError.queueId = queueId;
+            if (typeof cause === "object" && cause !== null && "status" in cause) {
+              queuedError.status = Number((cause as { status?: unknown }).status);
+            }
+            throw queuedError;
+          }
+          throw cause;
+        }
+      }
+
+      return await sendQueuedCareWrite("/daily/log", payload) as {
+        success?: boolean;
+        id?: string;
+        [key: string]: unknown;
+      };
     },
     onMutate: async (variables) => {
       // Return snapshot for potential rollback
