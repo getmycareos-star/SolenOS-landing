@@ -35,6 +35,7 @@ export default function NaturalLanguageDailyUpdate() {
   const [receipt, setReceipt] = useState<SaveReceipt | null>(null);
   const [pendingLocal, setPendingLocal] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [attentionCount, setAttentionCount] = useState(0);
   const [syncNotice, setSyncNotice] = useState("");
   const pendingQueueId = useRef<string | null>(null);
 
@@ -116,12 +117,14 @@ export default function NaturalLanguageDailyUpdate() {
       try {
         const summary = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
-        setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        setPendingCount(summary.pending);
+        setAttentionCount(summary.blocked + summary.failed_recoverable);
         if (typeof navigator !== "undefined" && !navigator.onLine) return;
         const result = await syncDurableWrites({ personId, caregiverId, send });
         const afterSync = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
-        setPendingCount(afterSync.pending + afterSync.blocked + afterSync.failed_recoverable);
+        setPendingCount(afterSync.pending);
+        setAttentionCount(afterSync.blocked + afterSync.failed_recoverable);
         if (afterSync.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
           if (retryTimer) clearTimeout(retryTimer);
           retryTimer = setTimeout(sync, 5_000);
@@ -335,7 +338,10 @@ export default function NaturalLanguageDailyUpdate() {
           ? Number((cause as { status?: unknown }).status)
           : null;
         const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
-        if (summary) setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        if (summary) {
+          setPendingCount(summary.pending);
+          setAttentionCount(summary.blocked + summary.failed_recoverable);
+        }
         if (status === 401 || status === 403) {
           setError("This update is encrypted on this device, but your care session must be verified before it can reach the care record.");
         } else if (status === 400 || status === 409 || status === 422) {
@@ -394,6 +400,11 @@ export default function NaturalLanguageDailyUpdate() {
       {pendingCount > 0 && !pendingLocal && (
         <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>
           {pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to sync with the care record.
+        </p>
+      )}
+      {attentionCount > 0 && (
+        <p role="alert" style={{ margin: 0, color: "var(--theme-danger-fg, #9b3434)" }}>
+          {attentionCount} update{attentionCount === 1 ? "" : "s"} need attention and have not been saved to the care record. Use the pending-update controls in Daily Care to retry or remove them.
         </p>
       )}
       {syncNotice && <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{syncNotice}</p>}
