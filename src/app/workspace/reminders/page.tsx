@@ -9,9 +9,14 @@ import { RecordState } from "@/components/ui/RecordState";
 
 type ReminderStatus = "open" | "completed" | "cancelled";
 
+type CaregiverMember = { caregiver_id: string; name: string; role: string };
+
 type CareReminder = {
   id: string;
   person_id: string;
+  created_by_caregiver_id: string;
+  assigned_to_caregiver_id: string | null;
+  version: number;
   title: string;
   note: string | null;
   due_at: string;
@@ -51,6 +56,8 @@ function reminderLabel(reminder: CareReminder): string {
 export default function CareRemindersPage() {
   const [personId, setPersonId] = useState("");
   const [reminders, setReminders] = useState<CareReminder[]>([]);
+  const [assignableMembers, setAssignableMembers] = useState<CaregiverMember[]>([]);
+  const [assignedTo, setAssignedTo] = useState("");
   const [snoozeSupported, setSnoozeSupported] = useState(false);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
@@ -67,10 +74,15 @@ export default function CareRemindersPage() {
     const session = await ensureAnonymousSession();
     const id = knownPersonId || session.person.id;
     setPersonId(id);
-    const data = await getJSON(`/reminders/${encodeURIComponent(id)}`);
+    const [data, members] = await Promise.all([
+      getJSON(`/reminders/${encodeURIComponent(id)}`),
+      getJSON("/caregiver-access/assignable-members").catch(() => []),
+    ]);
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
     const items = data as CareReminder[];
     setReminders(items);
+    setAssignableMembers(Array.isArray(members) ? members as CaregiverMember[] : []);
+    setAssignedTo((current) => current || session.caregiver.id);
     hasLoadedRef.current = true;
     setSnoozeSupported(items.length > 0 && items.every((item) => typeof item.snooze_count === "number"));
   }, []);
@@ -108,6 +120,7 @@ export default function CareRemindersPage() {
         title: title.trim(),
         note: note.trim() || null,
         due_at: new Date(dueAt).toISOString(),
+        assigned_to_caregiver_id: assignedTo || undefined,
       });
       await refresh(personId);
       setTitle("");
@@ -117,6 +130,26 @@ export default function CareRemindersPage() {
       setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function reassignReminder(reminder: CareReminder, caregiverId: string) {
+    if (!caregiverId || caregiverId === reminder.assigned_to_caregiver_id) return;
+    setBusyId(reminder.id);
+    setError("");
+    setNotice("");
+    try {
+      await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/assignment`, {
+        assigned_to_caregiver_id: caregiverId,
+        expected_version: reminder.version,
+      });
+      await refresh(personId);
+      setNotice("Reminder responsibility updated and saved.");
+    } catch {
+      setError("We couldn’t change who is responsible. Refresh the reminders and try again.");
+      await refresh(personId).catch(() => undefined);
+    } finally {
+      setBusyId("");
     }
   }
 
@@ -205,6 +238,14 @@ export default function CareRemindersPage() {
           />
         </label>
         <label>
+          <span>Who is responsible?</span>
+          <select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>
+            {assignableMembers.map((member) => (
+              <option key={member.caregiver_id} value={member.caregiver_id}>{member.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
           <span>Context (optional)</span>
           <textarea
             value={note}
@@ -282,6 +323,19 @@ export default function CareRemindersPage() {
                       </Button>
                     </div>
                   ) : null}
+                  <label className="care-reminder-footnote">
+                    <span>Responsible caregiver</span>
+                    <select
+                      aria-label={`Responsible caregiver for ${reminder.title}`}
+                      value={reminder.assigned_to_caregiver_id || reminder.created_by_caregiver_id}
+                      disabled={reminder.status !== "open" || busyId === reminder.id || assignableMembers.length === 0}
+                      onChange={(event) => void reassignReminder(reminder, event.target.value)}
+                    >
+                      {assignableMembers.map((member) => (
+                        <option key={member.caregiver_id} value={member.caregiver_id}>{member.name}</option>
+                      ))}
+                    </select>
+                  </label>
                   <p className="care-reminder-footnote">Saved in this care record</p>
                 </li>
               );
