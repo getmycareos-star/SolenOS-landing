@@ -413,69 +413,80 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       });
 
       const anonymousSession = await ensureAnonymousSession();
-      const situationRes = await fetch(apiUrl("/api/situation"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${anonymousSession.access_token}`,
+      const ingestionKey = situationSubmissionKey ?? crypto.randomUUID();
+      if (!situationSubmissionKey) setSituationSubmissionKey(ingestionKey);
+      const writePayload = {
+        person_id: anonymousSession.person.id,
+        caregiver_id: anonymousSession.caregiver.id,
+        client_care_key: caregiverId,
+        target_situation_id: targetSituationId ?? undefined,
+        raw_input: text,
+        ingestion_key: ingestionKey,
+        care_session_id: interactionSessionId(),
+        timestamp: provenance.captured_at,
+        captured_at: provenance.captured_at,
+        provenance: {
+          input_type:
+            readyDocs.length > 0 && !text ? "document" : provenance.input_type,
+          entry_method: provenance.entry_method,
+          captured_at: provenance.captured_at,
+          recognition_confidence: provenance.recognition_confidence,
+          transcript_uncertain: provenance.transcript_uncertain,
         },
-        body: JSON.stringify({
+        documents: readyDocs.map((d) => ({
+          id: d.id,
+          evidence_id: d.evidenceId,
+          name: d.name,
+          mime_type: d.mimeType || null,
+          extracted_text: d.extractedText,
+          extracted_text_preview: d.extractedTextPreview ?? undefined,
+          extracted_char_count: d.extractedCharCount ?? undefined,
+          ocr_confidence: d.ocrConfidence ?? null,
+          extraction_source: situationExtractionSource(d.extractionSource),
+          entry_method: d.entryMethod,
+        })),
+      };
+
+      let durableWriteId: string | null = null;
+      try {
+        durableWriteId = await enqueueDurableWrite({
           person_id: anonymousSession.person.id,
           caregiver_id: anonymousSession.caregiver.id,
-          client_care_key: caregiverId,
-          target_situation_id: targetSituationId ?? undefined,
-          raw_input: text,
-          care_session_id: interactionSessionId(),
-          timestamp: provenance.captured_at,
-          captured_at: provenance.captured_at,
-          provenance: {
-            input_type:
-              readyDocs.length > 0 && !text ? "document" : provenance.input_type,
-            entry_method: provenance.entry_method,
-            captured_at: provenance.captured_at,
-            recognition_confidence: provenance.recognition_confidence,
-            transcript_uncertain: provenance.transcript_uncertain,
-          },
-          documents: readyDocs.map((d) => ({
-            id: d.id,
-            evidence_id: d.evidenceId,
-            name: d.name,
-            mime_type: d.mimeType || null,
-            extracted_text: d.extractedText,
-            extracted_text_preview: d.extractedTextPreview ?? undefined,
-            extracted_char_count: d.extractedCharCount ?? undefined,
-            ocr_confidence: d.ocrConfidence ?? null,
-            extraction_source: situationExtractionSource(d.extractionSource),
-            entry_method: d.entryMethod,
-          })),
-        }),
-      });
-
-      if (!situationRes.ok) {
-        const err = (await safeJson(situationRes)) as {
-          error?: string;
-          detail?: string | { code?: string; message?: string };
-        };
-        const detail =
-          typeof err.detail === "string"
-            ? err.detail
-            : err.detail?.message;
-        if (
-          err.detail &&
-          typeof err.detail === "object" &&
-          err.detail.code === "conversation_only" &&
-          readyDocs.length === 0 &&
-          text
-        ) {
-          // Backward-compatible server rejection: keep the reply in LCR.
-          await requestLcrOrientation(text);
-          return;
+          endpoint: "/api/situation",
+          idempotency_key: ingestionKey,
+          payload: writePayload,
+        });
+      } catch (queueError) {
+        // Online writes can still proceed when this browser cannot provide
+        // encrypted offline storage. Offline writes cannot be claimed as saved.
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          throw new Error(
+            "This device could not securely keep your update offline. Your note is still here; reconnect before saving it.",
+          );
         }
-        throw new Error(detail ?? err.error ?? "Could not structure situation");
+      }
+
+      let rawSituationResponse: unknown;
+      const isOnline = typeof navigator === "undefined" || navigator.onLine;
+      if (durableWriteId && !isOnline) {
+        await markDurableWritePending(durableWriteId, new Error("Network unavailable"));
+        setCaregiverError(
+          "Your update is encrypted on this device. It has not reached your Care Record yet and will sync when your connection returns.",
+        );
+        setSubmitPhase("idle");
+        return;
+      }
+      if (durableWriteId) {
+        rawSituationResponse = await deliverDurableWrite(
+          durableWriteId,
+          sendQueuedCareWrite,
+        );
+      } else {
+        rawSituationResponse = await sendQueuedCareWrite("/api/situation", writePayload);
       }
 
       let situationData = normalizeBackendSituationResponse(
-        await safeJson(situationRes),
+        rawSituationResponse,
       ) as WorkspaceSituationResponse & {
         policy_engine_layer?: {
           consent_required?: boolean;
