@@ -790,9 +790,28 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(appointmentPrepareState.selects[2]?.value, shareAppointment.payload.id, "the selected appointment must be bound to the draft");
   assert.equal(appointmentPrepareState.selects[3]?.value, "30", "the selected history window must be retained");
   const appointmentBriefingResponse = page.waitForResponse(response =>
-    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
+    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST",
+    { timeout: 30_000 });
   await appointmentPrepareButton.click();
-  const appointmentBriefing = await appointmentBriefingResponse;
+  let appointmentBriefing;
+  try {
+    appointmentBriefing = await appointmentBriefingResponse;
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      buttonDisabled: document.querySelector('button')?.disabled ?? null,
+      prepareButton: Array.from(document.querySelectorAll("button"))
+        .find(button => button.textContent?.includes("Prepare summary to share"))?.outerHTML ?? null,
+      visibleAlerts: Array.from(document.querySelectorAll('[role="alert"], [role="status"]'))
+        .filter(element => element.getClientRects().length > 0)
+        .map(element => element.textContent?.trim()).filter(Boolean),
+      sessionTokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
+      sessionExpiry: localStorage.getItem("solenos_anonymous_session_expires_at"),
+      fetchTrace: window.__solenosE2EFetchTrace ?? [],
+      sessionBootstrapMeasures: performance.getEntriesByName("solenos.session.bootstrap")
+        .map(entry => ({ duration: entry.duration, startTime: entry.startTime })),
+    }));
+    throw new Error(String(error?.message || error) + " Appointment briefing request diagnostics: " + JSON.stringify(diagnostic));
+  }
   assert.equal(appointmentBriefing.status(), 200, "professional appointment briefing must be prepared by the backend");
   const appointmentDraft = await appointmentBriefing.json();
   assert.equal(appointmentDraft.source_of_truth, "living_care_record",
