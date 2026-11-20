@@ -2179,6 +2179,32 @@ export function LCRCurrentUnderstanding() {
                     <details className="lcr-entry-status">
                       <summary>Care details</summary>
                       <p>{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
+                      {item.derived_observations?.length ? (
+                        <div className="lcr-derived-observations" aria-label="Details saved from this report">
+                          <strong>Details saved from this report</strong>
+                          <ul className="lcr-current-facts">
+                            {item.derived_observations.map((observation) => (
+                              <li key={observation.id}>
+                                <strong>{caregiverFieldLabel(observation.attribute) || caregiverLabel(observation.attribute)}</strong>
+                                {observation.value_text && <p>{observation.value_text}{observation.units ? ` ${observation.units}` : ""}</p>}
+                                {typeof observation.context === "string" && observation.context.trim() && <p>{observation.context}</p>}
+                                <small>
+                                  {caregiverInformationLabel(observation.epistemic_status || "reported") || "Reported information"}
+                                  {observation.observed_at ? ` · Happened ${formatWhen(observation.observed_at)}` : ""}
+                                  {observation.reported_at ? ` · Shared ${formatWhen(observation.reported_at)}` : ""}
+                                  {observation.recorded_at ? ` · Saved ${formatWhen(observation.recorded_at)}` : ""}
+                                </small>
+                                {observation.source_passage && (
+                                  <details>
+                                    <summary>See the original submitted detail</summary>
+                                    <blockquote>{caregiverReadableCaptureText(observation.source_passage) || observation.source_passage}</blockquote>
+                                  </details>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                       <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"}</small>
                       {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
                       <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
