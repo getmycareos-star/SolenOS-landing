@@ -872,7 +872,6 @@ export function LCRCurrentUnderstanding() {
 
       // Initial hydration is read-only. Reassessment is a caregiver-triggered
       // action, never an automatic write every time the workspace is opened.
-      const changePath = `/change/changes/${encodeURIComponent(scopedPersonId)}`;
       const backgroundTasks = [
         (async () => {
           try {
@@ -906,7 +905,7 @@ export function LCRCurrentUnderstanding() {
             return value as PersistedChange[];
           };
           try {
-            setChanges(validateChanges(await getJSON(changePath)));
+            setChanges(validateChanges(await getJSON(`/change/changes/${encodeURIComponent(scopedPersonId)}`)));
             setChangesError(null);
           } catch {
             setChangesError("Saved care changes could not be loaded. Please try again.");
