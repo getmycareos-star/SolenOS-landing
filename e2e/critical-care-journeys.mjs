@@ -3046,6 +3046,60 @@ await record("browser renders caregiver surfaces and submits Companion through t
     JSON.stringify(afterAcceptance.payload).includes(observationText),
     "the explicitly accepted Companion report must appear in the same persisted Care Record",
   );
+
+  // Reviewed versions remain retrievable, and the caregiver can inspect the
+  // append-only decision history after the pending card disappears.
+  await companion.page.getByRole("button", { name: "Previous decisions" }).click();
+  const reviewedCard = companion.page.locator(".companion-reviewed-care-updates .companion-care-update").filter({ hasText: observationText }).first();
+  await reviewedCard.waitFor({ timeout: 15_000 });
+  await reviewedCard.getByRole("button", { name: "Review history" }).click();
+  await reviewedCard.getByText("accepted", { exact: true }).waitFor({ timeout: 15_000 });
+
+  // A correction creates a new pending version and must not update the LCR
+  // until that corrected version receives a separate explicit acceptance.
+  const correctionSource = "Mum was unsettled for four evenings.";
+  const correctedSource = "Mum was unsettled for two evenings.";
+  const correctionContext = "Correction: Mum was unsettled for two evenings, not four.";
+  const assistantCountBeforeCorrection = await companion.page.locator(".companion-message.is-assistant").count();
+  await companion.page.locator("#companion-message-input").fill(correctionSource);
+  await companion.page.locator("#companion-message-input").press("Enter");
+  await companion.page.waitForFunction((count) => {
+    const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
+    return messages.length > count && !messages[messages.length - 1].querySelector(".companion-typing");
+  }, assistantCountBeforeCorrection, { timeout: 210_000 });
+  const correctionMessage = companion.page.locator(".companion-message.is-user").filter({ hasText: correctionSource }).last();
+  await correctionMessage.getByRole("button", { name: "Save as a care note" }).click();
+  await correctionMessage.getByRole("button", { name: "Yes, save for review" }).click();
+  const correctionCard = companion.page.locator(".companion-care-update").filter({ hasText: correctionSource }).last();
+  await correctionCard.waitFor({ timeout: 15_000 });
+  await correctionCard.getByRole("button", { name: "Correct wording" }).click();
+  await correctionCard.getByLabel("Corrected wording").fill(correctedSource);
+  await correctionCard.getByLabel("Additional context (optional)").fill(correctionContext);
+  await correctionCard.getByRole("button", { name: "Save correction for review" }).click();
+  await companion.page.getByText(
+    "Correction saved as a new review item. Nothing has been added to your Care Record yet.",
+    { exact: true },
+  ).waitFor({ timeout: 15_000 });
+  const correctedCard = companion.page.locator(".companion-care-update").filter({ hasText: correctedSource }).last();
+  await correctedCard.waitFor({ timeout: 15_000 });
+  const beforeCorrectedAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+  assert.equal(beforeCorrectedAcceptance.status, 200, JSON.stringify(beforeCorrectedAcceptance.payload));
+  assert.equal(JSON.stringify(beforeCorrectedAcceptance.payload).includes(correctedSource), false);
+  await correctedCard.getByRole("button", { name: "Add to Care Record" }).click();
+  await companion.page.getByText(
+    "Your report was added to the Care Record. A healthcare professional has not confirmed it.",
+    { exact: true },
+  ).waitFor({ timeout: 15_000 });
+  const afterCorrectedAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
+  assert.equal(afterCorrectedAcceptance.status, 200, JSON.stringify(afterCorrectedAcceptance.payload));
+  assert.ok(JSON.stringify(afterCorrectedAcceptance.payload).includes(correctedSource));
+  assert.equal(JSON.stringify(afterCorrectedAcceptance.payload).includes(correctionSource), false);
+
+  await companion.page.getByRole("button", { name: "Previous decisions" }).click();
+  const correctedHistoryCard = companion.page.locator(".companion-reviewed-care-updates .companion-care-update").filter({ hasText: correctionSource }).first();
+  await correctedHistoryCard.waitFor({ timeout: 15_000 });
+  await correctedHistoryCard.getByRole("button", { name: "Review history" }).click();
+  await correctedHistoryCard.getByText("corrected", { exact: true }).waitFor({ timeout: 15_000 });
   }
   await companion.context.close();
 });
