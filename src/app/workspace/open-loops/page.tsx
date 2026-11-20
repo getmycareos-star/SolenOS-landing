@@ -46,6 +46,8 @@ type AttentionDecision = {
   evidence_status?: string;
   history_completeness?: string;
   action_status?: string;
+  linked_follow_up_outcome_status?: string;
+  significance_assessment_status?: string;
   care_significance?: string;
   records?: Array<{ source: string; record_id: string; title: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
 };
@@ -144,6 +146,8 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       {item.evidence_status && <span>Evidence: {caregiverStatusLabel(item.evidence_status) || "Not established"}</span>}
       {item.history_completeness && item.history_completeness !== "complete" && <span>Some earlier care information may be missing.</span>}
       {item.action_status === "not_recorded" && <span>No follow-up action has been saved yet.</span>}
+      {item.action_status && item.action_status !== "not_recorded" && <span>Follow-up: {caregiverStatusLabel(item.action_status) || "Status not recorded"}</span>}
+      {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <span>Outcome: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</span>}
     </div>
     {expanded && <div className="followup-detail">
       <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
