@@ -146,7 +146,7 @@ requireText("src/components/workflows/AICompanion.tsx", [
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
 assert(!companion.includes("QwenAssistPanel"), "Companion must not render a second AI assistance input above its primary conversation composer.");
-assert.equal((companion.match(/aria-label="Send a message to the Care Assistant"/g) ?? []).length, 1, "Companion must render exactly one message form.");
+assert.equal((companion.match(/aria-label="Send a message to the AI Companion"/g) ?? []).length, 1, "Companion must render exactly one message form.");
 assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1, "Companion must render exactly one message textarea.");
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
