@@ -1028,7 +1028,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       const localQueued = typeof error === "object" && error !== null && "localQueued" in error
         && (error as { localQueued?: unknown }).localQueued === true;
       if (localQueued) {
-        const status = "status" in error ? Number((error as { status?: unknown }).status) : null;
+        const status = typeof error === "object" && error !== null && "status" in error
+          ? Number((error as { status?: unknown }).status)
+          : null;
         setPendingLocal(true);
         setPendingMessage(
           status === 401 || status === 403
