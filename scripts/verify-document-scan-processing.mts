@@ -75,9 +75,9 @@ assert.match(scanCaptureSource, /cropInsetsPercent/, "each captured scan page mu
 assert.match(scanCaptureSource, /scanRotationDegrees: page\.rotationDegrees/, "scan adjustments must travel with each original page");
 assert.match(scanAttachmentSource, /scan_rotation_degrees/, "scan rotation must be persisted as OCR metadata");
 assert.match(scanAttachmentSource, /scan_crop_json/, "scan crop must be persisted as OCR metadata");
-assert.match(scanAttachmentSource, /fields\\.scan_review_status\\s*=\\s*"not_reviewed"/, "scan capture must remain explicitly unreviewed after crop adjustments");
-assert.match(scanAttachmentSource, /fields\\.scan_text_prepared\\s*=\\s*"false"/, "crop adjustments must not mark OCR text as caregiver-prepared");
-assert.doesNotMatch(scanAttachmentSource, /fields\\.scan_review_status\\s*=\\s*"(?:reviewed|approved|confirmed)"/, "crop adjustments must never attest caregiver review");
+assert.match(scanAttachmentSource, /fields\.scan_review_status\s*=\s*"not_reviewed"/, "scan capture must remain explicitly unreviewed after crop adjustments");
+assert.match(scanAttachmentSource, /fields\.scan_text_prepared\s*=\s*"false"/, "crop adjustments must not mark OCR text as caregiver-prepared");
+assert.doesNotMatch(scanAttachmentSource, /fields\.scan_review_status\s*=\s*"(?:reviewed|approved|confirmed)"/, "crop adjustments must never attest caregiver review");
 assert.match(scanAttachmentSource, /form\.append\("file", file\)/, "scan adjustments must never replace the original uploaded file bytes");
 assert.match(addRecordSource, /rotationDegrees: \(file as ScanPageFile\)\.scanRotationDegrees/, "per-page scan adjustments must be passed through the care-entry capture flow");
 
