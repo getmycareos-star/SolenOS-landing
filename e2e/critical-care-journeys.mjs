@@ -2466,6 +2466,45 @@ await record("12b invited caregiver sees the shared care record in a separate br
   await verifyMobile(page);
   assert.deepEqual(pageErrors, [], `invited caregiver browser must not throw: ${JSON.stringify(pageErrors)}`);
 
+  const primaryReminderBrowser = await createBrowserPage({
+    access_token: identity.token,
+    person: { id: identity.personId },
+    caregiver: { id: identity.caregiverId },
+    expires_at: session.expires_at,
+  }, "/workspace/reminders");
+  const primaryReminderPage = primaryReminderBrowser.page;
+  await primaryReminderPage.getByRole("heading", { name: "Care reminders", exact: true }).waitFor({ timeout: 20_000 });
+  const sharedReminderTitle = unique("Shared reminder — assigned caregiver");
+  const reminderForm = primaryReminderPage.locator("form.care-reminder-form");
+  await reminderForm.getByLabel("What needs following up?").fill(sharedReminderTitle);
+  await reminderForm.getByLabel("Who is responsible?").selectOption(accepted.payload.caregiver_id);
+  await reminderForm.getByRole("button", { name: "Save reminder", exact: true }).click();
+  const sharedReminderItem = primaryReminderPage.locator(".care-reminder-item").filter({ hasText: sharedReminderTitle });
+  await sharedReminderItem.waitFor({ timeout: 20_000 });
+  let sharedReminderRows = await request(
+    `/api/v1/reminders/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(sharedReminderRows.status, 200, JSON.stringify(sharedReminderRows.payload));
+  let sharedReminder = sharedReminderRows.payload.find((item) => item.title === sharedReminderTitle);
+  assert.ok(sharedReminder, "shared reminder must be persisted by the backend");
+  assert.equal(sharedReminder.created_by_caregiver_id, identity.caregiverId);
+  assert.equal(sharedReminder.assigned_to_caregiver_id, accepted.payload.caregiver_id);
+
+  await sharedReminderItem.getByLabel(`Responsible caregiver for ${sharedReminderTitle}`)
+    .selectOption(identity.caregiverId);
+  await primaryReminderPage.getByRole("status").filter({ hasText: "Reminder responsibility updated and saved." })
+    .waitFor({ timeout: 20_000 });
+  sharedReminderRows = await request(
+    `/api/v1/reminders/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  sharedReminder = sharedReminderRows.payload.find((item) => item.title === sharedReminderTitle);
+  assert.equal(sharedReminder.assigned_to_caregiver_id, identity.caregiverId);
+  assert.equal(sharedReminder.version, 2, "reassignment must advance the optimistic version");
+  assert.deepEqual(primaryReminderBrowser.pageErrors, [], "shared reminder assignment must not throw browser errors");
+  await primaryReminderBrowser.context.close();
+
   const settingsBrowser = await createBrowserPage({
     access_token: accepted.payload.access_token,
     person: { id: accepted.payload.person_id },
