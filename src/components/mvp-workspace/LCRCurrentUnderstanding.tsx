@@ -1992,6 +1992,12 @@ export function LCRCurrentUnderstanding() {
         )}
       </section>
 
+      <section className="lcr-current-fact" aria-labelledby="lcr-history-heading">
+        <h3 id="lcr-history-heading">Your care history</h3>
+        <p>Review saved care updates in date order, including the original reports and where they came from.</p>
+        <Link href="/workspace/timeline" className="lcr-text-action">Open your full care history <span aria-hidden="true">→</span></Link>
+      </section>
+
       <details className="lcr-history-details"><summary>See changes that have happened more than once</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
         <div className="lcr-entry-heading">
