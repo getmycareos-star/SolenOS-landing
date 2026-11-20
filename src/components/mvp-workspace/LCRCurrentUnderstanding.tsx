@@ -2188,8 +2188,8 @@ export function LCRCurrentUnderstanding() {
                                   <blockquote>{caregiverReadableCaptureText(observation.source_passage) || "The original note could not be displayed."}</blockquote>
                                 </details>
                               )}
-                              {observation.negated != null && <small>Does the note say this did not happen? {observation.negated ? "Yes" : "No"}</small>}
-                              {observation.hedge_marker && <small>Words that show uncertainty: {caregiverLabel(observation.hedge_marker)}</small>}
+                              {observation.negated != null && <small>Was this reported as not happening? {observation.negated ? "Yes" : "No"}</small>}
+                              {observation.hedge_marker && <small>Words that suggest uncertainty: {caregiverLabel(observation.hedge_marker)}</small>}
                               {observation.ambiguity_note && <small>What still needs clarification: {caregiverSafeAssistantText(observation.ambiguity_note) || "More information may be needed."}</small>}
                               {observation.correction_rationale && <small>Why it was corrected: {caregiverSafeAssistantText(observation.correction_rationale) || "A correction was recorded."}</small>}
                               <small>The original wording is saved.</small>
@@ -2198,6 +2198,8 @@ export function LCRCurrentUnderstanding() {
                         </ul>
                       </details>
                     )}
+                    <details className="lcr-entry-status">
+                      <summary>More about this information</summary>
                     {item.source_collection === "evidence_observations" && (
                       <div className="lcr-entry-status">
                         <small>
@@ -2208,12 +2210,12 @@ export function LCRCurrentUnderstanding() {
                         {item.source_passage && (
                           <details>
                             <summary>Read the original note</summary>
-                            <blockquote>{caregiverSafeAssistantText(item.source_passage) || "The original note could not be displayed."}</blockquote>
+                            <blockquote>{caregiverReadableCaptureText(item.source_passage) || "The original note could not be displayed."}</blockquote>
                           </details>
                         )}
                         {item.supersedes_observation_id && <small>This entry corrects an earlier care detail.</small>}
                         {item.correction_rationale && <small>Why it was corrected: {caregiverSafeAssistantText(item.correction_rationale) || "A correction was recorded."}</small>}
-                        {item.hedge_marker && <small>Words that show uncertainty: {caregiverLabel(item.hedge_marker)}</small>}
+                        {item.hedge_marker && <small>Words that suggest uncertainty: {caregiverLabel(item.hedge_marker)}</small>}
                         {item.ambiguity_note && <small>What still needs clarification: {caregiverSafeAssistantText(item.ambiguity_note) || "More information may be needed."}</small>}
                       </div>
                     )}
@@ -2246,6 +2248,7 @@ export function LCRCurrentUnderstanding() {
                                 <small>{caregiverSafeAssistantText(evidenceIntegrityByFact[item.id].near_duplicate_analysis?.interpretation_limit) || "Similar wording does not prove that reports came from the same source."}</small>
                               </div>
                             )}
+                    </details>
                             <small>{caregiverSafeAssistantText(evidenceIntegrityByFact[item.id].interpretation_limit) || "The relationship between these reports is not fully known."}</small>
                           </div>
                         )}
