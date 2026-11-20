@@ -353,7 +353,7 @@ export default function CareRemindersPage() {
                     <select
                       aria-label={`Responsible caregiver for ${reminder.title}`}
                       value={reminder.assigned_to_caregiver_id || reminder.created_by_caregiver_id}
-                      disabled={reminder.status !== "open" || busyId === reminder.id || assignableMembers.length === 0}
+                      disabled={reminder.status !== "open" || busyId === reminder.id || reminderAssignableMembers.length === 0}
                       onChange={(event) => void reassignReminder(reminder, event.target.value)}
                     >
                       {reminderAssignableMembers.map((member) => (
