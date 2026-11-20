@@ -12,7 +12,8 @@ assert(!source.includes('Extracted text — review and correct before saving'), 
 assert.match(source, /SolenOS will read it and prepare details for you to check after upload/, "the caregiver must be told that server extraction starts after the original is saved");
 assert.match(source, /form\.append\("file", page\.file\)/, "the original uploaded bytes must be retained");
 assert.equal((source.match(/Array\.from\(event\.currentTarget\.files \|\| \[\]\)/g) || []).length, 2, "both upload and camera inputs must copy FileList entries before clearing the input");
-assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "crop metadata must accompany the original");
+assert.match(source, /scan_crop_json: JSON\.stringify\(page\.crop\)/, "crop metadata must accompany the original");
+assert.match(source, /for \(const \[key, value\] of Object\.entries\(fields\)\) form\.append\(key, value\)/, "per-page metadata must accompany the original upload");
 assert(!source.includes("Extracting readable text"), "the upload screen must not claim pre-upload OCR is running");
 assert(!source.includes('aria-label="Review extracted text before saving"'), "the intake list must not be labeled as an OCR review step");
 assert.match(source, /if \(!reviewPages\.length\)/, "saving must not require caregivers to review every page first");
@@ -21,9 +22,9 @@ assert.match(source, /Save files<\/button>/, "caregivers must be able to save or
 assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop stage");
 assert(!source.includes("createProcessedImage("), "the browser must not transform the original image bytes before upload");
 assert(!source.includes("createMultiPagePdf(") && !source.includes("Combine scan pages into one PDF"), "multiple scan pages must remain separate original files rather than being recomposed in the browser");
-assert.match(source, /form\.append\("scan_rotation_degrees", String\(page\.rotation\)\)/, "per-page rotation must accompany the immutable original for server-side processing");
-assert.match(source, /form\.append\("scan_crop_json", JSON\.stringify\(page\.crop\)\)/, "per-page crop metadata must accompany the immutable original for server-side processing");
-assert.match(source, /form\.append\("scan_text_prepared", "false"\)/, "the upload must not claim that browser OCR prepared the source");
+assert.match(source, /scan_rotation_degrees: String\(page\.rotation\)/, "per-page rotation must accompany the immutable original for server-side processing");
+assert.match(source, /scan_crop_json: JSON\.stringify\(page\.crop\)/, "per-page crop metadata must accompany the immutable original for server-side processing");
+assert.match(source, /scan_text_prepared: "false"/, "the upload must not claim that browser OCR prepared the source");
 assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
 
 const attachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
@@ -66,7 +67,7 @@ assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and num
 assert.match(intelligenceReviewSource, /model_provenance/, "document processing model provenance must be available to the review view");
 
 assert.match(source, /ingestionKey: string; captureTimestamp: string/, "scan uploads must carry stable retry and capture metadata");
-assert.match(source, /form\.append\("ingestion_key", page\.ingestionKey\)/, "scan retry must reuse its original idempotency key");
+assert.match(source, /ingestion_key: page\.ingestionKey/, "scan retry must reuse its original idempotency key");
 const scanCaptureSource = readFileSync("src/components/mvp-workspace/capture/ScanDocumentCapture.tsx", "utf8");
 const scanAttachmentSource = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 assert.match(scanCaptureSource, /Rotate 90°/, "each captured scan page must support rotation correction");
@@ -84,7 +85,7 @@ assert(!saveFunction.includes("/extract"), "the caregiver page must not own docu
 assert(!saveFunction.includes("/intelligence"), "the caregiver page must not own document understanding after upload");
 assert.match(saveFunction, /You can leave this page/, "the caregiver can leave after the original and background job are saved");
 
-assert.match(source, /form\.append\("capture_timestamp", page\.captureTimestamp\)/, "scan retry must preserve capture time");
+assert.match(source, /capture_timestamp: page\.captureTimestamp/, "scan retry must preserve capture time");
 assert.match(source, /deleteJSON\("\/upload\/" \+ encodeURIComponent\(selected\.id\)\)/, "document deletion must call the authenticated backend lifecycle endpoint");
 assert.match(source, /The document and its unreviewed details were deleted/, "the caregiver must receive a success message only after backend deletion confirms");
 assert.match(source, /Link versions/, "caregivers must be able to explicitly link a corrected copy to its predecessor");
