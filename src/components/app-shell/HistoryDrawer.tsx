@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { caregiverInformationAreaLabel, caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome" | "follow-up";
@@ -332,7 +332,113 @@ function categoryLabel(category: HistoryCategory, eventType?: string): string {
 }
 
 function parseDescription(description?: string | null): string {
-  return caregiverReadableCaptureText(description) || "";
+  if (!description?.trim()) return "";
+  const fallback = "Saved care information";
+  const safeText = (value: unknown): string => {
+    if (typeof value === "string") return caregiverSafeAssistantText(value.trim()) || "";
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+    return "";
+  };
+  const readableLabel = (value: unknown): string => {
+    const raw = safeText(value);
+    if (!raw) return "";
+    return caregiverFieldLabel(raw) || caregiverStatusLabel(raw) || raw.replace(/[_-]+/g, " ");
+  };
+  try {
+    const parsed: unknown = JSON.parse(description);
+    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || fallback;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
+
+    const record = parsed as Record<string, unknown>;
+    const capture = record.original_capture && typeof record.original_capture === "object" && !Array.isArray(record.original_capture)
+      ? record.original_capture as Record<string, unknown>
+      : record;
+    const quick = capture.quick_check_in && typeof capture.quick_check_in === "object" && !Array.isArray(capture.quick_check_in)
+      ? capture.quick_check_in as Record<string, unknown>
+      : null;
+    const labels: Record<string, string> = {
+      same_as_usual: "About the same as usual",
+      change: "Something changed",
+      concern: "A concern was reported",
+      care_completed: "Care was reported as completed",
+      uncertain: "The caregiver was unsure",
+    };
+    const lines: string[] = [];
+    if (quick) {
+      lines.push(labels[String(quick.kind)] || "Caregiver check-in recorded");
+      const areas = Array.isArray(quick.selected_areas)
+        ? quick.selected_areas.filter((area): area is string => typeof area === "string")
+            .map((area) => readableLabel(area)).filter(Boolean)
+        : [];
+      if (areas.length) lines.push("Areas mentioned: " + areas.join(", "));
+    }
+
+    if (Array.isArray(capture.medications)) {
+      for (const raw of capture.medications) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+        const medicine = raw as Record<string, unknown>;
+        const name = safeText(medicine.medication_name) || "Medicine";
+        const details = [
+          safeText(medicine.dose) ? "Dose recorded: " + safeText(medicine.dose) : "",
+          safeText(medicine.status) ? "Status: " + readableLabel(medicine.status) : "",
+          safeText(medicine.note),
+        ].filter(Boolean);
+        lines.push(details.length ? name + " — " + details.join("; ") : name);
+      }
+    }
+
+    const vitalLabels: Record<string, string> = {
+      bp_systolic: "Blood pressure (top number)",
+      bp_diastolic: "Blood pressure (bottom number)",
+      heart_rate: "Heart rate",
+      temperature: "Temperature",
+      oxygen_saturation: "Oxygen level",
+      weight: "Weight",
+    };
+    if (Array.isArray(capture.vitals)) {
+      for (const raw of capture.vitals) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+        const vital = raw as Record<string, unknown>;
+        const kind = safeText(vital.vital_type);
+        const label = vitalLabels[kind] || readableLabel(kind) || "Measurement";
+        const value = safeText(vital.value);
+        const unit = safeText(vital.unit);
+        const note = safeText(vital.note);
+        const measurement = [value, unit].filter(Boolean).join(" ");
+        if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
+      }
+    }
+
+    if (Array.isArray(capture.scales)) {
+      for (const raw of capture.scales) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+        const scale = raw as Record<string, unknown>;
+        const label = readableLabel(scale.axis) || "Rating";
+        const score = safeText(scale.score);
+        const note = safeText(scale.note);
+        if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
+      }
+    }
+
+    for (const key of ["notes", "original_notes", "text", "description", "observation", "summary"]) {
+      const value = capture[key];
+      const safe = safeText(value);
+      if (safe && !lines.includes(safe)) lines.push(safe);
+    }
+    if (lines.length) {
+      const hasStructuredValues = ["medications", "vitals", "scales"].some((key) =>
+        Array.isArray(capture[key]) && (capture[key] as unknown[]).length > 0
+      );
+      if (hasStructuredValues) {
+        lines.push("Measurements and ratings are shown as entered; they have not been independently checked.");
+      }
+      return lines.join("\n");
+    }
+    return fallback;
+  } catch {
+    // Malformed serialized data is not shown as caregiver text.
+    return /^[\\s]*[\\[{]/.test(description) ? fallback : caregiverSafeAssistantText(description) || fallback;
+  }
 }
 
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
@@ -1319,7 +1425,19 @@ export function HistoryDrawer() {
                   {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries that loaded are still shown. Some others may be missing. Try refreshing later.</span>
+                      <span>The entries that loaded are still shown. Some others may be missing. Review the affected sections below.</span>
+                      <ul aria-label="Care history sections with incomplete retrieval">
+                        {sourceWarnings.map((warning, index) => <li key={index}>{warning}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {sourceWarnings.length > 0 && !loading && records.length === 0 && (
+                    <div className="history-source-warning" role="status">
+                      <strong>What could not be loaded</strong>
+                      <ul aria-label="Care history sections with incomplete retrieval">
+                        {sourceWarnings.map((warning, index) => <li key={index}>{warning}</li>)}
+                      </ul>
                     </div>
                   )}
 
