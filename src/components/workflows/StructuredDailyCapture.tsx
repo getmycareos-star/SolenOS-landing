@@ -248,13 +248,15 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           pendingQueueId.current = null;
           setPendingLocal(false);
           setPendingMessage("");
-          setSaved(true);
-          setSavedEntrySummary("Your previously queued update has synced to the care record. Your current form remains open.");
-          setChangeIntelligenceStatus("not_reported");
-          setCareContinuityExecution(null);
-          setQwenAnalysis(null);
-          setSaveError(null);
-          window.dispatchEvent(new Event("careRecordUpdated"));
+          if (result.synced > 0) {
+            setSaved(true);
+            setSavedEntrySummary("Your previously queued update has synced to the care record. Your current form remains open.");
+            setChangeIntelligenceStatus("not_reported");
+            setCareContinuityExecution(null);
+            setQwenAnalysis(null);
+            setSaveError(null);
+            window.dispatchEvent(new Event("careRecordUpdated"));
+          }
         } else if (result.synced > 0) {
           setPendingMessage("A pending update has synced to the care record.");
           window.dispatchEvent(new Event("careRecordUpdated"));
@@ -1123,6 +1125,43 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       ...submission,
       captureIdempotencyKey: captureSubmissionRef.current.key,
     });
+  };
+
+  const retryPendingCaptures = async () => {
+    const currentPersonId = getPersonId();
+    const currentCaregiverId = getCaregiverId();
+    if (!currentPersonId || !currentCaregiverId) return;
+    try {
+      await retryBlockedDurableWrites(currentPersonId, currentCaregiverId, ["/daily/log"]);
+      const result = await syncDurableWrites({
+        personId: currentPersonId,
+        caregiverId: currentCaregiverId,
+        send: sendQueuedCareWrite,
+        endpoints: ["/daily/log"],
+      });
+      const summary = await getDurableWriteSummary(currentPersonId, currentCaregiverId, ["/daily/log"]);
+      setPendingQueueCount(summary.pending);
+      setPendingAttentionCount(summary.blocked + summary.failed_recoverable);
+      if (result.synced > 0) {
+        setPendingMessage("Pending care updates have synced to the care record.");
+        window.dispatchEvent(new Event("careRecordUpdated"));
+      }
+    } catch {
+      setPendingMessage("SolenOS could not retry the pending care updates. The encrypted originals remain on this device.");
+    }
+  };
+
+  const removeBlockedCaptures = async () => {
+    const currentPersonId = getPersonId();
+    const currentCaregiverId = getCaregiverId();
+    if (!currentPersonId || !currentCaregiverId) return;
+    await discardBlockedDurableWrites(currentPersonId, currentCaregiverId, ["/daily/log"]);
+    pendingQueueId.current = null;
+    setPendingLocal(false);
+    setPendingMessage("Updates needing attention were removed from this device. They were not saved to the care record.");
+    const summary = await getDurableWriteSummary(currentPersonId, currentCaregiverId, ["/daily/log"]);
+    setPendingQueueCount(summary.pending);
+    setPendingAttentionCount(summary.blocked + summary.failed_recoverable);
   };
 
   // Helper to render medication items
