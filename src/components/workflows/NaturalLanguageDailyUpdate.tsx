@@ -19,7 +19,7 @@ const QWEN_JOB_MAX_WAIT_MS = 12 * 60 * 1000;
 const QWEN_JOB_MAX_POLLS = Math.ceil(QWEN_JOB_MAX_WAIT_MS / QWEN_JOB_POLL_INTERVAL_MS);
 
 type SaveReceipt = {
-  id: string;
+  id: string | null;
   jobId: string | null;
   processingStatus: "queued" | "processing" | "completed" | "failed" | "unavailable";
   extractionStatus: string;
@@ -219,7 +219,7 @@ export default function NaturalLanguageDailyUpdate() {
       const medicationNeedsConfirmation = medicationMentioned && possibleChange && uncertainty;
       const extractionStatus = response.qwen_extraction_status || "unavailable";
       setReceipt({
-        id: response.id,
+        id: response.id ?? null,
         jobId: response.qwen_job_id || null,
         processingStatus: response.qwen_job_id
           ? "queued"
