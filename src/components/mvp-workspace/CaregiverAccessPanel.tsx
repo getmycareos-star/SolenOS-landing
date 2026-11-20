@@ -346,6 +346,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setError("We couldn't load caregiver access. Please try again.");
       setAllowed(false);
       setCanManageMembers(false);
+      setCurrentPersonId(null);
+      setCurrentProfileId(null);
+      setActivities([]);
       setNetworkSummary(null);
       setNetworkState(null);
     } finally {
