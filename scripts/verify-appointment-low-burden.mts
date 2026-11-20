@@ -24,6 +24,7 @@ assert.ok(component.includes('appointment_id?: string | null'))
 assert.ok(component.includes('source_workspace_id?: string | null'))
 assert.ok(component.includes('brief.appointments.find(appointment => appointment.source_id === item.appointment_id)'))
 
+assert.ok(component.includes('It does not book appointments or confirm them with a provider.'))
 // Capture is optional. Voice capture is intentionally not part of this release.
 assert.ok(component.includes('You can leave this empty and return later.'))
 assert.ok(component.includes('You can leave notes empty.'))
