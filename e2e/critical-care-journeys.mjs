@@ -2500,6 +2500,16 @@ await record("12b invited caregiver sees the shared care record in a separate br
   // Session-derived network reads must work without a caller-supplied person_id.
   const privateNetworkState = await request("/api/v1/care-network-state", { token: identity.token });
   assert.equal(privateNetworkState.status, 200, JSON.stringify(privateNetworkState.payload));
+  const invitedNetworkState = await request(
+    `/api/v1/care-network-state/${encodeURIComponent(identity.personId)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(invitedNetworkState.status, 200, JSON.stringify(invitedNetworkState.payload));
+  const invitedSummary = await request(
+    `/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(invitedSummary.status, 200, JSON.stringify(invitedSummary.payload));
   const crossRecordNetwork = await request(
     `/api/v1/multi-caregiver-summary?person_id=${encodeURIComponent("another-person")}`,
     { token: identity.token },
