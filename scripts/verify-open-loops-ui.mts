@@ -5,7 +5,8 @@ const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 
 const required: Array<[string, RegExp]> = [
-  ["loads the persisted person-scoped follow-ups", /getJSON\("\/open-loops\?limit=100"\)/],
+  ["loads every persisted follow-up page before presenting the list", /async function loadAllOpenLoops\(\)[\s\S]*?limit=\$\{pageSize\}&offset=\$\{offset\}[\s\S]*?expectedCount[\s\S]*?records\.length >= expectedCount/],
+  ["rejects incomplete, duplicate or invalid follow-up pages instead of presenting partial history as complete", /seenIds\.has\(row\.id\)[\s\S]*?could not be fully retrieved[\s\S]*?larger than the available page limit/],
   ["loads the canonical situation-understanding assessment", /getJSON\("\/care-continuity\/situation-understanding"\)/],
   ["keeps partial source failures visible", /Promise\.allSettled\([\s\S]*?if \(!nextLoops && !nextAssessment\)/],
   ["refreshes a missing or stale assessment through the existing endpoint", /status === "not_assessed"[\s\S]*?reassessment_recommended === true[\s\S]*?postJSON\("\/care-continuity\/situation-understanding\/reassess"/],
