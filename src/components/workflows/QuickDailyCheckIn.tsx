@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
 import {
   deliverDurableWrite,
+  discardBlockedDurableWrites,
   discardDurableWrite,
   durableWriteId,
   enqueueDurableWrite,
   getDurableWriteSummary,
   hasDurableWrite,
+  retryBlockedDurableWrites,
   syncDurableWrites,
 } from "@/lib/offline-sync/durable-write-queue";
 
@@ -55,6 +57,7 @@ export default function QuickDailyCheckIn() {
   const [reportedAt, setReportedAt] = useState<string | null>(null);
   const [pendingLocal, setPendingLocal] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [attentionCount, setAttentionCount] = useState(0);
   const [syncNotice, setSyncNotice] = useState("");
   const pendingQueueId = useRef<string | null>(null);
 
@@ -75,12 +78,14 @@ export default function QuickDailyCheckIn() {
       try {
         const summary = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
-        setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        setPendingCount(summary.pending);
+        setAttentionCount(summary.blocked + summary.failed_recoverable);
         if (typeof navigator !== "undefined" && !navigator.onLine) return;
         const result = await syncDurableWrites({ personId, caregiverId, send });
         const afterSync = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
-        setPendingCount(afterSync.pending + afterSync.blocked + afterSync.failed_recoverable);
+        setPendingCount(afterSync.pending);
+        setAttentionCount(afterSync.blocked + afterSync.failed_recoverable);
         if (afterSync.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
           if (retryTimer) clearTimeout(retryTimer);
           retryTimer = setTimeout(sync, 5_000);
@@ -117,6 +122,38 @@ export default function QuickDailyCheckIn() {
       window.removeEventListener("solenos:offline-queue-updated", sync);
     };
   }, []);
+
+  async function retryQueuedUpdates() {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    if (!personId || !caregiverId) return;
+    const send = async (endpoint: string, payload: unknown) => {
+      const response = await postJSON(endpoint, payload) as { success?: boolean; id?: string | number };
+      if (response?.success !== true || response.id === undefined || response.id === null) {
+        throw new Error("The server did not confirm that this update was saved.");
+      }
+      return response;
+    };
+    await retryBlockedDurableWrites(personId, caregiverId);
+    const result = await syncDurableWrites({ personId, caregiverId, send });
+    const summary = await getDurableWriteSummary(personId, caregiverId);
+    setPendingCount(summary.pending);
+    setAttentionCount(summary.blocked + summary.failed_recoverable);
+    if (result.synced > 0) {
+      setSyncNotice("Pending updates have synced to the care record.");
+      window.dispatchEvent(new Event("careRecordUpdated"));
+    }
+  }
+
+  async function removeBlockedUpdates() {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    if (!personId || !caregiverId) return;
+    await discardBlockedDurableWrites(personId, caregiverId);
+    const summary = await getDurableWriteSummary(personId, caregiverId);
+    setPendingCount(summary.pending);
+    setAttentionCount(summary.blocked + summary.failed_recoverable);
+  }
 
   function selectKind(value: CheckInKind) {
     setKind(value);
@@ -213,7 +250,10 @@ export default function QuickDailyCheckIn() {
       if (queueId) {
         setPendingLocal(true);
         const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
-        if (summary) setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        if (summary) {
+          setPendingCount(summary.pending);
+          setAttentionCount(summary.blocked + summary.failed_recoverable);
+        }
         if (status === 401 || status === 403) {
           setError("This check-in is encrypted on this device, but your care session must be verified before it can reach the care record.");
         } else if (status === 400 || status === 409 || status === 422) {
@@ -341,6 +381,21 @@ export default function QuickDailyCheckIn() {
         <p role="status" style={{ margin: "8px 0 0", color: "var(--theme-panel-muted)" }}>
           {pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to sync with the care record.
         </p>
+      )}
+      {attentionCount > 0 && (
+        <div style={{ display: "grid", gap: 6 }}>
+          <p role="alert" style={{ margin: "8px 0 0", color: "var(--theme-danger-fg, #9b3434)" }}>
+            {attentionCount} update{attentionCount === 1 ? "" : "s"} need attention and have not been saved to the care record.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" disabled={saving} onClick={() => void retryQueuedUpdates()} style={{ border: 0, background: "transparent", textDecoration: "underline", cursor: "pointer" }}>
+              Retry queued updates
+            </button>
+            <button type="button" disabled={saving} onClick={() => void removeBlockedUpdates()} style={{ border: 0, background: "transparent", textDecoration: "underline", cursor: "pointer" }}>
+              Remove updates needing attention from this device
+            </button>
+          </div>
+        </div>
       )}
       {syncNotice && <p role="status" style={{ margin: "8px 0 0", color: "var(--theme-panel-muted)" }}>{syncNotice}</p>}
       {savedAt && (
