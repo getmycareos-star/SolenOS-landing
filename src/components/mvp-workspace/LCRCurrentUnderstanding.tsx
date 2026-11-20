@@ -856,13 +856,14 @@ export function LCRCurrentUnderstanding() {
       const response = await getJSON(
         `/care-continuity/current-care?limit_per_source=12&source=${encodeURIComponent(sourceName)}`,
       ) as CurrentCareProjection;
+      const refreshedCoverage = response.source_coverage?.[sourceName];
       if (
         response.person_id !== scopedPersonId ||
         response.read_only !== true ||
         !Array.isArray(response.items) ||
         response.requested_sources?.length !== 1 ||
         response.requested_sources[0] !== sourceName ||
-        !response.source_coverage?.[sourceName]
+        !refreshedCoverage
       ) {
         throw new Error("The refreshed care-history source did not match this care record.");
       }
@@ -875,9 +876,9 @@ export function LCRCurrentUnderstanding() {
         }
         const coverage = {
           ...(current.source_coverage ?? {}),
-          [sourceName]: response.source_coverage?.[sourceName],
+          [sourceName]: refreshedCoverage,
         };
-        const sourceStatus = response.source_coverage?.[sourceName]?.status;
+        const sourceStatus = refreshedCoverage.status;
         const failed = new Set(current.failed_sources ?? []);
         if (["failed", "partial", "unavailable_schema", "unavailable_scope"].includes(sourceStatus ?? "")) {
           failed.add(sourceName);
@@ -887,7 +888,7 @@ export function LCRCurrentUnderstanding() {
         const missingRequired = new Set(current.missing_required_sources);
         const missingOptional = new Set(current.missing_optional_sources);
         if (sourceStatus === "unavailable_schema" || sourceStatus === "unavailable_scope") {
-          if (response.source_coverage?.[sourceName]?.required) missingRequired.add(sourceName);
+          if (refreshedCoverage.required) missingRequired.add(sourceName);
           else missingOptional.add(sourceName);
         } else {
           missingRequired.delete(sourceName);
