@@ -826,7 +826,7 @@ export default function AppointmentWorkspace() {
             <label className="guided-capture-label">Questions still unanswered
               <textarea value={unansweredQuestions} onChange={event => setUnansweredQuestions(event.target.value)} rows={3} placeholder="Optional. What still needs clarification?" />
             </label>
-            <label className="guided-capture-label">Attach an existing document or visit document
+            <label className="guided-capture-label">Upload a document to this appointment
               <input type="file" accept=".pdf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.log,image/*" disabled={documentBusy || !appointmentId || brief.source_coverage?.documents === 'restricted'} onChange={async event => {
                 const file = event.currentTarget.files?.[0]
                 event.currentTarget.value = ''
