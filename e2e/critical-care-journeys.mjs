@@ -2561,6 +2561,55 @@ await record("browser renders caregiver surfaces and submits Companion through t
     await context.close();
   }
 
+  const details = await createBrowserPage(session, "/workspace");
+  await details.page.getByRole("button", { name: "More care record actions" }).click();
+  await details.page.getByRole("menuitem", { name: "View record details", exact: true }).click();
+  const dialog = details.page.getByRole("dialog", { name: "Care record details" });
+  await dialog.waitFor({ state: "visible", timeout: 15_000 });
+  await details.page.waitForFunction(() => {
+    const dialog = document.querySelector(".solenos-record-details-dialog");
+    return dialog instanceof HTMLElement && dialog.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])').length > 0;
+  }, undefined, { timeout: 15_000 });
+  assert.equal(
+    await details.page.locator(".solenos-chat-main").evaluate((element) => element.inert),
+    true,
+    "the workspace content behind care details must be inert while the modal is open",
+  );
+  const firstDialogControl = dialog.locator('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])').first();
+  const lastDialogControl = dialog.locator('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])').last();
+  await details.page.waitForFunction(
+    () => document.activeElement?.getAttribute("aria-label") === "Close care record details",
+    undefined,
+    { timeout: 5_000 },
+  );
+  await lastDialogControl.focus();
+  await details.page.keyboard.press("Tab");
+  assert.equal(
+    await details.page.evaluate(() => document.activeElement?.getAttribute("aria-label")),
+    "Close care record details",
+    "Tab from the last dialog control must wrap to the first control",
+  );
+  await details.page.keyboard.press("Shift+Tab");
+  assert.equal(
+    await lastDialogControl.evaluate((element) => element === document.activeElement),
+    true,
+    "Shift+Tab from the first dialog control must wrap to the last control",
+  );
+  await details.page.keyboard.press("Escape");
+  await dialog.waitFor({ state: "detached", timeout: 5_000 });
+  assert.equal(
+    await details.page.getByRole("button", { name: "More care record actions" }).evaluate((element) => element === document.activeElement),
+    true,
+    "closing care details must return focus to the More actions trigger",
+  );
+  assert.equal(
+    await details.page.locator(".solenos-chat-main").evaluate((element) => element.inert),
+    false,
+    "closing care details must restore background interaction",
+  );
+  await verifyMobile(details.page);
+  await details.context.close();
+
   const companion = await createBrowserPage(session, "/workspace/companion");
   const companionInput = companion.page.locator("#companion-message-input");
   if (await companionInput.isDisabled()) {
