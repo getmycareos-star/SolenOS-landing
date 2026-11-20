@@ -65,6 +65,8 @@ type CurrentCareItem = {
   source_collection: string;
   source_type: string;
   source_label: string;
+  related_record_type?: string | null;
+  related_record_id?: string | null;
   source_context?: {
     kind?: string;
     authority?: string;
@@ -502,6 +504,9 @@ type CurrentCareProjection = {
   items: CurrentCareItem[];
   item_count: number;
   has_more: boolean;
+  outcomes?: CurrentCareItem[];
+  outcomes_has_more?: boolean;
+  source_coverage?: Record<string, { status?: string; returned_count?: number; has_more?: boolean }>;
   notice: string;
 };
 
@@ -1961,6 +1966,30 @@ export function LCRCurrentUnderstanding() {
             </div>
             )}
 
+      <section className="lcr-current-fact" aria-labelledby="lcr-outcomes-heading">
+        <h3 id="lcr-outcomes-heading">What happened</h3>
+        {projection?.outcomes?.length ? (
+          <>
+            <ul className="lcr-current-facts">
+              {projection.outcomes.map((outcome) => (
+                <li key={outcome.source_collection + ":" + outcome.id}>
+                  <strong>{caregiverSafeAssistantText(outcome.description) || caregiverLabel(outcome.kind) || "Recorded outcome"}</strong>
+                  <p>{caregiverStatusLabel(outcome.status) || "Outcome recorded"} · {formatWhen(outcome.recorded_at || outcome.occurred_at)}</p>
+                  {outcome.related_record_type && outcome.related_record_id && (
+                    <small>Linked to {outcome.related_record_type === "care_decision" ? "a recorded care decision" : outcome.related_record_type === "care_action" ? "an agreed care action" : "a follow-up"}</small>
+                  )}
+                  {outcome.evidence_ids.length > 0 && <small>Based on {outcome.evidence_ids.length} saved source item(s)</small>}
+                </li>
+              ))}
+            </ul>
+            {projection.outcomes_has_more && <p>More saved outcomes are available in your care history.</p>}
+          </>
+        ) : projection?.missing_optional_sources?.some((source) => ["decision_outcomes", "action_outcomes", "follow_up_links"].includes(source)) ? (
+          <p>Some saved outcomes are not available right now. Try refreshing later.</p>
+        ) : (
+          <p>No follow-up outcomes have been recorded yet.</p>
+        )}
+      </section>
 
       <details className="lcr-history-details"><summary>See changes that have happened more than once</summary>
       <div className="lcr-situation-assessment" aria-labelledby="lcr-pattern-history-heading">
