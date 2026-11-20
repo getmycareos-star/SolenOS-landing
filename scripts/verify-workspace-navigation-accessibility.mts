@@ -10,6 +10,10 @@ const designSystem = readFileSync(
   "src/app/workspace/experience-design-system-v2.css",
   "utf8",
 );
+const navigationStyles = readFileSync(
+  "src/app/workspace/navigation-accessibility.css",
+  "utf8",
+);
 
 assert.match(accessibility, /matchMedia\("\(max-width: 900px\)"\)/);
 assert.match(designSystem, /@media \(max-width: 900px\)/);
