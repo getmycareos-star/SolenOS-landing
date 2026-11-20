@@ -38,6 +38,9 @@ type PreparationBrief = {
   facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null; recorded_at?: string | null; updated_at?: string | null } & LinkedSource>
   events: Array<{ source_id: string; title: string; description?: string | null; event_type: string; occurred_at?: string | null; status: string } & LinkedSource>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string } & LinkedSource>
+  open_loops?: Array<{ source_id: string; title: string; description?: string | null; status: string; priority?: string | null; deadline_at?: string | null; source_type?: string | null; source_reference?: string | null; appointment_id?: string | null; source_workspace_id?: string | null }>
+  appointment_needs?: Array<{ source_id: string; question: string; subject_type: string; status: string; intended_answerer_role?: string | null; intended_answerer_label?: string | null; necessity_rationale?: string | null; evidence_ids?: string[]; interpretation_limit?: string }>
+  documents?: Array<{ source_id: string; source_evidence_id?: string; filename?: string | null; extraction_status: string; extracted_text?: string; recorded_at?: string | null; uploaded_at?: string | null; epistemic_status?: string; interpretation_limit?: string }>
   source_coverage: Record<string, string>
   freshness_assessments?: FreshnessAssessment[]
   freshness_assessment_scope?: { status: string; bounded: boolean; limit: number; history_complete: boolean; interpretation_limit: string }
@@ -352,6 +355,42 @@ export default function DetailedAppointmentWorkspace() {
                   {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{caregiverSafeAssistantText(item.title) || "Appointment"}</span><small>{item.scheduled_at || 'Date not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved note or document'} · Added by: {caregiverSafeAssistantText(source.original_author) || 'Not recorded'} · Reported by: {caregiverSafeAssistantText(source.reported_by_label) || 'Not recorded'}</small>)}</li>)}</ul> : <p>No appointments are listed here.</p>}
                 </div>
               </div>
+              {(Boolean(lcrBrief.open_loops?.length) || Boolean(lcrBrief.appointment_needs?.length) || Boolean(lcrBrief.documents?.length)) && <section className="appointment-source-coverage" aria-label="Follow-ups, appointment questions and relevant documents">
+                <strong>Open follow-ups and related care information</strong>
+                <div className="appointment-brief-grid">
+                  <div><strong>Unresolved follow-ups ({lcrBrief.open_loops?.length ?? 0})</strong>
+                    {lcrBrief.open_loops?.length
+                      ? <ul>{lcrBrief.open_loops.map(item => <li key={item.source_id}>
+                        <span>{caregiverSafeAssistantText(item.title) || 'Follow-up recorded'}</span>
+                        {item.description && <p>{caregiverSafeAssistantText(item.description)}</p>}
+                        <small>{caregiverStatusLabel(item.status) || 'Status not available'} · {item.deadline_at ? 'Due ' + new Date(item.deadline_at).toLocaleString() : 'No due date recorded'} · {caregiverStatusLabel(item.priority || '') || 'Priority not recorded'}</small>
+                        {item.appointment_id && <small>Linked to an existing appointment in this care record</small>}
+                        <small>This remains open until its outcome is recorded; it is not assumed complete.</small>
+                      </li>)}</ul>
+                      : <p>No unresolved follow-ups were returned by this source.</p>}
+                  </div>
+                  <div><strong>Appointment-related questions ({lcrBrief.appointment_needs?.length ?? 0})</strong>
+                    {lcrBrief.appointment_needs?.length
+                      ? <ul>{lcrBrief.appointment_needs.map(item => <li key={item.source_id}>
+                        <span>{caregiverSafeAssistantText(item.question) || 'Question not available'}</span>
+                        <small>{caregiverStatusLabel(item.status) || 'Status not available'} · Answerer: {caregiverSafeAssistantText(item.intended_answerer_label || item.intended_answerer_role) || 'Not recorded'}</small>
+                        {item.necessity_rationale && <p>{caregiverSafeAssistantText(item.necessity_rationale)}</p>}
+                        <small>{caregiverSafeAssistantText(item.interpretation_limit) || 'This question does not mean an appointment has been booked or confirmed.'}</small>
+                      </li>)}</ul>
+                      : <p>No unresolved appointment-related questions were returned by this source.</p>}
+                  </div>
+                  <div><strong>Relevant documents ({lcrBrief.documents?.length ?? 0})</strong>
+                    {lcrBrief.documents?.length
+                      ? <ul>{lcrBrief.documents.slice(0, 8).map(item => <li key={item.source_id}>
+                        <span>{caregiverSafeAssistantText(item.filename) || 'Saved document'}</span>
+                        <small>{caregiverStatusLabel(item.extraction_status) || 'Extraction status not available'} · Uploaded: {item.uploaded_at ? new Date(item.uploaded_at).toLocaleString() : 'Date not recorded'}</small>
+                        {item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 500))}</p>}
+                        <small>{caregiverSafeAssistantText(item.interpretation_limit) || 'Document text is source material, not an accepted care fact or clinical verification.'}</small>
+                      </li>)}</ul>
+                      : <p>No relevant extracted documents were returned by this source.</p>}
+                  </div>
+                </div>
+              </section>}
               <div className="appointment-source-coverage"><strong>Available care information</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{caregiverInformationAreaLabel(source) || "Other care information"}</b><small>{caregiverStatusLabel(String(status)) || 'Status not available'}</small></span>)}</div></div>
               <section className="appointment-source-coverage" aria-label="How recent this information is">
                 <strong>How recent this information is</strong>
