@@ -6,13 +6,8 @@ import { useRouter } from "next/navigation";
 import type { Situation, UiRuntimeState } from "@/lib/ui-runtime";
 import {
   createEmptyUiRuntimeState,
-  loadActiveSituationId,
   loadSituationsFromStorage,
-  loadTimelineFromStorage,
   openSituationsFromSituationApi,
-  persistActiveSituationId,
-  persistSituations,
-  persistTimeline,
   type SituationApiContinuityPayload,
 } from "@/lib/ui-runtime";
 import {
@@ -106,14 +101,12 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       setTelemetryUserId(storedUserId);
     }
 
+    // Browser data is only a routing hint for legacy entry continuity. It is
+    // never hydrated into the care record: the authenticated server response
+    // below is the sole source of caregiver-visible situations and history.
     const localSituations = loadSituationsFromStorage();
-    const timeline = loadTimelineFromStorage();
-    const activeId = loadActiveSituationId();
     setRuntime({
       ...createEmptyUiRuntimeState(),
-      situations: localSituations,
-      timeline,
-      activeSituationId: activeId,
       decisionSurface: { activeCard: null },
     });
     setHydrated(true);
@@ -173,37 +166,20 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           (data?.total_events ?? 0) > 0 ||
           Boolean(data?.active_care_situation?.observations?.length);
 
-        if (fromServer.length > 0) {
+        if (fromServer.length > 0 || hasDurableServerReality) {
           markEnteredCareRecord();
-          setRuntime((prev) => {
-            const next = {
-              ...prev,
-              situations: fromServer,
-              activeSituationId:
-                fromServer.find((s) => s.status === "active")?.id ??
-                prev.activeSituationId ??
-                fromServer[0]?.id ??
-                null,
-            };
-            persistSituations(next.situations);
-            if (next.activeSituationId) persistActiveSituationId(next.activeSituationId);
-            return next;
-          });
-        } else if (freshEnter) {
-          if (localSituations.length > 0 && previousKey) {
-            markEnteredCareRecord();
-            persistSituations(localSituations);
-            if (activeId) persistActiveSituationId(activeId);
-          } else if (!hasDurableServerReality && localSituations.length === 0) {
-            persistSituations([]);
-            persistActiveSituationId(null);
-            setRuntime((prev) => ({
-              ...prev,
-              situations: [],
-              activeSituationId: null,
-            }));
-          }
         }
+        // Always replace the visible projection with the server result,
+        // including an empty result. Never resurrect another session's
+        // browser-cached care situations when the authorized record is empty.
+        setRuntime((prev) => ({
+          ...prev,
+          situations: fromServer,
+          activeSituationId:
+            fromServer.find((s) => s.status === "active")?.id ??
+            fromServer[0]?.id ??
+            null,
+        }));
 
         // First-time users who have not completed onboarding are handled by the
         // OnboardingGate (welcome → consent → app shell). Do not bounce them to
@@ -223,7 +199,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           return;
         }
 
-        if (localSituations.length > 0 || fromServer.length > 0 || freshEnter) {
+        if (fromServer.length > 0 || hasDurableServerReality || freshEnter) {
           markEnteredCareRecord();
         }
         setEntryReady(true);
@@ -236,13 +212,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         setEntryReady(true);
       });
   }, [router]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    persistSituations(runtime.situations);
-    persistTimeline(runtime.timeline);
-    persistActiveSituationId(runtime.activeSituationId);
-  }, [runtime, hydrated]);
 
   const updateRuntime = useCallback((updater: (prev: UiRuntimeState) => UiRuntimeState) => {
     setRuntime(updater);
@@ -289,8 +258,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
             situations.find((s) => s.status === "active")?.id ??
             prev.activeSituationId,
         };
-        persistSituations(next.situations);
-        if (next.activeSituationId) persistActiveSituationId(next.activeSituationId);
         return next;
       });
     },
@@ -324,10 +291,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
             situations[0]?.id ??
             null,
         };
-        persistSituations(next.situations);
-        if (next.activeSituationId) {
-          persistActiveSituationId(next.activeSituationId);
-        }
         return next;
       });
     },
