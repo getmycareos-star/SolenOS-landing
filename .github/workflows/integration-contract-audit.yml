@@ -1,0 +1,68 @@
+name: Frontend-backend integration contract audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "scripts/export-api-call-sites.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/integration-contract-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-contract-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  route-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out frontend main
+        uses: actions/checkout@v4
+
+      - name: Check out backend main for live route registration
+        uses: actions/checkout@v4
+        with:
+          repository: getmycareos-star/SolenOS_backend
+          ref: main
+          path: backend-contract
+          token: ${{ github.token }}
+
+      - name: Record backend source revision
+        run: echo "SOLENOS_BACKEND_SHA=$(git -C backend-contract rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked frontend dependencies
+        run: npm ci
+
+      - name: Build isolated backend route-inspection image
+        run: docker build -f backend-contract/ci/Dockerfile.backend-tests -t solenos-backend-route-audit backend-contract
+
+      - name: Export exact backend route registry from app.main
+        run: docker run --rm --volume "$GITHUB_WORKSPACE:/output" --workdir /workspace/backend solenos-backend-route-audit python scripts/export_registered_endpoints.py --output /output/backend-endpoint-inventory.json
+
+      - name: Match frontend call sites to registered backend routes
+        run: node scripts/export-api-call-sites.mjs --backend-inventory backend-endpoint-inventory.json --output frontend-backend-route-matrix.json
+
+      - name: Publish route inventory and integration matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: solenos-frontend-backend-integration-matrix
+          path: |
+            backend-endpoint-inventory.json
+            frontend-backend-route-matrix.json
+          if-no-files-found: error
+          retention-days: 30
