@@ -18,7 +18,7 @@ assert.ok(component.includes('brief.prior_decisions?.length'))
 assert.ok(component.includes('brief.decision_outcomes?.length'))
 assert.ok(component.includes('brief.open_loops?.length'))
 assert.ok(component.includes('appointment_needs?: Array<'))
-assert.ok(component.includes('Appointment to arrange or confirm'))
+assert.ok(component.includes('Appointment information to clarify'))
 assert.ok(component.includes('item.subject_type !== "appointment"'))
 assert.ok(component.includes('brief.documents?.length'))
 
@@ -28,7 +28,7 @@ assert.ok(component.includes('setRecord(null)'))
 assert.ok(component.includes('setOutcomeProposals([])'))
 // Workspace selection is tied to the selected appointment; unrelated notes are not reused.
 assert.ok(component.includes('items.find(item => item.appointment_id === selectedAppointmentId)'))
-assert.ok(component.includes('items.find(item => !item.appointment_id)'))
+assert.ok(!component.includes('items.find(item => !item.appointment_id)'), 'unlinked workspaces must not be reused as appointment records')
 assert.ok(component.includes('setRecord(null)'))
 
 // Follow-ups retain their appointment/workspace lineage in the caregiver view.
