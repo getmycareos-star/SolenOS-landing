@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { caregiverReadableCaptureText } from "../src/lib/caregiver-language.ts";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -55,6 +56,22 @@ assert.match(drawer, /shouldShowLcrRevision/);
 assert.match(drawer, /REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE/);
 assert.match(drawer, /mapDecision/);
 assert.match(drawer, /mapOutcome/);
+const structuredCapture = caregiverReadableCaptureText(JSON.stringify({
+  original_capture: {
+    notes: "she's loosing weight",
+    scales: [{ axis: "mood", score: 5, note: "she's sad" }],
+    vitals: [{ vital_type: "bp_systolic", value: 10, unit: "mmHg", note: "yes" }],
+    medications: [],
+    capture_idempotency_key: "internal-key",
+    capture_request_fingerprint: "internal-fingerprint",
+  },
+}));
+assert.ok(structuredCapture);
+assert.match(structuredCapture, /she's loosing weight/);
+assert.match(structuredCapture, /Mood: 5 — she's sad/);
+assert.match(structuredCapture, /Blood pressure \(top number\): 10 mmHg — yes/);
+assert.match(structuredCapture, /not been independently checked/);
+assert.doesNotMatch(structuredCapture, /capture_idempotency_key|capture_request_fingerprint|internal-key|internal-fingerprint/);
 assert.match(drawer, /caregiverReadableCaptureText/, "history details use the shared caregiver-readable source formatter");
 assert.match(evidenceReview, /caregiverReadableCaptureText\(selected\.source_text\)/, "evidence review must not print serialized capture JSON to caregivers");
 assert.match(caregiverLanguage, /capture\.vitals/, "saved measurements are rendered from the original capture");
