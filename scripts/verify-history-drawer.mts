@@ -79,7 +79,7 @@ assert.match(drawer, /caregiverSafeAssistantText/, "history details sanitize car
 assert.match(evidenceReview, /caregiverReadableCaptureText\(selected\.source_text\)/, "evidence review must not print serialized capture JSON to caregivers");
 assert.match(evidenceReview, /caregiverReadableCaptureText\(item\.source_passage\)/, "individual source passages must be shown in caregiver-readable language");
 assert.match(evidenceReview, /item\.observation_method !== 'Daily Care form'/, "structured source values are not redundantly repeated below their readable source passage");
-assert.match(evidenceReview, /Details recorded from this note or document/, "source details use caregiver-facing language");
+assert.match(evidenceReview, /<summary>Details recorded from this information \(\{observations\.length\}\)<\/summary>/, "source details use caregiver-facing language and remain grouped under a clear disclosure");
 assert.match(evidenceReview, /caregiver_form: 'Entered in Daily Care'/, "caregiver form metadata is translated into natural language");
 assert.match(evidenceReview, /note: 'Care update'/, "internal evidence type values are not exposed");
 assert.match(language, /capture\.axis === "string" && capture\.score !== undefined/, "a single rating source passage is readable");
