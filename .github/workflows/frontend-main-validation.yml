@@ -44,6 +44,15 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci
+      - name: Export frontend API call-site inventory
+        run: node scripts/export-api-call-sites.mjs --output frontend-api-call-sites.json
+      - name: Publish frontend API call-site inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-api-call-sites
+          path: frontend-api-call-sites.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Type-check frontend
         run: npm run typecheck
