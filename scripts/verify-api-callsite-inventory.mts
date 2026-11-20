@@ -239,6 +239,7 @@ let backendContract: {
   matched_callsite_pairs?: number;
   intentionally_disabled_pairs?: number;
   missing_operations?: Array<{ method_path: string; callsites: Callsite[] }>;
+  unconsumed_backend_operations?: Array<{ method_path: string }>;
 } = { enabled: false };
 
 const openApiUrl = process.env.SOLENOS_OPENAPI_URL;
@@ -252,6 +253,7 @@ if (openApiUrl) {
       .map(method => ({ path, method: method.toLowerCase() }))
   );
   const missing: Array<{ method_path: string; callsites: Callsite[] }> = [];
+  const matchedOperationKeys = new Set<string>();
   let matched = 0;
   let intentionallyDisabled = 0;
   for (const [key, items] of grouped.entries()) {
@@ -265,10 +267,17 @@ if (openApiUrl) {
     const pattern = new RegExp("^" + path.split("/").map(segment =>
       segment === "{param}" ? "[^/]+" : escapeRegex(segment)
     ).join("/") + "$");
-    const exists = registered.some(route => route.method === method && pattern.test(route.path));
-    if (exists) matched += 1;
-    else missing.push({ method_path: key, callsites: items });
+    const matches = registered.filter(route => route.method === method && pattern.test(route.path));
+    if (matches.length) {
+      matched += 1;
+      for (const route of matches) matchedOperationKeys.add(route.method + " " + route.path);
+    } else {
+      missing.push({ method_path: key, callsites: items });
+    }
   }
+  const unconsumed = registered
+    .filter(route => !matchedOperationKeys.has(route.method + " " + route.path))
+    .map(route => ({ method_path: route.method.toUpperCase() + " " + route.path }));
   backendContract = {
     enabled: true,
     openapi_url: openApiUrl,
@@ -276,6 +285,7 @@ if (openApiUrl) {
     matched_callsite_pairs: matched,
     intentionally_disabled_pairs: intentionallyDisabled,
     missing_operations: missing,
+    unconsumed_backend_operations: unconsumed,
   };
 }
 
@@ -288,6 +298,8 @@ const report = {
   server_proxy_callsite_count: proxyCallsites.length,
   unsupported_server_proxy_calls: unsupportedProxyCalls,
   backend_contract: backendContract,
+  unconsumed_backend_operation_count: backendContract.unconsumed_backend_operations?.length ?? null,
+  unconsumed_backend_operations: backendContract.unconsumed_backend_operations ?? [],
   endpoints: [...grouped.entries()].map(([key, items]) => ({
     method_path: key,
     callsite_count: items.length,
