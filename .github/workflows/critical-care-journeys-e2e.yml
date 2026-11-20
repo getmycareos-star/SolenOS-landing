@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "e2e/web-push-delivery.mjs"
+      - "src/lib/offline-sync/**"
       - ".github/workflows/critical-care-journeys-e2e.yml"
   push:
     branches: [main]
@@ -25,6 +26,7 @@ on:
       - "src/app/workspace/notifications/**"
       - "src/app/api/**"
       - "src/lib/situation-entry/**"
+      - "src/lib/offline-sync/**"
       - "src/app/workspace/**"
       - "src/app/globals.css"
       - "src/app/dark-mode-remediation.css"

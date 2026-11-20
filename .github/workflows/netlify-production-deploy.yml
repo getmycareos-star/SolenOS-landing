@@ -1,6 +1,10 @@
 name: Netlify production deployment
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/netlify-production-deploy.yml"
   workflow_dispatch:
     inputs:
       release_approved:
@@ -33,6 +37,7 @@ concurrency:
 jobs:
   verify:
     name: Verify production build before deploy
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release-approved]'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -66,7 +71,7 @@ jobs:
         run: npm run build
 
       - name: Require successful backend release checks for unchanged backend source
-        if: github.event_name == 'workflow_dispatch' && inputs.release_approved == true
+        if: (github.event_name == 'workflow_dispatch' && inputs.release_approved == true) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release-approved]'))
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +88,7 @@ jobs:
           const backendSha = process.env.BACKEND_SHA;
           const checks = [
             {
-              name: "Backend tests",
+              name: "Backend tests — main validation",
               paths: ["backend/app/", "backend/alembic/", "backend/tests/", "backend/scripts/", "backend/pyproject.toml", "backend/alembic.ini", "ci/", "Dockerfile", "start-with-qwen.sh", "railway.json", ".dockerignore"],
             },
             {
@@ -137,13 +142,13 @@ jobs:
 
   caregiver-acceptance:
     name: Verify all caregiver journeys against PostgreSQL and a real browser
-    if: github.event_name == 'workflow_dispatch' && inputs.release_approved == true
+    if: (github.event_name == 'workflow_dispatch' && inputs.release_approved == true) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release-approved]'))
     uses: ./.github/workflows/critical-care-journeys-e2e.yml
 
   deploy:
     name: Deploy production to Netlify
     needs: [verify, caregiver-acceptance]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.release_approved == true
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.release_approved == true) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release-approved]')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
