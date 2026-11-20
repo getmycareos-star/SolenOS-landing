@@ -193,6 +193,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
+  const [conversationRestoreError, setConversationRestoreError] = useState<string | null>(null)
   const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | 'unverified' | 'unknown'>('checking')
   const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
   const [careUpdateLoading, setCareUpdateLoading] = useState(false)
@@ -303,7 +304,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         if (error instanceof ApiResponseError && error.status === 404 && storageKey) {
           window.localStorage.removeItem(storageKey)
         } else if (!cancelled && !userInteractedRef.current) {
-          setRequestError('We could not restore the earlier conversation. Your saved Care Record has not changed. You can try again or start a new conversation.')
+          setConversationRestoreError('We could not restore the earlier conversation. Your saved Care Record has not changed. Reload this page to try again, or start a new conversation.')
         }
       }
     }
@@ -602,6 +603,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </header>
 
       {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {conversationRestoreError && <div className="companion-error" role="alert"><span>{conversationRestoreError}</span></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
       <div className="companion-workspace">
