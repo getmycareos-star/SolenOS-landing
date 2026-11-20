@@ -44,6 +44,9 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci
+
+      - name: Verify production telemetry cannot fall back to process memory
+        run: npm run verify:telemetry-production-fail-closed
       - name: Export frontend API call-site inventory
         run: node scripts/export-api-call-sites.mjs --output frontend-api-call-sites.json
       - name: Publish frontend API call-site inventory
