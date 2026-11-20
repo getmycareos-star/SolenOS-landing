@@ -195,6 +195,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [careUpdateCorrectionContext, setCareUpdateCorrectionContext] = useState('')
   const [careUpdateHistory, setCareUpdateHistory] = useState<Record<string, CareUpdateReviewHistoryItem[]>>({})
   const [loadingCareUpdateHistoryId, setLoadingCareUpdateHistoryId] = useState<string | null>(null)
+  const [showReviewedCareUpdates, setShowReviewedCareUpdates] = useState(false)
+  const [reviewedCareUpdates, setReviewedCareUpdates] = useState<PendingCareUpdate[]>([])
+  const [reviewedCareUpdatesLoading, setReviewedCareUpdatesLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -422,6 +425,26 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setCareUpdateError('The correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.')
     } finally {
       setReviewingCareUpdateId(null)
+    }
+  }
+
+  const loadReviewedCareUpdates = async () => {
+    setReviewedCareUpdatesLoading(true)
+    setCareUpdateError(null)
+    try {
+      const response = await getJSON('/companion/care-updates?include_reviewed=true') as {
+        items?: PendingCareUpdate[]
+        ordering?: string
+        limit?: number
+      }
+      if (!Array.isArray(response?.items) || response.ordering !== 'newest_first') {
+        throw new Error('The reviewed care update list was incomplete.')
+      }
+      setReviewedCareUpdates(response.items.filter(item => item.status !== 'pending_authorization'))
+    } catch {
+      setCareUpdateError('Previous care update decisions could not be loaded. Your saved Care Record has not changed.')
+    } finally {
+      setReviewedCareUpdatesLoading(false)
     }
   }
 
@@ -667,10 +690,37 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice) && <section className="companion-care-updates" aria-label="Care suggestions to review">
         <div className="companion-care-updates-heading">
           <div><span className="companion-kicker">YOUR CARE RECORD</span><h3>Care updates to review</h3><p>These are exact words from your message that may be useful to save. Nothing is added unless you choose to accept it.</p></div>
-          <button type="button" className="companion-care-refresh" onClick={() => void loadPendingCareUpdates()} disabled={careUpdateLoading || Boolean(reviewingCareUpdateId)}>{careUpdateLoading ? 'Checking…' : 'Refresh'}</button>
+          <div className="companion-care-updates-tools">
+            <button type="button" className="companion-care-refresh" onClick={() => void loadPendingCareUpdates()} disabled={careUpdateLoading || Boolean(reviewingCareUpdateId)}>{careUpdateLoading ? 'Checking…' : 'Refresh'}</button>
+            <button type="button" className="companion-care-refresh" onClick={() => {
+              const next = !showReviewedCareUpdates
+              setShowReviewedCareUpdates(next)
+              if (next && reviewedCareUpdates.length === 0) void loadReviewedCareUpdates()
+            }} disabled={reviewedCareUpdatesLoading}>{showReviewedCareUpdates ? 'Hide previous decisions' : 'Previous decisions'}</button>
+          </div>
         </div>
         {careUpdateError && <p className="companion-care-update-message is-error" role="alert">{careUpdateError}</p>}
         {careUpdateNotice && <p className="companion-care-update-message" role="status">{careUpdateNotice}</p>}
+        {showReviewedCareUpdates && <section className="companion-reviewed-care-updates" aria-label="Previous care update decisions">
+          <h4>Previous decisions</h4>
+          <p>Up to 100 of your most recent reviewed reports. A correction is kept as a separate version.</p>
+          {reviewedCareUpdatesLoading && <small>Loading previous decisions…</small>}
+          {!reviewedCareUpdatesLoading && reviewedCareUpdates.length === 0 && <small>No reviewed care reports were found.</small>}
+          {reviewedCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
+            <div><strong>{item.status.replace(/_/g, ' ')}</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p></div>
+            <div className="companion-care-update-actions">
+              <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
+            </div>
+            {careUpdateHistory[item.id] && <div className="companion-care-update-history">
+              {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
+                <strong>{entry.decision.replace(/_/g, ' ')}</strong>
+                {entry.rationale && <p>{entry.rationale}</p>}
+                {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
+                {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
+              </div>)}
+            </div>}
+          </article>)}
+        </section>}
         {pendingCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
           <div><strong>Possible care update</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p>
             {item.proposed_change?.event_time_text && <small>When you said it happened: {item.proposed_change.event_time_text}</small>}
@@ -793,7 +843,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-care-update strong { color:#34463a; font-size:12px; }
         .companion-care-update p { margin:6px 0; color:#26392c; font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
         .companion-care-update small { display:block; margin-top:5px; color:#718075; font-size:10px; line-height:1.5; }
-.companion-care-update-correction { display:grid; gap:7px; margin-top:12px; }
+.companion-care-updates-tools { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .companion-reviewed-care-updates { display:grid; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid #e5ece4; }
+        .companion-reviewed-care-updates h4 { margin:0; color:#3b5140; font-size:14px; }
+        .companion-reviewed-care-updates>p { margin:0; color:#718075; font-size:11px; line-height:1.5; }
+        .companion-care-update-correction { display:grid; gap:7px; margin-top:12px; }
         .companion-care-update-correction label { color:#415446; font-size:12px; font-weight:750; }
         .companion-care-update-correction textarea { width:100%; min-width:0; padding:10px 11px; border:1px solid #cfdccf; border-radius:10px; background:#fff; color:#26392c; font:inherit; font-size:13px; line-height:1.55; resize:vertical; }
         .companion-care-update-history { display:grid; gap:9px; margin-top:12px; padding:12px; border:1px solid #e2e9e1; border-radius:12px; background:#f8faf7; }
