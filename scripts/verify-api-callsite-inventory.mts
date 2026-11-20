@@ -156,6 +156,16 @@ for (const file of filesUnder(sourceRoot)) {
       const parsed = expressionPath(node.initializer);
       if (parsed) variablePaths.set(node.name.text, parsed);
     }
+    // Also track variables assigned after declaration (e.g. a URL assembled
+    // inside a try/catch before the server-side proxy fetch).
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isIdentifier(node.left)
+    ) {
+      const parsed = expressionPath(node.right);
+      if (parsed) variablePaths.set(node.left.text, parsed);
+    }
     ts.forEachChild(node, collectVariables);
   };
   collectVariables(source);
