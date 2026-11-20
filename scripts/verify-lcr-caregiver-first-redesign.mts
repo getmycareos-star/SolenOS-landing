@@ -241,3 +241,6 @@ assert.match(currentUnderstanding, /sourceRecoveryPanel[\s\S]*?Retrying…[\s\S]
   "failed and partial care-history sources expose a category-specific retry action");
 assert.match(currentUnderstanding, /failed_sources\?: string\[\]/,
   "the caregiver UI consumes explicit failed-source coverage rather than treating it as an empty list");
+
+assert.match(currentUnderstanding, /coverage\.status === "stale"[\s\S]*?previously saved details remain available/,
+  "a failed category retry must preserve and label previously retrieved care information as stale");
