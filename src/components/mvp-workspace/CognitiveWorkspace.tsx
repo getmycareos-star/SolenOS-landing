@@ -374,13 +374,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
           personId: session.person.id,
           caregiverId: session.caregiver.id,
           send: sendQueuedCareWrite,
-          endpoints: ["/situation"],
+          endpoints: ["/situation", "/upload"],
         });
         if (!active) return;
         const queueSummary = await getDurableWriteSummary(
           session.person.id,
           session.caregiver.id,
-          ["/situation"],
+          ["/situation", "/upload"],
         );
         if (queueSummary.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
           if (retryTimer !== null) window.clearTimeout(retryTimer);
@@ -406,7 +406,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         setSituationResponse(restored);
         setHasContextRoot(true);
         setSessionHasNote(true);
-        setOfflineSyncNotice("An update saved on this device has now synced to your Care Record. Your current draft has not been changed.");
+        setOfflineSyncNotice("A care update or document saved on this device has now synced. Your current draft has not been changed.");
         const careKey =
           restored.care_key ??
           restored.context?.caregiver_id ??
