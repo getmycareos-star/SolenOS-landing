@@ -689,7 +689,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>The Care Assistant can help organise notes and questions. It does not diagnose, replace a healthcare professional, or decide what is added to your Care Record.</p></div></aside>
       </div>
 
-      {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice) && <section className="companion-care-updates" aria-label="Care suggestions to review">
+      {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice || showReviewedCareUpdates || availability === 'available' || availability === 'unverified') && <section className="companion-care-updates" aria-label="Care suggestions to review">
         <div className="companion-care-updates-heading">
           <div><span className="companion-kicker">YOUR CARE RECORD</span><h3>Care updates to review</h3><p>These are exact words from your message that may be useful to save. Nothing is added unless you choose to accept it.</p></div>
           <div className="companion-care-updates-tools">
