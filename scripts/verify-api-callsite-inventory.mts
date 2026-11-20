@@ -240,6 +240,9 @@ let backendContract: {
   intentionally_disabled_pairs?: number;
   missing_operations?: Array<{ method_path: string; callsites: Callsite[] }>;
   unconsumed_backend_operations?: Array<{ method_path: string }>;
+  unconsumed_internal_operations?: Array<{ method_path: string; consumer: string; source: string }>;
+  unconsumed_frontend_operations?: Array<{ method_path: string; consumer: string; source: string }>;
+  unconsumed_classification_gaps?: Array<{ method_path: string }>;
 } = { enabled: false };
 
 const openApiUrl = process.env.SOLENOS_OPENAPI_URL;
@@ -278,14 +281,53 @@ if (openApiUrl) {
   const unconsumed = registered
     .filter(route => !matchedOperationKeys.has(route.method + " " + route.path))
     .map(route => ({ method_path: route.method.toUpperCase() + " " + route.path }));
+  const routeInventoryPath = process.env.SOLENOS_ROUTE_INVENTORY_PATH;
+  let unconsumedInternal: Array<{ method_path: string; consumer: string; source: string }> = [];
+  let unconsumedFrontend: Array<{ method_path: string; consumer: string; source: string }> = [];
+  let classificationGaps: Array<{ method_path: string }> = [];
+  if (routeInventoryPath) {
+    const routeInventory = JSON.parse(readFileSync(routeInventoryPath, "utf8")) as {
+      routes: Array<{
+        endpoint: string;
+        method: string;
+        disposition: string;
+        consumer: { type?: string; workflow?: string; source?: string } | string;
+      }>;
+    };
+    const routeByKey = new Map(routeInventory.routes.map(route => [
+      route.method.toUpperCase() + " " + route.endpoint,
+      route,
+    ]));
+    for (const operation of unconsumed) {
+      const route = routeByKey.get(operation.method_path);
+      if (!route) {
+        classificationGaps.push(operation);
+        continue;
+      }
+      const consumer = typeof route.consumer === "object" ? route.consumer : {};
+      const consumerName = consumer.workflow ?? "missing named consumer";
+      const source = consumer.source ?? "missing consumer source";
+      if (route.disposition === "internal_service_or_operations" && consumer.type === "internal") {
+        unconsumedInternal.push({ ...operation, consumer: consumerName, source });
+      } else if (route.disposition === "frontend_product_workflow" && consumer.type === "frontend") {
+        unconsumedFrontend.push({ ...operation, consumer: consumerName, source });
+      } else {
+        classificationGaps.push(operation);
+      }
+    }
+  }
   backendContract = {
     enabled: true,
     openapi_url: openApiUrl,
+    route_inventory_path: routeInventoryPath,
     registered_operations: registered.length,
     matched_callsite_pairs: matched,
     intentionally_disabled_pairs: intentionallyDisabled,
     missing_operations: missing,
     unconsumed_backend_operations: unconsumed,
+    unconsumed_internal_operations: unconsumedInternal,
+    unconsumed_frontend_operations: unconsumedFrontend,
+    unconsumed_classification_gaps: classificationGaps,
   };
 }
 
