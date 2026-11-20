@@ -105,6 +105,9 @@ const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
 const careDelta = read("../src/components/CareDeltaPanel.tsx");
 const careChangeHistory = read("../src/components/mvp-workspace/CareChangeHistoryPanel.tsx");
 const humanValidation = read("../src/components/HumanValidationLoop.tsx");
+const careCapture = read("../src/components/CareCapture.tsx");
+const feedbackPrompt = read("../src/components/mvp-workspace/UnderstandingFeedbackPrompt.tsx");
+const appShell = read("../src/components/app-shell/AppShell.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -278,6 +281,14 @@ assert.doesNotMatch(changeIntelligence, /saved care assessments|Caregiver-report
 assert.doesNotMatch(historyDrawer, /Living Care Record|LCR revision|Evidence references|caregiver ID|Immutable/);
 assert.doesNotMatch(historyDrawer, /evidence_ids\.join|Extracted text|Recorded LCR change|Persisted care decision|Persisted action outcome|Appointment workspace/);
 assert.match(historyDrawer, /Text read from the document/);
+assert.match(careCapture, /caregiverSafeErrorMessage/);
+assert.doesNotMatch(careCapture, /submitError\.message|error\.message|Qwen analysis|qwen_extraction_status/);
+assert.match(careCapture, /Suggested care details/);
+assert.match(feedbackPrompt, /caregiverSafeErrorMessage/);
+assert.doesNotMatch(feedbackPrompt, /error\.message/);
+assert.match(dailyCapture, /caregiverSafeErrorMessage/);
+assert.match(appShell, /caregiverSafeErrorMessage/);
+assert.doesNotMatch(appShell, /window\.alert\(error\.message/);
 assert.match(historyDrawer, /Related notes or documents/);
 assert.doesNotMatch(changeIntelligence, /CARE CHANGES OVER TIME|Observation time unknown|saved item\(s\)/);
 assert.doesNotMatch(persistedOrientation, /value\.replaceAll\("_", " "\)/);
