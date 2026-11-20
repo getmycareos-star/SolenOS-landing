@@ -354,6 +354,11 @@ export default function AppointmentWorkspace() {
       setOutcome(null)
       setOutcomeProposals([])
       setNote('')
+      setProfessionalStatement('')
+      setRecordedDecisions('')
+      setRecordedInstructions('')
+      setUnansweredQuestions('')
+      setAttachedEvidenceIds([])
       return
     }
     if (latest.appointment_id) setAppointmentId(latest.appointment_id)
