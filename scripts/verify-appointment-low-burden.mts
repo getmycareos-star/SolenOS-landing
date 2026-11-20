@@ -36,3 +36,8 @@ assert.ok(component.includes('Still being followed up'), 'open follow-ups must b
 assert.ok(component.includes('brief.prior_decisions?.length'), 'preparation must include previously recorded care decisions')
 assert.ok(component.includes('brief.decision_outcomes?.length'), 'preparation must include recorded outcomes from prior decisions')
 assert.ok(component.includes('What happened after those decisions'), 'prior decision outcomes must be visible in the caregiver summary')
+
+assert.ok(component.includes('!(brief.documents?.length)'), 'document-only history must not be hidden by the empty-state branch')
+assert.ok(component.includes('!(brief.open_loops?.length)'), 'follow-up-only history must not be hidden by the empty-state branch')
+assert.ok(component.includes('!(brief.prior_decisions?.length)'), 'decision-only history must not be hidden by the empty-state branch')
+assert.ok(component.includes('!(brief.decision_outcomes?.length)'), 'outcome-only history must not be hidden by the empty-state branch')
