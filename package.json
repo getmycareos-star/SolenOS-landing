@@ -264,7 +264,8 @@
     "verify:lcr-product-architecture": "tsx scripts/verify-lcr-product-architecture.mts",
     "verify:record-state-communication": "tsx scripts/verify-record-state-communication.mts",
     "verify:first-visit-capture": "tsx scripts/verify-first-visit-capture.mts",
-    "verify:learning-first-release": "tsx scripts/verify-learning-first-release.mts"
+    "verify:learning-first-release": "tsx scripts/verify-learning-first-release.mts",
+    "verify:telemetry-production-fail-closed": "tsx scripts/verify-telemetry-production-fail-closed.mts"
   },
   "dependencies": {
     "@aws-sdk/client-polly": "^3.1100.0",
