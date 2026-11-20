@@ -37,7 +37,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
     capture_timestamp: captureTimestamp,
     extracted_text: "",
   };
-  const scanPageNumber = entryMethod === "scan" ? /scan_page_(\\d+)/i.exec(file.name)?.[1] : undefined;
+  const scanPageNumber = entryMethod === "scan" ? /scan_page_(\d+)/i.exec(file.name)?.[1] : undefined;
   if (scanPageNumber) fields.capture_page_number = scanPageNumber;
   if (entryMethod === "scan" && scanProcessing) {
     fields.scan_review_status = "not_reviewed";
@@ -104,6 +104,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
     processingJobId: result.document_processing_job_id ?? undefined,
     processingStatus: result.processing_status,
   };
+}
 
 
 /**
