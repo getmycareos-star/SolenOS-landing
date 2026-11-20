@@ -61,6 +61,7 @@ assert.match(drawer, /Measurements and ratings are shown as entered/, "structure
 assert.match(drawer, /lines\.join\("\\n"\)/, "structured capture details must be separated with readable line breaks");
 assert.ok(drawer.includes('getJSON("/open-loops?limit=100")'), "saved follow-ups must be retrieved from the authenticated follow-up service");
 assert.match(drawer, /mapFollowUp/, "persisted follow-ups must be represented in care history using their saved fields");
+assert.match(drawer, /sourceWarnings\.map\(\(warning, index\)/, "partial history must identify the exact categories that failed to load");
 assert.match(drawer, /const followUpResult = results\[8\]/, "follow-up retrieval must have an independent result state");
 assert.match(drawer, /followUpPayload\.count > followUps\.length/, "bounded follow-up retrieval must be disclosed using the backend total");
 assert.match(drawer, /source_kind: "follow-up"/, "history details must retain the saved follow-up source type");
