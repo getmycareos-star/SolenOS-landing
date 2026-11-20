@@ -272,6 +272,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             guard_verdict?: string | null
             safety_note?: string | null
             evidence_ids?: string[]
+            source_event_ids?: string[]
+            source_evidence_ids?: string[]
+            source_appointment_ids?: string[]
+            source_assertion_ids?: string[]
+            source_lcr_context_ids?: string[]
+            source_freshness_assessment_ids?: string[]
+            freshness_source_status?: string
+            lcr_context_coverage?: LcrContextCoverage
             source_record_refs?: Array<{ record_type: string; record_id: string }>
             claim_provenance?: ClaimProvenance
             ai_generated?: boolean
@@ -295,6 +303,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           guard_verdict: message.guard_verdict,
           safety_note: message.safety_note,
           evidence_ids: message.evidence_ids || [],
+          source_event_ids: message.source_event_ids || [],
+          source_evidence_ids: message.source_evidence_ids || [],
+          source_appointment_ids: message.source_appointment_ids || [],
+          source_assertion_ids: message.source_assertion_ids || [],
+          source_lcr_context_ids: message.source_lcr_context_ids || [],
+          source_freshness_assessment_ids: message.source_freshness_assessment_ids || [],
+          freshness_source_status: message.freshness_source_status,
+          lcr_context_coverage: message.lcr_context_coverage,
           source_record_refs: message.source_record_refs || [],
           claim_provenance: message.claim_provenance,
           ai_generated: message.ai_generated,
