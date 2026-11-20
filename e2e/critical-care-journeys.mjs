@@ -2933,11 +2933,19 @@ await record("browser renders caregiver surfaces and submits Companion through t
     "a Companion message and pending proposal must not update the Care Record before acceptance",
   );
 
+  await companion.page.evaluate(() => {
+    window.__solenosCareRecordRefreshCount = 0;
+    window.addEventListener("careRecordUpdated", () => {
+      window.__solenosCareRecordRefreshCount += 1;
+    });
+  });
   await reviewCard.getByRole("button", { name: "Add to Care Record" }).click();
   await companion.page.getByText(
     "Your report was added to the Care Record. A healthcare professional has not confirmed it.",
     { exact: true },
   ).waitFor({ timeout: 15_000 });
+  const lcrRefreshCount = await companion.page.evaluate(() => window.__solenosCareRecordRefreshCount || 0);
+  assert.ok(lcrRefreshCount >= 1, "accepting a Companion report must notify mounted canonical LCR consumers");
   const afterAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
   assert.equal(afterAcceptance.status, 200, JSON.stringify(afterAcceptance.payload));
   assert.ok(
