@@ -1,4 +1,3 @@
-import { TIMELINE_STORAGE_KEY } from "./contract-constants";
 import type { TimelineEntry, TimelineEntryType, TimelineLog } from "./types";
 
 function createEntryId(): string {
@@ -66,16 +65,6 @@ export function parseTimeline(raw: string | null): TimelineLog {
   } catch {
     return createEmptyTimeline();
   }
-}
-
-export function loadTimelineFromStorage(): TimelineLog {
-  if (typeof window === "undefined") return createEmptyTimeline();
-  return parseTimeline(window.localStorage.getItem(TIMELINE_STORAGE_KEY));
-}
-
-export function persistTimeline(log: TimelineLog): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(TIMELINE_STORAGE_KEY, serializeTimeline(log));
 }
 
 /** Intentionally absent — timeline is append-only. */
