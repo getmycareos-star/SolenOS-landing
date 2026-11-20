@@ -2610,6 +2610,32 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await verifyMobile(details.page);
   await details.context.close();
 
+  await record("Care record details distinguish denied access from service outage", async () => {
+    for (const scenario of [
+      { status: 403, expected: "forbidden" },
+      { status: 503, expected: "unavailable" },
+    ]) {
+      const failedDetails = await createBrowserPage(session, "/workspace");
+      await failedDetails.page.route("**/api/v1/care-continuity/current-care*", (route) =>
+        route.fulfill({
+          status: scenario.status,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "Care record retrieval unavailable for this test." }),
+        }),
+      );
+      await failedDetails.page.getByRole("button", { name: "More care record actions" }).click();
+      await failedDetails.page.getByRole("menuitem", { name: "View record details", exact: true }).click();
+      const failedDialog = failedDetails.page.getByRole("dialog", { name: "Care record details" });
+      await failedDialog.locator(`.record-state--${scenario.expected}`).waitFor({ state: "visible", timeout: 15_000 });
+      assert.equal(
+        await failedDialog.locator(".record-state--first-empty").count(),
+        0,
+        "a failed care-record read must never be presented as an empty record",
+      );
+      await failedDetails.context.close();
+    }
+  });
+
   const companion = await createBrowserPage(session, "/workspace/companion");
   const companionInput = companion.page.locator("#companion-message-input");
   if (await companionInput.isDisabled()) {
