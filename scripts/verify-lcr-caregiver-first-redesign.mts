@@ -219,5 +219,5 @@ assert.match(currentUnderstanding, /<h3>What matters now<\/h3>/, "the first atte
 assert.match(currentUnderstanding, /Questions to resolve[\s\S]*?clarificationCareDecisions\.slice\(0, 2\)/, "saved clarification decisions are presented as questions to resolve");
 assert.match(currentUnderstanding, /<h4 id="lcr-registered-actions-heading">What’s been agreed<\/h4>/, "recorded actions are presented as agreed care");
 
-assert.match(currentUnderstanding, /item\\.derived_observations\?\.length[\\s\\S]*?Details saved from this report[\\s\\S]*?observation\\.value_text/, "the full care history renders persisted extracted details instead of hiding them");
-assert.match(currentUnderstanding, /observation\\.context[\\s\\S]*?observation\\.source_passage/, "extracted details retain their caregiver context and original source passage");
+assert.match(currentUnderstanding, /item\.derived_observations\?\.length[\s\S]*?Details saved from this report[\s\S]*?observation\.value_text/, "the full care history renders persisted extracted details instead of hiding them");
+assert.match(currentUnderstanding, /observation\.context[\s\S]*?observation\.source_passage/, "extracted details retain their caregiver context and original source passage");
