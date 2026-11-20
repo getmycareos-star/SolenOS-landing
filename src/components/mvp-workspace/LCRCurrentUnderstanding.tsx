@@ -915,7 +915,9 @@ export function LCRCurrentUnderstanding() {
             ...(current.source_coverage ?? {}),
             [sourceName]: {
               ...(current.source_coverage?.[sourceName] ?? {}),
-              status: "failed",
+              status: current.source_coverage?.[sourceName]?.returned_count
+                ? "stale"
+                : "failed",
               error_code: "retry_failed",
             },
           },
@@ -1448,7 +1450,7 @@ export function LCRCurrentUnderstanding() {
   };
 
   const sourceRecoveryPanel = projection && Object.entries(projection.source_coverage ?? {})
-    .filter(([, coverage]) => ["failed", "partial", "unavailable_schema", "unavailable_scope"].includes(coverage.status ?? ""))
+    .filter(([, coverage]) => ["failed", "partial", "stale", "unavailable_schema", "unavailable_scope"].includes(coverage.status ?? ""))
     .map(([sourceName, coverage]) => (
       <div key={sourceName} className="lcr-entry-status" role="status">
         <span>
@@ -1456,7 +1458,9 @@ export function LCRCurrentUnderstanding() {
             ? "couldn’t be loaded"
             : coverage.status === "partial"
               ? "only partly available"
-              : "not available in this care-record setup"}
+              : coverage.status === "stale"
+                ? "couldn’t be refreshed; previously saved details remain available"
+                : "not available in this care-record setup"}
           {coverage.returned_count ? ` — ${coverage.returned_count} saved details are still available.` : ""}
         </span>
         <button
