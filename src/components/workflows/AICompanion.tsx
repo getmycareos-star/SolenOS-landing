@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
-import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON, getPersonId } from '@/api/client'
+import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { RecordState } from '@/components/ui/RecordState'
@@ -214,7 +214,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const pendingTurnId = useRef<string | null>(null)
   const pendingTurnText = useRef<string | null>(null)
   const userInteractedRef = useRef(false)
-  const personId = getPersonId()
 
   const checkAvailability = useCallback(async () => {
     setAvailability('checking')
