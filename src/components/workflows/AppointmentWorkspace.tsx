@@ -502,3 +502,85 @@ export default function AppointmentWorkspace() {
                   : <p className="guided-muted">No check for missing source details is recorded for the linked notes.</p>}
             </section>
               </details>
+
+            <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknown details are kept separate.</p>
+          </>}
+          {appointmentId && <QwenAssistPanel
+            appointmentId={appointmentId}
+            contextText="Appointment details and unanswered questions. Help prepare for this scheduled appointment using the saved appointment and authorized care history."
+            title="Get help preparing for this appointment"
+            description="Ask about the saved appointment or questions you may want to raise. Suggestions need your review and do not change your Care Record automatically."
+          />}
+        </div>}
+
+        {stage === 'during' && <div className="guided-panel">
+          <div className="guided-panel-heading"><div><h4>Stay with the appointment</h4><p>You do not need to document while speaking with the professional.</p></div><span className="guided-state">Optional</span></div>
+          <p className="guided-muted">If it helps, leave yourself one short note. You can leave this empty and return later.</p>
+          <label className="guided-capture-label">Anything you want to remember?
+            <textarea value={note} onChange={event => setNote(event.target.value)} rows={4} placeholder="Optional note. Your own words are enough." />
+          </label>
+          <button className="guided-primary" type="button" onClick={() => void saveNote()} disabled={saving}>{saving ? 'Saving…' : 'Save note and continue'}</button>
+          <p className="guided-footnote">A saved note is attributed to the caregiver. It is not a verified professional statement and does not change the Care Record.</p>
+        </div>}
+
+        {stage === 'after' && <div className="guided-panel">
+          <div className="guided-panel-heading"><div><h4>Appointment information gathered</h4><p>SolenOS organises what has actually been recorded. You can return later if nothing is available yet.</p></div><span className="guided-state">Review first</span></div>
+          <label className="guided-capture-label">Add anything you remember, if you want to
+            <textarea value={note} onChange={event => setNote(event.target.value)} rows={4} placeholder="A short note is enough. You can also leave this empty." />
+          </label>
+          <div className="guided-actions">
+            <button className="guided-primary" type="button" onClick={() => void saveNote()} disabled={saving}>{saving ? 'Saving…' : 'Save what I remember'}</button>
+            <button className="guided-secondary" type="button" onClick={() => record && void refreshOutcome(record.id)} disabled={!record}>Refresh outcome</button>
+          </div>
+          {outcome?.status === 'ready_for_review' && <div className="guided-outcome" aria-live="polite">
+            <h5>Information available for review</h5>
+            {Object.entries(outcome.sections).filter(([, items]) => items.length).map(([key, items]) => <section key={key}><h6>Appointment details</h6>{items.map((item, index) => <p key={key + index}>{caregiverSafeAssistantText(item.text) || "Saved appointment information"}<small>{caregiverInformationLabel(item.epistemic_status) || 'Recorded information'} · {item.source_type === 'document' ? 'Document' : item.source_type === 'professional' ? 'Care professional' : 'Caregiver report'}</small></p>)}</section>)}
+            {outcome.missing_information.length > 0 && <p className="guided-muted">Not recorded: {outcome.missing_information.join(', ')}.</p>}
+            <p className="guided-footnote">This is a draft for you to review. It has not been confirmed by a healthcare professional, and your saved care record has not been changed.</p>
+            <div className="guided-actions">
+              <button className="guided-primary" type="button" onClick={() => void prepareOutcomeReview()} disabled={!record || proposalBusy}>
+                {proposalBusy ? 'Preparing…' : 'Review care information'}
+              </button>
+            </div>
+            {outcomeProposals.length > 0 && <div className="guided-proposals">
+              <h5>Please review these care details</h5>
+              <p className="guided-muted">Each item is linked to the appointment information it came from. Accepting adds it as a caregiver report; it does not mean a healthcare professional has confirmed it.</p>
+              {outcomeProposals.filter(item => item.proposed_change.source_record_version === record?.version_number).map(item => <article key={item.id} className="guided-proposal">
+                <strong>{caregiverSafeAssistantText(item.proposed_change.label) || "Care detail"}</strong>
+                <p>{caregiverSafeAssistantText(item.proposed_change.asserted_value) || "The saved wording is available for review."}</p>
+                {item.proposed_change.asserted_value !== item.proposed_change.source_quote && <p><small>Original saved wording: {caregiverSafeAssistantText(item.proposed_change.source_quote) || "The original wording is available in the saved record."}</small></p>}
+                <small>{caregiverStatusLabel(item.status) || 'Status not available'} · caregiver reported · not independently verified</small>
+                {item.status === 'pending_authorization' && <>
+                  <label className="guided-capture-label">Correction, if needed
+                    <textarea rows={2} value={correctionDrafts[item.id] || ''} onChange={event => setCorrectionDrafts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Enter the corrected statement." />
+                  </label>
+                  <label className="guided-capture-label">Why this correction is needed
+                    <textarea rows={2} value={correctionContexts[item.id] || ''} onChange={event => setCorrectionContexts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Record the caregiver's correction context. The corrected statement must appear here." />
+                  </label>
+                  <div className="guided-actions">
+                    <button className="guided-primary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'accept')}>Accept as caregiver report</button>
+                    <button className="guided-secondary" type="button" disabled={proposalBusy || !(correctionDrafts[item.id] || '').trim() || !(correctionContexts[item.id] || '').includes((correctionDrafts[item.id] || '').trim())} onClick={() => void reviewOutcomeProposal(item, 'correct')}>Save correction</button>
+                    <button className="guided-secondary" type="button" disabled={proposalBusy} onClick={() => void reviewOutcomeProposal(item, 'reject')}>Reject</button>
+                  </div>
+                </>}
+              </article>)}
+            </div>}
+          </div>}
+          {(!outcome || outcome.status === 'no_outcome_information') && <p className="guided-muted">No appointment outcome has been recorded yet. You can return later; SolenOS will not invent what happened.</p>}
+          {outcome?.limitations?.map((item, index) => <p className="guided-footnote" key={index}>{item}</p>)}
+          {appointmentId && <QwenAssistPanel
+            appointmentId={appointmentId}
+            contextText={`After-appointment notes. ${note.trim() ? `Caregiver's unsaved note: ${note.trim()}` : "The caregiver has not added a note yet."}`}
+            title="Organize what happened at the appointment"
+            description="Ask for help organizing what the clinician told you. Your note remains a caregiver report, and nothing is added to your Care Record without your review."
+          />}
+        </div>}
+
+        <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error}</span>}</div>
+        <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => { if (showDetailed) void refreshSavedWorkspace(); setShowDetailed(value => !value) }}>{showDetailed ? 'Close detailed appointment controls' : 'Open detailed appointment and follow-up controls (optional)'}</button>
+        {showDetailed && <div className="guided-detailed"><p>Use these additional controls only when you need to review individual sections or manage follow-up actions. The guided appointment stages above remain the normal path.</p><DetailedAppointmentWorkspace /></div>}
+      </>}
+
+    </section>
+  )
+}
