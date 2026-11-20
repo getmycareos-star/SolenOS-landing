@@ -11,7 +11,7 @@ type PreparationBrief = {
   snapshot_at: string
   facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null }>
   events: Array<{ source_id: string; title: string; description?: string | null; occurred_at?: string | null; status: string }>
-  appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
+  appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string; evidence_ids?: string[] }>
   next_appointment?: { source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string; evidence_ids?: string[] } | null
   appointment_context_status?: { code: string; has_appointment_information: boolean; date_known: boolean | null; next_appointment_id?: string | null; interpretation_limit?: string }
   previous_appointment?: { source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; status: string } | null
@@ -441,12 +441,14 @@ export default function AppointmentWorkspace() {
     }
   }
 
-  const retryDocumentLink = async () => {
-    if (!pendingDocumentEvidenceId || !appointmentId) return
+  const linkDocumentToAppointment = async (evidenceId = pendingDocumentEvidenceId, documentName = pendingDocumentName) => {
+    if (!evidenceId || !appointmentId) return
     setDocumentBusy(true)
     setDocumentMessage('')
+    setPendingDocumentEvidenceId(evidenceId)
+    setPendingDocumentName(documentName)
     try {
-      const nextIds = [...new Set([...attachedEvidenceIds, pendingDocumentEvidenceId])]
+      const nextIds = [...new Set([...attachedEvidenceIds, evidenceId])]
       const payload = {
         ...(record?.payload || {}),
         caregiverReport: note.trim(),
@@ -462,14 +464,14 @@ export default function AppointmentWorkspace() {
             expected_version: record.version_number,
             status: record.status,
             payload,
-            change_reason: 'Link previously saved appointment document',
+            change_reason: 'Link saved care document to appointment',
             idempotency_key: newAppointmentSaveKey(),
           }) as WorkspaceRecord
         : await postJSON('/appointment-workspaces', {
             appointment_id: appointmentId,
             status: 'outcome_pending',
             payload,
-            change_reason: 'Link previously saved appointment document',
+            change_reason: 'Link saved care document to appointment',
             idempotency_key: newAppointmentSaveKey(),
           }) as WorkspaceRecord
       setRecord(persisted)
@@ -478,12 +480,15 @@ export default function AppointmentWorkspace() {
       setPendingDocumentName('')
       setDocumentMessage('The saved original is now linked to this appointment.')
       window.dispatchEvent(new Event('careRecordUpdated'))
+      try { await refreshSavedWorkspace() } catch { /* the persisted link remains available on reload */ }
     } catch {
-      setDocumentMessage('The original is still saved in Documents, but its appointment link could not be saved. Retry linking; do not upload it again.')
+      setDocumentMessage('The original is saved in Documents, but its appointment link could not be saved. Retry linking; do not upload it again.')
     } finally {
       setDocumentBusy(false)
     }
   }
+
+  const retryDocumentLink = async () => linkDocumentToAppointment()
 
   const updateAppointmentLifecycle = async (status: 'cancelled' | 'rescheduled') => {
     if (!appointmentId) return
@@ -603,6 +608,17 @@ export default function AppointmentWorkspace() {
     }
   }
 
+  const selectedAppointmentEvidenceIds =
+    brief?.appointments.find(item => item.source_id === appointmentId)?.evidence_ids ||
+    brief?.next_appointment?.evidence_ids ||
+    []
+  const linkedAppointmentDocuments = (brief?.documents || []).filter(item =>
+    Boolean(item.source_evidence_id && selectedAppointmentEvidenceIds.includes(item.source_evidence_id))
+  )
+  const otherCareDocuments = (brief?.documents || []).filter(item =>
+    !item.source_evidence_id || !selectedAppointmentEvidenceIds.includes(item.source_evidence_id)
+  )
+
   return (
     <section className="appointment-workspace guided-appointment" aria-labelledby="appointment-workspace-title">
       <div className="appointment-heading">
@@ -672,8 +688,10 @@ export default function AppointmentWorkspace() {
                         <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('rescheduled')}>Save as rescheduled</button>
                       </details></section> : brief.appointments.length > 0 ? <section><h6>Appointments already recorded</h6><ul>{brief.appointments.slice(0, 2).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul></section> : null}
                     {brief.open_loops?.length ? <section><h6>Still being followed up</h6><ul>{brief.open_loops.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>{item.description && item.description !== item.title && <p>{caregiverSafeAssistantText(item.description)}</p>}<small>{caregiverStatusLabel(item.status) || "Status not available"}{item.deadline_at ? ` · Due ${new Date(item.deadline_at).toLocaleDateString()}` : ""}{item.owner_label ? ` · ${caregiverSafeAssistantText(item.owner_label)}` : ""}{item.appointment_id ? ` · Linked to ${caregiverSafeAssistantText(brief.appointments.find(appointment => appointment.source_id === item.appointment_id)?.title) || 'a recorded appointment'}` : ""}</small></li>)}</ul></section> : null}
-                    {brief.documents?.filter(item => item.source_evidence_id && brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).length ? <section><h6>Documents linked to this appointment</h6><ul>{brief.documents.filter(item => item.source_evidence_id && brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).slice(0, 5).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small></li>)}</ul></section> : null}
-                    {brief.documents?.filter(item => !item.source_evidence_id || !brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).length ? <section><h6>Other recent care documents</h6><ul>{brief.documents.filter(item => !item.source_evidence_id || !brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small></li>)}</ul></section> : null}
+                    {linkedAppointmentDocuments.length ? <section><h6>Documents linked to this appointment</h6><ul>{linkedAppointmentDocuments.slice(0, 5).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small></li>)}</ul></section> : null}
+                    {otherCareDocuments.length ? <section><h6>Other recent care documents</h6><ul>{otherCareDocuments.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small>
+                      {item.source_evidence_id && appointmentId && <button type="button" className="guided-secondary" disabled={documentBusy || attachedEvidenceIds.includes(item.source_evidence_id)} onClick={() => void linkDocumentToAppointment(item.source_evidence_id!, item.filename || 'Care document')}>{documentBusy ? 'Linking…' : 'Link to this appointment'}</button>}
+                    </li>)}</ul></section> : null}
                     {brief.prior_decisions?.length ? <section><h6>Previous care decisions</h6><ul>{brief.prior_decisions.slice(0, 2).map(item => <li key={item.id}><strong>{caregiverSafeAssistantText(item.title) || "Decision recorded"}</strong>{item.decision_text && <p>{caregiverSafeAssistantText(item.decision_text)}</p>}<small>{caregiverStatusLabel(item.decision_status || "recorded") || "Recorded"}{item.decided_at ? ` · ${new Date(item.decided_at).toLocaleDateString()}` : ""}</small></li>)}</ul></section> : null}
                     {brief.decision_outcomes?.length ? <section><h6>What happened after those decisions</h6><ul>{brief.decision_outcomes.slice(0, 2).map(item => <li key={item.id}><p>{caregiverSafeAssistantText(item.description) || "An outcome was recorded."}</p><small>{caregiverStatusLabel(item.outcome_status || "recorded") || "Outcome recorded"}{item.observed_at ? ` · ${new Date(item.observed_at).toLocaleDateString()}` : ""}</small></li>)}</ul></section> : null}
                   </div>}
@@ -805,19 +823,9 @@ export default function AppointmentWorkspace() {
                   uploadedEvidenceId = saved.evidenceId
                   setPendingDocumentEvidenceId(saved.evidenceId)
                   setPendingDocumentName(file.name)
-                  const nextIds = [...new Set([...attachedEvidenceIds, saved.evidenceId])]
-                  const payload = { ...(record?.payload || {}), caregiverReport: note.trim(), clinicianFindings: professionalStatement.trim(), decisions: recordedDecisions.trim(), instructions: recordedInstructions.trim(), unanswered: unansweredQuestions.trim(), attachedEvidenceIds: nextIds, captureStage: 'after' }
-                  const changeReason = 'Caregiver attached an appointment document'
-                  const key = newAppointmentSaveKey()
-                  const persisted = record
-                    ? await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), { expected_version: record.version_number, status: record.status, payload, change_reason: changeReason, idempotency_key: key }) as WorkspaceRecord
-                    : await postJSON('/appointment-workspaces', { appointment_id: appointmentId, status: 'outcome_pending', payload, change_reason: changeReason, idempotency_key: key }) as WorkspaceRecord
-                  setRecord(persisted)
-                  setAttachedEvidenceIds(nextIds)
-                  setPendingDocumentEvidenceId('')
-                  setPendingDocumentName('')
+                  setMessage('Document uploaded. Linking it to the appointment…')
+                  await linkDocumentToAppointment(saved.evidenceId, file.name)
                   setDocumentMessage('The original document is saved and linked to this appointment. Its extracted information will appear when processing is available.')
-                  setMessage('Document attached to the saved appointment record.')
                 } catch (cause) {
                   setDocumentMessage(uploadedEvidenceId
                     ? 'The original document is saved in Documents, but its appointment link could not be saved. Retry linking it below; do not upload it again.'
