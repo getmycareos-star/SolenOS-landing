@@ -2524,6 +2524,11 @@ await record("12b invited caregiver sees the shared care record in a separate br
     { token: accepted.payload.access_token },
   );
   assert.equal(invitedNetworkState.status, 200, JSON.stringify(invitedNetworkState.payload));
+  const invitedSummaryPathOnly = await request(
+    `/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(invitedSummaryPathOnly.status, 200, JSON.stringify(invitedSummaryPathOnly.payload));
   const invitedSummary = await request(
     `/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}?person_id=${encodeURIComponent(identity.personId)}`,
     { token: accepted.payload.access_token },
