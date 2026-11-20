@@ -240,7 +240,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult, observationResult, perspectiveResult, roleResult] = await Promise.allSettled([
           getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
           getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
-          getJSON("/multi-caregiver-summary/" + encodeURIComponent(personId)) as Promise<MultiCaregiverSummary>,
+          getJSON("/multi-caregiver-summary/" + encodeURIComponent(personId) + "?person_id=" + encodeURIComponent(personId)) as Promise<MultiCaregiverSummary>,
           getJSON("/care-network-state/" + encodeURIComponent(personId)) as Promise<CareNetworkState>,
           getJSON("/caregiver-communications") as Promise<CaregiverCommunication[]>,
           getJSON("/caregiver-contexts") as Promise<CaregiverContext[]>,
