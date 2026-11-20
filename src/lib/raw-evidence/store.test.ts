@@ -73,7 +73,7 @@ describe("raw evidence persistence truth", () => {
     fsMock.writeFileSync.mockImplementation(() => {
       throw new Error("filesystem unavailable");
     });
-    const query = jest.fn().mockResolvedValue({ rowCount: 1 });
+    const query = jest.fn().mockResolvedValue({ rows: [{ id: input.id }] });
     mockedCreatePool.mockResolvedValue({ query } as never);
 
     const result = await new RawEvidenceStore({ pool: null }).save(input);
@@ -106,7 +106,7 @@ describe("raw evidence persistence truth", () => {
       path === baseDir ? ["caregiver-1"] : ["evidence-restart.json"],
     );
     fsMock.readFileSync.mockReturnValue(JSON.stringify(queuedEvidence));
-    const query = jest.fn().mockResolvedValue({ rowCount: 1 });
+    const query = jest.fn().mockResolvedValue({ rows: [{ id: "evidence-restart" }] });
     mockedCreatePool.mockResolvedValue({ query } as never);
 
     const result = await new RawEvidenceStore({ pool: null }).syncToPostgres();
@@ -114,6 +114,31 @@ describe("raw evidence persistence truth", () => {
     expect(query).toHaveBeenCalledTimes(1);
     expect(query.mock.calls[0]?.[0]).toContain("ON CONFLICT (id) DO NOTHING");
     expect(fsMock.rmSync).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not acknowledge an ID collision with different evidence ownership or content", async () => {
+    process.env.DATABASE_URL = "postgres://configured";
+    fsMock.writeFileSync.mockImplementation(() => {
+      throw new Error("filesystem unavailable");
+    });
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: input.id,
+          caregiver_id: "another-caregiver",
+          person_id: null,
+          content_hash: "different-content",
+        }],
+      });
+    mockedCreatePool.mockResolvedValue({ query } as never);
+
+    const result = await new RawEvidenceStore({ pool: null }).save(input);
+    expect(result.persistence_status).toBe("memory_only");
+    expect(result.persisted).toBe(false);
+    expect(result.persistence_error).toBe("PostgreSQL storage could not be confirmed.");
+    expect(query).toHaveBeenCalledTimes(2);
   });
 
   it("rejects a missing caregiver identity instead of writing to a shared default queue", async () => {
