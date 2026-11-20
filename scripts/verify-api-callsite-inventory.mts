@@ -15,10 +15,18 @@ const helpers = new Map([
   ["deleteJSON", "DELETE"],
 ]);
 
-type Callsite = { file: string; line: number; helper: string; method: string; declared_path: string; resolved_path: string; dynamic: boolean };
+type Callsite = {
+  file: string;
+  line: number;
+  helper: string;
+  method: string;
+  declared_path: string;
+  resolved_path: string;
+  dynamic: boolean;
+};
 
 function filesUnder(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const full = join(directory, entry.name);
     if (entry.isDirectory()) return filesUnder(full);
     return /\.(?:ts|tsx)$/.test(entry.name) && !/\.d\.ts$/.test(entry.name) ? [full] : [];
@@ -31,9 +39,7 @@ function pathExpression(node: ts.Expression): { value: string; dynamic: boolean 
   }
   if (ts.isTemplateExpression(node)) {
     let value = node.head.text;
-    for (const span of node.templateSpans) {
-      value += "{param}" + span.literal.text;
-    }
+    for (const span of node.templateSpans) value += "{param}" + span.literal.text;
     return { value, dynamic: true };
   }
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
@@ -50,26 +56,37 @@ function pathExpression(node: ts.Expression): { value: string; dynamic: boolean 
 }
 
 function resolvedPath(path: string): string {
-  if (path === "/situation" || path.startsWith("/situation?")) return "/api" + path;
-  if (path === "/api/lcr/orientation" || path.startsWith("/api/lcr/orientation?")) return path;
-  if (path.startsWith("/api/v1/")) return path;
-  return "/api/v1" + (path.startsWith("/") ? path : "/" + path);
+  const normalized = path.startsWith("/") ? path : "/" + path;
+  if (normalized === "/situation" || normalized.startsWith("/situation?")) return "/api" + normalized;
+  if (normalized === "/api/lcr/orientation" || normalized.startsWith("/api/lcr/orientation?")) return normalized;
+  if (normalized.startsWith("/api/v1/")) return normalized;
+  return "/api/v1" + normalized;
+}
+
+function escapeRegex(value: string): string {
+  const special = ".^$*+?()[]{}|\\";
+  return value.split("").map(character => special.includes(character) ? "\\" + character : character).join("");
 }
 
 const callsites: Callsite[] = [];
 const unsupported: Array<{ file: string; line: number; helper: string }> = [];
 for (const file of filesUnder(sourceRoot)) {
   const sourceText = readFileSync(file, "utf8");
-  const source = ts.createSourceFile(file, sourceText, ts.ScriptTarget.Latest, true, file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const source = ts.createSourceFile(
+    file,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
   const visit = (node: ts.Node) => {
     if (ts.isCallExpression(node)) {
       const expression = node.expression;
       const helper = ts.isIdentifier(expression) ? expression.text : null;
       if (helper && helpers.has(helper)) {
-        const pathArg = node.arguments[0];
-        const parsed = pathArg && pathExpression(pathArg);
+        const parsed = node.arguments[0] ? pathExpression(node.arguments[0]) : null;
         const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
-        if (!parsed || !parsed.value.startsWith("/")) {
+        if (!parsed || !parsed.value.trim()) {
           unsupported.push({ file: relative(root, file), line, helper });
         } else {
           callsites.push({
@@ -94,34 +111,15 @@ for (const item of callsites) {
   unique.set([item.file, item.line, item.helper, item.declared_path].join("|"), item);
 }
 const sorted = [...unique.values()].sort((a, b) =>
-  a.resolved_path.localeCompare(b.resolved_path) || a.method.localeCompare(b.method) || a.file.localeCompare(b.file) || a.line - b.line
+  a.resolved_path.localeCompare(b.resolved_path) ||
+  a.method.localeCompare(b.method) ||
+  a.file.localeCompare(b.file) ||
+  a.line - b.line
 );
 const grouped = new Map<string, Callsite[]>();
 for (const item of sorted) {
   const key = item.method + " " + item.resolved_path;
   grouped.set(key, [...(grouped.get(key) ?? []), item]);
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\const grouped = new Map<string, Callsite[]>();
-for (const item of sorted) {
-  const key = item.method + " " + item.resolved_path;
-  grouped.set(key, [...(grouped.get(key) ?? []), item]);
-}
-
-console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify({
-  callsite_count: sorted.length,
-  distinct_method_path_pairs: grouped.size,
-  unsupported_dynamic_calls: unsupported.length,
-  endpoints: [...grouped.entries()].map(([key, items]) => ({
-    method_path: key,
-    callsite_count: items.length,
-    callsites: items.map(({ file, line, helper, dynamic }) => ({ file, line, helper, dynamic })),
-  })),
-}, null, 2));
-
-assert.equal(unsupported.length, 0, "Every API helper call must expose a statically auditable path expression.");
-assert.ok(sorted.length > 0, "No frontend API helper calls were discovered.");");
 }
 
 let backendContract: {
@@ -136,10 +134,9 @@ let backendContract: {
 const openApiUrl = process.env.SOLENOS_OPENAPI_URL;
 if (openApiUrl) {
   const response = await fetch(openApiUrl);
-  if (!response.ok) throw new Error(`Could not retrieve backend OpenAPI contract: HTTP ${response.status}`);
+  if (!response.ok) throw new Error("Could not retrieve backend OpenAPI contract: HTTP " + response.status);
   const specification = await response.json() as { paths?: Record<string, Record<string, unknown>> };
-  const paths = specification.paths ?? {};
-  const registered = Object.entries(paths).flatMap(([path, operations]) =>
+  const registered = Object.entries(specification.paths ?? {}).flatMap(([path, operations]) =>
     Object.keys(operations)
       .filter(method => ["get", "post", "put", "patch", "delete"].includes(method.toLowerCase()))
       .map(method => ({ path, method: method.toLowerCase() }))
@@ -155,7 +152,9 @@ if (openApiUrl) {
       intentionallyDisabled += 1;
       continue;
     }
-    const pattern = new RegExp("^" + path.split("/").map(segment => segment === "{param}" ? "[^/]+" : escapeRegex(segment)).join("/") + "$");
+    const pattern = new RegExp("^" + path.split("/").map(segment =>
+      segment === "{param}" ? "[^/]+" : escapeRegex(segment)
+    ).join("/") + "$");
     const exists = registered.some(route => route.method === method && pattern.test(route.path));
     if (exists) matched += 1;
     else missing.push({ method_path: key, callsites: items });
