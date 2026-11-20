@@ -168,7 +168,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
     <div className="followup-actions">
       <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
       {loop && <button type="button" className="followup-text-button" onClick={() => void onHistory(loop)}>View previous updates</button>}
-      {!loop && item.source === "events" && item.record_id && (
+      {!loop && (item.source === "events" || item.source === "persisted_change") && item.record_id && (
         <button type="button" className="followup-primary-button" onClick={() => void onCreate(item)} disabled={busy}>
           {busy ? "Adding…" : "Add to Follow-ups"}
         </button>
@@ -300,7 +300,7 @@ export default function FollowUpsPage() {
   }
 
   async function createFollowUp(item: AttentionDecision) {
-    if (item.source !== "events" || !item.record_id) return;
+    if ((item.source !== "events" && item.source !== "persisted_change") || !item.record_id) return;
     const sourceKey = item.source + ":" + item.record_id;
     setBusyId(sourceKey);
     setError("");
