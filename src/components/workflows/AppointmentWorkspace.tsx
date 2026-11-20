@@ -162,7 +162,7 @@ const stageStatus: Record<Stage, string> = {
 }
 
 const appointmentFollowUpsFromText = (value: string) => value
-  .split(/\\r?\\n/)
+  .split(/\r?\n/)
   .map(action => action.trim())
   .filter(Boolean)
   .map(action => ({
