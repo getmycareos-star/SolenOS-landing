@@ -311,7 +311,7 @@ export default function FollowUpsPage() {
       item.reason,
       ...(item.priority_basis || []),
     ].filter((value): value is string => Boolean(value && value.trim())).join(" · ")
-      || "This saved care event was marked for follow-up during the latest review.";
+      || "This saved care information was marked for follow-up during the latest review.";
     try {
       await postJSON("/open-loops", {
         loop_type: "follow_up",
