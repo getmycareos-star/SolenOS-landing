@@ -43,7 +43,10 @@ export async function sendQueuedCareWrite(endpoint: string, payload: unknown): P
       { type: payload.mime_type || "application/octet-stream" },
     );
     form.append("file", file);
-    const response = await postFormData(endpoint, form) as {
+    if (endpoint !== "/upload") {
+      throw new Error("This queued file-upload destination is not supported.");
+    }
+    const response = await postFormData("/upload", form) as {
       persisted?: boolean;
       evidence_id?: string;
     };
@@ -53,12 +56,21 @@ export async function sendQueuedCareWrite(endpoint: string, payload: unknown): P
     return response;
   }
 
-  const response = await postJSON(endpoint, payload) as {
+  let response: {
     success?: boolean;
     id?: string | number;
     ok?: boolean;
     care_event_id?: string;
   };
+  if (endpoint === "/situation") {
+    response = await postJSON("/situation", payload) as typeof response;
+  } else if (endpoint === "/daily/log") {
+    response = await postJSON("/daily/log", payload) as typeof response;
+  } else if (endpoint === "/daily-care/entries") {
+    response = await postJSON("/daily-care/entries", payload) as typeof response;
+  } else {
+    throw new Error("This queued care-update destination is not supported.");
+  }
   if (endpoint === "/situation") {
     if (response?.ok !== true || typeof response.care_event_id !== "string" || !response.care_event_id) {
       throw new Error("The server did not confirm that this care update was saved.");
