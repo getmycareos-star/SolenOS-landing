@@ -27,3 +27,8 @@ assert.ok(!component.includes('DetailedAppointmentWorkspace'), 'the caregiver-fa
 assert.ok(!component.includes('guided-details-toggle'), 'appointment preparation must not send caregivers into a second administrative workspace');
 assert.ok(component.includes('You do not need to rewrite information already in your Care Record'), 'caregivers must not be asked to re-enter information already recorded');
 console.log('PASS: low-burden appointment stages, optional capture, backend outcome retrieval and LCR write boundary')
+
+assert.ok(component.includes('brief.open_loops?.length'), 'preparation must surface existing unresolved follow-ups without caregiver re-entry')
+assert.ok(component.includes('brief.documents?.length'), 'preparation must surface extracted care documents already stored in the LCR')
+assert.ok(component.includes('Recent care documents'), 'document context must be visible in the caregiver summary')
+assert.ok(component.includes('Still being followed up'), 'open follow-ups must be visible in the caregiver summary')
