@@ -81,17 +81,13 @@ export class InMemoryRoutineMomentStore extends RoutineMomentStore {
  * API-backed store for routine moments (communicates with the backend).
  */
 export class ApiRoutineMomentStore extends RoutineMomentStore {
-  private readonly basePath = '/routine-moments';
-
   async listByPerson(personId: string, limit: number = 100, offset: number = 0): Promise<RoutineMomentRecord[]> {
-    const path = `${this.basePath}?person_id=${encodeURIComponent(personId)}&limit=${limit}&offset=${offset}`;
-    const data = await getJSON(path);
+    const data = await getJSON(`/routine-moments?person_id=${encodeURIComponent(personId)}&limit=${limit}&offset=${offset}`);
     return data as RoutineMomentRecord[];
   }
 
   async listByPersonAndRoutine(personId: string, routineName: string, limit: number = 100, offset: number = 0): Promise<RoutineMomentRecord[]> {
-    const path = `${this.basePath}?person_id=${encodeURIComponent(personId)}&routine_name=${encodeURIComponent(routineName)}&limit=${limit}&offset=${offset}`;
-    const data = await getJSON(path);
+    const data = await getJSON(`/routine-moments?person_id=${encodeURIComponent(personId)}&routine_name=${encodeURIComponent(routineName)}&limit=${limit}&offset=${offset}`);
     return data as RoutineMomentRecord[];
   }
 
@@ -101,20 +97,18 @@ export class ApiRoutineMomentStore extends RoutineMomentStore {
      const body = {
        ...observation,
      };
-     const data = await postJSON(this.basePath, body);
+     const data = await postJSON("/routine-moments", body);
      return data as RoutineMomentRecord;
    }
 
   async update(id: string, updates: Partial<RoutineMomentObservation>): Promise<RoutineMomentRecord> {
-    const path = `${this.basePath}/${id}`;
-    const data = await patchJSON(path, updates);
+    const data = await patchJSON(`/routine-moments/${encodeURIComponent(id)}`, updates);
     return data as RoutineMomentRecord;
   }
 
    async delete(id: string): Promise<void> {
      // The delete endpoint returns 204 No Content, so we don't expect JSON.
      // We'll use the API client for consistency.
-     const path = `${this.basePath}/${id}`;
-     await deleteJSON(path);
+     await deleteJSON(`/routine-moments/${encodeURIComponent(id)}`);
    }
 }
