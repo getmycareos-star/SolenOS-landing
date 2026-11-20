@@ -195,6 +195,13 @@ const workspace = fs.readFileSync(
 );
 assert(workspace.includes("AddSituationPanel"), "Add Situation panel wired");
 assert(workspace.includes("/api/situation"), "situation API primary path");
+assert(workspace.includes("enqueueDurableWrite"), "Daily Care submissions must be reserved in encrypted offline storage before sending");
+assert(workspace.includes("ingestion_key: ingestionKey"), "Daily Care retries must reuse a server idempotency key");
+assert(workspace.includes("syncDurableWrites"), "pending Daily Care submissions must recover after reconnect or app restart");
+assert(workspace.includes("deliverDurableWrite"), "online Daily Care writes must clear the local queue only after a server receipt");
+assert(workspace.includes("setSituationSubmissionCapturedAt"), "retry must preserve the original capture timestamp");
+const queuedWriter = fs.readFileSync(path.join(root, "src/lib/offline-sync/send-queued-care-write.ts"), "utf-8");
+assert(queuedWriter.includes('endpoint === "/api/situation"'), "the durable queue must validate the canonical situation write receipt");
 assert(workspace.includes("SituationResponsePanel"), "situation response UI");
 
 const realMoment = fs.readFileSync(
