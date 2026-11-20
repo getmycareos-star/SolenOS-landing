@@ -2,6 +2,7 @@
 
 import { apiUrl } from "@/lib/api-url";
 import { ensureAnonymousSession } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -125,9 +126,7 @@ export function UnderstandingFeedbackPrompt({
         setStep("thanks");
       } catch (error) {
         setSubmitError(
-          error instanceof Error
-            ? error.message
-            : "We couldn't send your feedback. No feedback was recorded.",
+          caregiverSafeErrorMessage(),
         );
       } finally {
         setSaving(false);
