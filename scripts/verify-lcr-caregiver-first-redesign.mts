@@ -230,3 +230,5 @@ assert.match(currentUnderstanding, /<h3 id="lcr-history-heading">Your care histo
 
 assert.match(currentUnderstanding, /projection\.missing_required_sources\.length > 0 \|\| projection\.missing_optional_sources\.length > 0[\s\S]*?Some care history could not be loaded/, "an incomplete retrieval is never presented as an empty care record");
 assert.match(currentUnderstanding, /!projection \|\| projection\.missing_required_sources\.length > 0[\s\S]*?Some saved outcomes may not be available right now/, "unavailable outcome history is distinguished from no recorded outcomes");
+
+assert.match(currentUnderstanding, /reported_by_caregiver_id[\s\S]*?another caregiver/, "the saved source shows whether it was shared by the current caregiver or another caregiver without exposing internal IDs");
