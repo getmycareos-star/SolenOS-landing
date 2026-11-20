@@ -1,7 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId, postJSON } from "@/api/client";
+import {
+  deliverDurableWrite,
+  discardDurableWrite,
+  durableWriteId,
+  enqueueDurableWrite,
+  getDurableWriteSummary,
+  hasDurableWrite,
+  syncDurableWrites,
+} from "@/lib/offline-sync/durable-write-queue";
 
 type CheckInKind = "same_as_usual" | "change" | "uncertain";
 
@@ -43,12 +52,69 @@ export default function QuickDailyCheckIn() {
   const [error, setError] = useState("");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
+  const [reportedAt, setReportedAt] = useState<string | null>(null);
+  const [pendingLocal, setPendingLocal] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncNotice, setSyncNotice] = useState("");
+  const pendingQueueId = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const send = async (endpoint: string, payload: unknown) => {
+      const response = await postJSON(endpoint, payload) as { success?: boolean; id?: string | number };
+      if (response?.success !== true || response.id === undefined || response.id === null) {
+        throw new Error("The server did not confirm that this update was saved.");
+      }
+      return response;
+    };
+    const sync = async () => {
+      const personId = getPersonId();
+      const caregiverId = getCaregiverId();
+      if (!personId || !caregiverId || (typeof navigator !== "undefined" && !navigator.onLine)) return;
+      try {
+        const result = await syncDurableWrites({ personId, caregiverId, send });
+        const summary = await getDurableWriteSummary(personId, caregiverId);
+        if (!active) return;
+        setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        if (pendingQueueId.current) {
+          const stillQueued = await hasDurableWrite(pendingQueueId.current);
+          if (!stillQueued) {
+            pendingQueueId.current = null;
+            setPendingLocal(false);
+            setIdempotencyKey(null);
+            setReportedAt(null);
+            setKind(null);
+            setNote("");
+            setSavedAt(new Date().toISOString());
+          }
+        }
+        if (result.synced > 0) {
+          setSyncNotice("A pending update has synced to the care record.");
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        }
+      } catch {
+        // The encrypted queue remains available for the next online attempt.
+      }
+    };
+    void sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("personIdChanged", sync);
+    window.addEventListener("solenos:offline-queue-updated", sync);
+    return () => {
+      active = false;
+      window.removeEventListener("online", sync);
+      window.removeEventListener("personIdChanged", sync);
+      window.removeEventListener("solenos:offline-queue-updated", sync);
+    };
+  }, []);
 
   function selectKind(value: CheckInKind) {
     setKind(value);
     setError("");
     setSavedAt(null);
     setIdempotencyKey(null);
+    setReportedAt(null);
+    setSyncNotice("");
   }
 
   async function saveCheckIn() {
@@ -62,49 +128,97 @@ export default function QuickDailyCheckIn() {
     }
 
     const requestKey = idempotencyKey ?? crypto.randomUUID();
+    const capturedAt = reportedAt ?? new Date().toISOString();
     setIdempotencyKey(requestKey);
+    setReportedAt(capturedAt);
     setSaving(true);
     setError("");
+    setSyncNotice("");
 
-    const reportedAt = new Date().toISOString();
     const noteText = note.trim();
+    const payload = {
+      person_id: personId,
+      caregiver_id: caregiverId,
+      medications: [],
+      vitals: [],
+      scales: [],
+      notes: noteText,
+      quick_check_in: {
+        schema_version: 1,
+        kind,
+        selected_areas: [],
+        scope: "overall_impression_only",
+        caregiver_reported_at: capturedAt,
+        epistemic_status: "caregiver_reported",
+        idempotency_key: requestKey,
+        note: noteText || null,
+      },
+    };
+    let queueId: string | null = null;
 
     try {
-      const response = (await postJSON("/daily/log", {
-        person_id: personId,
-        caregiver_id: caregiverId,
-        medications: [],
-        vitals: [],
-        scales: [],
-        notes: noteText,
-        quick_check_in: {
-          schema_version: 1,
-          kind,
-          selected_areas: [],
-          scope: "overall_impression_only",
-          caregiver_reported_at: reportedAt,
-          epistemic_status: "caregiver_reported",
+      try {
+        queueId = await enqueueDurableWrite({
+          person_id: personId,
+          caregiver_id: caregiverId,
+          endpoint: "/daily/log",
           idempotency_key: requestKey,
-          note: noteText || null,
-        },
-      })) as { success?: boolean; id?: string | number; recorded_at?: string | null };
-
-      if (response?.success !== true || response.id === undefined || response.id === null) {
-        throw new Error("The server did not confirm that this check-in was saved.");
+          payload,
+        });
+        pendingQueueId.current = queueId;
+      } catch {
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          throw new Error("This device could not securely keep an offline copy. The check-in was not saved.");
+        }
       }
 
+      const send = async (endpoint: string, body: unknown) => {
+        const response = await postJSON(endpoint, body) as {
+          success?: boolean;
+          id?: string | number;
+          recorded_at?: string | null;
+        };
+        if (response?.success !== true || response.id === undefined || response.id === null) {
+          throw new Error("The server did not confirm that this check-in was saved.");
+        }
+        return response;
+      };
+      const response = queueId
+        ? await deliverDurableWrite<{ success?: boolean; id?: string | number; recorded_at?: string | null }>(queueId, send)
+        : await send("/daily/log", payload);
+
       setSavedAt(response.recorded_at || new Date().toISOString());
+      pendingQueueId.current = null;
+      setPendingLocal(false);
+      setPendingCount(0);
       setIdempotencyKey(null);
+      setReportedAt(null);
       setKind(null);
       setNote("");
       window.dispatchEvent(new Event("careRecordUpdated"));
     } catch (cause) {
-      const reason = cause instanceof Error ? cause.message : "";
-      setError(
-        reason && reason.length < 180 && !/sql|traceback|stack/i.test(reason)
-          ? reason
-          : "We couldn’t confirm whether this check-in was saved. Your selection is still here. Check the care record before retrying.",
-      );
+      const status = typeof cause === "object" && cause !== null && "status" in cause
+        ? Number((cause as { status?: unknown }).status)
+        : null;
+      if (queueId) {
+        setPendingLocal(true);
+        const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
+        if (summary) setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        if (status === 401 || status === 403) {
+          setError("This check-in is encrypted on this device, but your care session must be verified before it can reach the care record.");
+        } else if (status === 400 || status === 409 || status === 422) {
+          setError("This check-in is kept on this device, but the server needs the update reviewed before it can be saved.");
+        } else {
+          setError("This check-in is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.");
+        }
+      } else {
+        const reason = cause instanceof Error ? cause.message : "";
+        setError(
+          reason && reason.length < 180 && !/sql|traceback|stack/i.test(reason)
+            ? reason
+            : "We couldn’t confirm whether this check-in was saved. Your selection is still here. Check the care record before retrying.",
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -138,7 +252,7 @@ export default function QuickDailyCheckIn() {
             key={option.value}
             type="button"
             aria-pressed={kind === option.value}
-            disabled={saving}
+            disabled={saving || pendingLocal}
             onClick={() => selectKind(option.value)}
             style={choiceStyle(kind === option.value)}
           >
@@ -162,7 +276,7 @@ export default function QuickDailyCheckIn() {
             maxLength={2000}
             rows={3}
             placeholder="You can leave this empty."
-            disabled={saving}
+            disabled={saving || pendingLocal}
             style={{
               display: "block",
               width: "100%",
@@ -182,12 +296,39 @@ export default function QuickDailyCheckIn() {
             className="workspace-primary"
             style={{ marginTop: 10, minHeight: 44, padding: "10px 16px", borderRadius: 9 }}
           >
-            {saving ? "Saving…" : "Save check-in"}
+            {saving ? "Saving…" : pendingLocal ? "Retry save" : "Save check-in"}
           </button>
         </div>
       )}
 
       {error && <p role="alert" style={{ margin: "12px 0 0", color: "var(--theme-danger-fg, #9b3434)" }}>{error}</p>}
+      {pendingLocal && idempotencyKey && (
+        <button
+          type="button"
+          onClick={() => {
+            const id = durableWriteId("/daily/log", idempotencyKey);
+            void discardDurableWrite(id).then(() => {
+              pendingQueueId.current = null;
+              setPendingLocal(false);
+              setPendingCount((count) => Math.max(0, count - 1));
+              setIdempotencyKey(null);
+              setReportedAt(null);
+              setKind(null);
+              setNote("");
+              setError("");
+            });
+          }}
+          style={{ justifySelf: "start", border: 0, background: "transparent", color: "var(--theme-panel-muted)", textDecoration: "underline", cursor: "pointer" }}
+        >
+          Remove this pending check-in from this device
+        </button>
+      )}
+      {pendingCount > 0 && !pendingLocal && (
+        <p role="status" style={{ margin: "8px 0 0", color: "var(--theme-panel-muted)" }}>
+          {pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to sync with the care record.
+        </p>
+      )}
+      {syncNotice && <p role="status" style={{ margin: "8px 0 0", color: "var(--theme-panel-muted)" }}>{syncNotice}</p>}
       {savedAt && (
         <p role="status" style={{ margin: "12px 0 0", color: "var(--theme-panel-muted)" }}>
           Check-in saved to the care record.
