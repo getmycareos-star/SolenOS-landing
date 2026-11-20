@@ -112,10 +112,10 @@ const outcomes: Record<ReviewType, string[]> = {
 }
 const labels: Record<ReviewType, string> = {
   quality: 'How clear this information is',
-  reliability: 'How much to rely on this information',
-  source_confidence: 'Who provided this information',
-  freshness: 'How recent it is',
-  completeness: 'How complete it is',
+  reliability: 'How sure are you about this information?',
+  source_confidence: 'Who shared this information?',
+  freshness: 'Is this still current?',
+  completeness: 'Are any details missing?',
 }
 const reviewStatusLabel = (value: string) => ({
   not_assessed: 'Not checked',
@@ -129,6 +129,13 @@ const reviewStatusLabel = (value: string) => ({
   mood: 'Mood',
   pain: 'Pain',
   'daily care form': 'Daily Care',
+  same_origin: 'Same original',
+  shared_origin: 'Same original',
+  same_source: 'Same source',
+  duplicate: 'Possible duplicate',
+  derived_from: 'Based on another note',
+  related_to: 'Related information',
+  independent_source: 'Separate source',
   caregiver_form: 'Entered in Daily Care',
   caregiver_check_in: 'Daily Care check-in',
   daily_care_quick_checkin: 'Daily Care check-in',
@@ -321,8 +328,9 @@ const panel: CSSProperties = { border: '1px solid var(--border)', borderRadius: 
 const field: CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '9px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const button: CSSProperties = { border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
 
-export default function EvidenceReviewPanel(props?: { personId?: string; evidenceItems?: EvidenceItem[] }) {
+export default function EvidenceReviewPanel(props?: { personId?: string; evidenceItems?: EvidenceItem[]; showInternalSourceChecks?: boolean }) {
   const expectedPersonId = props?.personId?.trim() || ''
+  const showInternalSourceChecks = props?.showInternalSourceChecks === true
   const [personId, setPersonId] = useState('')
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([])
   const [evidenceLoading, setEvidenceLoading] = useState(true)
@@ -600,7 +608,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     }
   }, [personId, selectedId])
 
-  useEffect(() => { void loadSourceIntegrity() }, [loadSourceIntegrity])
+  useEffect(() => { if (showInternalSourceChecks) void loadSourceIntegrity() }, [loadSourceIntegrity, showInternalSourceChecks])
 
   const reconstructHistoricalState = useCallback(async () => {
     if (!selectedId || !personId || !historyAsOf) {
@@ -738,10 +746,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{reviewStatusLabel(policy.domain_key)} · {policy.max_age_days == null ? 'No time limit set' : 'Review after ' + policy.max_age_days + ' days'}</option>)}
         </select>
       </label>
-      <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Reviewing…' : 'Review this information'}</button>
+      <button type="button" style={{ ...button, marginTop: 8 }} onClick={() => void assessSelectedFreshness()} disabled={!selected || !freshnessPolicyId || freshnessPolicySaving}>{freshnessPolicySaving ? 'Checking…' : 'Check whether this is still current'}</button>
       {freshnessPolicyNotice && <p role="status" style={{ fontSize: 12 }}>{freshnessPolicyNotice}</p>}
-      <h4 style={{ fontSize: 12, marginBottom: 4 }}>Earlier checks</h4>
-      {freshnessHistoryLoading && <p role="status" style={{ fontSize: 12 }}>Loading past reviews…</p>}
+      <h4 style={{ fontSize: 12, marginBottom: 4 }}>Earlier reviews</h4>
+      {freshnessHistoryLoading && <p role="status" style={{ fontSize: 12 }}>Loading earlier reviews…</p>}
       {freshnessHistoryError && <p role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{freshnessHistoryError} <button type="button" style={button} onClick={() => void loadFreshnessHistory()} disabled={freshnessHistoryLoading}>Retry history</button></p>}
       {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: 12 }}>No earlier reviews were found for this information.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: 12 }}>
@@ -762,48 +770,48 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>Type of note or document</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.type || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Shared by</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.reported_by_label || (selected.reported_by_caregiver_id || selected.uploaded_by_caregiver_id ? 'caregiver' : 'not_recorded'))}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Added to SolenOS</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Added to the care record</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it was shared</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || selected.evidence_kind || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How this information is known</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>What we know about this information</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
         </dl>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>More about this note or document</summary>
           <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px' }}>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0 }}>{caregiverSafeAssistantText(selected.original_author) || 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Collected by</dt><dd style={{ margin: 0 }}>{selected.collected_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || selected.evidence_kind || 'not_recorded')}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0 }}>{selected.origin_device_ref ? 'A device was used' : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Original source</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Related note or document</dt><dd style={{ margin: 0 }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Originally written by</dt><dd style={{ margin: 0 }}>{caregiverSafeAssistantText(selected.original_author) || 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Entered by</dt><dd style={{ margin: 0 }}>{selected.collected_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>When it was entered</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>When it was shared</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>How it was entered</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || selected.evidence_kind || 'not_recorded')}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Device</dt><dd style={{ margin: 0 }}>{selected.origin_device_ref ? 'A device was used' : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Saved on</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Related information</dt><dd style={{ margin: 0 }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
           </dl>
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>How this note or document is connected to other information ({relationships.length})</summary>
-          <p>These connections show when notes or documents come from the same original. They do not prove that two reports are separate or that a statement is true.</p>
+          <summary>Related notes and documents ({relationships.length})</summary>
+          <p>These links help show whether several items came from the same original. They do not confirm whether the information is true.</p>
           {relationshipsLoading && <p role="status">Loading links to other saved information…</p>}
           {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
           {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No other notes or documents are linked to this item yet.</p>}
           {relationships.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.relationship_type)}</strong>
-            <div>This note or document is linked to another saved item.</div>
-            <div>Were these reports separate? {reviewStatusLabel(item.source_independence_status)}</div>
+            <div>This information is connected to another saved item.</div>
+            <div>Were these shared separately? {reviewStatusLabel(item.source_independence_status)}</div>
             {item.source_independence_status === 'shared_origin' && (
               <p>These items came from the same original. They should not be counted as separate reports.</p>
             )}
             {item.origin_group_key && <p>These entries came from the same original.</p>}
             <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
-            <small>Reviewed by {item.reviewed_by_caregiver_id ? 'caregiver' : 'an unavailable identity'} · {new Date(item.created_at).toLocaleString()}</small>
+            <small>Checked by {item.reviewed_by_caregiver_id ? 'a caregiver' : 'an unavailable person'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Details recorded from this note or document ({observations.length})</summary>
-          <p>Each detail is linked to the original information. A caregiver report stays labelled as a report; it is not shown as a confirmed medical fact.</p>
+          <summary>Details recorded from this information ({observations.length})</summary>
+          <p>Each detail stays linked to what was originally shared. A caregiver report is not treated as a confirmed medical fact.</p>
           {observationsLoading && <p role="status">Loading recorded details…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
-          {!observationsLoading && !observationsError && observations.length === 0 && <p>No separate details have been recorded from this information yet.</p>}
+          {!observationsLoading && !observationsError && observations.length === 0 && <p>No separate details are available yet.</p>}
           {observations.slice().sort((a, b) => a.source_span_start - b.source_span_start).map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
@@ -812,9 +820,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               <div>What was recorded: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
             )}
             {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
-            {item.negated !== null && item.negated !== undefined && <div>Did the caregiver say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
-            {item.hedge_marker && <div>Words that show uncertainty: {item.hedge_marker}</div>}
-            {item.ambiguity_note && <div>What is unclear: {item.ambiguity_note}</div>}
+            {item.negated !== null && item.negated !== undefined && <div>Was this reported as not happening? {item.negated ? 'yes' : 'no'}</div>}
+            {item.hedge_marker && <div>Words that show the report may be uncertain: {item.hedge_marker}</div>}
+            {item.ambiguity_note && <div>What still needs clarification: {item.ambiguity_note}</div>}
             {item.observer_label && <div>Who shared this information: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
             <small>Added to the record {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
@@ -882,8 +890,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p>An earlier saved version is available. This does not prove the statement was true.</p>
           </div>}
         </details>
+        {showInternalSourceChecks && (
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Check whether the saved wording has changed</summary>
+          <summary>Check that the saved copy matches the original</summary>
           {sourceIntegrityLoading && <p role="status">Checking the saved wording…</p>}
           {sourceIntegrityError && <p role="alert" style={{ color: 'var(--error)' }}>{sourceIntegrityError} <button type="button" style={button} onClick={() => void loadSourceIntegrity()} disabled={sourceIntegrityLoading}>Try again</button></p>}
           {!sourceIntegrityLoading && !sourceIntegrityError && sourceIntegrity && <>
@@ -915,26 +924,29 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
           <small>This check compares the saved wording and file. It does not prove who created the original.</small>
         </details>
+        )}
       </>}
+      <details style={{ fontSize: 12, marginBottom: 12 }}>
+        <summary>Review or correct this information</summary>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9 }}>
-        <label style={{ fontSize: 12 }}>What are you reviewing?
+        <label style={{ fontSize: 12 }}>What would you like to check?
           <select style={field} value={reviewType} onChange={event => changeReviewType(event.target.value as ReviewType)}>
             {(Object.keys(labels) as ReviewType[]).map(key => <option key={key} value={key}>{labels[key]}</option>)}
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Your review
+        <label style={{ fontSize: 12 }}>What do you think?
           <select style={field} value={outcome} onChange={event => setOutcome(event.target.value)}>
             {outcomes[reviewType].map(value => <option key={value} value={value}>{reviewStatusLabel(value)}</option>)}
           </select>
         </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9, marginTop: 9 }}>
-        <label style={{ fontSize: 12 }}>Who provided this information?
+        <label style={{ fontSize: 12 }}>Who shared this information?
           <select style={field} value={sourceResult} onChange={event => setSourceResult(event.target.value)}>
             <option value="not_assessed">Not checked</option><option value="present">Recorded</option><option value="incomplete">Incomplete</option><option value="unverified">Not confirmed</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Was this reported separately?
+        <label style={{ fontSize: 12 }}>Was this shared separately?
           <select style={field} value={corroborationResult} onChange={event => setCorroborationResult(event.target.value)}>
             <option value="not_assessed">Not checked</option><option value="independent_source_linked">A separate report is linked</option><option value="copied_or_same_origin">Copied from the same original</option><option value="none_linked">No other report is linked</option>
           </select>
@@ -944,32 +956,33 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <option value="not_assessed">Not checked</option><option value="specified">Recorded</option><option value="partial">Partly recorded</option><option value="missing">Missing</option><option value="conflicting">Reports disagree</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Does this information still apply?
+        <label style={{ fontSize: 12 }}>Is this still current?
           <select style={field} value={freshnessResult} onChange={event => setFreshnessResult(event.target.value)}>
             <option value="not_assessed">Not checked</option><option value="current">Still current</option><option value="stale">May be out of date</option><option value="historical">Older information</option><option value="undetermined">Not sure</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>Is anything missing?
+        <label style={{ fontSize: 12 }}>Are any details missing?
           <select style={field} value={completenessResult} onChange={event => setCompletenessResult(event.target.value)}>
             <option value="not_assessed">Not checked</option><option value="complete">Complete</option><option value="partial">Some details are missing</option><option value="missing">Missing</option><option value="undetermined">Not sure</option>
           </select>
         </label>
       </div>
-      <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Why are you making this review?
+      <label style={{ display: 'block', fontSize: 12, marginTop: 9 }}>Add a note (optional)
         <textarea style={{ ...field, minHeight: 70 }} value={rationale} onChange={event => setRationale(event.target.value)} />
       </label>
-      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || loading || !selected}>{saving ? 'Saving…' : 'Save review'}</button>
-      <button type="button" style={{ ...button, marginTop: 9, marginLeft: 8 }} onClick={() => void loadReviews()} disabled={loading}>{loading ? 'Loading…' : 'Refresh past reviews'}</button>
+      <button type="button" style={{ ...button, marginTop: 9 }} onClick={() => void submit()} disabled={saving || loading || !selected}>{saving ? 'Saving…' : 'Save your review'}</button>
+      <button type="button" style={{ ...button, marginTop: 9, marginLeft: 8 }} onClick={() => void loadReviews()} disabled={loading}>{loading ? 'Loading…' : 'Show earlier reviews'}</button>
       {error && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{error}</p>}
       {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
-      <h4 style={{ fontSize: 13, marginBottom: 5 }}>Past reviews</h4>
-      {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Past reviews could not be loaded. Try again; a failed load does not mean there are no reviews.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No past reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
+      <h4 style={{ fontSize: 13, marginBottom: 5 }}>Earlier reviews</h4>
+      {historyUnavailable ? <p role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Past reviews could not be loaded. Try again; a failed load does not mean there are no reviews.</p> : reviews.length === 0 ? <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No earlier reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: 12 }}>
         <strong>{labels[review.review_type] || 'Saved review'}: {reviewStatusLabel(review.outcome)}</strong>
         <div>{new Date(review.created_at).toLocaleString()}</div>
         <p>{review.rationale}</p>
         <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {caregiverSafeAssistantText(criterion.rationale) || 'No further explanation is available.'}</li>)}</ul>
 
       </article>)}
+      </details>
     </> : null}
   </section>
 }
