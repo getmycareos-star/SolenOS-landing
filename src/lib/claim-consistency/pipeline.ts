@@ -36,39 +36,17 @@ export async function runConsistencyGate(
     persisted: saveResult.persisted,
   });
 
-  // Extraction must not begin if evidence exists only in process memory.
-  if (!saveResult.persisted) {
-    const error = "Raw evidence could not be durably persisted; extraction was not started.";
-    logger.error("raw evidence persistence unavailable", { evidence_id: evidenceId });
-    return {
-      success: false,
-      persistence_status: "memory_only",
-      reconciliation: createEmptyReconciliation(evidenceId),
-      run_a: {
-        run_id: "not-started",
-        claims: [],
-        raw_output: "",
-        success: false,
-        error,
-      },
-      run_b: {
-        run_id: "not-started",
-        claims: [],
-        raw_output: "",
-        success: false,
-        error,
-      },
-      error,
-    };
-  }
-
-  // A filesystem queue is not an authoritative server-side commit: Railway/container
-  // filesystems may be ephemeral, and a queued record is not yet available through
-  // canonical server retrieval. Do not spend inference or create derived claims until
-  // PostgreSQL has acknowledged the write.
+  // Local files and process memory are recovery buffers, not canonical care
+  // records. Do not start extraction until the authoritative backend confirms
+  // the same evidence identifier.
   if (saveResult.persistence_status !== "server_persisted") {
-    const error = "Raw evidence is queued locally but is not yet confirmed in PostgreSQL; extraction was not started.";
-    logger.error("raw evidence awaiting server persistence", { evidence_id: evidenceId });
+    const error = saveResult.persistence_status === "local_queued"
+      ? "Raw evidence is queued locally but has not been saved to the care record; extraction was not started."
+      : "Raw evidence could not be saved to the care record; extraction was not started.";
+    logger.error("raw evidence awaiting canonical backend persistence", {
+      evidence_id: evidenceId,
+      persistence_status: saveResult.persistence_status,
+    });
     return {
       success: false,
       persistence_status: saveResult.persistence_status,
