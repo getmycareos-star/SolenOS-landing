@@ -14,6 +14,10 @@ assert.ok(component.includes('brief.decision_outcomes?.length'))
 assert.ok(component.includes('brief.open_loops?.length'))
 assert.ok(component.includes('brief.documents?.length'))
 
+// Switching caregiver/person cannot leave the previous visit visible during a new load.
+assert.ok(component.includes('setBrief(null)'))
+assert.ok(component.includes('setRecord(null)'))
+assert.ok(component.includes('setOutcomeProposals([])'))
 // Workspace selection is tied to the selected appointment; unrelated notes are not reused.
 assert.ok(component.includes('items.find(item => item.appointment_id === selectedAppointmentId)'))
 assert.ok(component.includes('items.find(item => !item.appointment_id)'))
