@@ -116,6 +116,34 @@ describe("raw evidence persistence truth", () => {
     expect(fsMock.rmSync).toHaveBeenCalledTimes(1);
   });
 
+  it("acknowledges an identical immutable replay without creating a duplicate", async () => {
+    process.env.DATABASE_URL = "postgres://configured";
+    fsMock.writeFileSync.mockImplementation(() => {
+      throw new Error("filesystem unavailable");
+    });
+    const contentHash = require("crypto")
+      .createHash("sha256")
+      .update(input.content)
+      .digest("hex");
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: input.id,
+          caregiver_id: input.caregiver_id,
+          person_id: null,
+          content_hash: contentHash,
+        }],
+      });
+    mockedCreatePool.mockResolvedValue({ query } as never);
+
+    const result = await new RawEvidenceStore({ pool: null }).save(input);
+    expect(result.persistence_status).toBe("server_persisted");
+    expect(result.persisted).toBe(true);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+
   it("does not acknowledge an ID collision with different evidence ownership or content", async () => {
     process.env.DATABASE_URL = "postgres://configured";
     fsMock.writeFileSync.mockImplementation(() => {
