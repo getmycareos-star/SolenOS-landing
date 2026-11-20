@@ -17,6 +17,9 @@ assert.ok(component.includes('You do not need to rewrite information already in 
 assert.ok(component.includes('brief.prior_decisions?.length'))
 assert.ok(component.includes('brief.decision_outcomes?.length'))
 assert.ok(component.includes('brief.open_loops?.length'))
+assert.ok(component.includes('appointment_needs?: Array<'))
+assert.ok(component.includes('Appointment to arrange or confirm'))
+assert.ok(component.includes('item.subject_type !== "appointment"'))
 assert.ok(component.includes('brief.documents?.length'))
 
 // Switching caregiver/person cannot leave the previous visit visible during a new load.
