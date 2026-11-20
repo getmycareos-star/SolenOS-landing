@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from '../lib/caregiver-language'
 
 interface CareCaptureProps {
   personId?: string
@@ -44,7 +45,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     onSuccess: async (data, variables) => {
       // The backend currently returns a saved situation, not community matches.
       // Do not call the nonexistent /community/experience endpoint or invent matches.
-      setSavedMessage(typeof data?.message === 'string' ? data.message : 'Care update saved.')
+      setSavedMessage(caregiverSafeAssistantText(data?.message) || 'Care update saved.')
       setQwenAnalysis({
         status: typeof data?.qwen_extraction_status === 'string' ? data.qwen_extraction_status : 'not_reported',
         candidates: data?.qwen_candidates ?? null,
@@ -125,7 +126,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
-            {identityError || (submitError instanceof Error ? submitError.message : 'Failed to save')}
+            {identityError || caregiverSafeErrorMessage()}
           </span>
         )}
       </div>
@@ -178,7 +179,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       {Boolean(submitError) && !identityError && (
         <p role="alert" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--error)' }}>
-          The save could not be confirmed{submitError instanceof Error && submitError.message ? `: ${submitError.message}` : ''}. Your text remains in the field; check the connection and retry.
+          The save could not be confirmed. Your text remains in the field; check whether it was saved before trying again.
         </p>
       )}
 
@@ -190,9 +191,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
 
       {savedMessage && qwenAnalysis && (
         <section aria-label="Qwen capture analysis" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
-          <strong style={{ fontSize: '12px' }}>Qwen analysis: {qwenAnalysis.status}</strong>
+          <strong style={{ fontSize: '12px' }}>Suggested care details</strong>
           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            AI output is an unverified candidate, not an established Living Care Record fact.
+            {qwenAnalysis.status === 'available' ? 'Possible details are ready for review. They are not confirmed care facts.' : 'Your original update is saved. Suggested details are not available yet.'}
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
