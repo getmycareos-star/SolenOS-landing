@@ -62,7 +62,23 @@ export async function runConsistencyGate(
     };
   }
 
-  // Extraction only begins AFTER the store confirms PostgreSQL or local-queue persistence.
+  // A filesystem queue is not an authoritative server-side commit: Railway/container
+  // filesystems may be ephemeral, and a queued record is not yet available through
+  // canonical server retrieval. Do not spend inference or create derived claims until
+  // PostgreSQL has acknowledged the write.
+  if (saveResult.persistence_status !== "server_persisted") {
+    const error = "Raw evidence is queued locally but is not yet confirmed in PostgreSQL; extraction was not started.";
+    logger.error("raw evidence awaiting server persistence", { evidence_id: evidenceId });
+    return {
+      success: false,
+      persistence_status: saveResult.persistence_status,
+      reconciliation: createEmptyReconciliation(evidenceId),
+      run_a: { run_id: "not-started", claims: [], raw_output: "", success: false, error },
+      run_b: { run_id: "not-started", claims: [], raw_output: "", success: false, error },
+      error,
+    };
+  }
+
   const { runA, runB } = await runParallelExtractions(input, signal);
 
   logger.logExtractionRun(runA.run_id, runA.success, runA.claims.length, runA.error);
