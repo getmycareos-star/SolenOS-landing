@@ -143,14 +143,16 @@ if (backendInventoryPath) {
     const normalizedPath = normalizeFrontendPath(entry.route_expression);
     entry.normalized_backend_path = normalizedPath;
     const matches = normalizedPath
-      ? backendRoutes.filter(route =>
-          (entry.method === 'GET_OR_DYNAMIC' || route.method === entry.method) &&
-          routeRegex(route.path).test(normalizedPath)
-        )
+      ? backendRoutes.filter(route => {
+          const backendPath = route.path || route.endpoint;
+          return Boolean(backendPath)
+            && (entry.method === 'GET_OR_DYNAMIC' || route.method === entry.method)
+            && routeRegex(backendPath).test(normalizedPath);
+        })
       : [];
     entry.matched_backend_routes = matches.map(route => ({
       method: route.method,
-      path: route.path,
+      path: route.path || route.endpoint,
       router_module: route.router_module,
       handler: route.handler,
     }));
@@ -160,22 +162,23 @@ if (backendInventoryPath) {
   }
 }
 const backendRouteMatrix = backendRoutes.map(route => {
+  const backendPath = route.path || route.endpoint;
   const consumers = entries.filter(entry =>
-    entry.matched_backend_routes?.some(match => match.method === route.method && match.path === route.path)
+    entry.matched_backend_routes?.some(match => match.method === route.method && match.path === backendPath)
   );
   return {
     method: route.method,
-    path: route.path,
+    path: backendPath,
     router_module: route.router_module,
     handler: route.handler,
     tags: route.tags || [],
-    request_model: route.request_model || null,
-    response_model: route.response_model || null,
-    dependencies: route.dependencies || [],
-    authentication_disposition: route.authentication_disposition,
-    consumer_disposition: route.consumer_disposition,
-    persistence_disposition: route.persistence_disposition,
-    verification_disposition: route.verification_disposition,
+    contract: route.contract || null,
+    authentication: route.authentication || route.authentication_disposition || null,
+    consumer: route.consumer || route.consumer_disposition || null,
+    persistence: route.persistence || route.persistence_disposition || null,
+    verification: route.verification || route.verification_disposition || null,
+    disposition: route.disposition || null,
+    status: route.status || null,
     duplicate_registration: route.duplicate_registration === true,
     frontend_call_site_count: consumers.length,
     frontend_call_sites: consumers.map(entry => ({
