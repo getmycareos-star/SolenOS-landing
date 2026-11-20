@@ -17,6 +17,7 @@ type CaptureAnalysisPayload = {
   extraction_status?: string;
   candidates?: { observations?: CaptureCandidate[] };
   review_required?: boolean;
+  written_to_lcr?: boolean;
 };
 
 export default function CaptureAnalysisReview({
@@ -68,39 +69,57 @@ export default function CaptureAnalysisReview({
     setBusyIndex(index);
     setFeedback("");
     try {
-      const result = await postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {
-        candidate_index: index,
-        decision,
-        corrected_subject: decision === "correct" ? draft.subject.trim() || undefined : undefined,
-        corrected_observation: decision === "correct" ? draft.observation.trim() || undefined : undefined,
-      }) as { candidate?: CaptureCandidate; written_to_lcr?: boolean; message?: string };
-      if (!result.candidate || result.written_to_lcr !== (decision === "accept")) {
-        throw new Error("Review was not confirmed");
-      }
-      setAnalysis((current) => {
-        if (!current?.candidates?.observations) return current;
-        const observations = [...current.candidates.observations];
-        observations[index] = result.candidate as CaptureCandidate;
-        return {
-          ...current,
-          candidates: { ...current.candidates, observations },
-          review_required: observations.some((item) =>
-            ["pending_review", "corrected_pending_approval", "corrected_by_caregiver"].includes(item.review_status || "pending_review")
-          ),
-        };
-      });
-      if (decision === "correct") setEditingIndex(null);
-      setFeedback(result.message || (decision === "accept"
-        ? "The reviewed detail was added to the care record."
+      const expectedReviewStatus = decision === "accept"
+        ? "accepted_by_caregiver"
         : decision === "correct"
-          ? "Correction saved. It still needs approval before it becomes part of the care record."
-          : "Suggestion dismissed. No care-record detail was added."));
-      if (decision === "accept") {
-        window.dispatchEvent(new Event("careRecordUpdated"));
+          ? "corrected_pending_approval"
+          : "rejected_by_caregiver";
+      let writeMessage: string | undefined;
+      let writeFailed = false;
+      try {
+        const result = await postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {
+          candidate_index: index,
+          decision,
+          corrected_subject: decision === "correct" ? draft.subject.trim() || undefined : undefined,
+          corrected_observation: decision === "correct" ? draft.observation.trim() || undefined : undefined,
+        }) as { message?: string };
+        writeMessage = result.message;
+      } catch {
+        // A lost response does not prove that the server transaction failed.
+        writeFailed = true;
       }
-      onReviewed?.();
-    } catch {
-      setFeedback("We couldn’t save that review. Your original care entry is still saved.");
+
+      try {
+        // The persisted analysis is the source of truth, not the POST receipt
+        // or optimistic component state. This also resolves a lost response
+        // without asking the caregiver to submit the same decision twice.
+        const persisted = await getJSON(
+          `/capture/analyses/${encodeURIComponent(analysisId)}`
+        ) as CaptureAnalysisPayload;
+        const persistedCandidate = persisted.candidates?.observations?.[index];
+        if (
+          !persistedCandidate
+          || persistedCandidate.review_status !== expectedReviewStatus
+          || (decision === "accept" && persisted.written_to_lcr !== true)
+        ) {
+          throw new Error("The saved review could not be independently verified");
+        }
+        setAnalysis(persisted);
+        if (decision === "correct") setEditingIndex(null);
+        setFeedback(writeFailed
+          ? "Your review was saved and confirmed after reconnecting."
+          : writeMessage || (decision === "accept"
+            ? "The reviewed detail was added to the care record."
+            : decision === "correct"
+              ? "Correction saved. It still needs approval before it becomes part of the care record."
+              : "Suggestion dismissed. No care-record detail was added."));
+        if (decision === "accept") {
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        }
+        onReviewed?.();
+      } catch {
+        setFeedback("We couldn’t confirm whether this review was saved. Your original care entry is still saved. Reopen the review before trying again.");
+      }
     } finally {
       setBusyIndex(null);
     }
