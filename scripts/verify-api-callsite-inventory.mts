@@ -342,6 +342,9 @@ const report = {
   backend_contract: backendContract,
   unconsumed_backend_operation_count: backendContract.unconsumed_backend_operations?.length ?? null,
   unconsumed_backend_operations: backendContract.unconsumed_backend_operations ?? [],
+  unconsumed_internal_operations: backendContract.unconsumed_internal_operations ?? [],
+  unconsumed_frontend_operations: backendContract.unconsumed_frontend_operations ?? [],
+  unconsumed_classification_gaps: backendContract.unconsumed_classification_gaps ?? [],
   endpoints: [...grouped.entries()].map(([key, items]) => ({
     method_path: key,
     callsite_count: items.length,
