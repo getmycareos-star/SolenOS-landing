@@ -157,7 +157,7 @@ const stageStatus: Record<Stage, string> = {
 const selectNextAppointment = (brief: PreparationBrief) => {
   if (brief.next_appointment) return brief.next_appointment
   return [...brief.appointments]
-    .filter(item => item.status.toLowerCase() === 'scheduled')
+    .filter(item => ['scheduled', 'upcoming', 'today'].includes(item.status.toLowerCase()))
     .sort((a, b) => {
       const aTime = a.scheduled_at ? Date.parse(a.scheduled_at) : Number.MAX_SAFE_INTEGER
       const bTime = b.scheduled_at ? Date.parse(b.scheduled_at) : Number.MAX_SAFE_INTEGER
