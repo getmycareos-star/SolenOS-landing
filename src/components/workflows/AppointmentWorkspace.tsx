@@ -12,6 +12,7 @@ type PreparationBrief = {
   facts: Array<{ source_id: string; fact_type: string; value: string | null; epistemic_status: string; effective_at?: string | null }>
   events: Array<{ source_id: string; title: string; description?: string | null; occurred_at?: string | null; status: string }>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
+  next_appointment?: { source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string } | null
   documents?: Array<{ source_id: string; filename?: string | null; extracted_text?: string | null; extraction_status?: string | null; recorded_at?: string | null; epistemic_status?: string | null; interpretation_limit?: string }>
   open_loops?: Array<{ source_id: string; title: string; description?: string | null; status: string; priority?: string | null; owner_label?: string | null; deadline_at?: string | null; source_type?: string | null; interpretation_limit?: string }>
   prior_decisions?: Array<{ id: string; title?: string | null; decision_text?: string | null; decision_status?: string | null; decided_at?: string | null; context?: string | null }>
@@ -153,6 +154,17 @@ const stageStatus: Record<Stage, string> = {
   after: 'outcome_pending',
 }
 
+const selectNextAppointment = (brief: PreparationBrief) => {
+  if (brief.next_appointment) return brief.next_appointment
+  return [...brief.appointments]
+    .filter(item => item.status.toLowerCase() === 'scheduled')
+    .sort((a, b) => {
+      const aTime = a.scheduled_at ? Date.parse(a.scheduled_at) : Number.MAX_SAFE_INTEGER
+      const bTime = b.scheduled_at ? Date.parse(b.scheduled_at) : Number.MAX_SAFE_INTEGER
+      return aTime - bTime
+    })[0] || null
+}
+
 export default function AppointmentWorkspace() {
   const [open, setOpen] = useState(false)
   const [stage, setStage] = useState<Stage>('prepare')
@@ -186,7 +198,7 @@ export default function AppointmentWorkspace() {
         if (cancelled) return
         if (briefResult.status === 'fulfilled') {
           setBrief(briefResult.value)
-          const nextAppointment = briefResult.value.appointments.find(item => item.status.toLowerCase() === 'scheduled')
+          const nextAppointment = selectNextAppointment(briefResult.value)
           if (nextAppointment) setAppointmentId(nextAppointment.source_id)
         } else {
           setError('Your visit summary could not be loaded. Your care record has not been changed.')
@@ -234,7 +246,7 @@ export default function AppointmentWorkspace() {
       getJSON('/appointment-workspaces') as Promise<{ items?: WorkspaceRecord[] }>,
     ])
     setBrief(briefResult)
-    const nextAppointment = briefResult.appointments.find(item => item.status.toLowerCase() === 'scheduled')
+    const nextAppointment = selectNextAppointment(briefResult)
     if (nextAppointment) setAppointmentId(nextAppointment.source_id)
 
     const latest = workspaceResult.items?.[0] || null
@@ -437,7 +449,7 @@ export default function AppointmentWorkspace() {
                     {brief.assertions?.length ? <section><h6>Reported observations</h6><ul>{brief.assertions.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.field) || "Care detail"}</strong><p>{caregiverSafeAssistantText(item.asserted_value) || "Saved report"}</p><small>{caregiverSafeAssistantText(item.source_label) || "Saved care record"} · {caregiverInformationLabel(item.epistemic_state || "reported") || "Caregiver report"}</small></li>)}</ul></section> : null}
                     {brief.open_questions?.length ? <section><h6>Questions still needing an answer</h6><ul>{brief.open_questions.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.question) || "Question needs review"}</strong><small>{caregiverStatusLabel(item.priority) || "Priority not available"}</small></li>)}</ul></section> : null}
                     {brief.contradictions?.length ? <section><h6>Information that needs clarification</h6><ul>{brief.contradictions.slice(0, 2).map(item => <li key={item.source_id}><p>{caregiverSafeAssistantText(item.description) || "Some reports differ"}</p><small>{caregiverStatusLabel(item.resolution_status) || "Review needed"}</small></li>)}</ul></section> : null}
-                    {brief.appointments.length > 0 && <section><h6>Appointments already recorded</h6><ul>{brief.appointments.slice(0, 2).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul></section>}
+                    {brief.next_appointment ? <section><h6>Next scheduled visit</h6><strong>{caregiverSafeAssistantText(brief.next_appointment.title) || "Appointment"}</strong><p>{brief.next_appointment.scheduled_at ? new Date(brief.next_appointment.scheduled_at).toLocaleString() : "Date not recorded"}</p>{brief.next_appointment.provider && <small>{caregiverSafeAssistantText(brief.next_appointment.provider)}</small>}{brief.next_appointment.location && <small>{caregiverSafeAssistantText(brief.next_appointment.location)}</small>}</section> : brief.appointments.length > 0 ? <section><h6>Appointments already recorded</h6><ul>{brief.appointments.slice(0, 2).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul></section> : null}
                     {brief.open_loops?.length ? <section><h6>Still being followed up</h6><ul>{brief.open_loops.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>{item.description && item.description !== item.title && <p>{caregiverSafeAssistantText(item.description)}</p>}<small>{caregiverStatusLabel(item.status) || "Status not available"}{item.deadline_at ? ` · Due ${new Date(item.deadline_at).toLocaleDateString()}` : ""}{item.owner_label ? ` · ${caregiverSafeAssistantText(item.owner_label)}` : ""}</small></li>)}</ul></section> : null}
                     {brief.documents?.length ? <section><h6>Recent care documents</h6><ul>{brief.documents.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small></li>)}</ul></section> : null}
                     {brief.prior_decisions?.length ? <section><h6>Previous care decisions</h6><ul>{brief.prior_decisions.slice(0, 2).map(item => <li key={item.id}><strong>{caregiverSafeAssistantText(item.title) || "Decision recorded"}</strong>{item.decision_text && <p>{caregiverSafeAssistantText(item.decision_text)}</p>}<small>{caregiverStatusLabel(item.decision_status || "recorded") || "Recorded"}{item.decided_at ? ` · ${new Date(item.decided_at).toLocaleDateString()}` : ""}</small></li>)}</ul></section> : null}
