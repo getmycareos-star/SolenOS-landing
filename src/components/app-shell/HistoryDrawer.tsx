@@ -18,7 +18,7 @@ import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
-type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome";
+type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome" | "follow-up";
 type HistoryCategory =
   | "daily-care"
   | "document"
@@ -30,6 +30,23 @@ type HistoryCategory =
   | "lcr-update"
   | "other";
 type FilterKey = "all" | HistoryCategory;
+
+type FollowUpHistoryItem = {
+  id: string;
+  title?: string | null;
+  description?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  owner_label?: string | null;
+  deadline_at?: string | null;
+  review_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  evidence?: Array<Record<string, unknown>> | null;
+  response_evidence?: Array<Record<string, unknown>> | null;
+  action_evidence?: Array<Record<string, unknown>> | null;
+  outcome_evidence?: Array<Record<string, unknown>> | null;
+};
 
 type DetailField = { label: string; value: string };
 
@@ -604,6 +621,42 @@ function mapDecision(item: CareDecision): HistoryRecord {
   };
 }
 
+function mapFollowUp(item: FollowUpHistoryItem): HistoryRecord {
+  const evidenceIds = [...new Set([
+    ...(item.evidence ?? []),
+    ...(item.response_evidence ?? []),
+    ...(item.action_evidence ?? []),
+    ...(item.outcome_evidence ?? []),
+  ].map((entry) => asText(entry.evidence_id)).filter(Boolean))];
+  const createdAt = item.created_at || null;
+  const status = asText(item.status) || "unknown";
+  const title = caregiverSafeAssistantText(asText(item.title)) || "Care follow-up";
+  const description = caregiverSafeAssistantText(asText(item.description)) || "";
+  return {
+    id: "follow-up:" + item.id,
+    event_type: "follow_up",
+    status,
+    occurred_at: null,
+    recorded_at: createdAt,
+    updated_at: item.updated_at || null,
+    display_date: createdAt,
+    display_date_label: "Follow-up recorded",
+    title,
+    description: description || undefined,
+    evidence_ids: evidenceIds,
+    tags: ["follow-up"],
+    source_kind: "follow-up",
+    source_details: detailFields([
+      { label: "Status", value: caregiverStatusLabel(status) || status },
+      { label: "Priority", value: caregiverStatusLabel(asText(item.priority)) || asText(item.priority) },
+      { label: "Assigned to", value: caregiverSafeAssistantText(asText(item.owner_label)) || "" },
+      { label: "Due date", value: item.deadline_at ? formatDateTime(item.deadline_at) : "Not recorded" },
+      { label: "Review date", value: item.review_at ? formatDateTime(item.review_at) : "Not recorded" },
+      { label: "When it was saved", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
+    ]),
+  };
+}
+
 function mapOutcome(item: CareOutcome): HistoryRecord {
   const createdAt = item.created_at || null;
   const actionType = caregiverStatusLabel(asText(item.action_type)) || "Care update";
@@ -768,6 +821,7 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         getJSON("/care-continuity/decisions?limit=100"),
         getJSON("/care-continuity/outcomes/" + personPath),
+        getJSON("/open-loops?limit=100"),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
@@ -1033,6 +1087,23 @@ export function HistoryDrawer() {
         warnings.push("Recorded decision and action outcomes could not be loaded.");
       }
 
+      const followUpResult = results[8];
+      const followUpPayload = followUpResult.status === "fulfilled" && followUpResult.value &&
+        typeof followUpResult.value === "object"
+        ? followUpResult.value as { items?: unknown; has_more?: boolean }
+        : null;
+      if (followUpPayload && Array.isArray(followUpPayload.items)) {
+        availableSources += 1;
+        const followUps = (followUpPayload.items as FollowUpHistoryItem[])
+          .filter((item) => item && typeof item.id === "string");
+        nextRecords.push(...followUps.map(mapFollowUp));
+        if (followUpPayload.has_more === true) {
+          warnings.push("Only the latest saved follow-ups are shown here. Open Follow-ups to review the full list.");
+        }
+      } else {
+        warnings.push("Saved follow-ups could not be loaded.");
+      }
+
       if (availableSources === 0) {
         throw new Error("None of the available care-history sources could be loaded. Check the connection and try again.");
       }
@@ -1127,7 +1198,9 @@ export function HistoryDrawer() {
           ? "Decision recorded"
           : selectedRecord?.source_kind === "outcome"
             ? "Outcome recorded"
-            : selectedRecord?.source_kind === "handoff-in" || selectedRecord?.source_kind === "handoff-out"
+            : selectedRecord?.source_kind === "follow-up"
+              ? "Saved follow-up"
+              : selectedRecord?.source_kind === "handoff-in" || selectedRecord?.source_kind === "handoff-out"
               ? "Handoff information"
               : "Original record";
 
