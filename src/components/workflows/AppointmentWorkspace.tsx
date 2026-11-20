@@ -286,7 +286,7 @@ export default function AppointmentWorkspace() {
             setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
             setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
             setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
-            setFollowUps(Array.isArray(latest.payload?.followUps) ? latest.payload.followUps.map((item: { action?: string }) => item?.action).filter((item: unknown): item is string => typeof item === 'string').join('\\n') : '')
+            setFollowUps(Array.isArray(latest.payload?.followUps) ? latest.payload.followUps.map((item: { action?: string }) => item?.action).filter((item: unknown): item is string => typeof item === 'string').join('\n') : '')
             setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
             try {
               const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as OutcomeDraft
@@ -386,7 +386,7 @@ export default function AppointmentWorkspace() {
     setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
     setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
     setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
-    setFollowUps(Array.isArray(latest.payload?.followUps) ? latest.payload.followUps.map((item: { action?: string }) => item?.action).filter((item: unknown): item is string => typeof item === 'string').join('\\n') : '')
+    setFollowUps(Array.isArray(latest.payload?.followUps) ? latest.payload.followUps.map((item: { action?: string }) => item?.action).filter((item: unknown): item is string => typeof item === 'string').join('\n') : '')
     setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
 
     const [draftResult, proposalResult] = await Promise.allSettled([
