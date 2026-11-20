@@ -1043,9 +1043,22 @@ export function LCRCurrentUnderstanding() {
         }));
       }
     } catch (cause) {
+      const status = cause && typeof cause === "object" && "status" in cause &&
+        typeof (cause as { status?: unknown }).status === "number"
+        ? (cause as { status: number }).status
+        : null;
+      const message = status === 401 || status === 403
+        ? "Your care record session needs to be refreshed. Reopen your record and try again."
+        : status === 404
+          ? "This possible change is no longer available in this care record. Refresh your care history."
+          : status === 409
+            ? "This possible change has already been updated. Refresh your care history and review the latest information."
+            : status === 422
+              ? "The review was not accepted. Check the saved information and any note you entered, then try again."
+              : "We couldn’t confirm whether your review was saved. Refresh your care history before trying again. If the review appears there, you do not need to submit it again.";
       setConfirmationError((previous) => ({
         ...previous,
-        [change.id]: "Confirmation could not be saved.",
+        [change.id]: message,
       }));
     } finally {
       setConfirmationLoadingId(null);
