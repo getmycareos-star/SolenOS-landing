@@ -87,7 +87,7 @@ export function EarlyAccessConsentForm({
       // has confirmed the required acknowledgement.
       onConsentDone?.();
       if (continueHref) window.location.assign(continueHref);
-    } catch (cause) {
+    } catch {
       setError(caregiverSafeErrorMessage());
     } finally {
       setSubmitting(false);
