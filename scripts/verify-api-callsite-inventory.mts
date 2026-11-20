@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import ts from "typescript";
+import * as ts from "typescript";
 
 const root = process.cwd();
 const sourceRoot = join(root, "src");
