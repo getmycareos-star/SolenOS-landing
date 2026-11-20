@@ -389,6 +389,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
           }, 5_000);
         }
         if (result.synced === 0) return;
+        window.dispatchEvent(new Event("careRecordUpdated"));
 
         const response = await fetch(
           apiUrl(`/api/situation?care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=0`),
@@ -432,7 +433,6 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
             readbackVerified: true,
           });
         }
-        window.dispatchEvent(new Event("careRecordUpdated"));
       } catch {
         // The encrypted queue retains the original payload and retry key.
       } finally {
