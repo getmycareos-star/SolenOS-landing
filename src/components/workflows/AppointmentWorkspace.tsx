@@ -201,7 +201,7 @@ export default function AppointmentWorkspace() {
           setBrief(briefResult.value)
           const nextAppointment = selectNextAppointment(briefResult.value)
           selectedAppointmentId = nextAppointment?.source_id || null
-          if (selectedAppointmentId) setAppointmentId(selectedAppointmentId)
+          setAppointmentId(selectedAppointmentId || '')
         } else {
           setError('Your visit summary could not be loaded. Your care record has not been changed.')
         }
@@ -239,6 +239,11 @@ export default function AppointmentWorkspace() {
             } catch {
               if (!cancelled) setOutcome(null)
             }
+          } else if (!cancelled) {
+            setRecord(null)
+            setOutcome(null)
+            setOutcomeProposals([])
+            setNote('')
           }
         } else {
           setError('Saved appointment information could not be loaded. Your care record has not been changed.')
