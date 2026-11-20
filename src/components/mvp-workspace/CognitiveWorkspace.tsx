@@ -456,7 +456,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
           idempotency_key: ingestionKey,
           payload: writePayload,
         });
-      } catch (queueError) {
+      } catch {
         // Online writes can still proceed when this browser cannot provide
         // encrypted offline storage. Offline writes cannot be claimed as saved.
         if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -600,6 +600,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       // that was just created. A later browser session can then restore it from
       // the durable record rather than depending on local component state.
       setLastSharedDisplay(sharedDisplay);
+      setSituationSubmissionKey(null);
       setRawInput("");
       setDocuments([]);
       setSavedEventReceipt(verifiedReceipt);
