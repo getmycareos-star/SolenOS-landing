@@ -70,6 +70,8 @@ assert.ok(component.includes("brief.appointment_context_status?.code === 'cancel
 assert.ok(component.includes("brief.appointment_context_status?.code === 'rescheduled'"), 'rescheduled appointments must be distinguishable');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'occurred'"), 'occurred appointments must be distinguishable');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'overdue'"), 'past appointment dates must not be treated as proof of attendance');
+assert.ok(component.includes('appointment_recorded_events'), 'caregiver-recorded visits and clinic discussions must be recognised from existing care history');
+assert.ok(component.includes("brief.appointment_context_status?.code === 'visit_recorded'"), 'recorded visit events must not be represented as external bookings');
 assert.ok(component.includes("updateAppointmentLifecycle('completed')"), 'caregiver confirmation must be required before an overdue appointment is marked as occurred');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'retrieval_failed'" ) || component.includes("brief.lcr_retrieval_status?.status === 'failed'"), 'technical retrieval failures must not appear as empty history');
 assert.ok(component.includes('professionalStatement') && component.includes('recordedDecisions') && component.includes('recordedInstructions') && component.includes('unansweredQuestions'), 'optional after-visit capture must preserve separate professional statements, decisions, instructions and unanswered questions');
