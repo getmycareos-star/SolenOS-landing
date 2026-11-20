@@ -843,6 +843,7 @@ function CategoryIcon({ category }: { category: HistoryCategory }) {
 export function HistoryDrawer() {
   const open = true;
   const [records, setRecords] = useState<HistoryRecord[]>([]);
+  const recordsRef = useRef<HistoryRecord[]>([]);
   const loadedPersonIdRef = useRef<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -887,6 +888,7 @@ export function HistoryDrawer() {
       }
       requestPersonId = session.person.id;
       if (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId) {
+        recordsRef.current = [];
         setRecords([]);
         setSelectedId(null);
       }
@@ -1207,9 +1209,10 @@ export function HistoryDrawer() {
       });
 
       // Internal persistence revisions remain in the backend audit history, not the caregiver timeline.
-      const caregiverRecords = nextRecords.filter((record) => record.source_kind !== "lcr-revision");
-      const categoryHasRecords = (category: HistoryCategory) =>
-        caregiverRecords.some((record) => categoryFor(record) === category);
+      const freshRecords = nextRecords.filter((record) => record.source_kind !== "lcr-revision");
+      const previousRecords = recordsRef.current.filter((record) => record.person_id === session.person.id);
+      const categoryHasRecords = (items: HistoryRecord[], category: HistoryStatusCategory) =>
+        items.some((record) => categoryFor(record) === category);
       const warningMatches = (category: HistoryStatusCategory) => {
         const allWarnings = warnings.join(" ").toLowerCase();
         if (category === "daily-care") return /event history|saved care events|event history could not be verified/.test(allWarnings);
@@ -1222,11 +1225,26 @@ export function HistoryDrawer() {
       };
       const nextStatuses = Object.fromEntries(HISTORY_STATUS_CATEGORIES.map((category) => {
         if (warningMatches(category)) {
-          return [category, categoryHasRecords(category) ? "partial" : "failed"];
+          if (categoryHasRecords(freshRecords, category)) return [category, "partial"];
+          if (category !== "handoff" || !consentRequiredForHandoffs) {
+            if (categoryHasRecords(previousRecords, category)) return [category, "stale"];
+          }
+          return [category, "failed"];
         }
         if (category === "handoff" && consentRequiredForHandoffs) return [category, "partial"];
-        return [category, categoryHasRecords(category) ? "complete" : "empty"];
+        return [category, categoryHasRecords(freshRecords, category) ? "complete" : "empty"];
       })) as Record<HistoryStatusCategory, HistoryLoadStatus>;
+      const retainedRecords = previousRecords.filter((record) => {
+        const category = categoryFor(record);
+        const status = nextStatuses[category as HistoryStatusCategory];
+        return status === "stale" || status === "partial";
+      });
+      const mergedRecordsById = new Map<string, HistoryRecord>();
+      for (const record of [...retainedRecords, ...freshRecords]) {
+        mergedRecordsById.set(record.source_kind + ":" + record.id, record);
+      }
+      const caregiverRecords = [...mergedRecordsById.values()];
+      recordsRef.current = caregiverRecords;
       setRecords(caregiverRecords);
       setSourceStatuses(nextStatuses);
       setSourceWarnings(warnings);
@@ -1243,6 +1261,7 @@ export function HistoryDrawer() {
       const message = cause instanceof Error ? cause.message : "";
       const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
       if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
+        recordsRef.current = [];
         setRecords([]);
         setSelectedId(null);
         loadedPersonIdRef.current = null;
