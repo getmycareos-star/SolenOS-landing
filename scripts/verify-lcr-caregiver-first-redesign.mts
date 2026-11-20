@@ -183,9 +183,10 @@ assert.match(historyDrawer, /collapseDuplicateDailyCaptureWrappers/, "recent his
 assert.ok(historyDrawer.includes("source_record_ids: group.map"), "grouped history keeps the IDs of every original source event");
 
 assert.match(currentUnderstanding, /caregiverReadableCaptureText\(value\)/, "the Living Care Record uses the shared readable source formatter");
-assert.match(currentUnderstanding, /source_evidence: ChangeSourceEvidence\[\]/, "change detail includes original saved source records");
-assert.match(currentUnderstanding, /observations: ChangeObservationEvidence\[\]/, "change detail includes source-linked observations");
+assert.match(currentUnderstanding, /source_evidence\?: ChangeSourceEvidence\[\]/, "change detail includes original saved source records");
+assert.match(currentUnderstanding, /observations\?: ChangeObservationEvidence\[\]/, "change detail includes source-linked observations");
 assert.match(currentUnderstanding, /caregiverReadableCaptureText\(source\.source_text\)/, "original source text is rendered in caregiver language");
+assert.match(currentUnderstanding, /Array\.isArray\(result\.source_evidence\) \? result\.source_evidence : \[\]/, "the caregiver UI remains compatible with a backend that has not yet deployed the additional source detail");
 assert.match(currentUnderstanding, /changeEvidence\[change\.id\].*source_evidence\.map/, "supporting source records are visible in the change review");
 assert.match(currentUnderstanding, /const refreshWholeRecord = useCallback/, "the main refresh action runs care reassessment and reloads the record");
 assert.match(currentUnderstanding, /\}, \[refreshSituationAssessment, load\]\);/, "whole-record refresh callback has stable dependencies");
