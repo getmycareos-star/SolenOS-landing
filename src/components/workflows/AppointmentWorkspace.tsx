@@ -163,7 +163,7 @@ const selectNextAppointment = (brief: PreparationBrief) => {
   if (brief.next_appointment) return brief.next_appointment
   const recorded = [...brief.appointments]
   const upcoming = recorded
-    .filter(item => ['scheduled', 'upcoming', 'today', 'rescheduled', 'date_unknown'].includes(item.status.toLowerCase()))
+     .filter(item => ['scheduled', 'upcoming', 'today', 'rescheduled', 'date_unknown', 'overdue'].includes(item.status.toLowerCase()))
     .sort((a, b) => {
       const aTime = a.scheduled_at ? Date.parse(a.scheduled_at) : Number.MAX_SAFE_INTEGER
       const bTime = b.scheduled_at ? Date.parse(b.scheduled_at) : Number.MAX_SAFE_INTEGER
@@ -500,7 +500,7 @@ export default function AppointmentWorkspace() {
 
   const retryDocumentLink = async () => linkDocumentToAppointment()
 
-  const updateAppointmentLifecycle = async (status: 'cancelled' | 'rescheduled') => {
+  const updateAppointmentLifecycle = async (status: 'completed' | 'cancelled' | 'rescheduled') => {
     if (!appointmentId) return
     setProposalBusy(true)
     setError('')
@@ -513,9 +513,11 @@ export default function AppointmentWorkspace() {
       await patchJSON('/appointments/' + encodeURIComponent(appointmentId) + '/lifecycle', body)
       setMessage(status === 'cancelled'
         ? 'The appointment is marked cancelled in the Care Record. No external booking action was taken.'
-        : rescheduleDate
-          ? 'The new date is saved in the Care Record. SolenOS has not booked or confirmed it with the provider.'
-          : 'The appointment is marked rescheduled, but its new date is still unknown.')
+        : status === 'completed'
+          ? 'You confirmed that the visit occurred. The appointment remains a caregiver-recorded event, not an external booking confirmation.'
+          : rescheduleDate
+            ? 'The new date is saved in the Care Record. SolenOS has not booked or confirmed it with the provider.'
+            : 'The appointment is marked rescheduled, but its new date is still unknown.')
       setReloadToken(value => value + 1)
     } catch {
       setError('The appointment status could not be saved. The existing appointment information has not been changed.')
@@ -669,6 +671,7 @@ export default function AppointmentWorkspace() {
               {brief.appointment_context_status?.code === 'cancelled' && <p className="guided-muted" role="status">The recorded appointment is marked cancelled. SolenOS does not treat it as a current booking.</p>}
               {brief.appointment_context_status?.code === 'rescheduled' && <p className="guided-muted" role="status">A rescheduled appointment is recorded. Use only the date currently saved in the Care Record.</p>}
               {brief.appointment_context_status?.code === 'occurred' && <p className="guided-muted" role="status">The available appointment records indicate that a visit has already occurred.</p>}
+              {brief.appointment_context_status?.code === 'overdue' && <p className="guided-muted" role="status">The recorded appointment date has passed, but attendance is not recorded. SolenOS does not assume that the visit happened.</p>}
               {brief.appointment_context_status?.code === 'follow_up_needed' && <p className="guided-muted" role="status">The care record contains appointment-related questions or follow-ups. These indicate work to clarify, not an external booking.</p>}
               {brief.appointment_context_status?.code === 'no_appointment_information' && <p className="guided-muted" role="status">No appointment information was returned from the available sources. This does not prove that no appointment exists.</p>}
               <p className="guided-muted">Prepared from the care information SolenOS could access. You do not need to rewrite information already in your Care Record.</p>
@@ -688,9 +691,10 @@ export default function AppointmentWorkspace() {
                     {brief.contradictions?.length ? <section><h6>Information that needs clarification</h6><ul>{brief.contradictions.slice(0, 2).map(item => <li key={item.source_id}><p>{caregiverSafeAssistantText(item.description) || "Some reports differ"}</p><small>{caregiverStatusLabel(item.resolution_status) || "Review needed"}</small></li>)}</ul></section> : null}
                     {brief.appointment_needs?.length ? <section><h6>Appointment information to clarify</h6><ul>{brief.appointment_needs.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.question) || "An appointment needs attention"}</strong><small>{item.intended_answerer_label ? caregiverSafeAssistantText(item.intended_answerer_label) : "Who can confirm this was not recorded"} · {caregiverStatusLabel(item.priority) || "Priority not available"}</small><p>{caregiverSafeAssistantText(item.necessity_rationale) || "This question was marked as necessary in the Care Record."}</p><small>{caregiverSafeAssistantText(item.interpretation_limit) || "This is not a booked or confirmed visit."}</small></li>)}</ul></section> : null}
                     {brief.previous_appointment && <section><h6>Previous recorded visit</h6><strong>{caregiverSafeAssistantText(brief.previous_appointment.title) || "Appointment"}</strong><p>{brief.previous_appointment.scheduled_at ? new Date(brief.previous_appointment.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(brief.previous_appointment.status) || "Status not available"}</p></section>}
-                    {brief.next_appointment ? <section><h6>{brief.next_appointment.scheduled_at ? 'Next scheduled visit' : 'Appointment information · date unknown'}</h6><strong>{caregiverSafeAssistantText(brief.next_appointment.title) || "Appointment"}</strong><p>{brief.next_appointment.scheduled_at ? new Date(brief.next_appointment.scheduled_at).toLocaleString() : "Date not recorded"}</p>{brief.next_appointment.provider && <small>{caregiverSafeAssistantText(brief.next_appointment.provider)}</small>}{brief.next_appointment.location && <small>{caregiverSafeAssistantText(brief.next_appointment.location)}</small>}
+                    {brief.next_appointment ? <section><h6>{brief.next_appointment.status === 'overdue' ? 'Appointment date passed · attendance not recorded' : brief.next_appointment.scheduled_at ? 'Next scheduled visit' : 'Appointment information · date unknown'}</h6><strong>{caregiverSafeAssistantText(brief.next_appointment.title) || "Appointment"}</strong><p>{brief.next_appointment.scheduled_at ? new Date(brief.next_appointment.scheduled_at).toLocaleString() : "Date not recorded"}</p>{brief.next_appointment.provider && <small>{caregiverSafeAssistantText(brief.next_appointment.provider)}</small>}{brief.next_appointment.location && <small>{caregiverSafeAssistantText(brief.next_appointment.location)}</small>}
                       <details className="guided-optional-capture"><summary>Correct appointment status (optional)</summary>
                         <p className="guided-footnote">Only update this when you know the provider or family changed the visit. This records information in SolenOS; it does not contact the provider.</p>
+                        {brief.next_appointment.status === 'overdue' && <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('completed')}>Confirm the visit occurred</button>}
                         <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('cancelled')}>Mark as cancelled</button>
                         <label className="guided-capture-label">New date, if known
                           <input type="datetime-local" value={rescheduleDate} onChange={event => setRescheduleDate(event.target.value)} />
