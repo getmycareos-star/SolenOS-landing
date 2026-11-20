@@ -223,6 +223,35 @@ export default function AppointmentWorkspace() {
     setOutcome(draft)
   }
 
+  const refreshSavedWorkspace = async () => {
+    await ensureAnonymousSession()
+    const [briefResult, workspaceResult] = await Promise.all([
+      getJSON('/appointment-workspaces/preparation-brief?window_days=90') as Promise<PreparationBrief>,
+      getJSON('/appointment-workspaces') as Promise<{ items?: WorkspaceRecord[] }>,
+    ])
+    setBrief(briefResult)
+    const nextAppointment = briefResult.appointments.find(item => item.status.toLowerCase() === 'scheduled')
+    if (nextAppointment) setAppointmentId(nextAppointment.source_id)
+
+    const latest = workspaceResult.items?.[0] || null
+    setRecord(latest)
+    if (!latest) {
+      setOutcome(null)
+      setOutcomeProposals([])
+      setNote('')
+      return
+    }
+    if (latest.appointment_id) setAppointmentId(latest.appointment_id)
+    setNote(typeof latest.payload?.caregiverReport === 'string' ? latest.payload.caregiverReport : '')
+
+    const [draftResult, proposalResult] = await Promise.allSettled([
+      getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as Promise<OutcomeDraft>,
+      getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-proposals') as Promise<{ items?: OutcomeProposal[] }>,
+    ])
+    setOutcome(draftResult.status === 'fulfilled' ? draftResult.value : null)
+    setOutcomeProposals(proposalResult.status === 'fulfilled' ? proposalResult.value.items || [] : [])
+  }
+
   const prepareOutcomeReview = async () => {
     if (!record) return
     setProposalBusy(true)
@@ -268,6 +297,11 @@ export default function AppointmentWorkspace() {
           ? [...updated, result.corrected_proposal]
           : updated
       })
+      try {
+        await refreshSavedWorkspace()
+      } catch {
+        setError('Your review was saved. Appointment details could not refresh; reopen appointment support to retry.')
+      }
       setMessage(decision === 'accept'
         ? (result.written_to_lcr
             ? result.reconciliation?.stages?.reconciliation === 'committed'
@@ -341,12 +375,10 @@ export default function AppointmentWorkspace() {
       setRecord(saved)
       setSaveRetry(null)
       setMessage('Your note is saved as a caregiver report.')
-      if (stage === 'after') {
-        try {
-          await refreshOutcome(saved.id)
-        } catch {
-          setError('Your note was saved. The outcome view could not refresh; use Refresh outcome to retry.')
-        }
+      try {
+        await refreshSavedWorkspace()
+      } catch {
+        setError('Your note was saved. Appointment details could not refresh; open appointment support again to retry.')
       }
     } catch (cause) {
       setError('Your note could not be saved. Check whether it appears before trying again.')
