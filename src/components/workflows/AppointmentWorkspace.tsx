@@ -283,8 +283,19 @@ export default function AppointmentWorkspace() {
   }, [open, reloadToken])
 
   const refreshOutcome = async (recordId: string) => {
-    const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft') as OutcomeDraft
-    setOutcome(draft)
+    setError('')
+    setMessage('')
+    const [draftResult, proposalResult] = await Promise.allSettled([
+      getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft') as Promise<OutcomeDraft>,
+      getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-proposals') as Promise<{ items?: OutcomeProposal[] }>,
+    ])
+    if (draftResult.status === 'fulfilled') setOutcome(draftResult.value)
+    if (proposalResult.status === 'fulfilled') setOutcomeProposals(proposalResult.value.items || [])
+    if (draftResult.status === 'rejected' || proposalResult.status === 'rejected') {
+      setError('Saved appointment information could not be fully refreshed. Your saved notes have not been changed. Try again.')
+      return
+    }
+    setMessage('Appointment information refreshed from your saved records.')
   }
 
   const refreshSavedWorkspace = async () => {
