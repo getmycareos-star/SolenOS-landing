@@ -61,7 +61,7 @@ const newFollowUpId = () => typeof crypto !== 'undefined' && 'randomUUID' in cry
 const emptyFollowUp = (): FollowUp => ({ id: newFollowUpId(), action: '', owner: '', due: '', status: 'Open' })
 
 export default function DetailedAppointmentWorkspace() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [recordId, setRecordId] = useState<string | null>(null)
   const [recordVersion, setRecordVersion] = useState(0)
   const [loadingRecord, setLoadingRecord] = useState(false)
@@ -110,6 +110,14 @@ export default function DetailedAppointmentWorkspace() {
     void (async () => {
       try {
         await ensureAnonymousSession()
+        // Prepare a workspace only for an appointment that already exists in
+        // this person's care record. This is an internal continuity workspace,
+        // never an external booking or confirmation.
+        const ensured = await postJSON('/appointment-workspaces/ensure-upcoming', {}) as {
+          created?: boolean
+          reason?: string
+          workspace?: { id: string; appointment_id?: string | null }
+        }
         try {
           const brief = await getJSON('/appointment-workspaces/preparation-brief?window_days=90') as PreparationBrief
           if (!cancelled) setLcrBrief(brief)
@@ -117,13 +125,19 @@ export default function DetailedAppointmentWorkspace() {
         } catch (error) {
           if (!cancelled) {
             setLcrBrief(null)
-            setBriefError('Saved care information could not be loaded. Please try again.')
+            setBriefError('Saved care information could not be loaded. Please try again. This does not mean there is no care history.')
           }
         }
-        const response = await getJSON('/appointment-workspaces') as { items?: Array<{ id: string }> }
-        const first = response.items?.[0]
-        if (!first || cancelled) return
-        const record = await getJSON('/appointment-workspaces/' + encodeURIComponent(first.id)) as {
+        const response = await getJSON('/appointment-workspaces') as { items?: Array<{ id: string; appointment_id?: string | null }> }
+        const preparedId = ensured.workspace?.id
+        const preparedAppointmentId = ensured.workspace?.appointment_id
+        const selected = preparedId
+          ? response.items?.find(item => item.id === preparedId)
+          : preparedAppointmentId
+            ? response.items?.find(item => item.appointment_id === preparedAppointmentId)
+            : response.items?.[0]
+        if (!selected || cancelled) return
+        const record = await getJSON('/appointment-workspaces/' + encodeURIComponent(selected.id)) as {
           id: string; version_number: number; status: string; payload: Record<string, unknown>
         }
         if (cancelled) return
