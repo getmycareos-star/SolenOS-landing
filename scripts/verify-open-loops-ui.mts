@@ -49,6 +49,8 @@ assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an u
 assert.ok(page.includes("SolenOS checks the care information you have saved and keeps follow-ups easy to find"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
 
+assert.match(careContinuity, /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/, "LCR important changes must show evidence status and incomplete history");
+assert.match(careContinuity, /item\.linked_follow_up_outcome_status[\s\S]*?caregiverStatusLabel/, "LCR important changes must show the linked follow-up outcome");
 assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
 assert.match(careContinuity, /These are changes or things that are still unclear in the saved care history[\s\S]*?not automatically tasks[\s\S]*?Follow-ups screen/, "monitoring signals must remain distinct from the follow-up workflow");
 assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
