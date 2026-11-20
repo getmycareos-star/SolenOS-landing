@@ -508,7 +508,20 @@ type CurrentCareProjection = {
   has_more: boolean;
   outcomes?: CurrentCareItem[];
   outcomes_has_more?: boolean;
-  source_coverage?: Record<string, { status?: string; returned_count?: number; has_more?: boolean }>;
+  source_coverage?: Record<string, {
+    status?: string;
+    returned_count?: number;
+    candidate_count?: number;
+    has_more?: boolean;
+    limit?: number;
+    offset?: number;
+    next_offset?: number | null;
+    returned_history_complete?: boolean;
+    error_code?: string | null;
+    required?: boolean;
+  }>;
+  requested_sources?: string[];
+  failed_sources?: string[];
   notice: string;
 };
 
@@ -714,6 +727,7 @@ export function LCRCurrentUnderstanding() {
   const [actionHistory, setActionHistory] = useState<Record<string, RegisteredActionAudit[]>>({});
   const [actionHistoryErrors, setActionHistoryErrors] = useState<Record<string, string>>({});
   const [projection, setProjection] = useState<CurrentCareProjection | null>(null);
+  const [sourceRetrying, setSourceRetrying] = useState<string | null>(null);
   const [evidenceReviewOpen, setEvidenceReviewOpen] = useState(false);
   const [claimAssessmentOpen, setClaimAssessmentOpen] = useState(false);
   const [conflictReviewOpen, setConflictReviewOpen] = useState(false);
