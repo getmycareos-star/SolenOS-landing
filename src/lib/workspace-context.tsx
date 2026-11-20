@@ -34,6 +34,7 @@ export type WorkspaceContextValue = {
   language: string;
   hydrated: boolean;
   entryReady: boolean;
+  recordLoadError: string | null;
   opsMode: boolean;
   setOpsMode: (mode: boolean) => void;
   updateRuntime: (updater: (prev: UiRuntimeState) => UiRuntimeState) => void;
@@ -73,6 +74,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
   const [language, setLanguage] = useState("en");
   const [hydrated, setHydrated] = useState(false);
   const [entryReady, setEntryReady] = useState(false);
+  const [recordLoadError, setRecordLoadError] = useState<string | null>(null);
   const [opsMode, setOpsMode] = useState(false);
 
   useEffect(() => {
@@ -154,11 +156,17 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         }
         return fetch(
           `/api/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
-          { headers: { Authorization: `Bearer ${session.access_token}` } },
-        );
+          {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            cache: "no-store",
+          },
+        ).then((response) => {
+          if (!response.ok) throw new Error("care_record_read_failed");
+          return response.json();
+        });
       })
-      .then((r) => (r && r.ok ? r.json() : null))
       .then((data) => {
+        setRecordLoadError(null);
         const fromServer = openSituationsFromSituationApi(data);
         const hasDurableServerReality =
           fromServer.length > 0 ||
@@ -205,6 +213,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         setEntryReady(true);
       })
       .catch(() => {
+        setRecordLoadError("Your care information isn't available right now. Check your connection and try again.");
         if (!hasEnteredCareRecord() && localSituations.length === 0 && !opsKey) {
           router.replace("/start");
           return;
@@ -306,13 +315,14 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       language,
       hydrated,
       entryReady,
+      recordLoadError,
       opsMode,
       setOpsMode,
       updateRuntime,
       handleSituationComplete,
       handlePauseActive,
     }),
-    [runtime, careKey, sessionId, telemetryUserId, language, hydrated, entryReady, opsMode, updateRuntime, handleSituationComplete, handlePauseActive],
+    [runtime, careKey, sessionId, telemetryUserId, language, hydrated, entryReady, recordLoadError, opsMode, updateRuntime, handleSituationComplete, handlePauseActive],
   );
 
   return (
