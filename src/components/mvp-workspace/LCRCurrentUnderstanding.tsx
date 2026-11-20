@@ -1996,7 +1996,7 @@ export function LCRCurrentUnderstanding() {
                 </li>
               ))}
             </ul>
-            {projection.outcomes_has_more && <p>More saved outcomes are available in your care history.</p>}
+            {projection.outcomes_has_more && <p>More saved care history is available in your full care history.</p>}
           </>
         ) : projection?.missing_optional_sources?.some((source) => ["decision_outcomes", "action_outcomes", "follow_up_links"].includes(source)) ? (
           <p>Some saved outcomes are not available right now. Try refreshing later.</p>
