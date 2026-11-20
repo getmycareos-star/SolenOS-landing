@@ -1,0 +1,368 @@
+"use client";
+
+const DATABASE_NAME = "solenos-durable-write-queue";
+const DATABASE_VERSION = 1;
+const WRITE_STORE = "writes";
+const KEY_STORE = "keys";
+const MAX_ATTEMPTS = 8;
+const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const SENDING_LEASE_MS = 2 * 60 * 1000;
+const RETRY_DELAYS_MS = [1_000, 5_000, 30_000, 120_000, 600_000, 1_800_000];
+
+type QueueStatus = "pending" | "sending" | "blocked" | "failed_recoverable";
+
+type StoredWrite = {
+  id: string;
+  person_id: string;
+  caregiver_id: string;
+  endpoint: string;
+  idempotency_key: string;
+  iv: number[];
+  ciphertext: number[];
+  status: QueueStatus;
+  attempts: number;
+  next_retry_at: number | null;
+  created_at: number;
+  updated_at: number;
+  last_error: string | null;
+};
+
+type DeviceKeyRecord = { id: "device"; key: CryptoKey };
+
+export type DurableWriteSummary = {
+  pending: number;
+  blocked: number;
+  failed_recoverable: number;
+};
+
+export type DurableWriteSyncResult = {
+  synced: number;
+  remaining: number;
+  blocked: number;
+};
+
+type QueueInput = {
+  person_id: string;
+  caregiver_id: string;
+  endpoint: string;
+  idempotency_key: string;
+  payload: unknown;
+};
+
+type SendWrite = (endpoint: string, payload: unknown) => Promise<unknown>;
+
+let databasePromise: Promise<IDBDatabase> | null = null;
+let syncPromise: Promise<DurableWriteSyncResult> | null = null;
+
+function ensureBrowserStorage(): void {
+  if (typeof window === "undefined" || !window.indexedDB || !window.crypto?.subtle) {
+    throw new Error("Encrypted offline storage is not available in this browser.");
+  }
+}
+
+function openDatabase(): Promise<IDBDatabase> {
+  ensureBrowserStorage();
+  if (databasePromise) return databasePromise;
+  databasePromise = new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(WRITE_STORE)) {
+        db.createObjectStore(WRITE_STORE, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(KEY_STORE)) {
+        db.createObjectStore(KEY_STORE, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => {
+      databasePromise = null;
+      reject(request.error ?? new Error("Could not open encrypted offline storage."));
+    };
+    request.onblocked = () => reject(new Error("Offline storage is busy in another tab."));
+  });
+  return databasePromise;
+}
+
+function requestResult<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error("Offline storage request failed."));
+  });
+}
+
+function transactionDone(transaction: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error ?? new Error("Offline storage transaction was aborted."));
+    transaction.onerror = () => reject(transaction.error ?? new Error("Offline storage transaction failed."));
+  });
+}
+
+async function getDeviceKey(db: IDBDatabase): Promise<CryptoKey> {
+  const readTransaction = db.transaction(KEY_STORE, "readonly");
+  const existing = await requestResult(
+    readTransaction.objectStore(KEY_STORE).get("device") as IDBRequest<DeviceKeyRecord | undefined>,
+  );
+  await transactionDone(readTransaction);
+  if (existing?.key) return existing.key;
+
+  const key = await window.crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+  const writeTransaction = db.transaction(KEY_STORE, "readwrite");
+  writeTransaction.objectStore(KEY_STORE).put({ id: "device", key } satisfies DeviceKeyRecord);
+  await transactionDone(writeTransaction);
+  return key;
+}
+
+async function encryptPayload(db: IDBDatabase, payload: unknown): Promise<{ iv: number[]; ciphertext: number[] }> {
+  const key = await getDeviceKey(db);
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(JSON.stringify(payload));
+  const ciphertext = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
+  return {
+    iv: Array.from(iv),
+    ciphertext: Array.from(new Uint8Array(ciphertext)),
+  };
+}
+
+async function decryptPayload(db: IDBDatabase, record: StoredWrite): Promise<unknown> {
+  const key = await getDeviceKey(db);
+  const decrypted = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: new Uint8Array(record.iv) },
+    key,
+    new Uint8Array(record.ciphertext),
+  );
+  return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+function dispatchQueueUpdated(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("solenos:offline-queue-updated"));
+  }
+}
+
+function statusFromError(error: unknown): { blocked: boolean; message: string } {
+  const status = typeof error === "object" && error !== null && "status" in error
+    ? Number((error as { status?: unknown }).status)
+    : null;
+  if (status === 400 || status === 404 || status === 409 || status === 422) {
+    return { blocked: true, message: `The server needs this update reviewed (HTTP ${status}).` };
+  }
+  if (status === 401 || status === 403) {
+    return { blocked: true, message: "This care session needs to be verified before the update can sync." };
+  }
+  return { blocked: false, message: "The server could not confirm this update yet." };
+}
+
+async function getAllWrites(db: IDBDatabase): Promise<StoredWrite[]> {
+  const transaction = db.transaction(WRITE_STORE, "readonly");
+  const rows = await requestResult(transaction.objectStore(WRITE_STORE).getAll() as IDBRequest<StoredWrite[]>);
+  await transactionDone(transaction);
+  return rows;
+}
+
+async function putWrite(db: IDBDatabase, record: StoredWrite): Promise<void> {
+  const transaction = db.transaction(WRITE_STORE, "readwrite");
+  transaction.objectStore(WRITE_STORE).put(record);
+  await transactionDone(transaction);
+}
+
+async function deleteWrite(db: IDBDatabase, id: string): Promise<void> {
+  const transaction = db.transaction(WRITE_STORE, "readwrite");
+  transaction.objectStore(WRITE_STORE).delete(id);
+  await transactionDone(transaction);
+}
+
+async function readWrite(db: IDBDatabase, id: string): Promise<StoredWrite | undefined> {
+  const transaction = db.transaction(WRITE_STORE, "readonly");
+  const result = await requestResult(
+    transaction.objectStore(WRITE_STORE).get(id) as IDBRequest<StoredWrite | undefined>,
+  );
+  await transactionDone(transaction);
+  return result;
+}
+
+function isEligible(record: StoredWrite, now: number): boolean {
+  if (record.status === "blocked" || record.status === "failed_recoverable") return false;
+  if (record.status === "sending") return now - record.updated_at >= SENDING_LEASE_MS;
+  return record.next_retry_at === null || record.next_retry_at <= now;
+}
+
+export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
+  if (!input.person_id || !input.caregiver_id || !input.idempotency_key || !input.endpoint.startsWith("/")) {
+    throw new Error("A verified care identity and stable request key are required for offline storage.");
+  }
+  const db = await openDatabase();
+  const id = `${input.endpoint}:${input.idempotency_key}`;
+  const existing = await readWrite(db, id);
+  const encrypted = await encryptPayload(db, input.payload);
+  const now = Date.now();
+
+  if (existing) {
+    const existingPayload = await decryptPayload(db, existing);
+    if (
+      existing.person_id !== input.person_id ||
+      existing.caregiver_id !== input.caregiver_id ||
+      JSON.stringify(existingPayload) !== JSON.stringify(input.payload)
+    ) {
+      throw new Error("This request key is already assigned to a different offline update.");
+    }
+    return id;
+  }
+
+  await putWrite(db, {
+    id,
+    person_id: input.person_id,
+    caregiver_id: input.caregiver_id,
+    endpoint: input.endpoint,
+    idempotency_key: input.idempotency_key,
+    ...encrypted,
+    status: "pending",
+    attempts: 0,
+    next_retry_at: now,
+    created_at: now,
+    updated_at: now,
+    last_error: null,
+  });
+  dispatchQueueUpdated();
+  return id;
+}
+
+export async function completeDurableWrite(id: string): Promise<void> {
+  const db = await openDatabase();
+  await deleteWrite(db, id);
+  dispatchQueueUpdated();
+}
+
+export async function markDurableWritePending(id: string, error: unknown): Promise<void> {
+  const db = await openDatabase();
+  const record = await readWrite(db, id);
+  if (!record) return;
+  const classification = statusFromError(error);
+  const attempts = record.attempts + 1;
+  const exhausted = attempts >= MAX_ATTEMPTS;
+  const status: QueueStatus = classification.blocked
+    ? "blocked"
+    : exhausted ? "failed_recoverable" : "pending";
+  const delay = RETRY_DELAYS_MS[Math.min(attempts - 1, RETRY_DELAYS_MS.length - 1)] ?? 1_800_000;
+  await putWrite(db, {
+    ...record,
+    status,
+    attempts,
+    next_retry_at: status === "pending" ? Date.now() + delay : null,
+    updated_at: Date.now(),
+    last_error: classification.message,
+  });
+  dispatchQueueUpdated();
+}
+
+export async function deliverDurableWrite<T>(
+  id: string,
+  send: SendWrite,
+): Promise<T> {
+  const db = await openDatabase();
+  const record = await readWrite(db, id);
+  if (!record) throw new Error("The pending update is no longer in the local queue.");
+
+  await putWrite(db, { ...record, status: "sending", updated_at: Date.now() });
+  try {
+    const payload = await decryptPayload(db, record);
+    const result = await send(record.endpoint, payload);
+    await deleteWrite(db, id);
+    dispatchQueueUpdated();
+    return result as T;
+  } catch (error) {
+    await markDurableWritePending(id, error);
+    throw error;
+  }
+}
+
+export async function getDurableWriteSummary(
+  personId: string,
+  caregiverId: string,
+): Promise<DurableWriteSummary> {
+  const db = await openDatabase();
+  const now = Date.now();
+  const rows = await getAllWrites(db);
+  const matching = rows.filter((row) =>
+    row.person_id === personId &&
+    row.caregiver_id === caregiverId &&
+    now - row.created_at <= RETENTION_MS,
+  );
+  return {
+    pending: matching.filter((row) => row.status === "pending" || row.status === "sending").length,
+    blocked: matching.filter((row) => row.status === "blocked").length,
+    failed_recoverable: matching.filter((row) => row.status === "failed_recoverable").length,
+  };
+}
+
+export async function retryBlockedDurableWrites(
+  personId: string,
+  caregiverId: string,
+): Promise<void> {
+  const db = await openDatabase();
+  const rows = await getAllWrites(db);
+  for (const row of rows) {
+    if (
+      row.person_id === personId &&
+      row.caregiver_id === caregiverId &&
+      (row.status === "blocked" || row.status === "failed_recoverable")
+    ) {
+      await putWrite(db, {
+        ...row,
+        status: "pending",
+        attempts: 0,
+        next_retry_at: Date.now(),
+        updated_at: Date.now(),
+        last_error: null,
+      });
+    }
+  }
+  dispatchQueueUpdated();
+}
+
+export async function syncDurableWrites(input: {
+  personId: string;
+  caregiverId: string;
+  send: SendWrite;
+}): Promise<DurableWriteSyncResult> {
+  if (syncPromise) return syncPromise;
+  syncPromise = (async () => {
+    const db = await openDatabase();
+    const now = Date.now();
+    const rows = await getAllWrites(db);
+    let synced = 0;
+
+    for (const row of rows) {
+      if (now - row.created_at > RETENTION_MS) {
+        await deleteWrite(db, row.id);
+        continue;
+      }
+      if (row.person_id !== input.personId || row.caregiver_id !== input.caregiverId) continue;
+      if (!isEligible(row, now)) continue;
+      try {
+        await deliverDurableWrite(row.id, input.send);
+        synced += 1;
+      } catch {
+        // The queue retains retryable and blocked records with the same idempotency key.
+      }
+    }
+
+    const remainingRows = await getAllWrites(db);
+    const matching = remainingRows.filter((row) =>
+      row.person_id === input.personId && row.caregiver_id === input.caregiverId,
+    );
+    return {
+      synced,
+      remaining: matching.filter((row) => row.status === "pending" || row.status === "sending" || row.status === "failed_recoverable").length,
+      blocked: matching.filter((row) => row.status === "blocked").length,
+    };
+  })().finally(() => {
+    syncPromise = null;
+  });
+  return syncPromise;
+}
