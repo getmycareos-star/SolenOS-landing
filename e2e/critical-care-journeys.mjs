@@ -2506,7 +2506,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
   );
   assert.equal(invitedNetworkState.status, 200, JSON.stringify(invitedNetworkState.payload));
   const invitedSummary = await request(
-    `/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}`,
+    `/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}?person_id=${encodeURIComponent(identity.personId)}`,
     { token: accepted.payload.access_token },
   );
   assert.equal(invitedSummary.status, 200, JSON.stringify(invitedSummary.payload));
@@ -2516,7 +2516,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
   );
   assert.equal(crossRecordNetwork.status, 403,
     "a session-derived summary must still reject a caller-selected different care recipient");
-  const privateSummary = await request(`/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}`, { token: identity.token });
+  const privateSummary = await request(`/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}?person_id=${encodeURIComponent(identity.personId)}`, { token: identity.token });
   assert.equal(privateSummary.status, 200, JSON.stringify(privateSummary.payload));
   assert.equal(privateSummary.payload.perspective_conflicts.length, 0,
     "private caregiver perspectives must not create or expose network conflicts");
@@ -2533,7 +2533,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
     { token: identity.token, method: "POST", body: {} },
   );
   assert.equal(primaryPromotion.status, 200, JSON.stringify(primaryPromotion.payload));
-  const oneSharedSummary = await request(`/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}`, { token: identity.token });
+  const oneSharedSummary = await request(`/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}?person_id=${encodeURIComponent(identity.personId)}`, { token: identity.token });
   assert.equal(oneSharedSummary.payload.perspective_conflicts.length, 0,
     "one shared perspective is not enough to establish a cross-caregiver difference");
 
@@ -2542,7 +2542,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
     { token: accepted.payload.access_token, method: "POST", body: {} },
   );
   assert.equal(invitedPromotion.status, 200, JSON.stringify(invitedPromotion.payload));
-  const sharedSummary = await request(`/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}`, { token: identity.token });
+  const sharedSummary = await request(`/api/v1/multi-caregiver-summary/${encodeURIComponent(identity.personId)}?person_id=${encodeURIComponent(identity.personId)}`, { token: identity.token });
   assert.equal(sharedSummary.status, 200, JSON.stringify(sharedSummary.payload));
   assert.equal(sharedSummary.payload.perspective_conflicts.length, 1,
     "the conflict must appear only after both caregivers explicitly share their accounts");
