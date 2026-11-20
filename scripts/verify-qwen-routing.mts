@@ -87,7 +87,12 @@ assert(!read("src/components/mvp-workspace/CognitiveWorkspace.tsx").includes("Qw
   "The LCR capture screen must not include a separate AI assistance panel; contextual interpretation remains available after a saved record receipt.");
 const capture = read("src/components/workflows/StructuredDailyCapture.tsx");
 requireText("src/components/workflows/StructuredDailyCapture.tsx", [
-  "postJSON('/daily/log'",
+  'endpoint: "/daily/log"',
+  "await enqueueDurableWrite({",
+  "await deliverDurableWrite<",
+  'sendQueuedCareWrite("/daily/log", payload)',
+  "if (await hasDurableWrite(queueId))",
+  "capture_idempotency_key: captureIdempotencyKey",
   "qwen_extraction_status",
   "Review suggested details",
   "const [savedEntrySummary, setSavedEntrySummary] = useState('');",
