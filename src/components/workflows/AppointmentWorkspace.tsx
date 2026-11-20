@@ -189,6 +189,15 @@ export default function AppointmentWorkspace() {
     let cancelled = false
     setLoading(true)
     setError('')
+    setMessage('')
+    setBrief(null)
+    setRecord(null)
+    setAppointmentId('')
+    setOutcome(null)
+    setOutcomeProposals([])
+    setNote('')
+    setCorrectionDrafts({})
+    setCorrectionContexts({})
     void (async () => {
       try {
         await ensureAnonymousSession()
@@ -206,7 +215,7 @@ export default function AppointmentWorkspace() {
         } else {
           setError('Your visit summary could not be loaded. Your care record has not been changed.')
         }
-        if (workspaceResult.status === 'fulfilled') {
+        if (workspaceResult.status === 'fulfilled' && briefResult.status === 'fulfilled') {
           const items = workspaceResult.value.items || []
           const latest = selectedAppointmentId
             ? items.find(item => item.appointment_id === selectedAppointmentId) || null
