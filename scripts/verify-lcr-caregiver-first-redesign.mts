@@ -189,6 +189,15 @@ assert.match(currentUnderstanding, /\}, \[load, refreshWholeRecord\]\);/, "care-
 assert.doesNotMatch(currentUnderstanding, /const reassess = useCallback/, "duplicate assessment-only refresh logic is removed");
 assert.match(currentUnderstanding, /await refreshSituationAssessment\(\);\s*await load\(true\);/, "refresh backfills saved details before reloading the caregiver view");
 assert.doesNotMatch(currentUnderstanding, /Scope: selected areas only/, "internal capture scope is not shown in the caregiver record");
+assert.match(evidenceReview, /showInternalSourceChecks = props\?\.showInternalSourceChecks === true/, "technical source checks are opt-in rather than caregiver-default");
+assert.match(evidenceReview, /showInternalSourceChecks && \(/, "internal source checks are hidden from the caregiver view");
+assert.match(evidenceReview, /<summary>Review or correct this information<\/summary>/, "the optional source review form is collapsed until requested");
+assert.match(evidenceReview, /Who shared this information\?/, "source review uses plain caregiver language");
+assert.doesNotMatch(evidenceReview, /How much to rely on this information/, "technical source confidence wording is not exposed");
+assert.match(integrityPanel, /More about your care information/, "care history details use caregiver-facing language");
+assert.doesNotMatch(integrityPanel, /Care Record details|Care details shared with SolenOS/, "internal panel labels are not exposed");
+assert.doesNotMatch(currentUnderstanding, /bounded record view|deterministic state checks/i, "internal assessment terminology is not shown in the caregiver record");
+assert.doesNotMatch(currentUnderstanding, /Compared: Time not recorded.*Time not recorded/, "missing comparison dates are not displayed as a fake date range");
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
