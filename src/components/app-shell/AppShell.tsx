@@ -10,6 +10,7 @@ import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
 import { ensureAnonymousSession, getAnonymousAccessToken, markAnonymousSessionRevokedLocally, revokeAnonymousSession } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
 
@@ -201,7 +202,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             careRecipientName,
           });
         } catch (error) {
-          window.alert(error instanceof Error ? error.message : "The care session could not be opened for sharing.");
+          window.alert(caregiverSafeErrorMessage());
         }
         return;
       }
