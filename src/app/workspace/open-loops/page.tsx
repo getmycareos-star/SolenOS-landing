@@ -128,6 +128,34 @@ async function loadAllOpenLoops(): Promise<OpenLoop[]> {
   throw new Error("The saved follow-up history is larger than the available page limit. No incomplete list was presented as complete.");
 }
 
+async function loadAllLoopRecords<T extends { id: string }>(path: string): Promise<T[]> {
+  const pageSize = 100;
+  const maximumPages = 100;
+  const records: T[] = [];
+  const seenIds = new Set<string>();
+
+  for (let page = 0; page < maximumPages; page += 1) {
+    const response = await getJSON(`${path}${path.includes("?") ? "&" : "?"}limit=${pageSize}&offset=${page * pageSize}`) as unknown;
+    if (!Array.isArray(response)) {
+      throw new Error("The saved follow-up history returned an incomplete page.");
+    }
+    const rows = response as T[];
+    if (rows.some((row) => !row || typeof row.id !== "string" || !row.id)) {
+      throw new Error("The saved follow-up history contained an invalid record.");
+    }
+    for (const row of rows) {
+      if (seenIds.has(row.id)) {
+        throw new Error("The saved follow-up history changed while it was being loaded. Refresh to try again.");
+      }
+      seenIds.add(row.id);
+      records.push(row);
+    }
+    if (rows.length < pageSize) return records;
+  }
+
+  throw new Error("The saved follow-up history is larger than the available page limit. No incomplete history was presented as complete.");
+}
+
 function dateLabel(value?: string | null): string {
   if (!value) return "Date not recorded";
   const date = new Date(value);
@@ -407,13 +435,13 @@ export default function FollowUpsPage() {
   async function loadHistory(loop: OpenLoop) {
     setBusyId(loop.id);
     try {
+      const base = "/open-loops/" + encodeURIComponent(loop.id);
       const [result, occurrenceResult] = await Promise.all([
-        getJSON("/open-loops/" + encodeURIComponent(loop.id) + "/history?limit=100"),
-        getJSON("/open-loops/" + encodeURIComponent(loop.id) + "/occurrences?limit=100"),
+        loadAllLoopRecords<LoopHistoryEvent>(base + "/history"),
+        loadAllLoopRecords<LoopOccurrence>(base + "/occurrences"),
       ]);
-      if (!Array.isArray(result) || !Array.isArray(occurrenceResult)) throw new Error("Follow-up history response was invalid.");
-      setHistoryById((current) => ({ ...current, [loop.id]: result as LoopHistoryEvent[] }));
-      setOccurrencesById((current) => ({ ...current, [loop.id]: occurrenceResult as LoopOccurrence[] }));
+      setHistoryById((current) => ({ ...current, [loop.id]: result }));
+      setOccurrencesById((current) => ({ ...current, [loop.id]: occurrenceResult }));
       setNotice("Previous updates loaded.");
     } catch {
       setError("Previous updates could not be loaded. The saved follow-up itself has not changed.");
