@@ -1425,11 +1425,23 @@ export function HistoryDrawer() {
                   {sourceWarnings.length > 0 && !loading && records.length > 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
-                      <span>The entries that loaded are still shown. Some others may be missing. Try refreshing later.</span>
+                      <span>The entries that loaded are still shown. Some others may be missing. Review the affected sections below.</span>
+                      <ul aria-label="Care history sections with incomplete retrieval">
+                        {sourceWarnings.map((warning, index) => <li key={index}>{warning}</li>)}
+                      </ul>
                     </div>
                   )}
 
                   {error && records.length > 0 && <RecordState kind="error" title="Some care history could not be refreshed" description="Your previously loaded records are still shown. Please try again." onAction={() => void loadHistory(true)} />}
+                  {sourceWarnings.length > 0 && !loading && records.length === 0 && (
+                    <div className="history-source-warning" role="status">
+                      <strong>What could not be loaded</strong>
+                      <ul aria-label="Care history sections with incomplete retrieval">
+                        {sourceWarnings.map((warning, index) => <li key={index}>{warning}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
                   {loading ? (
                     <RecordState kind="loading" title="Loading saved care history" />
                   ) : error && records.length === 0 ? (
