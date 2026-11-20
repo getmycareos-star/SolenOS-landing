@@ -104,10 +104,11 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
 
 async function getDeviceKey(db: IDBDatabase): Promise<CryptoKey> {
   const readTransaction = db.transaction(KEY_STORE, "readonly");
+  const readDone = transactionDone(readTransaction);
   const existing = await requestResult(
     readTransaction.objectStore(KEY_STORE).get("device") as IDBRequest<DeviceKeyRecord | undefined>,
   );
-  await transactionDone(readTransaction);
+  await readDone;
   if (existing?.key) return existing.key;
 
   const key = await window.crypto.subtle.generateKey(
@@ -124,10 +125,11 @@ async function getDeviceKey(db: IDBDatabase): Promise<CryptoKey> {
     // Another tab may have created the non-extractable device key first.
     // Re-read that key rather than overwriting it and orphaning its ciphertext.
     const retryTransaction = db.transaction(KEY_STORE, "readonly");
+    const retryDone = transactionDone(retryTransaction);
     const winner = await requestResult(
       retryTransaction.objectStore(KEY_STORE).get("device") as IDBRequest<DeviceKeyRecord | undefined>,
     );
-    await transactionDone(retryTransaction);
+    await retryDone;
     if (!winner?.key) throw new Error("The encrypted offline-storage key could not be established.");
     return winner.key;
   }
@@ -175,8 +177,9 @@ function statusFromError(error: unknown): { blocked: boolean; message: string } 
 
 async function getAllWrites(db: IDBDatabase): Promise<StoredWrite[]> {
   const transaction = db.transaction(WRITE_STORE, "readonly");
+  const done = transactionDone(transaction);
   const rows = await requestResult(transaction.objectStore(WRITE_STORE).getAll() as IDBRequest<StoredWrite[]>);
-  await transactionDone(transaction);
+  await done;
   return rows;
 }
 
@@ -194,10 +197,11 @@ async function deleteWrite(db: IDBDatabase, id: string): Promise<void> {
 
 async function readWrite(db: IDBDatabase, id: string): Promise<StoredWrite | undefined> {
   const transaction = db.transaction(WRITE_STORE, "readonly");
+  const done = transactionDone(transaction);
   const result = await requestResult(
     transaction.objectStore(WRITE_STORE).get(id) as IDBRequest<StoredWrite | undefined>,
   );
-  await transactionDone(transaction);
+  await done;
   return result;
 }
 
