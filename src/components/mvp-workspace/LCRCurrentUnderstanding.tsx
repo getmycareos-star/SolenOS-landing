@@ -65,6 +65,7 @@ type CurrentCareItem = {
   source_collection: string;
   source_type: string;
   source_label: string;
+  reported_by_caregiver_id?: string | null;
   related_record_type?: string | null;
   related_record_id?: string | null;
   source_context?: {
@@ -1366,7 +1367,7 @@ export function LCRCurrentUnderstanding() {
                   <li key={item.source_collection + ":" + item.id}>
                     <strong>{displayCurrentCareTitle(item)}</strong>
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
-                    <small>{caregiverLabel(item.epistemic_status)} · Shared by {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    <small>{caregiverLabel(item.epistemic_status)} · Shared by {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "you" : "another caregiver") : caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
                     <a className="lcr-text-action" href={`#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View saved record</a>
                   </li>
@@ -2232,7 +2233,7 @@ export function LCRCurrentUnderstanding() {
                       <summary>Care details</summary>
                       <p>{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
 
-                      <small>Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"}</small>
+                      <small>Shared by: {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver") : caregiverSafeAssistantText(item.source_label) || "Not recorded"}</small>
                       {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
                       <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                       {item.evidence_ids?.length > 0 ? (
