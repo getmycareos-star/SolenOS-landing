@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getJSON, patchJSON, getCaregiverId } from '../api/client'
-import { caregiverInformationLabel, caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 type Assertion = {
   id: string
