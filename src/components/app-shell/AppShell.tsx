@@ -9,7 +9,7 @@ import { WORKSPACE_NAVIGATION } from "@/lib/workspace-navigation";
 import { SolenosWordmark } from "@/components/brand";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
-import { ensureAnonymousSession, getAnonymousAccessToken, markAnonymousSessionRevokedLocally, revokeAnonymousSession } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, revokeAnonymousSession } from "@/api/client";
 import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
@@ -194,7 +194,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           const storedSessionId = window.localStorage.getItem("solenos_care_session_id");
           const careSessionId = ensureClientInteractionSessionId(storedSessionId);
           window.localStorage.setItem("solenos_care_session_id", careSessionId);
-          const careRecipientName = window.localStorage.getItem("solenos_care_recipient_display_name")?.trim() || undefined;
+          const careProfile = await getJSON("/care-profile") as { name?: string };
+          const careRecipientName = careProfile.name?.trim() || undefined;
           setSharePanelIntent(action === "download_export" ? "export" : "share");
           setSharePanelContext({
             caregiverId: session.caregiver.id,
