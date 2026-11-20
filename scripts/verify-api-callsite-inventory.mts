@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import * as ts from "typescript";
 
 const root = process.cwd();
@@ -279,7 +279,8 @@ if (openApiUrl) {
   };
 }
 
-console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify({
+const report = {
+  generated_at: new Date().toISOString(),
   callsite_count: sorted.length,
   distinct_method_path_pairs: grouped.size,
   unsupported_dynamic_calls: unsupported.length,
@@ -294,7 +295,13 @@ console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify({
       file, line, helper, dynamic, source_kind: source_kind ?? "browser-api-client",
     })),
   })),
-}, null, 2));
+};
+console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify(report, null, 2));
+const reportPath = process.env.SOLENOS_API_INVENTORY_OUTPUT;
+if (reportPath) {
+  mkdirSync(dirname(reportPath), { recursive: true });
+  writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n", "utf8");
+}
 
 assert.equal(unsupported.length, 0, "Every API helper call must expose a statically auditable path expression.");
 assert.ok(sorted.length > 0, "No frontend API helper calls were discovered.");
