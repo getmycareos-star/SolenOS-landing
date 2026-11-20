@@ -14,7 +14,7 @@ type PreparationBrief = {
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
   next_appointment?: { source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string } | null
   documents?: Array<{ source_id: string; filename?: string | null; extracted_text?: string | null; extraction_status?: string | null; recorded_at?: string | null; epistemic_status?: string | null; interpretation_limit?: string }>
-  open_loops?: Array<{ source_id: string; title: string; description?: string | null; status: string; priority?: string | null; owner_label?: string | null; deadline_at?: string | null; source_type?: string | null; interpretation_limit?: string }>
+  open_loops?: Array<{ source_id: string; appointment_id?: string | null; source_workspace_id?: string | null; title: string; description?: string | null; status: string; priority?: string | null; owner_label?: string | null; deadline_at?: string | null; source_type?: string | null; interpretation_limit?: string }>
   prior_decisions?: Array<{ id: string; title?: string | null; decision_text?: string | null; decision_status?: string | null; decided_at?: string | null; context?: string | null }>
   decision_outcomes?: Array<{ id: string; decision_id?: string | null; outcome_status?: string | null; description?: string | null; observed_at?: string | null }>
   assertions?: Array<{ source_id: string; field: string; asserted_value: string; assertion_kind: string; epistemic_state: string; assertion_status: string; source_label: string; source_text?: string | null; event_time_text?: string | null; observed_at?: string | null; recorded_at?: string | null; evidence_ids: string[]; interpretation_limit: string }>
@@ -182,6 +182,7 @@ export default function AppointmentWorkspace() {
   const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
     if (!open) return
@@ -209,7 +210,7 @@ export default function AppointmentWorkspace() {
           const items = workspaceResult.value.items || []
           const latest = selectedAppointmentId
             ? items.find(item => item.appointment_id === selectedAppointmentId) || null
-            : items[0] || null
+            : items.find(item => !item.appointment_id) || null
           if (latest) {
             setRecord(latest)
             if (latest.appointment_id) setAppointmentId(latest.appointment_id)
@@ -237,7 +238,10 @@ export default function AppointmentWorkspace() {
                 }
               }
             } catch {
-              if (!cancelled) setOutcome(null)
+              if (!cancelled) {
+                setOutcome(null)
+                setError('Your saved appointment note is still stored, but its details could not be loaded. Try refreshing.')
+              }
             }
           } else if (!cancelled) {
             setRecord(null)
@@ -255,7 +259,7 @@ export default function AppointmentWorkspace() {
       }
     })()
     return () => { cancelled = true }
-  }, [open])
+  }, [open, reloadToken])
 
   const refreshOutcome = async (recordId: string) => {
     const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft') as OutcomeDraft
@@ -276,7 +280,7 @@ export default function AppointmentWorkspace() {
     const items = workspaceResult.items || []
     const latest = selectedAppointmentId
       ? items.find(item => item.appointment_id === selectedAppointmentId) || null
-      : items[0] || null
+      : items.find(item => !item.appointment_id) || null
     setRecord(latest)
     if (!latest) {
       setOutcome(null)
@@ -293,6 +297,9 @@ export default function AppointmentWorkspace() {
     ])
     setOutcome(draftResult.status === 'fulfilled' ? draftResult.value : null)
     setOutcomeProposals(proposalResult.status === 'fulfilled' ? proposalResult.value.items || [] : [])
+    if (draftResult.status === 'rejected' || proposalResult.status === 'rejected') {
+      setError('Some saved appointment details could not be refreshed. Your saved information has not been changed. Try again.')
+    }
   }
 
   const prepareOutcomeReview = async () => {
@@ -486,7 +493,7 @@ export default function AppointmentWorkspace() {
                     {brief.open_questions?.length ? <section><h6>Questions still needing an answer</h6><ul>{brief.open_questions.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.question) || "Question needs review"}</strong><small>{caregiverStatusLabel(item.priority) || "Priority not available"}</small></li>)}</ul></section> : null}
                     {brief.contradictions?.length ? <section><h6>Information that needs clarification</h6><ul>{brief.contradictions.slice(0, 2).map(item => <li key={item.source_id}><p>{caregiverSafeAssistantText(item.description) || "Some reports differ"}</p><small>{caregiverStatusLabel(item.resolution_status) || "Review needed"}</small></li>)}</ul></section> : null}
                     {brief.next_appointment ? <section><h6>Next scheduled visit</h6><strong>{caregiverSafeAssistantText(brief.next_appointment.title) || "Appointment"}</strong><p>{brief.next_appointment.scheduled_at ? new Date(brief.next_appointment.scheduled_at).toLocaleString() : "Date not recorded"}</p>{brief.next_appointment.provider && <small>{caregiverSafeAssistantText(brief.next_appointment.provider)}</small>}{brief.next_appointment.location && <small>{caregiverSafeAssistantText(brief.next_appointment.location)}</small>}</section> : brief.appointments.length > 0 ? <section><h6>Appointments already recorded</h6><ul>{brief.appointments.slice(0, 2).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul></section> : null}
-                    {brief.open_loops?.length ? <section><h6>Still being followed up</h6><ul>{brief.open_loops.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>{item.description && item.description !== item.title && <p>{caregiverSafeAssistantText(item.description)}</p>}<small>{caregiverStatusLabel(item.status) || "Status not available"}{item.deadline_at ? ` · Due ${new Date(item.deadline_at).toLocaleDateString()}` : ""}{item.owner_label ? ` · ${caregiverSafeAssistantText(item.owner_label)}` : ""}</small></li>)}</ul></section> : null}
+                    {brief.open_loops?.length ? <section><h6>Still being followed up</h6><ul>{brief.open_loops.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>{item.description && item.description !== item.title && <p>{caregiverSafeAssistantText(item.description)}</p>}<small>{caregiverStatusLabel(item.status) || "Status not available"}{item.deadline_at ? ` · Due ${new Date(item.deadline_at).toLocaleDateString()}` : ""}{item.owner_label ? ` · ${caregiverSafeAssistantText(item.owner_label)}` : ""}{item.appointment_id ? " · Linked to this care record's appointment" : ""}</small></li>)}</ul></section> : null}
                     {brief.documents?.length ? <section><h6>Recent care documents</h6><ul>{brief.documents.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small></li>)}</ul></section> : null}
                     {brief.prior_decisions?.length ? <section><h6>Previous care decisions</h6><ul>{brief.prior_decisions.slice(0, 2).map(item => <li key={item.id}><strong>{caregiverSafeAssistantText(item.title) || "Decision recorded"}</strong>{item.decision_text && <p>{caregiverSafeAssistantText(item.decision_text)}</p>}<small>{caregiverStatusLabel(item.decision_status || "recorded") || "Recorded"}{item.decided_at ? ` · ${new Date(item.decided_at).toLocaleDateString()}` : ""}</small></li>)}</ul></section> : null}
                     {brief.decision_outcomes?.length ? <section><h6>What happened after those decisions</h6><ul>{brief.decision_outcomes.slice(0, 2).map(item => <li key={item.id}><p>{caregiverSafeAssistantText(item.description) || "An outcome was recorded."}</p><small>{caregiverStatusLabel(item.outcome_status || "recorded") || "Outcome recorded"}{item.observed_at ? ` · ${new Date(item.observed_at).toLocaleDateString()}` : ""}</small></li>)}</ul></section> : null}
@@ -643,7 +650,7 @@ export default function AppointmentWorkspace() {
           />}
         </div>}
 
-        <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error}</span>}</div>
+        <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error} <button type="button" className="guided-secondary" onClick={() => setReloadToken(value => value + 1)} disabled={loading}>Try again</button></span>}</div>
         <p className="guided-footnote">You can leave notes empty. SolenOS keeps the appointment information it can retrieve together with your Care Record.</p>
       </>}
 
