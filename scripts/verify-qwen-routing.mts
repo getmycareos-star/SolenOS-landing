@@ -141,7 +141,7 @@ requireText("src/components/workflows/AICompanion.tsx", [
   "aggregate_count_mismatch",
   "aggregate_not_validated",
   "postJSON('/conversation/message'",
-  "The Care Assistant could not respond.",
+  "The AI Companion could not respond.",
   "{loading ? 'Sending' : 'Send'}",
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
