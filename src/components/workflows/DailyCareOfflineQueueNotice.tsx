@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCaregiverId, getPersonId } from "@/api/client";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
-import { getDurableWriteSummary, syncDurableWrites } from "@/lib/offline-sync/durable-write-queue";
+import { getDurableWriteSummary, retryPendingDurableWrites, syncDurableWrites } from "@/lib/offline-sync/durable-write-queue";
 
 export default function DailyCareOfflineQueueNotice() {
   const [pending, setPending] = useState(0);
@@ -35,22 +35,34 @@ export default function DailyCareOfflineQueueNotice() {
     }
   }, []);
 
+  const retryOnReconnect = useCallback(async () => {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    if (personId && caregiverId && typeof navigator !== "undefined" && navigator.onLine) {
+      await retryPendingDurableWrites(personId, caregiverId);
+    }
+    await refresh();
+  }, [refresh]);
+
   useEffect(() => {
     let active = true;
     const update = () => {
       if (active) void refresh();
     };
+    const reconnect = () => {
+      if (active) void retryOnReconnect();
+    };
     update();
-    window.addEventListener("online", update);
+    window.addEventListener("online", reconnect);
     window.addEventListener("personIdChanged", update);
     window.addEventListener("solenos:offline-queue-updated", update);
     return () => {
       active = false;
-      window.removeEventListener("online", update);
+      window.removeEventListener("online", reconnect);
       window.removeEventListener("personIdChanged", update);
       window.removeEventListener("solenos:offline-queue-updated", update);
     };
-  }, [refresh]);
+  }, [refresh, retryOnReconnect]);
 
   return (
     <>
