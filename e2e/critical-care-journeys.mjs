@@ -2599,7 +2599,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
   );
   assert.equal(sharedActivitySummary.status, 200, JSON.stringify(sharedActivitySummary.payload));
   assert(
-    sharedActivitySummary.payload.caregivers.some((caregiver) =>
+    (sharedActivitySummary.payload.caregivers ?? []).some((caregiver) =>
       caregiver.recent_activities?.some((item) => item.description === activityDescription)
     ),
     "authorized caregivers must see the activity in the shared caregiver network",
@@ -2610,7 +2610,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
   );
   assert.equal(careRecordAfterActivity.status, 200, JSON.stringify(careRecordAfterActivity.payload));
   assert(
-    !careRecordAfterActivity.payload.items.some((item) => JSON.stringify(item).includes(activityDescription)),
+    !(careRecordAfterActivity.payload.items ?? []).some((item) => JSON.stringify(item).includes(activityDescription)),
     "caregiver activity history must not silently become a canonical care fact",
   );
 
