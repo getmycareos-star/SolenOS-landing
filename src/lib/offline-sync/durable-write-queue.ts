@@ -6,7 +6,7 @@ const WRITE_STORE = "writes";
 const KEY_STORE = "keys";
 const MAX_ATTEMPTS = 8;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
-const SENDING_LEASE_MS = 2 * 60 * 1000;
+const SENDING_LEASE_MS = 15 * 1000;
 const RETRY_DELAYS_MS = [1_000, 5_000, 30_000, 120_000, 600_000, 1_800_000];
 
 type QueueStatus = "pending" | "sending" | "blocked" | "failed_recoverable";
