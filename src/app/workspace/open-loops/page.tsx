@@ -27,6 +27,8 @@ type OpenLoop = {
   review_at: string | null;
   source_type?: string | null;
   source_id?: string | null;
+  appointment_id?: string | null;
+  appointment_workspace_id?: string | null;
   owner_label?: string | null;
 };
 
@@ -148,10 +150,12 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       {item.action_status === "not_recorded" && <span>No follow-up action has been saved yet.</span>}
       {item.action_status && item.action_status !== "not_recorded" && <span>Follow-up: {caregiverStatusLabel(item.action_status) || "Status not recorded"}</span>}
       {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <span>Outcome: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</span>}
+      {loop?.appointment_id && <span>Linked to an appointment in this care record</span>}
     </div>
     {expanded && <div className="followup-detail">
       <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
+      {loop?.appointment_id && <p><strong>Appointment connection</strong><br />This follow-up remains linked to a saved appointment and its appointment history.</p>}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
       {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Review requested" : "Next review date"}</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
