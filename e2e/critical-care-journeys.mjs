@@ -1727,14 +1727,26 @@ await record("Daily Care capture survives secondary read failures", async () => 
     "offline capture must survive in IndexedDB until the backend confirms it");
   assert.equal(JSON.stringify(encryptedQueueRows).includes(originalReport), false,
     "caregiver text must be encrypted rather than stored as plaintext in IndexedDB");
-  // Allow the queue's first bounded retry delay to elapse before reconnecting.
-  await resilient.page.waitForTimeout(1_200);
+  // Force one failed retry, then reload the application while the encrypted
+  // IndexedDB record remains pending. The subsequent sync must use the same key.
+  const abortFirstSync = (route) => route.abort("internetdisconnected");
+  await resilient.page.route("**/api/v1/daily-care/entries", abortFirstSync);
+  const failedSync = resilient.page.waitForEvent("requestfailed", (request) =>
+    new URL(request.url()).pathname.endsWith("/api/v1/daily-care/entries")
+    && request.method() === "POST"
+  );
+  await resilient.context.setOffline(false);
+  await failedSync;
+  await resilient.page.reload({ waitUntil: "domcontentloaded" });
+  await resilient.page.getByRole("status")
+    .filter({ hasText: "update waiting to sync with the care record" })
+    .waitFor({ timeout: 15_000 });
+  await resilient.page.unroute("**/api/v1/daily-care/entries", abortFirstSync);
 
   const syncResponsePromise = resilient.page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
     && response.request().method() === "POST"
   );
-  await resilient.context.setOffline(false);
   const saveResponse = await syncResponsePromise;
   const savePayload = await saveResponse.json();
   assert.equal(saveResponse.status(), 200, JSON.stringify(savePayload));
@@ -1742,7 +1754,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
   assert.ok(typeof savePayload.id === "string" && savePayload.id,
     "the sync receipt must contain the persisted event ID");
   await resilient.page.getByRole("status")
-    .filter({ hasText: "Your pending update has now synced to the care record." })
+    .filter({ hasText: "A pending update has synced to the care record." })
     .waitFor({ timeout: 15_000 });
 
   const persisted = await request(`/api/v1/events/${resilientIdentity.personId}`, { token: resilientIdentity.token });
