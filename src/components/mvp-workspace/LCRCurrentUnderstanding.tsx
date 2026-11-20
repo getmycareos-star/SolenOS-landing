@@ -21,6 +21,8 @@ const ClarificationWorkflowPanel = dynamic(() => import("@/components/Clarificat
 let workspaceLoadSequence = 0;
 
 
+type AssignableCaregiver = { caregiver_id: string; name: string; role: string };
+
 type RegisteredAction = {
   id: string;
   person_id: string;
@@ -686,6 +688,8 @@ export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
   const personIdRef = useRef("");
   const [currentCaregiverId, setCurrentCaregiverId] = useState("");
+  const [assignableCaregivers, setAssignableCaregivers] = useState<AssignableCaregiver[]>([]);
+  const [responsibleCaregiverId, setResponsibleCaregiverId] = useState("");
   const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
   const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
   const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
@@ -835,6 +839,7 @@ export function LCRCurrentUnderstanding() {
       personIdRef.current = scopedPersonId;
       setPersonId(scopedPersonId);
       setCurrentCaregiverId(session.caregiver.id);
+      setResponsibleCaregiverId(session.caregiver.id);
 
       // The caregiver's first useful screen depends only on this scoped,
       // read-only projection. No secondary query or write blocks its display.
@@ -869,6 +874,18 @@ export function LCRCurrentUnderstanding() {
       // action, never an automatic write every time the workspace is opened.
       const changePath = `/change/changes/${encodeURIComponent(scopedPersonId)}`;
       const backgroundTasks = [
+        (async () => {
+          try {
+            const members = await getJSON("/caregiver-access/assignable-members");
+            if (!Array.isArray(members) || members.some((member) => !member?.caregiver_id || !member?.name)) {
+              throw new Error("Assignable caregiver response was invalid.");
+            }
+            setAssignableCaregivers(members as AssignableCaregiver[]);
+          } catch {
+            setAssignableCaregivers([]);
+            setResponsibleCaregiverId(session.caregiver.id);
+          }
+        })(),
         (async () => {
           try {
             const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
@@ -1134,7 +1151,7 @@ export function LCRCurrentUnderstanding() {
           rationale: (item.priority_reasons ?? []).join("; ") || item.description || "A follow-up request is saved in the care record.",
           limitations: `Information status: ${caregiverLabel(item.epistemic_status)}. Saving this suggestion does not confirm the information or show how urgent it is.`,
           evidence_ids: item.evidence_ids,
-          responsible_caregiver_id: session.caregiver.id,
+          responsible_caregiver_id: responsibleCaregiverId || session.caregiver.id,
           create_reminder: createReminderForSuggestion,
           ...(createReminderForSuggestion ? { reminder_due_at: new Date(reminderDueInput).toISOString() } : {}),
         },
@@ -1481,7 +1498,18 @@ export function LCRCurrentUnderstanding() {
                                 <p>Why suggested: {(item.priority_reasons ?? []).map(caregiverSafeAssistantText).filter(Boolean).join("; ") || caregiverSafeAssistantText(item.description) || "A follow-up request is saved in the care record."}</p>
                                 <p>From: {item.evidence_ids.length} saved item(s)</p>
                                 <p>What this does not tell us: This information is marked {caregiverLabel(item.epistemic_status)}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
-                                <p>Responsible caregiver: the caregiver authenticated in this session. No other caregiver will be assigned.</p>
+                                <label>
+                                  Responsible caregiver
+                                  <select
+                                    value={responsibleCaregiverId || currentCaregiverId}
+                                    onChange={(event) => setResponsibleCaregiverId(event.target.value)}
+                                    disabled={assignableCaregivers.length === 0}
+                                  >
+                                    {assignableCaregivers.map((member) => (
+                                      <option key={member.caregiver_id} value={member.caregiver_id}>{member.name}</option>
+                                    ))}
+                                  </select>
+                                </label>
                                 <p>Due date: {item.due_at ? `The source record contains ${formatWhen(item.due_at)}; no reminder will be created unless you explicitly choose one below.` : "No supported due date is recorded."}</p>
                                 <p>Timing context: recorded priority {caregiverLabel(item.priority)} · recorded consequence of delay {caregiverLabel(item.consequence_of_delay)} · date source {caregiverLabel(item.deadline_source)}. No deadline is invented.</p>
                                 <p>This item is not marked as optional or time-sensitive. Review the saved details before deciding when to act.</p>
