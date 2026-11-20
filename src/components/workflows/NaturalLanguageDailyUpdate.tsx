@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from "@/lib/caregiver-language";
+import {
+  deliverDurableWrite,
+  discardDurableWrite,
+  durableWriteId,
+  enqueueDurableWrite,
+  getDurableWriteSummary,
+  hasDurableWrite,
+  syncDurableWrites,
+} from "@/lib/offline-sync/durable-write-queue";
 
 const QWEN_JOB_POLL_INTERVAL_MS = 5_000;
 const QWEN_JOB_MAX_WAIT_MS = 12 * 60 * 1000;
@@ -24,6 +33,10 @@ export default function NaturalLanguageDailyUpdate() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<SaveReceipt | null>(null);
+  const [pendingLocal, setPendingLocal] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncNotice, setSyncNotice] = useState("");
+  const pendingQueueId = useRef<string | null>(null);
 
   useEffect(() => {
     const jobId = receipt?.jobId;
@@ -86,11 +99,67 @@ export default function NaturalLanguageDailyUpdate() {
     };
   }, [receipt?.jobId]);
 
+  useEffect(() => {
+    let active = true;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const send = async (endpoint: string, payload: unknown) => {
+      const response = await postJSON(endpoint, payload) as { success?: boolean; id?: string };
+      if (response?.success !== true || typeof response.id !== "string" || !response.id) {
+        throw new Error("The server did not confirm that this update was saved.");
+      }
+      return response;
+    };
+    const sync = async () => {
+      const personId = getPersonId();
+      const caregiverId = getCaregiverId();
+      if (!personId || !caregiverId) return;
+      try {
+        const summary = await getDurableWriteSummary(personId, caregiverId);
+        if (!active) return;
+        setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        if (typeof navigator !== "undefined" && !navigator.onLine) return;
+        const result = await syncDurableWrites({ personId, caregiverId, send });
+        const afterSync = await getDurableWriteSummary(personId, caregiverId);
+        if (!active) return;
+        setPendingCount(afterSync.pending + afterSync.blocked + afterSync.failed_recoverable);
+        if (afterSync.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
+          if (retryTimer) clearTimeout(retryTimer);
+          retryTimer = setTimeout(sync, 5_000);
+        }
+        if (pendingQueueId.current && !(await hasDurableWrite(pendingQueueId.current))) {
+          pendingQueueId.current = null;
+          setPendingLocal(false);
+          setRequestKey(null);
+          setReport("");
+          setSyncNotice("Your pending update has now synced to the care record.");
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        } else if (result.synced > 0) {
+          setSyncNotice("A pending update has synced to the care record.");
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        }
+      } catch {
+        // The encrypted queue remains available for the next online attempt.
+      }
+    };
+    void sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("personIdChanged", sync);
+    window.addEventListener("solenos:offline-queue-updated", sync);
+    return () => {
+      active = false;
+      if (retryTimer) clearTimeout(retryTimer);
+      window.removeEventListener("online", sync);
+      window.removeEventListener("personIdChanged", sync);
+      window.removeEventListener("solenos:offline-queue-updated", sync);
+    };
+  }, []);
+
   function updateReport(value: string) {
     setReport(value);
     setRequestKey(null);
     setReceipt(null);
     setError("");
+    setSyncNotice("");
   }
 
   async function saveUpdate() {
@@ -106,24 +175,52 @@ export default function NaturalLanguageDailyUpdate() {
     setRequestKey(idempotencyKey);
     setSaving(true);
     setError("");
+    setSyncNotice("");
+    const payload = {
+      person_id: personId,
+      caregiver_id: caregiverId,
+      capture_idempotency_key: idempotencyKey,
+      capture_kind: "natural_language_update",
+      notes: report,
+    };
+    let queueId: string | null = null;
     try {
-      const response = await postJSON("/daily-care/entries", {
-        person_id: personId,
-        caregiver_id: caregiverId,
-        capture_idempotency_key: idempotencyKey,
-        capture_kind: "natural_language_update",
-        notes: report,
-      }) as {
-        success?: boolean;
-        id?: string;
-        qwen_extraction_status?: string;
-        qwen_job_id?: string | null;
-        execution_status?: { assessment?: string };
-      };
-
-      if (response?.success !== true || typeof response.id !== "string" || !response.id) {
-        throw new Error("The server did not confirm that your update was saved.");
+      try {
+        queueId = await enqueueDurableWrite({
+          person_id: personId,
+          caregiver_id: caregiverId,
+          endpoint: "/daily-care/entries",
+          idempotency_key: idempotencyKey,
+          payload,
+        });
+        pendingQueueId.current = queueId;
+      } catch {
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          throw new Error("This device could not securely keep an offline copy. The update was not saved.");
+        }
       }
+      const send = async (endpoint: string, body: unknown) => {
+        const response = await postJSON(endpoint, body) as {
+          success?: boolean;
+          id?: string;
+          qwen_extraction_status?: string;
+          qwen_job_id?: string | null;
+          execution_status?: { assessment?: string };
+        };
+        if (response?.success !== true || typeof response.id !== "string" || !response.id) {
+          throw new Error("The server did not confirm that your update was saved.");
+        }
+        return response;
+      };
+      const response = queueId
+        ? await deliverDurableWrite<{
+            success?: boolean;
+            id?: string;
+            qwen_extraction_status?: string;
+            qwen_job_id?: string | null;
+            execution_status?: { assessment?: string };
+          }>(queueId, send)
+        : await send("/daily-care/entries", payload);
 
       const medicationMentioned = /\b(medication|medicine|dose|dosage|prescription)\b/i.test(report);
       const possibleChange = /\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\b/i.test(report);
@@ -226,10 +323,29 @@ export default function NaturalLanguageDailyUpdate() {
         });
       }
       setReport("");
+      pendingQueueId.current = null;
+      setPendingLocal(false);
+      setPendingCount(0);
       setRequestKey(null);
       window.dispatchEvent(new Event("careRecordUpdated"));
     } catch (cause) {
-      setError(caregiverSafeErrorMessage());
+      if (queueId) {
+        setPendingLocal(true);
+        const status = typeof cause === "object" && cause !== null && "status" in cause
+          ? Number((cause as { status?: unknown }).status)
+          : null;
+        const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
+        if (summary) setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        if (status === 401 || status === 403) {
+          setError("This update is encrypted on this device, but your care session must be verified before it can reach the care record.");
+        } else if (status === 400 || status === 409 || status === 422) {
+          setError("This update is kept on this device, but the server needs it reviewed before it can be saved.");
+        } else {
+          setError("This update is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.");
+        }
+      } else {
+        setError(caregiverSafeErrorMessage());
+      }
     } finally {
       setSaving(false);
     }
@@ -246,16 +362,41 @@ export default function NaturalLanguageDailyUpdate() {
       <textarea id="natural-daily-update-report" value={report} onChange={(event) => updateReport(event.target.value)}
         maxLength={12000} rows={4}
         placeholder="For example: Slept poorly last night and seemed more unsettled this morning."
-        disabled={saving}
+        disabled={saving || pendingLocal}
         style={{ width: "100%", minHeight: 104, padding: 12, border: "1px solid var(--theme-panel-border)", borderRadius: 10, background: "var(--theme-field-bg)", color: "var(--theme-field-fg)", font: "inherit", resize: "vertical" }} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <span style={{ color: "var(--theme-panel-muted)", fontSize: 12 }}>Your original wording is kept in the care history.</span>
         <button type="button" onClick={() => void saveUpdate()} disabled={saving || !report.trim()}
           className="workspace-primary" style={{ minHeight: 44, padding: "10px 16px", borderRadius: 9 }}>
-          {saving ? "Saving…" : "Save update"}
+          {saving ? "Saving…" : pendingLocal ? "Retry save" : "Save update"}
         </button>
       </div>
       {error && <p role="alert" style={{ margin: 0, color: "var(--theme-danger-fg, #9b3434)" }}>{error}</p>}
+      {pendingLocal && requestKey && (
+        <button
+          type="button"
+          onClick={() => {
+            const id = durableWriteId("/daily-care/entries", requestKey);
+            void discardDurableWrite(id).then(() => {
+              pendingQueueId.current = null;
+              setPendingLocal(false);
+              setPendingCount((count) => Math.max(0, count - 1));
+              setRequestKey(null);
+              setReport("");
+              setError("");
+            });
+          }}
+          style={{ justifySelf: "start", border: 0, background: "transparent", color: "var(--theme-panel-muted)", textDecoration: "underline", cursor: "pointer" }}
+        >
+          Remove this pending update from this device
+        </button>
+      )}
+      {pendingCount > 0 && !pendingLocal && (
+        <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>
+          {pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to sync with the care record.
+        </p>
+      )}
+      {syncNotice && <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{syncNotice}</p>}
       {receipt && (
         <div role="status" style={{ color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
           <p style={{ margin: 0 }}>Your update was saved to the care record.</p>
