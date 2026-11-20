@@ -19,14 +19,14 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
     any, 
-    { caregiverId: string; personId: string; rawInput: string }
+    { caregiverId: string; personId: string; rawInput: string; ingestionKey: string }
   >({
-    mutationFn: async ({ caregiverId, personId, rawInput }) => {
+    mutationFn: async ({ caregiverId, personId, rawInput, ingestionKey }) => {
       const response = await postJSON('/situation', {
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: rawInput,
-        ingestion_key: submissionKey ?? crypto.randomUUID(),
+        ingestion_key: ingestionKey,
       }) as { ok?: boolean; message?: string };
       if (response?.ok !== true) {
         throw new Error(
