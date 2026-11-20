@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId, postFormData } from "@/api/client";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import {
   deliverDurableWrite,
   discardDurableWrite,
@@ -161,10 +162,7 @@ export default function DailyCarePhotoCapture() {
         if (summary) setPendingCount(summary.pending);
         setError("This photo is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.");
       } else {
-        const message = cause instanceof Error ? cause.message : "";
-        setError(message && message.length < 180 && !/sql|traceback|stack/i.test(message)
-          ? message
-          : "We couldn’t confirm whether the photo was saved. Your selected file is still available to retry.");
+        setError(caregiverSafeErrorMessage());
       }
     } finally {
       setSaving(false);
