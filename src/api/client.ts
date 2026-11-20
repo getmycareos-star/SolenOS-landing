@@ -538,7 +538,7 @@ export async function getBlob(path: string): Promise<Blob> {
 function hasStableIdempotencyKey(body: unknown): boolean {
   if (!body || typeof body !== "object") return false;
   const value = body as Record<string, unknown>;
-  return [value.ingestion_key, value.idempotency_key].some(
+  return [value.ingestion_key, value.idempotency_key, value.capture_idempotency_key].some(
     (key) => typeof key === "string" && key.trim().length > 0,
   );
 }
