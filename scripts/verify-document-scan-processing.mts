@@ -17,7 +17,7 @@ assert.match(source, /for \(const \[key, value\] of Object\.entries\(fields\)\) 
 assert(!source.includes("Extracting readable text"), "the upload screen must not claim pre-upload OCR is running");
 assert(!source.includes('aria-label="Review extracted text before saving"'), "the intake list must not be labeled as an OCR review step");
 assert.match(source, /if \(!reviewPages\.length\)/, "saving must not require caregivers to review every page first");
-assert.match(source, /scan_review_status", "not_reviewed"/, "the upload must not claim the caregiver reviewed text that has not yet been extracted by the server");
+assert.match(source, /scan_review_status: "not_reviewed"/, "the upload must not claim the caregiver reviewed text that has not yet been extracted by the server");
 assert.match(source, /Save files<\/button>/, "caregivers must be able to save originals before reviewing extracted text");
 assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop stage");
 assert(!source.includes("createProcessedImage("), "the browser must not transform the original image bytes before upload");
