@@ -286,7 +286,9 @@ console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify({
   endpoints: [...grouped.entries()].map(([key, items]) => ({
     method_path: key,
     callsite_count: items.length,
-    callsites: items.map(({ file, line, helper, dynamic }) => ({ file, line, helper, dynamic })),
+    callsites: items.map(({ file, line, helper, dynamic, source_kind }) => ({
+      file, line, helper, dynamic, source_kind: source_kind ?? "browser-api-client",
+    })),
   })),
 }, null, 2));
 
