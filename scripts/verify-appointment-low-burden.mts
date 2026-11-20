@@ -80,6 +80,7 @@ assert.ok(component.includes("updateAppointmentLifecycle('cancelled')") && compo
 assert.ok(component.includes("{ status: 'completed' }"), 'saving after-visit information must update the recorded visit lifecycle');
 assert.ok(!component.includes('QwenAssistPanel'), 'appointment continuity must not depend on a separate chatbot panel');
 assert.ok(!component.includes('MediaRecorder') && !component.includes('getUserMedia'), 'voice capture remains deferred');
-assert.ok(component.includes("'Next scheduled visit' : 'Appointment information · date unknown'"), 'unknown dates must not be labelled as scheduled visits');
+assert.ok(component.includes("'Next appointment recorded' : 'Appointment information · date unknown'"), 'unknown dates must not be labelled as scheduled visits');
+assert.ok(component.includes('SolenOS has not booked or externally confirmed this appointment.'), 'recorded appointments must not be represented as external bookings');
 
 console.log('PASS: automatic appointment continuity, explicit lifecycle states, optional text/document capture, provenance review and retry handling')
