@@ -1790,9 +1790,15 @@ await record("Daily Care capture survives secondary read failures", async () => 
       });
       return {
         online: navigator.onLine,
-        rows,
+        currentPersonId: localStorage.getItem("solenos_backend_person_id"),
+        currentCaregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+        rows: rows.map((row) => ({
+          ...row,
+          created_at: row.created_at,
+          person_id: row.person_id,
+          caregiver_id: row.caregiver_id,
+        })),
         visibleText: document.body.innerText.slice(-1800),
-        personIdPresent: Boolean(localStorage.getItem("solenos_person_id") || localStorage.getItem("person_id")),
       };
     });
     console.log("OFFLINE_RELOAD_DIAGNOSTIC", JSON.stringify(state));
