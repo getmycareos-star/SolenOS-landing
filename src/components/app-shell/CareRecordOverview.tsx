@@ -170,7 +170,7 @@ export function CareRecordOverview() {
                       <span className="care-record-overview__status">{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
                     {caregiverSafeAssistantText(item.description) && <p className="care-record-overview__description">{caregiverSafeAssistantText(item.description)}</p>}
-                    <p className="care-record-overview__meta">Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Saved: {when(item.recorded_at || item.occurred_at)}</p>
+                    <p className="care-record-overview__meta">Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Happened: {when(item.occurred_at)} · Saved: {when(item.recorded_at)}</p>
                   </article>
                 ))}
               </div>
