@@ -214,9 +214,22 @@ export default function AppointmentWorkspace() {
               if (!cancelled) setOutcome(draft)
               try {
                 const proposals = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-proposals') as { items?: OutcomeProposal[] }
-                if (!cancelled) setOutcomeProposals(proposals.items || [])
+                let items = proposals.items || []
+                if (
+                  items.length === 0 &&
+                  latest.payload?.captureStage === 'after' &&
+                  typeof latest.payload?.caregiverReport === 'string' &&
+                  latest.payload.caregiverReport.trim()
+                ) {
+                  const prepared = await postJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[] }
+                  items = prepared.items || []
+                }
+                if (!cancelled) setOutcomeProposals(items)
               } catch {
-                if (!cancelled) setOutcomeProposals([])
+                if (!cancelled) {
+                  setOutcomeProposals([])
+                  if (latest.payload?.captureStage === 'after') setError('Your appointment note is saved. SolenOS could not prepare its review suggestions just now.')
+                }
               }
             } catch {
               if (!cancelled) setOutcome(null)
@@ -393,8 +406,17 @@ export default function AppointmentWorkspace() {
       setMessage('Your note is saved as a caregiver report.')
       try {
         await refreshSavedWorkspace()
+        if (stage === 'after') {
+          const prepared = await postJSON('/appointment-workspaces/' + encodeURIComponent(saved.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number }
+          setOutcomeProposals(prepared.items || [])
+          setMessage((prepared.count || 0) > 0
+            ? 'Your note is saved. SolenOS prepared possible care updates for your review. Nothing has been added to your Care Record yet.'
+            : 'Your note is saved. SolenOS found no separate care update to suggest from this note.')
+        }
       } catch {
-        setError('Your note was saved. Appointment details could not refresh; open appointment support again to retry.')
+        setError(stage === 'after'
+          ? 'Your note is saved. SolenOS could not finish preparing the review suggestions; you can retry.'
+          : 'Your note was saved. Appointment details could not refresh; open appointment support again to retry.')
       }
     } catch (cause) {
       setError('Your note could not be saved. Check whether it appears before trying again.')
@@ -568,11 +590,11 @@ export default function AppointmentWorkspace() {
             {Object.entries(outcome.sections).filter(([, items]) => items.length).map(([key, items]) => <section key={key}><h6>Appointment details</h6>{items.map((item, index) => <p key={key + index}>{caregiverSafeAssistantText(item.text) || "Saved appointment information"}<small>{caregiverInformationLabel(item.epistemic_status) || 'Recorded information'} · {item.source_type === 'document' ? 'Document' : item.source_type === 'professional' ? 'Care professional' : 'Caregiver report'}</small></p>)}</section>)}
             {outcome.missing_information.length > 0 && <p className="guided-muted">Not recorded: {outcome.missing_information.join(', ')}.</p>}
             <p className="guided-footnote">This is a draft for you to review. It has not been confirmed by a healthcare professional, and your saved care record has not been changed.</p>
-            <div className="guided-actions">
+            {outcomeProposals.length === 0 && <div className="guided-actions">
               <button className="guided-primary" type="button" onClick={() => void prepareOutcomeReview()} disabled={!record || proposalBusy}>
-                {proposalBusy ? 'Preparing…' : 'Review care information'}
+                {proposalBusy ? 'Preparing…' : 'Retry review preparation'}
               </button>
-            </div>
+            </div>}
             {outcomeProposals.length > 0 && <div className="guided-proposals">
               <h5>Please review these care details</h5>
               <p className="guided-muted">Each item is linked to the appointment information it came from. Accepting adds it as a caregiver report; it does not mean a healthcare professional has confirmed it.</p>
