@@ -1710,6 +1710,8 @@ await record("Daily Care capture survives secondary read failures", async () => 
   await resilient.page.getByRole("alert")
     .filter({ hasText: "encrypted and saved on this device" })
     .waitFor({ timeout: 10_000 });
+  // Allow the queue's first bounded retry delay to elapse before reconnecting.
+  await resilient.page.waitForTimeout(1_200);
 
   const syncResponsePromise = resilient.page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
