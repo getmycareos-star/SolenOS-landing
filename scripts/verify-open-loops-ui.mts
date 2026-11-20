@@ -54,3 +54,6 @@ assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-u
 console.log("FOLLOW_UPS_UI_CONTRACT=PASS");
 console.log(`Assertions=${required.length + 3}`);
 console.log("Scope=frontend source contract; not a browser or deployed-system test");
+
+assert.match(page, /The API paginates by immutable creation order[\s\S]*?displayOrdered[\s\S]*?deadline_at[\s\S]*?setLoops\(displayOrdered\)/,
+  "caregiver priority ordering is restored only after the complete paginated list has been retrieved");
