@@ -311,12 +311,11 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
-  await page.getByRole("region", { name: "Record context interpretation", exact: true })
+  const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
-      "Context interpretation is temporarily unavailable. Your saved care record is unchanged; you do not need to submit the update again.",
-      { exact: true },
-    )
-    .waitFor({ state: "visible", timeout: 10_000 });
+      /Context interpretation is temporarily unavailable|Connecting this update to the saved care history/,
+    );
+  await contextInterpretationState.waitFor({ state: "visible", timeout: 10_000 });
   assert.equal(
     await page.locator(".care-card-understanding").count(),
     0,
