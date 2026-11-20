@@ -3002,6 +3002,16 @@ await record("browser renders caregiver surfaces and submits Companion through t
     await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
     await verifyMobile(companion.page);
 
+    // Reload the browser and prove that the persisted conversation is retrieved
+    // through the authenticated history endpoint, including the original user
+    // message ID needed by the explicit "save as a care note" workflow.
+    await companion.page.reload();
+    const restoredMessage = companion.page.locator(".companion-message.is-user").filter({
+      hasText: "What did the caregiver record about sleep and appetite?",
+    }).last();
+    await restoredMessage.waitFor({ timeout: 20_000 });
+    await restoredMessage.getByRole("button", { name: "Save as a care note" }).waitFor({ timeout: 10_000 });
+
   // Companion messages remain conversation-only until the caregiver separately
   // confirms the exact message, reviews the proposal, and accepts it.
   const observationText = "Mum woke up three times last night.";
