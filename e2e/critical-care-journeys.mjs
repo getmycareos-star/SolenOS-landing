@@ -1193,8 +1193,12 @@ await record("01d secondary routes and reminder actions persist through reload",
   assert.equal(firstSaved.status, "open", "snoozing must not complete a reminder");
   assert.equal(firstSaved.snooze_count, 1, "snooze count must be persisted");
   assert.ok(firstSaved.snoozed_at, "snooze time must be persisted");
+  assert.equal(firstSaved.lifecycle_history.at(-1)?.action, "care.reminder.snoozed");
+  assert.equal(firstSaved.lifecycle_history.at(-1)?.actor_caregiver_id, identity.caregiverId);
 
   firstItem = page.locator(".care-reminder-item").filter({ hasText: firstTitle });
+  await firstItem.getByText("Reminder history", { exact: true }).click();
+  await firstItem.getByText(/Snoozed by/).waitFor({ timeout: 10_000 });
   await firstItem.getByRole("button", { name: "Mark complete", exact: true }).click();
   await page.getByRole("status").filter({ hasText: "Reminder marked complete." }).waitFor({ timeout: 15_000 });
   await page.getByLabel("Show").selectOption("completed");
@@ -1205,7 +1209,9 @@ await record("01d secondary routes and reminder actions persist through reload",
     { token: identity.token },
   );
   assert.equal(completed.status, 200, JSON.stringify(completed.payload));
-  assert.equal(completed.payload.find((item) => item.id === firstSaved.id)?.status, "completed");
+  const completedReminder = completed.payload.find((item) => item.id === firstSaved.id);
+  assert.equal(completedReminder?.status, "completed");
+  assert.ok(completedReminder?.lifecycle_history.some((event) => event.action === "care.reminder.completed"));
 
   await page.getByLabel("Show").selectOption("open");
   const secondTitle = unique("Browser reminder — cancel test");
