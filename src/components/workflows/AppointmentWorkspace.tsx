@@ -189,6 +189,8 @@ export default function AppointmentWorkspace() {
   const [attachedEvidenceIds, setAttachedEvidenceIds] = useState<string[]>([])
   const [documentBusy, setDocumentBusy] = useState(false)
   const [documentMessage, setDocumentMessage] = useState('')
+  const [pendingDocumentEvidenceId, setPendingDocumentEvidenceId] = useState('')
+  const [pendingDocumentName, setPendingDocumentName] = useState('')
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -215,6 +217,8 @@ export default function AppointmentWorkspace() {
     setUnansweredQuestions('')
     setAttachedEvidenceIds([])
     setDocumentMessage('')
+    setPendingDocumentEvidenceId('')
+    setPendingDocumentName('')
     setCorrectionDrafts({})
     setCorrectionContexts({})
     void (async () => {
@@ -425,6 +429,50 @@ export default function AppointmentWorkspace() {
       setError('Your review could not be saved. Please try again.')
     } finally {
       setProposalBusy(false)
+    }
+  }
+
+  const retryDocumentLink = async () => {
+    if (!pendingDocumentEvidenceId || !appointmentId) return
+    setDocumentBusy(true)
+    setDocumentMessage('')
+    try {
+      const nextIds = [...new Set([...attachedEvidenceIds, pendingDocumentEvidenceId])]
+      const payload = {
+        ...(record?.payload || {}),
+        caregiverReport: note.trim(),
+        clinicianFindings: professionalStatement.trim(),
+        decisions: recordedDecisions.trim(),
+        instructions: recordedInstructions.trim(),
+        unanswered: unansweredQuestions.trim(),
+        attachedEvidenceIds: nextIds,
+        captureStage: 'after',
+      }
+      const persisted = record
+        ? await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), {
+            expected_version: record.version_number,
+            status: record.status,
+            payload,
+            change_reason: 'Link previously saved appointment document',
+            idempotency_key: newAppointmentSaveKey(),
+          }) as WorkspaceRecord
+        : await postJSON('/appointment-workspaces', {
+            appointment_id: appointmentId,
+            status: 'outcome_pending',
+            payload,
+            change_reason: 'Link previously saved appointment document',
+            idempotency_key: newAppointmentSaveKey(),
+          }) as WorkspaceRecord
+      setRecord(persisted)
+      setAttachedEvidenceIds(nextIds)
+      setPendingDocumentEvidenceId('')
+      setPendingDocumentName('')
+      setDocumentMessage('The saved original is now linked to this appointment.')
+      window.dispatchEvent(new Event('careRecordUpdated'))
+    } catch {
+      setDocumentMessage('The original is still saved in Documents, but its appointment link could not be saved. Retry linking; do not upload it again.')
+    } finally {
+      setDocumentBusy(false)
     }
   }
 
@@ -737,9 +785,13 @@ export default function AppointmentWorkspace() {
                 if (!file) return
                 setDocumentBusy(true)
                 setDocumentMessage('')
+                let uploadedEvidenceId = ''
                 try {
                   const saved = await extractAttachedDocument(file, 'upload')
                   if (saved.status !== 'saved' || !saved.evidenceId) throw new Error(saved.errorNote || 'The original document was not confirmed as saved.')
+                  uploadedEvidenceId = saved.evidenceId
+                  setPendingDocumentEvidenceId(saved.evidenceId)
+                  setPendingDocumentName(file.name)
                   const nextIds = [...new Set([...attachedEvidenceIds, saved.evidenceId])]
                   const payload = { ...(record?.payload || {}), caregiverReport: note.trim(), clinicianFindings: professionalStatement.trim(), decisions: recordedDecisions.trim(), instructions: recordedInstructions.trim(), unanswered: unansweredQuestions.trim(), attachedEvidenceIds: nextIds, captureStage: 'after' }
                   const changeReason = 'Caregiver attached an appointment document'
@@ -749,10 +801,14 @@ export default function AppointmentWorkspace() {
                     : await postJSON('/appointment-workspaces', { appointment_id: appointmentId, status: 'outcome_pending', payload, change_reason: changeReason, idempotency_key: key }) as WorkspaceRecord
                   setRecord(persisted)
                   setAttachedEvidenceIds(nextIds)
+                  setPendingDocumentEvidenceId('')
+                  setPendingDocumentName('')
                   setDocumentMessage('The original document is saved and linked to this appointment. Its extracted information will appear when processing is available.')
                   setMessage('Document attached to the saved appointment record.')
                 } catch (cause) {
-                  setDocumentMessage(cause instanceof Error ? cause.message : 'The document could not be attached. Retry without re-uploading if it is already saved.')
+                  setDocumentMessage(uploadedEvidenceId
+                    ? 'The original document is saved in Documents, but its appointment link could not be saved. Retry linking it below; do not upload it again.'
+                    : cause instanceof Error ? cause.message : 'The document could not be saved. Try again when the connection is available.')
                 } finally {
                   setDocumentBusy(false)
                 }
@@ -760,6 +816,7 @@ export default function AppointmentWorkspace() {
             </label>
             {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>}
             {documentMessage && <p className="guided-muted" role="status">{documentMessage}</p>}
+            {pendingDocumentEvidenceId && <div className="guided-actions"><span className="guided-muted">Saved file: {caregiverSafeAssistantText(pendingDocumentName) || 'Document'}</span><button type="button" className="guided-secondary" disabled={documentBusy} onClick={() => void retryDocumentLink()}>Retry linking saved document</button></div>}
             {attachedEvidenceIds.length > 0 && <p className="guided-footnote">{attachedEvidenceIds.length} document {attachedEvidenceIds.length === 1 ? 'is' : 'items are'} linked to this appointment.</p>}
           </details>
           <div className="guided-actions">
