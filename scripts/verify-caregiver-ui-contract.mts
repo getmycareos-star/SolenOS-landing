@@ -243,6 +243,12 @@ assert.ok(dailyCarePage.includes("Review suggested details"), "returning caregiv
 assert.ok(dailyCarePage.includes("<CaptureAnalysisReview"), "Daily Care history must render the persisted review flow");
 assert.ok(captureReview.includes('getJSON(`/capture/analyses/${encodeURIComponent(analysisId)}`)'), "review UI must load the caregiver-scoped persisted extraction");
 assert.ok(captureReview.includes('postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {'), "review decisions must use the persisted source-bound review endpoint");
+assert.match(captureReview, /const persisted = await getJSON\([\s\S]*?capture\/analyses/,
+  "a review must be independently retrieved after the write before the UI reports success");
+assert.match(captureReview, /persistedCandidate\.review_status !== expectedReviewStatus/,
+  "the retrieved candidate status must match the caregiver's decision");
+assert.match(captureReview, /couldn’t confirm whether this review was saved/,
+  "a lost response must not be misreported as a failed save");
 assert.ok(captureReview.includes("Accept and add to care record"), "caregiver approval must be explicit before an extracted detail enters the LCR");
 assert.ok(dailyCapture.includes("qwen_job_id"), "structured Daily Care must retain the durable background job ID");
 assert.ok(dailyCapture.includes('getJSON(`/assistant/jobs/${encodeURIComponent(jobId)}`)'), "structured Daily Care must poll the durable extraction job after confirming the save");
