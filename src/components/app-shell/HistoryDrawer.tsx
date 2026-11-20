@@ -1218,7 +1218,7 @@ export function HistoryDrawer() {
         if (category === "daily-care") return /event history|saved care events|event history could not be verified/.test(allWarnings);
         if (category === "document") return /saved documents/.test(allWarnings);
         if (category === "appointment") return /appointment/.test(allWarnings);
-        if (category === "handoff") return /handoff/.test(allWarnings) || consentRequiredForHandoffs;
+        if (category === "handoff") return /handoff/.test(allWarnings);
         if (category === "decision") return /care decisions/.test(allWarnings);
         if (category === "outcome") return /outcomes/.test(allWarnings);
         return /follow-ups/.test(allWarnings);
@@ -1236,6 +1236,7 @@ export function HistoryDrawer() {
       })) as Record<HistoryStatusCategory, HistoryLoadStatus>;
       const retainedRecords = previousRecords.filter((record) => {
         const category = categoryFor(record);
+        if (category === "handoff" && consentRequiredForHandoffs) return false;
         const status = nextStatuses[category as HistoryStatusCategory];
         return status === "stale" || status === "partial";
       });
