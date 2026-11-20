@@ -157,3 +157,8 @@ assert.match(drawer, /previousRecords[\s\S]*?return status === "stale" \|\| stat
   "previously loaded records must remain visible when a source refresh is incomplete");
 assert.match(drawer, /category === "handoff" && consentRequiredForHandoffs\) return false/,
   "handoff records must not remain visible after required sharing consent is revoked");
+
+assert.match(drawer, /async function loadAllHistoryPages[\s\S]*?offset=\$\{page \* pageSize\}[\s\S]*?seenIds\.has\(row\.id\)[\s\S]*?rows\.length < pageSize/,
+  "decision and outcome history must use stable offset pages and reject duplicate or incomplete records");
+assert.match(drawer, /loadAllHistoryPages<CareDecision>\("\/care-continuity\/decisions"\)[\s\S]*?loadAllHistoryPages<CareOutcome>\("\/care-continuity\/outcomes\//,
+  "all decision and outcome pages must be retrieved before the history list is considered complete");
