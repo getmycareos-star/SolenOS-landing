@@ -441,8 +441,8 @@ export default function AppointmentWorkspace() {
     }
   }
 
-  const linkDocumentToAppointment = async (evidenceId = pendingDocumentEvidenceId, documentName = pendingDocumentName) => {
-    if (!evidenceId || !appointmentId) return
+  const linkDocumentToAppointment = async (evidenceId = pendingDocumentEvidenceId, documentName = pendingDocumentName): Promise<boolean> => {
+    if (!evidenceId || !appointmentId) return false
     setDocumentBusy(true)
     setDocumentMessage('')
     setPendingDocumentEvidenceId(evidenceId)
@@ -479,10 +479,13 @@ export default function AppointmentWorkspace() {
       setPendingDocumentEvidenceId('')
       setPendingDocumentName('')
       setDocumentMessage('The saved original is now linked to this appointment.')
+      setMessage('Document attached to the saved appointment record.')
       window.dispatchEvent(new Event('careRecordUpdated'))
       try { await refreshSavedWorkspace() } catch { /* the persisted link remains available on reload */ }
+      return true
     } catch {
       setDocumentMessage('The original is saved in Documents, but its appointment link could not be saved. Retry linking; do not upload it again.')
+      return false
     } finally {
       setDocumentBusy(false)
     }
@@ -825,7 +828,6 @@ export default function AppointmentWorkspace() {
                   setPendingDocumentName(file.name)
                   setMessage('Document uploaded. Linking it to the appointment…')
                   await linkDocumentToAppointment(saved.evidenceId, file.name)
-                  setDocumentMessage('The original document is saved and linked to this appointment. Its extracted information will appear when processing is available.')
                 } catch (cause) {
                   setDocumentMessage(uploadedEvidenceId
                     ? 'The original document is saved in Documents, but its appointment link could not be saved. Retry linking it below; do not upload it again.'
