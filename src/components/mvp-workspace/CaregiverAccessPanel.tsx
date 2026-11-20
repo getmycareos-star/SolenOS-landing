@@ -182,6 +182,12 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [reviewingNetworkItemId, setReviewingNetworkItemId] = useState<string | null>(null);
   const [communications, setCommunications] = useState<CaregiverCommunication[]>([]);
   const [careContexts, setCareContexts] = useState<CaregiverContext[]>([]);
+  const [contextProximity, setContextProximity] = useState<"" | "lives_with" | "local" | "regional" | "remote">("");
+  const [contextWindowStart, setContextWindowStart] = useState("");
+  const [contextWindowEnd, setContextWindowEnd] = useState("");
+  const [contextAvailabilityNotes, setContextAvailabilityNotes] = useState("");
+  const [contextShareConfirmed, setContextShareConfirmed] = useState(false);
+  const [savingContext, setSavingContext] = useState(false);
   const [myRoles, setMyRoles] = useState<CaregiverRole[]>([]);
   const [selectedCareRole, setSelectedCareRole] = useState<string>("appointment_coordinator");
   const [customCareRole, setCustomCareRole] = useState("");
@@ -463,6 +469,39 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setError("We couldn't share this update. Nothing was sent to the care circle.");
     } finally {
       setSendingCommunication(false);
+    }
+  };
+
+  const saveCaregiverContext = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!contextShareConfirmed) {
+      setError("Please confirm that this availability information can be shared with the care team.");
+      return;
+    }
+    setSavingContext(true);
+    setError("");
+    try {
+      const session = await ensureAnonymousSession();
+      await postJSON("/caregiver-contexts", {
+        person_id: session.person.id,
+        caregiver_id: session.caregiver.id,
+        proximity_category: contextProximity || null,
+        observation_window_start: contextWindowStart.trim() || null,
+        observation_window_end: contextWindowEnd.trim() || null,
+        availability_notes: contextAvailabilityNotes.trim() || null,
+        effective_start: new Date().toISOString(),
+      });
+      setNotice("Your care context was shared with caregivers who have access to this Care Record.");
+      setContextProximity("");
+      setContextWindowStart("");
+      setContextWindowEnd("");
+      setContextAvailabilityNotes("");
+      setContextShareConfirmed(false);
+      await load();
+    } catch {
+      setError("We couldn't share this care context. Check your access and try again.");
+    } finally {
+      setSavingContext(false);
     }
   };
 
@@ -909,6 +948,32 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   ))}
                 </section>
               )}
+              <section style={{ display: "grid", gap: "0.55rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
+                <h3 className="mobile-settings-label">Share your care context</h3>
+                <p className="mobile-settings-hint">Help the care team understand when and how you can help. This information is shared with caregivers who have access to this Care Record; it does not change the person's Living Care Record.</p>
+                <form onSubmit={(event) => void saveCaregiverContext(event)} style={{ display: "grid", gap: "0.55rem" }}>
+                  <label className="mobile-settings-label" htmlFor="care-context-proximity">Where are you based relative to the person you help?</label>
+                  <select id="care-context-proximity" className="mobile-settings-input" value={contextProximity} onChange={(event) => setContextProximity(event.target.value as typeof contextProximity)}>
+                    <option value="">Not specified</option>
+                    <option value="lives_with">I live with them</option>
+                    <option value="local">I live nearby</option>
+                    <option value="regional">I live in the same region</option>
+                    <option value="remote">I live farther away</option>
+                  </select>
+                  <label className="mobile-settings-label" htmlFor="care-context-window-start">When are you usually available? (optional)</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.5rem" }}>
+                    <input id="care-context-window-start" className="mobile-settings-input" value={contextWindowStart} onChange={(event) => setContextWindowStart(event.target.value)} placeholder="e.g. weekday mornings" maxLength={120} />
+                    <input aria-label="Availability window end" className="mobile-settings-input" value={contextWindowEnd} onChange={(event) => setContextWindowEnd(event.target.value)} placeholder="e.g. after 5 PM" maxLength={120} />
+                  </div>
+                  <label className="mobile-settings-label" htmlFor="care-context-notes">Anything else the care team should know? (optional)</label>
+                  <textarea id="care-context-notes" className="mobile-settings-input" rows={3} maxLength={1200} value={contextAvailabilityNotes} onChange={(event) => setContextAvailabilityNotes(event.target.value)} placeholder="Share practical availability details, not medical conclusions." />
+                  <label className="mobile-settings-hint" style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
+                    <input type="checkbox" checked={contextShareConfirmed} onChange={(event) => setContextShareConfirmed(event.target.checked)} aria-label="Care context sharing confirmation" />
+                    I understand this information will be shared with caregivers who have access to this Care Record.
+                  </label>
+                  <Button type="submit" variant="secondary" disabled={savingContext || !contextShareConfirmed} loading={savingContext}>Share care context</Button>
+                </form>
+              </section>
               {careContexts.length > 0 && (
                 <div>
                   <span className="mobile-settings-hint">Care availability and context</span>
