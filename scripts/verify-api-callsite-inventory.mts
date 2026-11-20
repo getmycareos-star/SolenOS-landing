@@ -354,6 +354,7 @@ const report = {
   server_proxy_callsite_count: proxyCallsites.length,
   unsupported_server_proxy_calls: unsupportedProxyCalls,
   backend_contract: backendContract,
+  uncontracted_frontend_operations: backendContract.uncontracted_frontend_operations ?? [],
   unconsumed_backend_operation_count: backendContract.unconsumed_backend_operations?.length ?? null,
   unconsumed_backend_operations: backendContract.unconsumed_backend_operations ?? [],
   unconsumed_internal_operations: backendContract.unconsumed_internal_operations ?? [],
