@@ -63,6 +63,8 @@ assert.match(drawer, /selectedRecord\.source_kind === "follow-up"/, "follow-up d
 assert.match(followUpsPage, /item\.evidence_status/, "follow-up cards must show the evidence status separately from care priority");
 assert.match(followUpsPage, /item\.history_completeness/, "follow-up cards must disclose incomplete earlier history");
 assert.match(followUpsPage, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish an unrecorded action from a completed one");
+assert.match(followUpsPage, /item\.source === "persisted_change"/, "persisted change candidates must be eligible for an explicit, durable follow-up action");
+assert.match(followUpsPage, /source_type: item\.source/, "new follow-ups must retain the actual originating source type");
 assert.match(drawer, /Previous saved details/);
 assert.match(drawer, /Updated saved details/);
 assert.match(drawer, /Promise\.allSettled/);
