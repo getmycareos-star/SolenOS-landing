@@ -149,11 +149,6 @@ type CareAttentionDecision = {
   recorded_at?: string | null;
   due_at?: string | null;
   review_at?: string | null;
-  evidence_status?: string;
-  history_completeness?: string;
-  action_status?: string;
-  linked_follow_up_outcome_status?: string;
-  significance_assessment_status?: string;
   records?: CareAttentionEvidenceRef[];
 };
 
@@ -731,7 +726,7 @@ export function LCRCurrentUnderstanding() {
     }
   }, []);
 
-  const refreshSituationAssessment = useCallback(async () => {
+  const refreshSituationAssessment = useCallback(async (): Promise<boolean> => {
     setAssessmentLoading(true);
     setAssessmentError(null);
     try {
@@ -748,11 +743,13 @@ export function LCRCurrentUnderstanding() {
         setAssessment(current.assessment);
         setSourceFreshness(current.source_freshness ?? null);
         setAssessmentError(null);
+        return true;
       } else {
         throw new Error("The refreshed care summary did not match the active care record.");
       }
     } catch {
       setAssessmentError("The latest care summary could not be refreshed. The last saved view is shown and may be out of date.");
+      return false;
     } finally {
       setAssessmentLoading(false);
     }
@@ -1036,6 +1033,14 @@ export function LCRCurrentUnderstanding() {
     }
   }, [changeEvidence, expandedChangeId]);
 
+  const refreshWholeRecord = useCallback(async () => {
+    const assessmentUpdated = await refreshSituationAssessment();
+    await load(true);
+    if (!assessmentUpdated) {
+      setAssessmentError("The latest care summary could not be refreshed. The last saved view is shown and may be out of date.");
+    }
+  }, [refreshWholeRecord]);
+
   const reassess = useCallback(async () => {
     setAssessmentLoading(true);
     setAssessmentError(null);
@@ -1058,8 +1063,7 @@ export function LCRCurrentUnderstanding() {
     void load();
     const refreshAfterCareRecordWrite = () => {
       void (async () => {
-        await load(true);
-        await refreshSituationAssessment();
+        await refreshWholeRecord();
       })();
     };
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
@@ -1259,8 +1263,8 @@ export function LCRCurrentUnderstanding() {
           <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
           <p className="lcr-record-introduction">This record reflects the care information saved here. It may not include everything happening in care.</p>
         </div>
-        <button type="button" className="lcr-text-action" onClick={() => void load(true)} disabled={loading || refreshing} aria-label="Refresh care summary">
-          <RefreshCw size={16} aria-hidden="true" /> Refresh care summary
+        <button type="button" className="lcr-text-action" onClick={() => void refreshWholeRecord()} disabled={loading || refreshing || assessmentLoading} aria-label="Refresh care summary">
+          <RefreshCw size={16} aria-hidden="true" /> {refreshing || assessmentLoading ? "Refreshing…" : "Refresh care summary"}
         </button>
       </div>
 
@@ -1416,7 +1420,7 @@ export function LCRCurrentUnderstanding() {
             <p>{sourceFreshness.status === "freshness_check_unavailable"
               ? "We couldn’t check whether this care summary is up to date. The last saved version is still available, but it may be out of date. Refresh before relying on it."
               : "Some information may have changed since this picture was last reviewed. Refresh to check for updates."}</p>
-            <button type="button" onClick={() => void refreshSituationAssessment()} disabled={assessmentLoading}>
+            <button type="button" onClick={() => void refreshWholeRecord()} disabled={assessmentLoading || refreshing}>
               {assessmentLoading ? "Refreshing…" : "Refresh care summary"}
             </button>
           </div>
@@ -1574,10 +1578,6 @@ export function LCRCurrentUnderstanding() {
                       <li key={item.id || item.source + ":" + item.record_id} className="lcr-current-fact">
                         <strong>{caregiverSafeAssistantText(item.title) || "Care information to review"}</strong>
                         <p>{caregiverSafeAssistantText(item.reason || item.priority_basis?.join("; ")) || "The saved care information indicates this needs follow-up."}</p>
-                        {item.evidence_status && <small>Evidence: {caregiverStatusLabel(item.evidence_status) || "Not established"}</small>}
-                        {item.history_completeness && item.history_completeness !== "complete" && <small>Some earlier care information may be missing.</small>}
-                        {item.action_status && item.action_status !== "not_recorded" && <small>Follow-up: {caregiverStatusLabel(item.action_status) || "Status not recorded"}</small>}
-                        {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <small>Outcome: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</small>}
                         {item.records?.map((record) => (
                           <small key={record.source + ":" + record.record_id}>
                             {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened: {formatWhen(record.occurred_at)} · Saved: {formatWhen(record.recorded_at)}
