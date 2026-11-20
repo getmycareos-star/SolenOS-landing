@@ -180,6 +180,9 @@ assert.ok(historyDrawer.includes("source_record_ids: group.map"), "grouped histo
 
 assert.match(currentUnderstanding, /caregiverReadableCaptureText\(value\)/, "the Living Care Record uses the shared readable source formatter");
 assert.match(currentUnderstanding, /const refreshWholeRecord = useCallback/, "the main refresh action runs care reassessment and reloads the record");
+assert.match(currentUnderstanding, /\}, \[refreshSituationAssessment, load\]\);/, "whole-record refresh callback has stable dependencies");
+assert.match(currentUnderstanding, /\}, \[load, refreshWholeRecord\]\);/, "care-record update listener depends on the complete refresh callback");
+assert.doesNotMatch(currentUnderstanding, /const reassess = useCallback/, "duplicate assessment-only refresh logic is removed");
 assert.match(currentUnderstanding, /await refreshSituationAssessment\(\);\s*await load\(true\);/, "refresh backfills saved details before reloading the caregiver view");
 assert.doesNotMatch(currentUnderstanding, /Scope: selected areas only/, "internal capture scope is not shown in the caregiver record");
 

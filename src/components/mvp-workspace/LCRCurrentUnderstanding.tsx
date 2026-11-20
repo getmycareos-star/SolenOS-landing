@@ -1041,24 +1041,6 @@ export function LCRCurrentUnderstanding() {
     }
   }, [refreshSituationAssessment, load]);
 
-  const reassess = useCallback(async () => {
-    setAssessmentLoading(true);
-    setAssessmentError(null);
-    try {
-      const session = await ensureAnonymousSession();
-      const result = await postJSON("/care-continuity/situation-understanding/reassess", {}) as SituationAssessmentResponse;
-      if (!result.assessment || result.assessment.person_id !== session.person.id) {
-        throw new Error("The review did not match the active care record.");
-      }
-      setAssessment(result.assessment);
-      setSourceFreshness(result.source_freshness ?? null);
-    } catch (cause) {
-      setAssessmentError("The care summary could not be updated.");
-    } finally {
-      setAssessmentLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     void load();
     const refreshAfterCareRecordWrite = () => {
@@ -1068,7 +1050,7 @@ export function LCRCurrentUnderstanding() {
     };
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
     return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
-  }, [load, refreshSituationAssessment]);
+  }, [load, refreshWholeRecord]);
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
   const careAttention = assessment?.care_attention;
@@ -1306,7 +1288,7 @@ export function LCRCurrentUnderstanding() {
         <div className="lcr-first-screen-card">
           <h3>What needs attention</h3>
           {assessmentError ? (
-            <RecordState kind="error" title="Care priorities could not be reviewed" description="We couldn’t check what may need attention. Please try again." onAction={() => void refreshSituationAssessment()} />
+            <RecordState kind="error" title="Care priorities could not be reviewed" description="We couldn’t check what may need attention. Please try again." onAction={() => void refreshWholeRecord()} />
           ) : !assessment ? (
             <RecordState kind="incomplete" title="Care priorities haven’t been reviewed yet" description="Review the saved care information to see what may need attention." onAction={() => void refreshSituationAssessment()} />
           ) : assessment.coverage.records_examined === 0 ? (
