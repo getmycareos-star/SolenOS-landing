@@ -804,7 +804,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {observationsLoading && <p role="status">Loading recorded details…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
           {!observationsLoading && !observationsError && observations.length === 0 && <p>No separate details have been recorded from this information yet.</p>}
-          {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
+          {observations.slice().sort((a, b) => a.source_span_start - b.source_span_start).map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(item.source_passage) || 'Original wording is not available.'}</blockquote>

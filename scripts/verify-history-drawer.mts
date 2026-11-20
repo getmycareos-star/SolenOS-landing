@@ -70,6 +70,8 @@ assert.ok(structuredCapture);
 assert.match(structuredCapture, /she's loosing weight/);
 assert.match(structuredCapture, /Mood: 5 — she's sad/);
 assert.match(structuredCapture, /Blood pressure \(top number\): 10 mmHg — yes/);
+assert.ok(structuredCapture.indexOf("she's loosing weight") < structuredCapture.indexOf("Mood: 5 — she's sad"));
+assert.ok(structuredCapture.indexOf("Mood: 5 — she's sad") < structuredCapture.indexOf("Blood pressure (top number): 10 mmHg — yes"));
 assert.match(structuredCapture, /not been independently checked/);
 assert.doesNotMatch(structuredCapture, /capture_idempotency_key|capture_request_fingerprint|internal-key|internal-fingerprint/);
 assert.match(drawer, /caregiverReadableCaptureText/, "history details use the shared caregiver-readable source formatter");

@@ -388,8 +388,6 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
       oxygen_saturation: "Oxygen level",
       weight: "Weight",
     };
-    // A detail may be shown on its own as an exact source passage, not only
-    // inside the complete original Daily Care capture.
     if (typeof capture.axis === "string" && capture.score !== undefined) {
       const label = readableLabel(capture.axis) || "Rating";
       const score = safeText(capture.score);
@@ -429,17 +427,18 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
         : [];
       if (areas.length) lines.push("Areas mentioned: " + areas.join(", "));
     }
-    if (Array.isArray(capture.medications)) {
-      for (const raw of capture.medications) {
+    for (const key of ["notes", "original_notes", "text", "description", "observation", "summary"]) {
+      const safe = safeText(capture[key]);
+      if (safe && !lines.includes(safe)) lines.push(safe);
+    }
+    if (Array.isArray(capture.scales)) {
+      for (const raw of capture.scales) {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
-        const medicine = raw as Record<string, unknown>;
-        const name = safeText(medicine.medication_name) || "Medicine";
-        const details = [
-          safeText(medicine.dose) ? "Dose recorded: " + safeText(medicine.dose) : "",
-          safeText(medicine.status) ? "Status: " + readableLabel(medicine.status) : "",
-          safeText(medicine.note),
-        ].filter(Boolean);
-        lines.push(details.length ? name + " — " + details.join("; ") : name);
+        const scale = raw as Record<string, unknown>;
+        const label = readableLabel(scale.axis) || "Rating";
+        const score = safeText(scale.score);
+        const note = safeText(scale.note);
+        if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
       }
     }
     if (Array.isArray(capture.vitals)) {
@@ -453,19 +452,18 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
         if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
       }
     }
-    if (Array.isArray(capture.scales)) {
-      for (const raw of capture.scales) {
+    if (Array.isArray(capture.medications)) {
+      for (const raw of capture.medications) {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
-        const scale = raw as Record<string, unknown>;
-        const label = readableLabel(scale.axis) || "Rating";
-        const score = safeText(scale.score);
-        const note = safeText(scale.note);
-        if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
+        const medicine = raw as Record<string, unknown>;
+        const name = safeText(medicine.medication_name) || "Medicine";
+        const details = [
+          safeText(medicine.dose) ? "Dose recorded: " + safeText(medicine.dose) : "",
+          safeText(medicine.status) ? "Status: " + readableLabel(medicine.status) : "",
+          safeText(medicine.note),
+        ].filter(Boolean);
+        lines.push(details.length ? name + " — " + details.join("; ") : name);
       }
-    }
-    for (const key of ["notes", "original_notes", "text", "description", "observation", "summary"]) {
-      const safe = safeText(capture[key]);
-      if (safe && !lines.includes(safe)) lines.push(safe);
     }
     if (!lines.length) return fallback;
     if (["medications", "vitals", "scales"].some((key) => Array.isArray(capture[key]) && (capture[key] as unknown[]).length > 0)) {
@@ -473,7 +471,6 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     }
     return lines.join("\n");
   } catch {
-    // Never expose serialized object payloads or internal request metadata.
     const trimmed = value.trimStart();
     return trimmed.startsWith("{") || trimmed.startsWith("[")
       ? fallback
