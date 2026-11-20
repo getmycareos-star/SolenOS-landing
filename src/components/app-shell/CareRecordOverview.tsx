@@ -111,8 +111,15 @@ export function CareRecordOverview() {
       }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
-      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
-      const unavailable = /502|503|504|network|fetch failed|failed to fetch|timeout|timed out|ECONN/i.test(message);
+      const responseStatus =
+        cause && typeof cause === "object" && "status" in cause &&
+        typeof (cause as { status?: unknown }).status === "number"
+          ? (cause as { status: number }).status
+          : null;
+      const accessDenied = responseStatus === 401 || responseStatus === 403 ||
+        /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
+      const unavailable = (responseStatus !== null && responseStatus >= 500) ||
+        /502|503|504|network|fetch failed|failed to fetch|timeout|timed out|ECONN/i.test(message);
       setErrorKind(accessDenied ? "forbidden" : unavailable ? "unavailable" : "error");
       if (accessDenied) {
         setItems([]);
