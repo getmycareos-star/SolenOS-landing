@@ -1384,6 +1384,29 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         </p>
       </div>
       
+      {pendingLocal && (
+        <p role="status" style={{ margin: "0 0 16px", padding: "12px 16px", border: "1px solid var(--warning)", borderRadius: 8, color: "var(--warning)" }}>
+          {pendingMessage || "This update is encrypted and saved on this device. It has not reached the care record yet."}
+        </p>
+      )}
+      {pendingQueueCount > 0 && !pendingLocal && (
+        <p role="status" style={{ margin: "0 0 16px", color: "var(--text-secondary)", fontSize: 13 }}>
+          {pendingQueueCount} care update{pendingQueueCount === 1 ? "" : "s"} waiting to sync. They are not in the care record until the server confirms them.
+        </p>
+      )}
+      {pendingAttentionCount > 0 && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+          <p role="alert" style={{ margin: 0, color: "var(--error)", fontSize: 13 }}>
+            {pendingAttentionCount} care update{pendingAttentionCount === 1 ? "" : "s"} need attention and have not been saved to the care record.
+          </p>
+          <button type="button" onClick={() => void retryPendingCaptures()} style={{ border: 0, background: "transparent", textDecoration: "underline", cursor: "pointer" }}>Retry pending updates</button>
+          <button type="button" onClick={() => void removeBlockedCaptures()} style={{ border: 0, background: "transparent", textDecoration: "underline", cursor: "pointer" }}>Remove unsaved updates from this device</button>
+        </div>
+      )}
+      {pendingMessage && !pendingLocal && (
+        <p role="status" style={{ margin: "0 0 16px", color: "var(--text-secondary)", fontSize: 13 }}>{pendingMessage}</p>
+      )}
+
       {/* Saved indicator */}
       {saved && (
         <div style={{ 
