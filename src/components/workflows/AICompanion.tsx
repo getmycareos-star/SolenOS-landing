@@ -344,18 +344,31 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setCareUpdateError(null)
     setCareUpdateNotice(null)
     try {
-      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as { written_to_lcr?: boolean }
-      setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
+      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as {
+        status?: string
+        decision?: string
+        written_to_lcr?: boolean
+        idempotent_replay?: boolean
+      }
+      const expectedStatus = decision === 'accept' ? 'accepted' : 'rejected'
+      if (response?.status !== expectedStatus || response?.decision !== decision) {
+        throw new Error('The server did not confirm the requested review decision.')
+      }
       if (decision === 'accept' && response?.written_to_lcr !== true) {
-        setCareUpdateNotice(null)
-        setCareUpdateError('Your review was saved, but we could not confirm that this report is active in your Care Record. Check your Care Record before trying again.')
-        return
+        throw new Error('The server did not confirm the Care Record update.')
+      }
+      if (decision === 'reject' && response?.written_to_lcr !== false) {
+        throw new Error('The server did not confirm that nothing was added to the Care Record.')
+      }
+      setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
+      if (decision === 'accept') {
+        window.dispatchEvent(new Event('careRecordUpdated'))
       }
       setCareUpdateNotice(decision === 'accept'
         ? 'Your report was added to the Care Record. A healthcare professional has not confirmed it.'
         : 'This suggestion was declined. Nothing was added to the Care Record.')
     } catch {
-      setCareUpdateError('This care suggestion could not be reviewed. It has not been marked as accepted. Refresh and try again.')
+      setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
     } finally {
       setReviewingCareUpdateId(null)
     }
