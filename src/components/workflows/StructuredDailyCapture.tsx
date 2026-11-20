@@ -226,7 +226,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       const currentCaregiverId = getCaregiverId();
       if (!currentPersonId || !currentCaregiverId) return;
       try {
-        const summary = await getDurableWriteSummary(currentPersonId, currentCaregiverId);
+        const summary = await getDurableWriteSummary(currentPersonId, currentCaregiverId, ["/daily/log"]);
         if (!active) return;
         setPendingQueueCount(summary.pending);
         setPendingAttentionCount(summary.blocked + summary.failed_recoverable);
@@ -236,7 +236,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           caregiverId: currentCaregiverId,
           send: sendQueuedCareWrite,
         });
-        const afterSync = await getDurableWriteSummary(currentPersonId, currentCaregiverId);
+        const afterSync = await getDurableWriteSummary(currentPersonId, currentCaregiverId, ["/daily/log"]);
         if (!active) return;
         setPendingQueueCount(afterSync.pending);
         setPendingAttentionCount(afterSync.blocked + afterSync.failed_recoverable);
@@ -250,6 +250,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           setPendingMessage("");
           setSaved(true);
           setSavedEntrySummary("Your previously queued update has synced to the care record. Your current form remains open.");
+          setChangeIntelligenceStatus("not_reported");
+          setCareContinuityExecution(null);
+          setQwenAnalysis(null);
           setSaveError(null);
           window.dispatchEvent(new Event("careRecordUpdated"));
         } else if (result.synced > 0) {
