@@ -555,7 +555,7 @@ export async function postJSON(path: string, body: unknown, extraHeaders: Record
   // Retry a rejected bearer only when the write carries a stable server-side
   // idempotency key. Never replay an arbitrary POST after an ambiguous outcome.
   if (res.status === 401 && authHeaders.Authorization && hasStableIdempotencyKey(body)) {
-    const previousToken = authHeaders.Authorization.replace(/^Bearer\\s+/i, "");
+    const previousToken = authHeaders.Authorization.replace(/^Bearer\s+/i, "");
     const nextToken = await refreshSessionAfterUnauthorized(previousToken);
     res = await fetchWithTimeout(url, {
       method: "POST",
@@ -708,7 +708,7 @@ export async function postFormData(path: string, body: FormData) {
   });
   const ingestionKey = body.get("ingestion_key");
   if (res.status === 401 && headers.Authorization && typeof ingestionKey === "string" && ingestionKey.trim()) {
-    const previousToken = headers.Authorization.replace(/^Bearer\\s+/i, "");
+    const previousToken = headers.Authorization.replace(/^Bearer\s+/i, "");
     const nextToken = await refreshSessionAfterUnauthorized(previousToken);
     res = await fetchWithTimeout(url, {
       method: "POST",
