@@ -1748,6 +1748,26 @@ await record("Daily Care capture survives secondary read failures", async () => 
   // Keep normal page navigation online; the route below blocks only the
   // care-write POST so the saved queue can be observed after a full reload.
   await resilient.page.reload({ waitUntil: "domcontentloaded" });
+  const queueAfterReload = await resilient.page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const open = indexedDB.open("solenos-durable-write-queue", 1);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => resolve(open.result);
+    });
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction("writes", "readonly");
+      const request = transaction.objectStore("writes").getAll();
+      request.onsuccess = () => resolve(request.result.map((row) => ({
+        endpoint: row.endpoint, status: row.status, attempts: row.attempts,
+      })));
+      request.onerror = () => reject(request.error);
+    });
+  });
+  assert.ok(
+    queueAfterReload.some((row) => row.endpoint === "/daily-care/entries"),
+    "the encrypted Daily Care write must remain in IndexedDB after a full page reload",
+  );
+  console.log("OFFLINE_QUEUE_AFTER_RELOAD", JSON.stringify(queueAfterReload));
   try {
     await resilient.page.getByRole("status")
       .filter({ hasText: "update waiting to sync with the care record" })
