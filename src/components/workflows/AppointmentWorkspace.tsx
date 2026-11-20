@@ -884,7 +884,7 @@ export default function AppointmentWorkspace() {
               }} />
             </label>
             {brief.source_coverage?.documents === 'restricted' && <p className="guided-muted" role="status">Document access is restricted for this caregiver. No document content or metadata is shown here.</p>}
-            {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>
+            {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>}
             {documentMessage && <p className="guided-muted" role="status">{documentMessage}</p>}
             {pendingDocumentEvidenceId && <div className="guided-actions"><span className="guided-muted">Saved file: {caregiverSafeAssistantText(pendingDocumentName) || 'Document'}</span><button type="button" className="guided-secondary" disabled={documentBusy} onClick={() => void retryDocumentLink()}>Retry linking saved document</button></div>}
             {attachedEvidenceIds.length > 0 && <p className="guided-footnote">{attachedEvidenceIds.length} document {attachedEvidenceIds.length === 1 ? 'is' : 'items are'} linked to this appointment.</p>}
