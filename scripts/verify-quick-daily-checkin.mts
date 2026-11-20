@@ -21,13 +21,13 @@ const detailedCapture = fs.readFileSync(
 
 assert.match(dailyCarePage, /<QuickDailyCheckIn\s*\/>/,
   "Daily Care mounts the optional quick check-in");
-assert.match(checkIn, /endpoint: "\\/daily\\/log"/,
+assert.match(checkIn, /endpoint: "\/daily\/log"/,
   "quick check-ins use the existing authenticated daily-log endpoint");
-assert.match(checkIn, /enqueueDurableWrite\\(/,
+assert.match(checkIn, /enqueueDurableWrite\(/,
   "quick check-ins reserve a durable idempotent write before delivery");
 assert.match(checkIn, /deliverDurableWrite</,
   "quick check-ins remove the local write only after the backend confirms delivery");
-assert.match(checkIn, /sendQueuedCareWrite\\("\\/daily\\/log", payload\\)/,
+assert.match(checkIn, /sendQueuedCareWrite\("\/daily\/log", payload\)/,
   "quick check-ins deliver through the existing authenticated daily-log endpoint");
 assert.match(checkIn, /getPersonId\(\)/);
 assert.match(checkIn, /getCaregiverId\(\)/);
