@@ -199,7 +199,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
   const categoryLabel = item.category === "needs_attention_now" ? "Needs attention now"
     : item.category === "important_to_address" ? "Important to address"
     : item.category === "can_wait_with_documented_basis" ? "Being monitored"
-    : item.category === "needs_clarification" ? "Needs checking" : "Follow-up";
+    : item.category === "needs_clarification" ? "Needs clarification" : "Follow-up";
 
   return <article className="followup-card">
     <div className="followup-card-heading">
@@ -481,9 +481,9 @@ export default function FollowUpsPage() {
         {categorized.monitored.length === 0 && unclassifiedLoops.length === 0 && <p className="followups-empty-inline">There are no other items to show from the information reviewed.</p>}
       </section>
       <section className="followups-section">
-        <div className="followups-section-heading"><div><h2>Needs checking</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length}</span></div>
+        <div className="followups-section-heading"><div><h2>Needs clarification</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length}</span></div>
         {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} occurrences={item.record_id ? occurrencesById[item.record_id] : undefined} />)}
-        {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">Nothing needs checking based on the information reviewed.</p>}
+        {categorized.needsClarification.length === 0 && <p className="followups-empty-inline">No clarification is currently needed based on the information reviewed.</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items marked as completed or closed.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
