@@ -1345,6 +1345,9 @@ export function HistoryDrawer() {
       if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
         recordsRef.current = [];
         setRecords([]);
+        setSourceStatuses(Object.fromEntries(
+          HISTORY_STATUS_CATEGORIES.map((category) => [category, "failed"]),
+        ) as Record<HistoryStatusCategory, HistoryLoadStatus>);
         setSelectedId(null);
         loadedPersonIdRef.current = null;
       }
