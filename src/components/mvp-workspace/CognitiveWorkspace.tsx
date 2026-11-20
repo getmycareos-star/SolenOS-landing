@@ -371,7 +371,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
           personId: session.person.id,
           caregiverId: session.caregiver.id,
           send: sendQueuedCareWrite,
-          endpoints: ["/api/situation"],
+          endpoints: ["/situation"],
         });
         if (!active || result.synced === 0) return;
 
@@ -542,7 +542,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         durableWriteId = await enqueueDurableWrite({
           person_id: anonymousSession.person.id,
           caregiver_id: anonymousSession.caregiver.id,
-          endpoint: "/api/situation",
+          endpoint: "/situation",
           idempotency_key: ingestionKey,
           payload: writePayload,
         });
@@ -572,7 +572,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
           sendQueuedCareWrite,
         );
       } else {
-        rawSituationResponse = await sendQueuedCareWrite("/api/situation", writePayload);
+        rawSituationResponse = await sendQueuedCareWrite("/situation", writePayload);
       }
 
       let situationData = normalizeBackendSituationResponse(
