@@ -68,7 +68,6 @@ type Observation = {
   value_text?: string | null
   units?: string | null
   source_passage: string
-  extraction_method?: string | null
   source_span_start: number
   source_span_end: number
   negated?: boolean | null
@@ -809,7 +808,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(item.source_passage) || 'Original wording is not available.'}</blockquote>
-            {item.extraction_method !== 'structured_daily_capture' && (
+            {item.observation_method !== 'Daily Care form' && (
               <div>What was recorded: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
             )}
             {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
