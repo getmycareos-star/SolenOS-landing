@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { getBlob, getJSON, postFormData, postJSON } from "../src/api/client";
 
 const values = new Map<string, string>([
@@ -35,6 +36,13 @@ globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unkn
 }) as typeof setTimeout;
 
 async function main() {
+  const photoCaptureSource = readFileSync(
+    new URL("../src/components/workflows/DailyCarePhotoCapture.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(photoCaptureSource, /form\.append\("ingestion_key", retryKey\)/);
+  assert.match(photoCaptureSource, /const retryKey = ingestionKey \?\? crypto\.randomUUID\(\)/);
+  assert.match(photoCaptureSource, /setIngestionKey\(null\)/, "photo retry key must be cleared only when the selected source changes or the upload succeeds");
   let reads = 0;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     reads += 1;
@@ -99,6 +107,6 @@ async function main() {
   assert.ok(observedTimeouts.filter(value => value === 120_000).length >= 2, "document downloads must use the extended file-transfer deadline");
 
   globalThis.setTimeout = originalSetTimeout;
-  console.log("API reliability checks passed: safe GET retry, no mutation replay, idempotency forwarding, and Companion/document-specific deadlines.");
+  console.log("API reliability checks passed: safe GET retry, no mutation replay, request idempotency, photo-upload retry identity, and Companion/document-specific deadlines.");
 }
 void main();
