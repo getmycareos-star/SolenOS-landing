@@ -2258,7 +2258,6 @@ export function LCRCurrentUnderstanding() {
                                 <small>{caregiverSafeAssistantText(evidenceIntegrityByFact[item.id].near_duplicate_analysis?.interpretation_limit) || "Similar wording does not prove that reports came from the same source."}</small>
                               </div>
                             )}
-                    </details>
                             <small>{caregiverSafeAssistantText(evidenceIntegrityByFact[item.id].interpretation_limit) || "The relationship between these reports is not fully known."}</small>
                           </div>
                         )}
