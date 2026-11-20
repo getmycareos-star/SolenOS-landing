@@ -43,14 +43,30 @@ export function GlobalDisplayPreferences() {
   useEffect(() => {
     if (!ready) return;
     const root = document.documentElement;
-    // System default intentionally means the accessible light theme, not OS dark mode.
-    root.dataset.solenosTheme = prefs.theme === "dark" ? "dark" : "light";
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const applyTheme = () => {
+      const resolvedTheme =
+        prefs.theme === "system" ? (systemTheme.matches ? "dark" : "light") : prefs.theme;
+      root.dataset.solenosTheme = resolvedTheme;
+      root.style.colorScheme = resolvedTheme;
+    };
+
+    applyTheme();
+    if (prefs.theme === "system") {
+      systemTheme.addEventListener("change", applyTheme);
+    }
+
     root.style.setProperty("--solenos-text-scale", String(Number(prefs.scale) / 100));
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch {
       // The active preference still applies for this session.
     }
+
+    return () => {
+      systemTheme.removeEventListener("change", applyTheme);
+    };
   }, [prefs, ready]);
 
   function update(next: Partial<Preferences>) {
