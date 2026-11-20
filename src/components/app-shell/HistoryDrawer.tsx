@@ -100,7 +100,10 @@ async function loadAllFollowUpHistoryPages(): Promise<{ items: FollowUpHistoryIt
       !Number.isInteger(response.count) || response.count < 0) {
       throw new Error("Saved follow-ups returned an incomplete page.");
     }
-    expectedCount = response.count;
+    if (expectedCount === null) expectedCount = response.count;
+    else if (response.count !== expectedCount) {
+      throw new Error("Saved follow-up history changed while it was loading. Refresh to try again.");
+    }
     const rows = response.items as FollowUpHistoryItem[];
     if (rows.some((row) => !row || typeof row.id !== "string" || !row.id)) {
       throw new Error("Saved follow-ups contained an incomplete record.");
