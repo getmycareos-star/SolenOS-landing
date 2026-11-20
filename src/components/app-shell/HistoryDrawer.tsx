@@ -1167,6 +1167,9 @@ export function HistoryDrawer() {
         availableSources += 1;
         const decisions = (decisionResult.value as CareDecision[]).filter((item) => item && typeof item.id === "string");
         nextRecords.push(...decisions.map(mapDecision));
+        if (decisions.length < (decisionResult.value as unknown[]).length) {
+          warnings.push("Some care decision records were incomplete and could not be shown.");
+        }
         if (decisions.length >= 100) {
           warnings.push("At least 100 care decisions were returned. Older decisions may be missing from this view.");
         }
@@ -1179,6 +1182,9 @@ export function HistoryDrawer() {
         availableSources += 1;
         const outcomes = (outcomeResult.value as CareOutcome[]).filter((item) => item && typeof item.id === "string");
         nextRecords.push(...outcomes.map(mapOutcome));
+        if (outcomes.length < (outcomeResult.value as unknown[]).length) {
+          warnings.push("Some decision and action outcome records were incomplete and could not be shown.");
+        }
         if (outcomes.length >= 100) {
           warnings.push("At least 100 decision and action outcomes were returned. Older outcomes may be missing from this view.");
         }
