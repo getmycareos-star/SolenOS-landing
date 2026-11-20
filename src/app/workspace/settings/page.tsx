@@ -383,8 +383,12 @@ function ProfileCard() {
         }
 
         const resolved = {
-          name: persisted.name?.trim() || legacyName.trim(),
-          relationship: persisted.relationship?.trim() || legacyRelationship.trim(),
+          name: legacyName.trim() && (!persisted.name?.trim() || persisted.name === "Care recipient")
+            ? legacyName.trim()
+            : persisted.name?.trim() || legacyName.trim(),
+          relationship: legacyRelationship.trim() && (!persisted.relationship?.trim() || persisted.relationship === "Family")
+            ? legacyRelationship.trim()
+            : persisted.relationship?.trim() || legacyRelationship.trim(),
           condition: persisted.condition?.trim() || legacyCondition.trim(),
         };
         const needsLegacyMigration = Boolean(
