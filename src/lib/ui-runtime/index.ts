@@ -62,8 +62,6 @@ export {
   timelineForSituation,
   serializeTimeline,
   parseTimeline,
-  loadTimelineFromStorage,
-  persistTimeline,
   TIMELINE_MUTATION_FORBIDDEN,
   type AppendTimelineParams,
 } from "./timeline-store";
@@ -75,10 +73,6 @@ export {
   upsertSituation,
   updateSituationFromDecision,
   titleFromInput,
-  loadSituationsFromStorage,
-  persistSituations,
-  loadActiveSituationId,
-  persistActiveSituationId,
 } from "./situation-store";
 
 export {
