@@ -258,7 +258,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       try {
         const session = await ensureAnonymousSession()
         storageKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
-        let savedSessionId = window.localStorage.getItem(storageKey)
+        let savedSessionId: string | null = null
+        try {
+          savedSessionId = window.localStorage.getItem(storageKey)
+        } catch {
+          // The authenticated server list remains authoritative when browser storage is unavailable.
+        }
         if (!savedSessionId) {
           // Browser storage is only a fast pointer. The authenticated server
           // list is the durable source, so a new device can restore the latest
