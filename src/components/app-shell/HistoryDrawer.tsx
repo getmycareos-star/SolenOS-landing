@@ -85,6 +85,41 @@ async function loadAllHistoryPages<T extends { id: string }>(path: string): Prom
   throw new Error("Saved care history exceeded the available page limit. The list was not presented as complete.");
 }
 
+async function loadAllFollowUpHistoryPages(): Promise<{ items: FollowUpHistoryItem[]; count: number }> {
+  const pageSize = 100;
+  const maximumPages = 100;
+  const records: FollowUpHistoryItem[] = [];
+  const seenIds = new Set<string>();
+  let expectedCount: number | null = null;
+  for (let page = 0; page < maximumPages; page += 1) {
+    const response = await getJSON(`/open-loops?limit=${pageSize}&offset=${page * pageSize}`) as {
+      items?: unknown;
+      count?: unknown;
+    };
+    if (!Array.isArray(response.items) || typeof response.count !== "number" ||
+      !Number.isInteger(response.count) || response.count < 0) {
+      throw new Error("Saved follow-ups returned an incomplete page.");
+    }
+    expectedCount = response.count;
+    const rows = response.items as FollowUpHistoryItem[];
+    if (rows.some((row) => !row || typeof row.id !== "string" || !row.id)) {
+      throw new Error("Saved follow-ups contained an incomplete record.");
+    }
+    for (const row of rows) {
+      if (seenIds.has(row.id)) {
+        throw new Error("Saved follow-ups changed while they were loading. Refresh to try again.");
+      }
+      seenIds.add(row.id);
+      records.push(row);
+    }
+    if (records.length >= expectedCount) return { items: records, count: expectedCount };
+    if (rows.length === 0) {
+      throw new Error("Saved follow-up history could not be fully retrieved.");
+    }
+  }
+  throw new Error("Saved follow-up history exceeded the available page limit. The list was not presented as complete.");
+}
+
 type HistoryRecord = {
   id: string;
   person_id?: string;
@@ -943,7 +978,7 @@ export function HistoryDrawer() {
         getJSON("/care-continuity/revisions/" + personPath),
         loadAllHistoryPages<CareDecision>("/care-continuity/decisions"),
         loadAllHistoryPages<CareOutcome>("/care-continuity/outcomes/" + personPath),
-        getJSON("/open-loops?limit=100"),
+        loadAllFollowUpHistoryPages(),
       ]);
 
       const nextRecords: HistoryRecord[] = [];
