@@ -44,6 +44,65 @@ function hashContent(content: string): string {
   return createHash("sha256").update(content).digest("hex");
 }
 
+/**
+ * Insert immutable raw evidence and verify idempotent replays.
+ *
+ * ON CONFLICT DO NOTHING alone is not sufficient: a reused ID with different
+ * content must never be reported as persisted. The caller may acknowledge a
+ * replay only when the existing row has the same owner and content hash.
+ */
+async function persistEvidence(pool: Pool, evidence: RawEvidence): Promise<void> {
+  const values = [
+    evidence.id,
+    evidence.caregiver_id,
+    evidence.person_id,
+    evidence.input_type,
+    evidence.content,
+    evidence.content_hash,
+    evidence.ocr_confidence,
+    evidence.document_id,
+    evidence.document_name,
+    evidence.captured_at,
+    evidence.urgency_risk_level,
+    evidence.urgency_signals,
+    evidence.metadata,
+  ];
+
+  const inserted = await pool.query(
+    `INSERT INTO raw_evidence (
+       id, caregiver_id, person_id, input_type, content, content_hash,
+       ocr_confidence, document_id, document_name, captured_at,
+       urgency_risk_level, urgency_signals, metadata
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+     ON CONFLICT (id) DO NOTHING
+     RETURNING id`,
+    values,
+  );
+  if (inserted.rows.length === 1) return;
+
+  const existing = await pool.query(
+    `SELECT id, caregiver_id, person_id, content_hash
+       FROM raw_evidence
+      WHERE id = $1`,
+    [evidence.id],
+  );
+  const row = existing.rows[0] as
+    | { id: string; caregiver_id: string; person_id: string | null; content_hash: string }
+    | undefined;
+
+  if (
+    !row ||
+    row.caregiver_id !== evidence.caregiver_id ||
+    row.person_id !== evidence.person_id ||
+    row.content_hash !== evidence.content_hash
+  ) {
+    throw new Error(
+      "Raw evidence ID already exists with different content or ownership; persistence was not acknowledged.",
+    );
+  }
+}
+
 function dataDir(caregiverId: string): string {
   const validated = requireCaregiverId(caregiverId);
   const cleaned = validated.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
@@ -127,30 +186,7 @@ export class RawEvidenceStore {
 
     if (activePool) {
       try {
-        await activePool.query(
-          `INSERT INTO raw_evidence (
-             id, caregiver_id, person_id, input_type, content, content_hash,
-             ocr_confidence, document_id, document_name, captured_at,
-             urgency_risk_level, urgency_signals, metadata
-           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-           ON CONFLICT (id) DO NOTHING`,
-          [
-            evidence.id,
-            evidence.caregiver_id,
-            evidence.person_id,
-            evidence.input_type,
-            evidence.content,
-            evidence.content_hash,
-            evidence.ocr_confidence,
-            evidence.document_id,
-            evidence.document_name,
-            evidence.captured_at,
-            evidence.urgency_risk_level,
-            evidence.urgency_signals,
-            evidence.metadata,
-          ],
-        );
+        await persistEvidence(activePool, evidence);
         serverPersisted = true;
         const queuedIndex = this.syncQueue.findIndex((queued) => queued.id === evidence.id);
         if (queuedIndex >= 0) this.syncQueue.splice(queuedIndex, 1);
@@ -252,30 +288,7 @@ export class RawEvidenceStore {
     let synced = 0;
     for (const evidence of queuedById.values()) {
       try {
-        await pool.query(
-          `INSERT INTO raw_evidence (
-             id, caregiver_id, person_id, input_type, content, content_hash,
-             ocr_confidence, document_id, document_name, captured_at,
-             urgency_risk_level, urgency_signals, metadata
-           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-           ON CONFLICT (id) DO NOTHING`,
-          [
-            evidence.id,
-            evidence.caregiver_id,
-            evidence.person_id,
-            evidence.input_type,
-            evidence.content,
-            evidence.content_hash,
-            evidence.ocr_confidence,
-            evidence.document_id,
-            evidence.document_name,
-            evidence.captured_at,
-            evidence.urgency_risk_level,
-            evidence.urgency_signals,
-            evidence.metadata,
-          ],
-        );
+        await persistEvidence(pool, evidence);
         synced++;
         try {
           rmSync(queueFile(evidence), { force: true });
