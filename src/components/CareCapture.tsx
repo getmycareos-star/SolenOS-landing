@@ -12,6 +12,9 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [qwenAnalysis, setQwenAnalysis] = useState<{ status: string; candidates: any } | null>(null)
   const [identityError, setIdentityError] = useState<string | null>(null)
+  // Retain the same key while a failed request is retried. A changed draft or
+  // confirmed save starts a new capture with a new server idempotency scope.
+  const [submissionKey, setSubmissionKey] = useState<string | null>(null)
   const personId = pid || getPersonId()
   
   const { mutate: submitSituation, loading: submitting, error: submitError } = useOptimisticMutation<
@@ -23,6 +26,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         caregiver_id: caregiverId,
         person_id: personId,
         raw_input: rawInput,
+        ingestion_key: submissionKey ?? crypto.randomUUID(),
       }) as { ok?: boolean; message?: string };
       if (response?.ok !== true) {
         throw new Error(
@@ -47,6 +51,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       })
       setIdentityError(null)
       setText('')
+      setSubmissionKey(null)
       onCapture?.(variables.rawInput)
     },
     onError: async (error, variables, context) => {
@@ -71,12 +76,15 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
     }
     setIdentityError(null)
     setSavedMessage(null)
+    const retryKey = submissionKey ?? crypto.randomUUID()
+    if (!submissionKey) setSubmissionKey(retryKey)
 
     try {
       await submitSituation({
         caregiverId,
         personId,
-        rawInput: text.trim()
+        rawInput: text.trim(),
+        ingestionKey: retryKey,
       })
     } catch {
       // The mutation hook exposes the failure; keep the user's text intact.
@@ -134,6 +142,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
         value={text}
         onChange={(e) => {
           setText(e.target.value)
+          setSubmissionKey(null)
           setSavedMessage(null)
           setQwenAnalysis(null)
           setIdentityError(null)
