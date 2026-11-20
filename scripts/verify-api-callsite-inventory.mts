@@ -102,6 +102,13 @@ for (const item of sorted) {
   grouped.set(key, [...(grouped.get(key) ?? []), item]);
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\const grouped = new Map<string, Callsite[]>();
+for (const item of sorted) {
+  const key = item.method + " " + item.resolved_path;
+  grouped.set(key, [...(grouped.get(key) ?? []), item]);
+}
+
 console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify({
   callsite_count: sorted.length,
   distinct_method_path_pairs: grouped.size,
@@ -114,4 +121,74 @@ console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify({
 }, null, 2));
 
 assert.equal(unsupported.length, 0, "Every API helper call must expose a statically auditable path expression.");
+assert.ok(sorted.length > 0, "No frontend API helper calls were discovered.");");
+}
+
+let backendContract: {
+  enabled: boolean;
+  openapi_url?: string;
+  registered_operations?: number;
+  matched_callsite_pairs?: number;
+  intentionally_disabled_pairs?: number;
+  missing_operations?: Array<{ method_path: string; callsites: Callsite[] }>;
+} = { enabled: false };
+
+const openApiUrl = process.env.SOLENOS_OPENAPI_URL;
+if (openApiUrl) {
+  const response = await fetch(openApiUrl);
+  if (!response.ok) throw new Error(`Could not retrieve backend OpenAPI contract: HTTP ${response.status}`);
+  const specification = await response.json() as { paths?: Record<string, Record<string, unknown>> };
+  const paths = specification.paths ?? {};
+  const registered = Object.entries(paths).flatMap(([path, operations]) =>
+    Object.keys(operations)
+      .filter(method => ["get", "post", "put", "patch", "delete"].includes(method.toLowerCase()))
+      .map(method => ({ path, method: method.toLowerCase() }))
+  );
+  const missing: Array<{ method_path: string; callsites: Callsite[] }> = [];
+  let matched = 0;
+  let intentionallyDisabled = 0;
+  for (const [key, items] of grouped.entries()) {
+    const [methodLabel, rawPath] = key.split(" ", 2);
+    const method = methodLabel === "GET_BLOB" ? "get" : methodLabel === "POST_MULTIPART" ? "post" : methodLabel.toLowerCase();
+    const path = rawPath.split("?", 1)[0];
+    if (path === "/api/v1/community" || path.startsWith("/api/v1/community/")) {
+      intentionallyDisabled += 1;
+      continue;
+    }
+    const pattern = new RegExp("^" + path.split("/").map(segment => segment === "{param}" ? "[^/]+" : escapeRegex(segment)).join("/") + "$");
+    const exists = registered.some(route => route.method === method && pattern.test(route.path));
+    if (exists) matched += 1;
+    else missing.push({ method_path: key, callsites: items });
+  }
+  backendContract = {
+    enabled: true,
+    openapi_url: openApiUrl,
+    registered_operations: registered.length,
+    matched_callsite_pairs: matched,
+    intentionally_disabled_pairs: intentionallyDisabled,
+    missing_operations: missing,
+  };
+}
+
+console.log("FRONTEND_API_CALLSITE_INVENTORY", JSON.stringify({
+  callsite_count: sorted.length,
+  distinct_method_path_pairs: grouped.size,
+  unsupported_dynamic_calls: unsupported.length,
+  unsupported_calls: unsupported,
+  backend_contract: backendContract,
+  endpoints: [...grouped.entries()].map(([key, items]) => ({
+    method_path: key,
+    callsite_count: items.length,
+    callsites: items.map(({ file, line, helper, dynamic }) => ({ file, line, helper, dynamic })),
+  })),
+}, null, 2));
+
+assert.equal(unsupported.length, 0, "Every API helper call must expose a statically auditable path expression.");
 assert.ok(sorted.length > 0, "No frontend API helper calls were discovered.");
+if (backendContract.enabled) {
+  assert.equal(
+    backendContract.missing_operations?.length ?? 0,
+    0,
+    "Every active frontend API helper call must match a registered backend OpenAPI method/path. Community routes are intentionally excluded.",
+  );
+}
