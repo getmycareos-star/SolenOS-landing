@@ -56,6 +56,35 @@ type FollowUpHistoryItem = {
 
 type DetailField = { label: string; value: string };
 
+async function loadAllHistoryPages<T extends { id: string }>(path: string): Promise<T[]> {
+  const pageSize = 100;
+  const maximumPages = 100;
+  const records: T[] = [];
+  const seenIds = new Set<string>();
+  for (let page = 0; page < maximumPages; page += 1) {
+    const separator = path.includes("?") ? "&" : "?";
+    const response = await getJSON(
+      `${path}${separator}limit=${pageSize}&offset=${page * pageSize}`,
+    );
+    if (!Array.isArray(response)) {
+      throw new Error("Saved care history returned an incomplete page.");
+    }
+    const rows = response as T[];
+    if (rows.some((row) => !row || typeof row.id !== "string" || !row.id)) {
+      throw new Error("Saved care history contained an incomplete record.");
+    }
+    for (const row of rows) {
+      if (seenIds.has(row.id)) {
+        throw new Error("Saved care history changed while it was loading. Refresh to try again.");
+      }
+      seenIds.add(row.id);
+      records.push(row);
+    }
+    if (rows.length < pageSize) return records;
+  }
+  throw new Error("Saved care history exceeded the available page limit. The list was not presented as complete.");
+}
+
 type HistoryRecord = {
   id: string;
   person_id?: string;
@@ -912,8 +941,8 @@ export function HistoryDrawer() {
         canUseHandoffs ? getJSON("/handoffs/inbox") : Promise.resolve({ items: [] as HandoffInboxItem[] }),
         canUseHandoffs ? getJSON("/handoffs/outbox") : Promise.resolve({ items: [] as HandoffOutboxItem[] }),
         getJSON("/care-continuity/revisions/" + personPath),
-        getJSON("/care-continuity/decisions?limit=100"),
-        getJSON("/care-continuity/outcomes/" + personPath),
+        loadAllHistoryPages<CareDecision>("/care-continuity/decisions"),
+        loadAllHistoryPages<CareOutcome>("/care-continuity/outcomes/" + personPath),
         getJSON("/open-loops?limit=100"),
       ]);
 
