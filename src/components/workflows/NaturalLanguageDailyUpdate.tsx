@@ -213,6 +213,10 @@ export default function NaturalLanguageDailyUpdate() {
           execution_status?: { assessment?: string };
         };
 
+      if (response.success !== true || typeof response.id !== "string" || !response.id.trim()) {
+        throw new Error("Your update could not be confirmed as saved. Please try again.");
+      }
+
       const medicationMentioned = /\b(medication|medicine|dose|dosage|prescription)\b/i.test(report);
       const possibleChange = /\b(changed|change|new dose|adjusted|increased|decreased|reduced|stopped)\b/i.test(report);
       const uncertainty = /\b(i think|maybe|might|may have|not sure|cannot remember|can't remember|don't remember|forgot)\b/i.test(report);

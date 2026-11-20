@@ -159,7 +159,8 @@ for (const stage of ["Early stage", "Moderate", "Late", "All stages"]) {
 }
 
 
-assert(workspace.includes('err.detail.code === "conversation_only"'));
+assert(workspace.includes("isLcrOrientationOnly"), "LCR interaction-only messages must be routed locally to the read-only orientation endpoint");
+assert(workspace.includes("/api/lcr/orientation"), "LCR orientation must not be routed to Companion");
 assert(!workspace.includes("/workspace/companion?draft="), "LCR must not redirect greetings or insults to Companion");
 console.log("✓ Companion has a visible form-based Send button wired to the real message endpoint");
 console.log("✓ Community has a visible Send post button wired to the real community publishing endpoint");

@@ -40,8 +40,8 @@ assert.match(companion, /\{requestError && messages\.length > 0 && <div classNam
 assert.match(companion, /setRequestError\(null\)/);
 assert.match(companion, /const startNewSession = \(\) => \{[\s\S]*?setRequestError\(null\)/);
 assert.match(companion, /onChange=\{event => handleInput\(event\.target\.value\)\}/);
-assert.match(workspaceComposer, /setRawInput\(value\);\s*setLcrOrientationReply\(null\);\s*setCaregiverError\(null\)/);
-assert.match(workspaceComposer, /setDocuments\(nextDocuments\);\s*setLcrOrientationReply\(null\);\s*setCaregiverError\(null\)/);
+assert.match(workspaceComposer, /setRawInput\(value\);[\s\S]*?setLcrOrientationReply\(null\);[\s\S]*?setCaregiverError\(null\)/);
+assert.match(workspaceComposer, /setDocuments\(nextDocuments\);[\s\S]*?setLcrOrientationReply\(null\);[\s\S]*?setCaregiverError\(null\)/);
 assert.match(sanitizeCaregiverErrorMessage("Situation hydration failed (404)"), /We couldn’t complete that step/);
 assert.match(sanitizeCaregiverErrorMessage("Failed to fetch /api/situation"), /We couldn’t complete that step/);
 
@@ -249,9 +249,9 @@ assert.ok(dailyCapture.includes('getJSON(`/assistant/jobs/${encodeURIComponent(j
 assert.ok(dailyCapture.includes("/capture/analyses/"), "structured Daily Care must load persisted review candidates after background extraction");
 assert.ok(dailyCapture.includes("Your update is saved. SolenOS is checking it against earlier care information."), "the UI must distinguish a saved record from unfinished downstream reconciliation");
 assert.ok(dailyCapture.includes("jobId: typeof data?.qwen_job_id === 'string' ? data.qwen_job_id : null"), "the saved receipt must retain the durable worker job ID");
-assert.ok(naturalDailyUpdate.includes('postJSON("/daily-care/entries"'), "natural-language updates must use the existing persisted Daily Care endpoint");
+assert.ok(naturalDailyUpdate.includes('sendQueuedCareWrite("/daily-care/entries"'), "natural-language updates must use the existing persisted Daily Care endpoint");
 assert.ok(naturalDailyUpdate.includes("notes: report"), "the exact caregiver wording must be submitted as the source report");
-assert.ok(naturalDailyUpdate.includes("response?.success !== true"), "the UI must require a backend save receipt before showing success");
+assert.ok(naturalDailyUpdate.includes("response.success !== true"), "the UI must require a backend save receipt before showing success");
 assert.ok(naturalDailyUpdate.includes("no extracted details have been treated as confirmed"), "failed extraction must be exposed without implying interpretation succeeded");
 assert.ok(naturalDailyUpdate.includes("Your report suggests a medication may have changed"), "possible medication changes must be surfaced as unconfirmed");
 assert.ok(naturalDailyUpdate.includes("execution_status?.assessment"), "the caregiver must be told when extraction assessment fails after the source is saved");
