@@ -178,7 +178,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-api-callsite-inventory
-          path: reports/frontend-api-callsite-inventory.json
+          path: |
+            reports/frontend-api-callsite-inventory.json
+            backend-service/backend/reports/registered-endpoint-inventory.json
           if-no-files-found: ignore
       - name: Verify caregiver-facing language boundary
         run: npm run verify:caregiver-language-boundary
