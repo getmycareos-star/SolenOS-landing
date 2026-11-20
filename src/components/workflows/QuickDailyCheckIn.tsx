@@ -70,12 +70,16 @@ export default function QuickDailyCheckIn() {
     const sync = async () => {
       const personId = getPersonId();
       const caregiverId = getCaregiverId();
-      if (!personId || !caregiverId || (typeof navigator !== "undefined" && !navigator.onLine)) return;
+      if (!personId || !caregiverId) return;
       try {
-        const result = await syncDurableWrites({ personId, caregiverId, send });
         const summary = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
         setPendingCount(summary.pending + summary.blocked + summary.failed_recoverable);
+        if (typeof navigator !== "undefined" && !navigator.onLine) return;
+        const result = await syncDurableWrites({ personId, caregiverId, send });
+        const afterSync = await getDurableWriteSummary(personId, caregiverId);
+        if (!active) return;
+        setPendingCount(afterSync.pending + afterSync.blocked + afterSync.failed_recoverable);
         if (pendingQueueId.current) {
           const stillQueued = await hasDurableWrite(pendingQueueId.current);
           if (!stillQueued) {
@@ -272,7 +276,11 @@ export default function QuickDailyCheckIn() {
           <textarea
             id="daily-checkin-note"
             value={note}
-            onChange={(event) => setNote(event.target.value)}
+            onChange={(event) => {
+              setNote(event.target.value);
+              setIdempotencyKey(null);
+              setReportedAt(null);
+            }}
             maxLength={2000}
             rows={3}
             placeholder="You can leave this empty."
