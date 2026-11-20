@@ -8,6 +8,7 @@ import { getDurableWriteSummary, retryPendingDurableWrites, syncDurableWrites } 
 export default function DailyCareOfflineQueueNotice() {
   const [pending, setPending] = useState(0);
   const [attention, setAttention] = useState(0);
+  const [synced, setSynced] = useState(false);
 
   const refresh = useCallback(async () => {
     const personId = getPersonId();
@@ -18,6 +19,7 @@ export default function DailyCareOfflineQueueNotice() {
       const before = await getDurableWriteSummary(personId, caregiverId);
       setPending(before.pending);
       setAttention(before.blocked + before.failed_recoverable);
+      if (before.pending > 0) setSynced(false);
 
       if (typeof navigator !== "undefined" && navigator.onLine && before.pending > 0) {
         const result = await syncDurableWrites({
@@ -28,7 +30,10 @@ export default function DailyCareOfflineQueueNotice() {
         const after = await getDurableWriteSummary(personId, caregiverId);
         setPending(after.pending);
         setAttention(after.blocked + after.failed_recoverable);
-        if (result.synced > 0) window.dispatchEvent(new Event("careRecordUpdated"));
+        if (result.synced > 0) {
+          setSynced(true);
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        }
       }
     } catch {
       // A failed status read must never hide or delete the encrypted local queue.
@@ -69,6 +74,11 @@ export default function DailyCareOfflineQueueNotice() {
       {pending > 0 && (
         <p role="status" className="daily-care-muted">
           {pending} update{pending === 1 ? "" : "s"} waiting to sync with the care record.
+        </p>
+      )}
+      {synced && (
+        <p role="status" className="daily-care-muted">
+          A pending update has synced to the care record.
         </p>
       )}
       {attention > 0 && (
