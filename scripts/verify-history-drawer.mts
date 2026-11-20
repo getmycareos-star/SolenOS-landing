@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { caregiverReadableCaptureText } from "../src/lib/caregiver-language.ts";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -10,6 +11,7 @@ const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 const followUpsPage = fs.readFileSync(path.join(root, "src/app/workspace/open-loops/page.tsx"), "utf8");
 const navigation = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
 const evidenceReview = fs.readFileSync(path.join(root, "src/components/EvidenceReviewPanel.tsx"), "utf8");
+const caregiverLanguage = fs.readFileSync(path.join(root, "src/lib/caregiver-language.ts"), "utf8");
 const evidenceCompletenessRoute = path.join(root, "src/app/workspace/evidence-completeness/page.tsx");
 assert.equal(fs.existsSync(evidenceCompletenessRoute), false, "internal evidence policy configuration must not be routable in the caregiver workspace");
 assert.doesNotMatch(evidenceReview, /workspace\/evidence-completeness|Review source completeness/, "caregiver evidence review must not link to internal policy configuration");
@@ -54,14 +56,43 @@ assert.match(drawer, /shouldShowLcrRevision/);
 assert.match(drawer, /REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE/);
 assert.match(drawer, /mapDecision/);
 assert.match(drawer, /mapOutcome/);
-assert.match(drawer, /capture\.vitals/, "saved measurements must be rendered as caregiver-readable details");
-assert.match(drawer, /capture\.scales/, "saved ratings must be rendered as caregiver-readable details");
-assert.match(drawer, /capture\.medications/, "saved medicine details must not disappear from the original capture");
-assert.match(drawer, /Measurements and ratings are shown as entered/, "structured values must retain an accuracy limitation");
-assert.match(drawer, /lines\.join\("\\n"\)/, "structured capture details must be separated with readable line breaks");
+const structuredCapture = caregiverReadableCaptureText(JSON.stringify({
+  original_capture: {
+    notes: "she's loosing weight",
+    scales: [{ axis: "mood", score: 5, note: "she's sad" }],
+    vitals: [{ vital_type: "bp_systolic", value: 10, unit: "mmHg", note: "yes" }],
+    medications: [],
+    capture_idempotency_key: "internal-key",
+    capture_request_fingerprint: "internal-fingerprint",
+  },
+}));
+assert.ok(structuredCapture);
+assert.match(structuredCapture, /she's loosing weight/);
+assert.match(structuredCapture, /Mood: 5 — she's sad/);
+assert.match(structuredCapture, /Blood pressure \(top number\): 10 mmHg — yes/);
+assert.ok(structuredCapture.indexOf("she's loosing weight") < structuredCapture.indexOf("Mood: 5 — she's sad"));
+assert.ok(structuredCapture.indexOf("Mood: 5 — she's sad") < structuredCapture.indexOf("Blood pressure (top number): 10 mmHg — yes"));
+assert.match(structuredCapture, /not been independently checked/);
+assert.doesNotMatch(structuredCapture, /capture_idempotency_key|capture_request_fingerprint|internal-key|internal-fingerprint/);
+assert.match(drawer, /caregiverReadableCaptureText/, "history details use the shared caregiver-readable source formatter");
+assert.match(evidenceReview, /caregiverReadableCaptureText\(selected\.source_text\)/, "evidence review must not print serialized capture JSON to caregivers");
+assert.match(evidenceReview, /caregiverReadableCaptureText\(item\.source_passage\)/, "individual source passages must be shown in caregiver-readable language");
+assert.match(evidenceReview, /item\.observation_method !== 'Daily Care form'/, "structured source values are not redundantly repeated below their readable source passage");
+assert.match(evidenceReview, /Details recorded from this note or document/, "source details use caregiver-facing language");
+assert.match(evidenceReview, /caregiver_form: 'Entered in Daily Care'/, "caregiver form metadata is translated into natural language");
+assert.match(evidenceReview, /note: 'Care update'/, "internal evidence type values are not exposed");
+assert.match(language, /capture\.axis === "string" && capture\.score !== undefined/, "a single rating source passage is readable");
+assert.match(language, /capture\.vital_type === "string" && capture\.value !== undefined/, "a single measurement source passage is readable");
+assert.match(evidenceReview, /<summary>More about this note or document<\/summary>/, "detailed source metadata is progressively disclosed");
+assert.doesNotMatch(evidenceReview, /How this information was added<\/dt>/, "duplicate collection-method labels are removed");
+assert.match(evidenceReview, /structured_daily_capture: 'Daily care update'/, "internal capture types receive caregiver-friendly labels");
+assert.match(caregiverLanguage, /capture\.vitals/, "saved measurements are rendered from the original capture");
+assert.match(caregiverLanguage, /capture\.scales/, "saved ratings are rendered from the original capture");
+assert.match(caregiverLanguage, /capture\.medications/, "saved medicine details are rendered from the original capture");
+assert.match(caregiverLanguage, /Measurements and ratings are shown as entered/, "structured values retain an accuracy limitation");
+assert.match(caregiverLanguage, /return lines\.join\("\\n"\)/, "structured capture details use readable line breaks");
 assert.ok(drawer.includes('getJSON("/open-loops?limit=100")'), "saved follow-ups must be retrieved from the authenticated follow-up service");
 assert.match(drawer, /mapFollowUp/, "persisted follow-ups must be represented in care history using their saved fields");
-assert.match(drawer, /sourceWarnings\.map\(\(warning, index\)/, "partial history must identify the exact categories that failed to load");
 assert.match(drawer, /const followUpResult = results\[8\]/, "follow-up retrieval must have an independent result state");
 assert.match(drawer, /followUpPayload\.count > followUps\.length/, "bounded follow-up retrieval must be disclosed using the backend total");
 assert.match(drawer, /source_kind: "follow-up"/, "history details must retain the saved follow-up source type");

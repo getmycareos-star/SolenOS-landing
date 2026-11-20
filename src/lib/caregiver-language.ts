@@ -80,7 +80,15 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   weak: "Limited information",
   moderate: "Some repeated information",
   strong: "Repeated information",
-  daily_care: "Daily care",
+  daily_care: "Daily Care",
+  structured_daily_capture: "Daily care update",
+  daily_care_entry: "Daily care update",
+  daily_capture: "Daily care update",
+  ai_companion: "Care Assistant",
+  companion: "Care Assistant",
+  caregiver: "Caregiver",
+  family_caregiver: "Family caregiver",
+  care_professional: "Healthcare professional",
   care_recipient: "Person receiving care",
   medication: "Medication",
   mobility: "Movement",
@@ -180,6 +188,13 @@ const CARE_FIELD_LABELS: Readonly<Record<string, string>> = {
   mobility: "Movement",
   pain: "Pain",
   mood: "Mood",
+  blood_pressure_systolic: "Blood pressure (top number)",
+  blood_pressure_diastolic: "Blood pressure (bottom number)",
+  oxygen_saturation: "Oxygen level",
+  heart_rate: "Heart rate",
+  caregiver_note: "Caregiver note",
+  caregiver_reported_observation: "Caregiver report",
+  medication: "Medication",
   hydration: "Fluid intake",
   food_intake: "Food intake",
 };
@@ -338,6 +353,131 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
  * expose engine identifiers or observation-coverage jargon in caregiver UI.
  * Return null so the caller can use a plain-language, evidence-bounded fallback.
  */
+/**
+ * Turn a saved Daily Care capture into readable caregiver text.
+ * Only known care fields are displayed; internal request keys and serialized
+ * implementation metadata are never shown as source wording.
+ */
+export function caregiverReadableCaptureText(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const fallback = "Saved care information";
+  const safeText = (item: unknown): string => {
+    if (typeof item === "string") return caregiverSafeAssistantText(item.trim()) || "";
+    if (typeof item === "number" && Number.isFinite(item)) return String(item);
+    return "";
+  };
+  const readableLabel = (item: unknown): string => {
+    const raw = safeText(item);
+    if (!raw) return "";
+    return caregiverFieldLabel(raw) || caregiverStatusLabel(raw) || caregiverInformationAreaLabel(raw) || raw.replace(/[_-]+/g, " ");
+  };
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || fallback;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
+    const root = parsed as Record<string, unknown>;
+    const capture = root.original_capture && typeof root.original_capture === "object" && !Array.isArray(root.original_capture)
+      ? root.original_capture as Record<string, unknown>
+      : root;
+    const lines: string[] = [];
+    const vitalLabels: Record<string, string> = {
+      bp_systolic: "Blood pressure (top number)",
+      bp_diastolic: "Blood pressure (bottom number)",
+      heart_rate: "Heart rate",
+      temperature: "Temperature",
+      oxygen_saturation: "Oxygen level",
+      weight: "Weight",
+    };
+    if (typeof capture.axis === "string" && capture.score !== undefined) {
+      const label = readableLabel(capture.axis) || "Rating";
+      const score = safeText(capture.score);
+      const note = safeText(capture.note);
+      if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
+    }
+    if (typeof capture.vital_type === "string" && capture.value !== undefined) {
+      const kind = safeText(capture.vital_type);
+      const label = vitalLabels[kind] || readableLabel(kind) || "Measurement";
+      const measurement = [safeText(capture.value), safeText(capture.unit)].filter(Boolean).join(" ");
+      const note = safeText(capture.note);
+      if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
+    }
+    if (typeof capture.medication_name === "string" || typeof capture.name === "string") {
+      const name = safeText(capture.medication_name) || safeText(capture.name);
+      const details = [
+        safeText(capture.dose) ? "Dose recorded: " + safeText(capture.dose) : "",
+        safeText(capture.status) ? "Status: " + readableLabel(capture.status) : "",
+        safeText(capture.note),
+      ].filter(Boolean);
+      if (name) lines.push(details.length ? name + " — " + details.join("; ") : name);
+    }
+    const quick = capture.quick_check_in && typeof capture.quick_check_in === "object" && !Array.isArray(capture.quick_check_in)
+      ? capture.quick_check_in as Record<string, unknown>
+      : null;
+    const quickLabels: Record<string, string> = {
+      same_as_usual: "About the same as usual",
+      change: "Something changed",
+      concern: "A concern was reported",
+      care_completed: "Care was reported as completed",
+      uncertain: "The caregiver was unsure",
+    };
+    if (quick) {
+      lines.push(quickLabels[String(quick.kind)] || "Caregiver check-in recorded");
+      const areas = Array.isArray(quick.selected_areas)
+        ? quick.selected_areas.map(readableLabel).filter(Boolean)
+        : [];
+      if (areas.length) lines.push("Areas mentioned: " + areas.join(", "));
+    }
+    for (const key of ["notes", "original_notes", "text", "description", "observation", "summary"]) {
+      const safe = safeText(capture[key]);
+      if (safe && !lines.includes(safe)) lines.push(safe);
+    }
+    if (Array.isArray(capture.scales)) {
+      for (const raw of capture.scales) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+        const scale = raw as Record<string, unknown>;
+        const label = readableLabel(scale.axis) || "Rating";
+        const score = safeText(scale.score);
+        const note = safeText(scale.note);
+        if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
+      }
+    }
+    if (Array.isArray(capture.vitals)) {
+      for (const raw of capture.vitals) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+        const vital = raw as Record<string, unknown>;
+        const kind = safeText(vital.vital_type);
+        const label = vitalLabels[kind] || readableLabel(kind) || "Measurement";
+        const measurement = [safeText(vital.value), safeText(vital.unit)].filter(Boolean).join(" ");
+        const note = safeText(vital.note);
+        if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
+      }
+    }
+    if (Array.isArray(capture.medications)) {
+      for (const raw of capture.medications) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+        const medicine = raw as Record<string, unknown>;
+        const name = safeText(medicine.medication_name) || "Medicine";
+        const details = [
+          safeText(medicine.dose) ? "Dose recorded: " + safeText(medicine.dose) : "",
+          safeText(medicine.status) ? "Status: " + readableLabel(medicine.status) : "",
+          safeText(medicine.note),
+        ].filter(Boolean);
+        lines.push(details.length ? name + " — " + details.join("; ") : name);
+      }
+    }
+    if (!lines.length) return fallback;
+    if (["medications", "vitals", "scales"].some((key) => Array.isArray(capture[key]) && (capture[key] as unknown[]).length > 0)) {
+      lines.push("Measurements and ratings are shown as entered; they have not been independently checked.");
+    }
+    return lines.join("\n");
+  } catch {
+    const trimmed = value.trimStart();
+    return trimmed.startsWith("{") || trimmed.startsWith("[")
+      ? fallback
+      : caregiverSafeAssistantText(value) || fallback;
+  }
+}
+
 export function caregiverSafeChangeText(value: unknown): string | null {
   const text = caregiverSafeAssistantText(value);
   if (!text) return null;

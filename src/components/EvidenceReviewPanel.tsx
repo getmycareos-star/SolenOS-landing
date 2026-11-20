@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
-import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { caregiverReadableCaptureText, caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 type EvidenceItem = {
   id: string
@@ -119,6 +119,30 @@ const labels: Record<ReviewType, string> = {
 }
 const reviewStatusLabel = (value: string) => ({
   not_assessed: 'Not checked',
+  caregiver_report: 'Caregiver report',
+  caregiver_note: 'Caregiver note',
+  caregiver_reported_observation: 'Caregiver report',
+  blood_pressure_systolic: 'Blood pressure (top number)',
+  blood_pressure_diastolic: 'Blood pressure (bottom number)',
+  oxygen_saturation: 'Oxygen level',
+  heart_rate: 'Heart rate',
+  mood: 'Mood',
+  pain: 'Pain',
+  'daily care form': 'Daily Care',
+  caregiver_form: 'Entered in Daily Care',
+  caregiver_check_in: 'Daily Care check-in',
+  daily_care_quick_checkin: 'Daily Care check-in',
+  note: 'Care update',
+  document: 'Document',
+  structured_daily_capture: 'Daily care update',
+  daily_care_entry: 'Daily care update',
+  daily_capture: 'Daily care update',
+  daily_care: 'Daily Care',
+  ai_companion: 'Care Assistant',
+  companion: 'Care Assistant',
+  caregiver: 'Caregiver',
+  family_caregiver: 'Family caregiver',
+  care_professional: 'Healthcare professional',
   undetermined: 'Not sure',
   unknown: 'Not yet known',
   unverified: 'Not confirmed',
@@ -733,29 +757,29 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </select>
       </label>
       {selected && <>
-        <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
+        <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(selected.source_text) || 'Saved care information'}</blockquote>
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Type of note or document</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.type || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How this information was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.evidence_kind || 'not_assessed')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How certain this information is</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Added by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.uploaded_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.original_author || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Reported by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{[selected.reported_by_label, selected.reported_by_caregiver_id ? 'Caregiver' : null].filter(Boolean).join(' · ') || 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Collected by</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.collected_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Shared by</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.reported_by_label || (selected.reported_by_caregiver_id || selected.uploaded_by_caregiver_id ? 'caregiver' : 'not_recorded'))}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How this information was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || 'not_recorded')}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0 }}>{selected.origin_device_ref ? 'A device was used' : 'Not recorded'}</dd></div>
-          
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
-          
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Date added</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || 'not_recorded')}</dd></div>
-          
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Related original note or document</dt><dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Added to SolenOS</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was shared</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || selected.evidence_kind || 'not_recorded')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How this information is known</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
         </dl>
+        <details style={{ fontSize: 12, marginBottom: 12 }}>
+          <summary>More about this note or document</summary>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px' }}>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Original author</dt><dd style={{ margin: 0 }}>{caregiverSafeAssistantText(selected.original_author) || 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Collected by</dt><dd style={{ margin: 0 }}>{selected.collected_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>When it was collected</dt><dd style={{ margin: 0 }}>{selected.collected_at ? new Date(selected.collected_at).toLocaleString() : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>When it was reported</dt><dd style={{ margin: 0 }}>{selected.reported_at ? new Date(selected.reported_at).toLocaleString() : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>How it was collected</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.collection_method || selected.evidence_kind || 'not_recorded')}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Device used</dt><dd style={{ margin: 0 }}>{selected.origin_device_ref ? 'A device was used' : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Original source</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Date saved</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Related note or document</dt><dd style={{ margin: 0 }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
+          </dl>
+        </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>How this note or document is connected to other information ({relationships.length})</summary>
           <p>These connections show when notes or documents come from the same original. They do not prove that two reports are separate or that a statement is true.</p>
@@ -775,22 +799,24 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </article>)}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Details found in this note or document ({observations.length})</summary>
-          <p>Each detail keeps the exact words from the original note or document. A report stays labelled as a report; an interpretation is not shown as something someone directly saw.</p>
+          <summary>Details recorded from this note or document ({observations.length})</summary>
+          <p>Each detail is linked to the original information. A caregiver report stays labelled as a report; it is not shown as a confirmed medical fact.</p>
           {observationsLoading && <p role="status">Loading recorded details…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
-          {!observationsLoading && !observationsError && observations.length === 0 && <p>No details have been read from this note or document yet.</p>}
-          {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
+          {!observationsLoading && !observationsError && observations.length === 0 && <p>No separate details have been recorded from this information yet.</p>}
+          {observations.slice().sort((a, b) => a.source_span_start - b.source_span_start).map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
-            <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
-            <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
+            <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(item.source_passage) || 'Original wording is not available.'}</blockquote>
+            {item.observation_method !== 'Daily Care form' && (
+              <div>What was recorded: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
+            )}
             {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
-            {item.negated !== null && item.negated !== undefined && <div>Does the original note or document say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
+            {item.negated !== null && item.negated !== undefined && <div>Did the caregiver say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
             {item.hedge_marker && <div>Words that show uncertainty: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>What is unclear: {item.ambiguity_note}</div>}
-            {item.observer_label && <div>Who noticed this: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
-            <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
+            {item.observer_label && <div>Who shared this information: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
+            <small>Added to the record {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
         </details>
 
