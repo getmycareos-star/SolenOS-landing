@@ -53,6 +53,9 @@ assert.match(drawer, /shouldShowLcrRevision/);
 assert.match(drawer, /REVISION_TYPES_ALREADY_SHOWN_BY_SOURCE/);
 assert.match(drawer, /mapDecision/);
 assert.match(drawer, /mapOutcome/);
+assert.match(drawer, /getJSON\("\\/open-loops\?limit=100"\)/, "saved follow-ups must be retrieved from the authenticated follow-up service");
+assert.match(drawer, /mapFollowUp/, "persisted follow-ups must be represented in care history using their saved fields");
+assert.match(drawer, /const followUpResult = results\[8\]/, "follow-up retrieval must have an independent result state");
 assert.match(drawer, /Previous saved details/);
 assert.match(drawer, /Updated saved details/);
 assert.match(drawer, /Promise\.allSettled/);
@@ -95,4 +98,4 @@ assert.match(styles, /\.history-source-warning/);
 assert.match(styles, /@media \(max-width: 480px\)/);
 assert.match(apiClient, /requestAuthorizationHeaders/);
 
-console.log("History drawer contract checks passed: authenticated event, document, appointment, handoff, LCR revision, decision and outcome reads; source-specific metadata; chronological ordering; partial-source failures; record detail; responsive browsing-only history.");
+console.log("History drawer contract checks passed: authenticated event, document, appointment, handoff, follow-up, LCR revision, decision and outcome reads; source-specific metadata; chronological ordering; partial-source failures; record detail; responsive browsing-only history.");
