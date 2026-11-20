@@ -34,7 +34,9 @@ import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import {
+  deliverDurableWrite,
   discardBlockedDurableWrites,
+  enqueueDurableWrite,
   getDurableWriteSummary,
   retryBlockedDurableWrites,
   syncDurableWrites,
