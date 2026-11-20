@@ -92,7 +92,7 @@ function backendProxyPath(raw: string): string | null {
   if (apiIndex >= 0) value = value.slice(apiIndex);
   else if (value.startsWith("/situation")) value = "/api" + value;
   else return null;
-  value = value.replace(/\\{query\\}.*$/, "");
+  value = value.replace(/\{query\}.*$/, "");
   value = value.split("?", 1)[0];
   return value.startsWith("/api/") ? value : null;
 }
