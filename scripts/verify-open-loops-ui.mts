@@ -3,6 +3,8 @@ import fs from "node:fs";
 
 const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
+const caregiverLanguage = fs.readFileSync("src/lib/caregiver-language.ts", "utf8");
 
 const required: Array<[string, RegExp]> = [
   ["loads the persisted person-scoped follow-ups", /getJSON\("\/open-loops\?limit=100"\)/],
@@ -45,6 +47,14 @@ assert.match(careContinuity, /These are changes or things that are still unclear
 assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
 assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Changes to keep an eye on must link to the dedicated Follow-ups screen");
 
+assert.match(historyDrawer, /sourceWarnings\.map\(\(warning, index\)/, "history must display the actual affected source warnings returned by retrieval");
+assert.match(historyDrawer, /sourceWarnings\.length > 0 && !loading && records\.length === 0/, "history failures must remain visible when no source records loaded");
+assert.match(page, /item\.evidence_status/, "follow-up cards must expose evidence status independently");
+assert.match(page, /item\.history_completeness/, "follow-up cards must disclose incomplete history");
+assert.match(page, /item\.linked_follow_up_outcome_status/, "follow-up cards must not equate an unknown outcome with resolution");
+assert.match(careContinuity, /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/, "LCR care changes must disclose evidence status and incomplete history");
+assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "unknown follow-up outcomes must not be described as resolved");
+
 console.log("FOLLOW_UPS_UI_CONTRACT=PASS");
-console.log(`Assertions=${required.length + 3}`);
+console.log(`Assertions=${required.length + 10}`);
 console.log("Scope=frontend source contract; not a browser or deployed-system test");
