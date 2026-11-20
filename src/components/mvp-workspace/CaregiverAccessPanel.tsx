@@ -23,6 +23,8 @@ type Responsibility = {
   responsibility_type: string;
   scope?: string | null;
   status: string;
+  effective_start?: string | null;
+  effective_end?: string | null;
 };
 type OpenLoop = { id: string; title: string; status: string; assigned_caregiver_id?: string | null };
 type Transfer = {
@@ -186,6 +188,8 @@ type InvitationResult = {
 export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
+  const [responsibilityHistory, setResponsibilityHistory] = useState<Responsibility[]>([]);
+  const [responsibilityHistoryUnavailable, setResponsibilityHistoryUnavailable] = useState(false);
   const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
   const [currentPersonId, setCurrentPersonId] = useState<string | null>(null);
   const [activities, setActivities] = useState<CaregiverActivity[]>([]);
@@ -249,6 +253,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setAllowed(false);
       setCanManageMembers(false);
       setCurrentProfileId(null);
+      setResponsibilityHistory([]);
+      setResponsibilityHistoryUnavailable(false);
       setCurrentPersonId(null);
       setActivities([]);
       setCurrentSessionCaregiverId("");
@@ -309,6 +315,21 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         ? profileResult.value.id
         : members.find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id ?? null;
       setCurrentProfileId(ownProfileId);
+      if (ownProfileId) {
+        try {
+          const history = await getJSON(
+            "/caregiver-responsibilities/history/" + encodeURIComponent(ownProfileId) + "?person_id=" + encodeURIComponent(personId),
+          ) as Responsibility[];
+          setResponsibilityHistory(history ?? []);
+          setResponsibilityHistoryUnavailable(false);
+        } catch {
+          setResponsibilityHistory([]);
+          setResponsibilityHistoryUnavailable(true);
+        }
+      } else {
+        setResponsibilityHistory([]);
+        setResponsibilityHistoryUnavailable(false);
+      }
 
       if (responsibilityResult.status === "fulfilled") {
         setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
@@ -348,6 +369,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setCanManageMembers(false);
       setCurrentPersonId(null);
       setCurrentProfileId(null);
+      setResponsibilityHistory([]);
+      setResponsibilityHistoryUnavailable(true);
       setActivities([]);
       setNetworkSummary(null);
       setNetworkState(null);
@@ -959,6 +982,23 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <p className="mobile-settings-hint" style={{ margin: 0 }}>
                   {networkState.active_caregiver_count ?? 0} active caregivers · {networkState.unresolved_handoff_count ?? 0} handovers awaiting confirmation · {networkState.gap_count ?? 0} responsibility gaps · {networkState.conflict_count ?? 0} differences to review
                 </p>
+              )}
+              {currentProfileId && (
+                <section style={{ display: "grid", gap: "0.55rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
+                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Your responsibility history</h4>
+                  {responsibilityHistoryUnavailable ? (
+                    <p className="mobile-settings-hint" style={{ margin: 0 }}>We couldn't load your responsibility history. Refresh this section to try again.</p>
+                  ) : responsibilityHistory.length > 0 ? responsibilityHistory.slice(0, 12).map((item) => (
+                    <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.5rem" }}>
+                      <strong style={{ fontSize: "0.88rem" }}>{caregiverFieldLabel(item.responsibility_type)} · {caregiverStatusLabel(item.status)}</strong>
+                      <p className="mobile-settings-hint" style={{ margin: "0.2rem 0 0" }}>
+                        {item.scope || "No scope recorded"} · Started {item.effective_start ? new Date(item.effective_start).toLocaleDateString() : "date not recorded"} · {item.effective_end ? "Ended " + new Date(item.effective_end).toLocaleDateString() : "Current"}
+                      </p>
+                    </div>
+                  )) : (
+                    <p className="mobile-settings-hint" style={{ margin: 0 }}>No responsibility history has been recorded for your caregiver profile yet.</p>
+                  )}
+                </section>
               )}
               {((networkSummary.responsibility_gaps?.length ?? 0) > 0
                 || (networkSummary.perspective_conflicts?.length ?? 0) > 0
