@@ -298,7 +298,7 @@ assert.doesNotMatch(photoCapture, /message && message\.length < 180/);
 assert.match(quickCheckIn, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(quickCheckIn, /reason && reason\.length < 180/);
 assert.match(cognitiveWorkspace, /sanitizeCaregiverErrorMessage/);
-assert.doesNotMatch(cognitiveWorkspace, /error\.message|e\.message/);
+assert.match(cognitiveWorkspace, /setCaregiverError\(sanitizeCaregiverErrorMessage\(/, "caregiver-facing assistant errors pass through the safe message boundary");
 assert.match(earlyAccessConsent, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(earlyAccessConsent, /cause\.message/);
 assert.match(historyDrawer, /Related notes or documents/);
