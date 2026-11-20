@@ -161,6 +161,17 @@ const stageStatus: Record<Stage, string> = {
   after: 'outcome_pending',
 }
 
+const appointmentFollowUpsFromText = (value: string) => value
+  .split(/\\r?\\n/)
+  .map(action => action.trim())
+  .filter(Boolean)
+  .map(action => ({
+    id: 'follow-up-' + action.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120),
+    action,
+    status: 'not_recorded',
+    owner_role: 'unassigned',
+  }))
+
 const selectNextAppointment = (brief: PreparationBrief) => {
   if (brief.next_appointment) return brief.next_appointment
   const recorded = [...brief.appointments]
@@ -193,6 +204,7 @@ export default function AppointmentWorkspace() {
   const [recordedDecisions, setRecordedDecisions] = useState('')
   const [recordedInstructions, setRecordedInstructions] = useState('')
   const [unansweredQuestions, setUnansweredQuestions] = useState('')
+  const [followUps, setFollowUps] = useState('')
   const [attachedEvidenceIds, setAttachedEvidenceIds] = useState<string[]>([])
   const [documentBusy, setDocumentBusy] = useState(false)
   const [documentMessage, setDocumentMessage] = useState('')
@@ -223,6 +235,7 @@ export default function AppointmentWorkspace() {
     setRecordedDecisions('')
     setRecordedInstructions('')
     setUnansweredQuestions('')
+    setFollowUps('')
     setAttachedEvidenceIds([])
     setDocumentMessage('')
     setPendingDocumentEvidenceId('')
@@ -273,6 +286,7 @@ export default function AppointmentWorkspace() {
             setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
             setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
             setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
+            setFollowUps(Array.isArray(latest.payload?.followUps) ? latest.payload.followUps.map((item: { action?: string }) => item?.action).filter((item: unknown): item is string => typeof item === 'string').join('\\n') : '')
             setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
             try {
               const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as OutcomeDraft
@@ -362,6 +376,7 @@ export default function AppointmentWorkspace() {
       setRecordedDecisions('')
       setRecordedInstructions('')
       setUnansweredQuestions('')
+      setFollowUps('')
       setAttachedEvidenceIds([])
       return
     }
@@ -371,6 +386,7 @@ export default function AppointmentWorkspace() {
     setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
     setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
     setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
+    setFollowUps(Array.isArray(latest.payload?.followUps) ? latest.payload.followUps.map((item: { action?: string }) => item?.action).filter((item: unknown): item is string => typeof item === 'string').join('\\n') : '')
     setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
 
     const [draftResult, proposalResult] = await Promise.allSettled([
@@ -465,6 +481,7 @@ export default function AppointmentWorkspace() {
         decisions: recordedDecisions.trim(),
         instructions: recordedInstructions.trim(),
         unanswered: unansweredQuestions.trim(),
+        followUps: appointmentFollowUpsFromText(followUps),
         attachedEvidenceIds: nextIds,
         captureStage: 'after',
       }
@@ -533,7 +550,7 @@ export default function AppointmentWorkspace() {
       setError('There is no existing appointment record to attach this note to. SolenOS has not created an unlinked appointment record.')
       return
     }
-    if (!note.trim() && !professionalStatement.trim() && !recordedDecisions.trim() && !recordedInstructions.trim() && !unansweredQuestions.trim()) {
+    if (!note.trim() && !professionalStatement.trim() && !recordedDecisions.trim() && !recordedInstructions.trim() && !unansweredQuestions.trim() && !followUps.trim()) {
       setMessage('Nothing to save. You can continue without adding a note.')
       if (stage === 'after' && record) {
         try { await refreshOutcome(record.id) } catch (cause) {
@@ -554,6 +571,7 @@ export default function AppointmentWorkspace() {
         decisions: recordedDecisions.trim(),
         instructions: recordedInstructions.trim(),
         unanswered: unansweredQuestions.trim(),
+        followUps: appointmentFollowUpsFromText(followUps),
         attachedEvidenceIds,
         captureStage: stage,
       }
@@ -826,6 +844,10 @@ export default function AppointmentWorkspace() {
             </label>
             <label className="guided-capture-label">Questions still unanswered
               <textarea value={unansweredQuestions} onChange={event => setUnansweredQuestions(event.target.value)} rows={3} placeholder="Optional. What still needs clarification?" />
+            </label>
+            <label className="guided-capture-label">Follow-ups that should remain open (one per line)
+              <textarea value={followUps} onChange={event => setFollowUps(event.target.value)} rows={3} placeholder="Optional. For example: Ask the clinic when the test result will be available." />
+              <small>Leave this empty if no follow-up is needed. Removing a previously saved follow-up cancels its tracking; it does not mark it completed. Unassigned work stays unassigned.</small>
             </label>
             <label className="guided-capture-label">Upload a document to this appointment
               <input type="file" accept=".pdf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.log,image/*" disabled={documentBusy || !appointmentId || brief.source_coverage?.documents === 'restricted'} onChange={async event => {
