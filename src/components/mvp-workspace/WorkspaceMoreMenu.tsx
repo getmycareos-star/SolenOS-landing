@@ -65,7 +65,7 @@ export function WorkspaceMoreMenu({ onAction, isPinned = false, isArchived = fal
   }, []);
 
   const handleSelect = useCallback((action: WorkspaceAction) => {
-    closeMenu();
+    closeMenu(action === "view_record_details");
     onAction(action);
   }, [closeMenu, onAction]);
 
