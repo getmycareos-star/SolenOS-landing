@@ -11,12 +11,20 @@ type ReminderStatus = "open" | "completed" | "cancelled";
 
 type CaregiverMember = { caregiver_id: string; name: string; role: string };
 
+type CareReminderAssignmentEvent = {
+  actor_caregiver_id: string;
+  previous_assignee_caregiver_id: string | null;
+  assigned_to_caregiver_id: string;
+  occurred_at: string;
+};
+
 type CareReminder = {
   id: string;
   person_id: string;
   created_by_caregiver_id: string;
   assigned_to_caregiver_id: string | null;
   version: number;
+  assignment_history: CareReminderAssignmentEvent[];
   title: string;
   note: string | null;
   due_at: string;
@@ -337,6 +345,18 @@ export default function CareRemindersPage() {
                       ))}
                     </select>
                   </label>
+                  {reminder.assignment_history?.length > 1 && (
+                    <details className="care-reminder-footnote">
+                      <summary>Responsibility history</summary>
+                      <ol>
+                        {reminder.assignment_history.map((entry, index) => (
+                          <li key={`${entry.occurred_at}-${index}`}>
+                            {assignableMembers.find((member) => member.caregiver_id === entry.assigned_to_caregiver_id)?.name || "Caregiver"} assigned by {assignableMembers.find((member) => member.caregiver_id === entry.actor_caregiver_id)?.name || "a caregiver"} · {formatDateTime(entry.occurred_at)}
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
+                  )}
                   <p className="care-reminder-footnote">Saved in this care record</p>
                 </li>
               );
