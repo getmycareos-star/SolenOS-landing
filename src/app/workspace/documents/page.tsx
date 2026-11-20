@@ -202,6 +202,58 @@ export default function DocumentsPage() {
   useEffect(() => { void loadDocuments(); }, [loadDocuments]);
 
   useEffect(() => {
+    let active = true;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const sync = async () => {
+      const personId = getPersonId();
+      const caregiverId = getCaregiverId();
+      if (!personId || !caregiverId) return;
+      try {
+        const summary = await getDurableWriteSummary(personId, caregiverId);
+        if (!active) return;
+        setPendingUploads(summary.pending);
+        setAttentionUploads(summary.blocked + summary.failed_recoverable);
+        if (typeof navigator !== "undefined" && !navigator.onLine) return;
+        const result = await syncDurableWrites({
+          personId,
+          caregiverId,
+          send: sendQueuedCareWrite,
+        });
+        const afterSync = await getDurableWriteSummary(personId, caregiverId);
+        if (!active) return;
+        setPendingUploads(afterSync.pending);
+        setAttentionUploads(afterSync.blocked + afterSync.failed_recoverable);
+        if (afterSync.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
+          if (retryTimer) clearTimeout(retryTimer);
+          retryTimer = setTimeout(sync, 5_000);
+        }
+        if (result.synced > 0) {
+          setUploadMessage({
+            kind: "success",
+            text: result.synced + " pending update" + (result.synced === 1 ? " has" : "s have") + " synced to the care record.",
+          });
+          await loadDocuments(true);
+          setDocumentIntelligenceRefresh((value) => value + 1);
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        }
+      } catch {
+        // The encrypted queue retains files until the backend confirms each write.
+      }
+    };
+    void sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("personIdChanged", sync);
+    window.addEventListener("solenos:offline-queue-updated", sync);
+    return () => {
+      active = false;
+      if (retryTimer) clearTimeout(retryTimer);
+      window.removeEventListener("online", sync);
+      window.removeEventListener("personIdChanged", sync);
+      window.removeEventListener("solenos:offline-queue-updated", sync);
+    };
+  }, [loadDocuments]);
+
+  useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
