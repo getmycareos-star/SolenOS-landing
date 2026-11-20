@@ -58,4 +58,18 @@ assert.ok(component.includes('Try again'))
 assert.ok(component.includes("getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-proposals')"), 'manual refresh must reload saved review proposals as well as the outcome draft')
 assert.ok(component.includes('Saved appointment information could not be fully refreshed. Your saved notes have not been changed. Try again.'), 'refresh failures must be visible without implying saved notes were lost')
 
-console.log('PASS: low-burden appointment preparation, optional capture, linked follow-ups, review boundaries and retry handling')
+// The actual routed appointment page opens directly onto the prepared brief.
+assert.ok(component.includes('const [open, setOpen] = useState(true)'), 'the caregiver must not need an extra click to see appointment continuity');
+assert.ok(component.includes("brief.appointment_context_status?.code === 'date_unknown'"), 'unknown appointment dates must be explicit');
+assert.ok(component.includes("brief.appointment_context_status?.code === 'cancelled'"), 'cancelled appointments must not appear as active bookings');
+assert.ok(component.includes("brief.appointment_context_status?.code === 'rescheduled'"), 'rescheduled appointments must be distinguishable');
+assert.ok(component.includes("brief.appointment_context_status?.code === 'occurred'"), 'occurred appointments must be distinguishable');
+assert.ok(component.includes("brief.appointment_context_status?.code === 'retrieval_failed'" ) || component.includes("brief.lcr_retrieval_status?.status === 'failed'"), 'technical retrieval failures must not appear as empty history');
+assert.ok(component.includes('professionalStatement') && component.includes('recordedDecisions') && component.includes('recordedInstructions') && component.includes('unansweredQuestions'), 'optional after-visit capture must preserve separate professional statements, decisions, instructions and unanswered questions');
+assert.ok(component.includes('extractAttachedDocument(file, \'upload\')'), 'appointment documents must use the existing durable evidence upload workflow');
+assert.ok(component.includes('attachedEvidenceIds'), 'appointment document evidence IDs must persist with the workspace');
+assert.ok(!component.includes('QwenAssistPanel'), 'appointment continuity must not depend on a separate chatbot panel');
+assert.ok(!component.includes('MediaRecorder') && !component.includes('getUserMedia'), 'voice capture remains deferred');
+assert.ok(component.includes("'Next scheduled visit' : 'Appointment information · date unknown'"), 'unknown dates must not be labelled as scheduled visits');
+
+console.log('PASS: automatic appointment continuity, explicit lifecycle states, optional text/document capture, provenance review and retry handling')
