@@ -104,6 +104,7 @@ type CurrentCareItem = {
     observer_label?: string | null;
     observation_method?: string | null;
     observed_at?: string | null;
+    reported_at?: string | null;
     recorded_at?: string | null;
     source_span_start?: number | null;
     source_span_end?: number | null;
