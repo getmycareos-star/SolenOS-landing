@@ -56,7 +56,15 @@ export async function sendQueuedCareWrite(endpoint: string, payload: unknown): P
   const response = await postJSON(endpoint, payload) as {
     success?: boolean;
     id?: string | number;
+    ok?: boolean;
+    care_event_id?: string;
   };
+  if (endpoint === "/api/situation") {
+    if (response?.ok !== true || typeof response.care_event_id !== "string" || !response.care_event_id) {
+      throw new Error("The server did not confirm that this care update was saved.");
+    }
+    return response;
+  }
   if (response?.success !== true || response.id === undefined || response.id === null) {
     throw new Error("The server did not confirm that this update was saved.");
   }
