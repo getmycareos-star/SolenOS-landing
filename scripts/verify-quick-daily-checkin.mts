@@ -14,6 +14,10 @@ const lcr = fs.readFileSync(
   `${root}/src/components/mvp-workspace/LCRCurrentUnderstanding.tsx`,
   "utf8",
 );
+const caregiverLanguage = fs.readFileSync(
+  `${root}/src/lib/caregiver-language.ts`,
+  "utf8",
+);
 const detailedCapture = fs.readFileSync(
   `${root}/src/components/workflows/StructuredDailyCapture.tsx`,
   "utf8",
@@ -61,8 +65,12 @@ assert.match(checkIn, /does not confirm medicines were given or measurements wer
   "an overall impression cannot imply medication or measurement completion");
 assert.match(checkIn, /window\.dispatchEvent\(new Event\("careRecordUpdated"\)\)/,
   "a confirmed save refreshes the existing care-record view");
-assert.match(lcr, /quickValue/,
-  "the LCR renders structured quick check-in details");
+assert.match(lcr, /displayCurrentCareDescription\(item\)/,
+  "the LCR renders the saved caregiver-readable description");
+assert.match(caregiverLanguage, /capture\.quick_check_in[\s\S]*?quickLabels[\s\S]*?quick\.kind/,
+  "the caregiver-language formatter renders the saved structured check-in kind");
+assert.match(caregiverLanguage, /for \(const key of \["notes", "original_notes"/,
+  "the caregiver-language formatter preserves the optional quick check-in note");
 assert.match(lcr, /Caregiver shared:/,
   "the LCR labels when the caregiver shared the information");
 assert.match(lcr, /Saved to the care record:/,
