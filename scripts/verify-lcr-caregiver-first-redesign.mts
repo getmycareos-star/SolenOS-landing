@@ -227,3 +227,6 @@ assert.match(currentUnderstanding, /<h3 id="lcr-outcomes-heading">What happened<
 assert.match(currentUnderstanding, /related_record_type[\s\S]*?Linked to/, "outcomes retain their link to the decision, action or follow-up that produced them");
 
 assert.match(currentUnderstanding, /<h3 id="lcr-history-heading">Your care history<\/h3>[\s\S]*?href="\/workspace\/timeline"/, "the caregiver can open the complete chronological care history");
+
+assert.match(currentUnderstanding, /projection\.missing_required_sources\.length > 0 \|\| projection\.missing_optional_sources\.length > 0[\s\S]*?Some care history could not be loaded/, "an incomplete retrieval is never presented as an empty care record");
+assert.match(currentUnderstanding, /!projection \|\| projection\.missing_required_sources\.length > 0[\s\S]*?Some saved outcomes may not be available right now/, "unavailable outcome history is distinguished from no recorded outcomes");
