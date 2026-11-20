@@ -21,7 +21,7 @@ import { RecordState } from "@/components/ui/RecordState";
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome" | "follow-up";
 type HistoryLoadStatus = "loading" | "complete" | "partial" | "failed" | "empty" | "stale";
 const HISTORY_STATUS_CATEGORIES: HistoryCategory[] = [
-  "care-event", "document", "appointment", "handoff", "decision", "outcome", "follow-up",
+  "daily-care", "document", "appointment", "handoff", "decision", "outcome", "follow-up",
 ];
 
 type HistoryCategory =
@@ -852,7 +852,7 @@ export function HistoryDrawer() {
   const [error, setError] = useState<string | null>(null);
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([]);
   const [sourceStatuses, setSourceStatuses] = useState<Record<HistoryCategory, HistoryLoadStatus>>({
-    "care-event": "loading",
+    "daily-care": "loading",
     document: "loading",
     appointment: "loading",
     handoff: "loading",
@@ -868,7 +868,7 @@ export function HistoryDrawer() {
     setError(null);
     setSourceWarnings([]);
     setSourceStatuses({
-      "care-event": "loading",
+      "daily-care": "loading",
       document: "loading",
       appointment: "loading",
       handoff: "loading",
@@ -1211,7 +1211,7 @@ export function HistoryDrawer() {
         caregiverRecords.some((record) => categoryFor(record) === category);
       const warningMatches = (category: HistoryCategory) => {
         const allWarnings = warnings.join(" ").toLowerCase();
-        if (category === "care-event") return /event history|saved care events|event history could not be verified/.test(allWarnings);
+        if (category === "daily-care") return /event history|saved care events|event history could not be verified/.test(allWarnings);
         if (category === "document") return /saved documents/.test(allWarnings);
         if (category === "appointment") return /appointment/.test(allWarnings);
         if (category === "handoff") return /handoff/.test(allWarnings) || handoffConsentRequired;
