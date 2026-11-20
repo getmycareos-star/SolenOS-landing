@@ -15,6 +15,7 @@ type Member = {
   access_scope: string;
   status: string;
   can_manage_members: boolean;
+  permissions: string[];
   granted_at: string | null;
 };
 type Responsibility = {
@@ -132,6 +133,19 @@ const CARE_ACTIVITY_OPTIONS = [
   { value: "handed_off", label: "Handed over a care responsibility" },
   { value: "requested_clarification", label: "Requested clarification" },
   { value: "updated_medication_info", label: "Updated medication information" },
+] as const;
+
+const CARE_PERMISSION_OPTIONS = [
+  { value: "view_lcr", label: "View the Care Record" },
+  { value: "add_evidence", label: "Add care notes and observations" },
+  { value: "manage_responsibilities", label: "Assign and change care responsibilities" },
+  { value: "manage_reminders", label: "Create and manage reminders" },
+  { value: "complete_assigned_reminders", label: "Complete assigned reminders" },
+  { value: "manage_handoffs", label: "Send and manage care handoffs" },
+  { value: "share_summaries", label: "Share care summaries" },
+  { value: "share_observations", label: "Share observations with the care team" },
+  { value: "view_documents", label: "View care documents" },
+  { value: "view_communications", label: "View caregiver updates" },
 ] as const;
 
 const CARE_ROLE_OPTIONS = [
@@ -526,6 +540,23 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       await load();
     } catch {
       setError("We couldn't change this caregiver's access. Their previous access remains in place.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const updateMemberPermissions = async (member: Member, permissions: string[]) => {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await patchJSON("/caregiver-access/members/" + encodeURIComponent(member.caregiver_id) + "/permissions", {
+        permissions,
+      });
+      setNotice("Access permissions updated for " + member.name + ".");
+      await load();
+    } catch {
+      setError("We couldn't update these permissions. " + member.name + "'s previous access remains in place.");
     } finally {
       setBusy(false);
     }
@@ -1202,6 +1233,29 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                       <option value="full_record">Full care record</option>
                       <option value="documents_only">Documents and appointment paperwork only</option>
                     </select>
+                  )}
+                  {member.status === "active" && !member.can_manage_members && member.access_scope === "full_record" && (
+                    <fieldset style={{ border: "1px solid var(--border, #d8ded8)", borderRadius: "10px", padding: "0.65rem", marginTop: "0.6rem" }}>
+                      <legend className="mobile-settings-label">What this caregiver can do</legend>
+                      <div style={{ display: "grid", gap: "0.45rem" }}>
+                        {CARE_PERMISSION_OPTIONS.map((permission) => (
+                          <label key={permission.value} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.88rem" }}>
+                            <input
+                              type="checkbox"
+                              checked={(member.permissions ?? []).includes(permission.value)}
+                              disabled={busy}
+                              onChange={(event) => {
+                                const current = new Set(member.permissions ?? []);
+                                if (event.target.checked) current.add(permission.value);
+                                else current.delete(permission.value);
+                                void updateMemberPermissions(member, Array.from(current));
+                              }}
+                            />
+                            {permission.label}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
                   )}
                 </div>
                 {!member.can_manage_members && member.status === "active" && (
