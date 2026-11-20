@@ -80,20 +80,35 @@ function WorkspaceEntryGate({ children }: { children: ReactNode }) {
       </main>
     );
   }
-  if (recordLoadError) {
-    return (
-      <main className="workspace-route-loading" role="alert" aria-live="assertive">
-        <section style={{ maxWidth: 440, padding: 24, textAlign: "center" }}>
-          <h1 style={{ fontSize: 20 }}>Your care information isn’t available right now.</h1>
-          <p>Check your connection and try again. Your saved care information has not been replaced.</p>
+  return (
+    <>
+      {recordLoadError ? (
+        <div
+          role="alert"
+          aria-live="assertive"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            padding: "12px 16px",
+            borderBottom: "1px solid var(--border-subtle)",
+            background: "var(--surface-secondary)",
+            color: "var(--text-primary)",
+          }}
+        >
+          <span>
+            Your server-backed Care Record could not be loaded. Offline drafts are not saved care records until the server confirms them.
+          </span>
           <button type="button" onClick={() => window.location.reload()}>
-            Try again
+            Retry connection
           </button>
-        </section>
-      </main>
-    );
-  }
-  return <>{children}</>;
+        </div>
+      ) : null}
+      {children}
+    </>
+  );
 }
 
 /**
