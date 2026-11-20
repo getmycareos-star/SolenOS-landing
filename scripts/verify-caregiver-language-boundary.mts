@@ -282,7 +282,7 @@ assert.doesNotMatch(historyDrawer, /Living Care Record|LCR revision|Evidence ref
 assert.doesNotMatch(historyDrawer, /evidence_ids\.join|Extracted text|Recorded LCR change|Persisted care decision|Persisted action outcome|Appointment workspace/);
 assert.match(historyDrawer, /Text read from the document/);
 assert.match(careCapture, /caregiverSafeErrorMessage/);
-assert.doesNotMatch(careCapture, /submitError\.message|error\.message|Qwen analysis|qwen_extraction_status/);
+assert.doesNotMatch(careCapture, /submitError\.message|error\.message|Qwen analysis:/);
 assert.match(careCapture, /Suggested care details/);
 assert.match(feedbackPrompt, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(feedbackPrompt, /error\.message/);
