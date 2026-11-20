@@ -13,8 +13,12 @@ import ts from 'typescript';
 
 const root = process.cwd();
 const sourceRoot = path.join(root, 'src');
-const outputArg = process.argv.indexOf('--output');
-const outputPath = outputArg >= 0 ? process.argv[outputArg + 1] : null;
+function argumentValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : null;
+}
+const outputPath = argumentValue('--output');
+const backendInventoryPath = argumentValue('--backend-inventory');
 const wrappers = new Map([
   ['getJSON', 'GET'],
   ['getBlob', 'GET'],
@@ -107,17 +111,91 @@ entries.sort((a, b) =>
   a.line - b.line ||
   a.method.localeCompare(b.method)
 );
+
+function normalizeFrontendPath(expression) {
+  const pathOnly = expression.split('?')[0].replace(/\/$/, '') || '/';
+  if (!pathOnly.startsWith('/')) return null;
+  if (pathOnly === '/situation' || pathOnly.startsWith('/situation/')) return '/api' + pathOnly;
+  if (pathOnly === '/api/v1' || pathOnly.startsWith('/api/v1/')) return pathOnly;
+  if (pathOnly === '/api' || pathOnly.startsWith('/api/')) return pathOnly;
+  return '/api/v1' + pathOnly;
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^\x24{}()|[\\]\\\\]/g, '\\\\$&');
+}
+
+function routeRegex(routePath) {
+  const parts = routePath.split('/').map(segment =>
+    /^\{[^}]+\}$/.test(segment) ? '[^/]+' : escapeRegex(segment)
+  );
+  return new RegExp('^' + parts.join('/') + '/?$');
+}
+
+let backendRoutes = [];
+let backendSource = null;
+if (backendInventoryPath) {
+  const backendInventory = JSON.parse(fs.readFileSync(path.resolve(root, backendInventoryPath), 'utf8'));
+  backendSource = backendInventory.source || null;
+  backendRoutes = backendInventory.routes || [];
+  for (const entry of entries) {
+    const normalizedPath = normalizeFrontendPath(entry.route_expression);
+    entry.normalized_backend_path = normalizedPath;
+    const matches = normalizedPath
+      ? backendRoutes.filter(route =>
+          (entry.method === 'GET_OR_DYNAMIC' || route.method === entry.method) &&
+          routeRegex(route.path).test(normalizedPath)
+        )
+      : [];
+    entry.matched_backend_routes = matches.map(route => ({
+      method: route.method,
+      path: route.path,
+      router_module: route.router_module,
+      handler: route.handler,
+    }));
+    entry.backend_match_status = matches.length === 1
+      ? (entry.dynamic ? 'matched_dynamic' : 'matched_static')
+      : matches.length > 1 ? 'ambiguous_multiple_backend_routes' : 'no_backend_route_match';
+  }
+}
+const backendRouteMatrix = backendRoutes.map(route => {
+  const consumers = entries.filter(entry =>
+    entry.matched_backend_routes?.some(match => match.method === route.method && match.path === route.path)
+  );
+  return {
+    method: route.method,
+    path: route.path,
+    router_module: route.router_module,
+    handler: route.handler,
+    frontend_call_site_count: consumers.length,
+    frontend_call_sites: consumers.map(entry => ({
+      source_file: entry.source_file,
+      line: entry.line,
+      caller: entry.caller,
+      route_expression: entry.route_expression,
+    })),
+    disposition: consumers.length
+      ? 'frontend_callsite_found_workflow_verification_required'
+      : 'no_frontend_callsite_internal_consumer_or_unused_review_required',
+  };
+});
 const inventory = {
-  format_version: 1,
+  format_version: 2,
   source: 'TypeScript AST scan of src/**/*.ts(x)',
+  frontend_source_commit: process.env.GITHUB_SHA || null,
+  backend_inventory_source: backendSource,
+  backend_route_count: backendRoutes.length,
   call_site_count: entries.length,
   static_call_site_count: entries.filter(item => !item.dynamic).length,
   dynamic_call_site_count: entries.filter(item => item.dynamic).length,
+  matched_call_site_count: entries.filter(item => item.backend_match_status?.startsWith('matched_')).length,
+  unmatched_call_site_count: entries.filter(item => item.backend_match_status === 'no_backend_route_match').length,
   call_sites: entries,
+  backend_routes: backendRouteMatrix,
 };
 const rendered = JSON.stringify(inventory, null, 2) + '\n';
 if (outputPath) fs.writeFileSync(path.resolve(root, outputPath), rendered);
 else process.stdout.write(rendered);
 console.log(
-  `Indexed ${inventory.call_site_count} API call sites (${inventory.static_call_site_count} static, ${inventory.dynamic_call_site_count} dynamic).`
+  `Indexed ${inventory.call_site_count} API call sites; matched ${inventory.matched_call_site_count}; unmatched ${inventory.unmatched_call_site_count}; backend routes ${inventory.backend_route_count}.`
 );
