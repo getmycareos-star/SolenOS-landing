@@ -1710,6 +1710,23 @@ await record("Daily Care capture survives secondary read failures", async () => 
   await resilient.page.getByRole("alert")
     .filter({ hasText: "encrypted and saved on this device" })
     .waitFor({ timeout: 10_000 });
+  const encryptedQueueRows = await resilient.page.evaluate(async () => {
+    return await new Promise((resolve, reject) => {
+      const open = indexedDB.open("solenos-durable-write-queue", 1);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const db = open.result;
+        const transaction = db.transaction("writes", "readonly");
+        const request = transaction.objectStore("writes").getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      };
+    });
+  });
+  assert.ok(Array.isArray(encryptedQueueRows) && encryptedQueueRows.length > 0,
+    "offline capture must survive in IndexedDB until the backend confirms it");
+  assert.equal(JSON.stringify(encryptedQueueRows).includes(originalReport), false,
+    "caregiver text must be encrypted rather than stored as plaintext in IndexedDB");
   // Allow the queue's first bounded retry delay to elapse before reconnecting.
   await resilient.page.waitForTimeout(1_200);
 
