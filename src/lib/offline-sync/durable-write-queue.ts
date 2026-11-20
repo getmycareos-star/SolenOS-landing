@@ -327,6 +327,7 @@ export async function deliverDurableWrite<T>(
 export async function getDurableWriteSummary(
   personId: string,
   caregiverId: string,
+  endpoints?: string[],
 ): Promise<DurableWriteSummary> {
   const db = await openDatabase();
   const now = Date.now();
@@ -334,6 +335,7 @@ export async function getDurableWriteSummary(
   const matching = rows.filter((row) =>
     row.person_id === personId &&
     row.caregiver_id === caregiverId &&
+    (!endpoints || endpoints.includes(row.endpoint)) &&
     now - row.created_at <= RETENTION_MS,
   );
   return {
@@ -346,6 +348,7 @@ export async function getDurableWriteSummary(
 export async function discardBlockedDurableWrites(
   personId: string,
   caregiverId: string,
+  endpoints?: string[],
 ): Promise<number> {
   const db = await openDatabase();
   const rows = await getAllWrites(db);
@@ -354,6 +357,7 @@ export async function discardBlockedDurableWrites(
     if (
       row.person_id === personId &&
       row.caregiver_id === caregiverId &&
+      (!endpoints || endpoints.includes(row.endpoint)) &&
       (row.status === "blocked" || row.status === "failed_recoverable")
     ) {
       await deleteWrite(db, row.id);
@@ -367,6 +371,7 @@ export async function discardBlockedDurableWrites(
 export async function retryBlockedDurableWrites(
   personId: string,
   caregiverId: string,
+  endpoints?: string[],
 ): Promise<void> {
   const db = await openDatabase();
   const rows = await getAllWrites(db);
@@ -374,6 +379,7 @@ export async function retryBlockedDurableWrites(
     if (
       row.person_id === personId &&
       row.caregiver_id === caregiverId &&
+      (!endpoints || endpoints.includes(row.endpoint)) &&
       (row.status === "blocked" || row.status === "failed_recoverable")
     ) {
       await putWrite(db, {
