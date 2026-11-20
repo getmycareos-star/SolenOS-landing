@@ -191,6 +191,8 @@ const inventory = {
   dynamic_call_site_count: entries.filter(item => item.dynamic).length,
   matched_call_site_count: entries.filter(item => item.backend_match_status?.startsWith('matched_')).length,
   unmatched_call_site_count: entries.filter(item => item.backend_match_status === 'no_backend_route_match').length,
+  ambiguous_call_site_count: entries.filter(item => item.backend_match_status === 'ambiguous_multiple_backend_routes').length,
+  backend_routes_without_frontend_callsite: backendRouteMatrix.filter(route => route.frontend_call_site_count === 0).length,
   call_sites: entries,
   backend_routes: backendRouteMatrix,
 };
