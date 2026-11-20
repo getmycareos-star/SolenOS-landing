@@ -211,91 +211,106 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [allowed, setAllowed] = useState(false);
+  const [canManageMembers, setCanManageMembers] = useState(false);
+  const [currentSessionCaregiverId, setCurrentSessionCaregiverId] = useState("");
 
   const load = useCallback(async () => {
     if (!getAnonymousAccessToken()) {
       setAllowed(false);
+      setCanManageMembers(false);
+      setCurrentProfileId(null);
+      setCurrentSessionCaregiverId("");
       setLoading(false);
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const transferPromise = getJSON("/caregiver-access/responsibility-transfers") as Promise<Transfer[]>;
-      const primaryTransferPromise = getJSON("/caregiver-access/primary-transfers") as Promise<PrimaryTransfer[]>;
-      const memberPromise = getJSON("/caregiver-access/members") as Promise<Member[]>;
-      const [transferResult, primaryTransferResult, memberResult] = await Promise.allSettled([transferPromise, primaryTransferPromise, memberPromise]);
+      const session = await ensureAnonymousSession();
+      const personId = session.person.id;
+      const caregiverId = session.caregiver.id;
+      setCurrentSessionCaregiverId(caregiverId);
+
+      const [
+        transferResult,
+        primaryTransferResult,
+        memberResult,
+        profileResult,
+        responsibilityResult,
+        loopResult,
+        networkResult,
+        networkStateResult,
+        communicationResult,
+        contextResult,
+        observationResult,
+        perspectiveResult,
+        roleResult,
+      ] = await Promise.allSettled([
+        getJSON("/caregiver-access/responsibility-transfers") as Promise<Transfer[]>,
+        getJSON("/caregiver-access/primary-transfers") as Promise<PrimaryTransfer[]>,
+        getJSON("/caregiver-access/members") as Promise<Member[]>,
+        getJSON("/caregiver-profiles/current") as Promise<{ id: string }>,
+        getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
+        getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
+        getJSON("/multi-caregiver-summary/" + encodeURIComponent(personId) + "?person_id=" + encodeURIComponent(personId)) as Promise<MultiCaregiverSummary>,
+        getJSON("/care-network-state/" + encodeURIComponent(personId)) as Promise<CareNetworkState>,
+        getJSON("/caregiver-communications") as Promise<CaregiverCommunication[]>,
+        getJSON("/caregiver-contexts") as Promise<CaregiverContext[]>,
+        getJSON("/caregiver-observations/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivateObservation[]>,
+        getJSON("/caregiver-perspectives/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivatePerspective[]>,
+        getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
+      ]);
+
       if (transferResult.status === "fulfilled") setTransfers(transferResult.value ?? []);
       else setTransfers([]);
       if (primaryTransferResult.status === "fulfilled") setPrimaryTransfers(primaryTransferResult.value ?? []);
       else setPrimaryTransfers([]);
-      if (memberResult.status === "fulfilled") {
+
+      const members = memberResult.status === "fulfilled" ? memberResult.value ?? [] : [];
+      setCanManageMembers(memberResult.status === "fulfilled");
+      setMembers(members);
+
+      const ownProfileId = profileResult.status === "fulfilled"
+        ? profileResult.value.id
+        : members.find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id ?? null;
+      setCurrentProfileId(ownProfileId);
+
+      if (responsibilityResult.status === "fulfilled") {
+        setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
+      } else setResponsibilities([]);
+      if (loopResult.status === "fulfilled") setOpenLoops(loopResult.value.items ?? []);
+      else setOpenLoops([]);
+
+      if (networkResult.status === "fulfilled") {
+        setNetworkSummary(networkResult.value);
         setAllowed(true);
-        setMembers(memberResult.value ?? []);
-        const session = await ensureAnonymousSession();
-        const personId = session.person.id;
-        const caregiverId = session.caregiver.id;
-        const ownProfileId = (memberResult.value ?? []).find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id ?? null;
-        setCurrentProfileId(ownProfileId);
-        const [responsibilityResult, loopResult, networkResult, networkStateResult, communicationResult, contextResult, observationResult, perspectiveResult, roleResult] = await Promise.allSettled([
-          getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
-          getJSON("/open-loops") as Promise<{ items?: OpenLoop[] }>,
-          getJSON("/multi-caregiver-summary/" + encodeURIComponent(personId) + "?person_id=" + encodeURIComponent(personId)) as Promise<MultiCaregiverSummary>,
-          getJSON("/care-network-state/" + encodeURIComponent(personId)) as Promise<CareNetworkState>,
-          getJSON("/caregiver-communications") as Promise<CaregiverCommunication[]>,
-          getJSON("/caregiver-contexts") as Promise<CaregiverContext[]>,
-          getJSON("/caregiver-observations/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivateObservation[]>,
-          getJSON("/caregiver-perspectives/" + encodeURIComponent(personId) + "?caregiver_id=" + encodeURIComponent(caregiverId)) as Promise<CaregiverPrivatePerspective[]>,
-          getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
-        ]);
-        if (responsibilityResult.status === "fulfilled") {
-          setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
-        } else setResponsibilities([]);
-        if (loopResult.status === "fulfilled") setOpenLoops(loopResult.value.items ?? []);
-        if (networkResult.status === "fulfilled") setNetworkSummary(networkResult.value);
-        else setNetworkSummary(null);
-        if (networkStateResult.status === "fulfilled") setNetworkState(networkStateResult.value);
-        else setNetworkState(null);
-        if (communicationResult.status === "fulfilled") setCommunications(communicationResult.value ?? []);
-        else setCommunications([]);
-        if (contextResult.status === "fulfilled") setCareContexts(contextResult.value ?? []);
-        else setCareContexts([]);
-        if (observationResult.status === "fulfilled") setMyObservations(observationResult.value ?? []);
-        else setMyObservations([]);
-        if (perspectiveResult.status === "fulfilled") setMyPerspectives(perspectiveResult.value ?? []);
-        else setMyPerspectives([]);
-        if (roleResult.status === "fulfilled") {
-          setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === ownProfileId && item.is_current));
-        } else setMyRoles([]);
       } else {
-        setAllowed(false);
         setNetworkSummary(null);
-        setNetworkState(null);
-        setCommunications([]);
-        setCareContexts([]);
-        setMyObservations([]);
-        setMyPerspectives([]);
-        setMyRoles([]);
-        const session = await ensureAnonymousSession();
-        const personId = session.person.id;
-        const [profileResult, responsibilityResult, roleResult] = await Promise.allSettled([
-          getJSON("/caregiver-profiles/current") as Promise<{ id: string }>,
-          getJSON("/caregiver-responsibilities/" + encodeURIComponent(personId)) as Promise<Responsibility[]>,
-          getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
-        ]);
-        const currentProfileId = profileResult.status === "fulfilled" ? profileResult.value.id : null;
-        setCurrentProfileId(currentProfileId);
-        if (responsibilityResult.status === "fulfilled") {
-          setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
-        } else setResponsibilities([]);
-        if (roleResult.status === "fulfilled" && currentProfileId) {
-          setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === currentProfileId && item.is_current));
-        } else setMyRoles([]);
-        if (profileResult.status === "rejected") setError("We couldn't confirm your caregiver profile. Your personal care details are hidden until it can be checked.");
-        if (transferResult.status === "rejected") setError("We couldn't load your care handover. Please try again.");
+        setAllowed(false);
+      }
+      if (networkStateResult.status === "fulfilled") setNetworkState(networkStateResult.value);
+      else setNetworkState(null);
+      if (communicationResult.status === "fulfilled") setCommunications(communicationResult.value ?? []);
+      else setCommunications([]);
+      if (contextResult.status === "fulfilled") setCareContexts(contextResult.value ?? []);
+      else setCareContexts([]);
+      if (observationResult.status === "fulfilled") setMyObservations(observationResult.value ?? []);
+      else setMyObservations([]);
+      if (perspectiveResult.status === "fulfilled") setMyPerspectives(perspectiveResult.value ?? []);
+      else setMyPerspectives([]);
+      if (roleResult.status === "fulfilled" && ownProfileId) {
+        setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === ownProfileId && item.is_current));
+      } else setMyRoles([]);
+
+      if (profileResult.status === "rejected") {
+        setError("We couldn't confirm your caregiver profile. Your personal care details are hidden until it can be checked.");
       }
     } catch {
       setError("We couldn't load caregiver access. Please try again.");
+      setAllowed(false);
+      setCanManageMembers(false);
+      setNetworkSummary(null);
+      setNetworkState(null);
     } finally {
       setLoading(false);
     }
@@ -715,6 +730,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
 
       {allowed ? (
         <>
+          {canManageMembers && (
+            <>
           <p className="mobile-settings-hint">Invite someone to help with care or remove their access. Notes they added in the past will stay in your Care Record.</p>
           <form onSubmit={(event) => void invite(event)} style={{ display: "grid", gap: "0.7rem", marginTop: "0.9rem" }}>
             <label className="mobile-settings-label" htmlFor="caregiver-invite-email">Email address</label>
@@ -731,6 +748,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             </div>
           )}
 
+            </>
+          )}
           <form onSubmit={(event) => void sendCareCircleUpdate(event)} style={{ display: "grid", gap: "0.6rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
             <h3 className="mobile-settings-label" style={{ margin: 0 }}>Share an update with the care circle</h3>
             <p className="mobile-settings-hint" style={{ margin: 0 }}>This update will be visible to caregivers who have access to this Care Record. Do not include information you want to keep private.</p>
@@ -934,6 +953,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             </div>
           )}
 
+          {canManageMembers && (
           <div style={{ display: "grid", gap: "0.65rem", marginTop: "1rem" }}>
             <h3 className="mobile-settings-label"><Shield size={15} aria-hidden /> People with access</h3>
             {members.map((member) => (
@@ -962,6 +982,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             ))}
           </div>
 
+          )}
+          {canManageMembers && (
           <div style={{ display: "grid", gap: "0.7rem", marginTop: "1.2rem" }}>
             <h3 className="mobile-settings-label"><Shield size={15} aria-hidden /> Change the main caregiver</h3>
             <p className="mobile-settings-hint">This changes who manages access for other caregivers. It does not move individual care tasks; you can hand those over separately below.</p>
@@ -977,6 +999,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             </form>
           </div>
 
+          )}
+          {canManageMembers && (
           <div style={{ display: "grid", gap: "0.7rem", marginTop: "1.2rem" }}>
             <h3 className="mobile-settings-label"><ArrowRightLeft size={15} aria-hidden /> Hand over a care task</h3>
             <p className="mobile-settings-hint">The current caregiver stays responsible until the other caregiver accepts. Each task is handed over separately.</p>
@@ -1001,9 +1025,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               <Button type="submit" variant="primary" disabled={busy || !selectedResponsibility || !selectedRecipient} loading={busy}>Request handover</Button>
             </form>
           </div>
+          )}
         </>
       ) : (
-        <p className="mobile-settings-hint">The main caregiver manages who can access this Care Record. You can still manage your own care responsibilities and care role.</p>
+        <p className="mobile-settings-hint">Shared caregiver information is not available with your current access. You can still manage your own care responsibilities and care role.</p>
       )}
 
       {currentProfileId && (
@@ -1061,7 +1086,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             <div key={transfer.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
               <strong>Change main caregiver · {caregiverStatusLabel(transfer.status) || "Status not available"}</strong>
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
-              {transfer.status === "pending" && !allowed && (
+              {transfer.status === "pending" && transfer.to_caregiver_id === currentSessionCaregiverId && (
                 <div className="mobile-settings-buttons">
                   <Button type="button" variant="primary" disabled={busy} onClick={() => void respondToPrimaryTransfer(transfer, "accept")}><Check size={15} aria-hidden /> Accept</Button>
                   <Button type="button" variant="secondary" disabled={busy} onClick={() => void respondToPrimaryTransfer(transfer, "reject")}>Decline</Button>
@@ -1080,7 +1105,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               <strong>{caregiverFieldLabel(transfer.responsibility_type) || caregiverStatusLabel(transfer.responsibility_type) || "Care task"}</strong>
               <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>{transfer.from_caregiver_name} → {transfer.to_caregiver_name} · {caregiverStatusLabel(transfer.status) || "Status not available"}</p>
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
-              {transfer.status === "pending" && !allowed && (
+              {transfer.status === "pending" && transfer.to_caregiver_profile_id === currentProfileId && (
                 <div className="mobile-settings-buttons">
                   <Button type="button" variant="primary" disabled={busy} onClick={() => void respondToTransfer(transfer, "accept")}><Check size={15} aria-hidden /> Accept</Button>
                   <Button type="button" variant="secondary" disabled={busy} onClick={() => void respondToTransfer(transfer, "reject")}>Decline</Button>
