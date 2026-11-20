@@ -81,8 +81,9 @@ export default function CareRemindersPage() {
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
     const items = data as CareReminder[];
     setReminders(items);
-    setAssignableMembers(Array.isArray(members) ? members as CaregiverMember[] : []);
-    setAssignedTo((current) => current || session.caregiver.id);
+    const memberRows = Array.isArray(members) ? members as CaregiverMember[] : [];
+    setAssignableMembers(memberRows);
+    setAssignedTo((current) => memberRows.some((member) => member.caregiver_id === current) ? current : session.caregiver.id);
     hasLoadedRef.current = true;
     setSnoozeSupported(items.length > 0 && items.every((item) => typeof item.snooze_count === "number"));
   }, []);
