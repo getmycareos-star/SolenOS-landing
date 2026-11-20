@@ -1337,16 +1337,35 @@ await record("03b source-backed caregiver question routing", async () => {
 
 // 4. Document upload: original bytes -> server extraction -> persisted extraction read.
 let documentId;
-await record("04 document upload and extraction", async () => {
+await record("04 document upload, binary retrieval, idempotent retry and extraction", async () => {
+  const documentText = "Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today.";
+  const uploadRetryKey = `document-retry-${randomUUID()}`;
   const form = new FormData();
   form.append("person_id", identity.personId);
   form.append("caregiver_id", identity.caregiverId);
   form.append("evidence_type", "document");
-  form.append("file", new Blob(["Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today."], { type: "text/plain" }), "journey-discharge-note.txt");
+  form.append("ingestion_key", uploadRetryKey);
+  form.append("file", new Blob([documentText], { type: "text/plain" }), "journey-discharge-note.txt");
   const uploaded = await request("/api/v1/upload", { token: identity.token, method: "POST", form });
   assert.equal(uploaded.status, 201, JSON.stringify(uploaded.payload));
   documentId = uploaded.payload.evidence_id;
   assert.equal(uploaded.payload.persisted, true);
+
+  const originalBinary = await request(`/api/v1/upload/${documentId}`, { token: identity.token });
+  assert.equal(originalBinary.status, 200, JSON.stringify(originalBinary.payload));
+  assert.equal(originalBinary.payload, documentText, "the original uploaded bytes must be retrievable from durable storage");
+
+  const retryForm = new FormData();
+  retryForm.append("person_id", identity.personId);
+  retryForm.append("caregiver_id", identity.caregiverId);
+  retryForm.append("evidence_type", "document");
+  retryForm.append("ingestion_key", uploadRetryKey);
+  retryForm.append("file", new Blob([documentText], { type: "text/plain" }), "journey-discharge-note.txt");
+  const replay = await request("/api/v1/upload", { token: identity.token, method: "POST", form: retryForm });
+  assert.equal(replay.status, 201, JSON.stringify(replay.payload));
+  assert.equal(replay.payload.evidence_id, documentId, "a lost upload response must not create a second evidence record");
+  assert.equal(replay.payload.idempotent_replay, true);
+
   const extracted = await request(`/api/v1/documents/${documentId}/extract`, { token: identity.token, method: "POST", body: {} });
   assert.equal(extracted.status, 201, JSON.stringify(extracted.payload));
   const reviewed = await request(`/api/v1/documents/analyses/${extracted.payload.analysis_id}`, { token: identity.token });
