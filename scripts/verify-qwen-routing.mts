@@ -181,7 +181,8 @@ requireText("src/app/workspace/documents/page.tsx", [
   "Snap a photo",
   "Scan pages",
   "navigator.mediaDevices.getUserMedia",
-  'form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload")',
+  'capture_method: intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload",',
+  "for (const [key, value] of Object.entries(fields)) form.append(key, value)",
 ]);
 assert(documentPage.includes('getJSON("/evidence/"'), "Documents must load persisted evidence from the session-scoped backend.");
 assert(documentPage.includes('getBlob("/upload/"'), "Documents must retrieve the original saved file.");
