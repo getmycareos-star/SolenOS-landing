@@ -1754,17 +1754,27 @@ await record("Daily Care capture survives secondary read failures", async () => 
       open.onerror = () => reject(open.error);
       open.onsuccess = () => resolve(open.result);
     });
-    return await new Promise((resolve, reject) => {
+    const currentPersonId = localStorage.getItem("solenos_backend_person_id");
+    const currentCaregiverId = localStorage.getItem("solenos_backend_caregiver_id");
+    const rows = await new Promise((resolve, reject) => {
       const transaction = db.transaction("writes", "readonly");
       const request = transaction.objectStore("writes").getAll();
       request.onsuccess = () => resolve(request.result.map((row) => ({
-        endpoint: row.endpoint, status: row.status, attempts: row.attempts,
+        endpoint: row.endpoint,
+        status: row.status,
+        attempts: row.attempts,
+        next_retry_at: row.next_retry_at,
+        created_at: row.created_at,
+        person_id: row.person_id,
+        caregiver_id: row.caregiver_id,
+        matches_identity: row.person_id === currentPersonId && row.caregiver_id === currentCaregiverId,
       })));
       request.onerror = () => reject(request.error);
     });
+    return { currentPersonId, currentCaregiverId, rows };
   });
   assert.ok(
-    queueAfterReload.some((row) => row.endpoint === "/daily-care/entries"),
+    queueAfterReload.rows.some((row) => row.endpoint === "/daily-care/entries"),
     "the encrypted Daily Care write must remain in IndexedDB after a full page reload",
   );
   console.log("OFFLINE_QUEUE_AFTER_RELOAD", JSON.stringify(queueAfterReload));
