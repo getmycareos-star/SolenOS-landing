@@ -348,7 +348,7 @@ export default function AppointmentWorkspace() {
     const items = workspaceResult.items || []
     const latest = selectedAppointmentId
       ? items.find(item => item.appointment_id === selectedAppointmentId) || null
-      : items.find(item => !item.appointment_id) || null
+      : null
     setRecord(latest)
     if (!latest) {
       setOutcome(null)
