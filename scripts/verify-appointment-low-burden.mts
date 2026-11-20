@@ -19,4 +19,10 @@ assert.ok(component.includes('nothing here changes your Care Record without your
 assert.ok(component.toLowerCase().includes('your reports stay marked as yours'), 'caregiver notes must preserve attribution')
 assert.ok(component.includes('Nothing to fill in.'), 'preparation must not be another required caregiver form')
 assert.ok(component.includes('Open detailed appointment and follow-up controls (optional)'), 'existing follow-up controls must remain available without blocking the guided path')
+assert.ok(component.includes('appointment-quick-summary'), 'caregiver-facing summary must lead with useful retrieved care context');
+assert.ok(component.includes('What SolenOS found'), 'appointment preparation must explain what SolenOS actually found');
+assert.ok(component.includes('There is not enough linked care information available'), 'empty retrieval must be disclosed without implying the care record is empty');
+assert.ok(component.includes('Review source details and information checks'), 'source audit details must remain available behind an optional disclosure');
+assert.ok(component.includes('<details className="appointment-source-review">'), 'technical source audit must not dominate the default caregiver view');
+assert.ok(component.includes('You do not need to rewrite information already in your Care Record'), 'caregivers must not be asked to re-enter information already recorded');
 console.log('PASS: low-burden appointment stages, optional capture, backend outcome retrieval and LCR write boundary')
