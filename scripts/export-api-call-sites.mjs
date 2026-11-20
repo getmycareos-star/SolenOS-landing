@@ -122,7 +122,7 @@ function normalizeFrontendPath(expression) {
 }
 
 function escapeRegex(value) {
-  return value.replace(/[.*+?^$()|[\]\\]/g, '\\  return value.replace(/[.*+?^\x24{}()|[\\]\\\\]/g, '\\\\$&');');
+  return value.replace(/[.*+?^$()|[\]\\]/g, '\\$&');
 }
 
 function routeRegex(routePath) {
