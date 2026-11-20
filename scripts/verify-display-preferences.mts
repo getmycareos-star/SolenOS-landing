@@ -6,6 +6,8 @@ const source = readFileSync(
   "utf8",
 );
 
+assert.match(source, /const DEFAULTS: Preferences = \{ theme: "light", scale: "100" \}/);
+assert.match(source, /saved\.theme === "system" \? \{ \.\.\.saved, theme: "light" \} : saved/);
 assert.match(source, /window\.matchMedia\("\(prefers-color-scheme: dark\)"\)/);
 assert.match(source, /prefs\.theme === "system" \? \(systemTheme\.matches \? "dark" : "light"\) : prefs\.theme/);
 assert.match(source, /systemTheme\.addEventListener\("change", applyTheme\)/);
