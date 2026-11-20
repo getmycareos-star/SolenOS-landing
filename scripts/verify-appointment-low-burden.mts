@@ -52,3 +52,5 @@ assert.ok(component.includes('outcomeProposals.length === 0'), 'manual retry mus
 
 assert.ok(component.includes('items.find(item => item.appointment_id === selectedAppointmentId)'), 'an upcoming visit must not inherit a previous appointment workspace')
 assert.ok(component.includes('setRecord(null)'), 'a new appointment with no saved workspace must not retain stale appointment notes')
+
+assert.ok(component.includes('!brief.next_appointment'), 'the next visit must not be hidden by an empty-state branch when older appointment history is truncated')
