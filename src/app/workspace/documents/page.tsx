@@ -405,55 +405,144 @@ export default function DocumentsPage() {
     setUploading(true);
     setUploadMessage(null);
     let saved = 0;
+    let queuedLocally = 0;
     let backgroundProcessingQueued = 0;
     let backgroundQueueUnavailable = 0;
+    let failed = 0;
+    const completedKeys = new Set<string>();
+    const remainingPages: ReviewPage[] = [];
+
     try {
-      const session = await ensureAnonymousSession();
+      let personId = getPersonId();
+      let caregiverId = getCaregiverId();
+      if (!personId || !caregiverId) {
+        const session = await ensureAnonymousSession();
+        personId = session.person.id;
+        caregiverId = session.caregiver.id;
+      }
+
       let scanPageNumber = 0;
       for (let pageIndex = 0; pageIndex < reviewPages.length; pageIndex += 1) {
         const page = reviewPages[pageIndex];
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) scanPageNumber += 1;
-        const form = new FormData();
-        form.append("file", page.file);
-        form.append("ingestion_key", page.ingestionKey);
-        form.append("person_id", session.person.id);
-        form.append("caregiver_id", session.caregiver.id);
-        form.append("evidence_type", "document");
-        form.append("capture_method", intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload");
-        form.append("capture_timestamp", page.captureTimestamp);
-        if (intakeMode === "scan" && page.file.type.startsWith("image/")) form.append("capture_page_number", String(scanPageNumber));
-        // SolenOS reads from the original file. Text shown in the browser does not replace the original.
-        form.append("scan_review_status", "not_reviewed");
-        form.append("scan_rotation_degrees", String(page.rotation));
-        form.append("scan_crop_json", JSON.stringify(page.crop));
-        form.append("scan_text_prepared", "false");
-        const stored = await postFormData("/upload", form) as {
-          evidence_id?: string;
-          persisted?: boolean;
-          document_processing_job_id?: string | null;
-          processing_status?: string;
+
+        const fields: Record<string, string> = {
+          ingestion_key: page.ingestionKey,
+          person_id: personId,
+          caregiver_id: caregiverId,
+          evidence_type: "document",
+          capture_method: intakeMode === "scan" ? "scan" : intakeMode === "capture" ? "snap" : "upload",
+          capture_timestamp: page.captureTimestamp,
+          scan_review_status: "not_reviewed",
+          scan_rotation_degrees: String(page.rotation),
+          scan_crop_json: JSON.stringify(page.crop),
+          scan_text_prepared: "false",
         };
-        if (!stored.persisted || !stored.evidence_id) throw new Error("The server did not confirm that the original file was saved.");
-        saved += 1;
-        if (stored.document_processing_job_id && ["queued", "processing", "completed"].includes(stored.processing_status || "")) {
-          backgroundProcessingQueued += 1;
-        } else {
-          backgroundQueueUnavailable += 1;
+        if (intakeMode === "scan" && page.file.type.startsWith("image/")) {
+          fields.capture_page_number = String(scanPageNumber);
+        }
+
+        let queueId: string | null = null;
+        try {
+          if (page.file.size <= MAX_OFFLINE_DOCUMENT_BYTES) {
+            try {
+              queueId = await enqueueDurableWrite({
+                person_id: personId,
+                caregiver_id: caregiverId,
+                endpoint: "/upload",
+                idempotency_key: page.ingestionKey,
+                payload: {
+                  offline_kind: "file_upload",
+                  file_name: page.file.name,
+                  mime_type: page.file.type || "application/octet-stream",
+                  file_base64: await encodeDocumentForOfflineQueue(page.file),
+                  fields,
+                },
+              });
+            } catch {
+              if (typeof navigator !== "undefined" && !navigator.onLine) {
+                throw new Error("This device could not securely keep an offline copy.");
+              }
+            }
+          } else if (typeof navigator !== "undefined" && !navigator.onLine) {
+            throw new Error("This file is too large to keep safely on this device while offline.");
+          }
+
+          let stored: {
+            evidence_id?: string;
+            persisted?: boolean;
+            document_processing_job_id?: string | null;
+            processing_status?: string;
+          };
+          if (queueId) {
+            stored = await deliverDurableWrite<typeof stored>(queueId, sendQueuedCareWrite);
+          } else {
+            const form = new FormData();
+            form.append("file", page.file);
+            for (const [key, value] of Object.entries(fields)) form.append(key, value);
+            stored = await postFormData("/upload", form) as typeof stored;
+          }
+
+          if (!stored.persisted || !stored.evidence_id) {
+            throw new Error("The server did not confirm that the original file was saved.");
+          }
+          saved += 1;
+          completedKeys.add(page.ingestionKey);
+          if (stored.document_processing_job_id && ["queued", "processing", "completed"].includes(stored.processing_status || "")) {
+            backgroundProcessingQueued += 1;
+          } else {
+            backgroundQueueUnavailable += 1;
+          }
+        } catch {
+          if (queueId) {
+            // The encrypted queue owns the original bytes. Do not call this a
+            // care-record save; the backend has not confirmed it yet.
+            queuedLocally += 1;
+            completedKeys.add(page.ingestionKey);
+          } else {
+            failed += 1;
+            remainingPages.push(page);
+          }
         }
       }
-      reviewPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
-      setReviewPages([]);
-      setIntakeMode(null);
-      setUploadMessage({
-        kind: "success",
-        text: `SolenOS saved ${saved} original ${saved === 1 ? "file" : "files"}. It is reading the documents now. You can leave this page. Suggested details will not be added to your Care Record until you check and approve them. ${backgroundQueueUnavailable} ${backgroundQueueUnavailable === 1 ? "file needs" : "files need"} another look.`,
-      });
-      await loadDocuments(true);
-      setDocumentIntelligenceRefresh((value) => value + 1);
+
+      const completedPages = reviewPages.filter((page) => completedKeys.has(page.ingestionKey));
+      completedPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
+      setReviewPages(remainingPages);
+      if (remainingPages.length === 0) setIntakeMode(null);
+
+      if (saved > 0 || queuedLocally > 0) {
+        const parts = [];
+        if (saved > 0) {
+          parts.push("SolenOS saved " + saved + " original " + (saved === 1 ? "file" : "files") + " to your care record.");
+        }
+        if (queuedLocally > 0) {
+          parts.push(queuedLocally + " " + (queuedLocally === 1 ? "file is" : "files are") + " encrypted on this device. They have not reached the care record yet and will sync when your connection returns.");
+        }
+        if (backgroundQueueUnavailable > 0) {
+          parts.push(backgroundQueueUnavailable + " " + (backgroundQueueUnavailable === 1 ? "file needs" : "files need") + " another look after upload.");
+        }
+        if (failed > 0) {
+          parts.push(failed + " file" + (failed === 1 ? " could" : "s could") + " not be saved or queued. " + (failed === 1 ? "It remains" : "They remain") + " here so you can try again.");
+        }
+        parts.push("Suggested details will not be added to your Care Record until you check and approve them.");
+        setUploadMessage({ kind: failed > 0 ? "error" : "success", text: parts.join(" ") });
+        await loadDocuments(true);
+        setDocumentIntelligenceRefresh((value) => value + 1);
+      } else {
+        setUploadMessage({
+          kind: "error",
+          text: "No files were saved or safely queued. Your selected files remain here so you can try again.",
+        });
+      }
     } catch {
-      setUploadMessage({ kind: "error", text: `SolenOS saved ${saved} of ${reviewPages.length} files before it stopped. You can try again; files already saved will not be duplicated.` });
-      await loadDocuments(true);
-    } finally { setUploading(false); }
+      setUploadMessage({
+        kind: "error",
+        text: "SolenOS could not confirm the upload session. Your selected files remain here; nothing has been reported as saved.",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const openOriginal = async (doc: DocumentItem) => {
