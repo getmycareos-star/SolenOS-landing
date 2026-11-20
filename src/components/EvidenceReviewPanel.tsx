@@ -113,7 +113,7 @@ const outcomes: Record<ReviewType, string[]> = {
 const labels: Record<ReviewType, string> = {
   quality: 'How clear this information is',
   reliability: 'How sure are you about this information?',
-  source_confidence: 'Who shared this information?',
+  source_confidence: 'Can we identify the source?',
   freshness: 'Is this still current?',
   completeness: 'Are any details missing?',
 }
@@ -941,9 +941,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9, marginTop: 9 }}>
-        <label style={{ fontSize: 12 }}>Who shared this information?
+        <label style={{ fontSize: 12 }}>Can we identify the source?
           <select style={field} value={sourceResult} onChange={event => setSourceResult(event.target.value)}>
-            <option value="not_assessed">Not checked</option><option value="present">Recorded</option><option value="incomplete">Incomplete</option><option value="unverified">Not confirmed</option>
+            <option value="not_assessed">Not checked</option><option value="present">Identified</option><option value="incomplete">Partly identified</option><option value="unverified">Not confirmed</option>
           </select>
         </label>
         <label style={{ fontSize: 12 }}>Was this shared separately?
@@ -951,7 +951,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <option value="not_assessed">Not checked</option><option value="independent_source_linked">A separate report is linked</option><option value="copied_or_same_origin">Copied from the same original</option><option value="none_linked">No other report is linked</option>
           </select>
         </label>
-        <label style={{ fontSize: 12 }}>When did it happen?
+        <label style={{ fontSize: 12 }}>Is the timing clear?
           <select style={field} value={temporalResult} onChange={event => setTemporalResult(event.target.value)}>
             <option value="not_assessed">Not checked</option><option value="specified">Recorded</option><option value="partial">Partly recorded</option><option value="missing">Missing</option><option value="conflicting">Reports disagree</option>
           </select>
