@@ -18,11 +18,27 @@ import {
   X,
 } from "lucide-react";
 
-import { deleteJSON, ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON } from "@/api/client";
+import {
+  deleteJSON,
+  ensureAnonymousSession,
+  getBlob,
+  getCaregiverId,
+  getJSON,
+  getPersonId,
+  postFormData,
+  postJSON,
+} from "@/api/client";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
+import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
+import {
+  discardBlockedDurableWrites,
+  getDurableWriteSummary,
+  retryBlockedDurableWrites,
+  syncDurableWrites,
+} from "@/lib/offline-sync/durable-write-queue";
 
 type EvidenceRecord = {
   id: string;
@@ -120,6 +136,17 @@ function isPdf(mimeType: string): boolean {
   return mimeType === "application/pdf";
 }
 
+const MAX_OFFLINE_DOCUMENT_BYTES = 8 * 1024 * 1024;
+
+async function encodeDocumentForOfflineQueue(file: File): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  }
+  return window.btoa(binary);
+}
+
 export default function DocumentsPage() {
   const [intakeMode, setIntakeMode] = useState<"upload" | "capture" | "scan" | null>(null);
   const cropDrag = useRef<{ index: number; startX: number; startY: number; width: number; height: number; crop: CropInsets } | null>(null);
@@ -137,6 +164,8 @@ export default function DocumentsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<UploadMessage>(null);
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const [attentionUploads, setAttentionUploads] = useState(0);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -154,8 +183,8 @@ export default function DocumentsPage() {
     else setLoading(true);
     setListError(null);
     try {
-      const session = await ensureAnonymousSession();
-      const result = await getJSON("/evidence/" + encodeURIComponent(session.person.id));
+      const personId = getPersonId() || (await ensureAnonymousSession()).person.id;
+      const result = await getJSON("/evidence/" + encodeURIComponent(personId));
       if (!Array.isArray(result)) throw new Error("The document list returned an unexpected response.");
       const next = (result as EvidenceRecord[])
         .filter((item) => item && item.type === "document" && item.id)
