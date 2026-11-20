@@ -79,6 +79,7 @@ assert.ok(component.includes('extractAttachedDocument(file, \'upload\')'), 'appo
 assert.ok(component.includes('attachedEvidenceIds'), 'appointment document evidence IDs must persist with the workspace')
 assert.ok(component.includes('Retry linking saved document'), 'a failed appointment link must be recoverable without re-uploading the original')
 assert.ok(component.includes('Link to this appointment'), 'existing care documents must be attachable without re-uploading')
+assert.ok(component.includes("brief.source_coverage?.documents === 'restricted'"), 'document attachment must respect caregiver document permissions')
 assert.ok(component.includes('Documents linked to this appointment'), 'documents linked to the selected visit must be distinguished from other care documents')
 assert.ok(component.includes("updateAppointmentLifecycle('cancelled')") && component.includes("updateAppointmentLifecycle('rescheduled')"), 'caregiver-recorded cancellation and rescheduling must be supported')
 assert.ok(component.includes("{ status: 'completed' }"), 'saving after-visit information must update the recorded visit lifecycle');
