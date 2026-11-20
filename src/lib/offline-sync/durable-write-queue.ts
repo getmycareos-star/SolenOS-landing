@@ -207,12 +207,22 @@ function isEligible(record: StoredWrite, now: number): boolean {
   return record.next_retry_at === null || record.next_retry_at <= now;
 }
 
+export function durableWriteId(endpoint: string, idempotencyKey: string): string {
+  return `${endpoint}:${idempotencyKey}`;
+}
+
+export async function discardDurableWrite(id: string): Promise<void> {
+  const db = await openDatabase();
+  await deleteWrite(db, id);
+  dispatchQueueUpdated();
+}
+
 export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
   if (!input.person_id || !input.caregiver_id || !input.idempotency_key || !input.endpoint.startsWith("/")) {
     throw new Error("A verified care identity and stable request key are required for offline storage.");
   }
   const db = await openDatabase();
-  const id = `${input.endpoint}:${input.idempotency_key}`;
+  const id = durableWriteId(input.endpoint, input.idempotency_key);
   const existing = await readWrite(db, id);
   const encrypted = await encryptPayload(db, input.payload);
   const now = Date.now();
