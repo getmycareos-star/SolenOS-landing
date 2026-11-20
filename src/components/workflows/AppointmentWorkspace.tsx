@@ -251,11 +251,6 @@ export default function AppointmentWorkspace() {
             setRecord(latest)
             if (latest.appointment_id) setAppointmentId(latest.appointment_id)
             setNote(typeof latest.payload?.caregiverReport === 'string' ? latest.payload.caregiverReport : '')
-    setProfessionalStatement(typeof latest.payload?.clinicianFindings === 'string' ? latest.payload.clinicianFindings : '')
-    setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
-    setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
-    setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
-    setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
             setProfessionalStatement(typeof latest.payload?.clinicianFindings === 'string' ? latest.payload.clinicianFindings : '')
             setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
             setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
@@ -347,6 +342,11 @@ export default function AppointmentWorkspace() {
     }
     if (latest.appointment_id) setAppointmentId(latest.appointment_id)
     setNote(typeof latest.payload?.caregiverReport === 'string' ? latest.payload.caregiverReport : '')
+    setProfessionalStatement(typeof latest.payload?.clinicianFindings === 'string' ? latest.payload.clinicianFindings : '')
+    setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
+    setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
+    setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
+    setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
 
     const [draftResult, proposalResult] = await Promise.allSettled([
       getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as Promise<OutcomeDraft>,
