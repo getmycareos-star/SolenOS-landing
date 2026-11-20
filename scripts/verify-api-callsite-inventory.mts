@@ -303,6 +303,20 @@ assert.equal(
   0,
   "Every Next.js backend proxy fetch must resolve to a statically auditable FastAPI path.",
 );
+assert.ok(
+  proxyCallsites.some(item => item.method === "POST" && item.resolved_path === "/api/extract"),
+  "The authenticated document extraction proxy must be included in the backend callsite inventory.",
+);
+assert.ok(
+  proxyCallsites.some(item => item.method === "GET" && item.resolved_path.startsWith("/api/v1/share-intake/")),
+  "The one-time share-intake proxy must be included in the backend callsite inventory.",
+);
+for (const method of ["GET", "POST", "PATCH"]) {
+  assert.ok(
+    proxyCallsites.some(item => item.method === method && item.resolved_path === "/api/situation"),
+    `The ${method} situation proxy must be included in the backend callsite inventory.`,
+  );
+}
 if (backendContract.enabled) {
   assert.equal(
     backendContract.missing_operations?.length ?? 0,
