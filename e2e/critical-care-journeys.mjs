@@ -1703,20 +1703,28 @@ await record("Daily Care capture survives secondary read failures", async () => 
   await reportField.waitFor({ state: "visible", timeout: 15_000 });
   await reportField.fill(originalReport);
 
-  const saveResponsePromise = resilient.page.waitForResponse((response) =>
+  // The write is queued before network submission. Verify that an offline
+  // attempt is never represented as a canonical care-record save.
+  await resilient.context.setOffline(true);
+  await resilient.page.getByRole("button", { name: "Save update", exact: true }).click();
+  await resilient.page.getByRole("alert")
+    .filter({ hasText: "encrypted and saved on this device" })
+    .waitFor({ timeout: 10_000 });
+
+  const syncResponsePromise = resilient.page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
     && response.request().method() === "POST"
   );
-  await resilient.page.getByRole("button", { name: "Save update", exact: true }).click();
-  const saveResponse = await saveResponsePromise;
+  await resilient.context.setOffline(false);
+  const saveResponse = await syncResponsePromise;
   const savePayload = await saveResponse.json();
   assert.equal(saveResponse.status(), 200, JSON.stringify(savePayload));
   assert.equal(savePayload.success, true, JSON.stringify(savePayload));
   assert.ok(typeof savePayload.id === "string" && savePayload.id,
-    "a save receipt must contain the persisted event ID");
+    "the sync receipt must contain the persisted event ID");
   await resilient.page.getByRole("status")
-    .filter({ hasText: "Your update was saved to the care record." })
-    .waitFor({ timeout: 10_000 });
+    .filter({ hasText: "Your pending update has now synced to the care record." })
+    .waitFor({ timeout: 15_000 });
 
   const persisted = await request(`/api/v1/events/${resilientIdentity.personId}`, { token: resilientIdentity.token });
   assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
