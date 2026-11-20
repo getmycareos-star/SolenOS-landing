@@ -198,6 +198,7 @@ const CARE_FIELD_LABELS: Readonly<Record<string, string>> = {
   heart_rate: "Heart rate",
   caregiver_note: "Caregiver note",
   caregiver_reported_observation: "Caregiver report",
+  reported_weight_change: "Weight change reported",
   medication: "Medication",
   hydration: "Fluid intake",
   food_intake: "Food intake",
