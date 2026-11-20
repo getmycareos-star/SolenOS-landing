@@ -8,6 +8,7 @@ const layout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), 
 const runtimeExports = fs.readFileSync(path.join(root, "src/lib/ui-runtime/index.ts"), "utf8");
 const situationStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/situation-store.ts"), "utf8");
 const timelineStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/timeline-store.ts"), "utf8");
+const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 
 assert.match(workspace, /openSituationsFromSituationApi\(data\)/);
 assert.match(workspace, /situations:\s*fromServer/);
@@ -27,6 +28,9 @@ assert.match(
 );
 assert.match(layout, /recordLoadError/);
 assert.match(layout, /window\.location\.reload\(\)/);
+assert.match(companion, /getJSON\('\/conversations\?limit=1'\)/);
+assert.match(companion, /listing\.person_id !== session\.person\.id/);
+assert.match(companion, /latest\.session_id/);
 
 console.log("PASS: caregiver-visible care state is hydrated from the authenticated no-store API response, not browser-local care data.");
 console.log("PASS: empty server records clear the projection and failed reads surface a recoverable error.");
