@@ -1215,7 +1215,7 @@ export function HistoryDrawer() {
         if (category === "daily-care") return /event history|saved care events|event history could not be verified/.test(allWarnings);
         if (category === "document") return /saved documents/.test(allWarnings);
         if (category === "appointment") return /appointment/.test(allWarnings);
-        if (category === "handoff") return /handoff/.test(allWarnings) || handoffConsentRequired;
+        if (category === "handoff") return /handoff/.test(allWarnings) || consentRequiredForHandoffs;
         if (category === "decision") return /care decisions/.test(allWarnings);
         if (category === "outcome") return /outcomes/.test(allWarnings);
         return /follow-ups/.test(allWarnings);
@@ -1224,7 +1224,7 @@ export function HistoryDrawer() {
         if (warningMatches(category)) {
           return [category, categoryHasRecords(category) ? "partial" : "failed"];
         }
-        if (category === "handoff" && handoffConsentRequired) return [category, "partial"];
+        if (category === "handoff" && consentRequiredForHandoffs) return [category, "partial"];
         return [category, categoryHasRecords(category) ? "complete" : "empty"];
       })) as Record<HistoryStatusCategory, HistoryLoadStatus>;
       setRecords(caregiverRecords);
