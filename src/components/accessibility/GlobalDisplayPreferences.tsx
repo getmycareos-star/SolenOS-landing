@@ -7,7 +7,7 @@ type TextScale = "100" | "125";
 type Preferences = { theme: ThemePreference; scale: TextScale };
 
 const STORAGE_KEY = "solenos_display_preferences_v1";
-const DEFAULTS: Preferences = { theme: "system", scale: "100" };
+const DEFAULTS: Preferences = { theme: "light", scale: "100" };
 
 function validPreferences(value: unknown): Preferences {
   if (!value || typeof value !== "object") return DEFAULTS;
@@ -34,7 +34,13 @@ export function GlobalDisplayPreferences() {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) setPrefs(validPreferences(JSON.parse(stored)));
+      if (stored) {
+        const saved = validPreferences(JSON.parse(stored));
+        // "system" was the previous first-run default. Migrate that legacy
+        // default to the new SolenOS light default while preserving an
+        // explicitly selected dark theme.
+        setPrefs(saved.theme === "system" ? { ...saved, theme: "light" } : saved);
+      }
     } catch {
       // Keep safe defaults when browser storage is unavailable or corrupt.
     }
