@@ -2497,6 +2497,15 @@ await record("12b invited caregiver sees the shared care record in a separate br
   assert.equal(primaryPerspective.status, 200, JSON.stringify(primaryPerspective.payload));
   assert.equal(invitedPerspective.status, 200, JSON.stringify(invitedPerspective.payload));
 
+  // Session-derived network reads must work without a caller-supplied person_id.
+  const privateNetworkState = await request("/api/v1/care-network-state", { token: identity.token });
+  assert.equal(privateNetworkState.status, 200, JSON.stringify(privateNetworkState.payload));
+  const crossRecordNetwork = await request(
+    `/api/v1/multi-caregiver-summary?person_id=${encodeURIComponent("another-person")}`,
+    { token: identity.token },
+  );
+  assert.equal(crossRecordNetwork.status, 403,
+    "a session-derived summary must still reject a caller-selected different care recipient");
   const privateSummary = await request("/api/v1/multi-caregiver-summary", { token: identity.token });
   assert.equal(privateSummary.status, 200, JSON.stringify(privateSummary.payload));
   assert.equal(privateSummary.payload.perspective_conflicts.length, 0,
