@@ -13,6 +13,7 @@ assert.match(workspace, /setRecordLoadError\(/);
 assert.doesNotMatch(workspace, /situations:\s*localSituations/);
 assert.doesNotMatch(workspace, /persistSituations\(|persistTimeline\(|persistActiveSituationId\(/);
 assert.doesNotMatch(workspace, /loadTimelineFromStorage\(|loadActiveSituationId\(/);
+assert.doesNotMatch(workspace, /loadSituationsFromStorage\(|localSituations/);
 assert.match(
   workspace,
   /Always replace the visible projection with the server result[\s\S]*?including an empty result/,
