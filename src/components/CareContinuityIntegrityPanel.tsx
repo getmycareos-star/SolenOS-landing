@@ -164,7 +164,7 @@ export default function CareContinuityIntegrityPanel({
         updated_by_caregiver_id: getCaregiverId() || undefined,
         review_after_days: assertion.review_after_days ?? undefined,
       })
-      setNotice('Marked as checked by a caregiver. This does not mean a healthcare professional has confirmed it.')
+      setNotice('Marked as reviewed. This does not mean a healthcare professional has confirmed it.')
       await load()
     } catch (reason) {
       setError('We couldn’t update this review. Please try again.')
