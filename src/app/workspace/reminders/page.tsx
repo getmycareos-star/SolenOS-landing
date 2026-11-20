@@ -31,7 +31,7 @@ type CareReminder = {
   cancelled_by_caregiver_id: string | null;
   created_at: string;
   delivery_mode: "in_app_notification_feed";
-  notification_delivery_status: "in_app_notification_created";
+  notification_delivery_status: "not_created" | "in_app_notification_created";
 };
 
 function localDateTimeValue(date: Date): string {
