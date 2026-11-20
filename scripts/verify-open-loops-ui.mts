@@ -11,7 +11,7 @@ const required: Array<[string, RegExp]> = [
   ["refreshes a missing or stale assessment through the existing endpoint", /status === "not_assessed"[\s\S]*?reassessment_recommended === true[\s\S]*?postJSON\("\/care-continuity\/situation-understanding\/reassess"/],
   ["does not use an assessment belonging to another person", /nextAssessmentResponse\.assessment\.person_id === personId/],
   ["refreshes when a care record is changed or the caregiver returns", /careRecordUpdated[\s\S]*?window\.addEventListener\("focus"/],
-  ["records the caregiver response against the existing loop type", /const endpoint = \["awaiting_response", "follow_up"\]\.includes\(loop\.loop_type\)[\s\S]*?"\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/responses"[\s\S]*?"\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/outcomes"[\s\S]*?await postJSON\(endpoint/],
+  ["records the caregiver response against the existing loop type", /if \(\["awaiting_response", "follow_up"\]\.includes\(loop\.loop_type\)\)[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)[\s\S]*?else[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/outcomes`, updatePayload\)/],
   ["reuses the same idempotency key when a caregiver update response is uncertain", /pendingUpdateKeys\.current\[loop\.id\][\s\S]*?pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)/],
   ["clears the pending update key only after the saved view refreshes", /await refresh\(\)[\s\S]*?delete pendingUpdateKeys\.current\[loop\.id\]/],
   ["preserves the caregiver report draft after an uncertain save", /onUpdate\(loop, updateText\.trim\(\)\)[\s\S]*?\.catch\(\(\) => \{ \/\* Keep the exact report text available for a safe retry\. \*\//],
@@ -23,7 +23,7 @@ const required: Array<[string, RegExp]> = [
   ["passes a linked follow-up review date into its card", /review_at: loop\.review_at/],
   ["labels a due review as requested rather than as a future date", /Review requested/],
   ["records caregiver actions without claiming the outcome is verified", /function recordAction[\s\S]*?postJSON\("\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/actions"[\s\S]*?outcome has not been marked as verified/],
-  ["does not expose a second general-purpose follow-up writer", /function shareUpdate[\s\S]*?const endpoint =[\s\S]*?await postJSON\(endpoint/],
+  ["does not expose a second general-purpose follow-up writer", /function shareUpdate[\s\S]*?const updatePayload =[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/outcomes`, updatePayload\)/],
   ["reassesses saved follow-ups before refreshing the page", /postJSON\("\/open-loops\/reassess"/],
   ["loads repeat occurrences alongside update history", /\/occurrences\?limit=100/],
 ];
