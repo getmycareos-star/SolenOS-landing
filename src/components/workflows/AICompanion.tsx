@@ -314,9 +314,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }, [])
 
   const sendMessage = async (textOverride?: string) => {
-    userInteractedRef.current = true
     const submittedText = (textOverride ?? input).trim()
-      if (!submittedText || loading) return
+    if (!submittedText || loading) return
+    userInteractedRef.current = true
     setRequestError(null)
     setConversationRestoreError(null)
     setLoading(true)
