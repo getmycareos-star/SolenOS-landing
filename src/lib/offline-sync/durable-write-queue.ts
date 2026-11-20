@@ -399,6 +399,7 @@ export async function syncDurableWrites(input: {
   personId: string;
   caregiverId: string;
   send: SendWrite;
+  endpoints?: string[];
 }): Promise<DurableWriteSyncResult> {
   const identityKey = `${input.personId}:${input.caregiverId}`;
   const existingSync = syncPromises.get(identityKey);
@@ -415,6 +416,7 @@ export async function syncDurableWrites(input: {
         continue;
       }
       if (row.person_id !== input.personId || row.caregiver_id !== input.caregiverId) continue;
+      if (input.endpoints && !input.endpoints.includes(row.endpoint)) continue;
       if (!isEligible(row, now)) continue;
       try {
         await deliverDurableWrite(row.id, input.send);
@@ -426,7 +428,9 @@ export async function syncDurableWrites(input: {
 
     const remainingRows = await getAllWrites(db);
     const matching = remainingRows.filter((row) =>
-      row.person_id === input.personId && row.caregiver_id === input.caregiverId,
+      row.person_id === input.personId &&
+      row.caregiver_id === input.caregiverId &&
+      (!input.endpoints || input.endpoints.includes(row.endpoint)),
     );
     return {
       synced,
