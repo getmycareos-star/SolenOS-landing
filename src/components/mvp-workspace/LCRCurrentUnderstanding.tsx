@@ -827,6 +827,84 @@ export function LCRCurrentUnderstanding() {
     }
   }, []);
 
+  const retryHistorySource = useCallback(async (sourceName: string) => {
+    setSourceRetrying(sourceName);
+    try {
+      const session = await ensureAnonymousSession();
+      const scopedPersonId = session.person?.id;
+      if (!scopedPersonId) throw new Error("The active care record could not be confirmed.");
+      const response = await getJSON(
+        `/care-continuity/current-care?limit_per_source=12&source=${encodeURIComponent(sourceName)}`,
+      ) as CurrentCareProjection;
+      if (
+        response.person_id !== scopedPersonId ||
+        response.read_only !== true ||
+        !Array.isArray(response.items) ||
+        response.requested_sources?.length !== 1 ||
+        response.requested_sources[0] !== sourceName ||
+        !response.source_coverage?.[sourceName]
+      ) {
+        throw new Error("The refreshed care-history source did not match this care record.");
+      }
+      setProjection((current) => {
+        if (!current || current.person_id !== scopedPersonId) return current;
+        const retained = current.items.filter((item) => item.source_collection !== sourceName);
+        const merged = new Map<string, CurrentCareItem>();
+        for (const item of [...retained, ...response.items]) {
+          merged.set(`${item.source_collection}:${item.id}`, item);
+        }
+        const coverage = {
+          ...(current.source_coverage ?? {}),
+          [sourceName]: response.source_coverage?.[sourceName],
+        };
+        const sourceStatus = response.source_coverage?.[sourceName]?.status;
+        const failed = new Set(current.failed_sources ?? []);
+        if (["failed", "partial", "unavailable_schema", "unavailable_scope"].includes(sourceStatus ?? "")) {
+          failed.add(sourceName);
+        } else {
+          failed.delete(sourceName);
+        }
+        const missingRequired = new Set(current.missing_required_sources);
+        const missingOptional = new Set(current.missing_optional_sources);
+        if (sourceStatus === "unavailable_schema" || sourceStatus === "unavailable_scope") {
+          if (response.source_coverage?.[sourceName]?.required) missingRequired.add(sourceName);
+          else missingOptional.add(sourceName);
+        } else {
+          missingRequired.delete(sourceName);
+          missingOptional.delete(sourceName);
+        }
+        return {
+          ...current,
+          items: [...merged.values()].slice(0, 12),
+          item_count: Math.min(merged.size, 12),
+          has_more: current.has_more || response.has_more,
+          source_coverage: coverage,
+          failed_sources: [...failed],
+          missing_required_sources: [...missingRequired],
+          missing_optional_sources: [...missingOptional],
+        };
+      });
+    } catch {
+      setProjection((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          failed_sources: [...new Set([...(current.failed_sources ?? []), sourceName])],
+          source_coverage: {
+            ...(current.source_coverage ?? {}),
+            [sourceName]: {
+              ...(current.source_coverage?.[sourceName] ?? {}),
+              status: "failed",
+              error_code: "retry_failed",
+            },
+          },
+        };
+      });
+    } finally {
+      setSourceRetrying((current) => current === sourceName ? null : current);
+    }
+  }, []);
+
   const load = useCallback(async (manual = false) => {
     const timingId = ++workspaceLoadSequence;
     const timingStart = `solenos-workspace-start-${timingId}`;
