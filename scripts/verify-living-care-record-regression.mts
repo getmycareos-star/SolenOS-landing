@@ -87,6 +87,9 @@ assert(
   confirmationSource.includes("Your review was saved, but the care history could not be refreshed."),
   "a post-save history refresh failure is not reported as a failed save",
 );
+assert(confirmationSource.includes("We couldn’t confirm whether your review was saved."), "an ambiguous network result is not falsely reported as a definite failed save");
+assert(confirmationSource.includes("This possible change has already been updated."), "a concurrent review conflict has a recoverable caregiver message");
+assert(confirmationSource.includes("The review was not accepted."), "a rejected review request is distinguished from an uncertain network result");
 assert(
   confirmationSource.includes("does not independently verify a medical fact"),
   "caregiver copy distinguishes review from independent medical verification",
