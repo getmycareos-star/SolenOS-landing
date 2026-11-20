@@ -62,6 +62,10 @@ assert.match(companion, /pendingCareUpdates/, "Companion must load persisted, ca
 assert.match(companion, /getJSON\('\/companion\/care-updates'/, "Companion must use the existing authenticated review queue");
 assert.match(companion, /reviewCareUpdate/, "caregivers must be able to explicitly review a suggested update");
 assert.match(companion, /postJSON\('\/companion\/care-updates\//, "review decisions must use the persisted backend review endpoint");
+assert.match(companion, /response\?\.status !== expectedStatus/, "a review must not be reported successful without the server-confirmed terminal status");
+assert.match(companion, /response\?\.decision !== decision/, "the returned decision must match the caregiver's requested decision");
+assert.match(companion, /window\.dispatchEvent\(new Event\('careRecordUpdated'\)\)/, "an accepted Companion report must refresh canonical LCR consumers");
+assert.match(companion, /We couldn’t confirm whether this review was saved/, "ambiguous network outcomes must not be misreported as failed or successful");
 assert.match(companion, /source_message_id\?: string \| null/, "the Companion must retain the original persisted user-message ID");
 assert.match(companion, /from-message\//, "caregivers must be able to submit an exact original message for review");
 assert.match(companion, /confirm_care_report: true/, "creating a care report must require an explicit caregiver confirmation");
