@@ -519,7 +519,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
 
       const anonymousSession = await ensureAnonymousSession();
       const ingestionKey = situationSubmissionKey ?? crypto.randomUUID();
-      const capturedAt = situationSubmissionCapturedAt ?? provenance.captured_at;
+      const capturedAt = situationSubmissionCapturedAt ?? provenance.captured_at ?? new Date().toISOString();
       if (!situationSubmissionKey) setSituationSubmissionKey(ingestionKey);
       if (!situationSubmissionCapturedAt) setSituationSubmissionCapturedAt(capturedAt);
       const writePayload = {
