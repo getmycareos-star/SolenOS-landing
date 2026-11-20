@@ -523,7 +523,7 @@ export default function DocumentsPage() {
           parts.push(queuedLocally + " " + (queuedLocally === 1 ? "file is" : "files are") + " encrypted on this device. They have not reached the care record yet and will sync when your connection returns.");
         }
         if (backgroundProcessingQueued > 0) {
-          parts.push("SolenOS has started reading " + backgroundProcessingQueued + " " + (backgroundProcessingQueued === 1 ? "file" : "files") + ".");
+          parts.push("SolenOS has started reading " + backgroundProcessingQueued + " " + (backgroundProcessingQueued === 1 ? "file" : "files") + ". You can leave this page while it finishes.");
         }
         if (backgroundQueueUnavailable > 0) {
           parts.push(backgroundQueueUnavailable + " " + (backgroundQueueUnavailable === 1 ? "file needs" : "files need") + " another look after upload.");
