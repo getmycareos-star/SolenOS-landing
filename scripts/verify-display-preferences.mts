@@ -12,6 +12,9 @@ assert.match(source, /systemTheme\.addEventListener\("change", applyTheme\)/);
 assert.match(source, /systemTheme\.removeEventListener\("change", applyTheme\)/);
 assert.match(source, /root\.style\.colorScheme = resolvedTheme/);
 assert.match(source, /root\.style\.setProperty\("--solenos-text-scale"/);
+assert.match(source, /setSaveState\("saved"\)/);
+assert.match(source, /setSaveState\("session-only"\)/);
+assert.match(source, /could not be saved on this device/);
 assert.doesNotMatch(source, /System default intentionally means the accessible light theme/);
 
 console.log("Display preference contract passed: explicit themes, live OS theme changes, cleanup, native color-scheme, and text scaling.");
