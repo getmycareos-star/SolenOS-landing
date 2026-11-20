@@ -346,7 +346,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         })))
       } catch (error) {
         if (error instanceof ApiResponseError && error.status === 404 && storageKey) {
-          window.localStorage.removeItem(storageKey)
+          try {
+            window.localStorage.removeItem(storageKey)
+          } catch {
+            // A missing local pointer must not prevent server-backed recovery.
+          }
         } else if (!cancelled && !userInteractedRef.current) {
           setConversationRestoreError('We could not restore the earlier conversation. Your saved Care Record has not changed. Reload this page to try again, or start a new conversation.')
         }
