@@ -1372,7 +1372,7 @@ export function LCRCurrentUnderstanding() {
                   </li>
                 ))}
               </ul>
-              {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open the full record below to review the rest.</p>}
+              {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open your full care history to review the rest.</p>}
             </>
           ) : projection ? (
             <RecordState kind="first-empty" title="No care updates recorded yet" description="Care information added to this record will appear here." />
