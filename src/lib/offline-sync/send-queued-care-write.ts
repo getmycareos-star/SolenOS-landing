@@ -59,7 +59,7 @@ export async function sendQueuedCareWrite(endpoint: string, payload: unknown): P
     ok?: boolean;
     care_event_id?: string;
   };
-  if (endpoint === "/api/situation") {
+  if (endpoint === "/situation") {
     if (response?.ok !== true || typeof response.care_event_id !== "string" || !response.care_event_id) {
       throw new Error("The server did not confirm that this care update was saved.");
     }
