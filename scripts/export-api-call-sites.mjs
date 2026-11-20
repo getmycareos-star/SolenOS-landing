@@ -2,9 +2,9 @@
 /**
  * Static inventory of frontend HTTP/API call sites.
  *
- * Literal route prefixes are preserved; dynamic expressions are reported as
- * unresolved rather than guessed. This is a call-site inventory, not proof that
- * a corresponding backend route or workflow is correct.
+ * Literal paths are matched directly; dynamic segments are compared against
+ * FastAPI path parameters by route shape. A match is not proof of correct
+ * authorization, persistence, or end-to-end workflow behavior.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -181,7 +181,7 @@ const backendRouteMatrix = backendRoutes.map(route => {
 });
 const inventory = {
   format_version: 2,
-  source: 'TypeScript AST scan of src/**/*.ts(x)',
+  source: 'TypeScript AST scan of src TypeScript and JavaScript modules',
   frontend_source_commit: process.env.GITHUB_SHA || null,
   backend_source_commit: process.env.SOLENOS_BACKEND_SHA || null,
   backend_inventory_source: backendSource,
