@@ -2490,6 +2490,21 @@ await record("12b invited caregiver sees the shared care record in a separate br
   await settingsPage.getByRole("button", { name: "End role", exact: true }).waitFor({ state: "detached", timeout: 20_000 });
   await settingsPage.getByRole("button", { name: "End responsibility", exact: true }).click();
   await settingsPage.getByRole("button", { name: "End responsibility", exact: true }).waitFor({ state: "detached", timeout: 20_000 });
+  await settingsPage.getByRole("heading", { name: "Your responsibility history" }).waitFor({ timeout: 20_000 });
+  await settingsPage.getByText(/Appointment follow-up/i).waitFor({ timeout: 20_000 });
+  const invitedProfile = await request("/api/v1/caregiver-profiles/current", { token: accepted.payload.access_token });
+  assert.equal(invitedProfile.status, 200, JSON.stringify(invitedProfile.payload));
+  const responsibilityHistory = await request(
+    `/api/v1/caregiver-responsibilities/history/${encodeURIComponent(invitedProfile.payload.id)}?person_id=${encodeURIComponent(identity.personId)}`,
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(responsibilityHistory.status, 200, JSON.stringify(responsibilityHistory.payload));
+  assert(
+    responsibilityHistory.payload.some((item) =>
+      item.responsibility_type === "Appointment follow-up" && Boolean(item.effective_end)
+    ),
+    "ending a responsibility must preserve its historical record and end timestamp",
+  );
   // Explicit sharing is the boundary for cross-caregiver perspective comparison.
   const primaryProfile = await request("/api/v1/caregiver-profiles/current", { token: identity.token });
   assert.equal(primaryProfile.status, 200, JSON.stringify(primaryProfile.payload));
