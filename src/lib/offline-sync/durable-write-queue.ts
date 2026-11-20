@@ -52,7 +52,7 @@ type QueueInput = {
 type SendWrite = (endpoint: string, payload: unknown) => Promise<unknown>;
 
 let databasePromise: Promise<IDBDatabase> | null = null;
-let syncPromise: Promise<DurableWriteSyncResult> | null = null;
+const syncPromises = new Map<string, Promise<DurableWriteSyncResult>>();
 
 function ensureBrowserStorage(): void {
   if (typeof window === "undefined" || !window.indexedDB || !window.crypto?.subtle) {
@@ -79,7 +79,10 @@ function openDatabase(): Promise<IDBDatabase> {
       databasePromise = null;
       reject(request.error ?? new Error("Could not open encrypted offline storage."));
     };
-    request.onblocked = () => reject(new Error("Offline storage is busy in another tab."));
+    request.onblocked = () => {
+      databasePromise = null;
+      reject(new Error("Offline storage is busy in another tab."));
+    };
   });
   return databasePromise;
 }
@@ -113,9 +116,21 @@ async function getDeviceKey(db: IDBDatabase): Promise<CryptoKey> {
     ["encrypt", "decrypt"],
   );
   const writeTransaction = db.transaction(KEY_STORE, "readwrite");
-  writeTransaction.objectStore(KEY_STORE).put({ id: "device", key } satisfies DeviceKeyRecord);
-  await transactionDone(writeTransaction);
-  return key;
+  writeTransaction.objectStore(KEY_STORE).add({ id: "device", key } satisfies DeviceKeyRecord);
+  try {
+    await transactionDone(writeTransaction);
+    return key;
+  } catch {
+    // Another tab may have created the non-extractable device key first.
+    // Re-read that key rather than overwriting it and orphaning its ciphertext.
+    const retryTransaction = db.transaction(KEY_STORE, "readonly");
+    const winner = await requestResult(
+      retryTransaction.objectStore(KEY_STORE).get("device") as IDBRequest<DeviceKeyRecord | undefined>,
+    );
+    await transactionDone(retryTransaction);
+    if (!winner?.key) throw new Error("The encrypted offline-storage key could not be established.");
+    return winner.key;
+  }
 }
 
 async function encryptPayload(db: IDBDatabase, payload: unknown): Promise<{ iv: number[]; ciphertext: number[] }> {
@@ -330,8 +345,10 @@ export async function syncDurableWrites(input: {
   caregiverId: string;
   send: SendWrite;
 }): Promise<DurableWriteSyncResult> {
-  if (syncPromise) return syncPromise;
-  syncPromise = (async () => {
+  const identityKey = `${input.personId}:${input.caregiverId}`;
+  const existingSync = syncPromises.get(identityKey);
+  if (existingSync) return existingSync;
+  const currentSync = (async () => {
     const db = await openDatabase();
     const now = Date.now();
     const rows = await getAllWrites(db);
@@ -362,7 +379,8 @@ export async function syncDurableWrites(input: {
       blocked: matching.filter((row) => row.status === "blocked").length,
     };
   })().finally(() => {
-    syncPromise = null;
+    syncPromises.delete(identityKey);
   });
-  return syncPromise;
+  syncPromises.set(identityKey, currentSync);
+  return currentSync;
 }
