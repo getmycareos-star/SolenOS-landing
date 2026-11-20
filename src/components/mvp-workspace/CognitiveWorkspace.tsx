@@ -348,6 +348,88 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only hydrate
   }, []);
 
+  // Recover encrypted Daily Care writes after a refresh, app restart, or
+  // restored connection. The backend idempotency key makes this safe even if
+  // the previous request reached PostgreSQL but its response never reached us.
+  useEffect(() => {
+    let active = true;
+    let syncing = false;
+
+    const syncPendingSituationWrites = async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) return;
+      if (syncing) return;
+      syncing = true;
+      try {
+        const session = await ensureAnonymousSession();
+        const result = await syncDurableWrites({
+          personId: session.person.id,
+          caregiverId: session.caregiver.id,
+          send: sendQueuedCareWrite,
+          endpoints: ["/api/situation"],
+        });
+        if (!active || result.synced === 0) return;
+
+        const response = await fetch(
+          apiUrl(`/api/situation?care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=0`),
+          {
+            method: "GET",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            cache: "no-store",
+          },
+        );
+        if (!response.ok || !active) return;
+
+        const restored = normalizeBackendSituationResponse(
+          await safeJson(response),
+        ) as WorkspaceSituationResponse;
+        setSituationResponse(restored);
+        setHasContextRoot(true);
+        setSessionHasNote(true);
+        const careKey =
+          restored.care_key ??
+          restored.context?.caregiver_id ??
+          session.caregiver.id;
+        setCaregiverId(careKey);
+        window.localStorage.setItem(DURABLE_CARE_KEY_STORAGE, careKey);
+
+        const events = Array.isArray(restored.events_created)
+          ? restored.events_created as Array<{
+              id?: string;
+              title?: string;
+              description?: string | null;
+              occurred_at?: string;
+            }>
+          : [];
+        const latestEvent = events[events.length - 1];
+        if (latestEvent?.id) {
+          setSavedEventReceipt({
+            id: latestEvent.id,
+            title: latestEvent.title || "Saved care update",
+            description: latestEvent.description,
+            occurred_at: latestEvent.occurred_at,
+            readbackVerified: true,
+          });
+        }
+        window.dispatchEvent(new Event("careRecordUpdated"));
+      } catch {
+        // The encrypted queue retains the original payload and retry key.
+      } finally {
+        syncing = false;
+      }
+    };
+
+    void syncPendingSituationWrites();
+    window.addEventListener("online", syncPendingSituationWrites);
+    window.addEventListener("personIdChanged", syncPendingSituationWrites);
+    window.addEventListener("solenos:offline-queue-updated", syncPendingSituationWrites);
+    return () => {
+      active = false;
+      window.removeEventListener("online", syncPendingSituationWrites);
+      window.removeEventListener("personIdChanged", syncPendingSituationWrites);
+      window.removeEventListener("solenos:offline-queue-updated", syncPendingSituationWrites);
+    };
+  }, []);
+
   async function requestLcrOrientation(message: string) {
     const session = await ensureAnonymousSession();
     if (!session.access_token) throw new Error("A secure care session is required.");
