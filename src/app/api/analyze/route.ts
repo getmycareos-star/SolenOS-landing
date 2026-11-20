@@ -49,6 +49,10 @@ export async function POST(request: NextRequest) {
       caregiver_depletion_state,
       is_single_caregiver,
       environmental_dependency_flag,
+    }).catch((telemetryError) => {
+      // Telemetry is non-authoritative and must not turn a valid analysis into
+      // a false success/failure. Never swallow a failed durable write silently.
+      console.error("[analyze] telemetry persistence failed:", telemetryError);
     });
 
     return NextResponse.json(result);
