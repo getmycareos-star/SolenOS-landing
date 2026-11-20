@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import type { Situation, UiRuntimeState } from "@/lib/ui-runtime";
 import {
   createEmptyUiRuntimeState,
-  loadSituationsFromStorage,
   openSituationsFromSituationApi,
   type SituationApiContinuityPayload,
 } from "@/lib/ui-runtime";
@@ -103,10 +102,9 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       setTelemetryUserId(storedUserId);
     }
 
-    // Browser data is only a routing hint for legacy entry continuity. It is
-    // never hydrated into the care record: the authenticated server response
-    // below is the sole source of caregiver-visible situations and history.
-    const localSituations = loadSituationsFromStorage();
+    // The authenticated server response below is the sole source of
+    // caregiver-visible situations and history. Legacy browser caches do not
+    // authorize workspace entry or supply care-record content.
     setRuntime({
       ...createEmptyUiRuntimeState(),
       decisionSurface: { activeCard: null },
@@ -129,7 +127,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       const shouldEnterWorkspace =
         onboardingPending ||
         hasEnteredCareRecord() ||
-        localSituations.length > 0 ||
         Boolean(opsKey) ||
         freshEnter;
 
@@ -198,7 +195,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           hasEnteredCareRecord() ||
           fromServer.length > 0 ||
           hasDurableServerReality ||
-          localSituations.length > 0 ||
           Boolean(opsKey) ||
           freshEnter;
 
@@ -214,7 +210,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       })
       .catch(() => {
         setRecordLoadError("Your care information isn't available right now. Check your connection and try again.");
-        if (!hasEnteredCareRecord() && localSituations.length === 0 && !opsKey) {
+        if (!hasEnteredCareRecord() && !opsKey) {
           router.replace("/start");
           return;
         }
