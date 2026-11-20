@@ -1,7 +1,3 @@
-import {
-  ACTIVE_SITUATION_STORAGE_KEY,
-  SITUATIONS_STORAGE_KEY,
-} from "./contract-constants";
 import type {
   ActiveSituation,
   DecisionRiskLevel,
@@ -100,33 +96,3 @@ export function titleFromInput(input: string): string {
   return `${cleaned.slice(0, 69)}…`;
 }
 
-export function loadSituationsFromStorage(): Situation[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(SITUATIONS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Situation[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-export function persistSituations(situations: Situation[]): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(SITUATIONS_STORAGE_KEY, JSON.stringify(situations));
-}
-
-export function loadActiveSituationId(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACTIVE_SITUATION_STORAGE_KEY);
-}
-
-export function persistActiveSituationId(id: string | null): void {
-  if (typeof window === "undefined") return;
-  if (!id) {
-    window.localStorage.removeItem(ACTIVE_SITUATION_STORAGE_KEY);
-    return;
-  }
-  window.localStorage.setItem(ACTIVE_SITUATION_STORAGE_KEY, id);
-}
