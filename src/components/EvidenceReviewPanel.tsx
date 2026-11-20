@@ -445,7 +445,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setFreshnessPolicyNotice('Review saved: ' + reviewStatusLabel(saved.freshness_status) + '. This does not prove the information is true.')
       const history = await getJSON('/care-continuity/evidence-freshness/assessments/' + encodeURIComponent(selectedId)) as { items?: FreshnessAssessment[] }
-      if (!Array.isArray(history?.items)) throw new Error('The review was saved, but its history could not be checked. Try loading past reviews again.')
+      if (!Array.isArray(history?.items)) throw new Error('Your review was saved, but earlier reviews could not be loaded. Try again.')
       setFreshnessAssessments(history.items)
       setFreshnessHistoryError('')
     } catch (cause) {
@@ -465,7 +465,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setFreshnessAssessments(result.items)
     } catch {
       setFreshnessAssessments([])
-      setFreshnessHistoryError('Past reviews are unavailable. This does not mean there are no past reviews.')
+      setFreshnessHistoryError('Earlier reviews are unavailable right now. This does not mean none exist.')
     } finally {
       setFreshnessHistoryLoading(false)
     }
@@ -631,7 +631,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
-      setHistoryReconstructionError('An earlier saved version could not be shown for that time. This does not establish that the evidence did not exist. A missing historical revision is not proof that the source was absent; try again or choose another date.')
+      setHistoryReconstructionError('An earlier version of this information could not be shown for that date. This does not mean the information was never saved. Try again or choose another date.')
     } finally {
       setHistoryReconstructionLoading(false)
     }
@@ -734,7 +734,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     <h3 style={{ fontSize: 15, marginTop: 0 }}>Notes and documents behind care information</h3>
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: 12 }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Try loading again</button></p>}
     {evidenceLoading && <p role="status" style={{ fontSize: 12 }}>Loading saved notes and documents…</p>}
-    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Reviews are saved with the reason and date. A caregiver review does not mean a healthcare professional has confirmed the information.</p>
+    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Your review is saved separately. The original information stays unchanged. A caregiver review does not mean a healthcare professional has confirmed the information.</p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 650 }}>Check whether information is still up to date</summary>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Choose how often this information should be checked. Different kinds of information may need different check-in times. A review does not prove that information is true or still applies today.</p>
