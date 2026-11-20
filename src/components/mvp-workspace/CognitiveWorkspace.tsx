@@ -160,6 +160,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
   const [loading, setLoading] = useState(false);
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [offlineSyncNotice, setOfflineSyncNotice] = useState<string | null>(null);
   const [lcrOrientationReply, setLcrOrientationReply] = useState<string | null>(null);
   const setCaregiverError = useCallback((message: string | null) => {
     setError(message == null ? null : sanitizeCaregiverErrorMessage(message));
@@ -405,6 +406,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         setSituationResponse(restored);
         setHasContextRoot(true);
         setSessionHasNote(true);
+        setOfflineSyncNotice("An update saved on this device has now synced to your Care Record. Your current draft has not been changed.");
         const careKey =
           restored.care_key ??
           restored.context?.caregiver_id ??
@@ -710,6 +712,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       setRawInput("");
       setDocuments([]);
       setSavedEventReceipt(verifiedReceipt);
+      setOfflineSyncNotice(null);
       if (verifiedReceipt?.id) {
         window.dispatchEvent(new Event("careRecordUpdated"));
       }
@@ -1060,6 +1063,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                       setRawInput(value);
                       setSituationSubmissionKey(null);
                       setSituationSubmissionCapturedAt(null);
+                      setOfflineSyncNotice(null);
                       setLcrOrientationReply(null);
                       setCaregiverError(null);
                     }}
@@ -1068,6 +1072,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                       setDocuments(nextDocuments);
                       setSituationSubmissionKey(null);
                       setSituationSubmissionCapturedAt(null);
+                      setOfflineSyncNotice(null);
                       setLcrOrientationReply(null);
                       setCaregiverError(null);
                     }}
@@ -1078,6 +1083,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                     }}
                     loading={loading}
                     error={error}
+                    notice={offlineSyncNotice}
                     pendingShareId={pendingShareId}
                     onShareClaimed={() => setPendingShareId(null)}
                     hasContextRoot={
