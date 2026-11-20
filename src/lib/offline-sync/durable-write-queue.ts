@@ -333,6 +333,27 @@ export async function getDurableWriteSummary(
   };
 }
 
+export async function discardBlockedDurableWrites(
+  personId: string,
+  caregiverId: string,
+): Promise<number> {
+  const db = await openDatabase();
+  const rows = await getAllWrites(db);
+  let removed = 0;
+  for (const row of rows) {
+    if (
+      row.person_id === personId &&
+      row.caregiver_id === caregiverId &&
+      (row.status === "blocked" || row.status === "failed_recoverable")
+    ) {
+      await deleteWrite(db, row.id);
+      removed += 1;
+    }
+  }
+  if (removed > 0) dispatchQueueUpdated();
+  return removed;
+}
+
 export async function retryBlockedDurableWrites(
   personId: string,
   caregiverId: string,
