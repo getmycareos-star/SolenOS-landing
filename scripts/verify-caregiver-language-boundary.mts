@@ -112,6 +112,7 @@ const photoCapture = read("../src/components/workflows/DailyCarePhotoCapture.tsx
 const quickCheckIn = read("../src/components/workflows/QuickDailyCheckIn.tsx");
 const cognitiveWorkspace = read("../src/components/mvp-workspace/CognitiveWorkspace.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
+const community = read("../src/components/workflows/Community.tsx");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
@@ -301,6 +302,8 @@ assert.match(cognitiveWorkspace, /sanitizeCaregiverErrorMessage/);
 assert.match(cognitiveWorkspace, /setCaregiverError\(sanitizeCaregiverErrorMessage\(/, "caregiver-facing assistant errors pass through the safe message boundary");
 assert.match(earlyAccessConsent, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(earlyAccessConsent, /cause\.message/);
+assert.match(community, /caregiverSafeAssistantText\(result\.summary\)/);
+assert.match(community, /caregiverSafeAssistantText\(result\.notice\)/);
 assert.match(historyDrawer, /Related notes or documents/);
 assert.doesNotMatch(changeIntelligence, /CARE CHANGES OVER TIME|Observation time unknown|saved item\(s\)/);
 assert.doesNotMatch(persistedOrientation, /value\.replaceAll\("_", " "\)/);
