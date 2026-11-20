@@ -6,7 +6,7 @@ const source = readFileSync("src/components/app-shell/AppShell.tsx", "utf8");
 assert.match(source, /recordDetailsReturnFocusRef = useRef<HTMLElement \| null>/);
 assert.match(source, /role="dialog" aria-modal="true"/);
 assert.match(source, /tabIndex=\{-1\}/);
-assert.match(source, /recordDetailsReturnFocusRef\.current = document\.activeElement instanceof HTMLElement/);
+assert.match(source, /recordDetailsReturnFocusRef\.current =\s*document\.activeElement instanceof HTMLElement/);
 assert.match(source, /getFocusableElements\(\)\[0\]\?\.focus\(\{ preventScroll: true \}\)/);
 assert.match(source, /document\.addEventListener\("keydown", handleDialogKeydown\)/);
 assert.match(source, /event\.key === "Escape"/);
