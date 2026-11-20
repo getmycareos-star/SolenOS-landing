@@ -19,8 +19,8 @@ type StoredWrite = {
   caregiver_id: string;
   endpoint: string;
   idempotency_key: string;
-  iv: ArrayBuffer;
-  ciphertext: ArrayBuffer;
+  iv: ArrayBuffer | number[];
+  ciphertext: ArrayBuffer | number[];
   status: QueueStatus;
   attempts: number;
   next_retry_at: number | null;
@@ -150,10 +150,16 @@ async function encryptPayload(db: IDBDatabase, payload: unknown): Promise<{ iv: 
 
 async function decryptPayload(db: IDBDatabase, record: StoredWrite): Promise<unknown> {
   const key = await getDeviceKey(db);
+  const iv = record.iv instanceof ArrayBuffer
+    ? new Uint8Array(record.iv)
+    : new Uint8Array(record.iv);
+  const ciphertext = record.ciphertext instanceof ArrayBuffer
+    ? record.ciphertext
+    : new Uint8Array(record.ciphertext).buffer;
   const decrypted = await window.crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(record.iv) },
+    { name: "AES-GCM", iv },
     key,
-    record.ciphertext,
+    ciphertext,
   );
   return JSON.parse(new TextDecoder().decode(decrypted));
 }
