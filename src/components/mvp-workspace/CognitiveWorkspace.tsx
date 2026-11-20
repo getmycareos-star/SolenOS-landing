@@ -153,6 +153,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
   const [rawInput, setRawInput] = useState("");
   const [documents, setDocuments] = useState<AttachedDocument[]>([]);
   const [situationSubmissionKey, setSituationSubmissionKey] = useState<string | null>(null);
+  const [situationSubmissionCapturedAt, setSituationSubmissionCapturedAt] = useState<string | null>(null);
   /** Last successful share — used for CARRYING / LCR when composer is cleared. */
   const [lastSharedDisplay, setLastSharedDisplay] = useState("");
   const [loading, setLoading] = useState(false);
@@ -496,7 +497,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
 
       const anonymousSession = await ensureAnonymousSession();
       const ingestionKey = situationSubmissionKey ?? crypto.randomUUID();
+      const capturedAt = situationSubmissionCapturedAt ?? provenance.captured_at;
       if (!situationSubmissionKey) setSituationSubmissionKey(ingestionKey);
+      if (!situationSubmissionCapturedAt) setSituationSubmissionCapturedAt(capturedAt);
       const writePayload = {
         person_id: anonymousSession.person.id,
         caregiver_id: anonymousSession.caregiver.id,
@@ -505,13 +508,13 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
         raw_input: text,
         ingestion_key: ingestionKey,
         care_session_id: interactionSessionId(),
-        timestamp: provenance.captured_at,
-        captured_at: provenance.captured_at,
+        timestamp: capturedAt,
+        captured_at: capturedAt,
         provenance: {
           input_type:
             readyDocs.length > 0 && !text ? "document" : provenance.input_type,
           entry_method: provenance.entry_method,
-          captured_at: provenance.captured_at,
+          captured_at: capturedAt,
           recognition_confidence: provenance.recognition_confidence,
           transcript_uncertain: provenance.transcript_uncertain,
         },
@@ -683,6 +686,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       // the durable record rather than depending on local component state.
       setLastSharedDisplay(sharedDisplay);
       setSituationSubmissionKey(null);
+      setSituationSubmissionCapturedAt(null);
       setRawInput("");
       setDocuments([]);
       setSavedEventReceipt(verifiedReceipt);
@@ -1035,6 +1039,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                     onChange={(value) => {
                       setRawInput(value);
                       setSituationSubmissionKey(null);
+                      setSituationSubmissionCapturedAt(null);
                       setLcrOrientationReply(null);
                       setCaregiverError(null);
                     }}
@@ -1042,6 +1047,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                     onDocumentsChange={(nextDocuments) => {
                       setDocuments(nextDocuments);
                       setSituationSubmissionKey(null);
+                      setSituationSubmissionCapturedAt(null);
                       setLcrOrientationReply(null);
                       setCaregiverError(null);
                     }}
