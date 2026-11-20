@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverRoleLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
-import { CalendarDays, ShieldCheck } from 'lucide-react'
-import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
+import { CalendarDays, ShieldCheck, Paperclip } from 'lucide-react'
+import { extractAttachedDocument } from '@/components/mvp-workspace/capture/extract-attached'
 
 type Stage = 'prepare' | 'during' | 'after'
 type PreparationBrief = {
@@ -13,6 +13,8 @@ type PreparationBrief = {
   events: Array<{ source_id: string; title: string; description?: string | null; occurred_at?: string | null; status: string }>
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string }>
   next_appointment?: { source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string } | null
+  appointment_context_status?: { code: string; has_appointment_information: boolean; date_known: boolean | null; next_appointment_id?: string | null; interpretation_limit?: string }
+  lcr_retrieval_status?: { status: string; schema_status?: string; scan_complete?: boolean; projection_complete?: boolean; failed_sources?: string[]; missing_required_sources?: string[]; missing_optional_sources?: string[]; retrieval_error?: string | null }
   documents?: Array<{ source_id: string; filename?: string | null; extracted_text?: string | null; extraction_status?: string | null; recorded_at?: string | null; epistemic_status?: string | null; interpretation_limit?: string }>
   open_loops?: Array<{ source_id: string; appointment_id?: string | null; source_workspace_id?: string | null; title: string; description?: string | null; status: string; priority?: string | null; owner_label?: string | null; deadline_at?: string | null; source_type?: string | null; interpretation_limit?: string }>
   prior_decisions?: Array<{ id: string; title?: string | null; decision_text?: string | null; decision_status?: string | null; decided_at?: string | null; context?: string | null }>
@@ -158,7 +160,7 @@ const stageStatus: Record<Stage, string> = {
 const selectNextAppointment = (brief: PreparationBrief) => {
   if (brief.next_appointment) return brief.next_appointment
   return [...brief.appointments]
-    .filter(item => ['scheduled', 'upcoming', 'today'].includes(item.status.toLowerCase()))
+    .filter(item => ['scheduled', 'upcoming', 'today', 'rescheduled', 'date_unknown'].includes(item.status.toLowerCase()))
     .sort((a, b) => {
       const aTime = a.scheduled_at ? Date.parse(a.scheduled_at) : Number.MAX_SAFE_INTEGER
       const bTime = b.scheduled_at ? Date.parse(b.scheduled_at) : Number.MAX_SAFE_INTEGER
@@ -167,7 +169,7 @@ const selectNextAppointment = (brief: PreparationBrief) => {
 }
 
 export default function AppointmentWorkspace() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [stage, setStage] = useState<Stage>('prepare')
   const [brief, setBrief] = useState<PreparationBrief | null>(null)
   const [record, setRecord] = useState<WorkspaceRecord | null>(null)
@@ -178,6 +180,13 @@ export default function AppointmentWorkspace() {
   const [correctionDrafts, setCorrectionDrafts] = useState<Record<string, string>>({})
   const [correctionContexts, setCorrectionContexts] = useState<Record<string, string>>({})
   const [note, setNote] = useState('')
+  const [professionalStatement, setProfessionalStatement] = useState('')
+  const [recordedDecisions, setRecordedDecisions] = useState('')
+  const [recordedInstructions, setRecordedInstructions] = useState('')
+  const [unansweredQuestions, setUnansweredQuestions] = useState('')
+  const [attachedEvidenceIds, setAttachedEvidenceIds] = useState<string[]>([])
+  const [documentBusy, setDocumentBusy] = useState(false)
+  const [documentMessage, setDocumentMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
@@ -197,6 +206,12 @@ export default function AppointmentWorkspace() {
     setOutcome(null)
     setOutcomeProposals([])
     setNote('')
+    setProfessionalStatement('')
+    setRecordedDecisions('')
+    setRecordedInstructions('')
+    setUnansweredQuestions('')
+    setAttachedEvidenceIds([])
+    setDocumentMessage('')
     setCorrectionDrafts({})
     setCorrectionContexts({})
     void (async () => {
@@ -236,6 +251,16 @@ export default function AppointmentWorkspace() {
             setRecord(latest)
             if (latest.appointment_id) setAppointmentId(latest.appointment_id)
             setNote(typeof latest.payload?.caregiverReport === 'string' ? latest.payload.caregiverReport : '')
+    setProfessionalStatement(typeof latest.payload?.clinicianFindings === 'string' ? latest.payload.clinicianFindings : '')
+    setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
+    setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
+    setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
+    setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
+            setProfessionalStatement(typeof latest.payload?.clinicianFindings === 'string' ? latest.payload.clinicianFindings : '')
+            setRecordedDecisions(typeof latest.payload?.decisions === 'string' ? latest.payload.decisions : '')
+            setRecordedInstructions(typeof latest.payload?.instructions === 'string' ? latest.payload.instructions : '')
+            setUnansweredQuestions(typeof latest.payload?.unanswered === 'string' ? latest.payload.unanswered : '')
+            setAttachedEvidenceIds(Array.isArray(latest.payload?.attachedEvidenceIds) ? latest.payload.attachedEvidenceIds.filter((id): id is string => typeof id === 'string') : [])
             try {
               const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-draft') as OutcomeDraft
               if (!cancelled) setOutcome(draft)
@@ -401,7 +426,7 @@ export default function AppointmentWorkspace() {
   }
 
   const saveNote = async () => {
-    if (!note.trim()) {
+    if (!note.trim() && !professionalStatement.trim() && !recordedDecisions.trim() && !recordedInstructions.trim() && !unansweredQuestions.trim()) {
       setMessage('Nothing to save. You can continue without adding a note.')
       if (stage === 'after' && record) {
         try { await refreshOutcome(record.id) } catch (cause) {
@@ -418,6 +443,11 @@ export default function AppointmentWorkspace() {
       const payload = {
         ...(record?.payload || {}),
         caregiverReport: note.trim(),
+        clinicianFindings: professionalStatement.trim(),
+        decisions: recordedDecisions.trim(),
+        instructions: recordedInstructions.trim(),
+        unanswered: unansweredQuestions.trim(),
+        attachedEvidenceIds,
         captureStage: stage,
       }
       const nextStatus = record
@@ -509,6 +539,17 @@ export default function AppointmentWorkspace() {
             
             <section className="appointment-quick-summary" aria-label="Appointment preparation summary">
               <h5>What SolenOS found</h5>
+              {brief.lcr_retrieval_status?.status === 'failed'
+                ? <p className="guided-error" role="alert">SolenOS could not retrieve the full care record. This is a technical retrieval failure, not an empty care history. Retry when the connection is available.</p>
+                : brief.lcr_retrieval_status?.status === 'partial'
+                  ? <p className="guided-muted" role="status">Some care-record sources could not be fully checked. This summary is partial; unavailable information is not treated as absent.</p>
+                  : null}
+              {brief.appointment_context_status?.code === 'date_unknown' && <p className="guided-muted" role="status">Appointment information exists, but its date has not been recorded. SolenOS has not supplied or assumed a date.</p>}
+              {brief.appointment_context_status?.code === 'cancelled' && <p className="guided-muted" role="status">The recorded appointment is marked cancelled. SolenOS does not treat it as a current booking.</p>}
+              {brief.appointment_context_status?.code === 'rescheduled' && <p className="guided-muted" role="status">A rescheduled appointment is recorded. Use only the date currently saved in the Care Record.</p>}
+              {brief.appointment_context_status?.code === 'occurred' && <p className="guided-muted" role="status">The available appointment records indicate that a visit has already occurred.</p>}
+              {brief.appointment_context_status?.code === 'follow_up_needed' && <p className="guided-muted" role="status">The care record contains appointment-related questions or follow-ups. These indicate work to clarify, not an external booking.</p>}
+              {brief.appointment_context_status?.code === 'no_appointment_information' && <p className="guided-muted" role="status">No appointment information was returned from the available sources. This does not prove that no appointment exists.</p>}
               <p className="guided-muted">Prepared from the care information SolenOS could access. You do not need to rewrite information already in your Care Record.</p>
               {(brief.living_care_record_context?.retrieval_scan_complete !== true ||
                 brief.living_care_record_context?.retrieval_projection_complete !== true ||
@@ -612,12 +653,7 @@ export default function AppointmentWorkspace() {
             <p className="guided-footnote">Prepared {new Date(brief.snapshot_at).toLocaleString()}. Reports, dates and unknown details are kept separate.</p>
             </section>
           </>}
-          {appointmentId && <QwenAssistPanel
-            appointmentId={appointmentId}
-            contextText="Appointment details and unanswered questions. Help prepare for this scheduled appointment using the saved appointment and authorized care history."
-            title="Get help preparing for this appointment"
-            description="Ask about the saved appointment or questions you may want to raise. Suggestions need your review and do not change your Care Record automatically."
-          />}
+
         </div>}
 
         {stage === 'during' && <div className="guided-panel">
@@ -635,6 +671,53 @@ export default function AppointmentWorkspace() {
           <label className="guided-capture-label">Add anything you remember, if you want to
             <textarea value={note} onChange={event => setNote(event.target.value)} rows={4} placeholder="A short note is enough. You can also leave this empty." />
           </label>
+          <details className="guided-optional-capture">
+            <summary>Add specific details or a document (optional)</summary>
+            <p className="guided-footnote">Only add what you know. These remain caregiver-recorded until you review the proposed care-record changes.</p>
+            <label className="guided-capture-label">What the professional said, as you remember it
+              <textarea value={professionalStatement} onChange={event => setProfessionalStatement(event.target.value)} rows={3} placeholder="Optional. Keep the wording as close as you can." />
+            </label>
+            <label className="guided-capture-label">Decisions recorded
+              <textarea value={recordedDecisions} onChange={event => setRecordedDecisions(event.target.value)} rows={3} placeholder="Optional. What was agreed, deferred or declined?" />
+            </label>
+            <label className="guided-capture-label">Instructions or next steps
+              <textarea value={recordedInstructions} onChange={event => setRecordedInstructions(event.target.value)} rows={3} placeholder="Optional. Record the instruction as communicated; do not infer missing details." />
+            </label>
+            <label className="guided-capture-label">Questions still unanswered
+              <textarea value={unansweredQuestions} onChange={event => setUnansweredQuestions(event.target.value)} rows={3} placeholder="Optional. What still needs clarification?" />
+            </label>
+            <label className="guided-capture-label">Attach an existing document or visit document
+              <input type="file" accept=".pdf,.txt,.md,.csv,.json,.xml,.yaml,.yml,.log,image/*" disabled={documentBusy || !appointmentId} onChange={async event => {
+                const file = event.currentTarget.files?.[0]
+                event.currentTarget.value = ''
+                if (!file) return
+                setDocumentBusy(true)
+                setDocumentMessage('')
+                try {
+                  const saved = await extractAttachedDocument(file, 'upload')
+                  if (saved.status !== 'saved' || !saved.evidenceId) throw new Error(saved.errorNote || 'The original document was not confirmed as saved.')
+                  const nextIds = [...new Set([...attachedEvidenceIds, saved.evidenceId])]
+                  const payload = { ...(record?.payload || {}), caregiverReport: note.trim(), clinicianFindings: professionalStatement.trim(), decisions: recordedDecisions.trim(), instructions: recordedInstructions.trim(), unanswered: unansweredQuestions.trim(), attachedEvidenceIds: nextIds, captureStage: 'after' }
+                  const changeReason = 'Caregiver attached an appointment document'
+                  const key = newAppointmentSaveKey()
+                  const persisted = record
+                    ? await patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id), { expected_version: record.version_number, status: record.status, payload, change_reason: changeReason, idempotency_key: key }) as WorkspaceRecord
+                    : await postJSON('/appointment-workspaces', { appointment_id: appointmentId, status: 'outcome_pending', payload, change_reason: changeReason, idempotency_key: key }) as WorkspaceRecord
+                  setRecord(persisted)
+                  setAttachedEvidenceIds(nextIds)
+                  setDocumentMessage('The original document is saved and linked to this appointment. Its extracted information will appear when processing is available.')
+                  setMessage('Document attached to the saved appointment record.')
+                } catch (cause) {
+                  setDocumentMessage(cause instanceof Error ? cause.message : 'The document could not be attached. Retry without re-uploading if it is already saved.')
+                } finally {
+                  setDocumentBusy(false)
+                }
+              }} />
+            </label>
+            {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>}
+            {documentMessage && <p className="guided-muted" role="status">{documentMessage}</p>}
+            {attachedEvidenceIds.length > 0 && <p className="guided-footnote">{attachedEvidenceIds.length} document {attachedEvidenceIds.length === 1 ? 'is' : 'items are'} linked to this appointment.</p>}
+          </details>
           <div className="guided-actions">
             <button className="guided-primary" type="button" onClick={() => void saveNote()} disabled={saving}>{saving ? 'Saving…' : 'Save what I remember'}</button>
             <button className="guided-secondary" type="button" onClick={() => record && void refreshOutcome(record.id)} disabled={!record}>Refresh appointment information</button>
@@ -675,12 +758,7 @@ export default function AppointmentWorkspace() {
           </div>}
           {(!outcome || outcome.status === 'no_outcome_information') && <p className="guided-muted">Nothing has been recorded about what happened at the appointment yet. You can return later; SolenOS will not invent what happened.</p>}
           {outcome?.limitations?.map((item, index) => <p className="guided-footnote" key={index}>{item}</p>)}
-          {appointmentId && <QwenAssistPanel
-            appointmentId={appointmentId}
-            contextText={`After-appointment notes. ${note.trim() ? `Caregiver's unsaved note: ${note.trim()}` : "The caregiver has not added a note yet."}`}
-            title="Organize what happened at the appointment"
-            description="Ask for help organizing what the clinician told you. Your note remains a caregiver report, and nothing is added to your Care Record without your review."
-          />}
+
         </div>}
 
         <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error} <button type="button" className="guided-secondary" onClick={() => setReloadToken(value => value + 1)} disabled={loading}>Try again</button></span>}</div>
