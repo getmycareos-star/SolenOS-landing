@@ -8,6 +8,8 @@ export default function DailyCarePhotoCapture() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  // Reuse one server idempotency key while the same selected file is retried.
+  const [ingestionKey, setIngestionKey] = useState<string | null>(null);
 
   async function savePhoto() {
     if (!file || saving) return;
@@ -22,8 +24,11 @@ export default function DailyCarePhotoCapture() {
     setError("");
     setSaved(false);
     try {
+      const retryKey = ingestionKey ?? crypto.randomUUID();
+      setIngestionKey(retryKey);
       const form = new FormData();
       form.append("file", file);
+      form.append("ingestion_key", retryKey);
       form.append("person_id", personId);
       form.append("caregiver_id", caregiverId);
       form.append("evidence_type", "care_photo");
@@ -33,6 +38,7 @@ export default function DailyCarePhotoCapture() {
       }
       setSaved(true);
       setFile(null);
+      setIngestionKey(null);
       window.dispatchEvent(new Event("careRecordUpdated"));
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
@@ -65,6 +71,7 @@ export default function DailyCarePhotoCapture() {
         accept="image/jpeg,image/png,image/webp,image/gif"
         onChange={(event) => {
           setFile(event.target.files?.[0] ?? null);
+          setIngestionKey(null);
           setError("");
           setSaved(false);
         }}
