@@ -39,6 +39,7 @@ import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
 import {
   deliverDurableWrite,
   enqueueDurableWrite,
+  getDurableWriteSummary,
   markDurableWritePending,
   syncDurableWrites,
 } from "@/lib/offline-sync/durable-write-queue";
@@ -360,6 +361,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
   useEffect(() => {
     let active = true;
     let syncing = false;
+    let retryTimer: number | null = null;
 
     const syncPendingSituationWrites = async () => {
       if (typeof navigator !== "undefined" && !navigator.onLine) return;
@@ -373,7 +375,19 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
           send: sendQueuedCareWrite,
           endpoints: ["/situation"],
         });
-        if (!active || result.synced === 0) return;
+        if (!active) return;
+        const queueSummary = await getDurableWriteSummary(
+          session.person.id,
+          session.caregiver.id,
+          ["/situation"],
+        );
+        if (queueSummary.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
+          if (retryTimer !== null) window.clearTimeout(retryTimer);
+          retryTimer = window.setTimeout(() => {
+            void syncPendingSituationWrites();
+          }, 5_000);
+        }
+        if (result.synced === 0) return;
 
         const response = await fetch(
           apiUrl(`/api/situation?care_session_id=${encodeURIComponent(interactionSessionId())}&offer_return_invite=0`),
@@ -430,6 +444,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
     window.addEventListener("solenos:offline-queue-updated", syncPendingSituationWrites);
     return () => {
       active = false;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
       window.removeEventListener("online", syncPendingSituationWrites);
       window.removeEventListener("personIdChanged", syncPendingSituationWrites);
       window.removeEventListener("solenos:offline-queue-updated", syncPendingSituationWrites);
