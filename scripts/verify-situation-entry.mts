@@ -201,7 +201,7 @@ assert(workspace.includes("syncDurableWrites"), "pending Daily Care submissions 
 assert(workspace.includes("deliverDurableWrite"), "online Daily Care writes must clear the local queue only after a server receipt");
 assert(workspace.includes("setSituationSubmissionCapturedAt"), "retry must preserve the original capture timestamp");
 const queuedWriter = fs.readFileSync(path.join(root, "src/lib/offline-sync/send-queued-care-write.ts"), "utf-8");
-assert(queuedWriter.includes('endpoint === "/api/situation"'), "the durable queue must validate the canonical situation write receipt");
+assert(queuedWriter.includes('endpoint === "/situation"'), "the durable queue must validate the canonical situation write receipt");
 assert(workspace.includes("SituationResponsePanel"), "situation response UI");
 
 const realMoment = fs.readFileSync(
