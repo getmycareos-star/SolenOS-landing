@@ -10,7 +10,7 @@ import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } fr
 import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 // Advanced review panels are code-split so they do not block the first caregiver view.
-const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
+const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care information…</p> });
 const DementiaCareProfilePanel = dynamic(() => import("@/components/mvp-workspace/DementiaCareProfilePanel"), { ssr: false, loading: () => <p role="status">Loading care profile…</p> });
 const DementiaObservationPanel = dynamic(() => import("@/components/mvp-workspace/DementiaObservationPanel"), { ssr: false, loading: () => <p role="status">Loading observations…</p> });
 const EvidenceReviewPanel = dynamic(() => import("@/components/EvidenceReviewPanel"), { ssr: false, loading: () => <RecordState kind="loading" title="Loading your care information" /> });
@@ -827,7 +827,7 @@ export function LCRCurrentUnderstanding() {
     try {
       const session = await ensureAnonymousSession();
       if (!session.access_token || !session.person?.id) {
-        throw new Error("Your care record session is not available. Refresh the page and try again.");
+        throw new Error("Your care information is not available right now. Refresh the page and try again.");
       }
       const scopedPersonId = session.person.id;
       if (personIdRef.current && personIdRef.current !== scopedPersonId) {
@@ -1561,7 +1561,7 @@ export function LCRCurrentUnderstanding() {
                           <p>Progress: {caregiverLabel(item.recorded_status)} · What we know: {caregiverLabel(item.epistemic_status)} · Shared through: {caregiverLabel(item.source)}</p>
                           <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                           {item.verification_rule && <small>How completion was confirmed: {caregiverSafeAssistantText(item.verification_rule) || "No further details are available."}</small>}
-                          {item.outcome_status && <small>Recorded outcome status: {caregiverStatusLabel(item.outcome_status) || "Status not available"}</small>}
+                          {item.outcome_status && <small>Outcome: {caregiverStatusLabel(item.outcome_status) || "Not available"}</small>}
                           {item.evidence_ids.length > 0
                             ? <small>Based on {item.evidence_ids.length} saved item(s)</small>
                             : <small>This item was marked for follow-up in the saved record, but no supporting information is linked here.</small>}
@@ -1973,7 +1973,7 @@ export function LCRCurrentUnderstanding() {
       <div className="lcr-situation-assessment" aria-labelledby="lcr-change-history-heading">
         <div className="lcr-entry-heading">
           <h3 id="lcr-change-history-heading">Care changes over time</h3>
-          <span>{changes.length} saved change reviews</span>
+          <span>{changes.length === 1 ? "1 change review saved" : `${changes.length} change reviews saved`}</span>
         </div>
         {changesError && <RecordState kind="error" title="Care changes could not be loaded" description="Your saved information is still available. Please try again." onAction={() => void load(true)} />}
         {!changesError && changes.length === 0 && (
