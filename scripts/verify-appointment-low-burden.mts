@@ -74,7 +74,7 @@ assert.ok(component.includes('appointment_recorded_events'), 'caregiver-recorded
 assert.ok(component.includes("brief.appointment_context_status?.code === 'visit_recorded'"), 'recorded visit events must not be represented as external bookings');
 assert.ok(component.includes("updateAppointmentLifecycle('completed')"), 'caregiver confirmation must be required before an overdue appointment is marked as occurred');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'retrieval_failed'" ) || component.includes("brief.lcr_retrieval_status?.status === 'failed'"), 'technical retrieval failures must not appear as empty history');
-assert.ok(component.includes("brief.source_coverage?.documents === 'failed'"), 'document retrieval failures must not be shown as an empty document list');
+assert.ok(component.includes("brief?.source_coverage?.documents === 'failed'"), 'document retrieval failures must not be shown as an empty document list');
 assert.ok(component.includes('professionalStatement') && component.includes('recordedDecisions') && component.includes('recordedInstructions') && component.includes('unansweredQuestions'), 'optional after-visit capture must preserve separate professional statements, decisions, instructions and unanswered questions');
 assert.ok(component.includes('followUps: appointmentFollowUpsFromText(followUps)'), 'explicit follow-ups must sync into the existing Open Loop records');
 assert.ok(component.includes("const appointmentFollowUpText = (payload?: Record<string, unknown>)"), 'saved follow-ups must be restored after refresh');
@@ -84,7 +84,7 @@ assert.ok(component.includes('extractAttachedDocument(file, \'upload\')'), 'appo
 assert.ok(component.includes('attachedEvidenceIds'), 'appointment document evidence IDs must persist with the workspace')
 assert.ok(component.includes('Retry linking saved document'), 'a failed appointment link must be recoverable without re-uploading the original')
 assert.ok(component.includes('Link to this appointment'), 'existing care documents must be attachable without re-uploading')
-assert.ok(component.includes("brief.source_coverage?.documents === 'restricted'"), 'document attachment must respect caregiver document permissions')
+assert.ok(component.includes("brief?.source_coverage?.documents === 'restricted'"), 'document attachment must respect caregiver document permissions')
 assert.ok(component.includes('Documents linked to this appointment'), 'documents linked to the selected visit must be distinguished from other care documents')
 assert.ok(component.includes("updateAppointmentLifecycle('cancelled')") && component.includes("updateAppointmentLifecycle('rescheduled')"), 'caregiver-recorded cancellation and rescheduling must be supported')
 assert.ok(component.includes("{ status: 'completed' }"), 'saving after-visit information must update the recorded visit lifecycle');
