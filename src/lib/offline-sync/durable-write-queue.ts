@@ -19,8 +19,8 @@ type StoredWrite = {
   caregiver_id: string;
   endpoint: string;
   idempotency_key: string;
-  iv: number[];
-  ciphertext: number[];
+  iv: ArrayBuffer;
+  ciphertext: ArrayBuffer;
   status: QueueStatus;
   attempts: number;
   next_retry_at: number | null;
@@ -137,14 +137,14 @@ async function getDeviceKey(db: IDBDatabase): Promise<CryptoKey> {
   }
 }
 
-async function encryptPayload(db: IDBDatabase, payload: unknown): Promise<{ iv: number[]; ciphertext: number[] }> {
+async function encryptPayload(db: IDBDatabase, payload: unknown): Promise<{ iv: ArrayBuffer; ciphertext: ArrayBuffer }> {
   const key = await getDeviceKey(db);
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(JSON.stringify(payload));
   const ciphertext = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
   return {
-    iv: Array.from(iv),
-    ciphertext: Array.from(new Uint8Array(ciphertext)),
+    iv: iv.buffer.slice(iv.byteOffset, iv.byteOffset + iv.byteLength) as ArrayBuffer,
+    ciphertext,
   };
 }
 
@@ -153,7 +153,7 @@ async function decryptPayload(db: IDBDatabase, record: StoredWrite): Promise<unk
   const decrypted = await window.crypto.subtle.decrypt(
     { name: "AES-GCM", iv: new Uint8Array(record.iv) },
     key,
-    new Uint8Array(record.ciphertext),
+    record.ciphertext,
   );
   return JSON.parse(new TextDecoder().decode(decrypted));
 }
