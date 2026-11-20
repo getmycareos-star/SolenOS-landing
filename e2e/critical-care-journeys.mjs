@@ -789,9 +789,12 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(appointmentPrepareState.selects[1]?.value, "professional_appointment", "the briefing purpose must be set to appointment");
   assert.equal(appointmentPrepareState.selects[2]?.value, shareAppointment.payload.id, "the selected appointment must be bound to the draft");
   assert.equal(appointmentPrepareState.selects[3]?.value, "30", "the selected history window must be retained");
+  // Match the API client 210s request budget plus a 30s browser-observation margin.
+  // A shorter Playwright wait reports a false failure while the backend is still
+  // retrieving and validating the authoritative LCR snapshot.
   const appointmentBriefingResponse = page.waitForResponse(response =>
     response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST",
-    { timeout: 30_000 });
+    { timeout: 240_000 });
   await appointmentPrepareButton.click();
   let appointmentBriefing;
   try {
