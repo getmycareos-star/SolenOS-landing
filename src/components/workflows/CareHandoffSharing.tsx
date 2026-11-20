@@ -424,8 +424,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   }, [draft?.draft_id]);
 
   useEffect(() => {
-    const currentRefs = new Set(editedSections.map(item => item.source_ref));
-    setReviewedSourceRefs(current => current.filter(ref => currentRefs.has(ref)));
+    // Any content edit invalidates every prior source acknowledgement, even
+    // when the source IDs stay the same. A caregiver must re-check the revised
+    // wording, dates and uncertainty labels before sharing.
+    setReviewedSourceRefs([]);
     setReviewConfirmed(false);
   }, [editedSections]);
 
