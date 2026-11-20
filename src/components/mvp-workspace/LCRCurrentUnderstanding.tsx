@@ -1318,7 +1318,7 @@ export function LCRCurrentUnderstanding() {
       <div className="lcr-section-heading">
         <div>
           <p className="lcr-eyebrow">YOUR CARE</p>
-          <h2 id="lcr-current-understanding-heading">Your care, at a glance</h2>
+          <h2 id="lcr-current-understanding-heading">Your Living Care Record</h2>
           <p className="lcr-record-introduction">This record reflects the care information saved here. It may not include everything happening in care.</p>
         </div>
         <button type="button" className="lcr-text-action" onClick={() => void refreshWholeRecord()} disabled={loading || refreshing || assessmentLoading} aria-label="Refresh care summary">
@@ -1362,7 +1362,7 @@ export function LCRCurrentUnderstanding() {
         </div>
 
         <div className="lcr-first-screen-card">
-          <h3>What needs attention</h3>
+          <h3>What matters now</h3>
           {assessmentError ? (
             <RecordState kind="error" title="Care priorities could not be reviewed" description="We couldn’t check what may need attention. Please try again." onAction={() => void refreshWholeRecord()} />
           ) : !assessment ? (
@@ -1420,6 +1420,29 @@ export function LCRCurrentUnderstanding() {
                 ? ` ${watchUncertainties.length - 1} more item(s) may need checking.`
                 : ""}
             </p>
+          )}
+          {clarificationCareDecisions.length > 0 && (
+            <section className="lcr-current-fact" aria-labelledby="lcr-questions-to-resolve-heading">
+              <h4 id="lcr-questions-to-resolve-heading">Questions to resolve</h4>
+              <ul className="lcr-current-facts">
+                {clarificationCareDecisions.slice(0, 2).map((decision) => (
+                  <li key={decision.id || decision.source + ":" + decision.record_id}>
+                    <strong>{caregiverSafeAssistantText(decision.title) || "Information to check"}</strong>
+                    <p>{caregiverSafeAssistantText(decision.reason || decision.priority_basis?.join("; ")) || "The saved information needs clarification."}</p>
+                    {decision.records?.length ? (
+                      <details>
+                        <summary>See the related care information</summary>
+                        {decision.records.map((record) => (
+                          <p key={record.source + ":" + record.record_id}>
+                            {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened {formatWhen(record.occurred_at)} · Saved {formatWhen(record.recorded_at)}
+                          </p>
+                        ))}
+                      </details>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
         </div>
@@ -1873,7 +1896,7 @@ export function LCRCurrentUnderstanding() {
 
             {(registeredActions.length > 0 || Boolean(registeredActionsError) || (assessment?.coverage.records_examined ?? 0) > 0) && (
             <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
-              <h4 id="lcr-registered-actions-heading">Agreed next steps</h4>
+              <h4 id="lcr-registered-actions-heading">What’s been agreed</h4>
               {registeredActionsError && <p role="alert">Agreed actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
               {!registeredActionsError && registeredActions.length === 0 && <p>No actions have been agreed yet.</p>}
               {registeredActions.length > 0 && (
