@@ -128,7 +128,7 @@ assert.match(navigation, /href: "\/workspace\/daily-care"[\s\S]*?label: "Daily C
 assert.match(navigation, /href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups has a dedicated route");
 assert.match(navigation, /href: "\/workspace\/timeline"[\s\S]*?label: "Care history"/, "Care Timeline has a dedicated route");
 assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents has a dedicated route");
-assert.match(navigation, /href: "\/workspace\/companion"[\s\S]*?label: "Care Assistant"/, "Care Assistant has a dedicated route");
+assert.match(navigation, /href: "\/workspace\/companion"[\s\S]*?label: "AI Companion"/, "AI Companion has a dedicated route");
 assert.match(navigation, /href: "\/workspace\/handoffs"[\s\S]*?label: "Share care information"/, "Share care information remains a separate workflow");
 assert.match(navigation, /href: "\/workspace\/appointments"[\s\S]*?label: "Appointments"/, "Appointments remains a separate workflow");
 assert.doesNotMatch(shell, /Community/);
