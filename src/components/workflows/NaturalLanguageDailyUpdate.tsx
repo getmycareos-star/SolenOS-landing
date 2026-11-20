@@ -350,7 +350,12 @@ export default function NaturalLanguageDailyUpdate() {
           setError("This update is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.");
         }
       } else {
-        setError(caregiverSafeErrorMessage());
+        const reason = cause instanceof Error ? cause.message : "";
+        setError(
+          reason.includes("could not securely keep an offline copy")
+            ? reason
+            : caregiverSafeErrorMessage(),
+        );
       }
     } finally {
       setSaving(false);
