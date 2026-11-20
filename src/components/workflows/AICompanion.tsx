@@ -134,6 +134,16 @@ interface PendingCareUpdate {
   created_at?: string | null
 }
 
+interface CareUpdateReviewHistoryItem {
+  id: string
+  decision: string
+  reviewer_caregiver_id: string
+  rationale: string
+  correction_context?: string | null
+  resulting_lcr_revision_id?: string | null
+  created_at?: string | null
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -180,6 +190,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [savingCareReportId, setSavingCareReportId] = useState<string | null>(null)
   const [careUpdateError, setCareUpdateError] = useState<string | null>(null)
   const [careUpdateNotice, setCareUpdateNotice] = useState<string | null>(null)
+  const [correctingCareUpdateId, setCorrectingCareUpdateId] = useState<string | null>(null)
+  const [correctedCareUpdateText, setCorrectedCareUpdateText] = useState('')
+  const [careUpdateCorrectionContext, setCareUpdateCorrectionContext] = useState('')
+  const [careUpdateHistory, setCareUpdateHistory] = useState<Record<string, CareUpdateReviewHistoryItem[]>>({})
+  const [loadingCareUpdateHistoryId, setLoadingCareUpdateHistoryId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -371,6 +386,61 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
     } finally {
       setReviewingCareUpdateId(null)
+    }
+  }
+
+  const correctCareUpdate = async (proposalId: string) => {
+    const correctedText = correctedCareUpdateText.trim()
+    if (!correctedText || reviewingCareUpdateId) return
+    setReviewingCareUpdateId(proposalId)
+    setCareUpdateError(null)
+    setCareUpdateNotice(null)
+    try {
+      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', {
+        decision: 'correct',
+        corrected_text: correctedText,
+        correction_context: careUpdateCorrectionContext.trim() || null,
+      }) as {
+        decision?: string
+        proposal?: { status?: string }
+        corrected_proposal?: { id?: string; status?: string }
+      }
+      if (
+        response?.decision !== 'correct'
+        || response?.proposal?.status !== 'corrected'
+        || response?.corrected_proposal?.status !== 'pending_authorization'
+        || !response?.corrected_proposal?.id
+      ) {
+        throw new Error('The server did not confirm a separately reviewable corrected proposal.')
+      }
+      setCorrectingCareUpdateId(null)
+      setCorrectedCareUpdateText('')
+      setCareUpdateCorrectionContext('')
+      setCareUpdateNotice('Correction saved as a new review item. Nothing has been added to your Care Record yet.')
+      await loadPendingCareUpdates()
+    } catch {
+      setCareUpdateError('The correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.')
+    } finally {
+      setReviewingCareUpdateId(null)
+    }
+  }
+
+  const loadCareUpdateHistory = async (proposalId: string) => {
+    setLoadingCareUpdateHistoryId(proposalId)
+    setCareUpdateError(null)
+    try {
+      const response = await getJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/history') as {
+        items?: CareUpdateReviewHistoryItem[]
+        append_only?: boolean
+      }
+      if (response?.append_only !== true || !Array.isArray(response.items)) {
+        throw new Error('Review history response was incomplete.')
+      }
+      setCareUpdateHistory(current => ({ ...current, [proposalId]: response.items || [] }))
+    } catch {
+      setCareUpdateError('Review history could not be loaded. The saved care suggestion has not been changed.')
+    } finally {
+      setLoadingCareUpdateHistoryId(null)
     }
   }
 
@@ -606,10 +676,32 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             {item.proposed_change?.event_time_text && <small>When you said it happened: {item.proposed_change.event_time_text}</small>}
             <small>This is your report, not a medical conclusion. Adding it records that you checked the wording; it does not mean a healthcare professional has confirmed it.</small>
           </div>
+          {correctingCareUpdateId === item.id && <div className="companion-care-update-correction">
+            <label htmlFor={'care-update-correction-' + item.id}>Corrected wording</label>
+            <textarea id={'care-update-correction-' + item.id} value={correctedCareUpdateText} onChange={event => setCorrectedCareUpdateText(event.target.value)} rows={3} maxLength={4000} />
+            <label htmlFor={'care-update-correction-context-' + item.id}>Additional context (optional)</label>
+            <textarea id={'care-update-correction-context-' + item.id} value={careUpdateCorrectionContext} onChange={event => setCareUpdateCorrectionContext(event.target.value)} rows={2} maxLength={4000} />
+            <small>The correction is saved as a separate version. It still needs its own approval before entering the Care Record.</small>
+          </div>}
           <div className="companion-care-update-actions">
-            <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
-            <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={Boolean(reviewingCareUpdateId)}>Don’t add</button>
+            {correctingCareUpdateId === item.id ? <>
+              <button type="button" onClick={() => void correctCareUpdate(item.id)} disabled={Boolean(reviewingCareUpdateId) || !correctedCareUpdateText.trim()}>{reviewingCareUpdateId === item.id ? 'Saving correction…' : 'Save correction for review'}</button>
+              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(null); setCorrectedCareUpdateText(''); setCareUpdateCorrectionContext('') }} disabled={Boolean(reviewingCareUpdateId)}>Cancel</button>
+            </> : <>
+              <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
+              <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={Boolean(reviewingCareUpdateId)}>Don’t add</button>
+              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || '') }} disabled={Boolean(reviewingCareUpdateId)}>Correct wording</button>
+            </>}
+            <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
           </div>
+          {careUpdateHistory[item.id] && <div className="companion-care-update-history" aria-label="Care update review history">
+            {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
+              <strong>{entry.decision.replaceAll('_', ' ')}</strong>
+              {entry.rationale && <p>{entry.rationale}</p>}
+              {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
+              {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
+            </div>)}
+          </div>}
         </article>)}
       </section>}
 
@@ -701,6 +793,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-care-update strong { color:#34463a; font-size:12px; }
         .companion-care-update p { margin:6px 0; color:#26392c; font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
         .companion-care-update small { display:block; margin-top:5px; color:#718075; font-size:10px; line-height:1.5; }
+.companion-care-update-correction { display:grid; gap:7px; margin-top:12px; }
+        .companion-care-update-correction label { color:#415446; font-size:12px; font-weight:750; }
+        .companion-care-update-correction textarea { width:100%; min-width:0; padding:10px 11px; border:1px solid #cfdccf; border-radius:10px; background:#fff; color:#26392c; font:inherit; font-size:13px; line-height:1.55; resize:vertical; }
+        .companion-care-update-history { display:grid; gap:9px; margin-top:12px; padding:12px; border:1px solid #e2e9e1; border-radius:12px; background:#f8faf7; }
+        .companion-care-update-history>div { padding-bottom:8px; border-bottom:1px solid #e5ece4; }
+        .companion-care-update-history>div:last-child { padding-bottom:0; border-bottom:0; }
+        .companion-care-update-history strong { text-transform:capitalize; color:#3f5945; font-size:12px; }
+        .companion-care-update-history p,.companion-care-update-history small,.companion-care-update-history time { display:block; margin:4px 0 0; color:#68776b; font-size:11px; line-height:1.55; }
         .companion-care-update-actions { display:flex; flex:0 0 auto; flex-wrap:wrap; gap:7px; }
         .companion-care-update-actions button { min-height:38px; padding:8px 11px; border:1px solid #cbdcc9; border-radius:10px; background:#e7f0e5; color:#203b27; font:inherit; font-size:11px; font-weight:750; cursor:pointer; }
         .companion-care-update-actions button.is-secondary { background:#fff; color:#526457; border-color:#dfe8e1; }
