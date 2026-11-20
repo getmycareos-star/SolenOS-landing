@@ -577,7 +577,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       const isOnline = typeof navigator === "undefined" || navigator.onLine;
       if (durableWriteId && !isOnline) {
         await markDurableWritePending(durableWriteId, new Error("Network unavailable"));
-        setCaregiverError(
+        setOfflineSyncNotice(
           "Your update is encrypted on this device. It has not reached your Care Record yet and will sync when your connection returns.",
         );
         setSubmitPhase("idle");
