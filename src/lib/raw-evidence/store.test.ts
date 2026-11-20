@@ -1,5 +1,4 @@
 import { join } from "path";
-import { createPostgresPool } from "../telemetry-persistence/postgres-store";
 import { RawEvidenceStore } from "./store";
 import type { RawEvidence } from "./types";
 
@@ -15,7 +14,6 @@ jest.mock("fs", () => {
     writeFileSync: jest.fn(),
   };
 });
-jest.mock("../telemetry-persistence/postgres-store", () => ({ createPostgresPool: jest.fn() }));
 
 const fsMock = jest.requireMock("fs") as {
   existsSync: jest.Mock;
@@ -25,19 +23,17 @@ const fsMock = jest.requireMock("fs") as {
   rmSync: jest.Mock;
   writeFileSync: jest.Mock;
 };
-const mockedCreatePool = jest.mocked(createPostgresPool);
 
 const input = {
   id: "evidence-1",
   caregiver_id: "caregiver-1",
+  person_id: "person-1",
   input_type: "text" as const,
   content: "Breakfast was mostly uneaten.",
   captured_at: "2026-10-22T12:00:00.000Z",
 };
 
-describe("raw evidence persistence truth", () => {
-  const originalDatabaseUrl = process.env.DATABASE_URL;
-
+describe("legacy raw evidence queue never claims canonical persistence", () => {
   beforeEach(() => {
     delete process.env.DATABASE_URL;
     jest.clearAllMocks();
@@ -45,53 +41,97 @@ describe("raw evidence persistence truth", () => {
     fsMock.readdirSync.mockReturnValue([]);
     fsMock.writeFileSync.mockImplementation(() => undefined);
     fsMock.mkdirSync.mockImplementation(() => undefined);
-    mockedCreatePool.mockReset();
+    fsMock.rmSync.mockImplementation(() => undefined);
   });
 
-  afterAll(() => {
-    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
-    else process.env.DATABASE_URL = originalDatabaseUrl;
-  });
-
-  it("reports local_queued only after the queue file write succeeds", async () => {
-    const result = await new RawEvidenceStore({ pool: null }).save(input);
-    expect(result.persisted).toBe(true);
+  it("reports local_queued but persisted=false when only the local recovery queue accepts the input", async () => {
+    const result = await new RawEvidenceStore().save(input);
     expect(result.persistence_status).toBe("local_queued");
-  });
-
-  it("reports memory_only when both configured storage and local queue are unavailable", async () => {
-    fsMock.writeFileSync.mockImplementation(() => {
-      throw new Error("filesystem unavailable");
-    });
-    const result = await new RawEvidenceStore({ pool: null }).save(input);
     expect(result.persisted).toBe(false);
-    expect(result.persistence_status).toBe("memory_only");
+    expect(fsMock.writeFileSync).toHaveBeenCalledTimes(1);
   });
 
-  it("lazily connects to configured PostgreSQL and reports server_persisted only after the write", async () => {
-    process.env.DATABASE_URL = "postgres://configured";
+  it("does not write to a separate frontend PostgreSQL database even when DATABASE_URL is configured", async () => {
+    process.env.DATABASE_URL = "postgres://a-separate-frontend-database";
+    const result = await new RawEvidenceStore().save(input);
+    expect(result.persistence_status).toBe("local_queued");
+    expect(result.persisted).toBe(false);
+  });
+
+  it("reports memory_only when the local recovery queue is unavailable", async () => {
     fsMock.writeFileSync.mockImplementation(() => {
       throw new Error("filesystem unavailable");
     });
-    const query = jest.fn().mockResolvedValue({ rows: [{ id: input.id }] });
-    mockedCreatePool.mockResolvedValue({ query } as never);
-
-    const result = await new RawEvidenceStore({ pool: null }).save(input);
-    expect(mockedCreatePool).toHaveBeenCalledTimes(1);
-    expect(query).toHaveBeenCalledTimes(1);
-    expect(result.persisted).toBe(true);
-    expect(result.persistence_status).toBe("server_persisted");
+    const result = await new RawEvidenceStore().save(input);
+    expect(result.persistence_status).toBe("memory_only");
+    expect(result.persisted).toBe(false);
   });
 
-  it("restores queue files after process restart and retries them idempotently", async () => {
-    process.env.DATABASE_URL = "postgres://configured";
+  it("acknowledges an identical immutable local replay without changing its identity", async () => {
+    const store = new RawEvidenceStore();
+    const first = await store.save(input);
+    const second = await store.save(input);
+    expect(first.evidence.id).toBe(second.evidence.id);
+    expect(first.evidence.content_hash).toBe(second.evidence.content_hash);
+    expect(second.persisted).toBe(false);
+    expect(second.persistence_status).toBe("local_queued");
+  });
+
+  it("rejects reuse of an evidence ID with different owner or content", async () => {
+    const store = new RawEvidenceStore();
+    await store.save(input);
+    await expect(store.save({ ...input, content: "Different observation" }))
+      .rejects.toThrow("different content or ownership");
+  });
+
+  it("restores queue files and synchronizes only through an explicit canonical backend writer", async () => {
     const queuedEvidence: RawEvidence = {
       id: "evidence-restart",
       caregiver_id: "caregiver-1",
-      person_id: null,
+      person_id: "person-1",
       input_type: "text",
       content: "Follow-up was scheduled.",
-      content_hash: "hash",
+      content_hash: "stable-hash",
+      ocr_confidence: null,
+      document_id: null,
+      document_name: null,
+      captured_at: "2026-10-22T12:00:00.000Z",
+      urgency_risk_level: "low",
+      urgency_signals: [],
+      metadata: {},
+    };
+    const baseDir = join(process.cwd(), ".data", "raw-evidence-queue");
+    let queuePresent = true;
+    fsMock.existsSync.mockImplementation((path: string) => path === baseDir);
+    fsMock.readdirSync.mockImplementation((path: string) =>
+      path === baseDir ? (queuePresent ? ["caregiver-1"] : []) :
+        queuePresent ? ["evidence-restart.json"] : [],
+    );
+    fsMock.readFileSync.mockReturnValue(JSON.stringify(queuedEvidence));
+    fsMock.rmSync.mockImplementation(() => {
+      queuePresent = false;
+    });
+    const writer = jest.fn(async (evidence: RawEvidence) => ({
+      evidence_id: evidence.id,
+      persisted: true as const,
+    }));
+    const store = new RawEvidenceStore({ persistCanonical: writer });
+
+    const result = await store.syncToCanonicalBackend();
+    expect(result).toEqual({ synced: 1, remaining: 0 });
+    expect(writer).toHaveBeenCalledTimes(1);
+    expect(writer.mock.calls[0]?.[0].id).toBe("evidence-restart");
+    expect(fsMock.rmSync).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not synchronize a local queue without an explicit canonical writer", async () => {
+    const queuedEvidence: RawEvidence = {
+      id: "evidence-restart",
+      caregiver_id: "caregiver-1",
+      person_id: "person-1",
+      input_type: "text",
+      content: "Follow-up was scheduled.",
+      content_hash: "stable-hash",
       ocr_confidence: null,
       document_id: null,
       document_name: null,
@@ -106,72 +146,14 @@ describe("raw evidence persistence truth", () => {
       path === baseDir ? ["caregiver-1"] : ["evidence-restart.json"],
     );
     fsMock.readFileSync.mockReturnValue(JSON.stringify(queuedEvidence));
-    const query = jest.fn().mockResolvedValue({ rows: [{ id: "evidence-restart" }] });
-    mockedCreatePool.mockResolvedValue({ query } as never);
 
-    const result = await new RawEvidenceStore({ pool: null }).syncToPostgres();
-    expect(result).toEqual({ synced: 1, remaining: 0 });
-    expect(query).toHaveBeenCalledTimes(1);
-    expect(query.mock.calls[0]?.[0]).toContain("ON CONFLICT (id) DO NOTHING");
-    expect(fsMock.rmSync).toHaveBeenCalledTimes(1);
+    const result = await new RawEvidenceStore().syncToCanonicalBackend();
+    expect(result).toEqual({ synced: 0, remaining: 1 });
+    expect(fsMock.rmSync).not.toHaveBeenCalled();
   });
 
-  it("acknowledges an identical immutable replay without creating a duplicate", async () => {
-    process.env.DATABASE_URL = "postgres://configured";
-    fsMock.writeFileSync.mockImplementation(() => {
-      throw new Error("filesystem unavailable");
-    });
-    const contentHash = require("crypto")
-      .createHash("sha256")
-      .update(input.content)
-      .digest("hex");
-    const query = jest
-      .fn()
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [{
-          id: input.id,
-          caregiver_id: input.caregiver_id,
-          person_id: null,
-          content_hash: contentHash,
-        }],
-      });
-    mockedCreatePool.mockResolvedValue({ query } as never);
-
-    const result = await new RawEvidenceStore({ pool: null }).save(input);
-    expect(result.persistence_status).toBe("server_persisted");
-    expect(result.persisted).toBe(true);
-    expect(query).toHaveBeenCalledTimes(2);
-  });
-
-  it("does not acknowledge an ID collision with different evidence ownership or content", async () => {
-    process.env.DATABASE_URL = "postgres://configured";
-    fsMock.writeFileSync.mockImplementation(() => {
-      throw new Error("filesystem unavailable");
-    });
-    const query = jest
-      .fn()
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [{
-          id: input.id,
-          caregiver_id: "another-caregiver",
-          person_id: null,
-          content_hash: "different-content",
-        }],
-      });
-    mockedCreatePool.mockResolvedValue({ query } as never);
-
-    const result = await new RawEvidenceStore({ pool: null }).save(input);
-    expect(result.persistence_status).toBe("memory_only");
-    expect(result.persisted).toBe(false);
-    expect(result.persistence_error).toBe("PostgreSQL storage could not be confirmed.");
-    expect(query).toHaveBeenCalledTimes(2);
-  });
-
-  it("rejects a missing caregiver identity instead of writing to a shared default queue", async () => {
-    await expect(
-      new RawEvidenceStore({ pool: null }).save({ ...input, caregiver_id: "" }),
-    ).rejects.toThrow("caregiver identity is required");
+  it("rejects a missing caregiver identity instead of writing to a shared queue", async () => {
+    await expect(new RawEvidenceStore().save({ ...input, caregiver_id: "" }))
+      .rejects.toThrow("caregiver identity is required");
   });
 });
