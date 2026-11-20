@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
-import { caregiverFieldLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 // Advanced review panels are code-split so they do not block the first caregiver view.
 const CareContinuityIntegrityPanel = dynamic(() => import("@/components/CareContinuityIntegrityPanel"), { ssr: false, loading: () => <p role="status">Loading care record details…</p> });
@@ -149,11 +149,6 @@ type CareAttentionDecision = {
   recorded_at?: string | null;
   due_at?: string | null;
   review_at?: string | null;
-  evidence_status?: string;
-  history_completeness?: string;
-  action_status?: string;
-  linked_follow_up_outcome_status?: string;
-  significance_assessment_status?: string;
   records?: CareAttentionEvidenceRef[];
 };
 
@@ -566,49 +561,7 @@ function displayCurrentCareDescription(item: CurrentCareItem): string | null {
 
 function displayDescription(value?: string | null): string {
   if (!value?.trim()) return "No description was recorded.";
-  try {
-    const parsed: unknown = JSON.parse(value);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      const parsedRecord = parsed as Record<string, unknown>;
-      const captureValue = parsedRecord.original_capture;
-      const captureRecord = captureValue && typeof captureValue === "object" && !Array.isArray(captureValue)
-        ? captureValue as Record<string, unknown>
-        : parsedRecord;
-      const quickValue = captureRecord.quick_check_in;
-      if (quickValue && typeof quickValue === "object" && !Array.isArray(quickValue)) {
-        const quick = quickValue as Record<string, unknown>;
-        const kindLabels: Record<string, string> = {
-          same_as_usual: "Same as usual",
-          change: "Something changed",
-          concern: "I have a concern",
-          care_completed: "Care was completed",
-          uncertain: "I’m not sure",
-        };
-        const areas = Array.isArray(quick.selected_areas)
-          ? quick.selected_areas.filter((item): item is string => typeof item === "string")
-               .map(caregiverLabel)
-          : [];
-        const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
-        .find((item): item is string => typeof item === "string" && item.trim().length > 0);
-      const safeSummary = summary ? caregiverSafeAssistantText(summary) || "" : "";
-        return [
-          safeSummary,
-          `Update type: ${kindLabels[String(quick.kind)] || "Caregiver check-in"}`,
-          areas.length ? `Areas selected: ${areas.join(", ")}` : "",
-          quick.scope === "selected_areas_only" ? "Scope: selected areas only" : "",
-        ].filter(Boolean).join("\n");
-      }
-      const summary = [captureRecord.notes, captureRecord.original_notes, captureRecord.text, captureRecord.description, captureRecord.observation, captureRecord.summary]
-        .find((item): item is string => typeof item === "string" && item.trim().length > 0);
-      if (summary) return caregiverSafeAssistantText(summary) || "Saved care information";
-      return "Saved care information";
-    }
-    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || "Saved care information";
-  } catch {
-    // Malformed serialized payloads are not caregiver-readable source text.
-    if (/^[\\s]*[\\[{]/.test(value)) return "Saved care information";
-  }
-  return caregiverSafeAssistantText(value) || "Saved care information";
+  return caregiverReadableCaptureText(value) || "Saved care information";
 }
 
 function formatWhen(value?: string | null): string {
@@ -1616,10 +1569,6 @@ export function LCRCurrentUnderstanding() {
                       <li key={item.id || item.source + ":" + item.record_id} className="lcr-current-fact">
                         <strong>{caregiverSafeAssistantText(item.title) || "Care information to review"}</strong>
                         <p>{caregiverSafeAssistantText(item.reason || item.priority_basis?.join("; ")) || "The saved care information indicates this needs follow-up."}</p>
-                        {item.evidence_status && <small>Evidence: {caregiverStatusLabel(item.evidence_status) || "Not established"}</small>}
-                        {item.history_completeness && item.history_completeness !== "complete" && <small>Some earlier care information may be missing.</small>}
-                        {item.action_status && item.action_status !== "not_recorded" && <small>Follow-up: {caregiverStatusLabel(item.action_status) || "Status not recorded"}</small>}
-                        {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <small>Outcome: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</small>}
                         {item.records?.map((record) => (
                           <small key={record.source + ":" + record.record_id}>
                             {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened: {formatWhen(record.occurred_at)} · Saved: {formatWhen(record.recorded_at)}
