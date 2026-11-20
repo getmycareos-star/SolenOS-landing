@@ -1,0 +1,1 @@
+Temporary deployment marker for a Netlify preview built from SolenOS landing main at 9bf2945c4ab94d411d1c5fe5dd92ca6ac5fae32a. This file does not affect application behavior.
