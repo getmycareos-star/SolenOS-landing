@@ -137,6 +137,11 @@ jobs:
           print(f"PostgreSQL database={database} user={user} alembic_head={migration_head}")
           assert database == "solenos_ci"
           PY
+      - name: Export runtime-registered backend route inventory
+        working-directory: backend-service/backend
+        run: |
+          mkdir -p reports
+          python scripts/export_registered_routes.py --output "$GITHUB_WORKSPACE/backend-service/backend/reports/registered-endpoint-inventory.json"
       - name: Start production-built Next.js frontend
         shell: bash
         run: |
@@ -165,6 +170,7 @@ jobs:
         env:
           DATABASE_URL: ""
           SOLENOS_OPENAPI_URL: http://127.0.0.1:8000/openapi.json
+          SOLENOS_ROUTE_INVENTORY_PATH: backend-service/backend/reports/registered-endpoint-inventory.json
           SOLENOS_API_INVENTORY_OUTPUT: reports/frontend-api-callsite-inventory.json
         run: npm test
       - name: Upload frontend-to-backend API callsite inventory
