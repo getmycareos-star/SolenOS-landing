@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverRoleLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { CalendarDays, ShieldCheck } from 'lucide-react'
-import DetailedAppointmentWorkspace from './DetailedAppointmentWorkspace'
 import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'
 
 type Stage = 'prepare' | 'during' | 'after'
@@ -167,7 +166,6 @@ export default function AppointmentWorkspace() {
   const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [showDetailed, setShowDetailed] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -223,27 +221,6 @@ export default function AppointmentWorkspace() {
   const refreshOutcome = async (recordId: string) => {
     const draft = await getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft') as OutcomeDraft
     setOutcome(draft)
-  }
-
-  const refreshSavedWorkspace = async () => {
-    try {
-      await ensureAnonymousSession()
-      const result = await getJSON('/appointment-workspaces') as { items?: WorkspaceRecord[] }
-      const latest = result.items?.[0] || null
-      setRecord(latest)
-      if (!latest) {
-        setOutcome(null)
-        setOutcomeProposals([])
-        return
-      }
-      setAppointmentId(latest.appointment_id || '')
-      setNote(typeof latest.payload?.caregiverReport === 'string' ? latest.payload.caregiverReport : '')
-      await refreshOutcome(latest.id)
-      const proposals = await getJSON('/appointment-workspaces/' + encodeURIComponent(latest.id) + '/outcome-proposals') as { items?: OutcomeProposal[] }
-      setOutcomeProposals(proposals.items || [])
-    } catch (cause) {
-      setError('Saved appointment information could not be refreshed. Please try again.')
-    }
   }
 
   const prepareOutcomeReview = async () => {
@@ -577,8 +554,7 @@ export default function AppointmentWorkspace() {
         </div>}
 
         <div className="guided-status" role="status" aria-live="polite">{message}{error && <span>{error}</span>}</div>
-        <button className="guided-details-toggle" type="button" aria-expanded={showDetailed} onClick={() => { if (showDetailed) void refreshSavedWorkspace(); setShowDetailed(value => !value) }}>{showDetailed ? 'Close detailed appointment controls' : 'Open detailed appointment and follow-up controls (optional)'}</button>
-        {showDetailed && <div className="guided-detailed"><p>Use these additional controls only when you need to review individual sections or manage follow-up actions. The guided appointment stages above remain the normal path.</p><DetailedAppointmentWorkspace /></div>}
+        <p className="guided-footnote">You can leave notes empty. SolenOS keeps the appointment information it can retrieve together with your Care Record.</p>
       </>}
 
     </section>
