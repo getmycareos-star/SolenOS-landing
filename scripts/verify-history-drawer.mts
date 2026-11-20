@@ -58,7 +58,7 @@ assert.match(drawer, /capture\.vitals/, "saved measurements must be rendered as 
 assert.match(drawer, /capture\.scales/, "saved ratings must be rendered as caregiver-readable details");
 assert.match(drawer, /capture\.medications/, "saved medicine details must not disappear from the original capture");
 assert.match(drawer, /Measurements and ratings are shown as entered/, "structured values must retain an accuracy limitation");
-assert.match(drawer, /lines\.join\("\\\\n"\)/, "structured capture details must be separated with readable line breaks");
+assert.match(drawer, /lines\.join\("\\n"\)/, "structured capture details must be separated with readable line breaks");
 assert.ok(drawer.includes('getJSON("/open-loops?limit=100")'), "saved follow-ups must be retrieved from the authenticated follow-up service");
 assert.match(drawer, /mapFollowUp/, "persisted follow-ups must be represented in care history using their saved fields");
 assert.match(drawer, /const followUpResult = results\[8\]/, "follow-up retrieval must have an independent result state");

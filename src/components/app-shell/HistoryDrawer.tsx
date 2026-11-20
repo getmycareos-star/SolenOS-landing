@@ -432,7 +432,7 @@ function parseDescription(description?: string | null): string {
       if (hasStructuredValues) {
         lines.push("Measurements and ratings are shown as entered; they have not been independently checked.");
       }
-      return lines.join("\\n");
+      return lines.join("\n");
     }
     return fallback;
   } catch {
