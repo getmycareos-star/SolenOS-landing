@@ -1855,6 +1855,8 @@ await record("Daily Care capture survives secondary read failures", async () => 
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p0cAAAAASUVORK5CYII=",
     "base64",
   );
+  await resilient.page.getByRole("button", { name: /Share something/i }).click();
+  await resilient.page.getByRole("button", { name: "Photograph", exact: true }).click();
   await resilient.context.setOffline(true);
   await resilient.page.locator("#daily-care-photo-file").setInputFiles({
     name: "offline-care-photo.png",
