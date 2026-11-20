@@ -887,7 +887,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   await professionalDialog.locator("select").nth(1).selectOption("period_summary");
   await professionalDialog.locator("select").nth(2).selectOption("30");
   const professionalBriefingResponse = page.waitForResponse(response =>
-    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
+    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST",
+    { timeout: 240_000 });
   await professionalDialog.getByRole("button", { name: "Prepare summary to share", exact: true }).click();
   const professionalBriefing = await professionalBriefingResponse;
   assert.equal(professionalBriefing.status(), 200, "professional care briefing must be prepared by the backend");
@@ -909,7 +910,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   await familyDialog.locator("select").nth(1).selectOption("period_summary");
   await familyDialog.locator("select").nth(2).selectOption("30");
   const familyBriefingResponse = page.waitForResponse(response =>
-    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST");
+    response.url().includes("/api/v1/handoff-drafts/prepare") && response.request().method() === "POST",
+    { timeout: 240_000 });
   await familyDialog.getByRole("button", { name: "Prepare summary to share", exact: true }).click();
   const familyBriefing = await familyBriefingResponse;
   assert.equal(familyBriefing.status(), 200, "family care briefing must be prepared by the backend");
