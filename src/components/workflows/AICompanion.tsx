@@ -169,6 +169,17 @@ interface Message {
   timestamp: Date
 }
 
+function companionConversationStorageKey(personId: string, caregiverId: string): string {
+  return `solenos_companion_session:${encodeURIComponent(personId)}:${encodeURIComponent(caregiverId)}`
+}
+
+function activeCompanionConversationStorageKey(): string | null {
+  if (typeof window === 'undefined') return null
+  const personId = window.localStorage.getItem('solenos_backend_person_id')
+  const caregiverId = window.localStorage.getItem('solenos_backend_caregiver_id')
+  return personId && caregiverId ? companionConversationStorageKey(personId, caregiverId) : null
+}
+
 const STARTER_PROMPTS = [
   { icon: MessageCircle, title: 'I need to talk it through', description: 'One thing at a time. No need to organise it first.', prompt: "I'm overwhelmed. Help me work through one thing at a time." },
   { icon: Clock3, title: 'Something has changed', description: 'Sort what is known from what is still unclear.', prompt: 'Something has changed in care. Help me work out what we know and what is unclear.' },
@@ -202,6 +213,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
   const pendingTurnText = useRef<string | null>(null)
+  const userInteractedRef = useRef(false)
   const personId = getPersonId()
 
   const checkAvailability = useCallback(async () => {
@@ -239,7 +251,67 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
 
+  useEffect(() => {
+    let cancelled = false
+    let storageKey: string | null = null
+    const restoreConversation = async () => {
+      try {
+        const session = await ensureAnonymousSession()
+        storageKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+        const savedSessionId = window.localStorage.getItem(storageKey)
+        if (!savedSessionId) return
+        const response = await getJSON('/conversation/' + encodeURIComponent(savedSessionId)) as {
+          session_id?: string
+          person_id?: string
+          messages?: Array<{
+            id?: string
+            source_message_id?: string | null
+            role: 'user' | 'assistant'
+            text: string
+            created_at?: string | null
+            guard_verdict?: string | null
+            safety_note?: string | null
+            evidence_ids?: string[]
+            source_record_refs?: Array<{ record_type: string; record_id: string }>
+            claim_provenance?: ClaimProvenance
+            ai_generated?: boolean
+            response_mode?: string
+          }>
+        }
+        if (cancelled || userInteractedRef.current) return
+        if (
+          response.session_id !== savedSessionId
+          || response.person_id !== session.person.id
+          || !Array.isArray(response.messages)
+        ) {
+          throw new Error('The saved conversation history did not match the active care session.')
+        }
+        setSessionId(savedSessionId)
+        setMessages(response.messages.map(message => ({
+          role: message.role,
+          text: message.text,
+          source_message_id: message.role === 'user' ? (message.source_message_id || message.id || null) : null,
+          guard_verdict: message.guard_verdict,
+          safety_note: message.safety_note,
+          evidence_ids: message.evidence_ids || [],
+          source_record_refs: message.source_record_refs || [],
+          claim_provenance: message.claim_provenance,
+          ai_generated: message.ai_generated,
+          response_mode: message.response_mode,
+          timestamp: message.created_at ? new Date(message.created_at) : new Date(),
+        })))
+      } catch (error) {
+        if (error instanceof ApiResponseError && error.status === 404 && storageKey) {
+          window.localStorage.removeItem(storageKey)
+        }
+      }
+    }
+    void restoreConversation()
+    return () => { cancelled = true }
+  }, [])
+
   const sendMessage = async (textOverride?: string) => {
+    userInteractedRef.current = true
     const submittedText = (textOverride ?? input).trim()
       if (!submittedText || loading) return
     setRequestError(null)
@@ -274,7 +346,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       pendingTurnId.current = null
       pendingTurnText.current = null
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
-      if (!sessionId && response.session_id) setSessionId(response.session_id)
+      if (response.session_id) {
+        setSessionId(response.session_id)
+        window.localStorage.setItem(
+          companionConversationStorageKey(session.person.id, session.caregiver.id),
+          response.session_id,
+        )
+      }
       const isEmergency = isEmergencyCompanionResponse(response)
       if (isEmergency) setEmergency(true)
 
@@ -498,6 +576,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
   const startNewSession = () => {
     if (loading) return
+    userInteractedRef.current = true
+    const storageKey = activeCompanionConversationStorageKey()
+    if (storageKey) window.localStorage.removeItem(storageKey)
     setMessages([])
     setInput('')
     setSessionId(null)
