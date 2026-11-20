@@ -7,6 +7,11 @@ const component = readFileSync('src/components/workflows/AppointmentWorkspace.ts
 assert.ok(component.includes('Your visit summary'))
 assert.ok(component.includes("getJSON('/appointment-workspaces/preparation-brief?window_days=90')"))
 assert.ok(component.includes('selectNextAppointment'))
+// An existing scheduled visit gets a durable preparation workspace automatically.
+// No appointment form or voice capture is required.
+assert.ok(component.includes("postJSON('/appointment-workspaces/ensure-upcoming', {})"))
+assert.ok(component.includes('Prepare and persist the workspace automatically'))
+assert.ok(component.includes('This creates continuity workspace only; it does not book a visit.'))
 assert.ok(component.includes('You do not have to fill in forms before, during or after a visit.'))
 assert.ok(component.includes('You do not need to rewrite information already in your Care Record'))
 assert.ok(component.includes('brief.prior_decisions?.length'))
