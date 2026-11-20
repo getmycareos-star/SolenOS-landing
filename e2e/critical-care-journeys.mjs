@@ -2526,6 +2526,10 @@ await record("12b invited caregiver sees the shared care record in a separate br
     "Your care context was shared with caregivers who have access to this Care Record.",
     { exact: true },
   ).waitFor({ timeout: 20_000 });
+  await settingsPage.getByText(
+    "Can help with appointment transport when arranged in advance.",
+    { exact: true },
+  ).waitFor({ timeout: 20_000 });
   const sharedCareContexts = await request(
     `/api/v1/caregiver-contexts/${encodeURIComponent(identity.personId)}`,
     { token: identity.token },
