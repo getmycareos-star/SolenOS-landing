@@ -391,7 +391,7 @@ export async function retryPendingDurableWrites(
       row.caregiver_id === caregiverId &&
       (!endpoints || endpoints.includes(row.endpoint)) &&
       row.status === "pending" &&
-      row.next_retry_at !== null &&
+      row.next_retry_at != null &&
       row.next_retry_at > now
     ) {
       await putWrite(db, {
