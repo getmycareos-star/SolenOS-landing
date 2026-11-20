@@ -78,7 +78,7 @@ export const WORKSPACE_NAVIGATION = {
     {
       id: "ai-companion",
       href: "/workspace/companion",
-      label: "Care Assistant",
+      label: "AI Companion",
       description: "Ask questions about saved care information",
       icon: MessageCircle,
     },
