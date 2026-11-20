@@ -196,15 +196,20 @@ export default function AppointmentWorkspace() {
           getJSON('/appointment-workspaces') as Promise<{ items?: WorkspaceRecord[] }>,
         ])
         if (cancelled) return
+        let selectedAppointmentId: string | null = null
         if (briefResult.status === 'fulfilled') {
           setBrief(briefResult.value)
           const nextAppointment = selectNextAppointment(briefResult.value)
-          if (nextAppointment) setAppointmentId(nextAppointment.source_id)
+          selectedAppointmentId = nextAppointment?.source_id || null
+          if (selectedAppointmentId) setAppointmentId(selectedAppointmentId)
         } else {
           setError('Your visit summary could not be loaded. Your care record has not been changed.')
         }
         if (workspaceResult.status === 'fulfilled') {
-          const latest = workspaceResult.value.items?.[0] || null
+          const items = workspaceResult.value.items || []
+          const latest = selectedAppointmentId
+            ? items.find(item => item.appointment_id === selectedAppointmentId) || null
+            : items[0] || null
           if (latest) {
             setRecord(latest)
             if (latest.appointment_id) setAppointmentId(latest.appointment_id)
@@ -260,9 +265,13 @@ export default function AppointmentWorkspace() {
     ])
     setBrief(briefResult)
     const nextAppointment = selectNextAppointment(briefResult)
-    if (nextAppointment) setAppointmentId(nextAppointment.source_id)
+    const selectedAppointmentId = nextAppointment?.source_id || null
+    if (selectedAppointmentId) setAppointmentId(selectedAppointmentId)
 
-    const latest = workspaceResult.items?.[0] || null
+    const items = workspaceResult.items || []
+    const latest = selectedAppointmentId
+      ? items.find(item => item.appointment_id === selectedAppointmentId) || null
+      : items[0] || null
     setRecord(latest)
     if (!latest) {
       setOutcome(null)
