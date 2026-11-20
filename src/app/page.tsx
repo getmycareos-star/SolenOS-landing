@@ -264,9 +264,6 @@ export default function LandingPage() {
             Some features are still being developed, and the experience will
             improve as we learn what families actually need.
           </p>
-          <LandingStartLink href={start} className="el-button">
-            Start your Living Care Record <span aria-hidden="true">↗</span>
-          </LandingStartLink>
         </section>
 
         <section className="el-final-cta">
