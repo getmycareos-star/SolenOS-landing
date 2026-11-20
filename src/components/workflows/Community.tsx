@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { Bookmark, Check, ChevronRight, HeartHandshake, MessageCircle, Search, Send, ShieldCheck, Sparkles, ThumbsUp, Users, X } from 'lucide-react'
 import { getJSON, postJSON, ensureAnonymousSession } from '@/api/client'
+import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 type AuthorType = 'peer_caregiver' | 'solenos_verified' | 'professional' | 'professional_pending'
 type ReactionType = 'like' | 'thank_you' | 'support'
@@ -206,8 +207,8 @@ export default function Community() {
       }
       if (!Array.isArray(result?.matches)) throw new Error('No matches')
       setWisdomMatches(result.matches.slice(0, 4))
-      setWisdomSummary(result.ai_generated && typeof result.summary === 'string' ? result.summary : null)
-      setWisdomMessage(result.notice || (result.matches.length ? 'These are personal experiences, not medical instructions.' : 'No related published experiences were found.'))
+      setWisdomSummary(result.ai_generated && typeof result.summary === 'string' ? caregiverSafeAssistantText(result.summary) : null)
+      setWisdomMessage(caregiverSafeAssistantText(result.notice) || (result.matches.length ? 'These are personal experiences, not medical instructions.' : 'No related published experiences were found.'))
     } catch {
       setWisdomMessage('Experience search is unavailable right now. You can still browse published posts below.')
     } finally { setWisdomLoading(false) }
