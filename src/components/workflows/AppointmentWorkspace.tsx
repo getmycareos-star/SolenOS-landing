@@ -696,6 +696,7 @@ export default function AppointmentWorkspace() {
                 : brief.lcr_retrieval_status?.status === 'partial'
                   ? <p className="guided-muted" role="status">Some care-record sources could not be fully checked. This summary is partial; unavailable information is not treated as absent.</p>
                   : null}
+              {brief.source_coverage?.documents === 'failed' && <p className="guided-muted" role="alert">Saved document information could not be retrieved. This is a technical failure, not evidence that no documents exist.</p>}
               {brief.appointment_context_status?.code === 'date_unknown' && <p className="guided-muted" role="status">Appointment information exists, but its date has not been recorded. SolenOS has not supplied or assumed a date.</p>}
               {brief.appointment_context_status?.code === 'cancelled' && <p className="guided-muted" role="status">The recorded appointment is marked cancelled. SolenOS does not treat it as a current booking.</p>}
               {brief.appointment_context_status?.code === 'rescheduled' && <p className="guided-muted" role="status">A rescheduled appointment is recorded. Use only the date currently saved in the Care Record.</p>}
