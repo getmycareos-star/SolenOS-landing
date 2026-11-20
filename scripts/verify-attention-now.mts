@@ -31,8 +31,9 @@ assert.deepEqual(selectWatchChanges(changes).map((item) => item.id), ["candidate
 
 const component = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 assert.match(component, /Needs attention now/);
-assert.match(component, /recorded as postponed/);
-assert.match(component, /That does not confirm they are safe to wait now/);
+assert.match(component, /Put off for now/);
+assert.match(component, /These items were put off earlier\. That does not mean they are safe to delay now\./);
+assert.match(component, /No care items have been marked as postponed/);
 assert.doesNotMatch(component, /Things that can wait/);
 assert.match(component, /There isn’t enough recorded care information to assess immediate priorities yet/);
 assert.doesNotMatch(component, /No immediate concerns were identified in the information currently available\./);
