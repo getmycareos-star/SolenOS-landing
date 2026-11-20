@@ -281,17 +281,25 @@ export async function completeDurableWrite(id: string): Promise<void> {
   dispatchQueueUpdated();
 }
 
-export async function markDurableWritePending(id: string, error: unknown): Promise<void> {
+export async function markDurableWritePending(
+  id: string,
+  error: unknown,
+  options: { countAttempt?: boolean } = {},
+): Promise<void> {
   const db = await openDatabase();
   const record = await readWrite(db, id);
   if (!record) return;
   const classification = statusFromError(error);
-  const attempts = record.attempts + 1;
+  // A known-offline decision happens before any network attempt and must not
+  // consume the bounded retry budget.
+  const attempts = record.attempts + (options.countAttempt === false ? 0 : 1);
   const exhausted = attempts >= MAX_ATTEMPTS;
   const status: QueueStatus = classification.blocked
     ? "blocked"
     : exhausted ? "failed_recoverable" : "pending";
-  const delay = RETRY_DELAYS_MS[Math.min(attempts - 1, RETRY_DELAYS_MS.length - 1)] ?? 1_800_000;
+  const delay = options.countAttempt === false
+    ? 0
+    : RETRY_DELAYS_MS[Math.min(Math.max(attempts - 1, 0), RETRY_DELAYS_MS.length - 1)] ?? 1_800_000;
   await putWrite(db, {
     ...record,
     status,
