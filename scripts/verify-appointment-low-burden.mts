@@ -32,3 +32,7 @@ assert.ok(component.includes('brief.open_loops?.length'), 'preparation must surf
 assert.ok(component.includes('brief.documents?.length'), 'preparation must surface extracted care documents already stored in the LCR')
 assert.ok(component.includes('Recent care documents'), 'document context must be visible in the caregiver summary')
 assert.ok(component.includes('Still being followed up'), 'open follow-ups must be visible in the caregiver summary')
+
+assert.ok(component.includes('brief.prior_decisions?.length'), 'preparation must include previously recorded care decisions')
+assert.ok(component.includes('brief.decision_outcomes?.length'), 'preparation must include recorded outcomes from prior decisions')
+assert.ok(component.includes('What happened after those decisions'), 'prior decision outcomes must be visible in the caregiver summary')
