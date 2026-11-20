@@ -188,6 +188,13 @@ const CARE_FIELD_LABELS: Readonly<Record<string, string>> = {
   mobility: "Movement",
   pain: "Pain",
   mood: "Mood",
+  blood_pressure_systolic: "Blood pressure (top number)",
+  blood_pressure_diastolic: "Blood pressure (bottom number)",
+  oxygen_saturation: "Oxygen level",
+  heart_rate: "Heart rate",
+  caregiver_note: "Caregiver note",
+  caregiver_reported_observation: "Caregiver report",
+  medication: "Medication",
   hydration: "Fluid intake",
   food_intake: "Food intake",
 };
@@ -373,6 +380,38 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
       ? root.original_capture as Record<string, unknown>
       : root;
     const lines: string[] = [];
+    const vitalLabels: Record<string, string> = {
+      bp_systolic: "Blood pressure (top number)",
+      bp_diastolic: "Blood pressure (bottom number)",
+      heart_rate: "Heart rate",
+      temperature: "Temperature",
+      oxygen_saturation: "Oxygen level",
+      weight: "Weight",
+    };
+    // A detail may be shown on its own as an exact source passage, not only
+    // inside the complete original Daily Care capture.
+    if (typeof capture.axis === "string" && capture.score !== undefined) {
+      const label = readableLabel(capture.axis) || "Rating";
+      const score = safeText(capture.score);
+      const note = safeText(capture.note);
+      if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
+    }
+    if (typeof capture.vital_type === "string" && capture.value !== undefined) {
+      const kind = safeText(capture.vital_type);
+      const label = vitalLabels[kind] || readableLabel(kind) || "Measurement";
+      const measurement = [safeText(capture.value), safeText(capture.unit)].filter(Boolean).join(" ");
+      const note = safeText(capture.note);
+      if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
+    }
+    if (typeof capture.medication_name === "string" || typeof capture.name === "string") {
+      const name = safeText(capture.medication_name) || safeText(capture.name);
+      const details = [
+        safeText(capture.dose) ? "Dose recorded: " + safeText(capture.dose) : "",
+        safeText(capture.status) ? "Status: " + readableLabel(capture.status) : "",
+        safeText(capture.note),
+      ].filter(Boolean);
+      if (name) lines.push(details.length ? name + " — " + details.join("; ") : name);
+    }
     const quick = capture.quick_check_in && typeof capture.quick_check_in === "object" && !Array.isArray(capture.quick_check_in)
       ? capture.quick_check_in as Record<string, unknown>
       : null;
@@ -403,14 +442,6 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
         lines.push(details.length ? name + " — " + details.join("; ") : name);
       }
     }
-    const vitalLabels: Record<string, string> = {
-      bp_systolic: "Blood pressure (top number)",
-      bp_diastolic: "Blood pressure (bottom number)",
-      heart_rate: "Heart rate",
-      temperature: "Temperature",
-      oxygen_saturation: "Oxygen level",
-      weight: "Weight",
-    };
     if (Array.isArray(capture.vitals)) {
       for (const raw of capture.vitals) {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
@@ -443,7 +474,10 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     return lines.join("\n");
   } catch {
     // Never expose serialized object payloads or internal request metadata.
-    return /^[\\s]*[\\[{]/.test(value) ? fallback : caregiverSafeAssistantText(value) || fallback;
+    const trimmed = value.trimStart();
+    return trimmed.startsWith("{") || trimmed.startsWith("[")
+      ? fallback
+      : caregiverSafeAssistantText(value) || fallback;
   }
 }
 

@@ -119,6 +119,16 @@ const labels: Record<ReviewType, string> = {
 }
 const reviewStatusLabel = (value: string) => ({
   not_assessed: 'Not checked',
+  caregiver_report: 'Caregiver report',
+  caregiver_note: 'Caregiver note',
+  caregiver_reported_observation: 'Caregiver report',
+  blood_pressure_systolic: 'Blood pressure (top number)',
+  blood_pressure_diastolic: 'Blood pressure (bottom number)',
+  oxygen_saturation: 'Oxygen level',
+  heart_rate: 'Heart rate',
+  mood: 'Mood',
+  pain: 'Pain',
+  'Daily Care form': 'Daily Care',
   structured_daily_capture: 'Daily care update',
   daily_care_entry: 'Daily care update',
   daily_capture: 'Daily care update',
@@ -784,22 +794,22 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           </article>)}
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
-          <summary>Details found in this note or document ({observations.length})</summary>
-          <p>Each detail keeps the exact words from the original note or document. A report stays labelled as a report; an interpretation is not shown as something someone directly saw.</p>
+          <summary>Details recorded from this note or document ({observations.length})</summary>
+          <p>Each detail is linked to the original information. A caregiver report stays labelled as a report; it is not shown as a confirmed medical fact.</p>
           {observationsLoading && <p role="status">Loading recorded details…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
-          {!observationsLoading && !observationsError && observations.length === 0 && <p>No details have been read from this note or document yet.</p>}
+          {!observationsLoading && !observationsError && observations.length === 0 && <p>No separate details have been recorded from this information yet.</p>}
           {observations.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
-            <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere' }}>{item.source_passage}</blockquote>
-            <div>Value: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
+            <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(item.source_passage) || 'Original wording is not available.'}</blockquote>
+            <div>What was recorded: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
             {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
-            {item.negated !== null && item.negated !== undefined && <div>Does the original note or document say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
+            {item.negated !== null && item.negated !== undefined && <div>Did the caregiver say this did not happen? {item.negated ? 'yes' : 'no'}</div>}
             {item.hedge_marker && <div>Words that show uncertainty: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>What is unclear: {item.ambiguity_note}</div>}
-            {item.observer_label && <div>Who noticed this: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
-            <small>Recorded {new Date(item.recorded_at).toLocaleString()}</small>
+            {item.observer_label && <div>Who shared this information: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
+            <small>Added to the record {new Date(item.recorded_at).toLocaleString()}</small>
           </article>)}
         </details>
 
