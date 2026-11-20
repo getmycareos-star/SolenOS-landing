@@ -1664,7 +1664,7 @@ export function HistoryDrawer() {
 
                 <footer className="history-drawer-footer">
                   <ShieldCheck size={15} aria-hidden />
-                  <span>History brings together saved care updates, documents, appointments, handoffs, Care Record changes, decisions and outcomes where available. It shows both when something happened and when it was saved{loadedAt ? " · Updated " + formatDateTime(loadedAt) : ""}.</span>
+                  <span>History brings together saved care updates, documents, appointments, handoffs, Care Record changes, decisions and outcomes where available. It shows both when something happened and when it was saved{loadedAt ? " · Last checked " + formatDateTime(loadedAt) : ""}.</span>
                 </footer>
               </>
             )}
