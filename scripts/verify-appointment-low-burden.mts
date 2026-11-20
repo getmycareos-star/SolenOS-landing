@@ -69,6 +69,8 @@ assert.ok(component.includes("brief.appointment_context_status?.code === 'date_u
 assert.ok(component.includes("brief.appointment_context_status?.code === 'cancelled'"), 'cancelled appointments must not appear as active bookings');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'rescheduled'"), 'rescheduled appointments must be distinguishable');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'occurred'"), 'occurred appointments must be distinguishable');
+assert.ok(component.includes("brief.appointment_context_status?.code === 'overdue'"), 'past appointment dates must not be treated as proof of attendance');
+assert.ok(component.includes("updateAppointmentLifecycle('completed')"), 'caregiver confirmation must be required before an overdue appointment is marked as occurred');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'retrieval_failed'" ) || component.includes("brief.lcr_retrieval_status?.status === 'failed'"), 'technical retrieval failures must not appear as empty history');
 assert.ok(component.includes('professionalStatement') && component.includes('recordedDecisions') && component.includes('recordedInstructions') && component.includes('unansweredQuestions'), 'optional after-visit capture must preserve separate professional statements, decisions, instructions and unanswered questions');
 assert.ok(component.includes('extractAttachedDocument(file, \'upload\')'), 'appointment documents must use the existing durable evidence upload workflow');
