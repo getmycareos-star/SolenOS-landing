@@ -51,8 +51,8 @@ jobs:
       - name: Build isolated backend route-inspection image
         run: docker build -f backend-contract/ci/Dockerfile.backend-tests -t solenos-backend-route-audit backend-contract
 
-      - name: Export exact backend route registry from app.main
-        run: docker run --rm --volume "$GITHUB_WORKSPACE:/output" --workdir /workspace/backend solenos-backend-route-audit python scripts/export_registered_endpoints.py --output /output/backend-endpoint-inventory.json
+      - name: Export nested runtime routes, OpenAPI contracts and endpoint dispositions
+        run: docker run --rm --volume "$GITHUB_WORKSPACE:/output" --workdir /workspace/backend solenos-backend-route-audit python scripts/export_registered_routes.py --output /output/backend-endpoint-inventory.json --markdown-output /output/backend-endpoint-inventory.md
 
       - name: Match frontend call sites to registered backend routes
         run: node scripts/export-api-call-sites.mjs --backend-inventory backend-endpoint-inventory.json --output frontend-backend-route-matrix.json
@@ -63,6 +63,7 @@ jobs:
           name: solenos-frontend-backend-integration-matrix
           path: |
             backend-endpoint-inventory.json
+            backend-endpoint-inventory.md
             frontend-backend-route-matrix.json
           if-no-files-found: error
           retention-days: 30
