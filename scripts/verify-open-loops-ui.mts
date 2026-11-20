@@ -3,6 +3,8 @@ import fs from "node:fs";
 
 const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const caregiverLanguage = fs.readFileSync("src/lib/caregiver-language.ts", "utf8");
+const allCareViews = page + "\n" + careContinuity;
 
 const required: Array<[string, RegExp]> = [
   ["loads the persisted person-scoped follow-ups", /getJSON\("\/open-loops\?limit=100"\)/],
@@ -31,7 +33,7 @@ const required: Array<[string, RegExp]> = [
 ];
 
 for (const [label, pattern] of required) {
-  assert.match(page, pattern, `Follow-ups contract missing: ${label}`);
+  assert.match(allCareViews, pattern, `Follow-ups contract missing: ${label}`);
 }
 
 const openLoopCreateWrites = page.match(/postJSON\("\/open-loops",/g) ?? [];
@@ -43,6 +45,7 @@ assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named ca
 assert.match(page, /item\.evidence_status/, "follow-up cards must expose evidence status separately from care significance");
 assert.match(page, /item\.history_completeness/, "follow-up cards must disclose incomplete history");
 assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
+assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an unknown follow-up outcome must not be described as resolved");
 assert.ok(page.includes("SolenOS checks the care information you have saved and keeps follow-ups easy to find"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
 
