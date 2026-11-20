@@ -54,6 +54,9 @@ jobs:
       - name: Export nested runtime routes, OpenAPI contracts and endpoint dispositions
         run: docker run --rm --volume "$GITHUB_WORKSPACE:/output" --workdir /workspace/backend solenos-backend-route-audit python scripts/export_registered_routes.py --output /output/backend-endpoint-inventory.json --markdown-output /output/backend-endpoint-inventory.md
 
+      - name: Export backend internal service consumer map
+        run: docker run --rm --volume "$GITHUB_WORKSPACE:/output" --workdir /workspace/backend solenos-backend-route-audit python scripts/export_service_consumers.py --output /output/backend-service-consumers.json
+
       - name: Match frontend call sites to registered backend routes
         run: node scripts/export-api-call-sites.mjs --backend-inventory backend-endpoint-inventory.json --output frontend-backend-route-matrix.json
 
@@ -64,6 +67,7 @@ jobs:
           path: |
             backend-endpoint-inventory.json
             backend-endpoint-inventory.md
+            backend-service-consumers.json
             frontend-backend-route-matrix.json
           if-no-files-found: error
           retention-days: 30
