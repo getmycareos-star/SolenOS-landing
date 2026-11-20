@@ -193,7 +193,15 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   );
   page.on("pageerror", (error) => console.log("FIRST_VISIT_PAGE_ERROR", error.message));
   page.on("console", (message) => { if (message.type() === "error") console.log("FIRST_VISIT_CONSOLE_ERROR", message.text()); });
-  page.on("response", (response) => {
+  page.on("response", async (response) => {
+    const responseUrl = new URL(response.url());
+    if (responseUrl.pathname === "/api/v1/assistant/assist") {
+      const payload = await response.json().catch(() => null);
+      console.log("FIRST_VISIT_ASSIST_RESPONSE", JSON.stringify({
+        status: response.status(),
+        error: payload?.detail?.message ?? payload?.detail ?? payload?.error ?? null,
+      }));
+    }
     if (response.status() >= 400) {
       console.log("FIRST_VISIT_HTTP_ERROR", response.status(), response.url());
     }
@@ -303,6 +311,12 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
+  await page.getByRole("region", { name: "Record context interpretation", exact: true })
+    .getByText(
+      "Context interpretation is temporarily unavailable. Your saved care record is unchanged; you do not need to submit the update again.",
+      { exact: true },
+    )
+    .waitFor({ state: "visible", timeout: 10_000 });
   assert.equal(
     await page.locator(".care-card-understanding").count(),
     0,
