@@ -3,6 +3,16 @@ import { postJSON, postFormData, getJSON, getPersonId, getCaregiverId } from '@/
 import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
+import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
+import {
+  discardBlockedDurableWrites,
+  getDurableWriteSummary,
+  hasDurableWrite,
+  retryBlockedDurableWrites,
+  syncDurableWrites,
+  enqueueDurableWrite,
+  deliverDurableWrite,
+} from "@/lib/offline-sync/durable-write-queue";
 
 const QWEN_JOB_POLL_INTERVAL_MS = 2_000;
 const QWEN_JOB_MAX_WAIT_MS = 12 * 60 * 1000;
@@ -48,6 +58,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   const [saved, setSaved] = useState(false);
   const [savedEntrySummary, setSavedEntrySummary] = useState('');
   const [saveError, setSaveError] = useState<unknown | null>(null);
+  const [pendingLocal, setPendingLocal] = useState(false);
+  const [pendingQueueCount, setPendingQueueCount] = useState(0);
+  const [pendingAttentionCount, setPendingAttentionCount] = useState(0);
+  const [pendingMessage, setPendingMessage] = useState("");
   const [qwenAnalysis, setQwenAnalysis] = useState<{
     status: string;
     processingStatus: string;
@@ -202,6 +216,62 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   // Retain the request key across an uncertain network outcome. A changed
   // form snapshot receives a new key; an unchanged retry reuses the old one.
   const captureSubmissionRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const pendingQueueId = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const sync = async () => {
+      const currentPersonId = getPersonId();
+      const currentCaregiverId = getCaregiverId();
+      if (!currentPersonId || !currentCaregiverId) return;
+      try {
+        const summary = await getDurableWriteSummary(currentPersonId, currentCaregiverId);
+        if (!active) return;
+        setPendingQueueCount(summary.pending);
+        setPendingAttentionCount(summary.blocked + summary.failed_recoverable);
+        if (typeof navigator !== "undefined" && !navigator.onLine) return;
+        const result = await syncDurableWrites({
+          personId: currentPersonId,
+          caregiverId: currentCaregiverId,
+          send: sendQueuedCareWrite,
+        });
+        const afterSync = await getDurableWriteSummary(currentPersonId, currentCaregiverId);
+        if (!active) return;
+        setPendingQueueCount(afterSync.pending);
+        setPendingAttentionCount(afterSync.blocked + afterSync.failed_recoverable);
+        if (afterSync.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
+          if (retryTimer) clearTimeout(retryTimer);
+          retryTimer = setTimeout(sync, 5_000);
+        }
+        if (pendingQueueId.current && !(await hasDurableWrite(pendingQueueId.current))) {
+          pendingQueueId.current = null;
+          setPendingLocal(false);
+          setPendingMessage("");
+          setSaved(true);
+          setSavedEntrySummary("Your previously queued update has synced to the care record. Your current form remains open.");
+          setSaveError(null);
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        } else if (result.synced > 0) {
+          setPendingMessage("A pending update has synced to the care record.");
+          window.dispatchEvent(new Event("careRecordUpdated"));
+        }
+      } catch {
+        // The queue retains the original request until the backend confirms it.
+      }
+    };
+    void sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("personIdChanged", sync);
+    window.addEventListener("solenos:offline-queue-updated", sync);
+    return () => {
+      active = false;
+      if (retryTimer) clearTimeout(retryTimer);
+      window.removeEventListener("online", sync);
+      window.removeEventListener("personIdChanged", sync);
+      window.removeEventListener("solenos:offline-queue-updated", sync);
+    };
+  }, []);
 
   // Medication form state
   const [medicationForm, setMedicationForm] = useState<{
