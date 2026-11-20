@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverRoleLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
-import { CalendarDays, ShieldCheck, Paperclip } from 'lucide-react'
+import { CalendarDays, ShieldCheck } from 'lucide-react'
 import { extractAttachedDocument } from '@/components/mvp-workspace/capture/extract-attached'
 
 type Stage = 'prepare' | 'during' | 'after'
@@ -189,6 +189,7 @@ export default function AppointmentWorkspace() {
   const [attachedEvidenceIds, setAttachedEvidenceIds] = useState<string[]>([])
   const [documentBusy, setDocumentBusy] = useState(false)
   const [documentMessage, setDocumentMessage] = useState('')
+  const [rescheduleDate, setRescheduleDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
@@ -427,6 +428,30 @@ export default function AppointmentWorkspace() {
     }
   }
 
+  const updateAppointmentLifecycle = async (status: 'cancelled' | 'rescheduled') => {
+    if (!appointmentId) return
+    setProposalBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const body: Record<string, unknown> = { status }
+      if (status === 'rescheduled') {
+        body.scheduled_at = rescheduleDate ? new Date(rescheduleDate).toISOString() : null
+      }
+      await patchJSON('/appointments/' + encodeURIComponent(appointmentId) + '/lifecycle', body)
+      setMessage(status === 'cancelled'
+        ? 'The appointment is marked cancelled in the Care Record. No external booking action was taken.'
+        : rescheduleDate
+          ? 'The new date is saved in the Care Record. SolenOS has not booked or confirmed it with the provider.'
+          : 'The appointment is marked rescheduled, but its new date is still unknown.')
+      setReloadToken(value => value + 1)
+    } catch {
+      setError('The appointment status could not be saved. The existing appointment information has not been changed.')
+    } finally {
+      setProposalBusy(false)
+    }
+  }
+
   const saveNote = async () => {
     if (!note.trim() && !professionalStatement.trim() && !recordedDecisions.trim() && !recordedInstructions.trim() && !unansweredQuestions.trim()) {
       setMessage('Nothing to save. You can continue without adding a note.')
@@ -489,6 +514,13 @@ export default function AppointmentWorkspace() {
       setRecord(saved)
       setSaveRetry(null)
       setMessage('Your note is saved as a caregiver report.')
+      if (stage === 'after' && appointmentId) {
+        try {
+          await patchJSON('/appointments/' + encodeURIComponent(appointmentId) + '/lifecycle', { status: 'completed' })
+        } catch {
+          setError('Your note is saved, but the appointment could not be marked as occurred. Retry the appointment status update.')
+        }
+      }
       try {
         await refreshSavedWorkspace()
         if (stage === 'after') {
@@ -569,7 +601,15 @@ export default function AppointmentWorkspace() {
                     {brief.contradictions?.length ? <section><h6>Information that needs clarification</h6><ul>{brief.contradictions.slice(0, 2).map(item => <li key={item.source_id}><p>{caregiverSafeAssistantText(item.description) || "Some reports differ"}</p><small>{caregiverStatusLabel(item.resolution_status) || "Review needed"}</small></li>)}</ul></section> : null}
                     {brief.appointment_needs?.length ? <section><h6>Appointment information to clarify</h6><ul>{brief.appointment_needs.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.question) || "An appointment needs attention"}</strong><small>{item.intended_answerer_label ? caregiverSafeAssistantText(item.intended_answerer_label) : "Who can confirm this was not recorded"} · {caregiverStatusLabel(item.priority) || "Priority not available"}</small><p>{caregiverSafeAssistantText(item.necessity_rationale) || "This question was marked as necessary in the Care Record."}</p><small>{caregiverSafeAssistantText(item.interpretation_limit) || "This is not a booked or confirmed visit."}</small></li>)}</ul></section> : null}
                     {brief.previous_appointment && <section><h6>Previous recorded visit</h6><strong>{caregiverSafeAssistantText(brief.previous_appointment.title) || "Appointment"}</strong><p>{brief.previous_appointment.scheduled_at ? new Date(brief.previous_appointment.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(brief.previous_appointment.status) || "Status not available"}</p></section>}
-                    {brief.next_appointment ? <section><h6>{brief.next_appointment.scheduled_at ? 'Next scheduled visit' : 'Appointment information · date unknown'}</h6><strong>{caregiverSafeAssistantText(brief.next_appointment.title) || "Appointment"}</strong><p>{brief.next_appointment.scheduled_at ? new Date(brief.next_appointment.scheduled_at).toLocaleString() : "Date not recorded"}</p>{brief.next_appointment.provider && <small>{caregiverSafeAssistantText(brief.next_appointment.provider)}</small>}{brief.next_appointment.location && <small>{caregiverSafeAssistantText(brief.next_appointment.location)}</small>}</section> : brief.appointments.length > 0 ? <section><h6>Appointments already recorded</h6><ul>{brief.appointments.slice(0, 2).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul></section> : null}
+                    {brief.next_appointment ? <section><h6>{brief.next_appointment.scheduled_at ? 'Next scheduled visit' : 'Appointment information · date unknown'}</h6><strong>{caregiverSafeAssistantText(brief.next_appointment.title) || "Appointment"}</strong><p>{brief.next_appointment.scheduled_at ? new Date(brief.next_appointment.scheduled_at).toLocaleString() : "Date not recorded"}</p>{brief.next_appointment.provider && <small>{caregiverSafeAssistantText(brief.next_appointment.provider)}</small>}{brief.next_appointment.location && <small>{caregiverSafeAssistantText(brief.next_appointment.location)}</small>}
+                      <details className="guided-optional-capture"><summary>Correct appointment status (optional)</summary>
+                        <p className="guided-footnote">Only update this when you know the provider or family changed the visit. This records information in SolenOS; it does not contact the provider.</p>
+                        <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('cancelled')}>Mark as cancelled</button>
+                        <label className="guided-capture-label">New date, if known
+                          <input type="datetime-local" value={rescheduleDate} onChange={event => setRescheduleDate(event.target.value)} />
+                        </label>
+                        <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('rescheduled')}>Save as rescheduled</button>
+                      </details></section> : brief.appointments.length > 0 ? <section><h6>Appointments already recorded</h6><ul>{brief.appointments.slice(0, 2).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul></section> : null}
                     {brief.open_loops?.length ? <section><h6>Still being followed up</h6><ul>{brief.open_loops.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>{item.description && item.description !== item.title && <p>{caregiverSafeAssistantText(item.description)}</p>}<small>{caregiverStatusLabel(item.status) || "Status not available"}{item.deadline_at ? ` · Due ${new Date(item.deadline_at).toLocaleDateString()}` : ""}{item.owner_label ? ` · ${caregiverSafeAssistantText(item.owner_label)}` : ""}{item.appointment_id ? ` · Linked to ${caregiverSafeAssistantText(brief.appointments.find(appointment => appointment.source_id === item.appointment_id)?.title) || 'a recorded appointment'}` : ""}</small></li>)}</ul></section> : null}
                     {brief.documents?.filter(item => item.source_evidence_id && brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).length ? <section><h6>Documents linked to this appointment</h6><ul>{brief.documents.filter(item => item.source_evidence_id && brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).slice(0, 5).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small></li>)}</ul></section> : null}
                     {brief.documents?.filter(item => !item.source_evidence_id || !brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).length ? <section><h6>Other recent care documents</h6><ul>{brief.documents.filter(item => !item.source_evidence_id || !brief.next_appointment?.evidence_ids?.includes(item.source_evidence_id)).slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text extracted"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · Source document, not a confirmed care fact</small></li>)}</ul></section> : null}
