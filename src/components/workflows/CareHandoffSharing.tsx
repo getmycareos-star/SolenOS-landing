@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import { getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
@@ -482,7 +482,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     );
     prepareRequestId.current = requestId;
     try {
-      await ensureAnonymousSession();
+      // postJSON performs the authoritative session check/refresh itself.
+      // Avoid a second, independent bootstrap wait that can leave the UI
+      // stuck before the request is ever sent.
       const prepared = await postJSON("/handoff-drafts/prepare", {
         purpose: preparePurpose,
         audience: prepareAudience,
