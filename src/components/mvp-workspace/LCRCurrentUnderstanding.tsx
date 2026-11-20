@@ -1550,7 +1550,7 @@ export function LCRCurrentUnderstanding() {
                     const source = sourceForLoop(item);
                     return (
                       <li key={item.source + ":" + item.id} className="lcr-current-fact">
-                        <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
+                        <strong>{caregiverSafeAssistantText(item.title) || "Care information"}</strong>
                         <p>{caregiverSafeAssistantText(item.description || source?.description) || "No further description was recorded."}</p>
                         {item.request_text && <p>Follow-up: {caregiverSafeAssistantText(item.request_text) || "A follow-up was requested."}</p>}
                         {item.owner && <small>Responsible person: {caregiverSafeAssistantText(item.owner) || "Not recorded"}</small>}
@@ -1710,7 +1710,7 @@ export function LCRCurrentUnderstanding() {
                   <ul className="lcr-current-facts">
                   {canWaitItems.map((item) => (
                     <li key={item.source + ":" + item.id} className="lcr-current-fact">
-                      <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
+                      <strong>{caregiverSafeAssistantText(item.title) || "Care information"}</strong>
                       <p>{displayDescription(item.description)}</p>
                       <p className="lcr-entry-status">Reason for postponing: {caregiverSafeAssistantText(item.deferred_reason) || "No reason was recorded."}</p>
                       <p className="lcr-entry-status">Progress: {caregiverLabel(item.recorded_status)} · Priority: {caregiverLabel(item.priority)} · What we know: {caregiverLabel(item.epistemic_status)}</p>
@@ -1798,7 +1798,7 @@ export function LCRCurrentUnderstanding() {
                     const disputed = item.source === "conflicts" || item.source === "reconciliations";
                     return (
                       <li key={item.source + ":" + item.id} className="lcr-current-fact">
-                        <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
+                        <strong>{caregiverSafeAssistantText(item.title) || "Care information"}</strong>
                         <p>{disputed ? "Reports do not match, and the difference has not been resolved. Neither report is treated as correct." : "This still needs to be checked."}</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · What we know: {caregiverLabel(item.epistemic_status)} · Source: {caregiverLabel(item.source)}</p>
                         {source?.description && <p>{displayDescription(source.description)}</p>}
@@ -2045,16 +2045,16 @@ export function LCRCurrentUnderstanding() {
                     )}
                     {changeEvidence[change.id]?.evidence.map((item) => (
                       <article key={item.id} className="lcr-current-fact">
-                        <strong>{caregiverSafeAssistantText(item.title) || "Care record item"}</strong>
+                        <strong>{caregiverSafeAssistantText(item.title) || "Care information"}</strong>
                         <p>{displayDescription(item.description)}</p>
                         <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : caregiverLabel(item.event_type)} · {item.status === "recorded" ? "Saved" : caregiverLabel(item.status)}</small>
-                        <small>Observed: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
-                        <small>Recorded: {formatWhen(item.recorded_at)}</small>
-                        <small>Time details: {caregiverLabel(item.time_provenance)}</small>
+                        <small>Happened: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
+                        <small>Saved: {formatWhen(item.recorded_at)}</small>
+                        <small>When this happened: {caregiverLabel(item.time_provenance)}</small>
                       </article>
                     ))}
                     {changeEvidence[change.id] && !changeEvidence[change.id].error && changeEvidence[change.id].evidence.length === 0 && (
-                      <p>No supporting source details are available for the linked information.</p>
+                      <p>The original information linked to this change is not available.</p>
                     )}
                     {changeEvidence[change.id]?.assertions.length > 0 && (
                       <div aria-label="Saved reports">
@@ -2063,8 +2063,8 @@ export function LCRCurrentUnderstanding() {
                           {changeEvidence[change.id].assertions.map((assertion) => (
                             <li key={assertion.id}>
                               <p>{caregiverFieldLabel(assertion.field) || caregiverLabel(assertion.field)}: {assertion.asserted_value}</p>
-                              <small>{caregiverLabel(assertion.subject_type)} · Information: {caregiverInformationLabel(assertion.epistemic_state || "reported") || "Caregiver report"} · Review: {caregiverLabel(assertion.assertion_status)} · {caregiverSafeAssistantText(assertion.source_label) || "Saved care record"}</small>
-                              <small>Observed: {formatWhen(assertion.observed_at)} · Recorded: {formatWhen(assertion.recorded_at)}</small>
+                              <small>{caregiverLabel(assertion.subject_type)} · What we know: {caregiverInformationLabel(assertion.epistemic_state || "reported") || "Caregiver report"} · Review progress: {caregiverLabel(assertion.assertion_status)} · {caregiverSafeAssistantText(assertion.source_label) || "Saved care record"}</small>
+                              <small>Observed on: {formatWhen(assertion.observed_at)} · Saved: {formatWhen(assertion.recorded_at)}</small>
                               {assertion.source_text && <p>{caregiverReadableCaptureText(assertion.source_text) || "The original wording is saved."}</p>}
                             </li>
                           ))}
