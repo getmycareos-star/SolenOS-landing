@@ -1039,7 +1039,7 @@ export function LCRCurrentUnderstanding() {
     if (!assessmentUpdated) {
       setAssessmentError("The latest care summary could not be refreshed. The last saved view is shown and may be out of date.");
     }
-  }, [refreshWholeRecord]);
+  }, [refreshSituationAssessment, load]);
 
   const reassess = useCallback(async () => {
     setAssessmentLoading(true);
