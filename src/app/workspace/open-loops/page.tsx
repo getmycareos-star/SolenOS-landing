@@ -268,15 +268,17 @@ export default function FollowUpsPage() {
     const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
     pendingUpdateKeys.current[loop.id] = { signature, key: idempotencyKey };
     try {
-      const endpoint = ["awaiting_response", "follow_up"].includes(loop.loop_type)
-        ? "/open-loops/" + encodeURIComponent(loop.id) + "/responses"
-        : "/open-loops/" + encodeURIComponent(loop.id) + "/outcomes";
-      await postJSON(endpoint, {
+      const updatePayload = {
         text: signature,
         evidence: [],
         response_outcome: "response_received",
         idempotency_key: idempotencyKey,
-      });
+      };
+      if (["awaiting_response", "follow_up"].includes(loop.loop_type)) {
+        await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/responses`, updatePayload);
+      } else {
+        await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/outcomes`, updatePayload);
+      }
       await refresh();
       delete pendingUpdateKeys.current[loop.id];
       setNotice("Your update was saved as a caregiver report. SolenOS has not marked the matter resolved.");
