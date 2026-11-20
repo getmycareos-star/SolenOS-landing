@@ -705,6 +705,26 @@ function caregiverLabel(value?: string | null): string {
   return CAREGIVER_LABELS[normalized] ?? caregiverStatusLabel(normalized) ?? "Care information";
 }
 
+const HISTORY_SOURCE_LABELS: Record<string, string> = {
+  events: "Daily Care",
+  evidence: "Documents and saved evidence",
+  document_extractions: "Document details",
+  appointments: "Appointments",
+  handoffs: "Care handoffs",
+  decisions: "Care decisions",
+  decision_outcomes: "Decision outcomes",
+  action_outcomes: "Action outcomes",
+  open_loop_records: "Follow-ups",
+  open_loop_events: "Follow-up history",
+  open_loop_occurrences: "Repeated follow-up records",
+  follow_up_links: "Follow-up outcomes",
+  information_gaps: "Information gaps",
+};
+
+function historySourceLabel(source: string): string {
+  return HISTORY_SOURCE_LABELS[source] ?? source.replaceAll("_", " ");
+}
+
 export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
   const personIdRef = useRef("");
@@ -1426,6 +1446,29 @@ export function LCRCurrentUnderstanding() {
     }
   };
 
+  const sourceRecoveryPanel = projection && Object.entries(projection.source_coverage ?? {})
+    .filter(([, coverage]) => ["failed", "partial", "unavailable_schema", "unavailable_scope"].includes(coverage.status ?? ""))
+    .map(([sourceName, coverage]) => (
+      <div key={sourceName} className="lcr-entry-status" role="status">
+        <span>
+          {historySourceLabel(sourceName)}: {coverage.status === "failed"
+            ? "couldn’t be loaded"
+            : coverage.status === "partial"
+              ? "only partly available"
+              : "not available in this care-record setup"}
+          {coverage.returned_count ? ` — ${coverage.returned_count} saved details are still available.` : ""}
+        </span>
+        <button
+          type="button"
+          className="lcr-text-action"
+          onClick={() => void retryHistorySource(sourceName)}
+          disabled={sourceRetrying !== null}
+        >
+          {sourceRetrying === sourceName ? "Retrying…" : "Retry"}
+        </button>
+      </div>
+    ));
+
   return (
     <section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">
       <div className="lcr-section-heading">
@@ -1454,6 +1497,7 @@ export function LCRCurrentUnderstanding() {
                   : "These are the details currently saved. They are not a diagnosis or a medical assessment."}
                 {projection.as_of ? ` Updated ${formatWhen(projection.as_of)}.` : ""}
               </p>
+              {sourceRecoveryPanel}
               <ul className="lcr-first-screen-list">
                 {projection.items.slice(0, 2).map((item) => (
                   <li key={item.source_collection + ":" + item.id}>
@@ -1467,8 +1511,11 @@ export function LCRCurrentUnderstanding() {
               </ul>
               {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open your full care history to review the rest.</p>}
             </>
-          ) : projection && (projection.missing_required_sources.length > 0 || projection.missing_optional_sources.length > 0) ? (
-            <RecordState kind="incomplete" title="Some care history could not be loaded" description="We could not check every saved source just now. Refresh to try again." onAction={() => void load(true)} />
+          ) : projection && (projection.missing_required_sources.length > 0 || projection.missing_optional_sources.length > 0 || (projection.failed_sources?.length ?? 0) > 0) ? (
+            <>
+              <RecordState kind="incomplete" title="Some care history could not be loaded" description="Successful records remain available. Retry the affected source below." />
+              {sourceRecoveryPanel}
+            </>
           ) : projection ? (
             <RecordState kind="first-empty" title="No care updates recorded yet" description="Care information added to this record will appear here." />
           ) : (
