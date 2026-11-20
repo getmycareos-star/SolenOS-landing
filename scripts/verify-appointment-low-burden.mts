@@ -41,3 +41,6 @@ assert.ok(component.includes('!(brief.documents?.length)'), 'document-only histo
 assert.ok(component.includes('!(brief.open_loops?.length)'), 'follow-up-only history must not be hidden by the empty-state branch')
 assert.ok(component.includes('!(brief.prior_decisions?.length)'), 'decision-only history must not be hidden by the empty-state branch')
 assert.ok(component.includes('!(brief.decision_outcomes?.length)'), 'outcome-only history must not be hidden by the empty-state branch')
+
+assert.ok(component.includes('selectNextAppointment'), 'appointment support must target the nearest scheduled visit rather than the furthest future visit')
+assert.ok(component.includes('brief.next_appointment'), 'the caregiver summary must identify the next scheduled visit from the backend')
