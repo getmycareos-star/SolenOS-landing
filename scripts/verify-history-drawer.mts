@@ -162,3 +162,6 @@ assert.match(drawer, /async function loadAllHistoryPages[\s\S]*?offset=\$\{page 
   "decision and outcome history must use stable offset pages and reject duplicate or incomplete records");
 assert.match(drawer, /loadAllHistoryPages<CareDecision>\("\/care-continuity\/decisions"\)[\s\S]*?loadAllHistoryPages<CareOutcome>\("\/care-continuity\/outcomes\//,
   "all decision and outcome pages must be retrieved before the history list is considered complete");
+
+assert.match(drawer, /async function loadAllFollowUpHistoryPages[\s\S]*?limit=\$\{pageSize\}&offset=\$\{page \* pageSize\}[\s\S]*?expectedCount[\s\S]*?seenIds\.has\(row\.id\)[\s\S]*?records\.length >= expectedCount/,
+  "the history timeline must retrieve every saved follow-up page and reject incomplete pagination");
