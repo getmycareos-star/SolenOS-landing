@@ -497,7 +497,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       try {
         await requestLcrOrientation(text);
       } catch (error) {
-        setCaregiverError(error instanceof Error ? error.message : "LCR response generation failed. Your message was not saved.");
+        setCaregiverError(sanitizeCaregiverErrorMessage(error instanceof Error ? error.message : ""));
       } finally {
         setLoading(false);
       }
@@ -789,7 +789,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
 
       go("CARRYING");
     } catch (e) {
-      setCaregiverError(e instanceof Error ? e.message : "Something went wrong");
+      setCaregiverError(sanitizeCaregiverErrorMessage(e instanceof Error ? e.message : ""));
       setSubmitPhase("idle");
       track("error_triggered", {
         error_code: "SITUATION_SUBMIT",
