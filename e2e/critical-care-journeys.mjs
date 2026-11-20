@@ -2510,6 +2510,18 @@ await record("12b invited caregiver sees the shared care record in a separate br
     { token: accepted.payload.access_token },
   );
   assert.equal(invitedSummary.status, 200, JSON.stringify(invitedSummary.payload));
+  const invitedCrossRecordSummary = await request(
+    "/api/v1/multi-caregiver-summary?person_id=another-person",
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(invitedCrossRecordSummary.status, 403,
+    "an invited caregiver cannot use the session-derived route to select another care recipient");
+  const invitedCrossRecordState = await request(
+    "/api/v1/care-network-state?person_id=another-person",
+    { token: accepted.payload.access_token },
+  );
+  assert.equal(invitedCrossRecordState.status, 403,
+    "care-network state must reject a caller-selected different care recipient");
   const crossRecordNetwork = await request(
     `/api/v1/multi-caregiver-summary?person_id=${encodeURIComponent("another-person")}`,
     { token: identity.token },
