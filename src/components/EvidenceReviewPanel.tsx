@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
-import { caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { caregiverReadableCaptureText, caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
 type EvidenceItem = {
   id: string
@@ -733,7 +733,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </select>
       </label>
       {selected && <>
-        <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere' }}>{selected.source_text}</blockquote>
+        <blockquote style={{ margin: '8px 0 12px', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: 12, overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(selected.source_text) || 'Saved care information'}</blockquote>
         <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px', fontSize: 12 }}>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Type of note or document</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.type || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How this information was added</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.evidence_kind || 'not_assessed')}</dd></div>
