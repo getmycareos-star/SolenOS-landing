@@ -26,6 +26,7 @@ type Props = {
   onSubmit: (provenance: InputProvenance) => void;
   loading: boolean;
   error: string | null;
+  notice?: string | null;
   hasContextRoot: boolean;
   mode?: "initial" | "update";
   /** Pending share-target intake id from /share redirect. */
@@ -46,6 +47,7 @@ export function AddSituationPanel({
   onSubmit,
   loading,
   error,
+  notice = null,
   hasContextRoot,
   mode = "initial",
   pendingShareId = null,
@@ -278,6 +280,11 @@ export function AddSituationPanel({
 
       </div>
 
+      {notice && (
+        <p role="status" aria-live="polite" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
+          {notice}
+        </p>
+      )}
       {(localHint || displayError) && (
         <p className="workspace-error" role="alert">
           {displayError ?? localHint}
