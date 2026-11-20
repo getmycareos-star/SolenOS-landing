@@ -513,12 +513,15 @@ export default function DocumentsPage() {
       if (remainingPages.length === 0) setIntakeMode(null);
 
       if (saved > 0 || queuedLocally > 0) {
-        const parts = [];
+        const parts: string[] = [];
         if (saved > 0) {
           parts.push("SolenOS saved " + saved + " original " + (saved === 1 ? "file" : "files") + " to your care record.");
         }
         if (queuedLocally > 0) {
           parts.push(queuedLocally + " " + (queuedLocally === 1 ? "file is" : "files are") + " encrypted on this device. They have not reached the care record yet and will sync when your connection returns.");
+        }
+        if (backgroundProcessingQueued > 0) {
+          parts.push("SolenOS has started reading " + backgroundProcessingQueued + " " + (backgroundProcessingQueued === 1 ? "file" : "files") + ".");
         }
         if (backgroundQueueUnavailable > 0) {
           parts.push(backgroundQueueUnavailable + " " + (backgroundQueueUnavailable === 1 ? "file needs" : "files need") + " another look after upload.");
