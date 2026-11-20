@@ -38,6 +38,9 @@ assert.match(page, /async function createFollowUp\(item: AttentionDecision\)[\s\
 assert.doesNotMatch(page, /function createLoop/, "do not add a second general-purpose follow-up writer");
 assert.match(page, /!loop && \(item\.source === "events" \|\| item\.source === "persisted_change"\) && item\.record_id/, "persisted change candidates must expose the same explicit Add to Follow-ups action");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
+assert.match(page, /item\.evidence_status/, "follow-up cards must expose evidence status separately from care significance");
+assert.match(page, /item\.history_completeness/, "follow-up cards must disclose incomplete history");
+assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
 assert.ok(page.includes("SolenOS checks the care information you have saved and keeps follow-ups easy to find"), "caregiver copy must explain that SolenOS manages unresolved matters");
 
 
