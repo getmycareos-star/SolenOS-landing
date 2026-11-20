@@ -1745,6 +1745,9 @@ await record("Daily Care capture survives secondary read failures", async () => 
   );
   await resilient.context.setOffline(false);
   await failedSync;
+  // The failed request must be the only forced failure. Keep the browser
+  // offline across reload so the persisted queue can be observed before retry.
+  await resilient.context.setOffline(true);
   await resilient.page.reload({ waitUntil: "domcontentloaded" });
   await resilient.page.getByRole("status")
     .filter({ hasText: "update waiting to sync with the care record" })
@@ -1755,6 +1758,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
     new URL(response.url()).pathname.endsWith("/api/v1/daily-care/entries")
     && response.request().method() === "POST"
   );
+  await resilient.context.setOffline(false);
   const saveResponse = await syncResponsePromise;
   const savePayload = await saveResponse.json();
   assert.equal(saveResponse.status(), 200, JSON.stringify(savePayload));
