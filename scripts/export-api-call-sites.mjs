@@ -135,10 +135,12 @@ function routeRegex(routePath) {
 
 let backendRoutes = [];
 let backendSource = null;
+let duplicateMethodPaths = new Set();
 if (backendInventoryPath) {
   const backendInventory = JSON.parse(fs.readFileSync(path.resolve(root, backendInventoryPath), 'utf8'));
   backendSource = backendInventory.source || null;
   backendRoutes = backendInventory.routes || [];
+  duplicateMethodPaths = new Set(Object.keys(backendInventory.duplicate_method_paths || {}));
   for (const entry of entries) {
     const normalizedPath = normalizeFrontendPath(entry.route_expression);
     entry.normalized_backend_path = normalizedPath;
@@ -179,7 +181,7 @@ const backendRouteMatrix = backendRoutes.map(route => {
     verification: route.verification || route.verification_disposition || null,
     disposition: route.disposition || null,
     status: route.status || null,
-    duplicate_registration: route.duplicate_registration === true,
+    duplicate_registration: route.duplicate_registration === true || duplicateMethodPaths.has(`${route.method} ${backendPath}`),
     frontend_call_site_count: consumers.length,
     frontend_call_sites: consumers.map(entry => ({
       source_file: entry.source_file,
