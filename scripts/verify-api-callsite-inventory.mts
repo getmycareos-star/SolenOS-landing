@@ -14,6 +14,7 @@ const helpers = new Map([
   ["patchJSON", "PATCH"],
   ["deleteJSON", "DELETE"],
   ["fetchWithTimeout", "GET"],
+  ["fetch", "GET"],
 ]);
 
 type Callsite = {
@@ -36,7 +37,7 @@ function filesUnder(directory: string): string[] {
 }
 
 function methodForCall(node: ts.CallExpression, helper: string): string {
-  if (helper !== "fetchWithTimeout") return helpers.get(helper)!;
+  if (helper !== "fetchWithTimeout" && helper !== "fetch") return helpers.get(helper)!;
   const options = node.arguments[1];
   if (options && ts.isObjectLiteralExpression(options)) {
     const method = options.properties.find(property =>
@@ -166,7 +167,10 @@ for (const file of filesUnder(sourceRoot)) {
       const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
       if (helper && helpers.has(helper)) {
         const parsed = node.arguments[0] ? pathExpression(node.arguments[0]) : null;
-        if (!parsed || !parsed.value.trim()) {
+        if (helper === "fetch" && (!parsed || !parsed.value.startsWith("/"))) {
+          // Ignore fetch(url) inside shared transport wrappers and external URL fetches;
+          // only direct same-origin API paths are backend callsites.
+        } else if (!parsed || !parsed.value.trim()) {
           if (helper !== "fetchWithTimeout") unsupported.push({ file: relative(root, file), line, helper });
         } else {
           callsites.push({
