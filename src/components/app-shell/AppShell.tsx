@@ -201,7 +201,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             careSessionId,
             careRecipientName,
           });
-        } catch (error) {
+        } catch {
           window.alert(caregiverSafeErrorMessage());
         }
         return;
