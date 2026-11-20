@@ -146,3 +146,14 @@ assert.match(styles, /@media \(max-width: 480px\)/);
 assert.match(apiClient, /requestAuthorizationHeaders/);
 
 console.log("History drawer contract checks passed: authenticated event, document, appointment, handoff, follow-up, LCR revision, decision and outcome reads; source-specific metadata; chronological ordering; partial-source failures; record detail; responsive browsing-only history.");
+
+assert.match(drawer, /type HistoryLoadStatus = "loading" \| "complete" \| "partial" \| "failed" \| "empty" \| "stale"/,
+  "each care-history category must expose the six explicit retrieval states");
+assert.match(drawer, /HISTORY_STATUS_CATEGORIES[\s\S]*?"daily-care"[\s\S]*?"document"[\s\S]*?"appointment"[\s\S]*?"handoff"[\s\S]*?"decision"[\s\S]*?"outcome"[\s\S]*?"follow-up"/,
+  "Daily Care, documents, appointments, handoffs, decisions, outcomes and follow-ups must each have a retrieval status");
+assert.match(drawer, /Care history sources[\s\S]*?sourceStatuses\[category\]/,
+  "the caregiver must be able to see the status of every history category");
+assert.match(drawer, /previousRecords[\s\S]*?return status === "stale" \|\| status === "partial"/,
+  "previously loaded records must remain visible when a source refresh is incomplete");
+assert.match(drawer, /category === "handoff" && consentRequiredForHandoffs\) return false/,
+  "handoff records must not remain visible after required sharing consent is revoked");
