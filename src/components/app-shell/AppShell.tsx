@@ -70,6 +70,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const [sharePanelContext, setSharePanelContext] = useState<SharePanelContext | null>(null);
   const [sharePanelIntent, setSharePanelIntent] = useState<"share" | "export">("share");
   const [recordDetailsOpen, setRecordDetailsOpen] = useState(false);
+  const recordDetailsReturnFocusRef = useRef<HTMLElement | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -100,11 +101,71 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
   useEffect(() => {
     if (!recordDetailsOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setRecordDetailsOpen(false);
+
+    const dialog = document.querySelector<HTMLElement>(".solenos-record-details-dialog");
+    if (!dialog) return;
+
+    const background = [
+      ".solenos-chat-sidebar-host",
+      ".solenos-chat-topbar",
+      ".solenos-chat-main",
+      ".solenos-workspace-action-notice",
+    ]
+      .map((selector) => document.querySelector<HTMLElement>(selector))
+      .filter((element): element is HTMLElement => Boolean(element));
+    const previousInertStates = background.map((element) => ({
+      element,
+      inert: element.inert,
+    }));
+    previousInertStates.forEach(({ element }) => {
+      element.inert = true;
+    });
+
+    const getFocusableElements = () =>
+      Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("hidden") && element.getAttribute("aria-hidden") !== "true");
+
+    getFocusableElements()[0]?.focus({ preventScroll: true });
+    const handleDialogKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setRecordDetailsOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = getFocusableElements();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialog.focus({ preventScroll: true });
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !dialog.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+
+    document.addEventListener("keydown", handleDialogKeydown);
+    return () => {
+      document.removeEventListener("keydown", handleDialogKeydown);
+      previousInertStates.forEach(({ element, inert }) => {
+        element.inert = inert;
+      });
+      const returnFocus = recordDetailsReturnFocusRef.current;
+      recordDetailsReturnFocusRef.current = null;
+      if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    };
   }, [recordDetailsOpen]);
 
   useEffect(() => {
@@ -420,8 +481,8 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         </main>
         {recordDetailsOpen && (
           <div className="solenos-record-details-backdrop">
-            <button type="button" className="solenos-record-details-dismiss" aria-label="Close care record details" onClick={() => setRecordDetailsOpen(false)} />
-            <section className="solenos-record-details-dialog" role="dialog" aria-modal="true" aria-labelledby="solenos-record-details-title">
+            <button type="button" className="solenos-record-details-dismiss" aria-hidden="true" tabIndex={-1} onClick={() => setRecordDetailsOpen(false)} />
+            <section className="solenos-record-details-dialog" role="dialog" aria-modal="true" aria-labelledby="solenos-record-details-title" tabIndex={-1}>
               <header className="solenos-record-details-header">
                 <div>
                   <p>YOUR CARE RECORD</p>
