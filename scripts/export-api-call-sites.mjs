@@ -51,10 +51,10 @@ function routeExpression(node) {
     const right = routeExpression(node.right);
     return {
       expression: left.expression + right.expression,
-      dynamic: left.dynamic || right.dynamic || !ts.isStringLiteralLike(node.right),
+      dynamic: left.dynamic || right.dynamic,
     };
   }
-  return { expression: node.getText().slice(0, 240), dynamic: true };
+  return { expression: '{dynamic}', dynamic: true };
 }
 
 function methodFor(call) {
