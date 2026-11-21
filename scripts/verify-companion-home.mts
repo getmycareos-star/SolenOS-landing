@@ -28,7 +28,7 @@ assert.match(companion, /companion-shell.*is-home/);
 assert.match(companion, /SOURCE_REFERENCE_LABELS/, "Companion provenance must use explicit source-reference labels");
 assert.match(companion, /document_extractions/, "persisted document extraction references must be presented");
 assert.match(companion, /Text read from a document is only a suggestion\. Review it in Documents before it is added to your care record\./, "document text must remain review-only until the caregiver accepts it");
-assert.match(companion, /Earlier AI Companion message.*conversation history, not a care update/, "prior conversation references must be distinguished from care evidence");
+assert.match(companion, /Earlier conversation message.*conversation history, not a care update/, "prior conversation references must be distinguished from care evidence");
 assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
 assert.doesNotMatch(companion, /Add to care story/);
 assert.doesNotMatch(
@@ -56,7 +56,7 @@ assert.match(documents, /getBlob\("\/upload\//, "saved original files remain ret
 assert.doesNotMatch(home, /compose=1|CognitiveWorkspace|lcr-add-screen/, "the legacy LCR entry screen is removed from Companion home");
 assert.match(dailyCare, /StructuredDailyCapture/);
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask|Ask Daily Care Qwen/);
-assert.match(navigation, /href: "\/workspace\/companion",[\s\S]*?label: "AI Companion"/, "AI Companion is the named caregiver destination");
+assert.match(navigation, /href: "\/workspace\/companion",[\s\S]*?label: "Care Assistant"/, "AI Companion is the named caregiver destination");
 assert.doesNotMatch(shell, /href: "\/workspace\/record"/);
 assert.match(shell, /useState\(false\)/);
 assert.match(shell, /is-sidebar-open/);
