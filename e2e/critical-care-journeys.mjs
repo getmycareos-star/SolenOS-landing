@@ -350,7 +350,6 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   await page.goto("/workspace");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
       /Context interpretation is temporarily unavailable|Connecting this update to the saved care history/,
