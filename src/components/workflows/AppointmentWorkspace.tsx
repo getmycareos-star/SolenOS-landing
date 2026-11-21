@@ -870,6 +870,10 @@ export default function AppointmentWorkspace() {
 
         {stage === 'after' && <div className="guided-panel">
           <div className="guided-panel-heading"><div><h4>Information recorded after the appointment</h4><p>SolenOS organises what has actually been recorded. You can return later if nothing is available yet.</p></div><span className="guided-state">Review first</span></div>
+          {appointmentId && !['completed', 'resolved', 'historical', 'cancelled', 'canceled'].includes((brief?.appointments.find(item => item.source_id === appointmentId)?.status || '').toLowerCase()) && <section className="guided-optional-capture" aria-label="Confirm appointment attendance">
+            <p className="guided-footnote">Saving notes does not change the appointment status. If you know the visit took place, confirm that separately.</p>
+            <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('completed')}>Confirm the visit occurred</button>
+          </section>}
           <label className="guided-capture-label">Add anything you remember, if you want to
             <textarea value={note} onChange={event => setNote(event.target.value)} rows={4} placeholder="A short note is enough. You can also leave this empty." />
           </label>
