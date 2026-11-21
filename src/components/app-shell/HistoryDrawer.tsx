@@ -911,6 +911,7 @@ export function HistoryDrawer() {
   const open = true;
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const recordsRef = useRef<HistoryRecord[]>([]);
+  const loadSequenceRef = useRef(0);
   const loadedPersonIdRef = useRef<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -932,6 +933,8 @@ export function HistoryDrawer() {
   const [handoffConsentRequired, setHandoffConsentRequired] = useState(false);
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const loadHistory = useCallback(async (manual = false) => {
+    const requestSequence = ++loadSequenceRef.current;
+    const isCurrentRequest = () => loadSequenceRef.current === requestSequence;
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -950,6 +953,7 @@ export function HistoryDrawer() {
 
     try {
       const session = await ensureAnonymousSession();
+      if (!isCurrentRequest()) return;
       if (!session.person?.id || !session.access_token) {
         throw new Error("A valid SolenOS care session is required to load this history.");
       }
@@ -972,6 +976,7 @@ export function HistoryDrawer() {
         handoffConsentCheckFailed = true;
         setHandoffConsentRequired(false);
       }
+      if (!isCurrentRequest()) return;
       const results = await Promise.allSettled([
         getJSON("/events/" + personPath),
         getJSON("/evidence/" + personPath),
@@ -983,6 +988,7 @@ export function HistoryDrawer() {
         loadAllHistoryPages<CareOutcome>("/care-continuity/outcomes/" + personPath),
         loadAllFollowUpHistoryPages(),
       ]);
+      if (!isCurrentRequest()) return;
 
       const nextRecords: HistoryRecord[] = [];
       const warnings: string[] = [];
@@ -1037,6 +1043,7 @@ export function HistoryDrawer() {
               status: "fulfilled",
               value: await getJSON("/care-continuity/context?limit_per_source=50&include_all_history=true"),
             };
+            if (!isCurrentRequest()) return;
           } catch (cause) {
             projectionResult = { status: "rejected", reason: cause };
           }
@@ -1094,6 +1101,7 @@ export function HistoryDrawer() {
                 };
               };
             };
+            if (!isCurrentRequest()) return;
             eventSource = page?.sources?.events ?? null;
             appendFallbackEvents(eventSource?.items);
             fallbackPagesFetched += 1;
@@ -1179,6 +1187,7 @@ export function HistoryDrawer() {
         const appointmentDetails = await Promise.allSettled(
           items.map((item) => getJSON("/appointment-workspaces/" + encodeURIComponent(item.id)) as Promise<AppointmentDetail>)
         );
+        if (!isCurrentRequest()) return;
         appointmentDetails.forEach((detail, index) => {
           if (detail.status === "fulfilled" && detail.value && typeof detail.value.id === "string") {
             nextRecords.push(mapAppointment(detail.value, items[index]));
@@ -1288,6 +1297,7 @@ export function HistoryDrawer() {
       });
 
       // Internal persistence revisions remain in the backend audit history, not the caregiver timeline.
+      if (!isCurrentRequest()) return;
       const freshRecords = nextRecords.filter((record) => record.source_kind !== "lcr-revision");
       const previousRecords = recordsRef.current.filter((record) => record.person_id === session.person.id);
       const categoryHasRecords = (items: HistoryRecord[], category: HistoryStatusCategory) =>
@@ -1330,6 +1340,7 @@ export function HistoryDrawer() {
       setSourceWarnings(warnings);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
+      if (!isCurrentRequest()) return;
       setSourceStatuses((current) => Object.fromEntries(HISTORY_STATUS_CATEGORIES.map((category) => [
         category,
         current[category] === "loading"
@@ -1355,9 +1366,11 @@ export function HistoryDrawer() {
         ? "You may not have access to this care history. Check your account and try again."
         : "We couldn’t load care history. Please try again.");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setHasLoaded(true);
+      if (isCurrentRequest()) {
+        setLoading(false);
+        setRefreshing(false);
+        setHasLoaded(true);
+      }
     }
   }, []);
 
