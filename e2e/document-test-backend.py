@@ -41,7 +41,11 @@ def deterministic_candidates(
     observations = [
         {
             "subject": "Patient",
-            "observation": quote,
+            "observation": (
+                "The patient ate half of lunch."
+                if quote.startswith("The patient ate half of lunch")
+                else quote
+            ),
             "source_quote": quote,
             "event_date": None,
             "extraction_method": "test_verbatim",
