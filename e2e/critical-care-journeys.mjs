@@ -2360,6 +2360,7 @@ await record("08 Community and LCR isolation", async () => {
 // 9. Appointment: idempotent save and durable summary retrieval.
 let appointmentWorkspaceId;
 let appointmentId;
+let appointmentTitle = null;
 const selectedAppointmentSourceId = (brief) => {
   if (brief.next_appointment?.source_id) return brief.next_appointment.source_id;
   const recorded = [...(brief.appointments || [])];
@@ -2379,7 +2380,8 @@ await record("09 appointment summary persistence", async () => {
   });
   assert.equal(preparationBrief.status, 200, JSON.stringify(preparationBrief.payload));
   assert.equal(preparationBrief.payload.read_only, true);
-  appointmentId = selectedAppointmentSourceId(preparationBrief.payload);
+  let selectedBrief = preparationBrief.payload;
+  appointmentId = selectedAppointmentSourceId(selectedBrief);
   if (!appointmentId) {
     const createdAppointment = await request("/api/v1/appointments", {
       token: identity.token,
@@ -2400,8 +2402,13 @@ await record("09 appointment summary persistence", async () => {
       token: identity.token,
     });
     assert.equal(refreshedBrief.status, 200, JSON.stringify(refreshedBrief.payload));
-    appointmentId = selectedAppointmentSourceId(refreshedBrief.payload);
+    selectedBrief = refreshedBrief.payload;
+    appointmentId = selectedAppointmentSourceId(selectedBrief);
   }
+  const selectedAppointment = selectedBrief.next_appointment?.source_id === appointmentId
+    ? selectedBrief.next_appointment
+    : (selectedBrief.appointments || []).find(item => item.source_id === appointmentId);
+  appointmentTitle = selectedAppointment?.title || null;
   assert.ok(appointmentId, "appointment workspace must be attached to the same saved appointment selected by the workspace");
   assert.ok(
     preparationBrief.payload.events.some((item) => item.description?.includes("restless sleep"))
@@ -3131,6 +3138,15 @@ await record("browser renders caregiver surfaces and submits Companion through t
     await verifyMobile(page);
     if (route === "/workspace") {
       assert.ok(observed.some((item) => item.path.includes("/care-continuity/current-care") && item.status === 200), "LCR screen did not consume the persisted current-care API");
+      const appointmentSummary = page.locator(".solenos-upcoming-appointment");
+      await appointmentSummary.waitFor({ state: "visible", timeout: 15_000 });
+      assert.ok(observed.some((item) => item.path.includes("/appointment-workspaces/preparation-brief") && item.status === 200),
+        "caregiver home did not load appointment information from the persisted backend preparation brief");
+      const summaryText = await appointmentSummary.innerText();
+      assert.ok(!/Appointment information is unavailable/i.test(summaryText),
+        "caregiver home represented appointment retrieval as unavailable");
+      if (appointmentTitle) assert.ok(summaryText.includes(appointmentTitle),
+        "caregiver home did not display the appointment returned by the backend preparation brief");
     }
     if (route === "/workspace/community") await page.waitForURL("**/workspace", { timeout: 10_000 });
     await context.close();
