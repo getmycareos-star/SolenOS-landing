@@ -45,7 +45,7 @@ export default function SourceIndicator({
       display: 'flex', 
       flexDirection: 'column', 
       gap: '4px',
-      fontSize: '12px',
+      fontSize: 'calc(12px * var(--solenos-text-scale, 1))',
       color: 'var(--text-secondary)'
     }}>
       {!expanded && (
@@ -56,7 +56,7 @@ export default function SourceIndicator({
           cursor: 'pointer'
         }}>
           <span style={{ 
-            fontSize: '10px', 
+            fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
             padding: '2px 6px', 
             borderRadius: '4px',
             background: 'var(--surface)',
@@ -67,7 +67,7 @@ export default function SourceIndicator({
           <span>{getSourceTypeLabel()}</span>
           {sourceDate && (
             <span style={{ 
-              fontSize: '10px', 
+              fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
               color: 'var(--text-secondary)',
               marginLeft: '4px'
             }}>
@@ -106,7 +106,7 @@ export default function SourceIndicator({
           
           <div style={{ marginBottom: '8px' }}>
             <span style={{ 
-              fontSize: '11px', 
+              fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
               color: 'var(--text-secondary)',
               display: 'block',
               marginBottom: '2px'
@@ -114,7 +114,7 @@ export default function SourceIndicator({
               Source type:
             </span>
             <span style={{ 
-              fontSize: '12px', 
+              fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: 'var(--text)',
               fontWeight: '500'
             }}>
@@ -125,7 +125,7 @@ export default function SourceIndicator({
           {sourceDate && (
             <div style={{ marginBottom: '8px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -133,7 +133,7 @@ export default function SourceIndicator({
                 Recorded on:
               </span>
               <span style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 fontWeight: '500'
               }}>
@@ -145,7 +145,7 @@ export default function SourceIndicator({
           {eventDate && eventDate !== sourceDate && (
             <div style={{ marginBottom: '8px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -153,7 +153,7 @@ export default function SourceIndicator({
                 Event date:
               </span>
               <span style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 fontWeight: '500'
               }}>
@@ -165,7 +165,7 @@ export default function SourceIndicator({
           {description && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -173,7 +173,7 @@ export default function SourceIndicator({
                 Description:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0'
               }}>
@@ -189,7 +189,7 @@ export default function SourceIndicator({
               alignItems: 'center'
             }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)'
               }}>
                 Source ID:

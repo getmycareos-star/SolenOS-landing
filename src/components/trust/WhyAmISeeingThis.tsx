@@ -31,7 +31,7 @@ export default function WhyAmISeeingThis({
       display: 'flex', 
       flexDirection: 'column', 
       gap: '4px',
-      fontSize: '12px',
+      fontSize: 'calc(12px * var(--solenos-text-scale, 1))',
       color: 'var(--text-secondary)'
     }}>
       {!expanded && (
@@ -73,7 +73,7 @@ export default function WhyAmISeeingThis({
           {recordSays && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px',
@@ -82,7 +82,7 @@ export default function WhyAmISeeingThis({
                 What the record says:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'
@@ -95,7 +95,7 @@ export default function WhyAmISeeingThis({
           {aiInterpreted && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px',
@@ -104,7 +104,7 @@ export default function WhyAmISeeingThis({
                 What SolenOS interpreted:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'
@@ -117,7 +117,7 @@ export default function WhyAmISeeingThis({
           {whyItMatters && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px',
@@ -126,7 +126,7 @@ export default function WhyAmISeeingThis({
                 Why it may matter:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'
@@ -139,7 +139,7 @@ export default function WhyAmISeeingThis({
           {remainsUnclear && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px',
@@ -148,7 +148,7 @@ export default function WhyAmISeeingThis({
                 What remains unclear:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'
@@ -161,7 +161,7 @@ export default function WhyAmISeeingThis({
           {couldClarify && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px',
@@ -170,7 +170,7 @@ export default function WhyAmISeeingThis({
                 What could clarify it:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'
@@ -183,7 +183,7 @@ export default function WhyAmISeeingThis({
           {supportingSources.length > 0 && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px',
@@ -206,14 +206,14 @@ export default function WhyAmISeeingThis({
                     borderRadius: '4px'
                   }}>
                     <span style={{ 
-                      fontSize: '11px', 
+                      fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                       color: 'var(--text)'
                     }}>
                       {source.description}
                     </span>
                     {source.date && (
                       <span style={{ 
-                        fontSize: '10px', 
+                        fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
                         color: 'var(--text-secondary)'
                       }}>
                         {new Date(source.date).toLocaleDateString()}

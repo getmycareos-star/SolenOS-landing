@@ -81,7 +81,7 @@ export default function CorrectThis({
         gap: '6px'
       }}>
         <span style={{ 
-          fontSize: '10px', 
+          fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
           padding: '2px 6px', 
           borderRadius: '4px',
           background: 'var(--success-soft)',
@@ -90,7 +90,7 @@ export default function CorrectThis({
           ✓
         </span>
         <span style={{ 
-          fontSize: '10px', 
+          fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
           color: 'var(--success)',
           fontWeight: '500'
         }}>
@@ -132,7 +132,7 @@ export default function CorrectThis({
       
       <div style={{ marginBottom: '12px' }}>
         <span style={{ 
-          fontSize: '11px', 
+          fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
           color: 'var(--text-secondary)',
           display: 'block',
           marginBottom: '2px'
@@ -140,7 +140,7 @@ export default function CorrectThis({
           Current value:
         </span>
         <p style={{ 
-          fontSize: '12px', 
+          fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
           color: 'var(--text)',
           margin: '0',
           background: 'var(--bg)',
@@ -153,7 +153,7 @@ export default function CorrectThis({
       
       <div style={{ marginBottom: '12px' }}>
         <span style={{ 
-          fontSize: '11px', 
+          fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
           color: 'var(--text-secondary)',
           display: 'block',
           marginBottom: '2px'
@@ -171,7 +171,7 @@ export default function CorrectThis({
             border: '1px solid var(--border)',
             background: 'var(--bg)',
             color: 'var(--text)',
-            fontSize: '12px',
+            fontSize: 'calc(12px * var(--solenos-text-scale, 1))',
             resize: 'vertical'
           }}
           disabled={submitting}
@@ -187,7 +187,7 @@ export default function CorrectThis({
           marginBottom: '12px'
         }}>
           <span style={{ 
-            fontSize: '11px', 
+            fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
             color: 'var(--error)',
             display: 'block',
             marginBottom: '2px'
@@ -195,7 +195,7 @@ export default function CorrectThis({
             Error:
           </span>
           <p style={{ 
-            fontSize: '12px', 
+            fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
             color: 'var(--text)',
             margin: '0'
           }}>

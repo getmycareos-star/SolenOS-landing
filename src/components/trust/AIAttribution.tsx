@@ -31,7 +31,7 @@ export default function AIAttribution({
       display: 'flex', 
       flexDirection: 'column', 
       gap: '4px',
-      fontSize: '12px',
+      fontSize: 'calc(12px * var(--solenos-text-scale, 1))',
       color: 'var(--text-secondary)'
     }}>
       {!expanded && (
@@ -41,7 +41,7 @@ export default function AIAttribution({
           gap: '6px'
         }}>
           <span style={{ 
-            fontSize: '10px', 
+            fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
             padding: '2px 6px', 
             borderRadius: '4px',
             background: 'var(--unknown-soft)',
@@ -53,7 +53,7 @@ export default function AIAttribution({
           <span>{getConfidenceLabel()}</span>
           {confidence !== undefined && (
             <span style={{ 
-              fontSize: '10px', 
+              fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
               color: 'var(--text-secondary)',
               marginLeft: '4px'
             }}>
@@ -87,7 +87,7 @@ export default function AIAttribution({
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '16px',
+                fontSize: 'calc(16px * var(--solenos-text-scale, 1))',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 padding: '0'
@@ -99,7 +99,7 @@ export default function AIAttribution({
           
           <div style={{ marginBottom: '8px' }}>
             <span style={{ 
-              fontSize: '11px', 
+              fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
               color: 'var(--text-secondary)',
               display: 'block',
               marginBottom: '2px'
@@ -107,7 +107,7 @@ export default function AIAttribution({
               Content type:
             </span>
             <span style={{ 
-              fontSize: '12px', 
+              fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: 'var(--text)',
               fontWeight: '500'
             }}>
@@ -118,7 +118,7 @@ export default function AIAttribution({
           {confidence !== undefined && (
             <div style={{ marginBottom: '8px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -131,7 +131,7 @@ export default function AIAttribution({
                 gap: '6px'
               }}>
                 <span style={{ 
-                  fontSize: '11px', 
+                  fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                   color: 'var(--text)'
                 }}>
                   {Math.round(confidence * 100)}%
@@ -163,7 +163,7 @@ export default function AIAttribution({
               padding: '8px 12px'
             }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -171,7 +171,7 @@ export default function AIAttribution({
                 Based on:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'

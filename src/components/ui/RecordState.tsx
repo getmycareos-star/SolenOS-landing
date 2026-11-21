@@ -91,8 +91,8 @@ export function RecordState({
         color: "#26392c",
       }}
     >
-      <strong style={{ fontSize: 15 }}>{title || copy.title}</strong>
-      <p style={{ margin: 0, color: "#69796c", fontSize: 14, lineHeight: 1.6 }}>
+      <strong style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>{title || copy.title}</strong>
+      <p style={{ margin: 0, color: "#69796c", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>
         {description || copy.description}
       </p>
       {children}
