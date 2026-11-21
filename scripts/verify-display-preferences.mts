@@ -7,6 +7,7 @@ const source = readFileSync(
 );
 const baseStyles = readFileSync("src/app/workspace/experience-design-system.css", "utf8");
 const v2Styles = readFileSync("src/app/workspace/experience-design-system-v2.css", "utf8");
+const navigationStyles = readFileSync("src/app/workspace/navigation-accessibility.css", "utf8");
 const accessibilityStyles = readFileSync("src/app/accessibility-overrides.css", "utf8");
 
 assert.match(source, /const DEFAULTS: Preferences = \{ theme: "light", scale: "100" \}/);
@@ -23,6 +24,15 @@ assert.match(v2Styles, /font-size:\s*calc\([^;]+\* var\(--solenos-text-scale, 1\
   "the caregiver design layer must scale its fixed-size typography");
 assert.match(accessibilityStyles, /font-size:\s*calc\(16px \* var\(--solenos-text-scale, 1\)\)/,
   "the document root must keep rem-based text in sync with the selected scale");
+for (const [name, stylesheet] of [
+  ["workspace base", baseStyles],
+  ["workspace v2", v2Styles],
+  ["navigation", navigationStyles],
+  ["accessibility", accessibilityStyles],
+] as const) {
+  assert.doesNotMatch(stylesheet, /font-size:\s*(?:\d+(?:\.\d+)?px|clamp\()/i,
+    `${name} must not leave fixed pixel typography outside the display scale`);
+}
 assert.match(source, /setSaveState\("saved"\)/);
 assert.match(source, /setSaveState\("session-only"\)/);
 assert.match(source, /could not be saved on this device/);
