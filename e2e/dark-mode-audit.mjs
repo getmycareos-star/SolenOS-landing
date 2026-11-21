@@ -44,6 +44,52 @@ async function createSession(label) {
   const raw = await response.text();
   const payload = raw ? JSON.parse(raw) : null;
   assert.equal(response.status, 201, JSON.stringify(payload));
+
+  // Seed only this isolated CI identity with real persisted records so the
+  // returning-caregiver home and appointment summary are exercised at every
+  // responsive viewport. These are test fixtures, never production defaults.
+  const eventResponse = await fetch(new URL("/api/v1/events", backend), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${payload.access_token}`,
+    },
+    body: JSON.stringify({
+      person_id: payload.person.id,
+      event_type: "care_update",
+      status: "recorded",
+      occurred_at: new Date().toISOString(),
+      title: "Responsive audit care update",
+      description: "Caregiver-recorded information for isolated responsive testing.",
+      created_by_caregiver_id: payload.caregiver.id,
+      ingestion_key: `responsive-audit-${label}`,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const eventRaw = await eventResponse.text();
+  const eventPayload = eventRaw ? JSON.parse(eventRaw) : null;
+  assert.ok([200, 201].includes(eventResponse.status), JSON.stringify(eventPayload));
+
+  const appointmentResponse = await fetch(new URL("/api/v1/appointments", backend), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${payload.access_token}`,
+    },
+    body: JSON.stringify({
+      person_id: payload.person.id,
+      title: "Responsive audit appointment",
+      scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      provider: "CI test provider",
+      status: "scheduled",
+      created_by_caregiver_id: payload.caregiver.id,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const appointmentRaw = await appointmentResponse.text();
+  const appointmentPayload = appointmentRaw ? JSON.parse(appointmentRaw) : null;
+  assert.ok([200, 201].includes(appointmentResponse.status), JSON.stringify(appointmentPayload));
+
   return payload;
 }
 
