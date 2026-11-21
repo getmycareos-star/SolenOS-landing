@@ -52,8 +52,14 @@ assert.ok(
 );
 
 assert.ok(
-  lcr.includes('status === "completed"') && lcr.includes('explicit_completion_confirmation: status === "completed"'),
-  "Completion must be an explicit caregiver transition",
+  lcr.includes('status === "completed"') &&
+    lcr.includes('explicit_completion_confirmation: status === "completed"') &&
+    lcr.includes('completion_outcome: status === "completed" ? reason : undefined'),
+  "Completion must include an explicitly recorded outcome, not just a status toggle",
+);
+assert.ok(
+  lcr.includes('Record what happened before completing this follow-up.'),
+  "The caregiver must be prompted to record what actually happened before completion",
 );
 assert.ok(
   lcr.includes('await patchJSON(`/open-loops/') && lcr.includes('status: "deferred"'),
