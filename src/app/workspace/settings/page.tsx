@@ -612,7 +612,7 @@ function AccountCard() {
       setMode("idle");
       setEmail("");
       setPassword("");
-      setMessage("Signed out securely. Your Care Record is still saved. Sign in again on this device to access it.");
+      setMessage("Signed out securely. Your Care Record is still saved. Sign in with the same account on this or another authorized device to access it.");
       show("Signed out securely.", "success");
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";
