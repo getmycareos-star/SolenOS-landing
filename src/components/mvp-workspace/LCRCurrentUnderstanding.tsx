@@ -2421,7 +2421,7 @@ export function LCRCurrentUnderstanding() {
                     {item.derived_observations && item.derived_observations.length > 0 && (
                       <details className="lcr-entry-status">
                         <summary>Details found in this note ({item.derived_observations.length})</summary>
-                        <p>These details were taken from the same note. They are not separate reports and do not independently confirm the information.</p>
+                        <p>These details were taken from the same note. They are not separate reports or independent confirmation of the information.</p>
                         {item.derived_observations.some((observation) => isMedicationObservation(observation.attribute)) && (
                           <p>These medication details come from saved reports. They do not confirm the current prescription or whether a dose was given. Do not use them as instructions to start, stop or change medicine.</p>
                         )}
