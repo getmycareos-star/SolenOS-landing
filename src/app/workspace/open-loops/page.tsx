@@ -265,19 +265,24 @@ export default function FollowUpsPage() {
   const pendingUpdateKeys = useRef<Record<string, { signature: string; key: string }>>({});
   const pendingCreateKeys = useRef<Record<string, string>>({});
   const pendingActionKeys = useRef<Record<string, { signature: string; key: string }>>({});
+  const refreshSequence = useRef(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [attentionWarning, setAttentionWarning] = useState("");
 
   const refresh = useCallback(async () => {
+    const requestSequence = ++refreshSequence.current;
+    const isCurrentRequest = () => requestSequence === refreshSequence.current;
     const session = await ensureAnonymousSession();
+    if (!isCurrentRequest()) return;
     const personId = session.person?.id;
     if (!personId) throw new Error("The active care record could not be confirmed.");
     try {
       await postJSON("/open-loops/reassess", {});
     } catch {
-      setAttentionWarning("SolenOS could not refresh the status of every follow-up. Previously saved information is still shown.");
+      if (isCurrentRequest()) setAttentionWarning("SolenOS could not refresh the status of every follow-up. Previously saved information is still shown.");
     }
+    if (!isCurrentRequest()) return;
     const [loopResult, assessmentResult] = await Promise.allSettled([
       loadAllOpenLoops(),
       getJSON("/care-continuity/situation-understanding"),
@@ -285,15 +290,17 @@ export default function FollowUpsPage() {
     const nextLoops = loopResult.status === "fulfilled" && Array.isArray(loopResult.value)
       ? loopResult.value : null;
     let nextAssessmentResponse = assessmentResult.status === "fulfilled" ? assessmentResult.value as SituationAssessmentResponse : null;
+    if (!isCurrentRequest()) return;
     let reassessmentFailed = false;
     if (nextAssessmentResponse && (nextAssessmentResponse.status === "not_assessed" || nextAssessmentResponse.source_freshness?.reassessment_recommended === true)) {
       try {
         nextAssessmentResponse = await postJSON("/care-continuity/situation-understanding/reassess", {}) as SituationAssessmentResponse;
       } catch {
         reassessmentFailed = true;
-        setAttentionWarning("SolenOS could not finish refreshing its attention review. The last available saved view is retained and may be out of date.");
+        if (isCurrentRequest()) setAttentionWarning("SolenOS could not finish refreshing its attention review. The last available saved view is retained and may be out of date.");
       }
     }
+    if (!isCurrentRequest()) return;
     const nextAssessment = nextAssessmentResponse?.assessment && nextAssessmentResponse.assessment.person_id === personId
       ? nextAssessmentResponse.assessment : null;
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
@@ -331,6 +338,7 @@ export default function FollowUpsPage() {
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       active = false;
+      refreshSequence.current += 1;
       window.removeEventListener("careRecordUpdated", refreshAfterCareChange);
       window.removeEventListener("focus", refreshAfterCareChange);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
