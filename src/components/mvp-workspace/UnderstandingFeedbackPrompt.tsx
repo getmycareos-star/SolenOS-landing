@@ -202,6 +202,7 @@ export function UnderstandingFeedbackPrompt({
         <label className="research-feedback-field">
           <span>What should SolenOS have understood? (optional)</span>
           <textarea
+            maxLength={12000}
             rows={2}
             value={expected}
             onChange={(event) => setExpected(event.target.value)}
