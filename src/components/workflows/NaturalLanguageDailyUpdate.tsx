@@ -373,7 +373,7 @@ export default function NaturalLanguageDailyUpdate() {
   return (
     <section className="natural-language-daily-update" aria-labelledby="natural-daily-update-title"
       style={{ width: "100%", display: "grid", gap: 10, padding: 14, border: "1px solid var(--theme-panel-border)", borderRadius: 12, background: "var(--theme-panel-bg)", color: "var(--theme-panel-fg)" }}>
-      <h3 id="natural-daily-update-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>What happened?</h3>
+      <h3 id="natural-daily-update-title" style={{ margin: 0, fontSize: "calc(17px * var(--solenos-text-scale, 1))", fontWeight: 700 }}>What happened?</h3>
       <p style={{ margin: 0, color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
         Write it in your own words. One sentence is enough. You do not need to choose a category or fill in extra fields.
       </p>
@@ -384,7 +384,7 @@ export default function NaturalLanguageDailyUpdate() {
         disabled={saving || pendingLocal}
         style={{ width: "100%", minHeight: 104, padding: 12, border: "1px solid var(--theme-panel-border)", borderRadius: 10, background: "var(--theme-field-bg)", color: "var(--theme-field-fg)", font: "inherit", resize: "vertical" }} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <span style={{ color: "var(--theme-panel-muted)", fontSize: 12 }}>Your original wording is kept in the care history.</span>
+        <span style={{ color: "var(--theme-panel-muted)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Your original wording is kept in the care history.</span>
         <button type="button" onClick={() => void saveUpdate()} disabled={saving || !report.trim()}
           className="workspace-primary" style={{ minHeight: 44, padding: "10px 16px", borderRadius: 9 }}>
           {saving ? "Saving…" : pendingLocal ? "Retry save" : "Save update"}

@@ -1175,11 +1175,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         backgroundColor: 'var(--surface)' 
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <h4 style={{ margin: 0, fontSize: '16px' }}>
+          <h4 style={{ margin: 0, fontSize: 'calc(16px * var(--solenos-text-scale, 1))' }}>
             {med.medication_name}
           </h4>
           <span style={{ 
-            fontSize: '12px', 
+            fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
             padding: '2px 6px', 
             borderRadius: '4px', 
             backgroundColor: med.status === 'given' ? 'var(--success-soft)' :
@@ -1199,32 +1199,32 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         </div>
         
         {med.dose && (
-          <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
             Dose: {med.dose}
           </p>
         )} 
         
         {med.scheduled_for && (
-          <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
             Scheduled: {new Date(med.scheduled_for).toLocaleString()}
           </p>
         )}
         
         {med.administered_at && (
-          <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
             Administered: {new Date(med.administered_at).toLocaleString()}
           </p>
         )}
         
         {med.note && (
-          <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
             Note: {med.note}
           </p>
         )}
         
         {med.photo_evidence_id && (
           <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'var(--bg)', borderRadius: '4px' }}>
-            <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <p style={{ margin: '0 0 4px 0', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
               Photo attached
             </p>
           </div>
@@ -1239,7 +1239,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               setForm(prev => ({ ...prev, medications: newMedications }));
             }}
             style={{ 
-              fontSize: '12px', 
+              fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: '#dc2626', 
               background: 'none', 
               border: 'none', 
@@ -1266,24 +1266,24 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         backgroundColor: 'var(--surface)' 
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <h4 style={{ margin: 0, fontSize: '16px' }}>
+          <h4 style={{ margin: 0, fontSize: 'calc(16px * var(--solenos-text-scale, 1))' }}>
             {vital.measurement_name || VITAL_LABELS[vital.vital_type] || vital.vital_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
           </h4>
-          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Recorded reading</span>
+          <span style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>Recorded reading</span>
         </div>
         
-        <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+        <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
           Value: {vital.value} {vital.unit || ''}
         </p>
         
         {vital.measured_at && (
-          <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
             Measured: {new Date(vital.measured_at).toLocaleString()}
           </p>
         )}
         
         {vital.note && (
-          <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
             Note: {vital.note}
           </p>
         )}
@@ -1297,7 +1297,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               setForm(prev => ({ ...prev, vitals: newVitals }));
             }}
             style={{ 
-              fontSize: '12px', 
+              fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: '#dc2626', 
               background: 'none', 
               border: 'none', 
@@ -1324,11 +1324,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         backgroundColor: 'var(--surface)' 
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <h4 style={{ margin: 0, fontSize: '16px' }}>
+          <h4 style={{ margin: 0, fontSize: 'calc(16px * var(--solenos-text-scale, 1))' }}>
             {scale.axis.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
           </h4>
           <span style={{ 
-            fontSize: '12px', 
+            fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
             padding: '2px 6px', 
             borderRadius: '4px', 
             backgroundColor: 'var(--accent-soft)', 
@@ -1338,12 +1338,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           </span>
         </div>
         
-        <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+        <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
           Observed: {new Date(scale.observed_at).toLocaleString()}
         </p>
         
         {scale.note && (
-          <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '4px 0', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
             Note: {scale.note}
           </p>
         )}
@@ -1357,7 +1357,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               setForm(prev => ({ ...prev, scales: newScales }));
             }}
             style={{ 
-              fontSize: '12px', 
+              fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: '#dc2626', 
               background: 'none', 
               border: 'none', 
@@ -1376,10 +1376,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   return (
     <div className="structured-daily-capture">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '4px' }}>
+        <h1 style={{ fontSize: 'calc(24px * var(--solenos-text-scale, 1))', fontWeight: '600', marginBottom: '4px' }}>
           {mode === "medicine" ? "Medicine" : mode === "measurement" ? "Measurement" : mode === "something" ? "Something happened" : mode === "note" ? "Note" : "Daily care update"}
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5', maxWidth: '500px' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', lineHeight: '1.5', maxWidth: '500px' }}>
           {mode === "medicine" ? "Record what happened with a medicine." : mode === "measurement" ? "Record a measurement that was actually taken." : mode === "something" ? "Tell us what happened in your own words. You do not need to organize it." : mode === "note" ? "Add a note in your own words. You can leave other details unknown." : "Add only the care information you want to record."}
         </p>
       </div>
@@ -1390,13 +1390,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         </p>
       )}
       {pendingQueueCount > 0 && !pendingLocal && (
-        <p role="status" style={{ margin: "0 0 16px", color: "var(--text-secondary)", fontSize: 13 }}>
+        <p role="status" style={{ margin: "0 0 16px", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
           {pendingQueueCount} care update{pendingQueueCount === 1 ? "" : "s"} waiting to sync. They are not in the care record until the server confirms them.
         </p>
       )}
       {pendingAttentionCount > 0 && (
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
-          <p role="alert" style={{ margin: 0, color: "var(--error)", fontSize: 13 }}>
+          <p role="alert" style={{ margin: 0, color: "var(--error)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
             {pendingAttentionCount} care update{pendingAttentionCount === 1 ? "" : "s"} need attention and have not been saved to the care record.
           </p>
           <button type="button" onClick={() => void retryPendingCaptures()} style={{ border: 0, background: "transparent", textDecoration: "underline", cursor: "pointer" }}>Retry pending updates</button>
@@ -1404,7 +1404,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         </div>
       )}
       {pendingMessage && !pendingLocal && (
-        <p role="status" style={{ margin: "0 0 16px", color: "var(--text-secondary)", fontSize: 13 }}>{pendingMessage}</p>
+        <p role="status" style={{ margin: "0 0 16px", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{pendingMessage}</p>
       )}
 
       {/* Saved indicator */}
@@ -1416,36 +1416,36 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           padding: '12px 16px', 
           marginBottom: '24px' 
         }}>
-          <span style={{ fontSize: '13px', color: 'var(--trust)', fontWeight: '500' }}>
+          <span style={{ fontSize: 'calc(13px * var(--solenos-text-scale, 1))', color: 'var(--trust)', fontWeight: '500' }}>
             Saved. {savedEntrySummary || 'Entry recorded.'}
           </span>
         </div>
       )}
       
       {saved && careContinuityExecution?.stages && (
-        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', marginTop: '-12px', marginBottom: '20px' }}>
           Original information: {careContinuityExecution.stages.source_preservation === 'verified' ? 'saved' : 'not confirmed'}.  
           {' '}Related notes or documents: {careContinuityExecution.stages.evidence === 'verified' ? 'linked' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not needed' : 'not confirmed'}. 
           {' '}Care Record: {['committed', 'completed'].includes(careContinuityExecution.stages.reconciliation || '') ? 'updated' : 'not confirmed'}. 
         </p>
       )}
       {saved && changeIntelligenceStatus === 'available' && (
-        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', marginTop: '-12px', marginBottom: '20px' }}>
           SolenOS checked this update against earlier care information.
         </p>
       )}
       {saved && changeIntelligenceStatus === 'unavailable' && (
-        <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+        <p role="alert" style={{ color: 'var(--text-secondary)', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', marginTop: '-12px', marginBottom: '20px' }}>
           Your update was saved, but SolenOS could not check it against earlier care information. Do not submit it again. Open Changes in care over time and try again.
         </p>
       )}
       {saved && changeIntelligenceStatus === 'pending' && (
-        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', marginTop: '-12px', marginBottom: '20px' }}>
           Your update is saved. SolenOS is checking it against earlier care information.
         </p>
       )}
       {saved && changeIntelligenceStatus === 'not_reported' && (
-        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-12px', marginBottom: '20px' }}>
+        <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', marginTop: '-12px', marginBottom: '20px' }}>
           We could not confirm whether your update was checked against earlier care information.
         </p>
       )}
@@ -1455,8 +1455,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '8px', padding: '12px 16px', marginBottom: '24px'
         }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Review suggested details</h2>
-          <p role="status" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: 'calc(16px * var(--solenos-text-scale, 1))', fontWeight: 700, marginBottom: '6px' }}>Review suggested details</h2>
+          <p role="status" style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)', marginBottom: '8px' }}>
             These suggested details have not been added to your Care Record. Check or correct them before you use them.
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
@@ -1469,7 +1469,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                 const reviewStatus = String(candidate.review_status || 'pending_review');
                 const alreadyReviewed = ['accepted_by_caregiver', 'rejected_by_caregiver'].includes(reviewStatus);
                 return (
-                  <li key={index} style={{ fontSize: '12px', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
+                  <li key={index} style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', marginBottom: '12px', padding: '12px 0', borderTop: '1px solid var(--border)' }}>
                     <strong>Suggested detail {index + 1}</strong>
                     <p style={{ color: 'var(--text-secondary)', margin: '4px 0 8px' }}>
                       {reviewStatus === 'pending_review' ? 'Waiting for your review' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Correction saved — waiting for your approval' : reviewStatus === 'accepted_by_caregiver' ? 'Added to your Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Not added to your Care Record' : 'Review status unavailable'}
@@ -1522,7 +1522,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               })}
             </ul>
           ) : (
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)' }}>
               {['queued', 'processing'].includes(qwenAnalysis.processingStatus)
                 ? 'Your update is saved. SolenOS is organizing the details in the background.'
                 : qwenAnalysis.processingStatus === 'unavailable'
@@ -1535,10 +1535,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           {reviewFeedback && <p role="status" style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '10px' }}>
-              <strong style={{ fontSize: '12px' }}>Questions to answer</strong>
+              <strong style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))' }}>Questions to answer</strong>
               <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
                 {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
-                  <li key={index} style={{ fontSize: '12px', marginBottom: '4px' }}>{question}</li>
+                  <li key={index} style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', marginBottom: '4px' }}>{question}</li>
                 ))}
               </ul>
             </div>
@@ -1555,7 +1555,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           padding: '12px 16px', 
           marginBottom: '24px' 
         }}>
-          <span style={{ fontSize: '13px', color: 'var(--error)', fontWeight: '500' }}>
+          <span style={{ fontSize: 'calc(13px * var(--solenos-text-scale, 1))', color: 'var(--error)', fontWeight: '500' }}>
             Failed to save. Please try again.
           </span>
         </div>
@@ -1570,7 +1570,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           padding: '12px 16px', 
           marginBottom: '24px' 
         }}>
-          <span style={{ fontSize: '13px', color: 'var(--warning)', fontWeight: '500' }}>
+          <span style={{ fontSize: 'calc(13px * var(--solenos-text-scale, 1))', color: 'var(--warning)', fontWeight: '500' }}>
             Saving...
           </span>
         </div>
@@ -1579,27 +1579,27 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       {/* Medications section */}
       {(mode === "all" || mode === "medicine") && (
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Medicines</h2>
+        <h2 style={{ fontSize: 'calc(20px * var(--solenos-text-scale, 1))', fontWeight: '600', marginBottom: '16px' }}>Medicines</h2>
         
         <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, marginBottom: 16 }}>
-          <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 600 }}>Add a medication to the care record</h3>
-          <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.45 }}>
+          <h3 style={{ margin: "0 0 6px", fontSize: "calc(16px * var(--solenos-text-scale, 1))", fontWeight: 600 }}>Add a medication to the care record</h3>
+          <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45 }}>
             Add what you have been told or what you currently understand. This starts as a caregiver report, not a verified prescription.
           </p>
           <form onSubmit={handleCreateMedicationRecord} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
               Medicine name
               <input value={medicationRecordName} onChange={(event) => setMedicationRecordName(event.target.value)} maxLength={240} required placeholder="Enter medicine name" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
               Dose or strength (optional)
               <input value={medicationRecordDose} onChange={(event) => setMedicationRecordDose(event.target.value)} maxLength={240} placeholder="Only if known" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
               Note (optional)
               <textarea value={medicationRecordNote} onChange={(event) => setMedicationRecordNote(event.target.value)} maxLength={2000} rows={2} placeholder="Where this information came from, if useful" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
             </label>
-            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 12 }}>This report will be marked as due for review after 30 days. You can review it now before it becomes a current medication choice.</p>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>This report will be marked as due for review after 30 days. You can review it now before it becomes a current medication choice.</p>
             {medicationRecordError && <p role="alert" style={{ margin: 0, color: "var(--error)" }}>{medicationRecordError}</p>}
             {medicationRecordMessage && <p role="status" style={{ margin: 0, color: "var(--text-secondary)" }}>{medicationRecordMessage}</p>}
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -1608,10 +1608,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           </form>
           {pendingMedicationRecords.length > 0 && (
             <div style={{ borderTop: "1px solid var(--border)", marginTop: 14, paddingTop: 12 }}>
-              <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Reports waiting for your review</h4>
+              <h4 style={{ margin: "0 0 8px", fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Reports waiting for your review</h4>
               {pendingMedicationRecords.map((item) => (
                 <div key={item.medication_id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 0", borderTop: "1px solid var(--border)" }}>
-                  <div style={{ minWidth: 0 }}><strong style={{ fontSize: 13 }}>{item.name}</strong>{item.dose && <span style={{ color: "var(--text-secondary)", fontSize: 12 }}> · {item.dose}</span>}<p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: 11 }}>{item.review_overdue ? "Review overdue · caregiver report" : item.record_status === "needs_caregiver_review" ? "Previously reviewed · needs a fresh review" : "Caregiver report · not yet reviewed"}</p>{item.source_text && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.4 }}>Recorded details: {item.source_text}</p>}</div>
+                  <div style={{ minWidth: 0 }}><strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{item.name}</strong>{item.dose && <span style={{ color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}> · {item.dose}</span>}<p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>{item.review_overdue ? "Review overdue · caregiver report" : item.record_status === "needs_caregiver_review" ? "Previously reviewed · needs a fresh review" : "Caregiver report · not yet reviewed"}</p>{item.source_text && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.4 }}>Recorded details: {item.source_text}</p>}</div>
                   <button type="button" className="workspace-primary" disabled={medicationRecordReviewing !== null} onClick={() => void handleReviewMedicationRecord(item.medication_id)} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8 }}>{medicationRecordReviewing === item.medication_id ? "Saving…" : "Review and confirm current"}</button>
                 </div>
               ))}
@@ -1626,14 +1626,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           padding: '16px', 
           marginBottom: '24px' 
         }}>
-          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a medicine</h3>
+          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: 'calc(18px * var(--solenos-text-scale, 1))', fontWeight: '600' }}>Add a medicine</h3>
           
           <form onSubmit={handleMedicationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {medicationError && <p role="alert" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-warning-bg)', border: '1px solid var(--theme-warning-border)', color: 'var(--theme-warning-fg)' }}>{medicationError}</p>}
             {medicationFeedback && <p role="status" style={{ margin: 0, padding: '10px 12px', borderRadius: 8, background: 'var(--theme-success-bg)', border: '1px solid var(--theme-success-border)', color: 'var(--theme-panel-fg)' }}>{medicationFeedback}</p>}
             {currentMedicationRecords.length > 0 && (
               <div>
-                <label htmlFor="capture-current-medication" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>
+                <label htmlFor="capture-current-medication" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>
                   Choose a current medication from the care record
                 </label>
                 <select
@@ -1651,7 +1651,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       }));
                     }
                   }}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '14px' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 'calc(14px * var(--solenos-text-scale, 1))' }}
                 >
                   <option value="">Choose current medication</option>
                   {currentMedicationRecords.map((item) => (
@@ -1660,14 +1660,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     </option>
                   ))}
                 </select>
-                <p style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                <p style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                   These are caregiver-reviewed care-record entries within their review window, not independent clinical verification.
                 </p>
               </div>
             )}
             {previouslyRecordedMedications.length > 0 && (
               <div>
-                <label htmlFor="capture-previous-medication" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>
+                <label htmlFor="capture-previous-medication" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>
                   Previously reported medicines (not confirmed current)
                 </label>
                 <select
@@ -1685,7 +1685,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       }));
                     }
                   }}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '14px' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 'calc(14px * var(--solenos-text-scale, 1))' }}
                 >
                   <option value="">Choose from care history</option>
                   {previouslyRecordedMedications.map((item) => (
@@ -1694,13 +1694,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     </option>
                   ))}
                 </select>
-                <p style={{ margin: "5px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                <p style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                   These appeared in past caregiver reports. Their current status is unknown; selecting one does not make it active.
                 </p>
               </div>
             )}
             <div>
-              <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Medicine name</label>
+              <label htmlFor="capture-medication-name" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Medicine name</label>
               <input
                 id="capture-medication-name"
                 type="text"
@@ -1713,14 +1713,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   borderRadius: '6px', 
                   border: '1px solid var(--border)', 
                   background: 'var(--bg)', 
-                  fontSize: '14px' 
+                  fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                 }}
               />
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label htmlFor="capture-medication-status" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>What happened?</label>
+                <label htmlFor="capture-medication-status" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>What happened?</label>
                 <select
                   id="capture-medication-status"
                   value={medicationForm.status}
@@ -1741,7 +1741,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 >
                   <option value="">Choose what happened</option>
@@ -1752,14 +1752,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <option value="other">Something else</option>
                 </select>
                 {medicationForm.status === "scheduled" && (
-                  <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.45 }}>
+                  <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45 }}>
                     This records an expected dose only. It does not confirm that the medicine was given.
                   </p>
                 )}
               </div>
               
               <div style={{ flex: 1 }}>
-                <label htmlFor="medication-dose" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Dose</label>
+                <label htmlFor="medication-dose" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Dose</label>
                 <input
                   type="text"
                   id="medication-dose"
@@ -1772,7 +1772,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 />
               </div>
@@ -1780,7 +1780,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Scheduled For</label>
+                <label style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Scheduled For</label>
                 <input
                   type="datetime-local"
                   value={medicationForm.scheduled_for || ''}
@@ -1791,14 +1791,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 />
               </div>
               
               {medicationForm.status === "given" && (
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Administered at</label>
+                  <label style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Administered at</label>
                   <input
                     type="datetime-local"
                     value={medicationForm.administered_at || ''}
@@ -1809,14 +1809,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       borderRadius: '6px',
                       border: '1px solid var(--border)',
                       background: 'var(--bg)',
-                      fontSize: '14px'
+                      fontSize: 'calc(14px * var(--solenos-text-scale, 1))'
                     }}
                   />
                 </div>
               )}
               {medicationForm.status !== "given" && medicationForm.status !== "" && (
                 <div style={{ flex: 1 }}>
-                  <label htmlFor="medication-event-time" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>When did this happen? (optional)</label>
+                  <label htmlFor="medication-event-time" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>When did this happen? (optional)</label>
                   <input
                     id="medication-event-time"
                     type="datetime-local"
@@ -1828,7 +1828,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       borderRadius: '6px',
                       border: '1px solid var(--border)',
                       background: 'var(--bg)',
-                      fontSize: '14px'
+                      fontSize: 'calc(14px * var(--solenos-text-scale, 1))'
                     }}
                   />
                 </div>
@@ -1836,7 +1836,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note</label>
+              <label style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Note</label>
               <textarea
                 value={medicationForm.note || ''}
                 onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, note: e.target.value || null })); }}
@@ -1848,7 +1848,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   borderRadius: '6px', 
                   border: '1px solid var(--border)', 
                   background: 'var(--bg)', 
-                  fontSize: '14px', 
+                  fontSize: 'calc(14px * var(--solenos-text-scale, 1))', 
                   resize: 'vertical' 
                 }}
               />
@@ -1856,7 +1856,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             
             {/* Image upload for medication */}
             <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg)', borderRadius: '6px' }}>
-              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Medicine photo (optional)</h4>
+              <h4 style={{ marginTop: '0', marginBottom: '12px', fontSize: 'calc(16px * var(--solenos-text-scale, 1))', fontWeight: '600' }}>Medicine photo (optional)</h4>
               
               {medicationImagePreview ? (
                 <div>
@@ -1882,7 +1882,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       type="button"
                       onClick={() => setMedicationImagePreview(null)}
                       style={{ 
-                        fontSize: '12px', 
+                        fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                         color: '#dc2626', 
                         background: 'none', 
                         border: 'none', 
@@ -1898,7 +1898,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       onClick={handleMedicationSubmit}
                       disabled={medicationUploading || !medicationForm.medication_name.trim()}
                       style={{ 
-                        fontSize: '13px', 
+                        fontSize: 'calc(13px * var(--solenos-text-scale, 1))', 
                         fontWeight: '500', 
                         color: 'var(--theme-action-fg)', 
                         background: medicationUploading || !medicationForm.medication_name.trim() 
@@ -1923,7 +1923,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       onClick={handleMedicationImageCapture}
                       disabled={submitting || medicationUploading || cameraState.status === 'denied' || cameraState.status === 'unsupported' ? true : false}
                       style={{ 
-                        fontSize: '12px', 
+                        fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                         padding: '8px 12px', 
                         borderRadius: '4px', 
                         border: '1px solid var(--border)', 
@@ -1947,12 +1947,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     </label>
                   </div>
                   {medicationUploading && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                    <p style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)', textAlign: 'center' }}>
                       Uploading...
                     </p>
                   )}
                   {medicationCompressing && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                    <p style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', color: 'var(--text-secondary)', textAlign: 'center' }}>
                       Compressing image...
                     </p>
                   )}
@@ -1962,7 +1962,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       onClick={handleMedicationSubmit}
                       disabled={medicationUploading || !medicationForm.medication_name.trim()}
                       style={{ 
-                        fontSize: '13px', 
+                        fontSize: 'calc(13px * var(--solenos-text-scale, 1))', 
                         fontWeight: '500', 
                         color: 'var(--theme-action-fg)', 
                         background: medicationUploading || !medicationForm.medication_name.trim() 
@@ -1987,7 +1987,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         {/* Display current medications */}
         {form.medications.length > 0 && (
           <div style={{ marginTop: '16px' }}>
-            <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>Medicines in this draft</h3>
+            <h3 style={{ marginBottom: '12px', fontSize: 'calc(18px * var(--solenos-text-scale, 1))', fontWeight: '600' }}>Medicines in this draft</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {renderMedications()}
             </div>
@@ -1999,7 +1999,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       {/* Vitals section */}
       {(mode === "all" || mode === "measurement") && (
       <section>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Measurements</h2>
+        <h2 style={{ fontSize: 'calc(20px * var(--solenos-text-scale, 1))', fontWeight: '600', marginBottom: '16px' }}>Measurements</h2>
         
         {/* Vitals form */}
         <div style={{ 
@@ -2009,11 +2009,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           padding: '16px', 
           marginBottom: '24px' 
         }}>
-          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a measurement</h3>
+          <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: 'calc(18px * var(--solenos-text-scale, 1))', fontWeight: '600' }}>Add a measurement</h3>
           
           <form onSubmit={handleVitalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label htmlFor="capture-vital-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
+              <label htmlFor="capture-vital-type" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Vital Type</label>
               <select
                 id="capture-vital-type"
                 value={vitalForm.vital_type}
@@ -2034,7 +2034,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   borderRadius: '6px', 
                   border: '1px solid var(--border)', 
                   background: 'var(--bg)', 
-                  fontSize: '14px' 
+                  fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                 }}
               >
                 {VITAL_TYPES.map(type => (
@@ -2047,7 +2047,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             
             {vitalForm.vital_type === 'other' && (
               <div>
-                <label htmlFor="capture-vital-other-name" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>What did you measure?</label>
+                <label htmlFor="capture-vital-other-name" style={{ display: 'block', fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500, marginBottom: 4 }}>What did you measure?</label>
                 <input
                   id="capture-vital-other-name"
                   type="text"
@@ -2055,13 +2055,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   onChange={(e) => setVitalForm(prev => ({ ...prev, measurement_name: e.target.value }))}
                   maxLength={100}
                   placeholder="Measurement name"
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14 }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}
                 />
               </div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label htmlFor="capture-vital-value" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>
+                <label htmlFor="capture-vital-value" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>
                   {vitalForm.vital_type === 'blood_pressure' ? 'Top number (systolic)' : 'Value'}
                 </label>
                 <input
@@ -2083,14 +2083,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 />
               </div>
               
               {vitalForm.vital_type === 'blood_pressure' && (
                 <div style={{ flex: 1 }}>
-                  <label htmlFor="capture-vital-diastolic" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Bottom number (diastolic)</label>
+                  <label htmlFor="capture-vital-diastolic" style={{ display: 'block', fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500, marginBottom: 4 }}>Bottom number (diastolic)</label>
                   <input
                     id="capture-vital-diastolic"
                     type="number"
@@ -2099,13 +2099,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     value={Number.isFinite(diastolicValue) ? diastolicValue : ''}
                     onChange={(e) => setDiastolicValue(e.target.value === '' ? Number.NaN : Number(e.target.value))}
                     placeholder="Enter bottom number"
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14 }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}
                   />
                 </div>
               )}
               {vitalForm.vital_type === 'blood_pressure' && (
                 <div style={{ flex: 1 }}>
-                  <label htmlFor="capture-vital-pulse" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Pulse (optional)</label>
+                  <label htmlFor="capture-vital-pulse" style={{ display: 'block', fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500, marginBottom: 4 }}>Pulse (optional)</label>
                   <input
                     id="capture-vital-pulse"
                     type="number"
@@ -2114,12 +2114,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     value={Number.isFinite(optionalPulseValue) ? optionalPulseValue : ''}
                     onChange={(e) => setOptionalPulseValue(e.target.value === '' ? Number.NaN : Number(e.target.value))}
                     placeholder="Pulse in bpm"
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14 }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}
                   />
                 </div>
               )}
               <div style={{ flex: 1 }}>
-                <label htmlFor="vital-unit" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
+                <label htmlFor="vital-unit" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
                 <input
                   type="text"
                   id="vital-unit"
@@ -2137,13 +2137,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 />
               </div>
               
               <div>
-                <label htmlFor="capture-vital-measured-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Measured at</label>
+                <label htmlFor="capture-vital-measured-at" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Measured at</label>
                 <input
                   type="datetime-local"
                   id="capture-vital-measured-at"
@@ -2159,13 +2159,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 />
               </div>
               
               <div>
-                <label htmlFor="capture-vital-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
+                <label htmlFor="capture-vital-note" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
                 <textarea
                   id="capture-vital-note"
                   value={vitalForm.note || ''}
@@ -2182,7 +2182,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px', 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))', 
                     resize: 'vertical' 
                   }}
                 />
@@ -2196,7 +2196,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   type="submit"
                   className="workspace-primary"
                   disabled={submitting}
-                  style={{ fontSize: '14px', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
+                  style={{ fontSize: 'calc(14px * var(--solenos-text-scale, 1))', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
                 >
                   {submitting ? 'Adding…' : 'Add measurement'}
                 </button>
@@ -2207,7 +2207,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           {/* Display current vitals */}
           {form.vitals.length > 0 && (
             <div style={{ marginTop: '16px' }}>
-              <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>Current Vitals</h3>
+              <h3 style={{ marginBottom: '12px', fontSize: 'calc(18px * var(--solenos-text-scale, 1))', fontWeight: '600' }}>Current Vitals</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {renderVitals()}
               </div>
@@ -2219,7 +2219,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         {/* Scales section */}
         {mode === "all" && (
         <section>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Daily ratings</h2>
+          <h2 style={{ fontSize: 'calc(20px * var(--solenos-text-scale, 1))', fontWeight: '600', marginBottom: '16px' }}>Daily ratings</h2>
           
           {/* Scales form */}
           <div style={{ 
@@ -2229,11 +2229,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             padding: '16px', 
             marginBottom: '24px' 
           }}>
-            <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>Add a daily rating</h3>
+            <h3 style={{ marginTop: '0', marginBottom: '16px', fontSize: 'calc(18px * var(--solenos-text-scale, 1))', fontWeight: '600' }}>Add a daily rating</h3>
             
             <form onSubmit={handleScaleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label htmlFor="capture-scale-type" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Rating type</label>
+                <label htmlFor="capture-scale-type" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Rating type</label>
                 <select
                   id="capture-scale-type"
                   value={scaleForm.axis}
@@ -2244,7 +2244,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 >
                   {SCALE_AXES.map(axis => (
@@ -2257,7 +2257,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label htmlFor="capture-scale-score" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Rating (1–5)</label>
+                  <label htmlFor="capture-scale-score" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Rating (1–5)</label>
                 <input
                   id="capture-scale-score"
                   type="number"
@@ -2273,13 +2273,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 />
               </div>
               
               <div style={{ flex: 1 }}>
-                <label htmlFor="capture-scale-observed-at" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Observed at</label>
+                <label htmlFor="capture-scale-observed-at" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Observed at</label>
                 <input
                   id="capture-scale-observed-at"
                   type="datetime-local"
@@ -2291,13 +2291,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px' 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
                   }}
                 />
               </div>
               
               <div>
-                <label htmlFor="capture-scale-note" style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
+                <label htmlFor="capture-scale-note" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Note (optional)</label>
                 <textarea
                   id="capture-scale-note"
                   value={scaleForm.note || ''}
@@ -2310,7 +2310,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     borderRadius: '6px', 
                     border: '1px solid var(--border)', 
                     background: 'var(--bg)', 
-                    fontSize: '14px', 
+                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))', 
                     resize: 'vertical' 
                   }}
                 />
@@ -2325,7 +2325,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   type="submit"
                   className="workspace-primary"
                   disabled={submitting}
-                  style={{ fontSize: '14px', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
+                  style={{ fontSize: 'calc(14px * var(--solenos-text-scale, 1))', fontWeight: 700, padding: '10px 16px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer' }}
                 >
                   {submitting ? 'Adding…' : 'Add rating'}
                 </button>
@@ -2336,7 +2336,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           {/* Display current scales */}
           {form.scales.length > 0 && (
             <div style={{ marginTop: '16px' }}>
-              <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600' }}>Current Scale Observations</h3>
+              <h3 style={{ marginBottom: '12px', fontSize: 'calc(18px * var(--solenos-text-scale, 1))', fontWeight: '600' }}>Current Scale Observations</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {renderScales()}
               </div>
@@ -2348,7 +2348,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         {/* Keep free-text capture first: no category or clinical assessment is required. */}
         {(mode === "all" || mode === "something" || mode === "note") && (
         <section>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: 'calc(20px * var(--solenos-text-scale, 1))', fontWeight: '600', marginBottom: '16px' }}>
             {mode === "something" ? "What happened?" : mode === "note" ? "Note" : "Notes"}
           </h2>
           
@@ -2358,7 +2358,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             borderRadius: '8px',
             padding: '16px'
           }}>
-            <label htmlFor="daily-capture-original-words" style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+            <label htmlFor="daily-capture-original-words" style={{ display: 'block', fontSize: 'calc(14px * var(--solenos-text-scale, 1))', fontWeight: '600', marginBottom: '8px' }}>
               {mode === "something" ? "Tell us what happened" : mode === "note" ? "Your note" : "Additional notes"}
             </label>
             <textarea
@@ -2376,13 +2376,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                 borderRadius: '6px',
                 border: '1px solid var(--border)',
                 background: 'var(--bg)',
-                fontSize: '14px',
+                fontSize: 'calc(14px * var(--solenos-text-scale, 1))',
                 resize: 'vertical'
               }}
             />
             {(mode === "something" || mode === "note") && (
               <div style={{ marginTop: 14 }}>
-                <label htmlFor="daily-capture-event-time" style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
+                <label htmlFor="daily-capture-event-time" style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500, marginBottom: 4 }}>
                   When did this happen? <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>Optional</span>
                 </label>
                 <input
@@ -2390,12 +2390,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   type="datetime-local"
                   value={eventOccurredAt}
                   onChange={(event) => setEventOccurredAt(event.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", fontSize: 14 }}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}
                 />
               </div>
             )}
             {mode === "something" && (
-              <p style={{ margin: "10px 0 0", color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.5 }}>
+              <p style={{ margin: "10px 0 0", color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>
                 Your original words are saved. You do not need to choose a category or explain the cause.
               </p>
             )}
@@ -2415,7 +2415,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               ((mode === "something" || mode === "note") && !form.notes.trim())
             }
             style={{ 
-              fontSize: '16px', 
+              fontSize: 'calc(16px * var(--solenos-text-scale, 1))', 
               fontWeight: '600', 
               color: 'var(--theme-action-fg)', 
               background: submittingMutation ? 'var(--theme-action-disabled-bg)' : 'var(--theme-action-bg)', 

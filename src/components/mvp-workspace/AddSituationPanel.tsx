@@ -281,7 +281,7 @@ export function AddSituationPanel({
       </div>
 
       {notice && (
-        <p role="status" aria-live="polite" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
+        <p role="status" aria-live="polite" style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
           {notice}
         </p>
       )}

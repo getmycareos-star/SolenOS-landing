@@ -183,7 +183,7 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
                 <button type="button" className="workspace-secondary" onClick={() => setPages((prev) => prev.map((page, index) => index === selectedPage ? { ...page, rotationDegrees: (page.rotationDegrees + 90) % 360 } : page))}>Rotate 90°</button>
               </div>
               <p className="panel-muted">Trim dark edges or background clutter. Keep the full text inside the crop.</p>
-              {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gridTemplateColumns: "68px 1fr 32px", gap: 8, alignItems: "center", fontSize: 12 }}>
+              {(["top", "right", "bottom", "left"] as const).map((edge) => <label key={edge} style={{ display: "grid", gridTemplateColumns: "68px 1fr 32px", gap: 8, alignItems: "center", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
                 <span>{edge[0].toUpperCase() + edge.slice(1)}</span>
                 <input aria-label={edge + " crop"} type="range" min="0" max="30" step="1" value={pages[selectedPage].cropInsetsPercent[edge]} onChange={(event) => setPages((prev) => prev.map((page, index) => index === selectedPage ? { ...page, cropInsetsPercent: { ...page.cropInsetsPercent, [edge]: Number(event.target.value) } } : page))} />
                 <span>{pages[selectedPage].cropInsetsPercent[edge]}%</span>

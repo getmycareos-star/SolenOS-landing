@@ -177,7 +177,7 @@ export default function DailyCarePhotoCapture() {
       background: "var(--theme-panel-bg)",
       color: "var(--theme-panel-fg)",
     }}>
-      <h3 id="daily-care-photo-title" style={{ margin: "0 0 6px", fontSize: 18 }}>Add a photograph</h3>
+      <h3 id="daily-care-photo-title" style={{ margin: "0 0 6px", fontSize: "calc(18px * var(--solenos-text-scale, 1))" }}>Add a photograph</h3>
       <p style={{ margin: "0 0 12px", color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
         Choose a photo that helps explain something in the care record. Upload only what you want to share.
       </p>
