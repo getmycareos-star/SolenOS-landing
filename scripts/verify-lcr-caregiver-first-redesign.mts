@@ -10,6 +10,7 @@ const integrityPanel = fs.readFileSync("src/components/CareContinuityIntegrityPa
 const evidenceReview = fs.readFileSync("src/components/EvidenceReviewPanel.tsx", "utf8");
 const changeIntelligence = fs.readFileSync("src/components/mvp-workspace/ChangeIntelligencePanel.tsx", "utf8");
 const styles = fs.readFileSync("src/app/mobile-app.css", "utf8");
+const experienceStyles = fs.readFileSync("src/app/workspace/experience-design-system.css", "utf8");
 const workspaceLayout = fs.readFileSync("src/app/workspace/layout.tsx", "utf8");
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
 const structuredDailyCapture = fs.readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
@@ -57,6 +58,8 @@ assert.match(dailyCare, /void getJSON\("\/notifications\?limit=100&offset=0"\)/,
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "Daily Care has no embedded AI agent");
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
+assert.match(experienceStyles, /lcr-current-fact :where\(p,small,li\)[\s\S]*?font-size: 0\.95rem;[\s\S]*?line-height: 1\.7;/, "care-record detail text remains comfortably readable");
+assert.match(experienceStyles, /lcr-current-fact h4[\s\S]*?font-size: 15px;/, "care-record section labels are not rendered in small dense text");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
 const caregiverRenderedCode = currentUnderstanding.slice(currentUnderstanding.indexOf("export function LCRCurrentUnderstanding"));
 assert.notEqual(currentUnderstanding.indexOf("export function LCRCurrentUnderstanding"), -1, "caregiver LCR component must exist");
