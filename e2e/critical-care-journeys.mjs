@@ -2170,6 +2170,11 @@ await record("06 Companion context and Qwen output", async () => {
   );
   assert.match(
     medicationAnswer.payload.safety_note || "",
+    /caregiver report/i,
+    "the medication recall answer must identify its source as a caregiver report",
+  );
+  assert.match(
+    medicationAnswer.payload.safety_note || "",
     /does not confirm the prescribed dose or current medication instructions/i,
     "the medication recall answer must disclose that a caregiver report does not verify the prescription",
   );
