@@ -753,9 +753,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         try {
           const savedRetry = window.sessionStorage.getItem(storageKey)
           if (savedRetry) {
-            const parsed = JSON.parse(savedRetry) as { key?: unknown; fingerprint?: unknown }
-            if (parsed.fingerprint === fingerprint && typeof parsed.key === 'string' && parsed.key.length >= 8 && parsed.key.length <= 128) {
-              restoredKey = parsed.key
+            const separator = savedRetry.indexOf(":")
+            const savedKey = separator > 0 ? savedRetry.slice(0, separator) : ""
+            const savedFingerprint = separator > 0 ? savedRetry.slice(separator + 1) : ""
+            if (savedFingerprint === fingerprint && savedKey.length >= 8 && savedKey.length <= 128) {
+              restoredKey = savedKey
             }
           }
         } catch {
@@ -767,7 +769,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       pendingReviewRequestRef.current = { key, fingerprint, storageKey }
       if (fingerprintIsHashed) {
         try {
-          window.sessionStorage.setItem(storageKey, JSON.stringify({ key, fingerprint }))
+          window.sessionStorage.setItem(storageKey, key + ":" + fingerprint)
         } catch {
           // The API remains idempotent for this mounted component even if the
           // browser blocks session storage.
