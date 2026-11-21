@@ -99,8 +99,9 @@ assert.match(currentUnderstanding, /There isn’t enough recorded care informati
 assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) => void load\(true\)\}/s, "failed current-care retrieval renders an actionable error state with a real retry");
 assert.ok(
   workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf('className="solenos-care-next-step"') &&
-  workspaceHome.indexOf('className="solenos-care-next-step"') < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
-  "workspace order is care orientation, primary actions, then handover inbox"
+  !workspaceHome.includes("<CaregiverHandoverInbox />") &&
+  workspaceMore.includes("<CaregiverHandoverInbox />"),
+  "Today stays focused on care orientation and primary actions; caregiver handover requests remain available under More"
 );
 assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Ask SolenOS remains directly accessible");
 assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Add a care update remains directly accessible");
