@@ -41,11 +41,19 @@ assert.match(appShell, /WORKSPACE_NAVIGATION\.settings\.map/);
 assert.doesNotMatch(appShell, /const NAVIGATION\s*=|NAVIGATION\.map/);
 assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
 assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct route to the Care Record");
-assert.match(appShell, /href === "\/workspace"\s*\? pathname === href/, "the Care Record active state must not match every nested route");
+assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Today is active only on the workspace home route");
 
-for (const label of ["Care Record", "Daily Care", "Follow-ups", "Care history", "Documents", "Appointments", "Share care information", "Care Assistant", "Settings"]) {
+for (const label of ["Today", "Share an update", "Care Assistant", "Appointments", "More", "Care history", "Follow-ups", "Documents", "Reminders", "Share care information", "Settings"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
+const primaryCare = navigationRegistry.match(/care:\s*\[([\s\S]*?)\],\s*support:/)?.[1] ?? "";
+const support = navigationRegistry.match(/support:\s*\[([\s\S]*?)\],\s*settings:/)?.[1] ?? "";
+const secondary = navigationRegistry.split("WORKSPACE_SECONDARY_NAVIGATION")[1] ?? "";
+assert.match(primaryCare, /label: "Follow-ups"/, "Follow-ups must remain in primary care navigation");
+assert.doesNotMatch(primaryCare, /label: "Care Assistant"/, "AI must not displace core follow-up navigation");
+assert.equal(support.trim(), "", "the optional Care Assistant must not occupy the primary support group");
+assert.match(secondary, /label: "Care Assistant"/, "Care Assistant remains available under More");
+assert.doesNotMatch(secondary, /label: "Follow-ups"/, "Follow-ups must not be buried under More");
 for (const route of [
   "src/app/workspace/page.tsx",
   "src/app/workspace/daily-care/page.tsx",
@@ -56,6 +64,7 @@ for (const route of [
   "src/app/workspace/handoffs/page.tsx",
   "src/app/workspace/companion/page.tsx",
   "src/app/workspace/settings/page.tsx",
+  "src/app/workspace/more/page.tsx",
 ]) {
   assert.ok(fs.existsSync(path.join(root, route)), `navigation destination exists: ${route}`);
 }
@@ -98,8 +107,8 @@ assert.match(workspaceStyles, /:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "A clearer picture of care"],
-  ["src/app/workspace/daily-care/page.tsx", "Daily Care"],
+  ["src/app/workspace/page.tsx", "Today"],
+  ["src/app/workspace/daily-care/page.tsx", "Share an update"],
   ["src/app/workspace/open-loops/page.tsx", "Follow-ups"],
   ["src/app/workspace/timeline/page.tsx", "Care history"],
   ["src/app/workspace/documents/page.tsx", "Documents"],
@@ -107,6 +116,7 @@ const routeContracts = [
   ["src/app/workspace/handoffs/page.tsx", "Share care information"],
   ["src/components/workflows/AICompanion.tsx", "Care Assistant"],
   ["src/app/workspace/settings/page.tsx", "Settings"],
+  ["src/app/workspace/more/page.tsx", "More"],
 ];
 for (const [route, title] of routeContracts) {
   const source = fs.readFileSync(path.join(root, route), "utf8");

@@ -17,6 +17,7 @@ const routes = [
   "/workspace/settings",
   "/workspace/handoffs",
   "/workspace/daily-care",
+  "/workspace/more",
   "/workspace/documents",
 ];
 const viewports = [

@@ -5,8 +5,31 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "e2e/critical-care-journeys.mjs"
+      - "e2e/anonymous-account-continuity.mjs"
       - "e2e/web-push-delivery.mjs"
+      - "e2e/dark-mode-audit.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - "public/sw.js"
+      - "src/api/client.ts"
+      - "src/lib/api-url.ts"
+      - "src/lib/share-summary.ts"
+      - "src/lib/domains/notification/**"
       - "src/lib/offline-sync/**"
+      - "src/components/NotificationBell.tsx"
+      - "src/app/api/**"
+      - "src/app/workspace/**"
+      - "src/app/globals.css"
+      - "src/app/dark-mode-remediation.css"
+      - "src/app/accessibility-overrides.css"
+      - "src/app/layout.tsx"
+      - "src/components/app-shell/**"
+      - "src/components/workflows/**"
+      - "src/components/mvp-workspace/**"
+      - "src/components/DocumentIntelligenceReview.tsx"
+      - "src/components/ClarificationWorkflowPanel.tsx"
+      - "scripts/verify-handoff-source-provenance.mts"
       - ".github/workflows/critical-care-journeys-e2e.yml"
   push:
     branches: [main]

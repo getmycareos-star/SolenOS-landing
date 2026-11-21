@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { WORKSPACE_NAVIGATION } from "@/lib/workspace-navigation";
+import { WORKSPACE_NAVIGATION, WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 
 const items = [
   ...WORKSPACE_NAVIGATION.care,
   ...WORKSPACE_NAVIGATION.support,
   ...WORKSPACE_NAVIGATION.settings,
+  ...WORKSPACE_SECONDARY_NAVIGATION,
 ];
 
 export function WorkspaceRouteBreadcrumbs() {

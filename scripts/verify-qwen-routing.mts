@@ -82,9 +82,9 @@ assert(!assist.includes("reply.model"), "Provider/model names must not be shown 
 
 requireText("src/app/workspace/page.tsx", [
   'import Link from "next/link";',
-  'href="/workspace/companion"',
-  "Ask SolenOS",
-  "Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.",
+  'href="/workspace/open-loops"',
+  "View follow-ups",
+  "Add something you noticed, or review an open concern and what happens next. You can take things one step at a time.",
 ]);
 assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
   "The caregiver home must route questions through the conversational Companion, not a separate care-management assistant panel.");
@@ -160,7 +160,7 @@ assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1,
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
   'placeholder="Ask about saved care information, a recent change, or something that is unclear…"',
-  "aria-label=\"Send a message to the AI Companion\"",
+  "aria-label=\"Send a message to the Care Assistant\"",
   "status.runtime_available === true && status.model_installed === true",
   "setAvailability('unverified')",
   "response.ai_generated === true ? 'available' : 'unverified'",
@@ -172,7 +172,7 @@ requireText("src/components/workflows/AICompanion.tsx", [
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
-assert(companion.includes("Conversations are saved here, but they are not added to your Care Record."), "Companion must distinguish persisted conversation history from the Living Care Record.");
+assert(companion.includes("Conversations are saved here.") && companion.includes("Nothing is added to your Care Record unless you choose to save a message as a care note and approve it."), "Companion must distinguish persisted conversation history from the Living Care Record and require explicit approval for care-record writes.");
 assert(companion.includes('href="/workspace/daily-care"') && companion.includes('href="/workspace/documents"'), "caregivers must be directed to the supported Daily Care and Documents capture workflows.");
 
 assert(!companion.includes("care_update_candidates"), "Companion must not treat model output as a care fact.");
