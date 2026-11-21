@@ -66,7 +66,11 @@ assert.match(
   "source and review information uses the accessible scaled body-text size",
 );
 assert.match(experienceStyles, /lcr-current-fact :where\(p,small,li\)[\s\S]*?font-size: 0\.95rem;[\s\S]*?line-height: 1\.7;/, "care-record detail text remains comfortably readable");
-assert.match(experienceStyles, /lcr-current-fact h4[\s\S]*?font-size: 15px;/, "care-record section labels are not rendered in small dense text");
+assert.match(
+  experienceStyles,
+  /lcr-current-fact h4[\s\S]*?font-size:\s*calc\(15px \* var\(--solenos-text-scale, 1\)\);/,
+  "care-record section labels use the accessible scaled heading size",
+);
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
 const caregiverRenderedCode = currentUnderstanding.slice(currentUnderstanding.indexOf("export function LCRCurrentUnderstanding"));
 assert.notEqual(currentUnderstanding.indexOf("export function LCRCurrentUnderstanding"), -1, "caregiver LCR component must exist");
