@@ -107,6 +107,9 @@ assert.match(followUpsPage, /source_type: item\.source/, "new follow-ups must re
 assert.match(drawer, /Previous saved details/);
 assert.match(drawer, /Updated saved details/);
 assert.match(drawer, /Promise\.allSettled/);
+assert.match(drawer, /const loadSequenceRef = useRef\(0\)/, "history requests have a monotonically increasing sequence");
+assert.match(drawer, /const requestSequence = \+\+loadSequenceRef\.current/, "each history load receives a distinct request sequence");
+assert.match(drawer, /if \(!isCurrentRequest\(\)\) return/, "late history responses cannot overwrite a newer load");
 assert.match(drawer, /sourceWarnings/);
 assert.match(drawer, /occurred_at/);
 assert.match(drawer, /recorded_at/);
