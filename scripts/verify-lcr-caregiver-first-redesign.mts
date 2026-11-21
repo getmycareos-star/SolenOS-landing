@@ -224,7 +224,7 @@ console.log("✓ Daily Care remains structured capture only, without an embedded
 
 assert.match(currentUnderstanding, /<h2 id="lcr-current-understanding-heading">Your Living Care Record<\/h2>/, "the primary care view is clearly named as the Living Care Record");
 assert.match(currentUnderstanding, /<h3>What matters now<\/h3>/, "the first attention summary uses caregiver language");
-assert.match(currentUnderstanding, /Questions to resolve[\s\S]*?clarificationCareDecisions\.slice\(0, 2\)/, "saved clarification decisions are presented as questions to resolve");
+assert.match(currentUnderstanding, /Questions to resolve[\s\S]*?clarificationCareDecisions\.length[\s\S]*?Review questions/, "saved clarification decisions are presented as questions to resolve without duplicating the full question list");
 assert.match(currentUnderstanding, /<h4 id="lcr-registered-actions-heading">What’s been agreed<\/h4>/, "recorded actions are presented as agreed care");
 
 assert.match(currentUnderstanding, /item\.derived_observations\?\.length[\s\S]*?Details saved from this report[\s\S]*?observation\.value_text/, "the full care history renders persisted extracted details instead of hiding them");
