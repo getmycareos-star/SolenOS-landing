@@ -61,7 +61,12 @@ jobs:
             console.error("Production backend does not yet provide saved care history. Frontend production deployment is blocked.");
             process.exit(1);
           }
-          console.log("Production backend has the saved care history endpoint.");
+          const feedbackOperation = spec.paths?.["/api/v1/feedback"]?.post;
+          if (!feedbackOperation?.requestBody?.content?.["application/json"]) {
+            console.error("Production backend does not yet accept privacy-safe JSON feedback. Deploying the frontend would break caregiver feedback and may expose feedback text in URLs; deployment is blocked.");
+            process.exit(1);
+          }
+          console.log("Production backend exposes saved care history and the privacy-safe JSON feedback contract.");
           NODE
       - name: Type-check
         run: npm run typecheck
