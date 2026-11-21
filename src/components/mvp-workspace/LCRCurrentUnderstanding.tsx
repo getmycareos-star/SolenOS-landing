@@ -734,7 +734,6 @@ export function LCRCurrentUnderstanding() {
   const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
   const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
   const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
-  const [clarificationPrefill, setClarificationPrefill] = useState<{ question: string; evidenceIds: string[] } | null>(null);
   const [actionApprovalLoadingId, setActionApprovalLoadingId] = useState<string | null>(null);
   const [actionApprovalError, setActionApprovalError] = useState<string | null>(null);
   const [suggestionDispositionReasons, setSuggestionDispositionReasons] = useState<Record<string, string>>({});
@@ -1948,16 +1947,6 @@ export function LCRCurrentUnderstanding() {
                                   </button>
                                 )}
                                 <button type="button" className="lcr-text-action" onClick={() => {
-                                  setClarificationPrefill({
-                                    question: item.request_text?.trim() || item.description || item.title,
-                                    evidenceIds: item.evidence_ids,
-                                  });
-                                  openClarification();
-                                  document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }}>
-                                  Request clarification
-                                </button>
-                                <button type="button" className="lcr-text-action" onClick={() => {
                                   setReviewingSuggestionId(null);
                                   setActionApprovalError(null);
                                   setCreateReminderForSuggestion(false);
@@ -2522,7 +2511,7 @@ export function LCRCurrentUnderstanding() {
       <div id="lcr-clarification-workflow">
         <details ref={clarificationDetailsRef} className="lcr-history-details" onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
           <summary>Questions to clarify care</summary>
-          {clarificationOpen ? <ClarificationWorkflowPanel personId={personId} prefillQuestion={clarificationPrefill?.question} prefillEvidenceIds={clarificationPrefill?.evidenceIds} /> : null}
+          {clarificationOpen ? <ClarificationWorkflowPanel personId={personId} /> : null}
         </details>
       </div>
 
