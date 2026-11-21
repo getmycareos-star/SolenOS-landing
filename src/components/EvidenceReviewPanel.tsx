@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
 import { caregiverReadableCaptureText, caregiverSafeAssistantText } from '@/lib/caregiver-language'
 
@@ -93,6 +93,7 @@ type FreshnessAssessment = { id: string; evidence_id: string; policy_id: string;
 type Review = {
   id: string
   evidence_id: string
+  person_id: string
   review_type: ReviewType
   outcome: string
   rationale: string
@@ -390,6 +391,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [freshnessResult, setFreshnessResult] = useState('not_assessed')
   const [completenessResult, setCompletenessResult] = useState('not_assessed')
   const [reviews, setReviews] = useState<Review[]>([])
+  const pendingReviewRequestRef = useRef<{ key: string; fingerprint: string } | null>(null)
   const [historyUnavailable, setHistoryUnavailable] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -561,7 +563,9 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     setHistoryUnavailable(false)
     try {
       const result = await getJSON(`/care-continuity/evidence/${encodeURIComponent(selectedId)}/reviews`)
-      if (!Array.isArray(result)) throw new Error('Invalid review response')
+      if (!Array.isArray(result) || result.some((item) =>
+        item?.person_id !== personId || item?.evidence_id !== selectedId || typeof item?.id !== 'string'
+      )) throw new Error('Invalid or incorrectly scoped review response')
       setReviews(result as Review[])
     } catch {
       setReviews([])
@@ -694,36 +698,66 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   }
 
   async function submit() {
-    if (!selected || !rationale.trim()) {
-      setError('Select evidence and provide a review rationale before saving.')
+    if (!selected || !personId || !rationale.trim()) {
+      setError('Select saved information and provide a review note before saving.')
       return
     }
     setSaving(true)
     setError('')
     setNotice('')
+    const criteria = [
+      { criterion: 'source attribution', result: sourceResult, rationale: 'Check who provided the original information.' },
+      { criterion: 'independent corroboration', result: corroborationResult, rationale: 'Check whether another report was made separately.' },
+      { criterion: 'temporal context', result: temporalResult, rationale: 'Check whether the dates and times are clear.' },
+      { criterion: 'evidence freshness', result: freshnessResult, rationale: 'Check whether the information still applies.' },
+      { criterion: 'record completeness', result: completenessResult, rationale: 'Check whether important details are missing.' },
+    ]
+    const requestPayload = {
+      evidence_id: selected.id,
+      person_id: personId,
+      review_type: reviewType,
+      outcome,
+      rationale: rationale.trim(),
+      policy_version: 'evidence-review-v1',
+      criteria,
+    }
+    const fingerprint = JSON.stringify(requestPayload)
+    if (!pendingReviewRequestRef.current || pendingReviewRequestRef.current.fingerprint !== fingerprint) {
+      pendingReviewRequestRef.current = { key: crypto.randomUUID(), fingerprint }
+    }
+    const requestKey = pendingReviewRequestRef.current.key
     try {
       const saved = await postJSON(`/care-continuity/evidence/${encodeURIComponent(selected.id)}/reviews`, {
-        review_type: reviewType,
-        outcome,
-        rationale: rationale.trim(),
-        policy_version: 'evidence-review-v1',
-        criteria: [
-          { criterion: 'source attribution', result: sourceResult, rationale: 'Check who provided the original information.' },
-          { criterion: 'independent corroboration', result: corroborationResult, rationale: 'Check whether another report was made separately.' },
-          { criterion: 'temporal context', result: temporalResult, rationale: 'Check whether the dates and times are clear.' },
-          { criterion: 'evidence freshness', result: freshnessResult, rationale: 'Check whether the information still applies.' },
-          { criterion: 'record completeness', result: completenessResult, rationale: 'Check whether important details are missing.' },
-        ],
-      }) as { care_continuity_execution?: { stages?: Record<string, string> } | null }
+        ...requestPayload,
+        request_key: requestKey,
+      }) as Review & { idempotent_replay?: boolean; care_continuity_execution?: { stages?: Record<string, string> } | null }
+      if (!saved?.id || saved.id.length === 0 || saved.evidence_id !== selected.id || saved.person_id !== personId) {
+        throw new Error('The saved review response did not match the selected care information.')
+      }
+
+      // Verify the committed review through a separate read before showing it as saved.
+      // The same request key remains in memory if this read fails, so a retry cannot
+      // append a second review after an ambiguous network result.
+      const history = await getJSON(`/care-continuity/evidence/${encodeURIComponent(selected.id)}/reviews`)
+      if (!Array.isArray(history) || history.some((item) =>
+        item?.person_id !== personId || item?.evidence_id !== selected.id || typeof item?.id !== 'string'
+      )) {
+        throw new Error('The saved review history could not be verified.')
+      }
+      const persisted = history.find((item: Review) => item.id === saved.id)
+      if (!persisted) throw new Error('The saved review was not returned by the independent history read.')
+
+      setReviews(history as Review[])
+      setHistoryUnavailable(false)
       setRationale('')
+      pendingReviewRequestRef.current = null
       setNotice(
-        saved?.care_continuity_execution?.stages?.reconciliation === 'committed'
+        saved.care_continuity_execution?.stages?.reconciliation === 'committed'
           ? 'Review saved and the care record was reassessed. The original source is unchanged, and this review does not confirm a medical fact.'
-          : 'Review saved. The original source is unchanged, but the care-record reassessment could not be confirmed. Do not treat this as a completed update.',
+          : 'Review saved and retrieved from your care record. The original source is unchanged.',
       )
-      await loadReviews()
     } catch {
-      setError('The review was not confirmed as saved. Check the connection and retry; the original information remains unchanged.')
+      setError('Your review could not be verified in the saved history. Retry this same review; SolenOS will recognize an exact retry and will not create a duplicate.')
     } finally {
       setSaving(false)
     }
