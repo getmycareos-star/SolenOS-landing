@@ -2,6 +2,11 @@
 
 **Event-sourced cognitive decision runtime.**
 
+
+> **Status: historical prototype specification — not the production persistence contract.**
+>
+> The referenced `src/lib/store/` implementation is in-process state and does not provide PostgreSQL durability, cross-device continuity, or a production API persistence guarantee. Do not use this document to assert that caregiver data is durably stored. The active application persistence contract is the authenticated FastAPI backend plus PostgreSQL and its Alembic migration chain; see [Database Architecture](./17-canonical-architecture/database-architecture.md) and the backend `DATABASE_PERSISTENCE_INVENTORY.md`.
+
 ## Guarantees
 
 - Every decision is reconstructable
