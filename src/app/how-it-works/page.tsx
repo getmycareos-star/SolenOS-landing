@@ -95,14 +95,14 @@ export default function HowItWorksPage() {
           You do not have to visit all three parts every time. Something
           happened? Start in Daily Care. Need the bigger picture? Open the
           Care Record. Need help thinking something through or getting ready for an appointment?
-          Use the AI Companion.
+          Use the Care Assistant.
         </p>
         <blockquote className="public-pull">
           Add an update in Daily Care. Find it later in your Care Record.
-          Talk it through with the AI Companion.
+          Talk it through with the Care Assistant.
         </blockquote>
         <p className="public-prose">
-          The Care Record keeps saved care information together. Daily Care helps you add or correct information. The AI Companion can help explain it, but it is not a healthcare professional and its suggestions do not automatically become part of the Care Record. SolenOS should clearly show what was reported, what is not certain, and what information is missing.
+          The Care Record keeps saved care information together. Daily Care helps you add or correct information. The Care Assistant can help explain it, but it is not a healthcare professional and its suggestions do not automatically become part of the Care Record. SolenOS should clearly show what was reported, what is not certain, and what information is missing.
         </p>
       </section>
 
