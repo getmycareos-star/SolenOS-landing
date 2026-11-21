@@ -122,6 +122,8 @@ assert.match(dailyCare, /item\.corrected_text\.trim\(\)/, "corrected caregiver r
 assert.doesNotMatch(dailyCare, /caregiverSafeAssistantText\(item\.(original_text|corrected_text|reason)\)/, "assistant-output filtering must not be applied to caregiver source text");
 assert.doesNotMatch(dailyCare, /The latest information currently available in the care record|Processing has not started yet|Document understanding could not be completed|Document processing was stopped|Care Timeline|change and pattern assessments/);
 assert.match(dailyCare, /SolenOS has finished reading it/);
+assert.match(dailyCare, /This update is being checked\. You can keep using SolenOS\./, "technical processing messages must have a caregiver-readable fallback");
+assert.match(dailyCare, /Your saved note is still available\./, "processing failures must preserve the confirmed saved-note state");
 assert.match(dailyCare, /Open care history/);
 assert.doesNotMatch(documentsPage, /AI interpretation|Document library|Server processing after upload|extracted statements|document understanding|upload ID|10 MiB/);
 assert.match(documentsPage, /Your original files are kept separate from suggested details/);
