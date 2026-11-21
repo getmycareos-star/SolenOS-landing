@@ -192,12 +192,13 @@
   color: #172b35 !important;
 }
 :root[data-solenos-theme="dark"] .appointment-workspace :is(svg,[role="img"]) {
-  color: #40584a !important;
+  color: var(--theme-panel-fg) !important;
 }
 :root[data-solenos-theme="dark"] .appointment-workspace :is(
   .guided-muted,.appointment-stage-intro,.appointment-lcr-brief-heading p
 ) {
-  color: #52645a !important;
+  color: var(--theme-panel-muted) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
 }
 
 /* Settings cards and account controls were outside the earlier dark surface list. */
