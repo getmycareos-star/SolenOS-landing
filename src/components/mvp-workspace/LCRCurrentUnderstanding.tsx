@@ -1618,27 +1618,14 @@ export function LCRCurrentUnderstanding() {
             </p>
           )}
           {clarificationCareDecisions.length > 0 && (
-            <section className="lcr-current-fact" aria-labelledby="lcr-questions-to-resolve-heading">
-              <h4 id="lcr-questions-to-resolve-heading">Questions to resolve</h4>
-              <ul className="lcr-current-facts">
-                {clarificationCareDecisions.slice(0, 2).map((decision) => (
-                  <li key={decision.id || decision.source + ":" + decision.record_id}>
-                    <strong>{caregiverSafeAssistantText(decision.title) || "Information to check"}</strong>
-                    <p>{caregiverSafeAssistantText(decision.reason || decision.priority_basis?.join("; ")) || "The saved information needs clarification."}</p>
-                    {decision.records?.length ? (
-                      <details>
-                        <summary>See the related care information</summary>
-                        {decision.records.map((record) => (
-                          <p key={record.source + ":" + record.record_id}>
-                            {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened {formatWhen(record.occurred_at)} · Saved {formatWhen(record.recorded_at)}
-                          </p>
-                        ))}
-                      </details>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <button
+              type="button"
+              className="lcr-text-action"
+              onClick={openClarification}
+              aria-controls="lcr-clarification-workflow"
+            >
+              Review useful questions
+            </button>
           )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
         </div>
