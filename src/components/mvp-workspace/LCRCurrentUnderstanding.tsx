@@ -2081,7 +2081,7 @@ export function LCRCurrentUnderstanding() {
                       {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
                       {action.responsible_caregiver_id !== currentCaregiverId && <p role="status">Only the responsible caregiver can change this action. You can still review its status and change history.</p>}
                       <label>
-                        {action.status === "completed" ? "Recorded outcome" : "Outcome when completing, or reason for deferring, cancelling or requesting clarification"}
+                        Outcome when completing, or reason for deferring, cancelling or requesting clarification
                         <input
                           type="text"
                           value={actionTransitionReasons[action.id] ?? ""}
