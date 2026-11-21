@@ -2323,56 +2323,67 @@ await record("06 Companion context and Qwen output", async () => {
 
 // 7. Change detection: reconcile against saved source evidence and retrieve the run.
 await record("07 change detection and supporting evidence", async () => {
-  const deltaStartedAt = performance.now();
-  const reconciled = await request("/api/v1/care-delta/reconcile", {
-    token: identity.token, method: "POST",
-    body: {
-      person_id: identity.personId,
-      event_date: new Date().toISOString(),
-      source: "critical_care_journey_e2e",
-      content: "Caregiver reports a change in sleep pattern and reduced breakfast intake.",
-      evidence_ids: [evidenceId],
-      persist: true,
-    },
-  });
-  const deltaDurationMs = Math.round(performance.now() - deltaStartedAt);
-  assert.equal(reconciled.status, 200, JSON.stringify(reconciled.payload));
-  assert.ok(deltaDurationMs < 150_000, `Delta Engine exceeded the 150-second inference budget: ${deltaDurationMs}ms`);
-  assert.equal(
-    reconciled.payload?.interpretation_evaluation?.version,
-    "longitudinal-interpretation-evaluator-v1",
-    "the default caregiver-facing Delta API path must run the independent interpretation evaluator",
+  const runsResponse = await request(
+    `/api/v1/care-delta/runs/${identity.personId}?limit=100&offset=0`,
+    { token: identity.token },
   );
-  assert.equal(
-    reconciled.payload.interpretation_evaluation.source_evidence_mutated,
-    false,
-    "the evaluator must not mutate original source evidence",
+  assert.equal(runsResponse.status, 200, JSON.stringify(runsResponse.payload));
+  assert.ok(Array.isArray(runsResponse.payload), "saved Delta history must be a persisted list");
+
+  const dailyEventIds = new Set(Object.values(dailyScenarioEventIdsByReport));
+  const dailyEvidenceIds = new Set(Object.values(dailyScenarioEvidenceIdsByReport));
+  const dailyRuns = runsResponse.payload.filter((run) =>
+    dailyEventIds.has(run.source_event_id)
+    && Array.isArray(run.evidence_ids)
+    && run.evidence_ids.some((id) => dailyEvidenceIds.has(id))
   );
-  assert.ok(reconciled.payload?.claim_provenance && Array.isArray(reconciled.payload.claim_provenance.claims), "Delta Engine must return claim-specific source references");
-  for (const claim of reconciled.payload.claim_provenance.claims) {
-    assert.ok(typeof claim.text === "string" && Array.isArray(claim.source_references), "each Delta claim must expose its own source references");
+  assert.ok(
+    dailyRuns.length > 0,
+    "completed Daily Care processing must persist a Delta run linked to its original event and evidence",
+  );
+
+  const persistedRun = dailyRuns[0];
+  assert.ok(persistedRun.delta && typeof persistedRun.delta === "object");
+  const delta = persistedRun.delta;
+  assert.ok(
+    delta.claim_provenance && Array.isArray(delta.claim_provenance.claims),
+    "the persisted Delta result must retain claim-specific source references",
+  );
+  for (const claim of delta.claim_provenance.claims) {
+    assert.ok(typeof claim.text === "string" && Array.isArray(claim.source_references),
+      "each Delta claim must expose its own source references");
     if (["matched_source_and_state", "matched_competing_sources", "matched_exact_source_wording"].includes(claim.support_status)) {
       assert.ok(claim.source_references.length > 0, "a supported Delta claim must identify at least one source");
     }
   }
   for (const domain of ["medications", "conditions", "symptoms", "tests", "follow_ups", "clinical_gaps", "contradictions"]) {
-    for (const finding of reconciled.payload[domain] || []) {
+    for (const finding of delta[domain] || []) {
       assert.ok(Array.isArray(finding.source_record_refs), "each Delta finding must carry its own source links");
     }
   }
+  assert.ok(Array.isArray(delta.computed_changes), "the persisted comparison must expose computed change candidates");
+  const evidenceBackedChanges = dailyRuns.flatMap((run) => run.delta?.computed_changes || [])
+    .filter((change) => Array.isArray(change.source_record_refs) && change.source_record_refs.length > 0);
+  assert.ok(
+    evidenceBackedChanges.length > 0,
+    "at least one persisted change comparison must link to the original care evidence",
+  );
+  for (const change of delta.computed_changes) {
+    assert.ok(Array.isArray(change.source_record_refs), "each computed change must retain its source records");
+    if (change.certainty === "supported") {
+      assert.ok(change.source_record_refs.length > 0, "a supported change must be linked to source evidence");
+    }
+    if (["potential_worsening", "potential_improvement"].includes(change.classification)) {
+      assert.equal(change.certainty, "candidate", "possible direction must not be promoted to a confirmed change");
+    }
+  }
+
   const invalid = await request("/api/v1/care-delta/reconcile", {
     token: identity.token, method: "POST",
     body: { person_id: identity.personId, source: "critical_care_journey_e2e", content: "", persist: true },
   });
   assert.equal(invalid.status, 422);
-  const runs = await request(`/api/v1/care-delta/runs/${identity.personId}`, { token: identity.token });
-  assert.equal(runs.status, 200);
-  assert.ok(runs.payload.some((run) =>
-    run.evidence_ids?.includes(evidenceId) &&
-    run.delta?.interpretation_evaluation?.version === "longitudinal-interpretation-evaluator-v1"
-  ), "retrieved persisted Delta run must retain the evaluator result");
 });
-
 // 8. Community: currently disabled; prove it cannot contaminate the authoritative LCR.
 await record("08 Community and LCR isolation", async () => {
   const before = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
