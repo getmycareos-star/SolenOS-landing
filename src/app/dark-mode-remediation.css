@@ -836,3 +836,21 @@
 :root[data-solenos-theme="dark"] .record-state > p {
   color: var(--theme-panel-fg) !important;
 }
+
+:root[data-solenos-theme="dark"] .record-state:is(
+  .record-state--error,
+  .record-state--forbidden,
+  .record-state--unavailable
+) {
+  background-color: var(--theme-warning-bg) !important;
+  color: var(--theme-warning-fg) !important;
+  border-color: var(--theme-warning-border) !important;
+}
+:root[data-solenos-theme="dark"] .record-state:is(
+  .record-state--error,
+  .record-state--forbidden,
+  .record-state--unavailable
+) > :is(strong, p) {
+  color: var(--theme-warning-fg) !important;
+  -webkit-text-fill-color: var(--theme-warning-fg) !important;
+}
