@@ -52,6 +52,7 @@ assert.match(page, /item\.history_completeness/, "follow-up cards must disclose 
 assert.match(page, /const unclassifiedFollowUpItems: AttentionDecision\[\] = unclassifiedLoops\.map\([\s\S]*?category: "needs_clarification"[\s\S]*?current care significance is unknown/, "unclassified saved follow-ups must remain explicitly unassessed rather than being represented as safe to wait");
 assert.match(page, /<h2>Being monitored<\/h2>[\s\S]*?categorized\.monitored\.map\([\s\S]*?<h2>Needs clarification<\/h2>[\s\S]*?unclassifiedFollowUpItems\.map\(/, "unclassified follow-ups must appear in Needs clarification, not Being monitored");
 assert.doesNotMatch(page, /<h2>Being monitored<\/h2>[\s\S]*?unclassifiedLoops\.map\(/, "Being monitored must contain only items with an explicit documented basis to wait");
+assert.doesNotMatch(page, /action_status: loop\.status/, "Open Loop lifecycle status must not be copied into the independent action-status dimension");
 assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
 assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an unknown follow-up outcome must not be described as resolved");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
