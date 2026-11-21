@@ -202,8 +202,11 @@ assert(handoffSharing.includes("ensureAnonymousSession()") && handoffSharing.inc
 
 const feedbackPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspace/HelpImproveSolenos.tsx"), "utf8");
 const validationLoop = fs.readFileSync(path.join(root, "src/components/HumanValidationLoop.tsx"), "utf8");
-assert(feedbackPanel.includes("/api/v1/feedback") && feedbackPanel.includes("session.access_token"), "improvement feedback uses the scoped backend endpoint");
+assert(feedbackPanel.includes('apiUrl("/api/v1/feedback")') && feedbackPanel.includes("session.access_token"), "improvement feedback uses the scoped backend endpoint");
+assert(feedbackPanel.includes('"Content-Type": "application/json"') && feedbackPanel.includes("body: JSON.stringify({"), "global feedback sends detail in a JSON body, not the URL");
+assert(!feedbackPanel.includes("/api/v1/feedback?"), "global feedback must not expose detail in query strings");
 assert(validationLoop.includes("/api/v1/feedback") && validationLoop.includes("session.access_token"), "human-validation feedback uses the scoped backend endpoint");
+assert(validationLoop.includes('"Content-Type": "application/json"') && validationLoop.includes("body: JSON.stringify({"), "human-validation feedback sends a JSON body");
 
 const page = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
