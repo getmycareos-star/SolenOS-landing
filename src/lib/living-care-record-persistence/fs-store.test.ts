@@ -56,4 +56,28 @@ describe("durable Living Care Record filesystem contract", () => {
       "durable care directory could not be cleared completely",
     );
   });
+
+  it("fails closed when legacy filesystem persistence is invoked in production", () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousOptIn = process.env.SOLENOS_LEGACY_FS_STORE_ENABLED;
+    process.env.NODE_ENV = "production";
+    delete process.env.SOLENOS_LEGACY_FS_STORE_ENABLED;
+    try {
+      const path = join(root, "production", "record.json");
+      expect(() => writeDurableJson(path, { version: 1 })).toThrow(
+        "Legacy filesystem persistence is disabled in production",
+      );
+      expect(() => readDurableJson(path)).toThrow(
+        "Legacy filesystem persistence is disabled in production",
+      );
+      expect(() => clearDurableDirectory(join(root, "production"))).toThrow(
+        "Legacy filesystem persistence is disabled in production",
+      );
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+      if (previousOptIn === undefined) delete process.env.SOLENOS_LEGACY_FS_STORE_ENABLED;
+      else process.env.SOLENOS_LEGACY_FS_STORE_ENABLED = previousOptIn;
+    }
+  });
 });
