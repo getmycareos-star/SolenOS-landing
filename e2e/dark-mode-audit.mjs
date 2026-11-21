@@ -19,8 +19,14 @@ const routes = [
   "/workspace/documents",
 ];
 const viewports = [
-  { label: "desktop", width: 1440, height: 1000 },
-  { label: "mobile", width: 390, height: 844 },
+  { label: "small-mobile-320x568", width: 320, height: 568 },
+  { label: "mobile-360x800", width: 360, height: 800 },
+  { label: "mobile-390x844", width: 390, height: 844 },
+  { label: "large-mobile-430x932", width: 430, height: 932 },
+  { label: "tablet-768x1024", width: 768, height: 1024 },
+  { label: "desktop-1366x768", width: 1366, height: 768 },
+  { label: "desktop-1440x900", width: 1440, height: 900 },
+  { label: "large-desktop-1920x1080", width: 1920, height: 1080 },
 ];
 const artifactDir = "artifacts/dark-mode";
 fs.mkdirSync(artifactDir, { recursive: true });
@@ -258,8 +264,21 @@ try {
             }
 
             const bodyText = document.body?.innerText?.trim() ?? "";
+            const horizontalOverflowPx = Math.max(
+              document.documentElement.scrollWidth,
+              document.body?.scrollWidth ?? 0,
+            ) - window.innerWidth;
+            const clippedPrimaryActions = [...document.querySelectorAll(
+              "main button:not(:disabled), main a.solenos-care-primary-action, main button[type='submit']:not(:disabled)",
+            )].filter((element) => {
+              if (!visible(element)) return false;
+              const rect = element.getBoundingClientRect();
+              return rect.width > 0 && (rect.left < -1 || rect.right > window.innerWidth + 1);
+            }).map(selectorFor);
             return {
               theme: document.documentElement.dataset.solenosTheme || null,
+              horizontalOverflowPx: Math.max(0, horizontalOverflowPx),
+              clippedPrimaryActions,
               pathname: window.location.pathname,
               title: document.title,
               bodyTextLength: bodyText.length,
@@ -293,6 +312,8 @@ try {
             ...(!rendered.hasWorkspaceMain ? [{ kind: "missing_workspace_main" }] : []),
             ...(!rendered.hasWorkspaceNav ? [{ kind: "missing_workspace_navigation" }] : []),
             ...(rendered.isNotFound ? [{ kind: "not_found_content" }] : []),
+            ...(rendered.horizontalOverflowPx > 1 ? [{ kind: "horizontal_overflow", pixels: rendered.horizontalOverflowPx }] : []),
+            ...rendered.clippedPrimaryActions.map((selector) => ({ kind: "clipped_primary_action", selector })),
             ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Share care information"
               ? [{ kind: "missing_handoffs_heading", actual: rendered.handoffsHeading }]
               : []),
@@ -313,6 +334,8 @@ try {
             bodyTextPreview: rendered.bodyTextPreview,
             hasWorkspaceMain: rendered.hasWorkspaceMain,
             hasWorkspaceNav: rendered.hasWorkspaceNav,
+            horizontalOverflowPx: rendered.horizontalOverflowPx,
+            clippedPrimaryActions: rendered.clippedPrimaryActions,
             consoleErrors,
             pageErrors,
             contrastIssues: rendered.issues,
