@@ -170,16 +170,41 @@ const appointmentFollowUpText = (payload?: Record<string, unknown>) => {
     .join('\n')
 }
 
-const appointmentFollowUpsFromText = (value: string) => value
-  .split(/\r?\n/)
-  .map(action => action.trim())
-  .filter(Boolean)
-  .map(action => ({
-    id: 'follow-up-' + action.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120),
-    action,
-    status: 'not_recorded',
-    owner_role: 'unassigned',
-  }))
+const appointmentFollowUpsFromText = (
+  value: string,
+  existingPayload?: Record<string, unknown>,
+  identity = 'appointment',
+) => {
+  const previous = existingPayload?.followUps ?? existingPayload?.follow_ups
+  const priorItems = Array.isArray(previous)
+    ? previous.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'))
+    : []
+  const used = new Set<number>()
+  return value
+    .split(/\r?\n/)
+    .map(action => action.trim())
+    .filter(Boolean)
+    .map((action, index) => {
+      const normalized = action.toLocaleLowerCase().replace(/\s+/g, ' ')
+      let priorIndex = priorItems.findIndex((item, candidateIndex) =>
+        !used.has(candidateIndex) &&
+        typeof item.action === 'string' &&
+        item.action.toLocaleLowerCase().replace(/\s+/g, ' ') === normalized
+      )
+      if (priorIndex < 0 && priorItems[index] && !used.has(index)) priorIndex = index
+      const prior = priorIndex >= 0 ? priorItems[priorIndex] : undefined
+      if (priorIndex >= 0) used.add(priorIndex)
+      return {
+        ...(prior || {}),
+        id: typeof prior?.id === 'string' && prior.id
+          ? prior.id
+          : 'appointment-follow-up:' + identity + ':' + (index + 1),
+        action,
+        status: typeof prior?.status === 'string' ? prior.status : 'not_recorded',
+        owner_role: typeof prior?.owner_role === 'string' ? prior.owner_role : 'unassigned',
+      }
+    })
+}
 
 const selectNextAppointment = (brief: PreparationBrief) => {
   if (brief.next_appointment) return brief.next_appointment
@@ -260,10 +285,12 @@ export default function AppointmentWorkspace() {
         ])
         if (cancelled) return
         let selectedAppointmentId: string | null = null
+        let selectedAppointmentStatus: string | null = null
         if (briefResult.status === 'fulfilled') {
           setBrief(briefResult.value)
           const nextAppointment = selectNextAppointment(briefResult.value)
           selectedAppointmentId = nextAppointment?.source_id || null
+          selectedAppointmentStatus = nextAppointment?.status?.toLowerCase() || null
           setAppointmentId(selectedAppointmentId || '')
           if (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) {
             setStage('after')
@@ -279,10 +306,21 @@ export default function AppointmentWorkspace() {
           // Prepare and persist the workspace automatically for an existing
           // scheduled appointment. The caregiver does not complete a form.
           // This creates continuity workspace only; it does not book a visit.
-          if (!latest && selectedAppointmentId) {
+          if (
+            !latest &&
+            selectedAppointmentId &&
+            ['scheduled', 'upcoming', 'today', 'rescheduled', 'date_unknown'].includes(selectedAppointmentStatus || '')
+          ) {
             try {
               const generated = await postJSON('/appointment-workspaces/ensure-upcoming', {}) as { workspace?: WorkspaceRecord | null }
-              latest = generated.workspace || null
+              // Never attach a workspace for a different appointment just
+              // because it happens to be the next one returned by the server.
+              latest = generated.workspace?.appointment_id === selectedAppointmentId
+                ? generated.workspace
+                : null
+              if (!latest && !cancelled) {
+                setMessage('Your visit summary is ready. Its preparation workspace could not be matched to this appointment; no other visit was substituted.')
+              }
             } catch {
               if (!cancelled) setMessage('Your visit summary is ready. Its preparation workspace could not be saved just now; you can still review the summary and try again later.')
             }
@@ -490,7 +528,7 @@ export default function AppointmentWorkspace() {
         decisions: recordedDecisions.trim(),
         instructions: recordedInstructions.trim(),
         unanswered: unansweredQuestions.trim(),
-        followUps: appointmentFollowUpsFromText(followUps),
+        followUps: appointmentFollowUpsFromText(followUps, record?.payload, record?.id || appointmentId),
         attachedEvidenceIds: nextIds,
         captureStage: 'after',
       }
@@ -580,7 +618,7 @@ export default function AppointmentWorkspace() {
         decisions: recordedDecisions.trim(),
         instructions: recordedInstructions.trim(),
         unanswered: unansweredQuestions.trim(),
-        followUps: appointmentFollowUpsFromText(followUps),
+        followUps: appointmentFollowUpsFromText(followUps, record?.payload, record?.id || appointmentId),
         attachedEvidenceIds,
         captureStage: stage,
       }
@@ -621,13 +659,8 @@ export default function AppointmentWorkspace() {
       setRecord(saved)
       setSaveRetry(null)
       setMessage('Your note is saved as a caregiver report.')
-      if (stage === 'after' && appointmentId) {
-        try {
-          await patchJSON('/appointments/' + encodeURIComponent(appointmentId) + '/lifecycle', { status: 'completed' })
-        } catch {
-          setError('Your note is saved, but the appointment could not be marked as occurred. Retry the appointment status update.')
-        }
-      }
+      // Saving after-visit notes is not itself an attendance confirmation.
+      // Appointment lifecycle changes require a separate explicit caregiver action.
       try {
         await refreshSavedWorkspace()
         if (stage === 'after') {
