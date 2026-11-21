@@ -104,7 +104,8 @@ assert.ok(
   workspaceMore.includes("<CaregiverHandoverInbox />"),
   "Today stays focused on care orientation and primary actions; caregiver handover requests remain available under More"
 );
-assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Ask SolenOS remains directly accessible");
+assert.ok(workspaceHome.includes('href="/workspace/open-loops"'), "Follow-ups remains directly accessible from Today");
+assert.doesNotMatch(workspaceHome, /\/workspace\/companion/, "Care Assistant remains secondary under More");
 assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Add a care update remains directly accessible");
 assert.match(currentUnderstanding, /evidenceReviewOpen \? <EvidenceReviewPanel personId={personId} \/>/, "evidence review mounts only when its own disclosure is opened");
 assert.match(currentUnderstanding, /claimAssessmentOpen \? <ClaimAssessmentPanel \/>/, "claim review mounts only when its own disclosure is opened");
