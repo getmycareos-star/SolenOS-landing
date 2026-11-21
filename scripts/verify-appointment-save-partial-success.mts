@@ -11,9 +11,15 @@ assert.ok(save.includes("setSaveRetry({ signature: saveSignature, key: requestKe
 assert.ok(save.includes("idempotency_key: requestKey"), "appointment create and update requests must send the same idempotency key on retry");
 assert.ok(save.includes("setRecord(saved)"), "the confirmed durable record must update local state");
 assert.ok(save.includes("setSaveRetry(null)"), "a confirmed write must release its pending retry key");
-assert.match(
-  save,
-  /try \{\s*await refreshSavedWorkspace\(\)\s*\} catch \{\s*setError\('Your note was saved\. Appointment details could not refresh; open appointment support again to retry\.'\)\s*\}/s,
+const confirmedSaveMessage = save.indexOf("setMessage('Your note is saved as a caregiver report.')");
+const refreshAfterSave = save.indexOf("await refreshSavedWorkspace()", confirmedSaveMessage);
+const partialSuccessError = save.indexOf("Your note was saved. Appointment details could not refresh; open appointment support again to retry.", refreshAfterSave);
+assert.ok(
+  confirmedSaveMessage >= 0 && refreshAfterSave > confirmedSaveMessage && partialSuccessError > refreshAfterSave,
   "a workspace refresh failure after a confirmed write must be reported as partial success, never as a failed save",
+);
+assert.ok(
+  save.includes("Your note is saved. SolenOS could not finish preparing the review suggestions; you can retry."),
+  "a review-suggestion failure after a confirmed write must preserve the saved state and offer a retry",
 );
 console.log("Appointment save checks passed: idempotent retry and truthful partial-success state.");
