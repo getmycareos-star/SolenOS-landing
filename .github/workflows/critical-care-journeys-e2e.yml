@@ -37,6 +37,8 @@ on:
     branches: [main]
     paths:
       - "e2e/critical-care-journeys.mjs"
+      - "e2e/document-continuity-stubbed-inference.mjs"
+      - "e2e/document-test-backend.py"
       - "e2e/anonymous-account-continuity.mjs"
       - "e2e/web-push-delivery.mjs"
       - "e2e/dark-mode-audit.mjs"
