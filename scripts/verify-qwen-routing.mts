@@ -82,9 +82,9 @@ assert(!assist.includes("reply.model"), "Provider/model names must not be shown 
 
 requireText("src/app/workspace/page.tsx", [
   'import Link from "next/link";',
-  'href="/workspace/companion"',
-  "Ask SolenOS",
-  "Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.",
+  'href="/workspace/open-loops"',
+  "View follow-ups",
+  "Add something you noticed, or review an open concern and what happens next. You can take things one step at a time.",
 ]);
 assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
   "The caregiver home must route questions through the conversational Companion, not a separate care-management assistant panel.");
