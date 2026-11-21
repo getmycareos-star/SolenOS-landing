@@ -664,7 +664,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             ) : (availability === 'available' || availability === 'unverified') && !requestError ? (
               <div className="companion-empty">
                 <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-                <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
+                <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>Conversations are saved here. Nothing is added to your Care Record unless you choose to save a message as a care note and approve it. Use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a> to record care information directly.</p></div>
                 {availability === 'unverified' && <p className="companion-empty-footnote" role="status">The Care Assistant has not completed a response yet. Send your first question to check that it is working.</p>}
                 <div className="companion-starters">
                   {STARTER_PROMPTS.map(item => {
@@ -820,7 +820,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             </div>
           )}
         </section>
-        <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>The Care Assistant can help organise notes and questions. It does not diagnose, replace a healthcare professional, or decide what is added to your Care Record.</p></div></aside>
+        <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>The Care Assistant can help organise notes and questions. It does not diagnose or replace a healthcare professional. You decide whether a suggested care report is added to your Care Record.</p></div></aside>
       </div>
 
       {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice || showReviewedCareUpdates || availability === 'available' || availability === 'unverified') && <section className="companion-care-updates" aria-label="Care suggestions to review">
