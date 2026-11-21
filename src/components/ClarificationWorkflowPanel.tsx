@@ -376,25 +376,42 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       return;
     }
     setHistoryError("");
-    try {
-      const [rows, reviews] = await Promise.all([
-        getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/answer-history`),
-        getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/review-history`),
-      ]);
+    const [answerResult, reviewResult] = await Promise.allSettled([
+      getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/answer-history`),
+      getJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestionId)}/review-history`),
+    ]);
+    if (answerResult.status === "fulfilled") {
+      const rows = answerResult.value;
       if (!Array.isArray(rows) || rows.some((row) =>
         row?.question_id !== selectedQuestionId || row?.person_id !== scopePersonId)) {
-        throw new Error("Invalid or cross-record answer history");
-      }
-      if (!Array.isArray(reviews) || reviews.some((row) =>
-        row?.question_id !== selectedQuestionId || row?.person_id !== scopePersonId)) {
-        throw new Error("Invalid or cross-record review history");
+        setHistory([]);
+        setReviewEvents([]);
+        setHistoryError("Earlier answers could not be verified for this care record. Please try again.");
+        return;
       }
       setHistory(rows as AnswerEvent[]);
-      setReviewEvents(reviews as ReviewEvent[]);
-    } catch {
+    } else {
       setHistory([]);
+    }
+    if (reviewResult.status === "fulfilled") {
+      const reviews = reviewResult.value;
+      if (!Array.isArray(reviews) || reviews.some((row) =>
+        row?.question_id !== selectedQuestionId || row?.person_id !== scopePersonId)) {
+        setHistory([]);
+        setReviewEvents([]);
+        setHistoryError("Review history could not be verified for this care record. Please try again.");
+        return;
+      }
+      setReviewEvents(reviews as ReviewEvent[]);
+    } else {
       setReviewEvents([]);
-      setHistoryError("Earlier answers or their review history could not be loaded. Please try again.");
+    }
+    if (answerResult.status === "rejected" && reviewResult.status === "rejected") {
+      setHistoryError("Earlier answers and their review history could not be loaded. Please try again.");
+    } else if (answerResult.status === "rejected") {
+      setHistoryError("Earlier answers could not be loaded. Please try again.");
+    } else if (reviewResult.status === "rejected") {
+      setHistoryError("Review history could not be loaded. The saved answers are still shown, but their latest review status may be incomplete.");
     }
   }, [scopePersonId, selectedQuestionId]);
 
