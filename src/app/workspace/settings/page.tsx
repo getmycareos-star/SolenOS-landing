@@ -64,6 +64,13 @@ function notificationCategoryLabel(category: string): string {
   }
 }
 
+function notificationReviewHref(category: string): string | null {
+  if (category === "care_attention" || category === "care_change") return "/workspace/care-continuity";
+  if (category === "open_loop_due") return "/workspace/open-loops";
+  if (category === "reminder_due") return "/workspace/reminders";
+  return null;
+}
+
 /** Notification controls persist to the authenticated care-record backend. */
 function NotificationsCard() {
   const { show, render } = useToast();
@@ -325,7 +332,11 @@ function NotificationsCard() {
                 </span>
               )}
               <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {notificationCategoryLabel(item.category)}</span>
-              {item.category === "open_loop_due" && <Link href="/workspace/open-loops" className="mobile-settings-hint">Review follow-ups</Link>}
+              {notificationReviewHref(item.category) && (
+                <Link href={notificationReviewHref(item.category)!} className="mobile-settings-hint">
+                  {item.category === "open_loop_due" ? "Review follow-ups" : item.category === "reminder_due" ? "Review reminders" : "Review in Care Record"}
+                </Link>
+              )}
               {(item.status ?? "active") === "active"
                 ? <span className="mobile-settings-hint">Needs attention</span>
                 : <span className="mobile-settings-hint">{item.status === "superseded" ? "Replaced by newer information" : item.status === "resolved" ? "No longer needs attention" : "Cancelled"}</span>}
