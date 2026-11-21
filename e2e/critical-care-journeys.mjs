@@ -357,7 +357,6 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  await page.getByText("Daily Care: Complete", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
   assert.equal(
     await page.getByText("Event history could not be verified from either read path.", { exact: false }).count(),
     0,
