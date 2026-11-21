@@ -2435,7 +2435,12 @@ await record("09A appointment outcome requires caregiver review before LCR retri
 
   const appointmentPage = await createBrowserPage(session, "/workspace/appointments");
   await appointmentPage.page.getByRole("heading", { name: "Your appointment, supported by SolenOS" }).waitFor({ timeout: 20_000 });
-  await appointmentPage.page.getByRole("button", { name: "Open appointment support", exact: true }).click();
+  const appointmentSupportToggle = appointmentPage.page.locator(".appointment-workspace .appointment-heading .appointment-primary");
+  assert.ok(await appointmentSupportToggle.count(), "appointment support toggle must be present");
+  if (await appointmentSupportToggle.getAttribute("aria-expanded") !== "true") {
+    await appointmentSupportToggle.click();
+  }
+  assert.equal(await appointmentSupportToggle.getAttribute("aria-expanded"), "true", "appointment support must be expanded before reviewing the saved outcome");
   await appointmentPage.page.getByRole("button", { name: "After", exact: true }).click();
   await appointmentPage.page.getByRole("heading", { name: "Appointment information gathered", exact: true }).waitFor({ timeout: 20_000 });
   await appointmentPage.page.getByText(caregiverReport, { exact: true }).waitFor({ timeout: 15_000 });
