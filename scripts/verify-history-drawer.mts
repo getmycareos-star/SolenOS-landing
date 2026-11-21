@@ -92,7 +92,7 @@ assert.match(caregiverLanguage, /capture\.scales/, "saved ratings are rendered f
 assert.match(caregiverLanguage, /capture\.medications/, "saved medicine details are rendered from the original capture");
 assert.match(caregiverLanguage, /Measurements and ratings are shown as entered/, "structured values retain an accuracy limitation");
 assert.match(caregiverLanguage, /return lines\.join\("\\n"\)/, "structured capture details use readable line breaks");
-assert.ok(drawer.includes('getJSON("/open-loops?limit=100")'), "saved follow-ups must be retrieved from the authenticated follow-up service");
+assert.match(drawer, /getJSON\(`\/open-loops\?limit=\$\{pageSize\}&offset=\$\{page \* pageSize\}`\)/, "saved follow-ups must be retrieved from the authenticated follow-up service using bounded, complete pagination");
 assert.match(drawer, /mapFollowUp/, "persisted follow-ups must be represented in care history using their saved fields");
 assert.match(drawer, /const followUpResult = results\[8\]/, "follow-up retrieval must have an independent result state");
 assert.match(drawer, /followUpPayload\.count > followUps\.length/, "bounded follow-up retrieval must be disclosed using the backend total");
