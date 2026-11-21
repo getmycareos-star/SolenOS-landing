@@ -36,11 +36,11 @@ function WorkspaceHomeInner() {
       <section className="solenos-care-next-step" aria-label="Next step">
         <div>
           <h2>When you’re ready, here are two ways to continue.</h2>
-          <p>Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.</p>
+          <p>Add something you noticed, or review an open concern and what happens next. You can take things one step at a time.</p>
         </div>
         <div className="solenos-care-next-step__actions">
           <Link href="/workspace/daily-care" className="solenos-care-primary-action">Share an update</Link>
-          <Link href="/workspace/companion" className="solenos-care-secondary-action">Ask Care Assistant</Link>
+          <Link href="/workspace/open-loops" className="solenos-care-secondary-action">View follow-ups</Link>
         </div>
       </section>
     </div>
