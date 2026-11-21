@@ -5,6 +5,7 @@ const legacyRoute = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8")
 const capture = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/app/workspace/care-continuity/page.tsx", "utf8");
 const currentUnderstanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const caregiverLanguage = fs.readFileSync("src/lib/caregiver-language.ts", "utf8");
 const captureReview = fs.readFileSync("src/components/workflows/CaptureAnalysisReview.tsx", "utf8");
 const integrityPanel = fs.readFileSync("src/components/CareContinuityIntegrityPanel.tsx", "utf8");
 const evidenceReview = fs.readFileSync("src/components/EvidenceReviewPanel.tsx", "utf8");
@@ -164,7 +165,8 @@ assert.match(currentUnderstanding, /Original report attached|Related report link
 assert.match(currentUnderstanding, /Original report text is not available in this view/, "a linked source without readable text must be distinguished from a missing link");
 assert.match(currentUnderstanding, /We couldn’t check whether this care summary is up to date/, "a failed freshness check must preserve the saved summary and warn that it may be out of date");
 assert.match(currentUnderstanding, /original report is not linked to this item/i, "a missing source link must be distinguished from unavailable source text");
-assert.match(currentUnderstanding, /captureRecord\.notes/, "serialized capture details must be reduced to the original caregiver report");
+assert.match(caregiverLanguage, /for \(const key of \["notes", "original_notes", "text", "description", "observation", "summary"\]\)/, "serialized capture notes must be reduced to the original caregiver report before display");
+assert.match(currentUnderstanding, /caregiverReadableCaptureText\(item\.description\)/, "the current-care projection must use the caregiver-readable capture parser");
 assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "care-source descriptions must pass through the caregiver-readable parser");
 assert.ok(currentUnderstanding.includes("if (!item.description?.trim()) return null;"), "missing current-care descriptions are omitted instead of rendered as empty-state filler");
 assert.ok(currentUnderstanding.includes("Reported as current"), "medication status is explicitly qualified as a report, not a verified instruction");
