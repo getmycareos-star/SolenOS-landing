@@ -17,11 +17,11 @@ assert.ok(prompt.includes("data_improvement_consent === true"), "feedback requir
 assert.ok(prompt.includes('apiUrl("/api/v1/feedback")'), "feedback must use the authenticated backend endpoint");
 assert.ok(prompt.includes('"Content-Type": "application/json"'), "feedback must use a JSON request body");
 assert.ok(prompt.includes("body: JSON.stringify({"), "feedback detail must not be placed in the URL");
-assert.doesNotMatch(prompt, /api\\/v1\\/feedback\\?/, "feedback text must not appear in URL query strings");
+assert.ok(!prompt.includes("/api/v1/feedback?"), "feedback text must not appear in URL query strings");
 assert.ok(prompt.includes("category: \"human_validation\""), "feedback category must be explicit");
 assert.ok(prompt.includes("source: \"post_response_understanding_prompt\""), "feedback provenance must be retained");
 assert.ok(prompt.includes("Authorization: `Bearer ${session.access_token}`"), "feedback must use the server-issued session");
 assert.ok(prompt.includes("Privacy settings"), "caregivers without opt-in must be directed to privacy settings");
-assert.ok(!/body:\s*JSON\.stringify/.test(prompt), "the backend feedback endpoint does not accept a JSON request body");
+assert.ok(!prompt.includes("URLSearchParams"), "feedback must not serialize sensitive detail into query parameters");
 
 console.log("Learning-first feedback uses the authenticated, consent-gated backend contract.");
