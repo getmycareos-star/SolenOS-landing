@@ -131,13 +131,13 @@
 
 ### B. No fake success states / no fake functionality
 - [x] Profile save feedback is shown only after authenticated `PUT /care-profile` returns the saved server profile; failure is surfaced without claiming a save (verified `src/app/workspace/settings/page.tsx`).
-- [x] No "Synced" shown — app does not claim sync/cross-device (Security card honestly states "Account sign-in and cross-device sync are not yet available") (verified `settings/page.tsx`)
-- [x] No "Account restored" — no fake account recovery; account controls all disabled with honest explanation (verified `SecurityCard`)
+- [x] Account sign-in is enabled through backend-backed create/login; the UI does not claim real-time sync. A caregiver can sign in to the same account on another authorized device; separate-browser/device E2E remains unverified.
+- [x] Account creation, sign-in, sign-out, account deletion and recovery-code generation use backend APIs; success is shown only after the backend responds. Verify the recovery-code redemption path separately before claiming full account recovery.
 - [ ] Feedback copy in `HelpImproveSolenos.tsx` reports receipt only after the supported `POST /api/v1/feedback` request succeeds. Do not claim `/api/research-feedback` exists; verify backend persistence with the current feedback integration tests.
 - [x] FIXED: `HelpImproveSolenos` `submit()` previously had a silent `catch {}` and always showed thanks even if POST failed. Now only shows success when the request succeeds, and surfaces a clear error + allows retry on failure.
 - [x] FIXED: `UnderstandingFeedbackPrompt` `submit()` previously had a silent `catch {}` that set `step("hidden")` on network failure (no user feedback). Now surfaces a readable error (`submitError`) rendered with `role="alert"` and keeps the send/helpful buttons available for retry. Verified by `npm run build` (BUILD_ID: `OsKJZx6n-UF1eaf_-chIh`).
 - [x] Every visible control fully functional OR clearly disabled — Security/account controls disabled with tooltip explanation; all nav/FAB/save/upload/capture buttons functional (verified)
-- [x] Audit passed: Save (persists), Login/Signup/Email (disabled with honest "not available yet"), Upload (real), Scan/Snap (real with graceful fallback), Delete (confirm + real clear), Support (mailto), Feedback (real durable POST), Toggles (persist), Settings (persist) (verified)
+- [ ] Full workspace audit: Profile and account create/login use backend APIs; upload, scan/snap, feedback and settings have real flows. Complete current-main PostgreSQL/browser lifecycle verification for every workflow before marking the entire audit passed.
 
 ### C. AI truthfulness & product identity
 - [x] AI separates Known / Possible / Unknown — `CALIBRATED_UNCERTAINTY_CONTRACT` + `care-reality` separates human_fact from interpretation; `caregiver-response-dto` returns `what_i_understood`/`what_is_uncertain`/`what_needs_clarification` (verified live response)
@@ -160,7 +160,7 @@
 ### G. User data ownership & recovery
 - [ ] Care-record recovery after device loss is not established by this checklist. Verify the actual care-record persistence and recovery contract independently; feedback storage is not care-record backup.
 - [ ] End-to-end ownership proof for every persistent category — server-issued bearer sessions and backend permission checks are authoritative; client care keys/session IDs are not credentials. Verify cross-caregiver and cross-person isolation for each workflow, not only identity bootstrap.
-- [x] Multi-device consistency OR remove restoration claims — Security card honestly states "cross-device sync not yet available" (no false claim) (verified)
+- [ ] Account sign-in enables the same account to retrieve its server-held Care Record on another device. Verify a separate browser/device login, full data readback, logout/revocation and cross-caregiver denial before claiming device-loss recovery.
 
 ### H. Empty states / delete behavior / error recovery
 - [x] Empty states honest — "Your care record is ready." / "No documents yet" / "No timeline yet" (honest, not "complete") (verified all route pages)
