@@ -134,7 +134,7 @@ assert.doesNotMatch(integrityPanel, /<form\b/, "Care Continuity integrity panel 
 assert.doesNotMatch(integrityPanel, /Review window in days|reviewWindows|setReviewWindows/, "review-window values cannot be independently entered from Care Continuity");
 assert.doesNotMatch(integrityPanel, /When information differs|Next questions|recordOutcome|loadResolutionHistory/, "legacy duplicate conflict and question workflows are removed from the integrity panel");
 assert.match(currentUnderstanding, /<ConflictResolutionPanel personId={personId} \/>/, "conflict review remains available in its dedicated section");
-assert.match(currentUnderstanding, /Questions that may help clarify care/, "care questions are discoverable without dominating the first LCR view");
+assert.match(currentUnderstanding, /Questions to resolve/, "care questions are discoverable without dominating the first LCR view");
 assert.match(currentUnderstanding, /clarificationOpen \? <ClarificationWorkflowPanel/, "the clarification workflow mounts only when a caregiver opens it");
 assert.doesNotMatch(currentUnderstanding, /careAttention\.needs_clarification\.map/, "care questions are not duplicated in the priority summary and clarification workflow");
 assert.match(currentUnderstanding, /Review useful questions/, "the summary routes unresolved clarification needs to one shared question list");
