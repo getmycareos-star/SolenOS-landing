@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
-import { WORKSPACE_NAVIGATION } from "@/lib/workspace-navigation";
+import { WORKSPACE_NAVIGATION, WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 import { SolenosWordmark } from "@/components/brand";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
 import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, revokeAnonymousSession } from "@/api/client";
@@ -306,10 +306,15 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
     }
   }, [installPrompt, router]);
 
-  const active = (href: string) =>
-    href === "/workspace"
-      ? pathname === href
-      : pathname === href || pathname.startsWith(href + "/");
+  const active = (href: string) => {
+    if (href === "/workspace") return pathname === href;
+    if (href === "/workspace/more") {
+      return pathname === href || WORKSPACE_SECONDARY_NAVIGATION.some((item) =>
+        pathname === item.href || pathname.startsWith(item.href + "/"),
+      );
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   return (
     <div className={`solenos-chat-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
