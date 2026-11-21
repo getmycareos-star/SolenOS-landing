@@ -9,6 +9,7 @@ const targets = [
 const routes = [
   "/workspace",
   "/workspace/open-loops",
+  "/workspace/reminders",
   "/workspace/timeline",
   "/workspace/care-continuity",
   "/workspace/companion",
