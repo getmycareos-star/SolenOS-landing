@@ -897,3 +897,20 @@
   color: var(--theme-panel-muted) !important;
   -webkit-text-fill-color: var(--theme-panel-muted) !important;
 }
+
+
+/* Second-pass fixes from the post-remediation 88-viewport contrast report. */
+:root[data-solenos-theme="dark"] .solenos-chat-app div.lcr-situation-assessment > ul.lcr-current-facts > li.lcr-current-fact {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-delivery {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-list-head p {
+  color: var(--theme-panel-muted) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
