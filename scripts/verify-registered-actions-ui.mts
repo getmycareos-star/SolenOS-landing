@@ -60,8 +60,11 @@ assert.ok(
 assert.ok(
   lcr.includes('Record what happened before completing this follow-up.') &&
     lcr.includes('if (status === "completed")') &&
-    lcr.includes('await load(true)'),
-  "The caregiver must record an outcome and refresh the canonical LCR after completion",
+    lcr.includes('await load(true)') &&
+    lcr.includes('const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(personId)}`)') &&
+    lcr.includes('persisted?.status === "completed"') &&
+    lcr.includes('Completion was saved, but the response was interrupted.'),
+  "The caregiver must record an outcome, refresh the canonical LCR and reconcile an uncertain completion response before retrying",
 );
 assert.ok(
   lcr.includes('await patchJSON(`/open-loops/') && lcr.includes('status: "deferred"'),
