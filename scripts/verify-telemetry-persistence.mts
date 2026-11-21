@@ -41,6 +41,14 @@ console.log("=== Telemetry Persistence — Relief Validation Storage ===\n");
 
 
 const migration = fs.readFileSync("db/migrations/001_telemetry_schema.sql", "utf-8");
+const telemetryServer = fs.readFileSync("src/lib/telemetry-persistence/server.ts", "utf-8");
+if (telemetryServer.includes('import { setFeedbackContainmentFromFeedback } from "./feedback-containment"')) {
+  throw new Error("production telemetry must not statically load the legacy filesystem feedback store");
+}
+if (!telemetryServer.includes('process.env.NODE_ENV !== "production"')) {
+  throw new Error("legacy feedback containment must remain development/test-only");
+}
+
 
 const reliefMigration = fs.readFileSync("db/migrations/002_relief_validation.sql", "utf-8");
 const evidenceMigration = fs.readFileSync("db/migrations/005_postgres_evidence_contract.sql", "utf-8");
