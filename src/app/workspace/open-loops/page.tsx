@@ -343,13 +343,13 @@ export default function FollowUpsPage() {
       const seen = new Set<string>();
       return items.filter((item) => { const key = decisionKey(item); if (seen.has(key)) return false; seen.add(key); return true; });
     };
-    const linkedToSavedFollowUp = (item: AttentionDecision) => loops.some((loop) =>
-      loop.source_type === item.source && loop.source_id === item.record_id
-    );
     return {
-      needsAttention: unique([...(care?.needs_attention_now || []), ...(care?.important_to_address || [])]).filter((item) => !linkedToSavedFollowUp(item)),
-      monitored: unique(care?.can_wait_with_documented_basis || []).filter((item) => !linkedToSavedFollowUp(item)),
-      needsClarification: unique(care?.needs_clarification || []).filter((item) => !linkedToSavedFollowUp(item)),
+      // Keep assessment classification visible even when an Open Loop is linked.
+      // AttentionCard resolves the linked loop so the caregiver sees the correct
+      // category and the saved action history on the same card.
+      needsAttention: unique([...(care?.needs_attention_now || []), ...(care?.important_to_address || [])]),
+      monitored: unique(care?.can_wait_with_documented_basis || []),
+      needsClarification: unique(care?.needs_clarification || []),
     };
   }, [assessment, loops]);
 
@@ -470,8 +470,10 @@ export default function FollowUpsPage() {
 
   const allAttention = [...categorized.needsAttention, ...categorized.monitored, ...categorized.needsClarification];
   const linkedLoops = loops.filter((loop) => !["closed", "cancelled"].includes(loop.status));
-  const linkedKeys = new Set(allAttention.map((item) => String(item.record_id || item.id || "")));
-  const unclassifiedLoops = linkedLoops.filter((loop) => !linkedKeys.has(loop.id));
+  const unclassifiedLoops = linkedLoops.filter((loop) => !allAttention.some((item) =>
+    item.record_id === loop.id
+    || (item.source === loop.source_type && item.record_id === loop.source_id)
+  ));
   const unclassifiedFollowUpItems: AttentionDecision[] = unclassifiedLoops.map((loop) => ({
     title: loop.title,
     category: "needs_clarification",
