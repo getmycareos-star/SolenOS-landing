@@ -99,7 +99,26 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   const observed = [];
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
+  page.on("response", async (response) => {
+    const url = new URL(response.url());
+    if (!url.pathname.startsWith("/api/")) return;
+    const entry = { path: url.pathname, status: response.status() };
+    if (url.pathname.startsWith("/api/v1/events/") && response.ok()) {
+      const payload = await response.json().catch(() => null);
+      const items = Array.isArray(payload) ? payload
+        : Array.isArray(payload?.items) ? payload.items
+          : Array.isArray(payload?.events) ? payload.events
+            : Array.isArray(payload?.data) ? payload.data : [];
+      entry.event_count = items.length;
+      entry.valid_event_count = items.filter((item) =>
+        item && typeof item.id === "string" &&
+        item.person_id === session.person.id &&
+        typeof item.event_type === "string" &&
+        typeof item.title === "string"
+      ).length;
+    }
+    observed.push(entry);
+  });
   await page.route("**/api/**", async (route) => {
     try {
       // route.fetch() runs outside Chromium and otherwise bypasses
@@ -357,6 +376,11 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
+  const browserEventReads = observed.filter((item) => item.path.startsWith("/api/v1/events/"));
+  assert.ok(
+    browserEventReads.some((item) => item.status === 200 && item.valid_event_count > 0),
+    `HistoryDrawer must read the persisted event with the active caregiver identity: ${JSON.stringify(browserEventReads)}`,
+  );
   assert.equal(
     await page.getByText("Event history could not be verified from either read path.", { exact: false }).count(),
     0,
