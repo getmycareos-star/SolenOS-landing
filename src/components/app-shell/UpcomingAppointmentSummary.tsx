@@ -83,9 +83,9 @@ export function UpcomingAppointmentSummary() {
           {appointment.location && <p>{caregiverSafeAssistantText(appointment.location)}</p>}
           <small>This is a Care Record entry. SolenOS has not booked or confirmed it with a provider.</small>
         </div>
-      ) : brief?.appointments.length ? (
+      ) : (brief?.appointments?.length ?? 0) > 0 ? (
         <ul className="solenos-upcoming-appointment__list">
-          {brief.appointments.slice(0, 2).map(item => (
+          {(brief.appointments ?? []).slice(0, 2).map(item => (
             <li key={item.source_id}>
               <strong>{caregiverSafeAssistantText(item.title) || "Recorded appointment"}</strong>
               <span>{displayDate(item.scheduled_at)} · {caregiverStatusLabel(item.status) || "Status not recorded"}</span>
