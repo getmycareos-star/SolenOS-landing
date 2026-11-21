@@ -292,6 +292,31 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.equal(capturePayload?.care_continuity_execution?.stages?.reconciliation, "pending");
   assert.equal(capturePayload?.care_continuity_execution?.stages?.longitudinal_retrieval, "not_verified");
   assert.equal(capturePayload?.qwen_written_to_lcr, false, "model suggestions must not be written directly to the Living Care Record");
+  const persistedEventRead = await request(
+    `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    { token: firstVisitSession.access_token },
+  );
+  const persistedEvents = Array.isArray(persistedEventRead.payload)
+    ? persistedEventRead.payload
+    : [];
+  const capturedEvent = persistedEvents.find((event) => event?.id === capturePayload.care_event_id);
+  console.log("FIRST_VISIT_EVENT_READ", JSON.stringify({
+    status: persistedEventRead.status,
+    count: persistedEvents.length,
+    matching_event_found: Boolean(capturedEvent),
+    matching_event_person_id: capturedEvent?.person_id ?? null,
+    matching_event_title: capturedEvent?.title ?? null,
+    matching_event_description: capturedEvent?.description ?? null,
+  }));
+  assert.equal(persistedEventRead.status, 200, JSON.stringify(persistedEventRead.payload));
+  assert.ok(capturedEvent, "the saved capture event must be retrievable from the authenticated event-history API");
+  assert.equal(capturedEvent.person_id, firstVisitSession.person.id);
+  assert.ok(
+    [capturedEvent.title, capturedEvent.description].some((value) =>
+      typeof value === "string" && value.includes(firstNote)
+    ),
+    "the persisted event must retain the caregiver's original note",
+  );
   console.log("FIRST_VISIT_CAPTURE_RESPONSE", JSON.stringify({
     status: captureResponse.status(),
     keys: Object.keys(capturePayload ?? {}),
