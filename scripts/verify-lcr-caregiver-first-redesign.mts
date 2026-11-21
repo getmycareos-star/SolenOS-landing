@@ -17,6 +17,7 @@ const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8
 const structuredDailyCapture = fs.readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
 const durableWriteSender = fs.readFileSync("src/lib/offline-sync/send-queued-care-write.ts", "utf8");
 const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const workspaceMore = fs.readFileSync("src/app/workspace/more/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
@@ -99,8 +100,9 @@ assert.match(currentUnderstanding, /There isn’t enough recorded care informati
 assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) => void load\(true\)\}/s, "failed current-care retrieval renders an actionable error state with a real retry");
 assert.ok(
   workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf('className="solenos-care-next-step"') &&
-  workspaceHome.indexOf('className="solenos-care-next-step"') < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
-  "workspace order is care orientation, primary actions, then handover inbox"
+  !workspaceHome.includes("<CaregiverHandoverInbox />") &&
+  workspaceMore.includes("<CaregiverHandoverInbox />"),
+  "Today stays focused on care orientation and primary actions; caregiver handover requests remain available under More"
 );
 assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Ask SolenOS remains directly accessible");
 assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Add a care update remains directly accessible");
@@ -219,6 +221,9 @@ console.log("✓ underlying capture and longitudinal continuity components remai
 assert.match(companion, /Care Assistant/, "the caregiver-facing assistant uses the approved caregiver-facing name");
 assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
 assert.match(navigation, /label: "Care Assistant"/, "workspace navigation uses the approved caregiver-facing name");
+assert.match(navigation, /care:\s*\[[\s\S]*?label: "Follow-ups"/, "Follow-ups remains a primary care destination");
+assert.match(navigation, /WORKSPACE_SECONDARY_NAVIGATION[\s\S]*?label: "Care Assistant"/, "Care Assistant remains secondary under More");
+assert.doesNotMatch(navigation, /support:\s*\[[\s\S]*?label: "Care Assistant"/, "AI is not promoted above the core follow-up workflow");
 assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
 assert.doesNotMatch(publicHome, /Care Assistant/, "the public home page uses AI Companion");
