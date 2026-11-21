@@ -89,7 +89,9 @@ assert.match(followUps, /postJSON\("\/open-loops"/, "adding an event follow-up p
 assert.match(followUps, /source_type: item\.source,\s*source_id: item\.record_id/, "a persisted follow-up retains its source record link");
 assert.match(followUps, /evidence: uniqueEvidenceIds\(item\)\.map\(\(evidenceId\) => \(\{ evidence_id: evidenceId \}\)\)/, "follow-up creation preserves authorized source evidence links");
 assert.match(followUps, /pendingCreateKeys\.current\[sourceKey\] \|\| crypto\.randomUUID\(\)/, "uncertain follow-up creation retries reuse an idempotency key");
-assert.match(followUps, /linkedToSavedFollowUp/, "an event suggestion already linked to a saved follow-up is not shown as a second responsibility");
+assert.match(followUps, /const loop = loops\.find\(\(candidate\) => candidate\.id === item\.record_id \|\| \(candidate\.source_type === item\.source && candidate\.source_id === item\.record_id\)\)/, "an event suggestion linked to a saved follow-up must resolve to that existing responsibility");
+assert.match(followUps, /\{!loop && \(item\.source === "events" \|\| item\.source === "persisted_change"\)[\s\S]*?Add to Follow-ups/, "a source-linked suggestion must not offer a second Add to Follow-ups action");
+assert.match(followUps, /const unclassifiedLoops = linkedLoops\.filter\(\(loop\) => !allAttention\.some\(\(item\) =>[\s\S]*?item\.source === loop\.source_type && item\.record_id === loop\.source_id/, "a source-linked saved follow-up must not be reintroduced as an unclassified duplicate");
 assert.match(followUps, /candidate\.source_type === item\.source && candidate\.source_id === item\.record_id/, "a source-linked saved follow-up remains actionable from its original source");
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed care information is progressively disclosed");
 assert.doesNotMatch(currentUnderstanding, /Missing information does not mean everything is fine|Do not assume there is nothing that needs attention/, "obsolete defensive disclaimers are removed from caregiver-facing copy");
