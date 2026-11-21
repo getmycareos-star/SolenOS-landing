@@ -89,7 +89,8 @@ assert.match(followUps, /postJSON\("\/open-loops"/, "adding an event follow-up p
 assert.match(followUps, /source_type: item\.source,\s*source_id: item\.record_id/, "a persisted follow-up retains its source record link");
 assert.match(followUps, /evidence: uniqueEvidenceIds\(item\)\.map\(\(evidenceId\) => \(\{ evidence_id: evidenceId \}\)\)/, "follow-up creation preserves authorized source evidence links");
 assert.match(followUps, /pendingCreateKeys\.current\[sourceKey\] \|\| crypto\.randomUUID\(\)/, "uncertain follow-up creation retries reuse an idempotency key");
-assert.match(followUps, /linkedToSavedFollowUp/, "an event suggestion already linked to a saved follow-up is not shown as a second responsibility");
+assert.match(followUps, /const loop = loops\.find\(\(candidate\) => candidate\.id === item\.record_id \|\| \(candidate\.source_type === item\.source && candidate\.source_id === item\.record_id\)\)/, "an event suggestion resolves to its existing source-linked follow-up");
+assert.match(followUps, /!loop && \(item\.source === "events" \|\| item\.source === "persisted_change"\)/, "a linked event suggestion stays in its assessment category but cannot create a second follow-up");
 assert.match(followUps, /candidate\.source_type === item\.source && candidate\.source_id === item\.record_id/, "a source-linked saved follow-up remains actionable from its original source");
 assert.match(currentUnderstanding, /lcr-progressive-disclosure/, "detailed care information is progressively disclosed");
 assert.doesNotMatch(currentUnderstanding, /Missing information does not mean everything is fine|Do not assume there is nothing that needs attention/, "obsolete defensive disclaimers are removed from caregiver-facing copy");
