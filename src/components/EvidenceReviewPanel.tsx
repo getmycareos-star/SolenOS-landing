@@ -721,29 +721,57 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       policy_version: 'evidence-review-v1',
       criteria,
     }
-    const fingerprint = JSON.stringify(requestPayload)
+    const fingerprintSource = [
+      requestPayload.evidence_id,
+      requestPayload.person_id,
+      requestPayload.review_type,
+      requestPayload.outcome,
+      requestPayload.rationale,
+      requestPayload.policy_version,
+      sourceResult,
+      corroborationResult,
+      temporalResult,
+      freshnessResult,
+      completenessResult,
+    ].map((value) => String(value).length + ":" + String(value)).join("")
+    let fingerprint = fingerprintSource
+    let fingerprintIsHashed = false
+    try {
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(fingerprintSource))
+      fingerprint = Array.from(new Uint8Array(digest))
+        .map((value) => value.toString(16).padStart(2, "0"))
+        .join("")
+      fingerprintIsHashed = true
+    } catch {
+      // Do not persist caregiver-entered review text when Web Crypto is unavailable.
+      // The in-memory request key still protects retries while this component remains mounted.
+    }
     const storageKey = `solenos:evidence-review:${encodeURIComponent(personId)}:${encodeURIComponent(selected.id)}`
     if (!pendingReviewRequestRef.current || pendingReviewRequestRef.current.fingerprint !== fingerprint) {
       let restoredKey: string | null = null
-      try {
-        const savedRetry = window.sessionStorage.getItem(storageKey)
-        if (savedRetry) {
-          const parsed = JSON.parse(savedRetry) as { key?: unknown; fingerprint?: unknown }
-          if (parsed.fingerprint === fingerprint && typeof parsed.key === 'string' && parsed.key.length >= 8) {
-            restoredKey = parsed.key
+      if (fingerprintIsHashed) {
+        try {
+          const savedRetry = window.sessionStorage.getItem(storageKey)
+          if (savedRetry) {
+            const parsed = JSON.parse(savedRetry) as { key?: unknown; fingerprint?: unknown }
+            if (parsed.fingerprint === fingerprint && typeof parsed.key === 'string' && parsed.key.length >= 8 && parsed.key.length <= 128) {
+              restoredKey = parsed.key
+            }
           }
+        } catch {
+          // Storage may be unavailable in a restricted browser; the in-memory
+          // key still protects retries while this component remains mounted.
         }
-      } catch {
-        // Storage may be unavailable in a restricted browser; the in-memory
-        // key still protects retries while this component remains mounted.
       }
       const key = restoredKey || crypto.randomUUID()
       pendingReviewRequestRef.current = { key, fingerprint, storageKey }
-      try {
-        window.sessionStorage.setItem(storageKey, JSON.stringify({ key, fingerprint }))
-      } catch {
-        // The API remains idempotent for this mounted component even if the
-        // browser blocks session storage.
+      if (fingerprintIsHashed) {
+        try {
+          window.sessionStorage.setItem(storageKey, JSON.stringify({ key, fingerprint }))
+        } catch {
+          // The API remains idempotent for this mounted component even if the
+          // browser blocks session storage.
+        }
       }
     }
     const requestKey = pendingReviewRequestRef.current.key
