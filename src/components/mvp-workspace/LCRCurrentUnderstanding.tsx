@@ -1402,8 +1402,8 @@ export function LCRCurrentUnderstanding() {
     status: "approved" | "in_progress" | "completed" | "cancelled" | "deferred" | "needs_clarification",
   ) => {
     const reason = (actionTransitionReasons[action.id] || "").trim();
-    if (["cancelled", "deferred", "needs_clarification"].includes(status) && !reason) {
-      setActionTransitionErrors((current) => ({ ...current, [action.id]: "Enter a reason before this status change." }));
+    if (["cancelled", "deferred", "needs_clarification", "completed"].includes(status) && !reason) {
+      setActionTransitionErrors((current) => ({ ...current, [action.id]: status === "completed" ? "Record what happened before completing this follow-up." : "Enter a reason before this status change." }));
       return;
     }
     setActionTransitionLoadingId(action.id);
@@ -1415,6 +1415,7 @@ export function LCRCurrentUnderstanding() {
           status,
           expected_version: action.version,
           explicit_completion_confirmation: status === "completed",
+          completion_outcome: status === "completed" ? reason : undefined,
           reason: reason || undefined,
           ...(status === "deferred" && actionDeferredUntil[action.id] ? { deferred_until: new Date(actionDeferredUntil[action.id]).toISOString() } : {}),
         },
@@ -2080,7 +2081,7 @@ export function LCRCurrentUnderstanding() {
                       {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
                       {action.responsible_caregiver_id !== currentCaregiverId && <p role="status">Only the responsible caregiver can change this action. You can still review its status and change history.</p>}
                       <label>
-                        Reason for deferring, cancelling or requesting clarification
+                        {action.status === "completed" ? "Recorded outcome" : "Outcome when completing, or reason for deferring, cancelling or requesting clarification"}
                         <input
                           type="text"
                           value={actionTransitionReasons[action.id] ?? ""}
