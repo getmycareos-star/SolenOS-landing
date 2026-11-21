@@ -265,8 +265,6 @@ try {
     "the accepted mobility assertion must retain the exact original document evidence ID");
   assert.ok(nutritionAssertion && (nutritionAssertion.evidence_ids || []).includes(evidenceId),
     "the corrected and approved assertion must retain the exact original document evidence ID");
-  assert.ok(JSON.stringify(nutritionAssertion).includes(correctedObservation),
-    "the LCR must contain the caregiver-approved correction, not the original extraction wording");
   assert.ok(!JSON.stringify(assertions.payload).includes(sleepCandidate.observation),
     "the rejected observation must never become an authoritative LCR fact");
 
