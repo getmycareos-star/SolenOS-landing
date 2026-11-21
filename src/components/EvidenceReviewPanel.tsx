@@ -790,7 +790,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>Related notes and documents ({relationships.length})</summary>
-          <p>These links help show whether several items came from the same original. They do not confirm whether the information is true.</p>
+          <p>These links help show whether several items came from the same original. They do not confirm whether the information is true. They do not prove that two reports are separate.</p>
           {relationshipsLoading && <p role="status">Loading links to other saved information…</p>}
           {relationshipsError && <p role="alert" style={{ color: 'var(--error)' }}>{relationshipsError} <button type="button" style={button} onClick={() => void loadRelationships()} disabled={relationshipsLoading}>Retry</button></p>}
           {!relationshipsLoading && !relationshipsError && relationships.length === 0 && <p>No other notes or documents are linked to this item yet.</p>}
