@@ -26,10 +26,10 @@ const CARE_EXPERIENCE = [
       "Use it when something happens today, when you need to add or correct a care note, or when you want to capture an update for later review.",
   },
   {
-    title: "AI Companion",
+    title: "Care Assistant",
     subtitle: "Get help working through care situations",
     body:
-      "The AI Companion helps caregivers think through a situation, understand saved information, prepare questions and get ready for appointments or care handoffs. It explains when something is not clear.",
+      "The Care Assistant helps caregivers think through a situation, understand saved information, prepare questions and get ready for appointments or care handoffs. It explains when something is not clear.",
     useWhen:
       "Use it when you want help thinking through a situation, making sense of information, or preparing what to ask a care professional.",
   },
