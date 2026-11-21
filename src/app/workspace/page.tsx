@@ -8,6 +8,7 @@ import Link from "next/link";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
 import { CaregiverHandoverInbox } from "@/components/mvp-workspace/CaregiverHandoverInbox";
 import { FirstVisitWorkspaceRouter } from "@/components/mvp-workspace/FirstVisitWorkspaceRouter";
+import { UpcomingAppointmentSummary } from "@/components/app-shell/UpcomingAppointmentSummary";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
@@ -32,6 +33,7 @@ function WorkspaceHomeInner() {
       <header className="solenos-workspace-page-heading"><p className="solenos-home-eyebrow">THE CARE JOURNEY, REMEMBERED</p><h1>A clearer picture of care.</h1><p>See what has been shared, what has changed, and what may need a little more attention. You can take things one step at a time.</p></header>
       {/* Show the current care situation before inbox and detailed record content. */}
       <LCRCurrentUnderstanding />
+      <UpcomingAppointmentSummary />
       <section className="solenos-care-next-step" aria-label="Next step">
         <div>
           <h2>When you’re ready, here are two ways to continue.</h2>
