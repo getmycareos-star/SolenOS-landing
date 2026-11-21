@@ -14,11 +14,20 @@ function requireText(file: string, snippets: string[]): void {
 }
 
 const assist = read("src/components/qwen/QwenAssistPanel.tsx");
+const appointmentWorkspace = read("src/components/workflows/AppointmentWorkspace.tsx");
+assert(!appointmentWorkspace.includes("QwenAssistPanel"),
+  "Appointment continuity must remain a persisted care workflow, not a separate embedded AI assistant panel.");
 requireText("src/components/workflows/AppointmentWorkspace.tsx", [
-  "import QwenAssistPanel from '@/components/qwen/QwenAssistPanel'",
-  "appointmentId={appointmentId}",
-  "Appointment details and unanswered questions.",
-  "After-appointment notes.",
+  "getJSON('/appointment-workspaces/preparation-brief?window_days=90')",
+  "getJSON('/appointment-workspaces')",
+  "getJSON('/appointment-workspaces/' + encodeURIComponent(recordId) + '/outcome-draft')",
+  "postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {})",
+  "patchJSON('/appointment-workspaces/' + encodeURIComponent(record.id)",
+  "postJSON('/appointment-workspaces'",
+  "patchJSON('/appointments/' + encodeURIComponent(appointmentId) + '/lifecycle'",
+  "Your note is saved as a caregiver report.",
+  "Nothing here changes your Care Record without your approval.",
+  "Retry care-record retrieval",
 ]);
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'postJSON("/assistant/jobs"',
