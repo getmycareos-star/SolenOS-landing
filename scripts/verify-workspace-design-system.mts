@@ -6,11 +6,16 @@ const layout = read("src/app/workspace/layout.tsx");
 const base = read("src/app/workspace/experience-design-system.css");
 const v2 = read("src/app/workspace/experience-design-system-v2.css");
 const navigation = read("src/app/workspace/navigation-accessibility.css");
+const accessibility = read("src/app/accessibility-overrides.css");
 
-assert.ok(layout.indexOf('import "./experience-design-system.css";') < layout.indexOf('import "./experience-design-system-v2.css";'),
-  "the base workspace stylesheet must load before the v2 caregiver overrides");
-assert.ok(layout.includes('import "./navigation-accessibility.css";'),
-  "navigation accessibility rules must remain loaded");
+const baseImport = layout.indexOf('import "./experience-design-system.css";');
+const v2Import = layout.indexOf('import "./experience-design-system-v2.css";');
+const navigationImport = layout.indexOf('import "./navigation-accessibility.css";');
+const accessibilityImport = layout.indexOf('import "./../accessibility-overrides.css";');
+assert.ok(baseImport >= 0 && baseImport < v2Import && v2Import < navigationImport && navigationImport < accessibilityImport,
+  "base styles, v2 overrides, navigation rules and accessibility overrides must load in cascade order");
+assert.match(accessibility, /Shared display preferences and theme overrides; imported after base and mobile styles/,
+  "global accessibility overrides must remain the final workspace stylesheet");
 assert.doesNotMatch(base, /:root\[data-solenos-theme="dark"\] \.solenos-chat-app\s*\{\s*--sn-canvas:/,
   "dark theme design tokens must not be duplicated in the legacy base stylesheet");
 for (const token of ["--sn-canvas", "--sn-surface", "--sn-surface-soft", "--sn-ink", "--sn-muted", "--sn-line", "--sn-sage", "--sn-forest", "--sn-focus", "--sn-shadow-soft"]) {
