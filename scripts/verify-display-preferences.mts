@@ -33,6 +33,41 @@ for (const [name, stylesheet] of [
   assert.doesNotMatch(stylesheet, /font-size:\s*(?:\d+(?:\.\d+)?px|clamp\()/i,
     `${name} must not leave fixed pixel typography outside the display scale`);
 }
+const inlineTypographyPaths = [
+  "src/components/ui/RecordState.tsx",
+  "src/components/trust/CorrectThis.tsx",
+  "src/components/trust/AIAttribution.tsx",
+  "src/components/trust/ReportProblem.tsx",
+  "src/components/trust/SourceIndicator.tsx",
+  "src/components/trust/WhyAmISeeingThis.tsx",
+  "src/components/trust/PrivacyIndicator.tsx",
+  "src/components/trust/InformationStatus.tsx",
+  "src/components/ConflictResolutionPanel.tsx",
+  "src/components/CareContinuityIntegrityPanel.tsx",
+  "src/components/ClaimAssessmentPanel.tsx",
+  "src/components/ClarificationWorkflowPanel.tsx",
+  "src/components/EvidenceReviewPanel.tsx",
+  "src/components/DocumentIntelligenceReview.tsx",
+  "src/components/workflows/CaptureAnalysisReview.tsx",
+  "src/components/workflows/QuickDailyCheckIn.tsx",
+  "src/components/mvp-workspace/CaregiverHandoverInbox.tsx",
+  "src/components/workflows/CareHandoffSharing.tsx",
+  "src/components/workflows/DailyCarePhotoCapture.tsx",
+  "src/components/mvp-workspace/CaregiverAccessPanel.tsx",
+  "src/components/mvp-workspace/AddSituationPanel.tsx",
+  "src/components/workflows/StructuredDailyCapture.tsx",
+  "src/components/workflows/NaturalLanguageDailyUpdate.tsx",
+  "src/components/mvp-workspace/capture/ScanDocumentCapture.tsx",
+  "src/app/workspace/documents/page.tsx",
+  "src/app/workspace/care-continuity/page.tsx",
+  "src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx",
+  "src/lib/permissions/PermissionExplainer.tsx",
+];
+for (const path of inlineTypographyPaths) {
+  const component = readFileSync(path, "utf8");
+  assert.doesNotMatch(component, /fontSize:\s*(?:\d+(?:\.\d+)?|["'](?:\d+(?:\.\d+)?px|clamp\()/,
+    `${path} must apply the saved text scale to inline pixel font sizes`);
+}
 assert.match(source, /setSaveState\("saved"\)/);
 assert.match(source, /setSaveState\("session-only"\)/);
 assert.match(source, /could not be saved on this device/);
