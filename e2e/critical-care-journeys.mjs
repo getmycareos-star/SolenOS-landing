@@ -765,6 +765,86 @@ const shareAppointment = await request("/api/v1/appointments", {
 assert.equal(shareAppointment.status, 200, JSON.stringify(shareAppointment.payload));
 assert.ok(shareAppointment.payload.id, "appointment briefing journey must start with a persisted appointment");
 
+await record("01b1 stale history responses cannot replace a newer refresh", async () => {
+  const { context, page } = await createBrowserPage(session, "/workspace/more", { width: 1280, height: 900 });
+  let firstStartedResolve;
+  let secondStartedResolve;
+  let firstFinishedResolve;
+  let releaseFirstResolve;
+  const firstStarted = new Promise((resolve) => { firstStartedResolve = resolve; });
+  const secondStarted = new Promise((resolve) => { secondStartedResolve = resolve; });
+  const firstFinished = new Promise((resolve) => { firstFinishedResolve = resolve; });
+  const firstGate = new Promise((resolve) => { releaseFirstResolve = resolve; });
+  let eventRequestCount = 0;
+
+  await page.route("**/api/v1/events/**", async (route) => {
+    eventRequestCount += 1;
+    const response = await route.fetch();
+    const payload = await response.json();
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.events)
+          ? payload.events
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : null;
+    assert.ok(items, "history event endpoint returns a recognised event collection");
+    const now = new Date().toISOString();
+    const label = eventRequestCount === 1
+      ? "Delayed older history response"
+      : "Fresh newer history response";
+    const syntheticEvent = {
+      ...(items[0] && typeof items[0] === "object" ? items[0] : {}),
+      id: \`e2e-stale-history-\${eventRequestCount}\`,
+      person_id: session.person.id,
+      event_type: "daily_care_entry",
+      status: "recorded",
+      occurred_at: now,
+      recorded_at: now,
+      created_at: now,
+      updated_at: now,
+      title: label,
+      description: "Synthetic browser-test event used only to verify request ordering.",
+      evidence_ids: [],
+      source_record_ids: [],
+      tags: ["e2e-stale-response"],
+    };
+    const updatedPayload = Array.isArray(payload)
+      ? [...items, syntheticEvent]
+      : Array.isArray(payload?.items)
+        ? { ...payload, items: [...items, syntheticEvent] }
+        : Array.isArray(payload?.events)
+          ? { ...payload, events: [...items, syntheticEvent] }
+          : { ...payload, data: [...items, syntheticEvent] };
+
+    if (eventRequestCount === 1) {
+      firstStartedResolve();
+      await firstGate;
+      await route.fulfill({ response, body: JSON.stringify(updatedPayload) });
+      firstFinishedResolve();
+      return;
+    }
+    if (eventRequestCount === 2) secondStartedResolve();
+    await route.fulfill({ response, body: JSON.stringify(updatedPayload) });
+  });
+
+  await page.goto("/workspace/more");
+  await firstStarted;
+  await page.evaluate(() => window.dispatchEvent(new Event("careRecordUpdated")));
+  await secondStarted;
+  await page.getByText("Fresh newer history response", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  releaseFirstResolve();
+  await firstFinished;
+  await page.getByText("Fresh newer history response", { exact: true })
+    .waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await page.getByText("Delayed older history response", { exact: true }).count(), 0,
+    "a late response from the older request must not replace the newer history state");
+  await context.close();
+});
+
 await record("01c workspace links, browser back, More menu and account form validation", async () => {
   const { context, page, observed } = await createBrowserPage(
     shareSession,
