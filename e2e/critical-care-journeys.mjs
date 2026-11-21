@@ -930,8 +930,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(familyBriefing.status(), 200, "family care briefing must be prepared by the backend");
   const familyDraft = await familyBriefing.json();
   assert.equal(familyDraft.source_of_truth, "living_care_record");
-  assert.equal(familyDraft.source_freshness?.status, "current",
-    "a newly prepared family briefing must return its verified source freshness");
+  assert.ok(["current", "stale", "unknown"].includes(familyDraft.source_freshness?.status),
+    "a family briefing must return an explicit source-freshness result; uncertain or changed sources must not be treated as current");
   assert.ok(["generated", "source_only_fallback"].includes(familyDraft.generation_status),
     "family briefing must use Qwen or a clearly labelled exact-source fallback");
   if (familyDraft.generation_status === "source_only_fallback") {
@@ -940,6 +940,12 @@ await record("01c workspace links, browser back, More menu and account form vali
   }
   await familyDialog.getByRole("heading", { name: "Review and share with family", exact: true }).waitFor({ timeout: 10_000 });
   await familyDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
+  const familyFreshnessLabel = familyDialog.getByText(/Last check:/);
+  await familyFreshnessLabel.waitFor({ timeout: 10_000 });
+  const familyFreshnessText = await familyFreshnessLabel.innerText();
+  if (familyDraft.source_freshness.status !== "current" || !/current/i.test(familyFreshnessText)) {
+    await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).waitFor({ timeout: 10_000 });
+  }
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
     "family briefing must contain actual LCR-derived content");
   assert.equal(await familyDialog.getByRole("checkbox", {
