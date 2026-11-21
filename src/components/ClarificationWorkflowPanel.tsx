@@ -310,7 +310,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setClaims(loadedClaims);
       setQuestions(loadedQuestions);
       setEligibleQuestionIds(recommendation.eligible_question_ids as string[]);
-      setRecommendationUnavailable(false);
       setEvidence(loadedEvidence);
       setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
