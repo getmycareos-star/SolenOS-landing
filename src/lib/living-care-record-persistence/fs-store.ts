@@ -1,10 +1,12 @@
 /**
- * Filesystem durability for Living Care Record spine (mirrors consent-store).
- * Maps are cache; `.data/` JSON is source of truth across process restarts.
+ * Legacy filesystem adapter retained for compatibility with non-authoritative
+ * prototype modules and migration tooling. It is NOT the production Living Care
+ * Record store: `.data/` files are not PostgreSQL, are not shared across devices
+ * or replicas, and must never confirm a caregiver care-record save.
  *
- * Client bundles must never resolve `node:fs`. This module uses Node `fs`/`path`
- * only on the server; browser callers get no-ops (in-memory Maps remain source
- * of truth for that tab).
+ * Production care facts, evidence and workflow state belong in the authenticated
+ * backend and PostgreSQL. Browser callers receive no filesystem writes; any
+ * in-memory caller state remains disposable UI/prototype state.
  */
 
 import {
