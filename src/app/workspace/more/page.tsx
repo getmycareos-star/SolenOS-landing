@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
+import { CaregiverHandoverInbox } from "@/components/mvp-workspace/CaregiverHandoverInbox";
 
 export default function WorkspaceMorePage() {
   return (
@@ -15,6 +16,7 @@ export default function WorkspaceMorePage() {
         <HistoryDrawer />
         <p><Link href="/workspace/timeline">View all care history</Link></p>
       </section>
+      <CaregiverHandoverInbox />
       <nav aria-label="More care record tools" className="solenos-care-explore__links">
         {WORKSPACE_SECONDARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
