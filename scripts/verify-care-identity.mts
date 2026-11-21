@@ -208,7 +208,7 @@ assert(feedbackPanel.includes("maxLength={10000}"), "global feedback input must 
 assert(!feedbackPanel.includes("/api/v1/feedback?"), "global feedback must not expose detail in query strings");
 assert(validationLoop.includes("/api/v1/feedback") && validationLoop.includes("session.access_token"), "human-validation feedback uses the scoped backend endpoint");
 assert(validationLoop.includes('"Content-Type": "application/json"') && validationLoop.includes("body: JSON.stringify({"), "human-validation feedback sends a JSON body");
-assert(validationLoop.includes("maxLength={10000}"), "human-validation feedback input must respect the backend detail limit");
+assert(validationLoop.includes("if (detail.length > 10_000)") && validationLoop.includes("detail,"), "human-validation feedback payload must respect the backend detail limit");
 
 const page = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"), "utf8");
 assert(page.includes("onSituationComplete"), "page hydrates sidebar from situation complete");
