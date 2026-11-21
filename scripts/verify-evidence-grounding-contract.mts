@@ -48,6 +48,11 @@ const panel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceR
 assert(panel.includes("/integrity"), "evidence review UI must call the persisted source-integrity endpoint");
 assert(panel.includes("source_text_integrity_status"), "evidence review UI must display the server-computed integrity status");
 assert(panel.includes("A matching file check only shows that the saved copy has not changed"), "the UI must explain what the saved-copy comparison means");
+assert(panel.includes("window.sessionStorage.getItem(storageKey)"), "an ambiguous evidence-review retry must recover its request key after a page reload");
+assert(panel.includes("window.sessionStorage.setItem(storageKey"), "an evidence-review request key must be retained until the independent history read verifies the write");
+assert(panel.includes("window.sessionStorage.removeItem(pendingReviewRequestRef.current.storageKey)"), "the retained retry key must be cleared only after the saved review is independently verified");
+assert(panel.includes("The same request key remains in memory"), "a failed history read must preserve the idempotency key for retry");
+
 console.log("PASS: evidence review UI displays server-computed integrity without claiming original-file authenticity.");
 
 const claimPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClaimAssessmentPanel.tsx"), "utf8");
