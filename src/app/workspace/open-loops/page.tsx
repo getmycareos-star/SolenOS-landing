@@ -479,7 +479,6 @@ export default function FollowUpsPage() {
     record_id: loop.id,
     reason: "This saved follow-up was not classified in the latest care review. Its current care significance is unknown, so SolenOS cannot safely describe it as something that can wait.",
     review_at: loop.review_at,
-    action_status: loop.status,
     evidence_ids: loop.evidence.flatMap((item) =>
       typeof item.evidence_id === "string" && item.evidence_id.trim() ? [item.evidence_id] : []
     ),
