@@ -1149,7 +1149,8 @@ export function HistoryDrawer() {
         } else if (
           fallbackEvents.length === 0 &&
           !eventSourceVerifiedEmpty &&
-          (eventReadProblem || eventItems?.length === 0 || projectionResult.status === "rejected")
+          (eventReadProblem || eventItems?.length === 0) &&
+          projectionResult.status === "rejected"
         ) {
           warnings.push("Event history could not be verified from either read path. A zero count is not confirmation that the care record is empty.");
         }
