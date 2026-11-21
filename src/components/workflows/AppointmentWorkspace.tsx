@@ -692,9 +692,9 @@ export default function AppointmentWorkspace() {
             <section className="appointment-quick-summary" aria-label="Appointment preparation summary">
               <h5>What SolenOS found</h5>
               {brief.lcr_retrieval_status?.status === 'failed'
-                ? <p className="guided-muted" role="alert">SolenOS could not retrieve the full care record. This is a technical retrieval failure, not an empty care history. Retry when the connection is available.</p>
+                ? <div role="alert"><p className="guided-muted">SolenOS could not retrieve the full care record. This is a technical retrieval failure, not an empty care history.</p><button type="button" className="guided-secondary" disabled={loading} onClick={() => setReloadToken(value => value + 1)}>Retry care-record retrieval</button></div>
                 : brief.lcr_retrieval_status?.status === 'partial'
-                  ? <p className="guided-muted" role="status">Some care-record sources could not be fully checked. This summary is partial; unavailable information is not treated as absent.</p>
+                  ? <div role="status"><p className="guided-muted">Some care-record sources could not be fully checked. This summary is partial; unavailable information is not treated as absent.</p><button type="button" className="guided-secondary" disabled={loading} onClick={() => setReloadToken(value => value + 1)}>Retry care-record retrieval</button></div>
                   : null}
               {brief?.source_coverage?.documents === 'failed' && <div role="alert"><p className="guided-muted">Saved document information could not be retrieved. This is a technical failure, not evidence that no documents exist.</p><button type="button" className="guided-secondary" disabled={loading} onClick={() => setReloadToken(value => value + 1)}>Retry document retrieval</button></div>}
               {brief.appointment_context_status?.code === 'date_unknown' && <p className="guided-muted" role="status">Appointment information exists, but its date has not been recorded. SolenOS has not supplied or assumed a date.</p>}
