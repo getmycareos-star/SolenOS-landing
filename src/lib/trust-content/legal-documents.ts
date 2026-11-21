@@ -25,7 +25,7 @@ export const PRIVACY_POLICY = {
         "Care information you choose to enter, including observations, notes, events, questions, decisions, outcomes, appointment details, and information about the person receiving care.",
         "Documents and other files you upload, together with related information such as filenames, file type, upload time, source text, and extraction or review results. Uploaded documents may contain sensitive health and personal information.",
         "Information needed to operate a care workspace, such as caregiver and care-recipient identifiers, account email address, session and security records, consent choices, and contributor attribution.",
-        "Information you send to AI Companion or document and capture assistance, including the request and the relevant care context selected for that task.",
+        "Information you send to Care Assistant or document and capture assistance, including the request and the relevant care context selected for that task.",
         "Basic technical and operational information, such as service requests, timestamps, error categories, and security events. We aim to keep operational logs from containing care-record content, credentials, or session tokens; this does not mean every provider log or diagnostic record has been independently audited.",
         "Feedback you deliberately submit to help improve SolenOS. We do not treat ordinary care-record entries as blanket permission to use those entries for product-improvement training.",
       ],
