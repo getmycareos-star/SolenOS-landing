@@ -1618,14 +1618,20 @@ export function LCRCurrentUnderstanding() {
             </p>
           )}
           {clarificationCareDecisions.length > 0 && (
-            <button
-              type="button"
-              className="lcr-text-action"
-              onClick={openClarification}
-              aria-controls="lcr-clarification-workflow"
-            >
-              Review useful questions
-            </button>
+            <section className="lcr-current-fact" aria-labelledby="lcr-questions-to-resolve-heading">
+              <h4 id="lcr-questions-to-resolve-heading">Questions to resolve</h4>
+              <p>
+                {clarificationCareDecisions.length} {clarificationCareDecisions.length === 1 ? "care detail needs" : "care details need"} a closer look before they can be relied on.
+              </p>
+              <button
+                type="button"
+                className="lcr-text-action"
+                onClick={openClarification}
+                aria-controls="lcr-clarification-workflow"
+              >
+                Review questions
+              </button>
+            </section>
           )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
         </div>
