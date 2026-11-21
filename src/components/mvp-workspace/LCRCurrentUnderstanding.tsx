@@ -1714,6 +1714,105 @@ export function LCRCurrentUnderstanding() {
         {dementiaProfileOpen ? <DementiaObservationPanel personId={personId} /> : null}
       </details>
 
+            {(registeredActions.length > 0 || Boolean(registeredActionsError) || (assessment?.coverage.records_examined ?? 0) > 0) && (
+            <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
+              <h4 id="lcr-registered-actions-heading">What’s been agreed</h4>
+              {registeredActionsError && <p role="alert">Agreed actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
+              {!registeredActionsError && registeredActions.length === 0 && <p>No actions have been agreed yet.</p>}
+              {registeredActions.length > 0 && (
+                <ul className="lcr-current-facts">
+                  {registeredActions.map((action) => (
+                    <li key={action.id} className="lcr-current-fact">
+                      <strong>{caregiverSafeAssistantText(action.normalized_action) || "Saved care action"}</strong>
+                      <p className="lcr-entry-status">Agreed action · {caregiverStatusLabel(action.status) || "Status not available"}</p>
+                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"} · Created by: {action.created_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}</small>
+                      <small>Based on {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)</small>
+                      {action.deadline && <small>Due date: {formatWhen(action.deadline)}</small>}
+                      {action.linked_reminder_status && <small>Linked reminder: {caregiverStatusLabel(action.linked_reminder_status) || "Status not available"} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
+                      {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
+                      {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
+                      {action.responsible_caregiver_id !== currentCaregiverId && <p role="status">Only the responsible caregiver can change this action. You can still review its status and change history.</p>}
+                      <label>
+                        Outcome when completing, or reason for deferring, cancelling or requesting clarification
+                        <input
+                          type="text"
+                          value={actionTransitionReasons[action.id] ?? ""}
+                          onChange={(event) => setActionTransitionReasons((current) => ({ ...current, [action.id]: event.target.value }))}
+                          maxLength={2000}
+                          disabled={action.responsible_caregiver_id !== currentCaregiverId}
+                        />
+                      </label>
+                      {action.status !== "completed" && action.status !== "cancelled" && (
+                        <label>
+                          New reminder date when deferring {action.linked_reminder_status === "open" ? "(required for the linked open reminder)" : "(optional)"}
+                          <input
+                            type="datetime-local"
+                            disabled={action.responsible_caregiver_id !== currentCaregiverId}
+                            value={actionDeferredUntil[action.id] ?? ""}
+                            onChange={(event) => setActionDeferredUntil((current) => ({ ...current, [action.id]: event.target.value }))}
+                          />
+                        </label>
+                      )}
+                      {action.status === "approved" && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
+                      {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
+                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
+                      {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
+                      {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs checking</button>}
+                      {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
+                      {actionTransitionErrors[action.id] && <p role="alert">{actionTransitionErrors[action.id]}</p>}
+                      <button type="button" className="lcr-text-action" onClick={() => void loadActionHistory(action)}>View change history</button>
+                      {actionHistoryErrors[action.id] && <p role="alert">{actionHistoryErrors[action.id]}</p>}
+                      {actionHistory[action.id] && (
+                        <ol>
+                          {actionHistory[action.id].map((event) => (
+                            <li key={event.id}>
+                              {caregiverStatusLabel(event.previous_status) || "Not recorded"} → {caregiverStatusLabel(event.new_status) || "Status not available"} · {formatWhen(event.created_at)} · Changed by: {event.actor_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}
+                              {event.reason && <p>{caregiverSafeAssistantText(event.reason) || "A reason was recorded."}</p>}
+                              <small>Based on {event.evidence_ids.length} saved item(s)</small>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            )}
+
+      <section className="lcr-current-fact" aria-labelledby="lcr-outcomes-heading">
+        <h3 id="lcr-outcomes-heading">What happened</h3>
+        {projection?.outcomes?.length ? (
+          <>
+            <ul className="lcr-current-facts">
+              {projection.outcomes.map((outcome) => (
+                <li key={outcome.source_collection + ":" + outcome.id}>
+                  <strong>{caregiverSafeAssistantText(outcome.description) || caregiverLabel(outcome.kind) || "Recorded outcome"}</strong>
+                  <p>{caregiverStatusLabel(outcome.status) || "Outcome recorded"} · {formatWhen(outcome.recorded_at || outcome.occurred_at)}</p>
+                  {outcome.related_record_type && outcome.related_record_id && (
+                    <small>Linked to {outcome.related_record_type === "care_decision" ? "a recorded care decision" : outcome.related_record_type === "care_action" ? "an agreed care action" : "a follow-up"}</small>
+                  )}
+                  {outcome.evidence_ids.length > 0 && <small>Based on {outcome.evidence_ids.length} saved source item(s)</small>}
+                </li>
+              ))}
+            </ul>
+            {projection.outcomes_has_more && <p>More saved care history is available in your full care history.</p>}
+          </>
+        ) : !projection || projection.missing_required_sources.length > 0 || projection.missing_optional_sources.some((source) => ["decision_outcomes", "action_outcomes", "follow_up_links"].includes(source)) ? (
+          <p>Some saved outcomes may not be available right now. Refresh your care history to try again.</p>
+        ) : (
+          <p>No follow-up outcomes have been recorded yet.</p>
+        )}
+      </section>
+
+      <section className="lcr-current-fact" aria-labelledby="lcr-history-heading">
+        <h3 id="lcr-history-heading">Your care history</h3>
+        <p>Review saved care updates in date order, including the original reports and where they came from.</p>
+        <Link href="/workspace/timeline" className="lcr-text-action">Open your full care history <span aria-hidden="true">→</span></Link>
+      </section>
+
+
+
       <details className="lcr-history-details lcr-progressive-disclosure">
         <summary>More about this care record — actions, details and history</summary>
       <section className="lcr-situation-assessment" aria-labelledby="lcr-attention-now-heading">
@@ -2081,103 +2180,6 @@ export function LCRCurrentUnderstanding() {
             </div>
           </>
         )}
-      </section>
-
-            {(registeredActions.length > 0 || Boolean(registeredActionsError) || (assessment?.coverage.records_examined ?? 0) > 0) && (
-            <div className="lcr-current-fact" aria-labelledby="lcr-registered-actions-heading">
-              <h4 id="lcr-registered-actions-heading">What’s been agreed</h4>
-              {registeredActionsError && <p role="alert">Agreed actions could not be loaded: {registeredActionsError}. Do not assume there are no active actions.</p>}
-              {!registeredActionsError && registeredActions.length === 0 && <p>No actions have been agreed yet.</p>}
-              {registeredActions.length > 0 && (
-                <ul className="lcr-current-facts">
-                  {registeredActions.map((action) => (
-                    <li key={action.id} className="lcr-current-fact">
-                      <strong>{caregiverSafeAssistantText(action.normalized_action) || "Saved care action"}</strong>
-                      <p className="lcr-entry-status">Agreed action · {caregiverStatusLabel(action.status) || "Status not available"}</p>
-                      <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"} · Created by: {action.created_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}</small>
-                      <small>Based on {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)</small>
-                      {action.deadline && <small>Due date: {formatWhen(action.deadline)}</small>}
-                      {action.linked_reminder_status && <small>Linked reminder: {caregiverStatusLabel(action.linked_reminder_status) || "Status not available"} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
-                      {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
-                      {action.deferred_until && <small>Deferred until: {formatWhen(action.deferred_until)}</small>}
-                      {action.responsible_caregiver_id !== currentCaregiverId && <p role="status">Only the responsible caregiver can change this action. You can still review its status and change history.</p>}
-                      <label>
-                        Outcome when completing, or reason for deferring, cancelling or requesting clarification
-                        <input
-                          type="text"
-                          value={actionTransitionReasons[action.id] ?? ""}
-                          onChange={(event) => setActionTransitionReasons((current) => ({ ...current, [action.id]: event.target.value }))}
-                          maxLength={2000}
-                          disabled={action.responsible_caregiver_id !== currentCaregiverId}
-                        />
-                      </label>
-                      {action.status !== "completed" && action.status !== "cancelled" && (
-                        <label>
-                          New reminder date when deferring {action.linked_reminder_status === "open" ? "(required for the linked open reminder)" : "(optional)"}
-                          <input
-                            type="datetime-local"
-                            disabled={action.responsible_caregiver_id !== currentCaregiverId}
-                            value={actionDeferredUntil[action.id] ?? ""}
-                            onChange={(event) => setActionDeferredUntil((current) => ({ ...current, [action.id]: event.target.value }))}
-                          />
-                        </label>
-                      )}
-                      {action.status === "approved" && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "in_progress")}>Start action</button>}
-                      {(action.status === "approved" || action.status === "in_progress") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "completed")}>Confirm completed</button>}
-                      {(action.status === "approved" || action.status === "in_progress" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id || (action.linked_reminder_status === "open" && !actionDeferredUntil[action.id])} onClick={() => void transitionRegisteredAction(action, "deferred")}>Defer</button>}
-                      {(action.status === "deferred" || action.status === "needs_clarification") && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "approved")}>Resume as approved</button>}
-                      {["approved", "in_progress", "deferred"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "needs_clarification")}>Needs checking</button>}
-                      {!["completed", "cancelled"].includes(action.status) && <button type="button" disabled={action.responsible_caregiver_id !== currentCaregiverId || actionTransitionLoadingId === action.id} onClick={() => void transitionRegisteredAction(action, "cancelled")}>Cancel action</button>}
-                      {actionTransitionErrors[action.id] && <p role="alert">{actionTransitionErrors[action.id]}</p>}
-                      <button type="button" className="lcr-text-action" onClick={() => void loadActionHistory(action)}>View change history</button>
-                      {actionHistoryErrors[action.id] && <p role="alert">{actionHistoryErrors[action.id]}</p>}
-                      {actionHistory[action.id] && (
-                        <ol>
-                          {actionHistory[action.id].map((event) => (
-                            <li key={event.id}>
-                              {caregiverStatusLabel(event.previous_status) || "Not recorded"} → {caregiverStatusLabel(event.new_status) || "Status not available"} · {formatWhen(event.created_at)} · Changed by: {event.actor_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}
-                              {event.reason && <p>{caregiverSafeAssistantText(event.reason) || "A reason was recorded."}</p>}
-                              <small>Based on {event.evidence_ids.length} saved item(s)</small>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            )}
-
-      <section className="lcr-current-fact" aria-labelledby="lcr-outcomes-heading">
-        <h3 id="lcr-outcomes-heading">What happened</h3>
-        {projection?.outcomes?.length ? (
-          <>
-            <ul className="lcr-current-facts">
-              {projection.outcomes.map((outcome) => (
-                <li key={outcome.source_collection + ":" + outcome.id}>
-                  <strong>{caregiverSafeAssistantText(outcome.description) || caregiverLabel(outcome.kind) || "Recorded outcome"}</strong>
-                  <p>{caregiverStatusLabel(outcome.status) || "Outcome recorded"} · {formatWhen(outcome.recorded_at || outcome.occurred_at)}</p>
-                  {outcome.related_record_type && outcome.related_record_id && (
-                    <small>Linked to {outcome.related_record_type === "care_decision" ? "a recorded care decision" : outcome.related_record_type === "care_action" ? "an agreed care action" : "a follow-up"}</small>
-                  )}
-                  {outcome.evidence_ids.length > 0 && <small>Based on {outcome.evidence_ids.length} saved source item(s)</small>}
-                </li>
-              ))}
-            </ul>
-            {projection.outcomes_has_more && <p>More saved care history is available in your full care history.</p>}
-          </>
-        ) : !projection || projection.missing_required_sources.length > 0 || projection.missing_optional_sources.some((source) => ["decision_outcomes", "action_outcomes", "follow_up_links"].includes(source)) ? (
-          <p>Some saved outcomes may not be available right now. Refresh your care history to try again.</p>
-        ) : (
-          <p>No follow-up outcomes have been recorded yet.</p>
-        )}
-      </section>
-
-      <section className="lcr-current-fact" aria-labelledby="lcr-history-heading">
-        <h3 id="lcr-history-heading">Your care history</h3>
-        <p>Review saved care updates in date order, including the original reports and where they came from.</p>
-        <Link href="/workspace/timeline" className="lcr-text-action">Open your full care history <span aria-hidden="true">→</span></Link>
       </section>
 
       <details className="lcr-history-details"><summary>See changes that have happened more than once</summary>
