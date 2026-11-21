@@ -417,7 +417,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
@@ -679,7 +679,7 @@ await record("01a dementia profile review window and observation persistence are
   await context.close();
 });
 
-await record("01b visible Follow-ups link and mobile navigation", async () => {
+await record("01b More groups secondary tools and preserves mobile navigation", async () => {
   const { context, page } = await createBrowserPage(
     session,
     "/workspace/daily-care",
@@ -699,10 +699,16 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
     document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
     document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
   , undefined, { timeout: 5_000 });
-  const followUpsNavigationLink = page.locator("#solenos-navigation")
-    .getByRole("link", { name: /Follow-ups/ });
-  await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
-  assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
+  const moreNavigationLink = page.locator("#solenos-navigation")
+    .getByRole("link", { name: "More", exact: true });
+  await moreNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await moreNavigationLink.getAttribute("href"), "/workspace/more");
+  await moreNavigationLink.click();
+  await page.waitForURL("**/workspace/more", { timeout: 20_000 });
+  const followUpsMoreLink = page.getByRole("link", { name: "Follow-ups", exact: true });
+  await followUpsMoreLink.waitFor({ state: "visible", timeout: 10_000 });
+  await followUpsMoreLink.click();
+  await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
   await context.close();
 });
 

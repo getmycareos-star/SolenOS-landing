@@ -41,9 +41,9 @@ assert.match(appShell, /WORKSPACE_NAVIGATION\.settings\.map/);
 assert.doesNotMatch(appShell, /const NAVIGATION\s*=|NAVIGATION\.map/);
 assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
 assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct route to the Care Record");
-assert.match(appShell, /href === "\/workspace"\s*\? pathname === href/, "the Care Record active state must not match every nested route");
+assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Today is active only on the workspace home route");
 
-for (const label of ["Care Record", "Daily Care", "Follow-ups", "Care history", "Documents", "Appointments", "Share care information", "Care Assistant", "Settings"]) {
+for (const label of ["Today", "Share an update", "Care Assistant", "Appointments", "More", "Care history", "Follow-ups", "Documents", "Reminders", "Share care information", "Settings"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
 for (const route of [
@@ -56,6 +56,7 @@ for (const route of [
   "src/app/workspace/handoffs/page.tsx",
   "src/app/workspace/companion/page.tsx",
   "src/app/workspace/settings/page.tsx",
+  "src/app/workspace/more/page.tsx",
 ]) {
   assert.ok(fs.existsSync(path.join(root, route)), `navigation destination exists: ${route}`);
 }
@@ -98,8 +99,8 @@ assert.match(workspaceStyles, /:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "A clearer picture of care"],
-  ["src/app/workspace/daily-care/page.tsx", "Daily Care"],
+  ["src/app/workspace/page.tsx", "Today"],
+  ["src/app/workspace/daily-care/page.tsx", "Share an update"],
   ["src/app/workspace/open-loops/page.tsx", "Follow-ups"],
   ["src/app/workspace/timeline/page.tsx", "Care history"],
   ["src/app/workspace/documents/page.tsx", "Documents"],
@@ -107,6 +108,7 @@ const routeContracts = [
   ["src/app/workspace/handoffs/page.tsx", "Share care information"],
   ["src/components/workflows/AICompanion.tsx", "Care Assistant"],
   ["src/app/workspace/settings/page.tsx", "Settings"],
+  ["src/app/workspace/more/page.tsx", "More"],
 ];
 for (const [route, title] of routeContracts) {
   const source = fs.readFileSync(path.join(root, route), "utf8");

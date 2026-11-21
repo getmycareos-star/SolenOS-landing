@@ -104,7 +104,7 @@ export function WorkspaceMoreMenu({ onAction, isPinned = false, isArchived = fal
         ref={triggerRef}
         type="button"
         className="workspace-more-menu-trigger"
-        aria-label="More care record actions"
+        aria-label="Care record actions"
         aria-haspopup="menu"
         aria-controls="solenos-care-record-actions-menu"
         aria-expanded={open}
