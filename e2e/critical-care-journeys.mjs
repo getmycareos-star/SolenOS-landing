@@ -406,7 +406,12 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "A clearer picture of care.", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  for (const heading of ["Your care, at a glance", "Care information on record", "What needs attention", "What has changed"]) {
+  for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
+    await page.getByRole("heading", { name: heading, exact: true })
+      .waitFor({ state: "visible", timeout: 15_000 });
+  }
+  await page.getByText("More about this care record — actions, details and history", { exact: true }).click();
+  for (const heading of ["What’s been agreed", "What happened", "Your care history"]) {
     await page.getByRole("heading", { name: heading, exact: true })
       .waitFor({ state: "visible", timeout: 15_000 });
   }
