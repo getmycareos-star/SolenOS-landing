@@ -1430,10 +1430,32 @@ export function LCRCurrentUnderstanding() {
         // the updated action status.
         await load(true);
       }
-    } catch (cause) {
+    } catch {
+      // A network failure can happen after the backend committed the transition.
+      // Re-read the scoped action before telling the caregiver it failed, so a
+      // retry cannot accidentally create confusion about a saved outcome.
+      if (status === "completed") {
+        try {
+          const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(personId)}`);
+          if (Array.isArray(savedActions) && savedActions.every((item) => item?.person_id === personId)) {
+            const persisted = savedActions.find((item) => item?.id === action.id) as RegisteredAction | undefined;
+            setRegisteredActions(savedActions as RegisteredAction[]);
+            if (persisted?.status === "completed") {
+              await load(true);
+              setActionTransitionErrors((current) => ({
+                ...current,
+                [action.id]: "Completion was saved, but the response was interrupted. The care record was refreshed; review the recorded outcome before retrying.",
+              }));
+              return;
+            }
+          }
+        } catch {
+          // Fall through to a fail-closed message; no successful write is assumed.
+        }
+      }
       setActionTransitionErrors((current) => ({
         ...current,
-        [action.id]: "The action status could not be updated.",
+        [action.id]: "The action status could not be confirmed. Refresh the care record before retrying.",
       }));
     } finally {
       setActionTransitionLoadingId(null);
