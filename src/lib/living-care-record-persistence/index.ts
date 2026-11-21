@@ -1,6 +1,7 @@
 /**
- * Living Care Record durability — CareContext + ACS as source of truth;
- * process Maps are cache only (mirror policy consent `.data/` pattern).
+ * Compatibility exports for legacy prototype modules. This filesystem helper
+ * is not the authoritative Living Care Record store. PostgreSQL via the
+ * authenticated backend is the only production source of truth for care data.
  */
 
 export {
