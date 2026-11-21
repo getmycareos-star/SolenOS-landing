@@ -2874,3 +2874,81 @@
 }
 
 .guided-full-span { grid-column: 1 / -1; }
+
+
+/* Compact appointment summary on the caregiver home. */
+.solenos-chat-app .solenos-upcoming-appointment {
+  width: min(100% - 32px, 1120px);
+  margin: 14px auto 18px;
+  padding: 17px 19px;
+  border: 1px solid var(--sn-line);
+  border-radius: var(--sn-radius-lg);
+  background: var(--sn-surface);
+  box-shadow: var(--sn-shadow-soft);
+}
+.solenos-chat-app .solenos-upcoming-appointment__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.solenos-chat-app .solenos-upcoming-appointment__heading h2 {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: 16px;
+  font-weight: 680;
+}
+.solenos-chat-app .solenos-upcoming-appointment__heading p,
+.solenos-chat-app .solenos-upcoming-appointment__item p,
+.solenos-chat-app .solenos-upcoming-appointment > p {
+  margin: 4px 0;
+  color: var(--sn-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.solenos-chat-app .solenos-upcoming-appointment__heading a {
+  flex: 0 0 auto;
+  color: var(--sn-forest);
+  font-size: 13px;
+  font-weight: 650;
+  text-underline-offset: 3px;
+}
+.solenos-chat-app .solenos-upcoming-appointment__item strong,
+.solenos-chat-app .solenos-upcoming-appointment__list strong {
+  color: var(--sn-ink);
+  font-size: 14px;
+}
+.solenos-chat-app .solenos-upcoming-appointment__item small,
+.solenos-chat-app .solenos-upcoming-appointment__list span {
+  display: block;
+  margin-top: 5px;
+  color: var(--sn-subtle);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-upcoming-appointment__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.solenos-chat-app .solenos-upcoming-appointment__list li {
+  display: grid;
+  gap: 2px;
+}
+@media (max-width: 520px) {
+  .solenos-chat-app .solenos-upcoming-appointment {
+    width: calc(100% - 24px);
+    padding: 15px;
+  }
+  .solenos-chat-app .solenos-upcoming-appointment__heading {
+    flex-wrap: wrap;
+  }
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-upcoming-appointment {
+  border-color: var(--sn-line);
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
