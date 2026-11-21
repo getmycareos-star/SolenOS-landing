@@ -162,10 +162,14 @@ assert(lcr.includes('const ConflictResolutionPanel = dynamic(() => import("@/com
 assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
 const clarificationPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ClarificationWorkflowPanel.tsx"), "utf8");
+const currentUnderstanding = fs.readFileSync(path.join(process.cwd(), "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
 assert(clarificationPanel.includes("/uncertainty/questions/"), "clarification workflow must persist questions and read answer history from the backend");
 assert(clarificationPanel.includes("?status=answered") && clarificationPanel.includes("?status=declined") && clarificationPanel.includes("?status=closed"), "the caregiver question archive must retrieve completed question states separately from the active queue");
-assert(clarificationPanel.includes("claim_clarification"), "clarification questions must retain a link to the selected source-attributed claim");
-assert(clarificationPanel.includes("claim_id: selectedClaim.id"), "clarification questions must submit the normalized claim foreign key");
+assert(!clarificationPanel.includes("createQuestion") && !clarificationPanel.includes('postJSON("/uncertainty/questions"'), "caregivers must not create manual clarification tasks");
+assert(!clarificationPanel.includes("prefillQuestion") && !clarificationPanel.includes("prefillEvidenceIds"), "clarification workflow must not accept manual task prefill");
+assert(clarificationPanel.includes("isCaregiverNecessaryQuestion") && clarificationPanel.includes("eligibleQuestionIdSet") && clarificationPanel.includes("caregiverOpenQuestions"), "only system-generated necessary questions approved by the recommendation projection may become caregiver work");
+assert(clarificationPanel.includes("There are no care questions for you to review right now."), "an empty clarification queue must not invite caregivers to create more tasks");
+assert(!currentUnderstanding.includes("Request clarification") && !currentUnderstanding.includes("clarificationPrefill"), "the LCR must not expose dead manual clarification actions");
 assert(clarificationPanel.includes("Who may know:") && clarificationPanel.includes("No saved source linked yet"), "caregivers must see plain-language question context without internal record identifiers");
 assert(clarificationPanel.includes("evidenceSummary(item)") && !clarificationPanel.includes("source_text.slice"), "saved source details must be shown as plain text, never raw JSON");
 assert(clarificationPanel.includes("questionHasLinkedSource(item)") && clarificationPanel.includes("source_record_refs"), "clarification source labels must recognize linked claims and persisted source records, not only attachments");
