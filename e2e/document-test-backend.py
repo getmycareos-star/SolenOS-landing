@@ -11,6 +11,9 @@ import os
 import sys
 from pathlib import Path
 
+if os.getenv("APP_ENV") != "test":
+    raise RuntimeError("The deterministic document backend is restricted to APP_ENV=test.")
+
 backend_root = Path(os.environ["BACKEND_SERVICE_DIR"]).resolve()
 sys.path.insert(0, str(backend_root))
 
