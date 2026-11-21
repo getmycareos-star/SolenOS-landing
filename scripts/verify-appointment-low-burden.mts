@@ -6,6 +6,14 @@ const component = readFileSync('src/components/workflows/AppointmentWorkspace.ts
 // Preparation is generated from the existing care record; no appointment form is required.
 assert.ok(component.includes('Your visit summary'))
 assert.ok(component.includes("getJSON('/appointment-workspaces/preparation-brief?window_days=90')"))
+
+// Appointment preparation must fail closed when the shared LCR retrieval is partial or missing.
+assert.ok(component.includes('living_care_record_context'), 'appointment preparation must consume shared Care Record coverage');
+assert.ok(component.includes('retrieval_projection_complete !== true'), 'appointment preparation must disclose incomplete Care Record projection');
+assert.ok(component.includes('schema_status !== "complete"'), 'appointment preparation must disclose partial Care Record schema coverage');
+assert.ok(component.includes('brief.living_care_record_context == null'), 'missing coverage metadata must not be interpreted as a complete record');
+assert.ok(component.includes('missing_required_sources?.length'), 'required source failures must be disclosed');
+assert.ok(component.includes('Some parts of your Care Record could not be fully checked'), 'partial coverage must be explained in caregiver language');
 assert.ok(component.includes('selectNextAppointment'))
 // An existing scheduled visit gets a durable preparation workspace automatically.
 // No appointment form or voice capture is required.
