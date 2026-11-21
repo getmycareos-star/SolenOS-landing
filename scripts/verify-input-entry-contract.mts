@@ -168,9 +168,13 @@ const companionSource = fs.readFileSync(path.join(root, "src", "components", "wo
 assert(companionSource.includes("postJSON('/conversation/message'"), "Companion must use the conversation endpoint");
 assert(companionSource.includes("client_turn_id"), "Companion turns must be idempotent");
 assert(!companionSource.includes("care_update_candidates"), "model-generated chat output must not become care facts");
-assert(!companionSource.includes("pendingCareUpdates") && !companionSource.includes("/companion/care-updates"), "Companion must not expose an unsupported chat-to-Care-Record workflow");
-assert(companionSource.includes("Conversation messages stay here."), "Companion must explain that conversation messages stay separate from Daily Care");
-assert(companionSource.includes("nothing in this conversation is added to your Care Record"), "Companion must clearly state its conversation-only persistence boundary");
+assert(companionSource.includes("pendingCareUpdates"), "Companion must load only explicitly created caregiver-review proposals");
+assert(companionSource.includes("/companion/care-updates"), "Companion must use the authenticated caregiver-scoped review endpoints");
+assert(companionSource.includes("reviewCareUpdate"), "caregivers must explicitly accept or decline a care report");
+assert(companionSource.includes("from-message/"), "caregivers must explicitly select an original message for a care report");
+assert(companionSource.includes("confirm_care_report: true"), "care-report creation must require explicit caregiver confirmation");
+assert(companionSource.includes("not a question, possibility or guess"), "care-report confirmation must reject questions and hypotheticals");
+assert(companionSource.includes("Nothing is added to your Care Record unless you choose to save a message as a care note and approve it."), "Companion must distinguish saved chat from explicitly approved care reports");
 assert(!companionSource.includes("ScanDocumentCapture"), "Document scanning belongs in Documents");
 assert(!companionSource.includes("SnapCameraCapture"), "Camera capture belongs in Documents");
 
