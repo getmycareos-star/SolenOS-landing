@@ -621,12 +621,13 @@
 }
 .solenos-chat-app .solenos-lcr-home .lcr-current-fact :where(p,small,li) {
   color: #58675d;
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.7;
 }
 .solenos-chat-app .solenos-lcr-home .lcr-current-fact > strong,
 .solenos-chat-app .solenos-lcr-home .lcr-current-fact h4 {
   color: var(--sn-forest);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 .solenos-chat-app .solenos-lcr-home .lcr-entry-heading {
