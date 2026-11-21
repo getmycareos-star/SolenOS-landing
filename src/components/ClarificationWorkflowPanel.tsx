@@ -407,7 +407,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setReviewEvents([]);
     }
     if (answerResult.status === "rejected" && reviewResult.status === "rejected") {
-      setHistoryError("Earlier answers and their review history could not be loaded. Please try again.");
+      setHistoryError("Earlier answers or their review history could not be loaded. Please try again.");
     } else if (answerResult.status === "rejected") {
       setHistoryError("Earlier answers could not be loaded. Please try again.");
     } else if (reviewResult.status === "rejected") {
