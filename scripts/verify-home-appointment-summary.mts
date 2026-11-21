@@ -1,0 +1,19 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const home = readFileSync("src/app/workspace/page.tsx", "utf8");
+const component = readFileSync("src/components/app-shell/UpcomingAppointmentSummary.tsx", "utf8");
+const styles = readFileSync("src/app/workspace/experience-design-system-v2.css", "utf8");
+
+assert.ok(home.includes("UpcomingAppointmentSummary"), "caregiver home must surface recorded appointments");
+assert.ok(component.includes('getJSON("/appointment-workspaces/preparation-brief?window_days=90")'), "use the existing appointment preparation contract");
+assert.ok(component.includes("await ensureAnonymousSession()"), "appointment information must use the current authenticated/anonymous session");
+assert.ok(component.includes("No appointment information was returned from the available sources. This does not prove that no appointment exists."), "empty results must not be represented as proof that no appointment exists");
+assert.ok(component.includes("Appointment information is unavailable"), "retrieval failures must remain visible");
+assert.ok(component.includes("onAction={() => void load()}"), "failed retrieval must be recoverable");
+assert.ok(component.includes("SolenOS has not booked or confirmed it with a provider."), "recorded appointments must not be represented as external bookings");
+assert.ok(component.includes('href="/workspace/appointments"'), "caregivers must be able to open the existing appointment workflow");
+assert.ok(styles.includes(".solenos-upcoming-appointment"), "the summary must use responsive shared workspace styling");
+assert.ok(styles.includes("@media (max-width: 520px)"), "the appointment summary must adapt to mobile widths");
+
+console.log("PASS: caregiver home appointment summary uses persisted appointment data, explicit unavailable states and existing appointment navigation");
