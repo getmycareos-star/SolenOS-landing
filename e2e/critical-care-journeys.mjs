@@ -2360,17 +2360,26 @@ await record("08 Community and LCR isolation", async () => {
 // 9. Appointment: idempotent save and durable summary retrieval.
 let appointmentWorkspaceId;
 let appointmentId;
+const selectedAppointmentSourceId = (brief) => {
+  if (brief.next_appointment?.source_id) return brief.next_appointment.source_id;
+  const recorded = [...(brief.appointments || [])];
+  const upcoming = recorded
+    .filter(item => ["scheduled", "upcoming", "today", "rescheduled", "date_unknown", "overdue"].includes(String(item.status || "").toLowerCase()))
+    .sort((a, b) => {
+      const aTime = a.scheduled_at ? Date.parse(a.scheduled_at) : Number.MAX_SAFE_INTEGER;
+      const bTime = b.scheduled_at ? Date.parse(b.scheduled_at) : Number.MAX_SAFE_INTEGER;
+      return aTime - bTime;
+    })[0];
+  if (upcoming) return upcoming.source_id;
+  return recorded.find(item => ["completed", "resolved", "historical"].includes(String(item.status || "").toLowerCase()))?.source_id || null;
+};
 await record("09 appointment summary persistence", async () => {
   const preparationBrief = await request("/api/v1/appointment-workspaces/preparation-brief?window_days=90", {
     token: identity.token,
   });
   assert.equal(preparationBrief.status, 200, JSON.stringify(preparationBrief.payload));
   assert.equal(preparationBrief.payload.read_only, true);
-  appointmentId = preparationBrief.payload.next_appointment?.source_id
-    || preparationBrief.payload.appointments?.find((item) =>
-      ["scheduled", "upcoming", "today", "rescheduled", "date_unknown", "overdue"].includes(String(item.status || "").toLowerCase())
-    )?.source_id
-    || null;
+  appointmentId = selectedAppointmentSourceId(preparationBrief.payload);
   if (!appointmentId) {
     const createdAppointment = await request("/api/v1/appointments", {
       token: identity.token,
@@ -2387,9 +2396,13 @@ await record("09 appointment summary persistence", async () => {
       },
     });
     assert.ok([200, 201].includes(createdAppointment.status), JSON.stringify(createdAppointment.payload));
-    appointmentId = createdAppointment.payload.id;
+    const refreshedBrief = await request("/api/v1/appointment-workspaces/preparation-brief?window_days=90", {
+      token: identity.token,
+    });
+    assert.equal(refreshedBrief.status, 200, JSON.stringify(refreshedBrief.payload));
+    appointmentId = selectedAppointmentSourceId(refreshedBrief.payload);
   }
-  assert.ok(appointmentId, "appointment workspace must be attached to a saved appointment");
+  assert.ok(appointmentId, "appointment workspace must be attached to the same saved appointment selected by the workspace");
   assert.ok(
     preparationBrief.payload.events.some((item) => item.description?.includes("restless sleep"))
       || preparationBrief.payload.events.some((item) => item.description?.includes("overnight awakenings")),
@@ -2465,6 +2478,8 @@ await record("09A appointment outcome requires caregiver review before LCR retri
   assert.equal(revised.status, 200, JSON.stringify(revised.payload));
   const recordId = revised.payload.id;
   assert.equal(recordId, appointmentWorkspaceId);
+  assert.equal(revised.payload.appointment_id, appointmentId);
+  assert.equal(revised.payload.payload?.caregiverReport, caregiverReport);
 
   const appointmentPage = await createBrowserPage(session, "/workspace/appointments");
   await appointmentPage.page.getByRole("heading", { name: "Your appointment, supported by SolenOS" }).waitFor({ timeout: 20_000 });
