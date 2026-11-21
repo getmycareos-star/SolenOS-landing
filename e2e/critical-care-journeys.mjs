@@ -2359,12 +2359,37 @@ await record("08 Community and LCR isolation", async () => {
 
 // 9. Appointment: idempotent save and durable summary retrieval.
 let appointmentWorkspaceId;
+let appointmentId;
 await record("09 appointment summary persistence", async () => {
   const preparationBrief = await request("/api/v1/appointment-workspaces/preparation-brief?window_days=90", {
     token: identity.token,
   });
   assert.equal(preparationBrief.status, 200, JSON.stringify(preparationBrief.payload));
   assert.equal(preparationBrief.payload.read_only, true);
+  appointmentId = preparationBrief.payload.next_appointment?.source_id
+    || preparationBrief.payload.appointments?.find((item) =>
+      ["scheduled", "upcoming", "today", "rescheduled", "date_unknown", "overdue"].includes(String(item.status || "").toLowerCase())
+    )?.source_id
+    || null;
+  if (!appointmentId) {
+    const createdAppointment = await request("/api/v1/appointments", {
+      token: identity.token,
+      method: "POST",
+      body: {
+        person_id: identity.personId,
+        title: "Primary care follow-up",
+        scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        provider: "Primary care clinician",
+        healthcare_org: "E2E clinic",
+        preparation_notes: "Review the caregiver's recorded follow-up.",
+        status: "scheduled",
+        created_by_caregiver_id: identity.caregiverId,
+      },
+    });
+    assert.ok([200, 201].includes(createdAppointment.status), JSON.stringify(createdAppointment.payload));
+    appointmentId = createdAppointment.payload.id;
+  }
+  assert.ok(appointmentId, "appointment workspace must be attached to a saved appointment");
   assert.ok(
     preparationBrief.payload.events.some((item) => item.description?.includes("restless sleep"))
       || preparationBrief.payload.events.some((item) => item.description?.includes("overnight awakenings")),
@@ -2387,6 +2412,7 @@ await record("09 appointment summary persistence", async () => {
     "appointment preparation must report whether caregiver questions were successfully retrieved",
   );
   const payload = {
+    appointment_id: appointmentId,
     status: "preparation",
     payload: {
       summary: "Prepare for the next care review.",
@@ -2416,22 +2442,28 @@ await record("09 appointment summary persistence", async () => {
 // 09A. Appointment outcome: caregiver review is required before an assertion enters the LCR.
 await record("09A appointment outcome requires caregiver review before LCR retrieval", async () => {
   const caregiverReport = "Caregiver reports that Mum woke twice overnight after the clinic visit.";
-  const created = await request("/api/v1/appointment-workspaces", {
+  const revised = await request("/api/v1/appointment-workspaces/" + encodeURIComponent(appointmentWorkspaceId), {
     token: identity.token,
-    method: "POST",
+    method: "PATCH",
     body: {
+      expected_version: 1,
       status: "outcome_pending",
       payload: {
+        summary: "Prepare for the next care review.",
+        caregiver_concerns: ["Sleep pattern", "Breakfast intake"],
+        evidence_ids: [evidenceId],
+        source_attribution: "caregiver_reported",
         caregiverReport,
         actualVisitDate: new Date().toISOString(),
+        captureStage: "after",
       },
       change_reason: "Browser acceptance test for caregiver-reviewed appointment outcomes",
       idempotency_key: unique("appointment-outcome-review"),
     },
   });
-  assert.equal(created.status, 201, JSON.stringify(created.payload));
-  const recordId = created.payload.id;
-  assert.ok(recordId);
+  assert.equal(revised.status, 200, JSON.stringify(revised.payload));
+  const recordId = revised.payload.id;
+  assert.equal(recordId, appointmentWorkspaceId);
 
   const appointmentPage = await createBrowserPage(session, "/workspace/appointments");
   await appointmentPage.page.getByRole("heading", { name: "Your appointment, supported by SolenOS" }).waitFor({ timeout: 20_000 });
