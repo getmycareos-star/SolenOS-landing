@@ -85,7 +85,7 @@ export function UpcomingAppointmentSummary() {
         </div>
       ) : (brief?.appointments?.length ?? 0) > 0 ? (
         <ul className="solenos-upcoming-appointment__list">
-          {(brief.appointments ?? []).slice(0, 2).map(item => (
+          {(brief?.appointments ?? []).slice(0, 2).map(item => (
             <li key={item.source_id}>
               <strong>{caregiverSafeAssistantText(item.title) || "Recorded appointment"}</strong>
               <span>{displayDate(item.scheduled_at)} · {caregiverStatusLabel(item.status) || "Status not recorded"}</span>
