@@ -1048,6 +1048,7 @@ export function HistoryDrawer() {
             projectionResult = { status: "rejected", reason: cause };
           }
         }
+        if (!isCurrentRequest()) return;
         const historyContext = projectionResult.status === "fulfilled" && projectionResult.value &&
           typeof projectionResult.value === "object"
           ? projectionResult.value as {
