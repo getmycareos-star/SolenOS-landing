@@ -332,6 +332,8 @@ try {
               isNotFound: /\b404\b|page not found|not found/i.test(bodyText),
               hasWorkspaceMain: Boolean(document.querySelector("main,[role='main']")),
               hasWorkspaceNav: Boolean(document.querySelector("nav[aria-label='Primary navigation']")),
+              hasAppointmentSummary: Boolean(document.querySelector(".solenos-upcoming-appointment")),
+              appointmentSummaryText: document.querySelector(".solenos-upcoming-appointment")?.innerText ?? "",
               handoffsHeading: document.querySelector("#care-handoffs-title")?.textContent?.trim() ?? null,
               issues,
             };
@@ -358,6 +360,8 @@ try {
             ...(!rendered.hasWorkspaceMain ? [{ kind: "missing_workspace_main" }] : []),
             ...(!rendered.hasWorkspaceNav ? [{ kind: "missing_workspace_navigation" }] : []),
             ...(rendered.isNotFound ? [{ kind: "not_found_content" }] : []),
+            ...(routePath === "/workspace" && !rendered.hasAppointmentSummary ? [{ kind: "appointment_summary_missing" }] : []),
+            ...(routePath === "/workspace" && !rendered.appointmentSummaryText.includes("Responsive audit appointment") ? [{ kind: "appointment_summary_data_missing" }] : []),
             ...(rendered.horizontalOverflowPx > 1 ? [{ kind: "horizontal_overflow", pixels: rendered.horizontalOverflowPx }] : []),
             ...rendered.clippedPrimaryActions.map((selector) => ({ kind: "clipped_primary_action", selector })),
             ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Share care information"
@@ -380,6 +384,8 @@ try {
             bodyTextPreview: rendered.bodyTextPreview,
             hasWorkspaceMain: rendered.hasWorkspaceMain,
             hasWorkspaceNav: rendered.hasWorkspaceNav,
+            hasAppointmentSummary: rendered.hasAppointmentSummary,
+            appointmentSummaryText: rendered.appointmentSummaryText,
             horizontalOverflowPx: rendered.horizontalOverflowPx,
             clippedPrimaryActions: rendered.clippedPrimaryActions,
             consoleErrors,
