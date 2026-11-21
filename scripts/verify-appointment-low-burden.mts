@@ -99,6 +99,8 @@ assert.ok(!saveNoteSource.includes("/lifecycle', { status: 'completed'"), 'savin
 assert.ok(component.includes('Confirm the visit occurred'), 'attendance confirmation must be an explicit caregiver action');
 assert.ok(component.includes('existingPayload?: Record<string, unknown>'), 'follow-up serialization must receive the previous persisted payload');
 assert.ok(component.includes("appointment-follow-up:' + identity + ':' + (index + 1)"), 'new follow-ups need stable workspace-scoped IDs');
+assert.ok(component.includes("status: typeof prior?.status === 'string' ? prior.status : 'not_recorded'"), 'editing follow-up wording must preserve its saved status');
+assert.ok(component.includes("owner_role: typeof prior?.owner_role === 'string' ? prior.owner_role : 'unassigned'"), 'editing follow-up wording must preserve its recorded owner and never default responsibility to the caregiver');
 assert.ok(component.includes('selectedAppointmentStatus'), 'workspace generation must use the selected appointment lifecycle');
 assert.ok(component.includes('generated.workspace?.appointment_id === selectedAppointmentId'), 'auto-prepared workspace must belong to the selected appointment');
 assert.ok(!component.includes('QwenAssistPanel'), 'appointment continuity must not depend on a separate chatbot panel');
