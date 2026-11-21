@@ -166,7 +166,7 @@ assert.match(currentUnderstanding, /Original report text is not available in thi
 assert.match(currentUnderstanding, /We couldn’t check whether this care summary is up to date/, "a failed freshness check must preserve the saved summary and warn that it may be out of date");
 assert.match(currentUnderstanding, /original report is not linked to this item/i, "a missing source link must be distinguished from unavailable source text");
 assert.match(caregiverLanguage, /for \(const key of \["notes", "original_notes", "text", "description", "observation", "summary"\]\)/, "serialized capture notes must be reduced to the original caregiver report before display");
-assert.match(currentUnderstanding, /caregiverReadableCaptureText\(item\.description\)/, "the current-care projection must use the caregiver-readable capture parser");
+assert.match(currentUnderstanding, /caregiverReadableCaptureText\(value\)/, "care-source descriptions must pass through the caregiver-readable capture parser");
 assert.match(currentUnderstanding, /displayDescription\(item\.description\)/, "care-source descriptions must pass through the caregiver-readable parser");
 assert.ok(currentUnderstanding.includes("if (!item.description?.trim()) return null;"), "missing current-care descriptions are omitted instead of rendered as empty-state filler");
 assert.ok(currentUnderstanding.includes("Reported as current"), "medication status is explicitly qualified as a report, not a verified instruction");
