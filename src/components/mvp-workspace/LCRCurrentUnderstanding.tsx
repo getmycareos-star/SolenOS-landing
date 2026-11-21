@@ -2385,7 +2385,7 @@ export function LCRCurrentUnderstanding() {
           {projection.items.length === 0 ? (
             <div className="lcr-empty-state">
               <h3>Your Care Record does not have any care information yet.</h3>
-              <p>Add what you know in Daily Care or upload a care document. You can also ask the AI Companion to help you understand saved information.</p>
+              <p>Add what you know in Daily Care or upload a care document. You can also ask the Care Assistant to help you understand saved information.</p>
             </div>
           ) : (
             <div className="lcr-current-facts">
