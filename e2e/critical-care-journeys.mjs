@@ -226,7 +226,7 @@ assert.equal(firstVisitConsent.status, 200, JSON.stringify(firstVisitConsent.pay
 assert.equal(firstVisitConsent.payload.verified, true);
 assert.equal(firstVisitConsent.payload.profile?.data_improvement_consent, true);
 await record("00 first-time caregiver capture and persisted return", async () => {
-  const { context, page, pageErrors } = await createBrowserPage(
+  const { context, page, observed, pageErrors } = await createBrowserPage(
     firstVisitSession,
     "/workspace",
     { width: 390, height: 844 },
