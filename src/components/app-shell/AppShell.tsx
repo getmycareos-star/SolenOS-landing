@@ -11,7 +11,7 @@ import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
 import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, revokeAnonymousSession } from "@/api/client";
 import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
-import { ensureClientInteractionSessionId } from "@/lib/care-identity";
+import { ensureClientInteractionSessionId } from "@/lib/care-identity/durable-care-key";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
 
 const CareRecordOverview = dynamic(
