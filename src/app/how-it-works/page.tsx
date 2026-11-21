@@ -87,9 +87,9 @@ export default function HowItWorksPage() {
           Imagine you notice that a family member has been sleeping poorly.
           Record what you observed in Daily Care. After you review the update,
           it can be saved to your Care Record with what was reported and when.
-          Then use the AI Companion if you want help preparing questions for
-          the next care professional. Its suggestions do not become care facts
-          unless they are reviewed and saved.
+          Then ask SolenOS for help preparing questions for the next care
+          professional. Suggestions are not added to your Care Record unless
+          you review and save them.
         </p>
         <p className="public-prose">
           You do not have to visit all three parts every time. Something
