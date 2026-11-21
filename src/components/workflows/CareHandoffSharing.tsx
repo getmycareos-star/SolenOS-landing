@@ -547,6 +547,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   }
 
   async function shareReviewedFamilyHandoff() {
+    if (sourceFreshness?.status !== "current") {
+      setError("This summary may be out of date or could not be checked. Prepare a new draft before sharing.");
+      return;
+    }
     if (!draft || audience !== "family") {
       setError("SolenOS cannot yet confirm that a recipient is a healthcare professional, so professional sharing is not available.");
       return;
