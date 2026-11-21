@@ -174,21 +174,13 @@ function assertScopedRows(rows: unknown, personId: string, label: string): asser
   }
 }
 
-export default function ClarificationWorkflowPanel({ personId, prefillQuestion, prefillEvidenceIds }: { personId?: string; prefillQuestion?: string; prefillEvidenceIds?: string[] }) {
+export default function ClarificationWorkflowPanel({ personId }: { personId?: string }) {
   const [scopePersonId, setScopePersonId] = useState("");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [eligibleQuestionIds, setEligibleQuestionIds] = useState<string[]>([]);
-  const [selectedClaimId, setSelectedClaimId] = useState("");
   const [selectedQuestionId, setSelectedQuestionId] = useState("");
-  const [questionText, setQuestionText] = useState("");
-  const [priority, setPriority] = useState("informational");
-  const [intendedAnswererRole, setIntendedAnswererRole] = useState("");
-  const [intendedAnswererLabel, setIntendedAnswererLabel] = useState("");
-  const [necessity, setNecessity] = useState("not_assessed");
-  const [necessityRationale, setNecessityRationale] = useState("");
-  const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [answer, setAnswer] = useState("");
   const [answerProvenance, setAnswerProvenance] = useState("");
   const [answerEntryOpen, setAnswerEntryOpen] = useState(false);
@@ -236,7 +228,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     (!(item.status === "open" || item.status === "unresolved") ||
       (eligibleQuestionIdSet.has(item.id) && isCaregiverNecessaryQuestion(item)))
   );
-  const selectedClaim = claims.find((item) => item.id === (selectedQuestion?.claim_id || selectedClaimId));
+  const selectedClaim = claims.find((item) => item.id === selectedQuestion?.claim_id);
   const latestAnswer = history[history.length - 1];
   const latestReview = latestAnswer
     ? reviewEvents.find((item) => item.answer_version === latestAnswer.answer_version)
@@ -329,7 +321,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setQuestions(loadedQuestions);
       setEligibleQuestionIds(recommendation.eligible_question_ids as string[]);
       setEvidence(loadedEvidence);
-      setSelectedClaimId((current) => current && loadedClaims.some((row) => row.id === current) ? current : loadedClaims[0]?.id ?? "");
       setSelectedQuestionId((current) => {
         const eligibleIds = new Set(recommendation.eligible_question_ids as string[]);
         const currentQuestion = loadedQuestions.find((row) => row.id === current);
@@ -347,7 +338,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
       setQuestions([]);
       setEligibleQuestionIds([]);
       setEvidence([]);
-      setSelectedClaimId("");
       setSelectedQuestionId("");
       setError("Care questions could not be loaded. Your saved information has not been changed. Please try again.");
     } finally {
@@ -362,12 +352,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
   }, [loadAll]);
 
-  useEffect(() => {
-    if (prefillQuestion) setQuestionText(prefillQuestion);
-    if (prefillEvidenceIds?.length) {
-      setEvidenceIds(prefillEvidenceIds);
-    }
-  }, [prefillQuestion, prefillEvidenceIds]);
+
 
   const loadHistory = useCallback(async () => {
     if (!selectedQuestionId || !scopePersonId) {
@@ -416,67 +401,6 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   }, [scopePersonId, selectedQuestionId]);
 
   useEffect(() => { void loadHistory(); }, [loadHistory]);
-
-  async function createQuestion() {
-    if (!scopePersonId || !selectedClaim || questionText.trim().length < 5) {
-      setError("Choose a care detail and write a clear question.");
-      return;
-    }
-    if (necessity !== "not_assessed" && necessityRationale.trim().length < 3) {
-      setError("Please explain why this question needs an answer, or leave that choice undecided.");
-      return;
-    }
-    if (intendedAnswererLabel.trim() && (!intendedAnswererRole || intendedAnswererRole === "not_known")) {
-      setError("Choose who may know the answer before adding a name.");
-      return;
-    }
-    if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopePersonId))) {
-      setError("One of the selected saved items is unavailable. Please choose again.");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const created = await postJSON("/uncertainty/questions", {
-        person_id: scopePersonId,
-        question: questionText.trim(),
-        subject_type: selectedClaim.subject_type,
-        subject_id: selectedClaim.subject_id,
-        claim_id: selectedClaim.id,
-        intended_answerer_role: intendedAnswererRole || null,
-        intended_answerer_label: intendedAnswererLabel.trim() || null,
-        necessity,
-        necessity_rationale: necessityRationale.trim() || null,
-        status: "open",
-        priority,
-        evidence_ids: evidenceIds,
-        context: [{
-          kind: "claim_clarification",
-          claim_id: selectedClaim.id,
-          claim_field: selectedClaim.field,
-          claim_text: selectedClaim.asserted_value,
-          purpose: "Resolve a declared evidence gap; the question itself does not establish the claim.",
-        }],
-      });
-      if (!created || created.person_id !== scopePersonId || typeof created.id !== "string") {
-        throw new Error("Question create response not confirmed");
-      }
-      setQuestionText("");
-      setNotice("Your question has been saved.");
-      await loadAll();
-      setSelectedQuestionId(created.id);
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "";
-      if (message.toLowerCase().includes("equivalent open clarification question already exists")) {
-        setError("This question is already open. Choose it above to review or answer it.");
-      } else {
-        setError("Your question could not be saved. Please try again.");
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function updateQuestion(status: "answered" | "open" | "unresolved") {
     if (!selectedQuestion || !scopePersonId) return;
