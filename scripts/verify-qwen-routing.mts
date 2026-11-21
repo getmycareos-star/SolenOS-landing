@@ -172,7 +172,7 @@ requireText("src/components/workflows/AICompanion.tsx", [
 ]);
 assert(!companion.includes("The Qwen model service"), "Model runtime details must not be shown.");
 assert(!companion.includes("connected backend"), "Technical service details must not be shown to caregivers.");
-assert(companion.includes("Chats are not saved automatically."), "Companion must explain that conversation is not automatically saved as care information.");
+assert(companion.includes("Conversations are saved here, but they are not added to your Care Record."), "Companion must distinguish persisted conversation history from the Living Care Record.");
 assert(companion.includes('href="/workspace/daily-care"') && companion.includes('href="/workspace/documents"'), "caregivers must be directed to the supported Daily Care and Documents capture workflows.");
 
 assert(!companion.includes("care_update_candidates"), "Companion must not treat model output as a care fact.");
