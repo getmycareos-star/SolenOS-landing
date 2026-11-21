@@ -85,7 +85,7 @@ assert.ok(component.includes('Retry document retrieval'), 'document retrieval fa
 assert.ok(component.includes('professionalStatement') && component.includes('recordedDecisions') && component.includes('recordedInstructions') && component.includes('unansweredQuestions'), 'optional after-visit capture must preserve separate professional statements, decisions, instructions and unanswered questions');
 assert.ok(component.includes('followUps: appointmentFollowUpsFromText(followUps, record?.payload, record?.id || appointmentId)'), 'explicit follow-ups must sync into existing Open Loop records while preserving their identities and metadata');
 assert.ok(component.includes("const appointmentFollowUpText = (payload?: Record<string, unknown>)"), 'saved follow-ups must be restored after refresh');
-assert.ok(component.includes("owner_role: 'unassigned'"), 'follow-up owners must not default to the caregiver');
+assert.ok(component.includes("owner_role: typeof prior?.owner_role === 'string' ? prior.owner_role : 'unassigned'"), 'follow-up owners must preserve a previously recorded owner and otherwise remain unassigned');
 assert.ok(component.includes('Unassigned work stays unassigned.'), 'SolenOS must not silently assign follow-up responsibility to the caregiver');
 assert.ok(component.includes('extractAttachedDocument(file, \'upload\')'), 'appointment documents must use the existing durable evidence upload workflow');
 assert.ok(component.includes('attachedEvidenceIds'), 'appointment document evidence IDs must persist with the workspace')
