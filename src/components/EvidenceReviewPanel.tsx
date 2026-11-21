@@ -808,7 +808,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </details>
         <details style={{ fontSize: 12, marginBottom: 12 }}>
           <summary>Details recorded from this information ({observations.length})</summary>
-          <p>Each detail stays linked to what was originally shared. A caregiver report is not treated as a confirmed medical fact.</p>
+          <p>Each detail keeps the exact words from the original note or document and stays linked to what was shared. A report stays labelled as a report; it is not treated as a confirmed medical fact.</p>
           {observationsLoading && <p role="status">Loading recorded details…</p>}
           {observationsError && <p role="alert" style={{ color: 'var(--error)' }}>{observationsError} <button type="button" style={button} onClick={() => void loadObservations()} disabled={observationsLoading}>Retry</button></p>}
           {!observationsLoading && !observationsError && observations.length === 0 && <p>No separate details are available yet.</p>}
