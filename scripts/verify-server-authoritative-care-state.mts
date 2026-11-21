@@ -10,8 +10,21 @@ const situationStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/situa
 const timelineStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/timeline-store.ts"), "utf8");
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 const communityClient = fs.readFileSync(path.join(root, "src/app/workspace/community/CommunityClient.tsx"), "utf8");
+const activeIdentityClients = [
+  "src/lib/workspace-context.tsx",
+  "src/components/app-shell/AppShell.tsx",
+  "src/components/mvp-workspace/FirstVisitWorkspaceRouter.tsx",
+  "src/components/mvp-workspace/CognitiveWorkspace.tsx",
+].map((file) => ({
+  file,
+  source: fs.readFileSync(path.join(root, file), "utf8"),
+}));
 
 assert.match(workspace, /openSituationsFromSituationApi\(data\)/);
+for (const { file, source } of activeIdentityClients) {
+  assert.match(source, /from ["']@\/lib\/care-identity\/durable-care-key["']/, `${file} must import only browser-safe identity helpers`);
+  assert.doesNotMatch(source, /from ["']@\/lib\/care-identity["']/, `${file} must not pull the legacy filesystem-backed identity barrel into the browser`);
+}
 assert.match(workspace, /situations:\s*fromServer/);
 assert.match(workspace, /cache:\s*"no-store"/);
 assert.match(workspace, /setRecordLoadError\(/);
