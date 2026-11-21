@@ -34,15 +34,16 @@ def deterministic_candidates(
 ) -> dict[str, object]:
     source = str(text or "")
     quotes = (
-        "Patient walked 20 metres with a frame on 12 October.",
-        "The patient reports eating half of lunch on 2026-11-10 during the observation period.",
+        "Patient walked 20 metres with a frame on 12 October during the physiotherapy session.",
+        "The patient ate half of lunch during the observation period.",
+        "The caregiver reported that the patient slept poorly last night.",
     )
     observations = [
         {
             "subject": "Patient",
             "observation": quote,
             "source_quote": quote,
-            "event_date": "2026-11-10" if quote.startswith("The patient reports") else None,
+            "event_date": None,
             "extraction_method": "test_verbatim",
         }
         for quote in quotes
