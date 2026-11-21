@@ -4,23 +4,7 @@
  * intentionally do not inherit these rules.
  */
 .solenos-chat-app {
-  --sn-canvas: #f6f8f5;
-  --sn-surface: #ffffff;
-  --sn-surface-soft: #f0f4ef;
-  --sn-surface-hover: #edf2ec;
-  --sn-ink: #26342d;
-  --sn-muted: #66736a;
-  --sn-subtle: #849087;
-  --sn-line: #e3e9e2;
-  --sn-sage: #a7bda8;
-  --sn-sage-strong: #718f75;
-  --sn-forest: #263f32;
-  --sn-focus: #527d5b;
-  --sn-radius-sm: 10px;
-  --sn-radius-md: 14px;
-  --sn-radius-lg: 20px;
-  --sn-shadow-soft: 0 8px 28px rgba(38, 63, 50, .055);
-  --sn-motion: 180ms cubic-bezier(.2,.75,.25,1);
+  /* Shared design tokens are defined once in experience-design-system-v2.css. */
   min-height: 100dvh;
   background: var(--sn-canvas);
   color: var(--sn-ink);
