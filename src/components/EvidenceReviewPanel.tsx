@@ -631,7 +631,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
-      setHistoryReconstructionError('An earlier version of this information could not be shown for that date. This does not mean the information was never saved. Try again or choose another date.')
+      setHistoryReconstructionError('An earlier version of this information could not be shown for that date. This does not establish that the evidence did not exist or that the information was never saved. Try again or choose another date.')
     } finally {
       setHistoryReconstructionLoading(false)
     }
