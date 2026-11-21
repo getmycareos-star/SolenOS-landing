@@ -23,7 +23,7 @@ assert.ok(component.includes('item.evidence_ids?.length ? \'Source evidence link
 assert.ok(component.includes('brief.open_loops?.length'))
 assert.ok(component.includes('appointment_needs?: Array<'))
 assert.ok(component.includes('Appointment information to clarify'))
-assert.ok(component.includes('item.subject_type !== "appointment"'))
+assert.ok(component.includes('brief.appointment_needs?.length'))
 assert.ok(component.includes('brief.documents?.length'))
 
 // Switching caregiver/person cannot leave the previous visit visible during a new load.
