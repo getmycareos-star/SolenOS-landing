@@ -31,8 +31,8 @@ assert.ok(component.includes('setBrief(null)'))
 assert.ok(component.includes('setRecord(null)'))
 assert.ok(component.includes('setOutcomeProposals([])'))
 // A workspace must remain attached to the selected appointment; unlinked notes are not reused.
-assert.match(component, /items\\s*\\.filter\\(item => item\\.appointment_id === appointmentId\\)/, 'the latest workspace must be selected only from records linked to the chosen appointment');
-assert.match(component, /latestWorkspaceForAppointment\\(items, selectedAppointmentId\\)/, 'the selected appointment must resolve to its newest persisted workspace revision')
+assert.match(component, /items\s*\.filter\(item => item\.appointment_id === appointmentId\)/, 'the latest workspace must be selected only from records linked to the chosen appointment');
+assert.match(component, /latestWorkspaceForAppointment\(items, selectedAppointmentId\)/, 'the selected appointment must resolve to its newest persisted workspace revision');
 assert.ok(!component.includes('items.find(item => !item.appointment_id)'), 'unlinked workspaces must not be reused as appointment records')
 assert.ok(component.includes('setRecord(null)'))
 
