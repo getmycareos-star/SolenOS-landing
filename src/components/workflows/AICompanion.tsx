@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { ArrowUp, CheckCircle2, Clock3, FileText, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
@@ -127,6 +127,23 @@ interface LcrContextCoverage {
   }>
 }
 
+interface PendingCareUpdate {
+  id: string
+  status: string
+  proposed_change: { asserted_value?: string; source_quote?: string; event_time_text?: string | null }
+  created_at?: string | null
+}
+
+interface CareUpdateReviewHistoryItem {
+  id: string
+  decision: string
+  reviewer_caregiver_id: string
+  rationale: string
+  correction_context?: string | null
+  resulting_lcr_revision_id?: string | null
+  created_at?: string | null
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
@@ -178,6 +195,21 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [requestError, setRequestError] = useState<string | null>(null)
   const [conversationRestoreError, setConversationRestoreError] = useState<string | null>(null)
   const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | 'unverified' | 'unknown'>('checking')
+  const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
+  const [careUpdateLoading, setCareUpdateLoading] = useState(false)
+  const [reviewingCareUpdateId, setReviewingCareUpdateId] = useState<string | null>(null)
+  const [confirmingCareReportId, setConfirmingCareReportId] = useState<string | null>(null)
+  const [savingCareReportId, setSavingCareReportId] = useState<string | null>(null)
+  const [careUpdateError, setCareUpdateError] = useState<string | null>(null)
+  const [careUpdateNotice, setCareUpdateNotice] = useState<string | null>(null)
+  const [correctingCareUpdateId, setCorrectingCareUpdateId] = useState<string | null>(null)
+  const [correctedCareUpdateText, setCorrectedCareUpdateText] = useState('')
+  const [careUpdateCorrectionContext, setCareUpdateCorrectionContext] = useState('')
+  const [careUpdateHistory, setCareUpdateHistory] = useState<Record<string, CareUpdateReviewHistoryItem[]>>({})
+  const [loadingCareUpdateHistoryId, setLoadingCareUpdateHistoryId] = useState<string | null>(null)
+  const [showReviewedCareUpdates, setShowReviewedCareUpdates] = useState(false)
+  const [reviewedCareUpdates, setReviewedCareUpdates] = useState<PendingCareUpdate[]>([])
+  const [reviewedCareUpdatesLoading, setReviewedCareUpdatesLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
@@ -399,6 +431,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         timestamp: new Date(),
       }
       setMessages(prev => [...prev.map(message => message === userMsg ? { ...message, source_message_id: response.source_message_id || null } : message), assistantMsg])
+      void loadPendingCareUpdates()
 
 
     } catch (error) {
@@ -417,6 +450,157 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     }
   }
 
+
+  const loadPendingCareUpdates = async () => {
+    setCareUpdateLoading(true)
+    setCareUpdateError(null)
+    try {
+      const response = await getJSON('/companion/care-updates') as { items?: PendingCareUpdate[] }
+      setPendingCareUpdates(Array.isArray(response?.items) ? response.items : [])
+    } catch {
+      setCareUpdateError('Care suggestions could not be loaded. Your conversation is still saved. Try refreshing these suggestions.')
+    } finally {
+      setCareUpdateLoading(false)
+    }
+  }
+
+  const createCareReport = async (messageId: string) => {
+    if (savingCareReportId) return
+    setSavingCareReportId(messageId)
+    setCareUpdateError(null)
+    setCareUpdateNotice(null)
+    try {
+      const response = await postJSON('/companion/care-updates/from-message/' + encodeURIComponent(messageId), { confirm_care_report: true }) as { proposal?: { status?: string } }
+      setConfirmingCareReportId(null)
+      setCareUpdateNotice(response?.proposal?.status === 'accepted'
+        ? 'This report is already in your Care Record.'
+        : response?.proposal?.status === 'rejected'
+          ? 'This report was previously declined and was not added to your Care Record.'
+          : 'Saved for review. It will not enter your Care Record unless you accept it below.')
+      await loadPendingCareUpdates()
+    } catch {
+      setCareUpdateError('This message could not be saved for review. It has not been added to your Care Record.')
+    } finally {
+      setSavingCareReportId(null)
+    }
+  }
+
+  const reviewCareUpdate = async (proposalId: string, decision: 'accept' | 'reject') => {
+    if (reviewingCareUpdateId) return
+    setReviewingCareUpdateId(proposalId)
+    setCareUpdateError(null)
+    setCareUpdateNotice(null)
+    try {
+      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as {
+        status?: string
+        decision?: string
+        written_to_lcr?: boolean
+        idempotent_replay?: boolean
+      }
+      const expectedStatus = decision === 'accept' ? 'accepted' : 'rejected'
+      if (response?.status !== expectedStatus || response?.decision !== decision) {
+        throw new Error('The server did not confirm the requested review decision.')
+      }
+      if (decision === 'accept' && response?.written_to_lcr !== true) {
+        throw new Error('The server did not confirm the Care Record update.')
+      }
+      if (decision === 'reject' && response?.written_to_lcr !== false) {
+        throw new Error('The server did not confirm that nothing was added to the Care Record.')
+      }
+      setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
+      if (decision === 'accept') {
+        window.dispatchEvent(new Event('careRecordUpdated'))
+      }
+      setCareUpdateNotice(decision === 'accept'
+        ? 'Your report was added to the Care Record. A healthcare professional has not confirmed it.'
+        : 'This suggestion was declined. Nothing was added to the Care Record.')
+      if (showReviewedCareUpdates) await loadReviewedCareUpdates()
+    } catch {
+      setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
+    } finally {
+      setReviewingCareUpdateId(null)
+    }
+  }
+
+  const correctCareUpdate = async (proposalId: string) => {
+    const correctedText = correctedCareUpdateText.trim()
+    if (!correctedText || reviewingCareUpdateId) return
+    setReviewingCareUpdateId(proposalId)
+    setCareUpdateError(null)
+    setCareUpdateNotice(null)
+    try {
+      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', {
+        decision: 'correct',
+        corrected_text: correctedText,
+        correction_context: careUpdateCorrectionContext.trim() || null,
+      }) as {
+        decision?: string
+        proposal?: { status?: string }
+        corrected_proposal?: { id?: string; status?: string }
+      }
+      if (
+        response?.decision !== 'correct'
+        || response?.proposal?.status !== 'corrected'
+        || response?.corrected_proposal?.status !== 'pending_authorization'
+        || !response?.corrected_proposal?.id
+      ) {
+        throw new Error('The server did not confirm a separately reviewable corrected proposal.')
+      }
+      setCorrectingCareUpdateId(null)
+      setCorrectedCareUpdateText('')
+      setCareUpdateCorrectionContext('')
+      setCareUpdateNotice('Correction saved as a new review item. Nothing has been added to your Care Record yet.')
+      await loadPendingCareUpdates()
+      if (showReviewedCareUpdates) await loadReviewedCareUpdates()
+    } catch {
+      setCareUpdateError('The correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.')
+    } finally {
+      setReviewingCareUpdateId(null)
+    }
+  }
+
+  const loadReviewedCareUpdates = async () => {
+    setReviewedCareUpdatesLoading(true)
+    setCareUpdateError(null)
+    try {
+      const response = await getJSON('/companion/care-updates?include_reviewed=true') as {
+        items?: PendingCareUpdate[]
+        ordering?: string
+        limit?: number
+      }
+      if (!Array.isArray(response?.items) || response.ordering !== 'newest_first') {
+        throw new Error('The reviewed care update list was incomplete.')
+      }
+      setReviewedCareUpdates(response.items.filter(item => item.status !== 'pending_authorization'))
+    } catch {
+      setCareUpdateError('Previous care update decisions could not be loaded. Your saved Care Record has not changed.')
+    } finally {
+      setReviewedCareUpdatesLoading(false)
+    }
+  }
+
+  const loadCareUpdateHistory = async (proposalId: string) => {
+    setLoadingCareUpdateHistoryId(proposalId)
+    setCareUpdateError(null)
+    try {
+      const response = await getJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/history') as {
+        items?: CareUpdateReviewHistoryItem[]
+        append_only?: boolean
+      }
+      if (response?.append_only !== true || !Array.isArray(response.items)) {
+        throw new Error('Review history response was incomplete.')
+      }
+      setCareUpdateHistory(current => ({ ...current, [proposalId]: response.items || [] }))
+    } catch {
+      setCareUpdateError('Review history could not be loaded. The saved care suggestion has not been changed.')
+    } finally {
+      setLoadingCareUpdateHistoryId(null)
+    }
+  }
+
+  useEffect(() => {
+    void checkAvailability().then(() => loadPendingCareUpdates())
+  }, [checkAvailability])
 
   useEffect(() => {
     const prompt = initialPrompt?.trim()
@@ -480,7 +664,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             ) : (availability === 'available' || availability === 'unverified') && !requestError ? (
               <div className="companion-empty">
                 <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
-                <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>Conversations are saved here, but they are not added to your Care Record. Use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a> to record new care information.</p></div>
+                <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
                 {availability === 'unverified' && <p className="companion-empty-footnote" role="status">The Care Assistant has not completed a response yet. Send your first question to check that it is working.</p>}
                 <div className="companion-starters">
                   {STARTER_PROMPTS.map(item => {
@@ -522,6 +706,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   <div className="companion-message-body">
                     <div className="companion-message-meta"><strong>{isUser ? 'You' : 'Care Assistant'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
+                    {isUser && msg.source_message_id && <div className="companion-care-report-action">
+                      {confirmingCareReportId === msg.source_message_id ? <div className="companion-care-report-confirm" role="group" aria-label="Confirm this care report">
+                        <p>Only continue if this describes something that happened or something you were told — not a question, possibility or guess.</p>
+                        <button type="button" onClick={() => void createCareReport(msg.source_message_id!)} disabled={savingCareReportId === msg.source_message_id}>{savingCareReportId === msg.source_message_id ? 'Saving…' : 'Yes, save for review'}</button>
+                        <button type="button" className="is-secondary" onClick={() => setConfirmingCareReportId(null)} disabled={Boolean(savingCareReportId)}>Cancel</button>
+                      </div> : <button type="button" onClick={() => setConfirmingCareReportId(msg.source_message_id || null)} disabled={Boolean(savingCareReportId)}>Save as a care note</button>}
+                    </div>}
                     {!isUser && msg.ai_generated === false && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.response_mode === 'deterministic_low_capacity_support_fallback'
                         ? msg.safety_note || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
@@ -629,8 +820,76 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             </div>
           )}
         </section>
-        <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>Conversation messages stay here. Use Daily Care to record a care update; nothing in this conversation is added to your Care Record.</p></div></aside>
+        <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>The Care Assistant can help organise notes and questions. It does not diagnose, replace a healthcare professional, or decide what is added to your Care Record.</p></div></aside>
       </div>
+
+      {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice || showReviewedCareUpdates || availability === 'available' || availability === 'unverified') && <section className="companion-care-updates" aria-label="Care suggestions to review">
+        <div className="companion-care-updates-heading">
+          <div><span className="companion-kicker">YOUR CARE RECORD</span><h3>Care updates to review</h3><p>These are exact words from your message that may be useful to save. Nothing is added unless you choose to accept it.</p></div>
+          <div className="companion-care-updates-tools">
+            <button type="button" className="companion-care-refresh" onClick={() => void loadPendingCareUpdates()} disabled={careUpdateLoading || Boolean(reviewingCareUpdateId)}>{careUpdateLoading ? 'Checking…' : 'Refresh'}</button>
+            <button type="button" className="companion-care-refresh" onClick={() => {
+              const next = !showReviewedCareUpdates
+              setShowReviewedCareUpdates(next)
+              if (next && reviewedCareUpdates.length === 0) void loadReviewedCareUpdates()
+            }} disabled={reviewedCareUpdatesLoading}>{showReviewedCareUpdates ? 'Hide previous decisions' : 'Previous decisions'}</button>
+          </div>
+        </div>
+        {careUpdateError && <p className="companion-care-update-message is-error" role="alert">{careUpdateError}</p>}
+        {careUpdateNotice && <p className="companion-care-update-message" role="status">{careUpdateNotice}</p>}
+        {showReviewedCareUpdates && <section className="companion-reviewed-care-updates" aria-label="Previous care update decisions">
+          <h4>Previous decisions</h4>
+          <p>Up to 100 of your most recent reviewed reports. A correction is kept as a separate version.</p>
+          {reviewedCareUpdatesLoading && <small>Loading previous decisions…</small>}
+          {!reviewedCareUpdatesLoading && reviewedCareUpdates.length === 0 && <small>No reviewed care reports were found.</small>}
+          {reviewedCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
+            <div><strong>{item.status.replace(/_/g, ' ')}</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p></div>
+            <div className="companion-care-update-actions">
+              <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
+            </div>
+            {careUpdateHistory[item.id] && <div className="companion-care-update-history">
+              {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
+                <strong>{entry.decision.replace(/_/g, ' ')}</strong>
+                {entry.rationale && <p>{entry.rationale}</p>}
+                {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
+                {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
+              </div>)}
+            </div>}
+          </article>)}
+        </section>}
+        {pendingCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
+          <div><strong>Possible care update</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p>
+            {item.proposed_change?.event_time_text && <small>When you said it happened: {item.proposed_change.event_time_text}</small>}
+            <small>This is your report, not a medical conclusion. Adding it records that you checked the wording; it does not mean a healthcare professional has confirmed it.</small>
+          </div>
+          {correctingCareUpdateId === item.id && <div className="companion-care-update-correction">
+            <label htmlFor={'care-update-correction-' + item.id}>Corrected wording</label>
+            <textarea id={'care-update-correction-' + item.id} value={correctedCareUpdateText} onChange={event => setCorrectedCareUpdateText(event.target.value)} rows={3} maxLength={4000} />
+            <label htmlFor={'care-update-correction-context-' + item.id}>Additional context (optional)</label>
+            <textarea id={'care-update-correction-context-' + item.id} value={careUpdateCorrectionContext} onChange={event => setCareUpdateCorrectionContext(event.target.value)} rows={2} maxLength={4000} />
+            <small>The correction is saved as a separate version. It still needs its own approval before entering the Care Record.</small>
+          </div>}
+          <div className="companion-care-update-actions">
+            {correctingCareUpdateId === item.id ? <>
+              <button type="button" onClick={() => void correctCareUpdate(item.id)} disabled={Boolean(reviewingCareUpdateId) || !correctedCareUpdateText.trim()}>{reviewingCareUpdateId === item.id ? 'Saving correction…' : 'Save correction for review'}</button>
+              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(null); setCorrectedCareUpdateText(''); setCareUpdateCorrectionContext('') }} disabled={Boolean(reviewingCareUpdateId)}>Cancel</button>
+            </> : <>
+              <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
+              <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={Boolean(reviewingCareUpdateId)}>Don’t add</button>
+              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || '') }} disabled={Boolean(reviewingCareUpdateId)}>Correct wording</button>
+            </>}
+            <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
+          </div>
+          {careUpdateHistory[item.id] && <div className="companion-care-update-history" aria-label="Care update review history">
+            {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
+              <strong>{entry.decision.replace(/_/g, ' ')}</strong>
+              {entry.rationale && <p>{entry.rationale}</p>}
+              {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
+              {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
+            </div>)}
+          </div>}
+        </article>)}
+      </section>}
 
       <div className="companion-composer-wrap">
         <form className="companion-composer" aria-label="Send a message to the Care Assistant" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
