@@ -187,35 +187,96 @@ try {
   assert.ok(extracted.payload.extracted_text.includes(candidate.source_quote),
     "the candidate quotation must be present in the persisted extraction");
 
-  // The candidate is now shown by the real review component. Accept it through the browser.
-  await page.getByText(candidate.source_quote, { exact: true }).first().waitFor({ timeout: 30_000 });
-  const candidateIndex = typeof candidate.candidate_index === "number"
+  const mobilityCandidate = analysis.observations.find((item) =>
+    typeof item.source_quote === "string" && item.source_quote.includes("walked 20 metres"),
+  );
+  const nutritionCandidate = analysis.observations.find((item) =>
+    typeof item.source_quote === "string" && item.source_quote.includes("ate half of lunch"),
+  );
+  const sleepCandidate = analysis.observations.find((item) =>
+    typeof item.source_quote === "string" && item.source_quote.includes("slept poorly"),
+  );
+  assert.ok(mobilityCandidate && nutritionCandidate && sleepCandidate,
+    `The deterministic extractor must return the three verbatim test observations. Candidates: ${JSON.stringify(analysis.observations).slice(0, 2400)}`);
+
+  const candidateIndexFor = (candidate) => typeof candidate.candidate_index === "number"
     ? candidate.candidate_index
     : analysis.observations.indexOf(candidate);
-  assert.ok(candidateIndex >= 0, "the selected source-grounded candidate must retain its persisted candidate index");
-  await page.getByTestId(`accept-document-candidate-${candidateIndex}`).click();
-  await page.getByText("Added to Care Record", { exact: true }).waitFor({ timeout: 30_000 });
+  const mobilityIndex = candidateIndexFor(mobilityCandidate);
+  const nutritionIndex = candidateIndexFor(nutritionCandidate);
+  const sleepIndex = candidateIndexFor(sleepCandidate);
+  assert.ok([mobilityIndex, nutritionIndex, sleepIndex].every((index) => index >= 0),
+    "each source-grounded candidate must retain its persisted index");
+
+  const extracted = await request(`/api/v1/documents/analyses/${encodeURIComponent(analysis.analysis_id)}`, {
+    token: session.access_token,
+  });
+  assert.equal(extracted.status, 200, JSON.stringify(extracted.payload));
+  for (const candidate of [mobilityCandidate, nutritionCandidate, sleepCandidate]) {
+    assert.ok(extracted.payload.extracted_text.includes(candidate.source_quote),
+      "every reviewable quotation must be present in the persisted extraction");
+  }
+
+  // Accept one candidate, correct and explicitly approve another, and reject the third.
+  const mobilityCard = page.getByTestId(`document-candidate-${mobilityIndex}`);
+  await mobilityCard.getByText(mobilityCandidate.source_quote, { exact: true }).waitFor({ timeout: 30_000 });
+  await mobilityCard.getByTestId(`accept-document-candidate-${mobilityIndex}`).click();
+  await mobilityCard.getByText("Added to Care Record", { exact: true }).waitFor({ timeout: 30_000 });
+
+  const correctedObservation = "The patient ate about half of lunch, as reported by the caregiver.";
+  const nutritionCard = page.getByTestId(`document-candidate-${nutritionIndex}`);
+  await nutritionCard.getByLabel("Corrected detail").fill(correctedObservation);
+  await nutritionCard.getByTestId(`correct-document-candidate-${nutritionIndex}`).click();
+  await nutritionCard.getByText("Correction saved — waiting for approval", { exact: true }).waitFor({ timeout: 30_000 });
+  await nutritionCard.getByTestId(`accept-document-candidate-${nutritionIndex}`).click();
+  await nutritionCard.getByText("Added to Care Record", { exact: true }).waitFor({ timeout: 30_000 });
+
+  const sleepCard = page.getByTestId(`document-candidate-${sleepIndex}`);
+  await sleepCard.getByTestId(`reject-document-candidate-${sleepIndex}`).click();
+  await sleepCard.getByText("You chose not to add this detail to your Care Record.", { exact: true }).waitFor({ timeout: 30_000 });
 
   const history = await request(
     `/api/v1/documents/intelligence/${encodeURIComponent(analysis.analysis_id)}/review-history`,
     { token: session.access_token },
   );
   assert.equal(history.status, 200, JSON.stringify(history.payload));
-  const acceptedEvent = (history.payload.items || []).find((item) =>
-    item.decision === "accept" && item.after?.source_quote === candidate.source_quote,
+  const reviewItems = history.payload.items || [];
+  const mobilityAccepted = reviewItems.find((item) =>
+    item.decision === "accept" && item.after?.source_quote === mobilityCandidate.source_quote,
   );
-  assert.ok(acceptedEvent?.resulting_assertion_id,
+  const nutritionCorrected = reviewItems.find((item) =>
+    item.decision === "correct" && item.after?.source_quote === nutritionCandidate.source_quote &&
+    item.after?.observation === correctedObservation,
+  );
+  const nutritionAccepted = reviewItems.find((item) =>
+    item.decision === "accept" && item.after?.source_quote === nutritionCandidate.source_quote &&
+    item.after?.observation === correctedObservation,
+  );
+  const sleepRejected = reviewItems.find((item) =>
+    item.decision === "reject" && item.after?.source_quote === sleepCandidate.source_quote,
+  );
+  assert.ok(mobilityAccepted?.resulting_assertion_id,
     "browser acceptance must append a durable review event linked to the resulting LCR assertion");
+  assert.ok(nutritionCorrected && nutritionAccepted?.resulting_assertion_id,
+    "the corrected wording must be saved for review and only promoted after explicit approval");
+  assert.ok(sleepRejected && !sleepRejected.resulting_assertion_id,
+    "rejection must persist without creating an authoritative LCR assertion");
 
   const assertions = await request(
     `/api/v1/care-continuity/assertions/${encodeURIComponent(session.person.id)}`,
     { token: session.access_token },
   );
   assert.equal(assertions.status, 200, JSON.stringify(assertions.payload));
-  const assertion = assertions.payload.find((item) => item.id === acceptedEvent.resulting_assertion_id);
-  assert.ok(assertion, "the accepted assertion must be retrievable from the Living Care Record");
-  assert.ok((assertion.evidence_ids || []).includes(evidenceId),
-    "the accepted assertion must retain the exact original document evidence ID");
+  const mobilityAssertion = assertions.payload.find((item) => item.id === mobilityAccepted.resulting_assertion_id);
+  const nutritionAssertion = assertions.payload.find((item) => item.id === nutritionAccepted.resulting_assertion_id);
+  assert.ok(mobilityAssertion && (mobilityAssertion.evidence_ids || []).includes(evidenceId),
+    "the accepted mobility assertion must retain the exact original document evidence ID");
+  assert.ok(nutritionAssertion && (nutritionAssertion.evidence_ids || []).includes(evidenceId),
+    "the corrected and approved assertion must retain the exact original document evidence ID");
+  assert.ok(JSON.stringify(nutritionAssertion).includes(correctedObservation),
+    "the LCR must contain the caregiver-approved correction, not the original extraction wording");
+  assert.ok(!JSON.stringify(assertions.payload).includes(sleepCandidate.observation),
+    "the rejected observation must never become an authoritative LCR fact");
 
   const original = await request(`/api/v1/upload/${encodeURIComponent(evidenceId)}`, {
     token: session.access_token,
@@ -232,12 +293,19 @@ try {
     { token: session.access_token },
   );
   assert.equal(reloadedHistory.status, 200, JSON.stringify(reloadedHistory.payload));
-  assert.ok(reloadedHistory.payload.items.some((item) =>
-    item.decision === "accept" && item.resulting_assertion_id === acceptedEvent.resulting_assertion_id,
-  ), "the accepted decision must still be present after a fresh browser session");
+  const persistedDecisions = reloadedHistory.payload.items || [];
+  assert.ok(persistedDecisions.some((item) =>
+    item.decision === "accept" && item.resulting_assertion_id === mobilityAccepted.resulting_assertion_id,
+  ), "the accepted mobility decision must survive a fresh browser session");
+  assert.ok(persistedDecisions.some((item) =>
+    item.decision === "correct" && item.after?.observation === correctedObservation,
+  ), "the saved correction must survive a fresh browser session");
+  assert.ok(persistedDecisions.some((item) =>
+    item.decision === "reject" && item.after?.source_quote === sleepCandidate.source_quote,
+  ), "the rejected decision must survive a fresh browser session");
 
   await closeContext(reopened.context);
-  process.stdout.write("PASS deterministic test extractor extraction, browser caregiver acceptance, PostgreSQL LCR persistence, and original-source retrieval\n");
+  process.stdout.write("PASS deterministic document extraction, browser acceptance/correction/rejection, PostgreSQL LCR persistence, and original-source integrity\n");
 } finally {
   for (const context of [...activeContexts]) await closeContext(context);
   await browser.close();
