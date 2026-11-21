@@ -71,12 +71,12 @@ assert.doesNotMatch(careContinuity, /situation\.openQuestions\.map/, "care quest
 assert.doesNotMatch(careContinuity, /Winner selected: no|Supporting information:/, "raw conflict evidence counts and audit flags are not shown in the default timeline");
 assert.doesNotMatch(careContinuity, /PersistedCareOrientation|ChangeIntelligencePanel/, "duplicate overview and standalone observation-coverage editor are not mounted on Care Continuity");
 assert.match(currentUnderstanding, /lcr-first-screen-summary/, "workspace opens with a concise three-part care orientation");
-assert.match(currentUnderstanding, /Care information on record/, "first screen explains the recorded care picture");
-assert.match(currentUnderstanding, /What needs attention/, "first screen surfaces supported care priorities");
+assert.match(currentUnderstanding, /Your care information/, "first screen explains the recorded care picture");
+assert.match(currentUnderstanding, /What matters now/, "first screen surfaces supported care priorities");
 assert.match(currentUnderstanding, /<strong>Still unclear:<\/strong>/, "the first-screen summary surfaces recorded uncertainty without turning it into a task");
 assert.match(currentUnderstanding, /This record reflects the care information saved here/, "the Care Record uses one concise scope statement instead of repeating its introduction");
 assert.doesNotMatch(currentUnderstanding, /Your care information, brought together/, "the redundant introductory headline is removed");
-assert.match(currentUnderstanding, /What has changed/, "first screen summarizes persisted changes");
+assert.match(currentUnderstanding, /What’s changed/, "first screen summarizes persisted changes");
 assert.match(followUps, /item\.source === "events" \|\| item\.source === "persisted_change"\) && item\.record_id/, "event- and change-derived follow-up candidates require an explicit caregiver action before becoming a responsibility");
 assert.match(followUps, /onClick=\{\(\) => void onCreate\(item\)\}/, "a suggested follow-up becomes a responsibility only after the caregiver explicitly chooses to create it");
 assert.match(followUps, /postJSON\("\/open-loops"/, "adding an event follow-up persists it through the authoritative open-loop API");
