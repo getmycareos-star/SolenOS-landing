@@ -91,7 +91,16 @@ assert.ok(component.includes('Link to this appointment'), 'existing care documen
 assert.ok(component.includes("brief?.source_coverage?.documents === 'restricted'"), 'document attachment must respect caregiver document permissions')
 assert.ok(component.includes('Documents linked to this appointment'), 'documents linked to the selected visit must be distinguished from other care documents')
 assert.ok(component.includes("updateAppointmentLifecycle('cancelled')") && component.includes("updateAppointmentLifecycle('rescheduled')"), 'caregiver-recorded cancellation and rescheduling must be supported')
-assert.ok(component.includes("{ status: 'completed' }"), 'saving after-visit information must update the recorded visit lifecycle');
+const saveNoteStart = component.indexOf('const saveNote = async () =>');
+const saveNoteEnd = component.indexOf('const selectedAppointmentEvidenceIds', saveNoteStart);
+const saveNoteSource = component.slice(saveNoteStart, saveNoteEnd);
+assert.ok(saveNoteStart >= 0 && saveNoteEnd > saveNoteStart, 'appointment save handler must remain identifiable');
+assert.ok(!saveNoteSource.includes("/lifecycle', { status: 'completed'"), 'saving notes must not automatically mark an appointment as completed');
+assert.ok(component.includes('Confirm the visit occurred'), 'attendance confirmation must be an explicit caregiver action');
+assert.ok(component.includes('existingPayload?: Record<string, unknown>'), 'follow-up serialization must receive the previous persisted payload');
+assert.ok(component.includes("appointment-follow-up:' + identity + ':' + (index + 1)"), 'new follow-ups need stable workspace-scoped IDs');
+assert.ok(component.includes('selectedAppointmentStatus'), 'workspace generation must use the selected appointment lifecycle');
+assert.ok(component.includes('generated.workspace?.appointment_id === selectedAppointmentId'), 'auto-prepared workspace must belong to the selected appointment');
 assert.ok(!component.includes('QwenAssistPanel'), 'appointment continuity must not depend on a separate chatbot panel');
 assert.ok(!component.includes('MediaRecorder') && !component.includes('getUserMedia'), 'voice capture remains deferred');
 assert.ok(component.includes("'Next appointment recorded' : 'Appointment information · date unknown'"), 'unknown dates must not be labelled as scheduled visits');
