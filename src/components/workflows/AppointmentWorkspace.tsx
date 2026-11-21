@@ -206,6 +206,20 @@ const appointmentFollowUpsFromText = (
     })
 }
 
+const latestWorkspaceForAppointment = (items: WorkspaceRecord[], appointmentId: string | null) => {
+  if (!appointmentId) return null
+  return items
+    .filter(item => item.appointment_id === appointmentId)
+    .sort((a, b) => {
+      const aUpdated = Date.parse(a.updated_at || a.created_at || '') || 0
+      const bUpdated = Date.parse(b.updated_at || b.created_at || '') || 0
+      // updated_at can have coarse precision in local test databases. Use
+      // the persisted optimistic-lock version as a deterministic tie-breaker
+      // so a newly revised workspace wins over an older preparation snapshot.
+      return bUpdated - aUpdated || (b.version_number || 0) - (a.version_number || 0)
+    })[0] || null
+}
+
 const selectNextAppointment = (brief: PreparationBrief) => {
   if (brief.next_appointment) return brief.next_appointment
   const recorded = [...brief.appointments]
@@ -301,7 +315,7 @@ export default function AppointmentWorkspace() {
         if (workspaceResult.status === 'fulfilled' && briefResult.status === 'fulfilled') {
           const items = workspaceResult.value.items || []
           let latest = selectedAppointmentId
-            ? items.find(item => item.appointment_id === selectedAppointmentId) || null
+            ? latestWorkspaceForAppointment(items, selectedAppointmentId)
             : null
           // Prepare and persist the workspace automatically for an existing
           // scheduled appointment. The caregiver does not complete a form.
@@ -418,7 +432,7 @@ export default function AppointmentWorkspace() {
 
     const items = workspaceResult.items || []
     const latest = selectedAppointmentId
-      ? items.find(item => item.appointment_id === selectedAppointmentId) || null
+      ? latestWorkspaceForAppointment(items, selectedAppointmentId)
       : null
     if (
       (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) ||
