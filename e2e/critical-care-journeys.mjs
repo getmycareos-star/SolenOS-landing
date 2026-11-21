@@ -2425,6 +2425,7 @@ await record("09 appointment summary persistence", async () => {
   };
   const saved = await request("/api/v1/appointment-workspaces", { token: identity.token, method: "POST", body: payload });
   assert.equal(saved.status, 201, JSON.stringify(saved.payload));
+  assert.equal(saved.payload.appointment_id, appointmentId, "appointment notes must stay linked to the selected saved appointment");
   appointmentWorkspaceId = saved.payload.id;
   const replay = await request("/api/v1/appointment-workspaces", { token: identity.token, method: "POST", body: payload });
   assert.ok([200, 201].includes(replay.status), JSON.stringify(replay.payload));
