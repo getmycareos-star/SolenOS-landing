@@ -106,6 +106,7 @@ try {
     has: page.getByRole("heading", { name: title, exact: true }),
   });
   await card.waitFor({ timeout: 20_000 });
+  assert.equal(await card.count(), 1, "one saved follow-up must appear only once across caregiver attention sections");
   const initialSection = await card.evaluate((element) =>
     element.closest(".followups-section")?.querySelector("h2")?.textContent?.trim() ?? null
   );
