@@ -1000,8 +1000,14 @@ await record("01c workspace links, browser back, More menu and account form vali
   const familyFreshnessLabel = familyDialog.getByText(/Last check:/);
   await familyFreshnessLabel.waitFor({ timeout: 10_000 });
   const familyFreshnessText = await familyFreshnessLabel.innerText();
-  if (!/current/i.test(familyFreshnessText)) {
+  if (familyDraft.source_freshness.status !== "current") {
     await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).waitFor({ timeout: 10_000 });
+  } else {
+    assert.equal(
+      await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).count(),
+      0,
+      "a current source snapshot must not be blocked by a stale-source alert",
+    );
   }
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
     "family briefing must contain actual LCR-derived content");
