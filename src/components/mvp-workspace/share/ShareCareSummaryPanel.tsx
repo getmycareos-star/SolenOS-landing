@@ -183,10 +183,10 @@ export function ShareCareSummaryPanel({
       >
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
           <div>
-            <h2 id="lcr-briefing-dialog-title" style={{ margin: 0, fontSize: 18, color: "#172117" }}>
+            <h2 id="lcr-briefing-dialog-title" style={{ margin: 0, fontSize: "calc(18px * var(--solenos-text-scale, 1))", color: "#172117" }}>
               Prepare a care briefing
             </h2>
-            <p style={{ margin: "4px 0 0", color: "#59665a", fontSize: 12 }}>
+            <p style={{ margin: "4px 0 0", color: "#59665a", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
               Built from the saved Care Record. Review the sources before sharing.
             </p>
           </div>
@@ -206,18 +206,18 @@ export function ShareCareSummaryPanel({
           onResumeDraft={resumeDraft}
         />
         {intent === "export" && draft && draft.source_freshness?.status !== "current" && (
-          <p role="alert" style={{ color: "#8d2d2d", fontSize: 12, lineHeight: 1.5 }}>
+          <p role="alert" style={{ color: "#8d2d2d", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>
             This briefing is out of date or its saved sources could not be checked. Prepare a new briefing before exporting.
           </p>
         )}
         {intent === "export" && exportError && (
-          <p role="alert" style={{ color: "#8d2d2d", fontSize: 12, lineHeight: 1.5 }}>{exportError}</p>
+          <p role="alert" style={{ color: "#8d2d2d", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{exportError}</p>
         )}
         {intent === "export" && exportableDraft && (
           <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
-            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Check each briefing item before exporting</strong>
+            <strong style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Check each briefing item before exporting</strong>
             {(exportableDraft.generation?.sections ?? []).map((item, index) => (
-              <label key={item.source_ref + index} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, marginBottom: 8 }}>
+              <label key={item.source_ref + index} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, marginBottom: 8 }}>
                 <input
                   type="checkbox"
                   checked={exportReviewedSourceRefs.includes(item.source_ref)}
@@ -228,7 +228,7 @@ export function ShareCareSummaryPanel({
                 <span>I checked “{item.section}” against its saved source wording, dates and uncertainty labels.</span>
               </label>
             ))}
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "10px 0" }}>
               <input type="checkbox" checked={exportReviewed} onChange={event => setExportReviewed(event.target.checked)} />
               <span>I understand this is an AI-assisted draft, not a medical opinion or a replacement for the full Care Record.</span>
             </label>

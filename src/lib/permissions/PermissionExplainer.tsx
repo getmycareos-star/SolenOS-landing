@@ -27,11 +27,11 @@ export const PermissionExplainer = ({
         gap: '8px',
         marginBottom: '8px',
       }}>
-        {icon || <span style={{ fontSize: '20px' }}>📍</span>}
+        {icon || <span style={{ fontSize: 'calc(20px * var(--solenos-text-scale, 1))' }}>📍</span>}
         <div>
           <h3 style={{
             margin: 0,
-            fontSize: '16px',
+            fontSize: 'calc(16px * var(--solenos-text-scale, 1))',
             fontWeight: 600,
             color: 'var(--text)',
           }}>
@@ -39,7 +39,7 @@ export const PermissionExplainer = ({
           </h3>
           <p style={{
             margin: '4px 0 0',
-            fontSize: '14px',
+            fontSize: 'calc(14px * var(--solenos-text-scale, 1))',
             color: 'var(--text-secondary)',
             lineHeight: 1.5,
           }}>

@@ -103,8 +103,8 @@ function WorkspacePageInner() {
           style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, padding: 18, border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "var(--solenos-surface)" }}
         >
           <div>
-            <h2 style={{ margin: "0 0 5px", fontSize: 16 }}>Keep your care information up to date</h2>
-            <p style={{ margin: 0, color: "var(--solenos-muted)", fontSize: 13, lineHeight: 1.5 }}>
+            <h2 style={{ margin: "0 0 5px", fontSize: "calc(16px * var(--solenos-text-scale, 1))" }}>Keep your care information up to date</h2>
+            <p style={{ margin: 0, color: "var(--solenos-muted)", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>
               Record something new in Daily Care, or open the Timeline when you need to review earlier updates.
             </p>
           </div>
