@@ -697,10 +697,16 @@ await record("01b More groups secondary tools and preserves mobile navigation", 
     document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
     document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
   , undefined, { timeout: 5_000 });
-  const followUpsNavigationLink = page.locator("#solenos-navigation")
-    .getByRole("link", { name: /Follow-ups/ });
-  await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
-  assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
+  const moreNavigationLink = page.locator("#solenos-navigation")
+    .getByRole("link", { name: "More", exact: true });
+  await moreNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await moreNavigationLink.getAttribute("href"), "/workspace/more");
+  await moreNavigationLink.click();
+  await page.waitForURL("**/workspace/more", { timeout: 20_000 });
+  const followUpsMoreLink = page.getByRole("link", { name: "Follow-ups", exact: true });
+  await followUpsMoreLink.waitFor({ state: "visible", timeout: 10_000 });
+  await followUpsMoreLink.click();
+  await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
   await context.close();
 });
 
