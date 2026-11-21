@@ -60,7 +60,11 @@ assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask/, "D
 assert.doesNotMatch(workspaceLayout, /type="checkbox"|ResearchPreviewAckGate|ConsentGatePanel/, "workspace route mounts without a pre-entry checkbox");
 assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is preserved for continuity components");
 assert.doesNotMatch(evidenceReview, /fontSize: 12\b|<small>/, "caregiver source review details must not use dense small text");
-assert.match(evidenceReview, /fontSize: 14/, "source and review information remains comfortably readable");
+assert.match(
+  evidenceReview,
+  /fontSize:\s*["']calc\(14px \* var\(--solenos-text-scale, 1\)\)["']/,
+  "source and review information uses the accessible scaled body-text size",
+);
 assert.match(experienceStyles, /lcr-current-fact :where\(p,small,li\)[\s\S]*?font-size: 0\.95rem;[\s\S]*?line-height: 1\.7;/, "care-record detail text remains comfortably readable");
 assert.match(experienceStyles, /lcr-current-fact h4[\s\S]*?font-size: 15px;/, "care-record section labels are not rendered in small dense text");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
