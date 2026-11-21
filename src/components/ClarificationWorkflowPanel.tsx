@@ -203,6 +203,7 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   const [historyError, setHistoryError] = useState("");
   const [notice, setNotice] = useState("");
   const [recommendationUnavailable, setRecommendationUnavailable] = useState(false);
+  const [partialLoadWarning, setPartialLoadWarning] = useState<string[]>([]);
 
   const isCaregiverNecessaryQuestion = (item: Question) =>
     item.necessity === "necessary" && Boolean(item.necessity_rationale?.trim());
@@ -246,13 +247,14 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
     setError("");
     setNotice("");
     setRecommendationUnavailable(false);
+    setPartialLoadWarning([]);
     try {
       const session = await ensureAnonymousSession();
       const sessionPersonId = session.person?.id;
       if (!sessionPersonId || (personId && personId !== sessionPersonId)) {
         throw new Error("Authenticated care-record scope mismatch");
       }
-      const [claimRows, questionRows, answeredRows, declinedRows, closedRows, evidenceRows] = await Promise.all([
+      const [claimResult, questionResult, answeredResult, declinedResult, closedResult, evidenceResult] = await Promise.allSettled([
         getJSON(`/care-continuity/assertions/${encodeURIComponent(sessionPersonId)}?limit=100`),
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`),
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}?status=answered`),
@@ -260,6 +262,22 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
         getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}?status=closed`),
         getJSON("/care-continuity/evidence?limit=100"),
       ]);
+      const failedSources: string[] = [];
+      const readRows = (result: PromiseSettledResult<unknown>, label: string): unknown[] => {
+        if (result.status === "rejected") {
+          failedSources.push(label);
+          return [];
+        }
+        return result.value as unknown[];
+      };
+      const claimRows = readRows(claimResult, "care details");
+      const questionRows = readRows(questionResult, "open care questions");
+      const answeredRows = readRows(answeredResult, "answered questions");
+      const declinedRows = readRows(declinedResult, "declined questions");
+      const closedRows = readRows(closedResult, "closed questions");
+      const evidenceRows = readRows(evidenceResult, "saved source information");
+      if (questionResult.status === "rejected") setRecommendationUnavailable(true);
+      setPartialLoadWarning(failedSources);
       let recommendation: {
         person_id: string;
         eligible_question_ids: string[];
@@ -559,6 +577,9 @@ SolenOS only brings up a question when saved care information shows that an answ
     </p>
     {loading && <p role="status">Loading care questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
+    {!loading && !error && partialLoadWarning.length > 0 && (
+      <p role="status">Some saved care information could not be loaded: {partialLoadWarning.join(", ")}. The information shown may be incomplete. Try again.</p>
+    )}
     {!loading && !error && <>
       {recommendationUnavailable && <p role="status">We couldn’t check for care questions just now. Your saved care information has not changed. Try again later.</p>}
       {caregiverOpenQuestions.length === 0 && !recommendationUnavailable && <p>There are no care questions for you to review right now. SolenOS will let you know when a detail needs your input.</p>}
