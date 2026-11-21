@@ -176,9 +176,10 @@ assert(companion.includes("Conversations are saved here, but they are not added 
 assert(companion.includes('href="/workspace/daily-care"') && companion.includes('href="/workspace/documents"'), "caregivers must be directed to the supported Daily Care and Documents capture workflows.");
 
 assert(!companion.includes("care_update_candidates"), "Companion must not treat model output as a care fact.");
-assert(!companion.includes("pendingCareUpdates") && !companion.includes("/companion/care-updates"), "Companion must not expose the retired chat-to-Care-Record review workflow.");
-assert(companion.includes("Conversation messages stay here."), "Companion must direct care capture to Daily Care.");
-assert(companion.includes("nothing in this conversation is added to your Care Record"), "Companion messages must remain conversation-only.");
+assert(companion.includes("pendingCareUpdates"), "Companion must load only caregiver-created review proposals.");
+assert(companion.includes("/companion/care-updates"), "Companion must use the caregiver-scoped review endpoints.");
+assert(companion.includes("reviewCareUpdate"), "Companion care reports must require an explicit caregiver decision.");
+assert(companion.includes("Nothing is added to your Care Record unless you choose to save a message as a care note and approve it."), "Companion must disclose the explicit approval boundary.");
 assert(!companion.includes("AppointmentWorkspace") && !companion.includes("CareHandoffSharing"), "Appointment and handoff workflows must remain outside the conversational interface.");
 
 const documentPage = read("src/app/workspace/documents/page.tsx");
