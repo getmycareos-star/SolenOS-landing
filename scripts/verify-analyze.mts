@@ -30,9 +30,20 @@ const pipelineSource = fs.readFileSync(
 
 );
 
+const routeSource = fs.readFileSync(
+  path.join(process.cwd(), "src/app/api/analyze/route.ts"),
+  "utf-8",
+);
+
+if (!routeSource.includes("LEGACY_ANALYSIS_ENDPOINT_RETIRED") || !routeSource.includes("status: 410")) {
+  throw new Error("legacy analysis must remain retired from caregiver-facing API traffic");
+}
+console.log("✓ legacy /api/analyze endpoint is closed; PostgreSQL-backed care workflows remain authoritative");
 
 
-console.log("=== /api/analyze — FINAL IMPLEMENTATION PIPELINE ===\n");
+
+
+console.log("=== RETIRED INTERNAL ANALYSIS LIBRARY — NOT A CAREGIVER API ===\n");
 
 
 
@@ -266,5 +277,5 @@ console.log(`✓ retry policy unchanged (max ${ANALYZE_MAX_RETRIES} retries)`);
 
 
 
-console.log("\n✓ /api/analyze aligned with final implementation contract");
+console.log("\n✓ legacy analysis library checks passed; caregiver API remains retired");
 
