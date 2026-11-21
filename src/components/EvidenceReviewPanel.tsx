@@ -902,7 +902,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             )}
             {item.origin_group_key && <p>These entries came from the same original.</p>}
             <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
-            <small>Checked by {item.reviewed_by_caregiver_id ? 'a caregiver' : 'an unavailable person'} · {new Date(item.created_at).toLocaleString()}</small>
+            <small style={{ fontSize: 14 }}>Checked by {item.reviewed_by_caregiver_id ? 'a caregiver' : 'an unavailable person'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
         </details>
         <details style={{ fontSize: 14, marginBottom: 12 }}>
@@ -925,10 +925,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             {item.hedge_marker && <div>Words that show the report may be uncertain: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>What still needs clarification: {item.ambiguity_note}</div>}
             {item.observer_label && <div>Who shared this information: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
-            <small>Happened: {item.occurred_at ? new Date(item.occurred_at).toLocaleString() : 'Not recorded'}</small>
-            {item.observed_at && <small>Observed: {new Date(item.observed_at).toLocaleString()}</small>}
-            <small>Reported: {item.reported_at ? new Date(item.reported_at).toLocaleString() : 'Not recorded'}</small>
-            <small>Saved: {item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Not recorded'}</small>
+            <small style={{ fontSize: 14 }}>Happened: {item.occurred_at ? new Date(item.occurred_at).toLocaleString() : 'Not recorded'}</small>
+            {item.observed_at && <small style={{ fontSize: 14 }}>Observed: {new Date(item.observed_at).toLocaleString()}</small>}
+            <small style={{ fontSize: 14 }}>Reported: {item.reported_at ? new Date(item.reported_at).toLocaleString() : 'Not recorded'}</small>
+            <small style={{ fontSize: 14 }}>Saved: {item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Not recorded'}</small>
           </article>)}
         </details>
 
@@ -964,7 +964,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
                     <li key={item.key} style={{ marginBottom: 8 }}>
                       <strong>{item.title}</strong>
                       <p>{item.detail}</p>
-                      <small>{item.date}{item.status ? ` · ${reviewStatusLabel(item.status)}` : ''}{item.source ? ` · From: ${reviewStatusLabel(item.source)}` : ''}</small>
+                      <small style={{ fontSize: 14 }}>{item.date}{item.status ? ` · ${reviewStatusLabel(item.status)}` : ''}{item.source ? ` · From: ${reviewStatusLabel(item.source)}` : ''}</small>
                     </li>
                   ))}
                 </ul>
@@ -1026,7 +1026,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
-          <small>This check compares the saved wording and file. It does not prove who created the original.</small>
+          <small style={{ fontSize: 14 }}>This check compares the saved wording and file. It does not prove who created the original.</small>
         </details>
         )}
       </>}
