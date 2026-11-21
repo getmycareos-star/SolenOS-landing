@@ -93,6 +93,12 @@ assert.match(clarificationPanel, /Promise\.allSettled/, "a failed history source
 assert.match(clarificationPanel, /partialLoadWarning/, "partial question-history retrieval must be visible to the caregiver");
 assert.match(clarificationPanel, /questionResult\.status === "rejected"\) setRecommendationUnavailable\(true\)/, "an unavailable open-question source must never appear as a successful empty queue");
 assert.match(clarificationPanel, /Some saved care information could not be loaded/, "partial retrieval must be described as incomplete, not empty");
+const historyLoader = clarificationPanel.slice(
+  clarificationPanel.indexOf("const loadHistory"),
+  clarificationPanel.indexOf("useEffect(() => { void loadHistory(); }"),
+);
+assert.match(historyLoader, /Promise\.allSettled/, "answer and review history must load independently");
+assert.match(historyLoader, /The saved answers are still shown/, "review-history failure must not erase successfully retrieved answers");
 assert.equal([...clarificationPanel.matchAll(/setRecommendationUnavailable\(false\)/g)].length, 1, "a successful empty-state reset must not overwrite the unavailable state after a failed recommendation read");
 assert.match(clarificationPanel, /We couldn’t check for care questions just now/, "recommendation failure must be communicated plainly");
 assert.match(clarificationPanel, /caregiverOpenQuestions\.length === 0 && !recommendationUnavailable/, "an empty successful result must be distinct from an unavailable result");
