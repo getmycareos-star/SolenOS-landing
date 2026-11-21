@@ -391,7 +391,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   const [freshnessResult, setFreshnessResult] = useState('not_assessed')
   const [completenessResult, setCompletenessResult] = useState('not_assessed')
   const [reviews, setReviews] = useState<Review[]>([])
-  const pendingReviewRequestRef = useRef<{ key: string; fingerprint: string } | null>(null)
+  const pendingReviewRequestRef = useRef<{ key: string; fingerprint: string; storageKey: string } | null>(null)
   const [historyUnavailable, setHistoryUnavailable] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -722,8 +722,29 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       criteria,
     }
     const fingerprint = JSON.stringify(requestPayload)
+    const storageKey = `solenos:evidence-review:${encodeURIComponent(personId)}:${encodeURIComponent(selected.id)}`
     if (!pendingReviewRequestRef.current || pendingReviewRequestRef.current.fingerprint !== fingerprint) {
-      pendingReviewRequestRef.current = { key: crypto.randomUUID(), fingerprint }
+      let restoredKey: string | null = null
+      try {
+        const savedRetry = window.sessionStorage.getItem(storageKey)
+        if (savedRetry) {
+          const parsed = JSON.parse(savedRetry) as { key?: unknown; fingerprint?: unknown }
+          if (parsed.fingerprint === fingerprint && typeof parsed.key === 'string' && parsed.key.length >= 8) {
+            restoredKey = parsed.key
+          }
+        }
+      } catch {
+        // Storage may be unavailable in a restricted browser; the in-memory
+        // key still protects retries while this component remains mounted.
+      }
+      const key = restoredKey || crypto.randomUUID()
+      pendingReviewRequestRef.current = { key, fingerprint, storageKey }
+      try {
+        window.sessionStorage.setItem(storageKey, JSON.stringify({ key, fingerprint }))
+      } catch {
+        // The API remains idempotent for this mounted component even if the
+        // browser blocks session storage.
+      }
     }
     const requestKey = pendingReviewRequestRef.current.key
     try {
@@ -750,6 +771,14 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setReviews(history as Review[])
       setHistoryUnavailable(false)
       setRationale('')
+      if (pendingReviewRequestRef.current) {
+        try {
+          window.sessionStorage.removeItem(pendingReviewRequestRef.current.storageKey)
+        } catch {
+          // A completed review is already verified server-side; storage cleanup
+          // must not turn a successful save into a reported failure.
+        }
+      }
       pendingReviewRequestRef.current = null
       setNotice(
         saved.care_continuity_execution?.stages?.reconciliation === 'committed'
