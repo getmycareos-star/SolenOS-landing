@@ -1,9 +1,9 @@
 "use client";
 
-import "./../accessibility-overrides.css";
 import "./experience-design-system.css";
 import "./experience-design-system-v2.css";
 import "./navigation-accessibility.css";
+import "./../accessibility-overrides.css";
 import { AppShell } from "@/components/app-shell/AppShell";
 import { WorkspaceNavigationAccessibility } from "@/components/app-shell/WorkspaceNavigationAccessibility";
 import { WorkspaceRouteBreadcrumbs } from "@/components/app-shell/WorkspaceRouteBreadcrumbs";

@@ -2,7 +2,7 @@
   width: min(100% - 32px, 1120px);
   margin: 12px auto 8px;
   color: var(--text-secondary, #536157);
-  font-size: 13px;
+  font-size: calc(13px * var(--solenos-text-scale, 1));
   line-height: 1.4;
 }
 .solenos-workspace-breadcrumbs ol {
@@ -95,7 +95,7 @@
 .companion-page-title {
   margin: 0;
   color: var(--text, #263329);
-  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-size: calc(clamp(1.55rem, 3vw, 2rem) * var(--solenos-text-scale, 1));
   font-weight: 750;
   line-height: 1.2;
   letter-spacing: -.025em;
