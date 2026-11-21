@@ -30,10 +30,9 @@ assert.ok(component.includes('brief.documents?.length'))
 assert.ok(component.includes('setBrief(null)'))
 assert.ok(component.includes('setRecord(null)'))
 assert.ok(component.includes('setOutcomeProposals([])'))
-// A linked workspace always follows the selected appointment. If no appointment is selected,
-// a legacy unlinked workspace may be restored for review, but must not be attached to a visit.
+// A workspace must remain attached to the selected appointment; unlinked notes are not reused.
 assert.ok(component.includes('items.find(item => item.appointment_id === selectedAppointmentId)'))
-assert.ok(component.includes('items.find(item => !item.appointment_id)'), 'legacy unlinked workspace history may be restored only when no appointment is selected')
+assert.ok(!component.includes('items.find(item => !item.appointment_id)'), 'unlinked workspaces must not be reused as appointment records')
 assert.ok(component.includes('setRecord(null)'))
 
 // Follow-ups retain their appointment/workspace lineage in the caregiver view.
@@ -66,8 +65,9 @@ assert.ok(component.includes('Saved appointment information could not be fully r
 // The actual routed appointment page opens directly onto the prepared brief.
 assert.ok(component.includes('const [open, setOpen] = useState(true)'), 'the caregiver must not need an extra click to see appointment continuity');
 assert.ok(component.includes("recorded.find(item => ['completed', 'resolved', 'historical']"), 'the most recent completed appointment must remain available for after-visit continuity');
-assert.ok(component.includes(': items.find(item => !item.appointment_id) || null'), 'legacy unlinked workspace restoration must remain a standalone fallback, never an appointment association')
-assert.ok(component.includes('if (!appointmentId && !record?.appointment_id)'), 'new after-visit notes must not be saved into a disconnected unlinked workspace');
+assert.ok(component.includes(': null\n          // Prepare and persist the workspace automatically'), 'unlinked workspaces must not be mistaken for appointment records')
+assert.ok(component.includes("latest?.status === 'outcome_pending' || latest?.payload?.captureStage === 'after'"), 'the after-visit stage must be restored from the linked workspace without inferring attendance')
+assert.ok(component.includes('latest?.status === \'outcome_pending\'') && component.includes('latest?.payload?.captureStage === \'after\''), 'after-visit recovery must preserve the explicit workspace state');
 assert.ok(component.includes('There is no existing appointment record to attach this note to'), 'notes must not create a disconnected appointment workspace');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'date_unknown'"), 'unknown appointment dates must be explicit');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'cancelled'"), 'cancelled appointments must not appear as active bookings');
