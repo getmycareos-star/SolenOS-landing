@@ -352,9 +352,17 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     .waitFor({ state: "visible", timeout: 30_000 });
   // Recent History is already visible in this workspace layout; assert the
   // saved event directly rather than requiring a mobile-only navigation toggle.
-  const savedHistoryRecord = page.locator(".history-event-list .history-event-description")
+  // The original caregiver note is the event title in the history list.
+  // The description is intentionally suppressed when it duplicates that title.
+  const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
+  await page.getByText("Daily Care: Complete", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(
+    await page.getByText("Event history could not be verified from either read path.", { exact: false }).count(),
+    0,
+    "a verified event read must not leave a stale incomplete-history warning",
+  );
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
