@@ -130,7 +130,7 @@
 - [ ] No React-only authoritative data — React state may hold transient presentation state, but every authoritative care mutation must be confirmed by the backend and read back from the server.
 
 ### B. No fake success states / no fake functionality
-- [x] "Saved ✓" only shown when data actually saved — ProfileCard `save()` shows "Saved ✓" ONLY in try branch after localStorage.setItem succeeds; catch shows "Could not save" (verified `settings/page.tsx`)
+- [x] Profile save feedback is shown only after authenticated `PUT /care-profile` returns the saved server profile; failure is surfaced without claiming a save (verified `src/app/workspace/settings/page.tsx`).
 - [x] No "Synced" shown — app does not claim sync/cross-device (Security card honestly states "Account sign-in and cross-device sync are not yet available") (verified `settings/page.tsx`)
 - [x] No "Account restored" — no fake account recovery; account controls all disabled with honest explanation (verified `SecurityCard`)
 - [ ] Feedback copy in `HelpImproveSolenos.tsx` reports receipt only after the supported `POST /api/v1/feedback` request succeeds. Do not claim `/api/research-feedback` exists; verify backend persistence with the current feedback integration tests.
@@ -154,12 +154,12 @@
 - [x] No overpromising — feedback copy now honest ("recorded for our team", not "improves AI"); no cross-device/account claims (verified)
 
 ### F. Deployment must not damage trust
-- [x] Existing user data survives deployment — data in localStorage (client) + backend durable fs-store/DB; deployment does not clear storage (verified)
+- [ ] Deployment survival and device-loss recovery — authoritative care data must be verified against the deployed PostgreSQL database and durable object storage; browser localStorage and legacy Next.js filesystem stores are not evidence of production durability.
 - [x] Migrations safe; no DB reset / storage reset / broken routes — backend migrations additive; frontend routes compiled (verified build)
 
 ### G. User data ownership & recovery
 - [ ] Care-record recovery after device loss is not established by this checklist. Verify the actual care-record persistence and recovery contract independently; feedback storage is not care-record backup.
-- [x] Data tied to correct user; no cross-user leakage — durable care key + session id scoping; `requireCareKeyFromRequest` (verified)
+- [ ] End-to-end ownership proof for every persistent category — server-issued bearer sessions and backend permission checks are authoritative; client care keys/session IDs are not credentials. Verify cross-caregiver and cross-person isolation for each workflow, not only identity bootstrap.
 - [x] Multi-device consistency OR remove restoration claims — Security card honestly states "cross-device sync not yet available" (no false claim) (verified)
 
 ### H. Empty states / delete behavior / error recovery
