@@ -172,9 +172,9 @@ console.log("PASS: claim-linked clarification and immutable attributed answer hi
 for (const field of ["reported_at", "collection_method", "origin_device_ref", "transfer_source", "transfer_reference"]) {
   assert(panel.includes(field), `evidence review UI must expose acquisition provenance field ${field}`);
 }
-assert(panel.includes("Device used"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
-assert(panel.includes("These connections show when notes or documents come from the same original"), "source relationships must be explained in caregiver language");
-assert(panel.includes("Check whether the saved wording has changed"), "source integrity must use plain English");
+assert(panel.includes("A device was used"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
+assert(panel.includes("These links help show whether several items came from the same original"), "source relationships must be explained in caregiver language");
+assert(panel.includes("Check that the saved copy matches the original"), "source integrity must use plain English");
 assert(!panel.includes("SHA-256") && !panel.includes("JSON.stringify"), "technical hashes and raw data snapshots must not be shown in the caregiver UI");
 assert(!panel.includes("source_text_sha256 ||"), "internal source fingerprints must not be displayed to caregivers");
 console.log("PASS: LCR evidence review exposes report time, collection method, optional device label, and transfer provenance.");
