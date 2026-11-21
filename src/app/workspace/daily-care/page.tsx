@@ -301,8 +301,8 @@ export default function DailyCarePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
-  const [captureOpen, setCaptureOpen] = useState(false);
-  const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
+  const [captureOpen, setCaptureOpen] = useState(true);
+  const [captureMode, setCaptureMode] = useState<CaptureMode | null>("something");
   const [reviewAnalysisId, setReviewAnalysisId] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
@@ -565,9 +565,9 @@ export default function DailyCarePage() {
           <span>Care Record</span>
         </Button>
         <div>
-          <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
-          <h1>Daily Care</h1>
-          <p>Your care journey, remembered. See what has been recorded and add something only when it would help.</p>
+          <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> SHARE AN UPDATE</p>
+          <h1>Share an update</h1>
+          <p>Tell SolenOS what happened, what you noticed or what you want to remember. Use your own words; you do not need to choose a category.</p>
         </div>
       </div>
 
@@ -628,8 +628,8 @@ export default function DailyCarePage() {
 
           <DailyCareOfflineQueueNotice />
           <section aria-labelledby="daily-care-capture-title" className="daily-care-context-panel">
-            <h2 id="daily-care-capture-title">Anything different today?</h2>
-            <p className="daily-care-muted">Share something, check in, or leave things as they are. Nothing is required.</p>
+            <h2 id="daily-care-capture-title">What would you like to share?</h2>
+            <p className="daily-care-muted">Start with a note in your own words. You can add a photo or use another option if it fits better.</p>
             <Button
               variant="primary"
               aria-expanded={captureOpen}
@@ -642,7 +642,7 @@ export default function DailyCarePage() {
                 }
               }}
             >
-              {captureOpen ? "Close capture" : "Share something"}
+              {captureOpen ? "Close update" : "Share something"}
             </Button>
             {captureOpen && (
               <div className="daily-care-capture-state">
@@ -678,7 +678,8 @@ export default function DailyCarePage() {
                         checkin: "Quick check-in",
                         note: "Note",
                       } as const)[captureMode]}</strong>
-                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>Back to choices</Button>
+                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>More ways to share</Button>
+                      <Link href="/workspace/documents" className="daily-care-document-link">Add a document</Link>
                     </div>
                     {captureMode === "checkin" ? (
                       <QuickDailyCheckIn />
