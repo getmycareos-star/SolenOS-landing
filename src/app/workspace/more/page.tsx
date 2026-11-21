@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
+import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 
 export default function WorkspaceMorePage() {
   return (
@@ -9,6 +10,11 @@ export default function WorkspaceMorePage() {
         <h1>More</h1>
         <p>Open the tools you use less often. Your saved care information remains in the same Care Record.</p>
       </header>
+      <section className="solenos-more-history-section" aria-labelledby="solenos-more-history-heading">
+        <h2 id="solenos-more-history-heading">Recent care history</h2>
+        <HistoryDrawer />
+        <p><Link href="/workspace/timeline">View all care history</Link></p>
+      </section>
       <nav aria-label="More care record tools" className="solenos-care-explore__links">
         {WORKSPACE_SECONDARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
