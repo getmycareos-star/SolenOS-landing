@@ -39,9 +39,16 @@ assert.doesNotMatch(situationStore, /localStorage/);
 assert.doesNotMatch(timelineStore, /localStorage/);
 assert.match(legacyFilesystemStore, /process\.env\.NODE_ENV === "production"/);
 assert.match(legacyFilesystemStore, /Legacy filesystem persistence is disabled in production/);
-assert.match(retiredAnalyzeRoute, /status:\s*410/);
-assert.match(retiredAnalyzeRoute, /LEGACY_ANALYSIS_ENDPOINT_RETIRED/);
-assert.doesNotMatch(retiredAnalyzeRoute, /runAnalyzePipeline|recordReliefMeasurementEvent/);
+assert.match(retiredAnalyzeRoute, /process\.env\.NODE_ENV === "production"/);
+assert.match(retiredAnalyzeRoute, /!isAnalyzePipelineEnabled/);
+assert.match(retiredAnalyzeRoute, /analyzePipelineDisabledResponse\(\)/);
+assert.match(retiredAnalyzeRoute, /status:\s*disabled\.status/);
+assert.match(retiredAnalyzeRoute, /await import\("@\/lib\/analyze-pipeline"\)/);
+assert.ok(
+  retiredAnalyzeRoute.indexOf('await import("@/lib/analyze-pipeline")') >
+    retiredAnalyzeRoute.indexOf("const disabled = analyzePipelineDisabledResponse()"),
+  "the legacy analysis pipeline must load only after the production and ops-access gates",
+);
 assert.match(
   workspace,
   /Always replace the visible projection with the server result[\s\S]*?including an empty result/,
