@@ -9,6 +9,7 @@ const runtimeExports = fs.readFileSync(path.join(root, "src/lib/ui-runtime/index
 const situationStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/situation-store.ts"), "utf8");
 const timelineStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/timeline-store.ts"), "utf8");
 const legacyFilesystemStore = fs.readFileSync(path.join(root, "src/lib/living-care-record-persistence/fs-store.ts"), "utf8");
+const retiredAnalyzeRoute = fs.readFileSync(path.join(root, "src/app/api/analyze/route.ts"), "utf8");
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 const communityClient = fs.readFileSync(path.join(root, "src/app/workspace/community/CommunityClient.tsx"), "utf8");
 const activeIdentityClients = [
@@ -38,6 +39,9 @@ assert.doesNotMatch(situationStore, /localStorage/);
 assert.doesNotMatch(timelineStore, /localStorage/);
 assert.match(legacyFilesystemStore, /process\.env\.NODE_ENV === "production"/);
 assert.match(legacyFilesystemStore, /Legacy filesystem persistence is disabled in production/);
+assert.match(retiredAnalyzeRoute, /status:\s*410/);
+assert.match(retiredAnalyzeRoute, /LEGACY_ANALYSIS_ENDPOINT_RETIRED/);
+assert.doesNotMatch(retiredAnalyzeRoute, /runAnalyzePipeline|recordReliefMeasurementEvent/);
 assert.match(
   workspace,
   /Always replace the visible projection with the server result[\s\S]*?including an empty result/,
