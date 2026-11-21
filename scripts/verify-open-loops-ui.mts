@@ -3,6 +3,8 @@ import fs from "node:fs";
 
 const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const caregiverLanguage = fs.readFileSync("src/lib/caregiver-language.ts", "utf8");
+const allCareViews = page + "\n" + careContinuity;
 
 const required: Array<[string, RegExp]> = [
   ["loads every persisted follow-up page before presenting the list", /async function loadAllOpenLoops\(\)[\s\S]*?limit=\$\{pageSize\}&offset=\$\{offset\}[\s\S]*?expectedCount[\s\S]*?records\.length >= expectedCount/],
@@ -19,6 +21,8 @@ const required: Array<[string, RegExp]> = [
   ["states that a caregiver update is not a verified outcome", /Your update was saved as a caregiver report\. SolenOS has not marked the matter resolved\./],
   ["fails closed when the update cannot be confirmed", /The update could not be confirmed\. Nothing has been marked resolved\./],
   ["discloses bounded or incomplete source coverage", /assessmentIsBounded[\s\S]*?Some saved care information is missing or has not been checked/],
+  ["shows evidence status and incomplete history beside LCR care changes", /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/],
+  ["shows linked follow-up status and outcome in both care views", /item\.linked_follow_up_outcome_status[\s\S]*?caregiverStatusLabel/],
   ["renders the four explicit attention classifications", /needs_attention_now[\s\S]*?important_to_address[\s\S]*?can_wait_with_documented_basis[\s\S]*?needs_clarification/],
   ["uses the three specified caregiver follow-up sections", /<h2>Needs attention<\/h2>[\s\S]*?<h2>Being monitored<\/h2>[\s\S]*?<h2>Needs clarification<\/h2>/],
   ["shows linked notes and documents", /Related notes and documents[\s\S]*?uniqueEvidenceIds/],
@@ -35,15 +39,22 @@ const required: Array<[string, RegExp]> = [
 ];
 
 for (const [label, pattern] of required) {
-  assert.match(page, pattern, `Follow-ups contract missing: ${label}`);
+  assert.match(allCareViews, pattern, `Follow-ups contract missing: ${label}`);
 }
 
 const openLoopCreateWrites = page.match(/postJSON\("\/open-loops",/g) ?? [];
 assert.equal(openLoopCreateWrites.length, 1, "event-derived follow-ups must use one canonical create writer");
-assert.match(page, /async function createFollowUp\(item: AttentionDecision\)[\s\S]*?if \(item\.source !== "events" \|\| !item\.record_id\) return;[\s\S]*?postJSON\("\/open-loops",\s*\{[\s\S]*?source_type: item\.source,[\s\S]*?source_id: item\.record_id,[\s\S]*?idempotency_key: idempotencyKey/s, "follow-up creation must remain bound to a saved care event and retry-safe");
+assert.match(page, /async function createFollowUp\(item: AttentionDecision\)[\s\S]*?if \(\(item\.source !== "events" && item\.source !== "persisted_change"\) \|\| !item\.record_id\) return;[\s\S]*?postJSON\("\/open-loops",\s*\{[\s\S]*?source_type: item\.source,[\s\S]*?source_id: item\.record_id,[\s\S]*?idempotency_key: idempotencyKey/s, "follow-up creation must remain bound to a persisted source record and retry-safe");
 assert.doesNotMatch(page, /function createLoop/, "do not add a second general-purpose follow-up writer");
+assert.match(page, /!loop && \(item\.source === "events" \|\| item\.source === "persisted_change"\) && item\.record_id/, "persisted change candidates must expose the same explicit Add to Follow-ups action");
+assert.match(page, /item\.evidence_status/, "follow-up cards must expose evidence status separately from care significance");
+assert.match(page, /item\.history_completeness/, "follow-up cards must disclose incomplete history");
+assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
+assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an unknown follow-up outcome must not be described as resolved");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
 assert.ok(page.includes("SolenOS checks the care information you have saved and keeps follow-ups easy to find"), "caregiver copy must explain that SolenOS manages unresolved matters");
+assert.match(careContinuity, /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/, "LCR important changes must show evidence status and incomplete history");
+assert.match(careContinuity, /item\.linked_follow_up_outcome_status[\s\S]*?caregiverStatusLabel/, "LCR important changes must show the linked follow-up outcome");
 
 
 assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
