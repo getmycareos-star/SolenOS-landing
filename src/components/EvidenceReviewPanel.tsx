@@ -465,7 +465,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setFreshnessAssessments(result.items)
     } catch {
       setFreshnessAssessments([])
-      setFreshnessHistoryError('Earlier reviews are unavailable right now. This does not mean none exist.')
+      setFreshnessHistoryError('Earlier reviews are unavailable right now. This does not mean there are no past reviews.')
     } finally {
       setFreshnessHistoryLoading(false)
     }
