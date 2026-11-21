@@ -125,6 +125,8 @@ type WorkspaceRecord = {
   appointment_id?: string | null
   status: string
   version_number: number
+  created_at?: string | null
+  updated_at?: string | null
   payload: Record<string, unknown>
 }
 type OutcomeDraft = {
