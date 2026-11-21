@@ -219,7 +219,8 @@ console.log("✓ underlying capture and longitudinal continuity components remai
 assert.match(companion, /Care Assistant/, "the caregiver-facing assistant uses the approved caregiver-facing name");
 assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
 assert.match(navigation, /label: "Care Assistant"/, "workspace navigation uses the approved caregiver-facing name");
-assert.doesNotMatch(howItWorks, /Care Assistant/, "public product explanations use AI Companion");
+assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
+assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
 assert.doesNotMatch(publicHome, /Care Assistant/, "the public home page uses AI Companion");
 
 console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
