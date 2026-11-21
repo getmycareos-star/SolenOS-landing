@@ -9,7 +9,6 @@ import { getMemoryTelemetryStore } from "./memory-store";
 import { createPostgresPool, PostgresTelemetryStore } from "./postgres-store";
 
 import type { TelemetryFeedbackSubmit } from "./schema";
-import { setFeedbackContainmentFromFeedback } from "./feedback-containment";
 
 import {
 
@@ -183,11 +182,17 @@ export async function recordReliefFeedback(feedback: TelemetryFeedbackSubmit): P
 
   await store.recordFeedback(feedback);
 
-  if (feedback.care_key?.trim()) {
+  if (feedback.care_key?.trim() && process.env.NODE_ENV !== "production") {
+    // Legacy feedback-containment state is a local development/test adapter,
+    // not a production source of truth. The former /api/analyze route that
+    // consumed it is retired; production feedback remains PostgreSQL-only.
+    const { setFeedbackContainmentFromFeedback } = await import("./feedback-containment");
     setFeedbackContainmentFromFeedback({
       careKey: feedback.care_key.trim(),
       feedback,
     });
+  }
+  if (feedback.care_key?.trim()) {
     // Slice 5.6 — attach feedback proxies to latest research event (ops only; no survey UI).
     try {
       const { attachFeedbackToRetentionResearch } = await import(
