@@ -116,7 +116,8 @@ assert.match(captureReview, /The original quotation is not available in this rev
 assert.match(captureReview, /editingIndex === index \? \(/, "correction fields are hidden until the caregiver chooses Correct");
 assert.match(captureReview, /onClick=\{\(\) => setEditingIndex\(index\)\}/, "the caregiver explicitly enters correction mode");
 assert.match(captureReview, /onClick=\{\(\) => \{\s*setDrafts\(\(current\) => \(\{\s*\.\.\.current,\s*\[index\]: \{\s*subject: candidate\.corrected_subject \?\? candidate\.subject \?\? "",\s*observation: candidate\.corrected_observation \?\? candidate\.observation \?\? "",\s*\},\s*\}\)\);\s*setEditingIndex\(null\);\s*\}\}/, "cancelling correction restores the persisted suggestion and discards unsaved edits");
-assert.match(captureReview, /written_to_lcr !== \(decision === "accept"\)/, "only an explicitly accepted suggestion may be confirmed as written to the care record");
+assert.match(captureReview, /persistedCandidate\.review_status !== expectedReviewStatus/, "the persisted caregiver decision must match the requested review transition");
+assert.match(captureReview, /decision === "accept" && persisted\.written_to_lcr !== true/, "only an explicitly accepted suggestion may be confirmed as written to the care record");
 assert.match(captureReview, /review\(index, "accept"\)/, "caregivers can accept a suggested detail");
 assert.match(captureReview, /review\(index, "correct"\)/, "caregivers can correct a suggested detail");
 assert.match(captureReview, /review\(index, "reject"\)/, "caregivers can dismiss a suggested detail");
