@@ -325,6 +325,14 @@ export default function AppointmentWorkspace() {
               if (!cancelled) setMessage('Your visit summary is ready. Its preparation workspace could not be saved just now; you can still review the summary and try again later.')
             }
           }
+          if (
+            (latest?.status === 'outcome_pending' || latest?.payload?.captureStage === 'after') &&
+            !cancelled
+          ) {
+            // Restore the after-visit workspace stage without changing the
+            // appointment lifecycle or asserting that attendance was confirmed.
+            setStage('after')
+          }
           if (latest) {
             setRecord(latest)
             if (latest.appointment_id) setAppointmentId(latest.appointment_id)
@@ -412,7 +420,11 @@ export default function AppointmentWorkspace() {
     const latest = selectedAppointmentId
       ? items.find(item => item.appointment_id === selectedAppointmentId) || null
       : null
-    if (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) setStage('after')
+    if (
+      (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) ||
+      latest?.status === 'outcome_pending' ||
+      latest?.payload?.captureStage === 'after'
+    ) setStage('after')
     else setStage('prepare')
     setRecord(latest)
     if (!latest) {
