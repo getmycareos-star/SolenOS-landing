@@ -23,7 +23,7 @@ for (const contract of [
   'Approve and register',
   'Keep as suggestion',
   'Defer consideration',
-  'Request clarification',
+  'Review questions',
   'Agreed actions',
   'View change history',
   'Confirm completed',
