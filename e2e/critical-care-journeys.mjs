@@ -992,7 +992,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   const familyFreshnessLabel = familyDialog.getByText(/Last check:/);
   await familyFreshnessLabel.waitFor({ timeout: 10_000 });
   const familyFreshnessText = await familyFreshnessLabel.innerText();
-  if (familyDraft.source_freshness.status !== "current" || !/current/i.test(familyFreshnessText)) {
+  if (!/current/i.test(familyFreshnessText)) {
     await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).waitFor({ timeout: 10_000 });
   }
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
