@@ -677,7 +677,7 @@ await record("01a dementia profile review window and observation persistence are
   await context.close();
 });
 
-await record("01b visible Follow-ups link and mobile navigation", async () => {
+await record("01b More groups secondary tools and preserves mobile navigation", async () => {
   const { context, page } = await createBrowserPage(
     session,
     "/workspace/daily-care",
