@@ -302,7 +302,7 @@ export default function AppointmentWorkspace() {
           const items = workspaceResult.value.items || []
           let latest = selectedAppointmentId
             ? items.find(item => item.appointment_id === selectedAppointmentId) || null
-            : items.find(item => !item.appointment_id) || null
+            : null
           // Prepare and persist the workspace automatically for an existing
           // scheduled appointment. The caregiver does not complete a form.
           // This creates continuity workspace only; it does not book a visit.
@@ -411,12 +411,8 @@ export default function AppointmentWorkspace() {
     const items = workspaceResult.items || []
     const latest = selectedAppointmentId
       ? items.find(item => item.appointment_id === selectedAppointmentId) || null
-      : items.find(item => !item.appointment_id) || null
-    if (
-      (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) ||
-      latest?.status === 'outcome_pending' ||
-      latest?.payload?.captureStage === 'after'
-    ) setStage('after')
+      : null
+    if (nextAppointment && ['completed', 'resolved', 'historical'].includes(nextAppointment.status.toLowerCase())) setStage('after')
     else setStage('prepare')
     setRecord(latest)
     if (!latest) {
