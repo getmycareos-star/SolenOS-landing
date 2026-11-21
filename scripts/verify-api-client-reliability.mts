@@ -43,6 +43,14 @@ async function main() {
   assert.match(photoCaptureSource, /form\.append\("ingestion_key", retryKey\)/);
   assert.match(photoCaptureSource, /const retryKey = ingestionKey \?\? crypto\.randomUUID\(\)/);
   assert.match(photoCaptureSource, /setIngestionKey\(null\)/, "photo retry key must be cleared only when the selected source changes or the upload succeeds");
+  const naturalLanguageUpdateSource = readFileSync(
+    new URL("../src/components/workflows/NaturalLanguageDailyUpdate.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(naturalLanguageUpdateSource, /identityRetryCount < 20[\s\S]*?setTimeout\(sync, 250\)/,
+    "durable writes must retry briefly when session identity has not hydrated at component mount");
+  assert.match(naturalLanguageUpdateSource, /handleIdentityChange[\s\S]*?personIdChanged/,
+    "durable-write sync must restart when the authenticated care-record identity changes");
   let reads = 0;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     reads += 1;
