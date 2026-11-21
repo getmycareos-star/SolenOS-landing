@@ -66,7 +66,7 @@ assert.ok(component.includes('Saved appointment information could not be fully r
 assert.ok(component.includes('const [open, setOpen] = useState(true)'), 'the caregiver must not need an extra click to see appointment continuity');
 assert.ok(component.includes("recorded.find(item => ['completed', 'resolved', 'historical']"), 'the most recent completed appointment must remain available for after-visit continuity');
 assert.ok(component.includes(': null\n          // Prepare and persist the workspace automatically'), 'unlinked workspaces must not be mistaken for appointment records')
-assert.ok(component.includes("latest?.status === 'outcome_pending' || latest?.payload?.captureStage === 'after'"), 'the after-visit stage must be restored from the linked workspace without inferring attendance')
+assert.ok(component.includes("latest?.status === 'outcome_pending'") && component.includes("latest?.payload?.captureStage === 'after'"), 'the after-visit stage must be restored from the linked workspace without inferring attendance')
 assert.ok(component.includes('latest?.status === \'outcome_pending\'') && component.includes('latest?.payload?.captureStage === \'after\''), 'after-visit recovery must preserve the explicit workspace state');
 assert.ok(component.includes('There is no existing appointment record to attach this note to'), 'notes must not create a disconnected appointment workspace');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'date_unknown'"), 'unknown appointment dates must be explicit');
