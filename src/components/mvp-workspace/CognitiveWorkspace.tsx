@@ -24,7 +24,7 @@ import {
   DURABLE_CARE_KEY_STORAGE,
   ensureClientDurableCareKey,
   ensureClientInteractionSessionId,
-} from "@/lib/care-identity";
+} from "@/lib/care-identity/durable-care-key";
 import type { Situation } from "@/lib/ui-runtime/types";
 import { openSituationsFromSituationApi } from "@/lib/ui-runtime";
 import { AddSituationPanel } from "./AddSituationPanel";
