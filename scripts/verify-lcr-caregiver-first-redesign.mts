@@ -17,6 +17,7 @@ const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8
 const structuredDailyCapture = fs.readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
 const durableWriteSender = fs.readFileSync("src/lib/offline-sync/send-queued-care-write.ts", "utf8");
 const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const workspaceMore = fs.readFileSync("src/app/workspace/more/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
