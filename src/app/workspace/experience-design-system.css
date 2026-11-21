@@ -745,22 +745,7 @@
 }
 
 
-/* Explicit dark-theme mapping; workspace tokens follow the user's theme choice. */
-:root[data-solenos-theme="dark"] .solenos-chat-app {
-  --sn-canvas: #151d18;
-  --sn-surface: #1d2821;
-  --sn-surface-soft: #243129;
-  --sn-surface-hover: #2b3a30;
-  --sn-ink: #edf3ed;
-  --sn-muted: #b6c2b8;
-  --sn-subtle: #8d9b91;
-  --sn-line: #35443a;
-  --sn-sage: #a7bda8;
-  --sn-sage-strong: #b6cbb6;
-  --sn-forest: #dce9dd;
-  --sn-focus: #b1cfb5;
-  --sn-shadow-soft: 0 10px 32px rgba(0,0,0,.2);
-}
+/* Dark-theme tokens are defined once in experience-design-system-v2.css. */
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-sidebar,
 :root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-sidebar-host {
   background: var(--sn-surface);
