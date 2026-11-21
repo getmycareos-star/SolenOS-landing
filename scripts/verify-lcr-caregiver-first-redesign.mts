@@ -214,11 +214,11 @@ assert.doesNotMatch(integrityPanel, /Care Record details|Care details shared wit
 assert.doesNotMatch(currentUnderstanding, /bounded record view|deterministic state checks/i, "internal assessment terminology is not shown in the caregiver record");
 assert.doesNotMatch(currentUnderstanding, /Compared: Time not recorded.*Time not recorded/, "missing comparison dates are not displayed as a fake date range");
 
-console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the AI Companion");
+console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the Care Assistant");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
-assert.match(companion, /AI Companion/, "the caregiver-facing assistant is named AI Companion");
-assert.doesNotMatch(companion, /Care Assistant/, "the old product name is not shown in the companion");
-assert.match(navigation, /label: "AI Companion"/, "workspace navigation uses the AI Companion name");
+assert.match(companion, /Care Assistant/, "the caregiver-facing assistant uses the approved caregiver-facing name");
+assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
+assert.match(navigation, /label: "Care Assistant"/, "workspace navigation uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /Care Assistant/, "public product explanations use AI Companion");
 assert.doesNotMatch(publicHome, /Care Assistant/, "the public home page uses AI Companion");
 
