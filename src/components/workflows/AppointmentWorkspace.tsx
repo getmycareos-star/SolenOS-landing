@@ -744,7 +744,7 @@ export default function AppointmentWorkspace() {
                 brief.living_care_record_context?.schema_status !== "complete" ||
                 (brief.living_care_record_context?.missing_required_sources?.length ?? 0) > 0 ||
                 Object.values(brief.source_completeness ?? {}).some(item => item.retrieval_complete === false || item.has_more === true)) &&
-                <p className="guided-muted" role="status">Some saved care information could not be fully checked. This summary may be incomplete; that does not mean the information is missing from your Care Record.</p>}
+                <p className="guided-muted" role="status">Some parts of your Care Record could not be fully checked. This summary may be incomplete; that does not mean the information is missing from your Care Record.</p>}
               {brief.events.length === 0 && brief.facts.length === 0 && !(brief.assertions?.length) && !(brief.open_questions?.length) && !(brief.appointment_needs?.length) && !(brief.contradictions?.length) && !(brief.documents?.length) && !(brief.open_loops?.length) && !(brief.prior_decisions?.length) && !(brief.decision_outcomes?.length) && !brief.next_appointment && brief.appointments.length === 0
                 ? <p className="guided-muted">There is not enough linked care information available to prepare a useful visit summary yet. This describes what SolenOS could retrieve, not everything the family may know or have recorded.</p>
                 : <div className="guided-columns">
