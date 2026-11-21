@@ -87,7 +87,7 @@ export default function HowItWorksPage() {
           Imagine you notice that a family member has been sleeping poorly.
           Record what you observed in Daily Care. After you review the update,
           it can be saved to your Care Record with what was reported and when.
-          Then ask SolenOS for help preparing questions for the next care
+          Then ask the Care Assistant for help preparing questions for the next care
           professional. Suggestions are not added to your Care Record unless
           you review and save them.
         </p>
