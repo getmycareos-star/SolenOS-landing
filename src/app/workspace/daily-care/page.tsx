@@ -593,7 +593,15 @@ export default function DailyCarePage() {
                     <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p className="daily-care-summary-detail">{displayHistoryText(item)}</p>}
                     {item.capture_processing?.message && (
-                      <p className="daily-care-muted">{caregiverSafeAssistantText(item.capture_processing.message)}</p>
+                      <p className="daily-care-muted">{caregiverSafeAssistantText(item.capture_processing.message) || (
+                        item.capture_processing.review_required
+                          ? "Suggested details are ready for your review."
+                          : item.capture_processing.job_status === "failed"
+                            ? "SolenOS could not finish checking this update. Your saved note is still available."
+                            : ["queued", "processing"].includes(item.capture_processing.job_status || "")
+                              ? "This update is being checked. You can keep using SolenOS."
+                              : "The latest update details are not available yet."
+                      )}</p>
                     )}
                     <span>{displayHistoryTime(item)}</span>
                     <span> · {displayHistorySource(item)}</span>
