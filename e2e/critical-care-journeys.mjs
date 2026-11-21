@@ -99,7 +99,31 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   const observed = [];
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
+  const eventReadPromises = [];
+  page.on("response", (response) => {
+    const url = new URL(response.url());
+    if (!url.pathname.startsWith("/api/")) return;
+    const entry = { path: url.pathname, status: response.status() };
+    observed.push(entry);
+    if (url.pathname.startsWith("/api/v1/events/") && response.ok()) {
+      eventReadPromises.push(response.json().then((payload) => {
+        const items = Array.isArray(payload) ? payload
+          : Array.isArray(payload?.items) ? payload.items
+            : Array.isArray(payload?.events) ? payload.events
+              : Array.isArray(payload?.data) ? payload.data : [];
+        entry.event_count = items.length;
+        entry.valid_event_count = items.filter((item) =>
+          item && typeof item.id === "string" &&
+          item.person_id === session.person.id &&
+          typeof item.event_type === "string" &&
+          typeof item.title === "string"
+        ).length;
+      }).catch(() => {
+        entry.event_count = 0;
+        entry.valid_event_count = 0;
+      }));
+    }
+  });
   await page.route("**/api/**", async (route) => {
     try {
       // route.fetch() runs outside Chromium and otherwise bypasses
@@ -161,7 +185,7 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     }
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
-  return { context, page, observed, pageErrors };
+  return { context, page, observed, pageErrors, eventReadPromises };
 }
 
 async function browserPageConsumes(page, pathname, observed) {
@@ -207,7 +231,7 @@ assert.equal(firstVisitConsent.status, 200, JSON.stringify(firstVisitConsent.pay
 assert.equal(firstVisitConsent.payload.verified, true);
 assert.equal(firstVisitConsent.payload.profile?.data_improvement_consent, true);
 await record("00 first-time caregiver capture and persisted return", async () => {
-  const { context, page, pageErrors } = await createBrowserPage(
+  const { context, page, observed, pageErrors, eventReadPromises } = await createBrowserPage(
     firstVisitSession,
     "/workspace",
     { width: 390, height: 844 },
@@ -292,6 +316,31 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.equal(capturePayload?.care_continuity_execution?.stages?.reconciliation, "pending");
   assert.equal(capturePayload?.care_continuity_execution?.stages?.longitudinal_retrieval, "not_verified");
   assert.equal(capturePayload?.qwen_written_to_lcr, false, "model suggestions must not be written directly to the Living Care Record");
+  const persistedEventRead = await request(
+    `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    { token: firstVisitSession.access_token },
+  );
+  const persistedEvents = Array.isArray(persistedEventRead.payload)
+    ? persistedEventRead.payload
+    : [];
+  const capturedEvent = persistedEvents.find((event) => event?.id === capturePayload.care_event_id);
+  console.log("FIRST_VISIT_EVENT_READ", JSON.stringify({
+    status: persistedEventRead.status,
+    count: persistedEvents.length,
+    matching_event_found: Boolean(capturedEvent),
+    matching_event_person_id: capturedEvent?.person_id ?? null,
+    matching_event_title: capturedEvent?.title ?? null,
+    matching_event_description: capturedEvent?.description ?? null,
+  }));
+  assert.equal(persistedEventRead.status, 200, JSON.stringify(persistedEventRead.payload));
+  assert.ok(capturedEvent, "the saved capture event must be retrievable from the authenticated event-history API");
+  assert.equal(capturedEvent.person_id, firstVisitSession.person.id);
+  assert.ok(
+    [capturedEvent.title, capturedEvent.description].some((value) =>
+      typeof value === "string" && value.includes(firstNote)
+    ),
+    "the persisted event must retain the caregiver's original note",
+  );
   console.log("FIRST_VISIT_CAPTURE_RESPONSE", JSON.stringify({
     status: captureResponse.status(),
     keys: Object.keys(capturePayload ?? {}),
@@ -332,6 +381,17 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
+  await Promise.all(eventReadPromises);
+  const browserEventReads = observed.filter((item) => item.path.startsWith("/api/v1/events/"));
+  assert.ok(
+    browserEventReads.some((item) => item.status === 200 && item.valid_event_count > 0),
+    `HistoryDrawer must read the persisted event with the active caregiver identity: ${JSON.stringify(browserEventReads)}`,
+  );
+  assert.equal(
+    await page.getByText("Event history could not be verified from either read path.", { exact: false }).count(),
+    0,
+    "a verified event read must not leave a stale incomplete-history warning",
+  );
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
@@ -968,9 +1028,14 @@ await record("01c workspace links, browser back, More menu and account form vali
   await familyDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
   const familyFreshnessLabel = familyDialog.getByText(/Last check:/);
   await familyFreshnessLabel.waitFor({ timeout: 10_000 });
-  const familyFreshnessText = await familyFreshnessLabel.innerText();
-  if (familyDraft.source_freshness.status !== "current" || !/current/i.test(familyFreshnessText)) {
+  if (familyDraft.source_freshness.status !== "current") {
     await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).waitFor({ timeout: 10_000 });
+  } else {
+    assert.equal(
+      await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).count(),
+      0,
+      "a current source snapshot must not be blocked by a stale-source alert",
+    );
   }
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
     "family briefing must contain actual LCR-derived content");

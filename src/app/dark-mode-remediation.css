@@ -854,3 +854,71 @@
   color: var(--theme-warning-fg) !important;
   -webkit-text-fill-color: var(--theme-warning-fg) !important;
 }
+
+
+/* Route-level dark-mode fixes verified by the rendered 88-viewport audit. */
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-care-explore > summary {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+  -webkit-text-fill-color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .lcr-situation-assessment,
+:root[data-solenos-theme="dark"] .solenos-chat-app .lcr-situation-assessment .lcr-current-fact {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .lcr-situation-assessment .lcr-entry-status {
+  color: var(--theme-panel-muted) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-header {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-header :is(h1,p,a,svg) {
+  color: var(--theme-panel-fg) !important;
+  -webkit-text-fill-color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-header .care-reminders-eyebrow {
+  color: var(--theme-panel-muted) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminder-form label,
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminder-form label span {
+  color: var(--theme-panel-fg) !important;
+  -webkit-text-fill-color: var(--theme-panel-fg) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-list-head > p,
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-filter,
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-filter > span {
+  color: var(--theme-panel-muted) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
+
+
+/* Second-pass fixes from the post-remediation 88-viewport contrast report. */
+:root[data-solenos-theme="dark"] .solenos-chat-app div.lcr-situation-assessment > ul.lcr-current-facts > li.lcr-current-fact {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-delivery {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-fg) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-reminders-page .care-reminders-list-head p {
+  color: var(--theme-panel-muted) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
+
+/* LCR status pills inherit a light background from mobile-app.css. */
+:root[data-solenos-theme="dark"] .lcr-situation-assessment .lcr-entry-status {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-muted) !important;
+  border: 1px solid var(--theme-panel-border) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
