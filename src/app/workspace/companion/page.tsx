@@ -7,7 +7,7 @@ import { BrandLoading } from "@/components/brand";
 
 const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
   ssr: false,
-  loading: () => <BrandLoading animate message="Opening AI Companion…" />,
+  loading: () => <BrandLoading animate message="Opening Care Assistant…" />,
 });
 
 function WorkspaceHomeInner() {
@@ -75,7 +75,7 @@ function WorkspaceHomeInner() {
 
 export default function WorkspaceHomePage() {
   return (
-    <Suspense fallback={<BrandLoading animate message="Opening AI Companion…" />}>
+    <Suspense fallback={<BrandLoading animate message="Opening Care Assistant…" />}>
       <WorkspaceHomeInner />
     </Suspense>
   );

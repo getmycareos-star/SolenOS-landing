@@ -101,8 +101,8 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   appointments: 'Appointment',
   caregiver_observations: 'What a caregiver noticed',
   caregiver_perspectives: 'Caregiver view',
-  conversation_messages: 'Earlier AI Companion message',
-  companion_messages: 'Earlier AI Companion message',
+  conversation_messages: 'Earlier conversation message',
+  companion_messages: 'Earlier conversation message',
 }
 
 interface LcrContextCoverage {
@@ -442,8 +442,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setAvailability(inferenceUnavailable ? 'unavailable' : 'unknown')
       setRequestError(
         inferenceUnavailable
-          ? 'The AI Companion is temporarily unavailable. Your message is still in the box, and your Care Record has not changed. Check again shortly.'
-          : 'The AI Companion could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.'
+          ? 'The Care Assistant is temporarily unavailable. Your message is still in the box, and your Care Record has not changed. Check again shortly.'
+          : 'The Care Assistant could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.'
       )
     } finally {
       setLoading(false)
@@ -643,11 +643,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   return (
-    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="AI Companion">
+    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="Care Assistant">
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">AI Companion</h1></div>
+          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Care Assistant</h1></div>
         </div>
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
@@ -660,12 +660,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         <section className="companion-conversation" aria-label="Conversation">
           {messages.length === 0 ? (
             availability === 'checking' ? (
-              <RecordState kind="loading" title="Checking whether the AI Companion is available" />
+              <RecordState kind="loading" title="Checking whether the Care Assistant is available" />
             ) : (availability === 'available' || availability === 'unverified') && !requestError ? (
               <div className="companion-empty">
                 <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
                 <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>To add new care information, use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a>. Chats are not saved automatically. You can review possible care updates before anything is added to your Care Record.</p></div>
-                {availability === 'unverified' && <p className="companion-empty-footnote" role="status">The AI Companion has not completed a response yet. Send your first question to check that it is working.</p>}
+                {availability === 'unverified' && <p className="companion-empty-footnote" role="status">The Care Assistant has not completed a response yet. Send your first question to check that it is working.</p>}
                 <div className="companion-starters">
                   {STARTER_PROMPTS.map(item => {
                     const Icon = item.icon
@@ -679,9 +679,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
               </div>
             ) : availability === 'unavailable' ? (
-              <RecordState kind="unavailable" title="The AI Companion is temporarily unavailable" description="Responses are not available right now. Your Care Record, Daily Care and Documents remain available." actionLabel="Check again" onAction={() => void checkAvailability()} />
+              <RecordState kind="unavailable" title="The Care Assistant is temporarily unavailable" description="Responses are not available right now. Your Care Record, Daily Care and Documents remain available." actionLabel="Check again" onAction={() => void checkAvailability()} />
             ) : (
-              <RecordState kind="error" title="We couldn't check the AI Companion" description={requestError || "We couldn't confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
+              <RecordState kind="error" title="We couldn't check the Care Assistant" description={requestError || "We couldn't confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
             )
           ) : (
             <div className="companion-message-list">
@@ -704,7 +704,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={index}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
-                    <div className="companion-message-meta"><strong>{isUser ? 'You' : 'AI Companion'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
+                    <div className="companion-message-meta"><strong>{isUser ? 'You' : 'Care Assistant'}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {isUser && msg.source_message_id && <div className="companion-care-report-action">
                       {confirmingCareReportId === msg.source_message_id ? <div className="companion-care-report-confirm" role="group" aria-label="Confirm this care report">
@@ -716,7 +716,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && msg.ai_generated === false && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.response_mode === 'deterministic_low_capacity_support_fallback'
                         ? msg.safety_note || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
-                        : `This reply wasn't generated by the AI Companion. ${msg.safety_note || "It uses a safety check or saved information. Nothing was changed in your Care Record."}`}</p>
+                        : `This reply wasn't generated by the Care Assistant. ${msg.safety_note || "It uses a safety check or saved information. Nothing was changed in your Care Record."}`}</p>
                     </section>}
                     {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
@@ -730,7 +730,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
                           <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
                           {reference.record_type === 'document_extractions' && <p>Text read from a document is only a suggestion. Review it in Documents before it is added to your care record.</p>}
-                          {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Earlier AI Companion message — this is conversation history, not a care update.</p>}
+                          {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Earlier conversation message — this is conversation history, not a care update.</p>}
                         </div>
                       ))}
                     </section>}
@@ -815,12 +815,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   </div>
                 </article>
               })}
-              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>AI Companion</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="AI Companion is responding"><i /><i /><i /></div></div></div>}
+              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>Care Assistant</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="Care Assistant is responding"><i /><i /><i /></div></div></div>}
               <div ref={bottomRef} />
             </div>
           )}
         </section>
-        <aside className="companion-side-note" aria-label="AI Companion guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>The AI Companion can help organise notes and questions. It does not diagnose, replace a healthcare professional, or decide what is added to your Care Record.</p></div></aside>
+        <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>The Care Assistant can help organise notes and questions. It does not diagnose, replace a healthcare professional, or decide what is added to your Care Record.</p></div></aside>
       </div>
 
       {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice || showReviewedCareUpdates || availability === 'available' || availability === 'unverified') && <section className="companion-care-updates" aria-label="Care suggestions to review">
@@ -892,7 +892,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </section>}
 
       <div className="companion-composer-wrap">
-        <form className="companion-composer" aria-label="Send a message to the AI Companion" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
+        <form className="companion-composer" aria-label="Send a message to the Care Assistant" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }

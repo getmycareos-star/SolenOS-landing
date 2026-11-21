@@ -250,7 +250,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
           {busy ? "Adding…" : "Add to Follow-ups"}
         </button>
       )}
-      <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care information: " + item.title + ". Explain what is known, what is not clear yet and what still needs attention.")}><MessageCircle size={15} /> Ask AI Companion</Link>
+      <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care information: " + item.title + ". Explain what is known, what is not clear yet and what still needs attention.")}><MessageCircle size={15} /> Ask Care Assistant</Link>
     </div>
   </article>;
 }
