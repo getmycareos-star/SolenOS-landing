@@ -72,6 +72,8 @@ assert.match(sharingComponent, /scope: \[\.\.\.selectedScope\]\.sort\(\)/,
   "the approved scope must be passed unchanged to the existing share API");
 assert.match(sharingComponent, /sourceFreshness\?\.status !== "current"/,
   "stale or unverifiable source snapshots must block sharing");
+assert.match(sharingComponent, /async function shareReviewedFamilyHandoff\(\) \{[\s\S]*?if \(sourceFreshness\?\.status !== "current"\)[\s\S]*?Prepare a new draft before sharing/,
+  "the share handler itself must fail closed when source freshness is stale or unavailable");
 assert.match(sharingComponent, /revisionHistory\.map/,
   "caregivers must be able to inspect persisted revision history");
 assert.match(sharingComponent, /setEditedSections/,
