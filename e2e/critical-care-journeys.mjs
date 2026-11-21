@@ -99,25 +99,30 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
   const observed = [];
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  page.on("response", async (response) => {
+  const eventReadPromises = [];
+  page.on("response", (response) => {
     const url = new URL(response.url());
     if (!url.pathname.startsWith("/api/")) return;
     const entry = { path: url.pathname, status: response.status() };
-    if (url.pathname.startsWith("/api/v1/events/") && response.ok()) {
-      const payload = await response.json().catch(() => null);
-      const items = Array.isArray(payload) ? payload
-        : Array.isArray(payload?.items) ? payload.items
-          : Array.isArray(payload?.events) ? payload.events
-            : Array.isArray(payload?.data) ? payload.data : [];
-      entry.event_count = items.length;
-      entry.valid_event_count = items.filter((item) =>
-        item && typeof item.id === "string" &&
-        item.person_id === session.person.id &&
-        typeof item.event_type === "string" &&
-        typeof item.title === "string"
-      ).length;
-    }
     observed.push(entry);
+    if (url.pathname.startsWith("/api/v1/events/") && response.ok()) {
+      eventReadPromises.push(response.json().then((payload) => {
+        const items = Array.isArray(payload) ? payload
+          : Array.isArray(payload?.items) ? payload.items
+            : Array.isArray(payload?.events) ? payload.events
+              : Array.isArray(payload?.data) ? payload.data : [];
+        entry.event_count = items.length;
+        entry.valid_event_count = items.filter((item) =>
+          item && typeof item.id === "string" &&
+          item.person_id === session.person.id &&
+          typeof item.event_type === "string" &&
+          typeof item.title === "string"
+        ).length;
+      }).catch(() => {
+        entry.event_count = 0;
+        entry.valid_event_count = 0;
+      }));
+    }
   });
   await page.route("**/api/**", async (route) => {
     try {
@@ -180,7 +185,7 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     }
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
-  return { context, page, observed, pageErrors };
+  return { context, page, observed, pageErrors, eventReadPromises };
 }
 
 async function browserPageConsumes(page, pathname, observed) {
@@ -226,7 +231,7 @@ assert.equal(firstVisitConsent.status, 200, JSON.stringify(firstVisitConsent.pay
 assert.equal(firstVisitConsent.payload.verified, true);
 assert.equal(firstVisitConsent.payload.profile?.data_improvement_consent, true);
 await record("00 first-time caregiver capture and persisted return", async () => {
-  const { context, page, observed, pageErrors } = await createBrowserPage(
+  const { context, page, observed, pageErrors, eventReadPromises } = await createBrowserPage(
     firstVisitSession,
     "/workspace",
     { width: 390, height: 844 },
@@ -376,6 +381,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
+  await Promise.all(eventReadPromises);
   const browserEventReads = observed.filter((item) => item.path.startsWith("/api/v1/events/"));
   assert.ok(
     browserEventReads.some((item) => item.status === 200 && item.valid_event_count > 0),
