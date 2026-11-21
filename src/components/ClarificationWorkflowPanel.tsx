@@ -588,12 +588,12 @@ export default function ClarificationWorkflowPanel({ personId, prefillQuestion, 
   }
 
   return <section style={panel} aria-label="Questions worth clarifying">
-    <h3 style={{ fontSize: 16, marginTop: 0 }}>Questions worth clarifying</h3>
-    <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+    <h3 style={{ fontSize: "calc(16px * var(--solenos-text-scale, 1))", marginTop: 0 }}>Questions worth clarifying</h3>
+    <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
 SolenOS only brings up a question when saved care information shows that an answer could affect a care decision. You do not have to answer now. Anything you share remains a caregiver report until it has been reviewed.
     </p>
     {loading && <p role="status">Loading care questions…</p>}
-    {error && <p role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
+    {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && partialLoadWarning.length > 0 && (
       <p role="status">Some saved care information could not be loaded: {partialLoadWarning.join(", ")}. The information shown may be incomplete. Try again.</p>
     )}
@@ -601,7 +601,7 @@ SolenOS only brings up a question when saved care information shows that an answ
       {recommendationUnavailable && <p role="status">We couldn’t check for care questions just now. Your saved care information has not changed. Try again later.</p>}
       {caregiverOpenQuestions.length === 0 && !recommendationUnavailable && <p>There are no care questions for you to review right now. SolenOS will let you know when a detail needs your input.</p>}
       {caregiverOpenQuestions.length > visibleCaregiverQuestions.length && (
-        <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+        <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
           Only a few questions are shown at once. Other saved questions can wait until you choose to review them.
         </p>
       )}
@@ -620,14 +620,14 @@ SolenOS only brings up a question when saved care information shows that an answ
               }}
               style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
             >
-              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionAudienceLabel(item.intended_answerer_role)}</span>
-              <strong style={{ fontSize: 14, fontWeight: 600 }}>{item.question}</strong>
-              <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
+              <span style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionAudienceLabel(item.intended_answerer_role)}</span>
+              <strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", fontWeight: 600 }}>{item.question}</strong>
+              <span style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Linked to saved care information" : "No saved source linked yet"}</span>
             </button>
           ))}
           {additionalCaregiverQuestions.length > 0 && (
             <details>
-              <summary style={{ cursor: "pointer", fontSize: 13 }}>
+              <summary style={{ cursor: "pointer", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
                 See other care questions
               </summary>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
@@ -644,10 +644,10 @@ SolenOS only brings up a question when saved care information shows that an answ
                     }}
                     style={{ ...button, textAlign: "left", display: "grid", gap: 5 }}
                   >
-                    <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                    <span style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                       {questionAudienceLabel(item.intended_answerer_role)}
                     </span>
-                    <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
+                    <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500 }}>{item.question}</strong>
                   </button>
                 ))}
               </div>
@@ -655,12 +655,12 @@ SolenOS only brings up a question when saved care information shows that an answ
           )}
           {questions.some((item) => item.status !== "open" && item.status !== "unresolved") && (
             <details>
-              <summary style={{ cursor: "pointer", fontSize: 13 }}>View answered and closed questions</summary>
+              <summary style={{ cursor: "pointer", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>View answered and closed questions</summary>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {questions.filter((item) => item.status !== "open" && item.status !== "unresolved").map((item) => (
                   <button key={item.id} type="button" onClick={() => setSelectedQuestionId(item.id)} style={{ ...button, textAlign: "left" }}>
-                    <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id))}</span>
-                    <strong style={{ fontSize: 13, fontWeight: 500 }}>{item.question}</strong>
+                    <span style={{ display: "block", fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id))}</span>
+                    <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500 }}>{item.question}</strong>
                   </button>
                 ))}
               </div>
@@ -668,13 +668,13 @@ SolenOS only brings up a question when saved care information shows that an answ
           )}
         </div>
         {!selectedQuestion && caregiverOpenQuestions.length > 0 && (
-          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+          <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
             Open a question to see why it came up. You can leave it unanswered if you do not know.
           </p>
         )}
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
-          <p style={{ marginTop: 0, fontSize: 11, color: "var(--text-secondary)" }}>{questionAudienceLabel(selectedQuestion.intended_answerer_role)}</p>
-          <p style={{ fontSize: 14, fontWeight: 600 }}>{selectedQuestion.question}</p>
+          <p style={{ marginTop: 0, fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionAudienceLabel(selectedQuestion.intended_answerer_role)}</p>
+          <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", fontWeight: 600 }}>{selectedQuestion.question}</p>
           {(() => {
             const guidance = caregiverQuestionGuidance(selectedQuestion);
             const why = guidance?.why
@@ -682,8 +682,8 @@ SolenOS only brings up a question when saved care information shows that an answ
               : caregiverSafeAssistantText(selectedQuestion.necessity_rationale);
             return (
               <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
-                <strong style={{ fontSize: 12 }}>Why this came up</strong>
-                <p style={{ margin: "5px 0 0", fontSize: 12 }}>
+                <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Why this came up</strong>
+                <p style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
                   {why || "The saved care information shows that this detail affects a care decision."}
                 </p>
               </div>
@@ -693,7 +693,7 @@ SolenOS only brings up a question when saved care information shows that an answ
             const guidance = caregiverQuestionGuidance(selectedQuestion);
             if (!guidance?.timingLabel) return null;
             return (
-              <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+              <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                 <strong>When to ask:</strong> {guidance.timingLabel}
                 {guidance.targetAt ? " · " + displayDate(guidance.targetAt) : ""}
               </p>
@@ -705,39 +705,39 @@ SolenOS only brings up a question when saved care information shows that an answ
             ).slice(0, 3);
             return linkedEvidence.length > 0 ? (
               <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
-                <strong style={{ fontSize: 12 }}>Saved information behind this question</strong>
+                <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Saved information behind this question</strong>
                 {linkedEvidence.map((item) => (
                   <div key={item.id} style={{ marginTop: 7 }}>
-                    <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                    <span style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                       {item.type === "document" ? "Saved document" : "Saved care note"}
                     </span>
-                    <p style={{ margin: "3px 0 0", fontSize: 12, overflowWrap: "anywhere" }}>
+                    <p style={{ margin: "3px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", overflowWrap: "anywhere" }}>
                       {evidenceSummary(item)}
                     </p>
                   </div>
                 ))}
                 {(selectedQuestion.evidence_ids?.length || 0) > linkedEvidence.length && (
-                  <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--text-secondary)" }}>
+                  <p style={{ margin: "6px 0 0", fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                     {selectedQuestion.evidence_ids!.length - linkedEvidence.length} additional source(s) linked
                   </p>
                 )}
               </div>
             ) : null;
           })()}
-          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+          <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
             {selectedQuestion.intended_answerer_role === "professional" ? "Best person to ask: " : "Who may know: "}
             {selectedQuestion.intended_answerer_label || answererLabel(selectedQuestion.intended_answerer_role)}
           </p>
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
-            <strong style={{ fontSize: 12 }}>Last answer</strong>
+            <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Last answer</strong>
             <p>{selectedQuestion.answer?.trim() || "The saved answer is available for review."}</p>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>Source: {selectedQuestion.answer_provenance?.trim() || "Not recorded"}</p>
-            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
+            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Source: {selectedQuestion.answer_provenance?.trim() || "Not recorded"}</p>
+            <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
           {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
             {!answerEntryOpen ? (
               <div style={{ margin: "10px 0" }}>
-                <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                   You can leave this unanswered if you do not know. SolenOS will keep the saved care information as it is.
                 </p>
                 <button type="button" style={button} onClick={() => setAnswerEntryOpen(true)}>
@@ -745,7 +745,7 @@ SolenOS only brings up a question when saved care information shows that an answ
                 </button>
               </div>
             ) : <>
-            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+            <label style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>
               {selectedQuestion.intended_answerer_role === "professional"
                 ? "What did the care professional confirm?"
                 : selectedQuestion.intended_answerer_role === "other_caregiver"
@@ -770,7 +770,7 @@ SolenOS only brings up a question when saved care information shows that an answ
                         : "Write what you know. It is okay if you are not sure."}
               />
             </label>
-            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+            <label style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>
               {selectedQuestion.intended_answerer_role === "professional"
                 ? "Which professional provided this answer, and when?"
                 : selectedQuestion.intended_answerer_role === "person_receiving_care"
@@ -795,33 +795,33 @@ SolenOS only brings up a question when saved care information shows that an answ
                       : "For example, the caregiver shared this today."}
               />
             </label>
-            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
-            <p style={{ fontSize: 11, color: "var(--text-secondary)" }}>An answer will not be treated as confirmed until it has been reviewed.</p>
+            <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Your answer and its source will be saved as a new caregiver report. The original report will remain unchanged.</p>
+            <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>An answer will not be treated as confirmed until it has been reviewed.</p>
             <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
             <button type="button" style={button} onClick={() => { setAnswerEntryOpen(false); setAnswer(""); setAnswerProvenance(""); }}>Not now</button>
             </>}
           </>}
           {selectedQuestion.status === "answered" && latestAnswer && (
             latestReview ? (
-              <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+              <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                 Answer review recorded: {caregiverStatusLabel(latestReview.decision) || "Review recorded"}.
                 {latestReview.resulting_claim_id ? " The answer remains classified as a caregiver report, not an independently verified fact." : ""}
               </p>
             ) : !selectedQuestion.claim_id ? (
-              <p role="status" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+              <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                 This question is not linked to a specific care detail. Your answer and its source are saved, but the answer remains separate from the care record.
               </p>
             ) : (
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
-                <strong style={{ fontSize: 13 }}>Review this answer</strong>
-                <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Review this answer</strong>
+                <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                   Accepting adds the answer as a caregiver report. It does not make the information independently verified.
                 </p>
-                <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review reason
+                <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Review reason
                   <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} />
                 </label>
                 {selectedClaim?.assertion_kind === "current_state" && (
-                  <label style={{ display: "block", fontSize: 12, marginBottom: 8 }}>Review again after (days)
+                  <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Review again after (days)
                     <input type="number" min={1} max={3650} value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} style={{ ...field, marginTop: 4 }} />
                   </label>
                 )}
@@ -837,10 +837,10 @@ SolenOS only brings up a question when saved care information shows that an answ
           )}
           {selectedQuestion.status !== "open" && selectedQuestion.status !== "unresolved" && <button type="button" style={button} onClick={() => void updateQuestion("open")} disabled={saving}>Reopen this question</button>}
           <div style={{ marginTop: 12 }}>
-            <strong style={{ fontSize: 12 }}>Earlier answers</strong>
-            {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: 12 }}>{historyError}</p>}
-            {!historyError && history.length === 0 && <p style={{ fontSize: 12 }}>No earlier answers have been saved.</p>}
-            <ol style={{ fontSize: 12, paddingLeft: 18 }}>
+            <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Earlier answers</strong>
+            {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{historyError}</p>}
+            {!historyError && history.length === 0 && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No earlier answers have been saved.</p>}
+            <ol style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
                 <p>{item.answer?.trim() || "The saved answer is available for review."}</p>
                 <p>Source: {item.answer_provenance?.trim() || "Not recorded"}</p>
@@ -852,6 +852,6 @@ SolenOS only brings up a question when saved care information shows that an answ
       </>}
 
     </>}
-    {notice && <p role="status" style={{ fontSize: 12 }}>{notice}</p>}
+    {notice && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{notice}</p>}
   </section>;
 }

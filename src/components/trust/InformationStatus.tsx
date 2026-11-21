@@ -63,7 +63,7 @@ export default function InformationStatus({
       display: 'flex', 
       flexDirection: 'column', 
       gap: '4px',
-      fontSize: '12px'
+      fontSize: 'calc(12px * var(--solenos-text-scale, 1))'
     }}>
       {!expanded && (
         <div style={{ 
@@ -73,7 +73,7 @@ export default function InformationStatus({
           cursor: 'pointer'
         }}>
           <span style={{ 
-            fontSize: '10px', 
+            fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
             padding: '2px 6px', 
             borderRadius: '4px',
             background: getStatusColors().bg,
@@ -84,7 +84,7 @@ export default function InformationStatus({
           </span>
           {explanation && (
             <span style={{ 
-              fontSize: '10px', 
+              fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
               color: 'var(--text-secondary)',
               marginLeft: '4px',
               fontStyle: 'italic'
@@ -119,7 +119,7 @@ export default function InformationStatus({
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '16px',
+                fontSize: 'calc(16px * var(--solenos-text-scale, 1))',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 padding: '0'
@@ -131,7 +131,7 @@ export default function InformationStatus({
           
           <div style={{ marginBottom: '8px' }}>
             <span style={{ 
-              fontSize: '11px', 
+              fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
               color: 'var(--text-secondary)',
               display: 'block',
               marginBottom: '2px'
@@ -139,7 +139,7 @@ export default function InformationStatus({
               Status:
             </span>
             <span style={{ 
-              fontSize: '12px', 
+              fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: getStatusColors().color,
               fontWeight: '500',
               background: getStatusColors().bg,
@@ -159,7 +159,7 @@ export default function InformationStatus({
               marginBottom: '12px'
             }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -167,7 +167,7 @@ export default function InformationStatus({
                 Why it is marked this way:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'

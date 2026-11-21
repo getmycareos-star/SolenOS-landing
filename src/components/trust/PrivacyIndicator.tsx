@@ -62,7 +62,7 @@ export default function PrivacyIndicator({
       display: 'flex', 
       flexDirection: 'column', 
       gap: '4px',
-      fontSize: '12px',
+      fontSize: 'calc(12px * var(--solenos-text-scale, 1))',
       color: 'var(--text-secondary)'
     }}>
       {!expanded && (
@@ -73,7 +73,7 @@ export default function PrivacyIndicator({
           cursor: 'pointer'
         }}>
           <span style={{ 
-            fontSize: '10px', 
+            fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
             padding: '2px 6px', 
             borderRadius: '4px',
             background: getAccessLevelColors().bg,
@@ -117,7 +117,7 @@ export default function PrivacyIndicator({
           
           <div style={{ marginBottom: '8px' }}>
             <span style={{ 
-              fontSize: '11px', 
+              fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
               color: 'var(--text-secondary)',
               display: 'block',
               marginBottom: '2px'
@@ -125,7 +125,7 @@ export default function PrivacyIndicator({
               Access level:
             </span>
             <span style={{ 
-              fontSize: '12px', 
+              fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: getAccessLevelColors().color,
               fontWeight: '500',
               background: getAccessLevelColors().bg,
@@ -139,7 +139,7 @@ export default function PrivacyIndicator({
           {accessLevel === 'shared' && sharedWith.length > 0 && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -166,13 +166,13 @@ export default function PrivacyIndicator({
                       gap: '4px'
                     }}>
                       <span style={{ 
-                        fontSize: '11px', 
+                        fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                         color: 'var(--text)'
                       }}>
                         {person.name}
                       </span>
                       <span style={{ 
-                        fontSize: '10px', 
+                        fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
                         padding: '1px 4px', 
                         borderRadius: '3px',
                         background: person.role === 'editor' ? 'var(--warning-soft)' : 'var(--trust-soft)',
@@ -182,7 +182,7 @@ export default function PrivacyIndicator({
                       </span>
                     </div>
                     <span style={{ 
-                      fontSize: '10px', 
+                      fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
                       color: person.status === 'accepted' ? 'var(--text-secondary)' : 'var(--unknown)'
                     }}>
                       {person.status === 'accepted' ? 'Accepted' : 'Pending'}
@@ -201,7 +201,7 @@ export default function PrivacyIndicator({
               padding: '8px 12px'
             }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)',
                 display: 'block',
                 marginBottom: '2px'
@@ -209,7 +209,7 @@ export default function PrivacyIndicator({
                 Access details:
               </span>
               <p style={{ 
-                fontSize: '12px', 
+                fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text)',
                 margin: '0',
                 lineHeight: '1.4'
@@ -228,7 +228,7 @@ export default function PrivacyIndicator({
               alignItems: 'center'
             }}>
               <span style={{ 
-                fontSize: '11px', 
+                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                 color: 'var(--text-secondary)'
               }}>
                 Manage access:
