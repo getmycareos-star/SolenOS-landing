@@ -25,6 +25,17 @@ import { requireCaregiverId } from "../care-identity/durable-care-key";
 
 const isBrowser = typeof window !== "undefined";
 
+function assertLegacyFilesystemStoreEnabled(): void {
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.SOLENOS_LEGACY_FS_STORE_ENABLED !== "true"
+  ) {
+    throw new Error(
+      "Legacy filesystem persistence is disabled in production; authoritative care data must use the authenticated PostgreSQL backend.",
+    );
+  }
+}
+
 export function livingCareRecordDataDir(...parts: string[]): string {
   if (isBrowser) return ["browser-data", ...parts].join("/");
   return join(process.cwd(), ".data", ...parts);
@@ -39,6 +50,7 @@ export function sanitizeDurableCareKey(careKey: string): string {
 
 export function readDurableJson<T>(filePath: string): T | null {
   if (isBrowser) return null;
+  assertLegacyFilesystemStoreEnabled();
   let exists: boolean;
   try {
     exists = existsSync(filePath);
@@ -57,6 +69,7 @@ export function readDurableJson<T>(filePath: string): T | null {
 
 export function writeDurableJson(filePath: string, value: unknown): void {
   if (isBrowser) return;
+  assertLegacyFilesystemStoreEnabled();
   const directory = join(filePath, "..");
   const temporaryPath = `${filePath}.tmp-${process.pid}-${Math.random().toString(36).slice(2)}`;
   try {
@@ -84,6 +97,7 @@ export function writeDurableJson(filePath: string, value: unknown): void {
 
 export function deleteDurableFile(filePath: string): void {
   if (isBrowser) return;
+  assertLegacyFilesystemStoreEnabled();
   let exists: boolean;
   try {
     exists = existsSync(filePath);
@@ -100,6 +114,7 @@ export function deleteDurableFile(filePath: string): void {
 
 export function clearDurableDirectory(dirPath: string): void {
   if (isBrowser) return;
+  assertLegacyFilesystemStoreEnabled();
   let exists: boolean;
   try {
     exists = existsSync(dirPath);
@@ -128,6 +143,7 @@ export function withDurableFileLock<T>(
   timeoutMs = 5000,
 ): T {
   if (isBrowser) return operation();
+  assertLegacyFilesystemStoreEnabled();
   mkdirSync(join(lockPath, ".."), { recursive: true });
   const deadline = Date.now() + timeoutMs;
   let descriptor: number | null = null;
@@ -161,6 +177,7 @@ export function withDurableFileLock<T>(
 /** List basename files in a durable data directory (server only). */
 export function listDurableDirectory(dirPath: string): string[] {
   if (isBrowser) return [];
+  assertLegacyFilesystemStoreEnabled();
   let exists: boolean;
   try {
     exists = existsSync(dirPath);
