@@ -845,6 +845,83 @@ await record("01b1 stale history responses cannot replace a newer refresh", asyn
   await context.close();
 });
 
+await record("01b2 one failed history category stays visible and recovers on retry", async () => {
+  const { context, page } = await createBrowserPage(session, "/workspace/more", { width: 1280, height: 900 });
+  let appointmentCalls = 0;
+  await page.route("**/api/v1/appointment-workspaces**", async (route) => {
+    appointmentCalls += 1;
+    if (appointmentCalls === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Temporary E2E-only appointment history failure" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.goto("/workspace/more");
+  await page.getByText("Appointment: Failed", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByRole("button", { name: "Refresh care history", exact: true }).click();
+  await page.getByText(/^Appointment: (Complete|Empty)$/, { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  assert.ok(appointmentCalls >= 2, "refresh retries the failed appointment source");
+  assert.equal(await page.getByText("Appointment: Failed", { exact: true }).count(), 0,
+    "a successful retry replaces the failed state rather than retaining a false failure");
+  await context.close();
+});
+
+await record("01b3 follow-up history retrieves every persisted page", async () => {
+  const { context, page } = await createBrowserPage(session, "/workspace/more", { width: 1280, height: 900 });
+  const offsets = [];
+  const makeFollowUp = (index) => {
+    const timestamp = new Date(Date.now() - index * 1_000).toISOString();
+    return {
+      id: \`e2e-pagination-follow-up-\${index}\`,
+      person_id: session.person.id,
+      title: index === 100 ? "Pagination page 2 final item" : \`Pagination page 1 item \${index + 1}\`,
+      description: "Synthetic browser-test record used only to verify complete pagination.",
+      status: "open",
+      priority: "routine",
+      owner_label: "Caregiver",
+      created_at: timestamp,
+      updated_at: timestamp,
+      deadline_at: null,
+      review_at: null,
+      evidence: [],
+      response_evidence: [],
+      action_evidence: [],
+      outcome_evidence: [],
+    };
+  };
+  await page.route("**/api/v1/open-loops?*", async (route) => {
+    const url = new URL(route.request().url());
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    offsets.push(offset);
+    const items = offset === 0
+      ? Array.from({ length: 100 }, (_, index) => makeFollowUp(index))
+      : offset === 100
+        ? [makeFollowUp(100)]
+        : [];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items, count: 101 }),
+    });
+  });
+
+  await page.goto("/workspace/more");
+  await page.getByText("Follow-up: Complete", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByText("Pagination page 2 final item", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  assert.ok(offsets.includes(0) && offsets.includes(100),
+    "the history loader requests the first and final follow-up pages");
+  await context.close();
+});
+
 await record("01c workspace links, browser back, More menu and account form validation", async () => {
   const { context, page, observed } = await createBrowserPage(
     shareSession,
