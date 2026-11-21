@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ensureAnonymousSession } from "@/api/client";
 import { apiUrl } from "@/lib/api-url";
-import { ensureClientInteractionSessionId } from "@/lib/care-identity";
+import { ensureClientInteractionSessionId } from "@/lib/care-identity/durable-care-key";
 import { CognitiveWorkspace } from "./CognitiveWorkspace";
 
 type SituationSnapshot = {
