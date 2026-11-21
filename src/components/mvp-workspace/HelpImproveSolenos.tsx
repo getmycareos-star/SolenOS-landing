@@ -56,15 +56,18 @@ export function HelpImproveSolenos({ compact }: Props) {
         expected_understanding: note.trim() || undefined,
         source: "global_help_improve",
       });
-      const query = new URLSearchParams({
-        person_id: session.person.id,
-        caregiver_id: session.caregiver.id,
-        category: "help_improve",
-        detail,
-      });
-      const res = await fetch(apiUrl(`/api/v1/feedback?${query.toString()}`), {
+      const res = await fetch(apiUrl("/api/v1/feedback"), {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          person_id: session.person.id,
+          caregiver_id: session.caregiver.id,
+          category: "help_improve",
+          detail,
+        }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { detail?: string; error?: string };
