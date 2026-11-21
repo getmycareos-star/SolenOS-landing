@@ -89,6 +89,7 @@ assert.match(
   "The initial view must show no more than two ordinary questions.",
 );
 assert.match(clarificationPanel, /recommendationUnavailable/, "an unavailable recommendation read must have a distinct state");
+assert.equal([...clarificationPanel.matchAll(/setRecommendationUnavailable\(false\)/g)].length, 1, "a successful empty-state reset must not overwrite the unavailable state after a failed recommendation read");
 assert.match(clarificationPanel, /We couldn’t check for care questions just now/, "recommendation failure must be communicated plainly");
 assert.match(clarificationPanel, /caregiverOpenQuestions\.length === 0 && !recommendationUnavailable/, "an empty successful result must be distinct from an unavailable result");
 assert.match(
