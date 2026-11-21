@@ -66,7 +66,7 @@ export function CaregiverHandoverInbox() {
     <section aria-labelledby="caregiver-handover-heading" className="mobile-settings-card" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <ArrowRightLeft size={18} aria-hidden />
-        <h2 id="caregiver-handover-heading" style={{ margin: 0, fontSize: 17 }}>Care handover</h2>
+        <h2 id="caregiver-handover-heading" style={{ margin: 0, fontSize: "calc(17px * var(--solenos-text-scale, 1))" }}>Care handover</h2>
       </div>
       <p className="mobile-settings-hint">These changes need your response. Nothing is reassigned until you accept.</p>
       {primaryTransfers.map(item => (

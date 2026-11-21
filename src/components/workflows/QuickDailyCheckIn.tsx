@@ -267,7 +267,7 @@ export default function QuickDailyCheckIn() {
         color: "var(--theme-panel-fg)",
       }}
     >
-      <h2 id="quick-daily-checkin-title" style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 700 }}>
+      <h2 id="quick-daily-checkin-title" style={{ margin: "0 0 6px", fontSize: "calc(20px * var(--solenos-text-scale, 1))", fontWeight: 700 }}>
         Quick check-in
       </h2>
       <p style={{ margin: "0 0 14px", color: "var(--theme-panel-muted)", lineHeight: 1.55 }}>
@@ -285,7 +285,7 @@ export default function QuickDailyCheckIn() {
             style={choiceStyle(kind === option.value)}
           >
             <span style={{ display: "block", fontWeight: 700 }}>{option.label}</span>
-            <span style={{ display: "block", marginTop: 3, color: "var(--theme-panel-muted)", fontSize: 13 }}>
+            <span style={{ display: "block", marginTop: 3, color: "var(--theme-panel-muted)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
               {option.description}
             </span>
           </button>
@@ -381,7 +381,7 @@ export default function QuickDailyCheckIn() {
           Check-in saved to the care record.
         </p>
       )}
-      <p style={{ margin: "12px 0 0", color: "var(--theme-panel-muted)", fontSize: 12, lineHeight: 1.5 }}>
+      <p style={{ margin: "12px 0 0", color: "var(--theme-panel-muted)", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>
         This records your overall impression only. It does not confirm medicines were given or measurements were taken.
       </p>
     </section>

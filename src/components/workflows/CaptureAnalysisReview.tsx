@@ -131,10 +131,10 @@ export default function CaptureAnalysisReview({
       margin: "12px 0", background: "var(--surface)",
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>Review suggested details</h3>
+        <h3 style={{ margin: 0, fontSize: "calc(16px * var(--solenos-text-scale, 1))" }}>Review suggested details</h3>
         <button type="button" onClick={onClose} aria-label="Close review">Close</button>
       </div>
-      <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+      <p style={{ color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
         These suggestions are not part of the care record until you accept them.
       </p>
       {loading ? <p role="status">Loading saved suggestions…</p> : null}
@@ -152,7 +152,7 @@ export default function CaptureAnalysisReview({
         return (
           <article key={index} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 12 }}>
             <strong>Suggested detail {index + 1}</strong>
-            <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
               {status === "accepted_by_caregiver" ? "Accepted and added to the care record"
                 : status === "rejected_by_caregiver" ? "Dismissed"
                   : status === "corrected_pending_approval" || status === "corrected_by_caregiver"
@@ -192,12 +192,12 @@ export default function CaptureAnalysisReview({
               ) : <p>{draft.observation || "No details were provided."}</p>}
             </div>
             {candidate.source_quote ? (
-              <blockquote style={{ margin: "8px 0", padding: "8px 12px", borderLeft: "3px solid var(--border)", color: "var(--text-secondary)", fontSize: 13 }}>
+              <blockquote style={{ margin: "8px 0", padding: "8px 12px", borderLeft: "3px solid var(--border)", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
                 <strong>From your note</strong>
                 <p style={{ margin: "4px 0 0" }}>{candidate.source_quote}</p>
               </blockquote>
             ) : (
-              <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>The original quotation is not available in this review.</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>The original quotation is not available in this review.</p>
             )}
             {!final ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>

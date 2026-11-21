@@ -680,11 +680,11 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     <div className="companion-handoff-sharing" style={{ marginTop: 14, display: "grid", gap: 12, minWidth: 0, width: "100%" }}>
       <section style={{ ...panel, marginTop: 0 }} aria-labelledby="prepare-handoff-heading">
         <h4 id="prepare-handoff-heading" style={{ marginTop: 0 }}>Prepare a care summary to share</h4>
-        <p style={{ fontSize: 12, lineHeight: 1.55, color: "#667267" }}>
+        <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.55, color: "#667267" }}>
           SolenOS gathers the saved care information for the selected handoff. Review the draft before sharing. Missing or uncertain information stays clearly identified.
         </p>
         <form onSubmit={event => { event.preventDefault(); void prepareHandoffDraft(); }} style={{ display: "grid", gap: 10 }}>
-          <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+          <label style={{ display: "grid", gap: 5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
             Who is this summary for?
             <select value={prepareAudience} onChange={event => {
               const next = event.target.value as "family" | "professional";
@@ -703,7 +703,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <option value="professional">Healthcare professional — private review only</option>
             </select>
           </label>
-          <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+          <label style={{ display: "grid", gap: 5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
             Why are you sharing it?
             <select value={preparePurpose} onChange={event => {
               const next = event.target.value as HandoffDraftPurpose;
@@ -730,7 +730,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             </select>
           </label>
           {preparePurpose === "professional_appointment" && (
-            <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+            <label style={{ display: "grid", gap: 5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
               Which saved appointment is this briefing for?
               <select value={prepareAppointmentId} onChange={event => {
                 setPrepareAppointmentId(event.target.value);
@@ -747,7 +747,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               {appointmentOptions.length === 0 && <span style={{ color: "#667267" }}>No saved appointments are available. Add the appointment to this Care Record before preparing its briefing.</span>}
             </label>
           )}
-          <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+          <label style={{ display: "grid", gap: 5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
             How much care history should be included?
             <select value={prepareWindowDays} onChange={event => {
               setPrepareWindowDays(event.target.value);
@@ -761,9 +761,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <option value="90">Past 90 days</option>
             </select>
           </label>
-          {prepareAudience === "professional" && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5 }}>We have not confirmed this person's identity or professional role. You can review this draft privately, but you cannot share it with a healthcare professional yet.</p>}
-          {prepareError && <p role="alert" style={{ margin: 0, color: "#8d2d2d", fontSize: 12 }}>{prepareError}</p>}
-          {prepareNotice && <p role="status" style={{ margin: 0, color: "#356441", fontSize: 12 }}>{prepareNotice}</p>}
+          {prepareAudience === "professional" && <p style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>We have not confirmed this person's identity or professional role. You can review this draft privately, but you cannot share it with a healthcare professional yet.</p>}
+          {prepareError && <p role="alert" style={{ margin: 0, color: "#8d2d2d", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{prepareError}</p>}
+          {prepareNotice && <p role="status" style={{ margin: 0, color: "#356441", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{prepareNotice}</p>}
           <button
             type="button"
             style={button}
@@ -778,12 +778,12 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       {savedDrafts.length > 0 && (
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved summaries">
           <h4 style={{ marginTop: 0 }}>Saved summaries</h4>
-          <p style={{ fontSize: 12, color: "#667267" }}>Only summaries you prepared for this Care Record are listed.</p>
+          <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#667267" }}>Only summaries you prepared for this Care Record are listed.</p>
           {savedDrafts.map(saved => (
             <div key={saved.draft_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderTop: "1px solid #e5ebe4", padding: "9px 0" }}>
               <div>
                 <strong>{handoffPurposeLabel(saved.purpose)}</strong>
-                <div style={{ fontSize: 11, color: "#667267" }}>{saved.review_status ? readableStatus(saved.review_status) : "Needs your review"} · Updated {formatDate(saved.updated_at ?? saved.prepared_at)}</div>
+                <div style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267" }}>{saved.review_status ? readableStatus(saved.review_status) : "Needs your review"} · Updated {formatDate(saved.updated_at ?? saved.prepared_at)}</div>
               </div>
               <button type="button" style={quietButton} disabled={busy || !onResumeDraft} onClick={async () => {
                 setBusy(true);
@@ -807,7 +807,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       {savedDrafts.length === 0 && !loading && !draftsError && (
         <section style={{ ...panel, marginTop: 0 }} aria-label="Saved summaries">
           <h4 style={{ marginTop: 0 }}>Saved summaries</h4>
-          <p style={{ fontSize: 13, color: "#667267", marginBottom: 0 }}>
+          <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "#667267", marginBottom: 0 }}>
             No summaries have been saved for this Care Record yet. Use the form above to prepare one from saved information.
           </p>
         </section>
@@ -815,12 +815,12 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
       {draft && (
         <section role="status" aria-label="Care Record coverage and missing information" style={{ ...panel, marginTop: 0, background: "#fbf8ef", borderColor: "#d8c9a5" }}>
-          {draft.selected_appointment && <p style={{ fontSize: 12, lineHeight: 1.5, margin: "6px 0" }}><b>Appointment:</b> {draft.selected_appointment.title} · {formatDate(draft.selected_appointment.scheduled_at)}{draft.selected_appointment.provider ? " · " + draft.selected_appointment.provider : ""}</p>}
-          <strong style={{ fontSize: 13 }}>Check what information is missing</strong>
-          {draft.retrieval_complete === false && <p style={{ fontSize: 12, lineHeight: 1.5, margin: "6px 0" }}>This briefing does not include all available Care Record information. Review the listed gaps before relying on or sharing it.</p>}
-          {draft.partial_sources?.map(item => <p key={item.source} style={{ fontSize: 12, lineHeight: 1.45, margin: "4px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were retrieved; more may be available.</p>)}
-          {draft.template_sections?.filter(item => /medication/i.test(item.title)).map(item => <p key={item.title} style={{ fontSize: 12, lineHeight: 1.45, margin: "4px 0" }}>{item.coverage_note}</p>)}
-          {draft.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 12, lineHeight: 1.45, margin: "4px 0" }}>
+          {draft.selected_appointment && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}><b>Appointment:</b> {draft.selected_appointment.title} · {formatDate(draft.selected_appointment.scheduled_at)}{draft.selected_appointment.provider ? " · " + draft.selected_appointment.provider : ""}</p>}
+          <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Check what information is missing</strong>
+          {draft.retrieval_complete === false && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>This briefing does not include all available Care Record information. Review the listed gaps before relying on or sharing it.</p>}
+          {draft.partial_sources?.map(item => <p key={item.source} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were retrieved; more may be available.</p>)}
+          {draft.template_sections?.filter(item => /medication/i.test(item.title)).map(item => <p key={item.title} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0" }}>{item.coverage_note}</p>)}
+          {draft.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0" }}>
             {item.source === "allergies"
               ? "Allergy information could not be checked from a connected source. This does not mean there are no allergies."
               : `${readableSection(item.source)}: this information could not be fully checked (${readableStatus(item.status)}).`}
@@ -831,45 +831,45 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         <>
           <div style={{ ...panel, marginTop: 0, background: "#f7f8f4" }}>
             <strong>Healthcare professional briefing — private review only</strong>
-            <p style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.55 }}>This briefing is prepared from the saved Care Record. SolenOS cannot yet confirm a professional recipient's identity and role, so professional sharing is not available from this screen.</p>
-            {draft.generation?.interpretation_limit && <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(draft.generation.interpretation_limit) ?? "Check each generated statement against its saved source."}</p>}
-            {typeof draft.generation?.sources_available === "number" && typeof draft.generation?.sources_considered === "number" && draft.generation.sources_available > draft.generation.sources_considered && <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5 }}>This briefing highlights {draft.generation.sources_considered} of {draft.generation.sources_available} available source records. It does not replace the full Care Record.</p>}
+            <p style={{ marginBottom: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.55 }}>This briefing is prepared from the saved Care Record. SolenOS cannot yet confirm a professional recipient's identity and role, so professional sharing is not available from this screen.</p>
+            {draft.generation?.interpretation_limit && <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{caregiverSafeAssistantText(draft.generation.interpretation_limit) ?? "Check each generated statement against its saved source."}</p>}
+            {typeof draft.generation?.sources_available === "number" && typeof draft.generation?.sources_considered === "number" && draft.generation.sources_available > draft.generation.sources_considered && <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>This briefing highlights {draft.generation.sources_considered} of {draft.generation.sources_available} available source records. It does not replace the full Care Record.</p>}
           </div>
           <section style={{ ...panel, marginTop: 0 }} aria-label="Professional briefing review">
             <h4 style={{ marginTop: 0 }}>Professional briefing</h4>
             {(draft.generation?.sections ?? []).map((item, index) => (
               <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
-                <strong style={{ fontSize: 13 }}>{readableSection(item.section)}</strong>
-                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown."}</p>
-                {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Saved source wording: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording unavailable."}</p>}
-                <p style={{ fontSize: 11, lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Validation: exact saved wording; no AI paraphrase." : "Validation: source quote matched. The summary wording still needs your review; quote matching does not prove the paraphrase is fully supported."}</p>
+                <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{readableSection(item.section)}</strong>
+                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown."}</p>
+                {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Saved source wording: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording unavailable."}</p>}
+                <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Validation: exact saved wording; no AI paraphrase." : "Validation: source quote matched. The summary wording still needs your review; quote matching does not prove the paraphrase is fully supported."}</p>
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
-                {claimSourceFor(draft, item, index)?.reporter_label && <p style={{ fontSize: 11, color: "#667267", margin: "4px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</p>}
-                {claimSourceFor(draft, item, index)?.source_state_label && <p style={{ fontSize: 11, color: "#765b2b", margin: "4px 0" }}>{claimSourceFor(draft, item, index)?.source_state_label}</p>}
-                {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: 11, color: "#667267", margin: "4px 0" }}>Linked evidence: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => source.type || source.source_type || "Saved evidence").join(", ")}</p>}
+                {claimSourceFor(draft, item, index)?.reporter_label && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</p>}
+                {claimSourceFor(draft, item, index)?.source_state_label && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#765b2b", margin: "4px 0" }}>{claimSourceFor(draft, item, index)?.source_state_label}</p>}
+                {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Linked evidence: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => source.type || source.source_type || "Saved evidence").join(", ")}</p>}
               </article>
             ))}
-            {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: 12, lineHeight: 1.5 }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized or interpreted. Check each detail and its dates before using it.</p>}
-            {draft.generation?.status !== "generated" && draft.generation?.status !== "source_only_fallback" && <p style={{ fontSize: 12 }}>Draft preparation could not be completed. The saved source records and retrieval limitations remain available for review.</p>}
+            {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized or interpreted. Check each detail and its dates before using it.</p>}
+            {draft.generation?.status !== "generated" && draft.generation?.status !== "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Draft preparation could not be completed. The saved source records and retrieval limitations remain available for review.</p>}
           </section>
         </>
       )}
 
       {draft && audience === "family" && (
         <section style={panel} aria-labelledby="family-share-heading">
-          <h4 id="family-share-heading" style={{ margin: "0 0 8px", fontSize: 15 }}>Review and share with family</h4>
-          <p style={{ marginTop: 0, fontSize: 12, lineHeight: 1.55 }}>Only caregivers who can access this Care Record are listed. You must review the summary before sharing. The link expires automatically, you can stop sharing it, and it does not change your Care Record.</p>
-          {draft.generation?.status === "source_only_fallback" && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized. Check each detail and its dates before sharing.</p>}
-          {consentRequired && <p role="status" style={{ fontSize: 12, lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
+          <h4 id="family-share-heading" style={{ margin: "0 0 8px", fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>Review and share with family</h4>
+          <p style={{ marginTop: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.55 }}>Only caregivers who can access this Care Record are listed. You must review the summary before sharing. The link expires automatically, you can stop sharing it, and it does not change your Care Record.</p>
+          {draft.generation?.status === "source_only_fallback" && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized. Check each detail and its dates before sharing.</p>}
+          {consentRequired && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
             You cannot receive or share care summaries until you save the required privacy and shared-care choices for this Care Record. Review them in <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Settings → Privacy</Link>, then refresh this panel. Your care record remains available.
           </p>}
           {draft.evidence_lineage && <details style={{ border: "1px solid #dce7dc", borderRadius: 9, padding: 10, marginBottom: 12 }} aria-label="Where the information came from">
-            <summary style={{ fontSize: 12, fontWeight: 650, cursor: "pointer" }}>Where the information came from</summary>
-            {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map((group, index) => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: 12 }}>
+            <summary style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", fontWeight: 650, cursor: "pointer" }}>Where the information came from</summary>
+            {draft.evidence_lineage.groups.length ? draft.evidence_lineage.groups.map((group, index) => <div key={group.lineage_id} style={{ borderTop: "1px solid #e5ebe4", marginTop: 7, paddingTop: 7, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
               <b>How these reports are connected: {readableStatus(group.source_independence_status)}</b>
               <p style={{ margin: "3px 0", color: "#667267" }}>{caregiverSafeAssistantText(group.interpretation_limit) ?? "The relationship between these reports is not fully known."}</p>
-            </div>) : <p style={{ fontSize: 12, marginBottom: 0 }}>We could not check whether some information came from the same original. Do not assume similar reports are separate.</p>}
-            <p style={{ fontSize: 12, marginBottom: 0, color: "#667267" }}>{caregiverSafeAssistantText(draft.evidence_lineage.interpretation_limit) ?? "A connection between reports does not prove they are true or came from different people."}</p>
+            </div>) : <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 0 }}>We could not check whether some information came from the same original. Do not assume similar reports are separate.</p>}
+            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 0, color: "#667267" }}>{caregiverSafeAssistantText(draft.evidence_lineage.interpretation_limit) ?? "A connection between reports does not prove they are true or came from different people."}</p>
           </details>}
           {directoryError && <RecordState kind="error" title="Recipient access could not be checked" description="Refresh before sharing this summary." onAction={() => void load()} />}
           {!consentRequired && !directoryError && !loading && eligibleRecipients.length === 0 && <p>No caregiver on this Care Record can receive the summary right now. SolenOS will not share it outside this Care Record.</p>}
@@ -884,25 +884,25 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <span><strong>{recipient.name}</strong><br /><small>{recipient.relationship || "Linked caregiver"} · can receive shared care information</small></span>
             </label>
           ))}
-          {ineligibleRecipients.map(recipient => <p key={recipient.caregiver_id} style={{ fontSize: 12, color: "#6b746c" }}>{recipient.name} — cannot receive this summary until the required permission is saved.</p>)}
-          <label htmlFor="companion-handoff-expiry" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>How long the link works</label>
+          {ineligibleRecipients.map(recipient => <p key={recipient.caregiver_id} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#6b746c" }}>{recipient.name} — cannot receive this summary until the required permission is saved.</p>)}
+          <label htmlFor="companion-handoff-expiry" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>How long the link works</label>
           <select id="companion-handoff-expiry" value={expiryDays} onChange={event => { setExpiryDays(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} style={{ ...field, maxWidth: 240 }}>
             <option value="1">24 hours</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option>
           </select>
-          <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Full summary</label>
+          <label htmlFor="companion-handoff-share-text" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Full summary</label>
           <div style={{ margin: "12px 0" }}>
-            <strong style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Check what will be shared</strong>
-            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Each detail stays linked to the information it came from. Remove anything you do not want to share. If something is old or needs correcting, explain it in your note below. Your note will be clearly marked as yours, not as something confirmed by a healthcare professional. Update the Care Record separately when needed.</p>
+            <strong style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Check what will be shared</strong>
+            <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "0 0 8px" }}>Each detail stays linked to the information it came from. Remove anything you do not want to share. If something is old or needs correcting, explain it in your note below. Your note will be clearly marked as yours, not as something confirmed by a healthcare professional. Update the Care Record separately when needed.</p>
             {editedSections.map((item, index) => (
               <div key={item.source_ref + index} style={{ border: "1px solid #e2e9e1", borderRadius: 8, padding: 10, marginBottom: 9 }}>
-                <strong style={{ display: "block", fontSize: 12 }}>{readableSection(item.section)}</strong>
+                <strong style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{readableSection(item.section)}</strong>
                 <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
                 {claimSourceFor(draft, item, index)?.reporter_label && <small style={{ display: "block", color: "#667267", margin: "3px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</small>}
                 {claimSourceFor(draft, item, index)?.source_state_label && <small style={{ display: "block", color: "#765b2b", margin: "3px 0" }}>{claimSourceFor(draft, item, index)?.source_state_label}</small>}
-                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown in this preview."}</p>
-                {item.supporting_quote && <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 6px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
-                <p style={{ fontSize: 11, lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Exact saved wording; no AI paraphrase." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 11, lineHeight: 1.45, margin: "0 0 9px" }}>
+                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown in this preview."}</p>
+                {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 6px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
+                <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Exact saved wording; no AI paraphrase." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 9px" }}>
                   <input type="checkbox" checked={reviewedSourceRefs.includes(item.source_ref)} disabled={busy} onChange={event => {
                     setReviewedSourceRefs(current => event.target.checked
                       ? [...new Set([...current, item.source_ref])]
@@ -926,22 +926,22 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             ))}
           </div>
           <textarea id="companion-handoff-share-text" value={summaryText} readOnly rows={12} style={{ ...field, resize: "vertical", lineHeight: 1.5, background: "#f8faf7" }} />
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Each detail stays connected to the information it came from. The summary shows when something happened and when it was saved.</p>
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: "#667267" }}>Saved versions: {revisionHistory.length || 1} · Last check: {sourceFreshness ? readableStatus(sourceFreshness.status) : "Checking"}</p>
-          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: 12 }}>Previous saved versions</summary>{revisionHistory.map(item => (
+          <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "#667267" }}>Each detail stays connected to the information it came from. The summary shows when something happened and when it was saved.</p>
+          <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "#667267" }}>Saved versions: {revisionHistory.length || 1} · Last check: {sourceFreshness ? readableStatus(sourceFreshness.status) : "Checking"}</p>
+          {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Previous saved versions</summary>{revisionHistory.map(item => (
               <details key={item.revision_number} style={{ margin: "6px 0" }}>
-                <summary style={{ cursor: "pointer", fontSize: 11 }}>Updated {formatDate(item.created_at)} · {readableStatus(item.change_type)}</summary>
-                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: 11, margin: "5px 0" }}><strong>{readableSection(section.section)}:</strong> {caregiverSafeAssistantText(section.text) ?? "Some details are not available in this version."} <small>(Related note or document {index + 1})</small></p>)}
-                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: 11 }}>Caregiver note: {caregiverSafeAssistantText(note.text) ?? "No further note was recorded."}</p>)}
-                <p style={{ fontSize: 10, color: "#667267" }}>Related notes and documents in this version: {item.source_snapshot?.source_records?.length ?? "Not recorded"}</p>
+                <summary style={{ cursor: "pointer", fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>Updated {formatDate(item.created_at)} · {readableStatus(item.change_type)}</summary>
+                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", margin: "5px 0" }}><strong>{readableSection(section.section)}:</strong> {caregiverSafeAssistantText(section.text) ?? "Some details are not available in this version."} <small>(Related note or document {index + 1})</small></p>)}
+                {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>Caregiver note: {caregiverSafeAssistantText(note.text) ?? "No further note was recorded."}</p>)}
+                <p style={{ fontSize: "calc(10px * var(--solenos-text-scale, 1))", color: "#667267" }}>Related notes and documents in this version: {item.source_snapshot?.source_records?.length ?? "Not recorded"}</p>
               </details>
             ))}</details>}
-          {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: 12, color: "#8d2d2d" }}>Some information in this draft may be out of date ({readableStatus(sourceFreshness.status)}). Prepare a new draft before sharing.</p>}
+          {sourceFreshness && sourceFreshness.status !== "current" && <p role="alert" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8d2d2d" }}>Some information in this draft may be out of date ({readableStatus(sourceFreshness.status)}). Prepare a new draft before sharing.</p>}
           <div style={{ margin: "12px 0" }}>
-            <strong style={{ display: "block", fontSize: 13, marginBottom: 6 }}>What to share</strong>
-            <p style={{ fontSize: 11, color: "#667267", margin: "0 0 8px" }}>Choose what the recipient can see. Anything you leave unchecked will not be shared.</p>
+            <strong style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 6 }}>What to share</strong>
+            <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "0 0 8px" }}>Choose what the recipient can see. Anything you leave unchecked will not be shared.</p>
             {requiredHandoffScopes(draft, editedSections).map(scope => (
-              <label key={scope} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, margin: "6px 0" }}>
+              <label key={scope} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "6px 0" }}>
                 <input type="checkbox" checked={selectedScope.includes(scope)} onChange={event => {
                   setSelectedScope(current => event.target.checked ? [...current, scope] : current.filter(value => value !== scope));
                   setReviewConfirmed(false);
@@ -952,18 +952,18 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               </label>
             ))}
           </div>
-          <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: 13 }}>Add a note (optional)</label>
+          <label htmlFor="companion-handoff-caregiver-note" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Add a note (optional)</label>
           <textarea id="companion-handoff-caregiver-note" value={caregiverNote} onChange={event => { setCaregiverNote(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} rows={3} maxLength={2000} placeholder="Add context in your own words. It will be shown as your note, not a confirmed medical fact." style={{ ...field, resize: "vertical", lineHeight: 1.5 }} />
           <button type="button" style={quietButton} disabled={busy || sourceFreshness?.status === "stale" || editedSections.length === 0} onClick={() => void saveDraftRevision()}>Save draft changes</button>
           <section aria-label="Check sharing details" style={{ border: "1px solid #cbd8cb", borderRadius: 10, padding: 12, margin: "14px 0", background: "#f7faf6" }}>
-            <strong style={{ display: "block", fontSize: 13, marginBottom: 7 }}>Check what will be shared</strong>
-            <p style={{ fontSize: 12, margin: "4px 0" }}><b>Purpose:</b> {purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor’s appointment" : "Full care overview"}</p>
-            <p style={{ fontSize: 12, margin: "4px 0" }}><b>Who will receive it:</b> {eligibleRecipients.filter(item => selectedRecipients.includes(item.caregiver_id)).map(item => item.name).join(", ") || "No recipient selected"}</p>
-            <p style={{ fontSize: 12, margin: "4px 0" }}><b>What will be shared:</b> {selectedScope.map(readableScope).join(", ") || "No information category selected"}</p>
-            <p style={{ fontSize: 12, margin: "4px 0" }}><b>Link expires:</b> {expiryDays === "1" ? "In 24 hours" : "In " + expiryDays + " days"} after sharing</p>
-            <p style={{ fontSize: 11, color: "#667267", margin: "8px 0 0" }}>Only the people you choose can open this summary. Sharing does not change your Care Record. If you stop sharing later, they may still have information they already saw or saved.</p>
+            <strong style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 7 }}>Check what will be shared</strong>
+            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>Purpose:</b> {purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor’s appointment" : "Full care overview"}</p>
+            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>Who will receive it:</b> {eligibleRecipients.filter(item => selectedRecipients.includes(item.caregiver_id)).map(item => item.name).join(", ") || "No recipient selected"}</p>
+            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>What will be shared:</b> {selectedScope.map(readableScope).join(", ") || "No information category selected"}</p>
+            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>Link expires:</b> {expiryDays === "1" ? "In 24 hours" : "In " + expiryDays + " days"} after sharing</p>
+            <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "8px 0 0" }}>Only the people you choose can open this summary. Sharing does not change your Care Record. If you stop sharing later, they may still have information they already saw or saved.</p>
           </section>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: 12 }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
             <span>I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement.</span>
           </label>
@@ -981,8 +981,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <button type="button" style={quietButton} onClick={() => setShowHistory(value => !value)}>{showHistory ? "Hide sharing history" : "View sharing history"}</button>
           </div>
         </div>
-        {error && <p role="alert" style={{ color: "#8d2d2d", fontSize: 12, lineHeight: 1.5 }}>{error}</p>}
-        {notice && <p role="status" style={{ color: "#356441", fontSize: 12, lineHeight: 1.5 }}>{notice}</p>}
+        {error && <p role="alert" style={{ color: "#8d2d2d", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{error}</p>}
+        {notice && <p role="status" style={{ color: "#356441", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{notice}</p>}
         {showHistory && (
           <div style={{ marginTop: 12 }}>
             {consentRequired && <p role="status">Summaries shared with you or by you are hidden until you save the required privacy and shared-care choices. <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Review Settings → Privacy</Link>.</p>}
@@ -992,33 +992,33 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             {inbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong>{item.from_caregiver_name || "Linked caregiver"}</strong>
-                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {readableStatus(item.status)} · Expires: {formatDate(item.expires_at)}</p>
-                <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
+                <p style={{ margin: "4px 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Status: {readableStatus(item.status)} · Expires: {formatDate(item.expires_at)}</p>
+                <p style={{ margin: "4px 0 8px", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
                 <button type="button" style={button} disabled={busy || !item.has_summary} onClick={() => void reviewIncoming(item)}>Open shared summary</button>
               </article>
             ))}
             {activeInbox && activeSnapshot && (
               <article style={{ ...panel, margin: "12px 0" }}>
                 <h5 style={{ marginTop: 0 }}>Open shared summary</h5>
-                <p style={{ fontSize: 12, lineHeight: 1.5 }}>From {activeInbox.from_caregiver_name || "a linked caregiver"}. Another caregiver shared this summary. A healthcare professional has not confirmed every detail.</p>
+                <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>From {activeInbox.from_caregiver_name || "a linked caregiver"}. Another caregiver shared this summary. A healthcare professional has not confirmed every detail.</p>
                 {Object.entries(activeSnapshot.sections ?? {}).map(([name, value]) => (
                   <div key={name} style={{ marginBottom: 10 }}>
-                    <strong style={{ fontSize: 12 }}>{readableSection(name)}</strong>
-                    <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", fontSize: 12, lineHeight: 1.5 }}>{caregiverSafeAssistantText(String(value ?? "")) ?? "Some details are not available in this summary."}</pre>
+                    <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{readableSection(name)}</strong>
+                    <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{caregiverSafeAssistantText(String(value ?? "")) ?? "Some details are not available in this summary."}</pre>
                   </div>
                 ))}
                 
-                {activeSnapshot.purpose && <p style={{ fontSize: 12 }}>Purpose: {handoffPurposeLabel(activeSnapshot.purpose)} · Shared with: {activeSnapshot.audience === "family" ? "Family caregiver" : activeSnapshot.audience === "professional" ? "Healthcare professional" : "Not recorded"} · Period covered: {activeSnapshot.window?.days ?? "Not recorded"} days</p>}
+                {activeSnapshot.purpose && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Purpose: {handoffPurposeLabel(activeSnapshot.purpose)} · Shared with: {activeSnapshot.audience === "family" ? "Family caregiver" : activeSnapshot.audience === "professional" ? "Healthcare professional" : "Not recorded"} · Period covered: {activeSnapshot.window?.days ?? "Not recorded"} days</p>}
                 {activeSnapshot.retrieval_complete === false && <section role="status" style={{ margin: "10px 0", padding: 10, border: "1px solid #d8c9a5", borderRadius: 8, background: "#fbf8ef" }}>
-                  <strong style={{ fontSize: 12 }}>Some care history is missing from this summary</strong>
-                  <p style={{ fontSize: 11, margin: "5px 0" }}>This summary does not include everything in your Care Record. Check the full Care Record before relying on it.</p>
-                  {(activeSnapshot.partial_sources ?? []).map(item => <p key={item.source} style={{ fontSize: 11, margin: "3px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were included; more may be available.</p>)}
+                  <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Some care history is missing from this summary</strong>
+                  <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", margin: "5px 0" }}>This summary does not include everything in your Care Record. Check the full Care Record before relying on it.</p>
+                  {(activeSnapshot.partial_sources ?? []).map(item => <p key={item.source} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", margin: "3px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were included; more may be available.</p>)}
                 </section>}
-                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: 12 }}>What is included and what is missing</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: 11, margin: "4px 0" }}>{caregiverSafeAssistantText(value.label) || readableSection(key)}: {readableStatus(value.status)}{caregiverSafeAssistantText(value.reason) ? " — " + caregiverSafeAssistantText(value.reason) : ""} · {value.count} {value.count === 1 ? "saved detail" : "saved details"}</p>)}</section>}
-                {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: 11, color: "#667267" }}>Not included — {readableSection(item.source)}: {readableStatus(item.status)}{caregiverSafeAssistantText(item.reason) ? " (" + caregiverSafeAssistantText(item.reason) + ")" : ""}</p>)}
-                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: 10, overflowWrap: "anywhere" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}{item.stale_warning ? " · older information — check before relying on it" : ""}{item.original_source_reference ? " · document source" : ""}{Array.isArray(item.page_references) && item.page_references.length ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
-                <p style={{ fontSize: 11 }}>Care Record check: This information is for this person. It does not confirm that every detail is accurate.</p>
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, lineHeight: 1.5, margin: "10px 0" }}>
+                {activeSnapshot.source_coverage && <section style={{ margin: "10px 0" }}><strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>What is included and what is missing</strong>{Object.entries(activeSnapshot.source_coverage).map(([key, value]) => <p key={key} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", margin: "4px 0" }}>{caregiverSafeAssistantText(value.label) || readableSection(key)}: {readableStatus(value.status)}{caregiverSafeAssistantText(value.reason) ? " — " + caregiverSafeAssistantText(value.reason) : ""} · {value.count} {value.count === 1 ? "saved detail" : "saved details"}</p>)}</section>}
+                {activeSnapshot.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267" }}>Not included — {readableSection(item.source)}: {readableStatus(item.status)}{caregiverSafeAssistantText(item.reason) ? " (" + caregiverSafeAssistantText(item.reason) + ")" : ""}</p>)}
+                {activeSnapshot.source_references?.map((item, index) => <p key={item.source_ref + index} style={{ fontSize: "calc(10px * var(--solenos-text-scale, 1))", overflowWrap: "anywhere" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status)} · {readableStatus(item.record_status)} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}{item.stale_warning ? " · older information — check before relying on it" : ""}{item.original_source_reference ? " · document source" : ""}{Array.isArray(item.page_references) && item.page_references.length ? " · pages " + item.page_references.map(value => String(value)).join(", ") : ""}</p>)}
+                <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>Care Record check: This information is for this person. It does not confirm that every detail is accurate.</p>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "10px 0" }}>
                   <input type="checkbox" checked={incomingReviewConfirmed} onChange={event => setIncomingReviewConfirmed(event.target.checked)} />
                   <span>I have checked this summary. That does not mean a healthcare professional confirmed every detail or that every follow-up is complete.</span>
                 </label>
@@ -1030,15 +1030,15 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             {outbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong>{item.recipients?.map(recipient => recipient.name || "Caregiver").join(", ") || "Care summary"}</strong>
-                <p style={{ margin: "4px 0", fontSize: 12 }}>Status: {readableStatus(item.status)}{item.is_expired ? " · Expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
-                <p style={{ margin: "4px 0 8px", fontSize: 12 }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
-                {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: 11, color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status ? readableStatus(recipient.status) : "We couldn't confirm whether they received it."}</p>)}
+                <p style={{ margin: "4px 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Status: {readableStatus(item.status)}{item.is_expired ? " · Expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
+                <p style={{ margin: "4px 0 8px", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
+                {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status ? readableStatus(recipient.status) : "We couldn't confirm whether they received it."}</p>)}
                 {item.status !== "revoked" && !item.is_expired && <button type="button" style={quietButton} disabled={busy} onClick={() => void revoke(item)}>Remove access</button>}
               </article>
             ))}
           </div>
         )}
-        <p style={{ marginBottom: 0, fontSize: 11, color: "#667267", lineHeight: 1.5 }}><Clock3 size={13} style={{ verticalAlign: "middle", marginRight: 4 }} />Sharing does not mean the recipient has opened the summary. You will see separately when they confirm receipt. Stopping sharing prevents future access, but cannot take back information already seen or saved.</p>
+        <p style={{ marginBottom: 0, fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", lineHeight: 1.5 }}><Clock3 size={13} style={{ verticalAlign: "middle", marginRight: 4 }} />Sharing does not mean the recipient has opened the summary. You will see separately when they confirm receipt. Stopping sharing prevents future access, but cannot take back information already seen or saved.</p>
       </section>
     </div>
   );
