@@ -108,7 +108,7 @@ async function pollDocument(session, evidenceId) {
     }
     await new Promise((resolve) => setTimeout(resolve, 2500));
   }
-  throw new Error(`Live Qwen document analysis timed out. Last response: ${JSON.stringify(last).slice(0, 1800)}`);
+  throw new Error(`Deterministic document test analysis timed out. Last response: ${JSON.stringify(last).slice(0, 1800)}`);
 }
 
 try {
@@ -167,7 +167,7 @@ try {
   assert.equal(analysis.review_required, true, "new model candidates must require caregiver review");
   assert.equal(analysis.written_to_lcr, false, "model output must not write care facts before caregiver acceptance");
   assert.equal(analysis.model_provenance?.provider, "unavailable_or_test_stub", "the saved analysis must identify the real test-only inference stub provider");
-  assert.equal(analysis.model_provenance?.model_tag, process.env.OLLAMA_MODEL ?? "deterministic-test-extractor", "the saved analysis must identify the configured Qwen model");
+  assert.equal(analysis.model_provenance?.model_tag, process.env.OLLAMA_MODEL ?? "deterministic-test-extractor", "the saved analysis must identify the configured test extractor");
   assert.ok(Array.isArray(analysis.observations) && analysis.observations.length > 0,
     "deterministic test extractor inference must produce at least one reviewable source-grounded candidate");
 
