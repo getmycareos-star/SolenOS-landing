@@ -13,7 +13,7 @@ import {
   DURABLE_CARE_KEY_STORAGE,
   ensureClientDurableCareKey,
   ensureClientInteractionSessionId,
-} from "@/lib/care-identity";
+} from "@/lib/care-identity/durable-care-key";
 import {
   ENTER_CARE_QUERY,
   hasEnteredCareRecord,
