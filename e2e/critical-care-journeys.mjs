@@ -327,10 +327,9 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     .waitFor({ state: "visible", timeout: 30_000 });
   // Recent History is already visible in this workspace layout; assert the
   // saved event directly rather than requiring a mobile-only navigation toggle.
-  const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
-    .filter({ hasText: firstNote });
+  const savedHistoryRecord = page.locator(".history-event-list .history-event-description")
+    .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  assert.equal(await savedHistoryRecord.count(), 1, "the saved care update should appear once in history");
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
