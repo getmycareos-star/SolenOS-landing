@@ -15,6 +15,7 @@ const historyPanel = fs.readFileSync(path.join(root, "src/components/mvp-workspa
 const lcr = fs.readFileSync(path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx"), "utf8");
 const timeline = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
 const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
+const caregiverLanguage = fs.readFileSync(path.join(root, "src/lib/caregiver-language.ts"), "utf8");
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -56,6 +57,22 @@ for (const contract of [
 assert(!/\bconfidence\b/i.test(panel), "uncalibrated model confidence must not be displayed in caregiver-facing change intelligence");
 assert(!/changes\.slice\(0,\s*8\)/.test(panel), "change history must not be silently truncated to eight rows");
 assert(!/patterns\.slice\(0,\s*8\)/.test(panel), "pattern history must not be silently truncated to eight rows");
+
+assert(/classification\?: string/.test(historyPanel), "persisted Delta classifications must reach caregiver history");
+assert(/claim_supported === true/.test(historyPanel), "only positively supported claims may be presented as established changes");
+assert(/potential_worsening: "May be getting worse"/.test(historyPanel), "possible worsening must remain qualified");
+assert(/potential_improvement: "May be improving"/.test(historyPanel), "possible improvement must remain qualified");
+assert(/potential_resolution: "May no longer be happening"/.test(historyPanel), "possible resolution must remain qualified");
+assert(/source_reference_status === "partial"/.test(historyPanel), "partial source matching must be disclosed");
+assert(/Review available source details/.test(historyPanel), "review-only findings must expose available source records");
+for (const [term, expected] of [
+  ["potential_worsening", "May be getting worse"],
+  ["potential_improvement", "May be improving"],
+  ["potential_resolution", "May no longer be happening"],
+  ["recurring", "Happening again"],
+] as const) {
+  assert(caregiverLanguage.includes(`${term}: "${expected}"`), `caregiver label for ${term} must preserve uncertainty`);
+}
 
 const initialLoadStart = panel.indexOf("useEffect(() => {");
 const initialLoadEnd = panel.indexOf("  return (", initialLoadStart);
