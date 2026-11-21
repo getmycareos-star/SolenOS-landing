@@ -104,11 +104,23 @@ export default function NaturalLanguageDailyUpdate() {
   useEffect(() => {
     let active = true;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let identityRetryCount = 0;
     const send = sendQueuedCareWrite;
     const sync = async () => {
       const personId = getPersonId();
       const caregiverId = getCaregiverId();
-      if (!personId || !caregiverId) return;
+      if (!personId || !caregiverId) {
+        // The workspace may mount before the bearer session has hydrated.
+        // Retry briefly so queued encrypted writes are not stranded until a
+        // later navigation or another identity event.
+        if (active && identityRetryCount < 20) {
+          identityRetryCount += 1;
+          if (retryTimer) clearTimeout(retryTimer);
+          retryTimer = setTimeout(sync, 250);
+        }
+        return;
+      }
+      identityRetryCount = 0;
       try {
         const summary = await getDurableWriteSummary(personId, caregiverId);
         if (!active) return;
@@ -140,14 +152,18 @@ export default function NaturalLanguageDailyUpdate() {
       }
     };
     void sync();
+    const handleIdentityChange = () => {
+      identityRetryCount = 0;
+      void sync();
+    };
     window.addEventListener("online", sync);
-    window.addEventListener("personIdChanged", sync);
+    window.addEventListener("personIdChanged", handleIdentityChange);
     window.addEventListener("solenos:offline-queue-updated", sync);
     return () => {
       active = false;
       if (retryTimer) clearTimeout(retryTimer);
       window.removeEventListener("online", sync);
-      window.removeEventListener("personIdChanged", sync);
+      window.removeEventListener("personIdChanged", handleIdentityChange);
       window.removeEventListener("solenos:offline-queue-updated", sync);
     };
   }, []);
