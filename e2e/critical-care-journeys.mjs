@@ -743,7 +743,20 @@ await record("01c workspace links, browser back, More menu and account form vali
     { width: 390, height: 844 },
   );
   await page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 20_000 });
+
+  const homeHeading = page.locator(".solenos-chat-main .solenos-workspace-page-heading h1").first();
+  const defaultHeadingSize = await homeHeading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  const displayTrigger = page.getByRole("button", { name: "Display and accessibility settings", exact: true });
+  await displayTrigger.click();
+  await page.getByRole("radio", { name: "Large", exact: true }).check();
+  await page.waitForFunction(() => document.documentElement.style.getPropertyValue("--solenos-text-scale") === "1.25");
+  const largeHeadingSize = await homeHeading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  assert.ok(largeHeadingSize >= defaultHeadingSize * 1.24,
+    `Large text preference must scale caregiver workspace typography: ${JSON.stringify({ defaultHeadingSize, largeHeadingSize })}`);
   await verifyMobile(page);
+  await page.getByRole("radio", { name: "Default", exact: true }).check();
+  await page.waitForFunction(() => document.documentElement.style.getPropertyValue("--solenos-text-scale") === "1");
+  await displayTrigger.click();
 
   const moreTrigger = page.getByRole("button", { name: "More care record actions", exact: true });
   await moreTrigger.click();
