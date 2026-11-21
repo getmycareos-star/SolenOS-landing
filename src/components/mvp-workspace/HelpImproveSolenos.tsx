@@ -124,7 +124,7 @@ export function HelpImproveSolenos({ compact }: Props) {
       <label className="research-feedback-field">
         <span>Anything else? (optional)</span>
         <textarea
-          maxLength={12000}
+          maxLength={10000}
           rows={2}
           value={note}
           onChange={(e) => setNote(e.target.value)}
