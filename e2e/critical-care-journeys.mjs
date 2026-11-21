@@ -281,6 +281,21 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     throw error;
   }
   const capturePayload = await captureResponse.json().catch(() => null);
+  const persistedEventRead = await request(
+    `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    { token: firstVisitSession.access_token },
+  );
+  const persistedEvents = Array.isArray(persistedEventRead.payload) ? persistedEventRead.payload : [];
+  const capturedEvent = persistedEvents.find((event) => event?.id === capturePayload?.care_event_id);
+  assert.equal(persistedEventRead.status, 200, JSON.stringify(persistedEventRead.payload));
+  assert.ok(capturedEvent, "the saved capture event must be retrievable from the authenticated event-history API");
+  assert.equal(capturedEvent.person_id, firstVisitSession.person.id);
+  assert.ok(
+    [capturedEvent.title, capturedEvent.description].some((value) =>
+      typeof value === "string" && value.includes(firstNote)
+    ),
+    "the persisted event must retain the caregiver's original note",
+  );
   assert.equal(capturePayload?.qwen_extraction_status, "queued", "a saved free-text care report must receive a durable extraction job");
   assert.equal(typeof capturePayload?.qwen_analysis_id, "string", "the capture receipt must identify its persisted analysis");
   assert.ok(capturePayload.qwen_analysis_id, "the persisted analysis ID must not be empty");
@@ -325,11 +340,16 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
-  // Recent History is already visible in this workspace layout; assert the
-  // saved event directly rather than requiring a mobile-only navigation toggle.
-  const savedHistoryRecord = page.locator(".history-event-list .history-event-description")
+  // Saved history is grouped under More in the simplified caregiver navigation.
+  // Verify the durable history row there, then return to Today for the rest of this journey.
+  await page.goto("/workspace/more");
+  await page.getByRole("heading", { name: "Recent care history", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
+  const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
+  await page.goto("/workspace");
+  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
