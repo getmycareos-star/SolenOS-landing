@@ -97,17 +97,20 @@ export function UnderstandingFeedbackPrompt({
           raw_input_excerpt: rawInputExcerpt ?? undefined,
           source: "post_response_understanding_prompt",
         });
-        const query = new URLSearchParams({
-          person_id: session.person.id,
-          caregiver_id: session.caregiver.id,
-          category: "human_validation",
-          detail,
-        });
         const response = await fetch(
-          apiUrl(`/api/v1/feedback?${query.toString()}`),
+          apiUrl("/api/v1/feedback"),
           {
             method: "POST",
-            headers: { Authorization: `Bearer ${session.access_token}` },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              person_id: session.person.id,
+              caregiver_id: session.caregiver.id,
+              category: "human_validation",
+              detail,
+            }),
           },
         );
         if (response.status === 403) {
