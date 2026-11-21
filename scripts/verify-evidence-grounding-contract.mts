@@ -184,7 +184,11 @@ for (const field of ["reported_at", "collection_method", "origin_device_ref", "t
 assert(panel.includes("A device was used"), "device provenance must be a privacy-minimizing label, not a raw hardware identifier");
 assert(panel.includes("These links help show whether several items came from the same original"), "source relationships must be explained in caregiver language");
 assert(panel.includes("Check that the saved copy matches the original"), "source integrity must use plain English");
-assert(!panel.includes("SHA-256") && !panel.includes("JSON.stringify"), "technical hashes and raw data snapshots must not be shown in the caregiver UI");
+const evidenceReviewRender = panel.slice(panel.indexOf("return <section"));
+assert(!evidenceReviewRender.includes("SHA-256") && !evidenceReviewRender.includes("JSON.stringify") &&
+  !evidenceReviewRender.includes("source_text_sha256"), "technical hashes and raw data snapshots must not be rendered in the caregiver UI");
+assert(panel.includes('crypto.subtle.digest("SHA-256"') && panel.includes("fingerprintIsHashed"),
+  "ambiguous retry identity must be persisted only as a one-way fingerprint");
 assert(!panel.includes("source_text_sha256 ||"), "internal source fingerprints must not be displayed to caregivers");
 console.log("PASS: LCR evidence review exposes report time, collection method, optional device label, and transfer provenance.");
 
