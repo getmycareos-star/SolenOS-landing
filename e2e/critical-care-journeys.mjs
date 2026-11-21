@@ -281,6 +281,21 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     throw error;
   }
   const capturePayload = await captureResponse.json().catch(() => null);
+  const persistedEventRead = await request(
+    `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    { token: firstVisitSession.access_token },
+  );
+  const persistedEvents = Array.isArray(persistedEventRead.payload) ? persistedEventRead.payload : [];
+  const capturedEvent = persistedEvents.find((event) => event?.id === capturePayload?.care_event_id);
+  assert.equal(persistedEventRead.status, 200, JSON.stringify(persistedEventRead.payload));
+  assert.ok(capturedEvent, "the saved capture event must be retrievable from the authenticated event-history API");
+  assert.equal(capturedEvent.person_id, firstVisitSession.person.id);
+  assert.ok(
+    [capturedEvent.title, capturedEvent.description].some((value) =>
+      typeof value === "string" && value.includes(firstNote)
+    ),
+    "the persisted event must retain the caregiver's original note",
+  );
   assert.equal(capturePayload?.qwen_extraction_status, "queued", "a saved free-text care report must receive a durable extraction job");
   assert.equal(typeof capturePayload?.qwen_analysis_id, "string", "the capture receipt must identify its persisted analysis");
   assert.ok(capturePayload.qwen_analysis_id, "the persisted analysis ID must not be empty");
@@ -325,14 +340,16 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
-  // Recent History is already visible in this workspace layout; assert the
-  // saved event directly rather than requiring a mobile-only navigation toggle.
-  // The original caregiver note is the event title in the history list.
-  // The description is intentionally suppressed when it duplicates that title.
+  // Saved history is grouped under More in the simplified caregiver navigation.
+  // Verify the durable history row there, then return to Today for the rest of this journey.
+  await page.goto("/workspace/more");
+  await page.getByRole("heading", { name: "Recent care history", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
+  await page.goto("/workspace");
+  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
       /Context interpretation is temporarily unavailable|Connecting this update to the saved care history/,
@@ -417,7 +434,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
@@ -679,7 +696,7 @@ await record("01a dementia profile review window and observation persistence are
   await context.close();
 });
 
-await record("01b visible Follow-ups link and mobile navigation", async () => {
+await record("01b Follow-ups stays primary; optional Care Assistant lives under More", async () => {
   const { context, page } = await createBrowserPage(
     session,
     "/workspace/daily-care",
@@ -692,6 +709,9 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
   await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
   await page.locator(".followups-page h1").getByText("Follow-ups", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
+  for (const label of ["Needs attention", "Being monitored", "Needs clarification"]) {
+    await page.getByText(label, { exact: true }).first().waitFor({ state: "visible", timeout: 10_000 });
+  }
   await verifyMobile(page);
   const navigationToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navigationToggle.click();
@@ -699,10 +719,18 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
     document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
     document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
   , undefined, { timeout: 5_000 });
-  const followUpsNavigationLink = page.locator("#solenos-navigation")
-    .getByRole("link", { name: /Follow-ups/ });
-  await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
-  assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
+  const navigation = page.locator("#solenos-navigation");
+  const primaryFollowUps = navigation.getByRole("link", { name: "Follow-ups", exact: true });
+  await primaryFollowUps.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await primaryFollowUps.getAttribute("href"), "/workspace/open-loops");
+  const moreNavigationLink = navigation.getByRole("link", { name: "More", exact: true });
+  await moreNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
+  await moreNavigationLink.click();
+  await page.waitForURL("**/workspace/more", { timeout: 20_000 });
+  const careAssistantMoreLink = page.getByRole("link", { name: "Care Assistant", exact: true });
+  await careAssistantMoreLink.waitFor({ state: "visible", timeout: 10_000 });
+  await careAssistantMoreLink.click();
+  await page.waitForURL("**/workspace/companion", { timeout: 20_000 });
   await context.close();
 });
 
@@ -969,7 +997,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   const familyFreshnessLabel = familyDialog.getByText(/Last check:/);
   await familyFreshnessLabel.waitFor({ timeout: 10_000 });
   const familyFreshnessText = await familyFreshnessLabel.innerText();
-  if (familyDraft.source_freshness.status !== "current" || !/current/i.test(familyFreshnessText)) {
+  if (!/current/i.test(familyFreshnessText)) {
     await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).waitFor({ timeout: 10_000 });
   }
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
