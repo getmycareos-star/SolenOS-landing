@@ -43,7 +43,7 @@ export const WORKSPACE_NAVIGATION = {
       icon: CalendarDays,
     },
   ],
-  support: [],
+  support: [] as WorkspaceNavigationItem[],
   settings: [
     {
       id: "more",
