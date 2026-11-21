@@ -1424,6 +1424,12 @@ export function LCRCurrentUnderstanding() {
         throw new Error("The backend did not confirm the expected action update. Refresh before retrying.");
       }
       setRegisteredActions((current) => current.map((item) => item.id === updated.id ? updated : item));
+      if (status === "completed") {
+        // Completion writes a canonical LCR outcome; refresh the shared
+        // projection so the caregiver sees the persisted outcome, not only
+        // the updated action status.
+        await load(true);
+      }
     } catch (cause) {
       setActionTransitionErrors((current) => ({
         ...current,
