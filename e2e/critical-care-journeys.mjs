@@ -2443,8 +2443,8 @@ await record("09A appointment outcome requires caregiver review before LCR retri
   assert.equal(await appointmentSupportToggle.getAttribute("aria-expanded"), "true", "appointment support must be expanded before reviewing the saved outcome");
   await appointmentPage.page.getByRole("button", { name: "After", exact: true }).click();
   await appointmentPage.page.getByRole("heading", { name: "Information recorded after the appointment", exact: true }).waitFor({ timeout: 20_000 });
-  await appointmentPage.page.getByText(caregiverReport, { exact: true }).waitFor({ timeout: 15_000 });
-  await appointmentPage.page.getByRole("button", { name: "Review care information", exact: true }).click();
+  const afterAppointmentNote = appointmentPage.page.getByLabel("Add anything you remember, if you want to");
+  assert.equal(await afterAppointmentNote.inputValue(), caregiverReport, "the saved caregiver report must be restored into the after-appointment capture field");
 
   const proposal = appointmentPage.page.locator(".guided-proposal").filter({ hasText: caregiverReport }).first();
   await proposal.waitFor({ state: "visible", timeout: 20_000 });
