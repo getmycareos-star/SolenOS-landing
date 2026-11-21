@@ -41,7 +41,7 @@ assert.match(appShell, /WORKSPACE_NAVIGATION\.settings\.map/);
 assert.doesNotMatch(appShell, /const NAVIGATION\s*=|NAVIGATION\.map/);
 assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
 assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct route to the Care Record");
-assert.match(appShell, /href === "\/workspace"\s*\? pathname === href/, "the Care Record active state must not match every nested route");
+assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Today is active only on the workspace home route");
 
 for (const label of ["Today", "Share an update", "Care Assistant", "Appointments", "More", "Care history", "Follow-ups", "Documents", "Reminders", "Share care information", "Settings"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
