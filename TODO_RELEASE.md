@@ -158,7 +158,7 @@
 - [x] Migrations safe; no DB reset / storage reset / broken routes — backend migrations additive; frontend routes compiled (verified build)
 
 ### G. User data ownership & recovery
-- [ ] Care-record recovery after device loss is not established by this checklist. Verify the actual care-record persistence and recovery contract independently; feedback storage is not care-record backup.
+- [ ] Fresh-browser account recovery is implemented in `e2e/anonymous-account-continuity.mjs`: it verifies the same person/caregiver identity, recovery-code redemption, revocation of prior device tokens, 20 original care events, evidence wording and observation/correction lineage against PostgreSQL-backed FastAPI. Current-main browser E2E must pass before treating device-loss recovery as verified; anonymous users without an account still cannot recover a lost device identity.
 - [ ] End-to-end ownership proof for every persistent category — server-issued bearer sessions and backend permission checks are authoritative; client care keys/session IDs are not credentials. Verify cross-caregiver and cross-person isolation for each workflow, not only identity bootstrap.
 - [ ] Account sign-in enables the same account to retrieve its server-held Care Record on another device. Verify a separate browser/device login, full data readback, logout/revocation and cross-caregiver denial before claiming device-loss recovery.
 
