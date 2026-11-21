@@ -854,3 +854,11 @@
   color: var(--theme-warning-fg) !important;
   -webkit-text-fill-color: var(--theme-warning-fg) !important;
 }
+
+/* LCR status pills inherit a light background from mobile-app.css. */
+:root[data-solenos-theme="dark"] .lcr-situation-assessment .lcr-entry-status {
+  background: var(--theme-subtle-bg) !important;
+  color: var(--theme-panel-muted) !important;
+  border: 1px solid var(--theme-panel-border) !important;
+  -webkit-text-fill-color: var(--theme-panel-muted) !important;
+}
