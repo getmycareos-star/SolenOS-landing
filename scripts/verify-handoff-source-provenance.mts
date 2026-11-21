@@ -120,8 +120,12 @@ assert.match(sharingComponent, /What will be shared:/,
   "final approval must identify selected information scope");
 assert.match(sharingComponent, /Link expires:/,
   "final approval must restate the expiry");
-assert.match(sharingComponent, /activeSnapshot\.purpose\s*&&\s*\(?\s*<p[^>]*>\s*Purpose:\s*\{handoffPurposeLabel/,
-  "incoming handoff must show a caregiver-readable purpose without depending on a fixed font-size style");
+assert.match(sharingComponent, /activeSnapshot\.purpose\s*&&\s*<p[^>]*>\s*Purpose:\s*\{handoffPurposeLabel/,
+  "incoming handoff must show a caregiver-readable purpose");
+assert.match(sharingComponent, /fontSize:\s*"calc\(12px \* var\(--solenos-text-scale, 1\)\)"/,
+  "incoming handoff purpose text must respect the caregiver display scale");
+assert.doesNotMatch(sharingComponent, /fontSize:\s*(?:12|["']12px["'])/,
+  "incoming handoff purpose text must not use a fixed font size");
 assert.match(sharingComponent, /item\.scope\.map\(readableScope\)/,
   "incoming and outgoing scope must use caregiver-readable labels");
 assert.doesNotMatch(sharingComponent, /Integrity hash:/,
