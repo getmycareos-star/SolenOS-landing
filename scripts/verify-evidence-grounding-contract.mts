@@ -47,6 +47,10 @@ console.log("PASS: evidence builder emits no synthetic event IDs, confidence, so
 const panel = fs.readFileSync(path.join(process.cwd(), "src/components/EvidenceReviewPanel.tsx"), "utf8");
 assert(panel.includes("/integrity"), "evidence review UI must call the persisted source-integrity endpoint");
 assert(panel.includes("source_text_integrity_status"), "evidence review UI must display the server-computed integrity status");
+assert(panel.includes("item.occurred_at ? new Date(item.occurred_at)"), "extracted details must distinguish event time from report and save time");
+assert(panel.includes("item.reported_at ? new Date(item.reported_at)"), "extracted details must preserve and display when information was reported");
+assert(panel.includes("item.recorded_at ? new Date(item.recorded_at)"), "extracted details must preserve and display when information was saved");
+assert(panel.includes("Care detail: {caregiverSafeAssistantText(item.normalized_value)}"), "caregiver-facing detail must show the source-grounded normalized care detail alongside the original wording");
 assert(panel.includes("request_key: requestKey"), "evidence review writes must carry a stable retry key");
 assert(panel.includes("pendingReviewRequestRef"), "an ambiguous review write must retain its retry identity");
 assert(panel.includes("history.find((item: Review) => item.id === saved.id)"), "a review is not reported saved until an independent history read returns it");
