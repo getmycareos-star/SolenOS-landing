@@ -25,15 +25,10 @@ Authoritative table docs: [`../03-database/`](../03-database/). Contracts: [`../
 
 Snapshot STATE/BELIEF/EXPLANATION per user/care-system; recompute DERIVED; FI assets persist beside graph — requires ADR.
 
-## Event-sourced storage (IMPLEMENTED — MVP)
+## Legacy event-store prototype — not production persistence
 
-Four-layer model in `src/lib/event-sourced-storage` (migrations `063`–`067` accompany runtime arbitration):
+The `src/lib/event-sourced-storage` module is an in-process Map implementation used by legacy runtime-arbitration code and verification scripts. Its event, projection, session and derived stores are cleared on process restart and have no PostgreSQL repository or durable API integration. It is **not** the authoritative care record and must not be described as a production event store.
 
-| Layer | Role | Rule |
-|-------|------|------|
-| **Event Store** | Append-only CareEvents | Immutable; never update/delete except legal override |
-| **Projection Store** | CareContext computed view | Rebuild from Event Store only; not editable truth |
-| **Session Store** | Last visit / engagement | Enables Return Value Loop + first-60s detection |
-| **Derived tables** | Analytics / patterns | Disposable; always rebuildable |
+The production caregiver application reads and writes care information through authenticated backend APIs. PostgreSQL tables such as `care_events`, `evidence`, `care_assertions`, their revision/provenance records, and the related workflow tables are authoritative. Derived views must be rebuilt from those persisted records. A module-level Map, local JSON file, or browser cache is never evidence of a successful care-record save.
 
-Invariant: all CareContext state must be reconstructable from the Event Store alone. Engines emit events/signals — they do not mutate projections directly.
+Any future replacement of the prototype must use the existing backend models and Alembic chain, preserve caregiver/person authorization, and prove PostgreSQL create/read/update/history behavior across a new session and process restart before it can be called implemented.
