@@ -58,11 +58,23 @@ assert.doesNotMatch(companion, /The safety engine flagged this exchange/);
 assert.match(companion, /A few words are enough/);
 assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /postJSON\('\/conversation\/message'/);
-assert.doesNotMatch(companion, /pendingCareUpdates|reviewCareUpdate|createCareReport|companion\/care-updates|care_update_candidates|Save as a care note|Add to Care Record/, "Companion must remain conversation-only and must not expose unsupported LCR write controls");
-assert.match(companion, /Conversation messages stay here\./, "Companion must direct care capture to Daily Care");
-assert.match(companion, /nothing in this conversation is added to your Care Record/, "Companion must clearly disclose its conversation-only boundary");
-assert.match(companion, /persistence: response\.persistence/, "conversation persistence status must come from the backend response");
-assert.match(companion, /written_to_lcr: response\.written_to_lcr/, "Companion must preserve the backend's explicit no-write status");
+assert.match(companion, /pendingCareUpdates/, "Companion must load caregiver-created, person-scoped review proposals");
+assert.match(companion, /getJSON\('\/companion\/care-updates'/, "Companion must use the authenticated review queue");
+assert.match(companion, /reviewCareUpdate/, "caregivers must explicitly accept or decline a suggested care report");
+assert.match(companion, /postJSON\('\/companion\/care-updates\//, "review decisions must use the persisted backend review endpoint");
+assert.match(companion, /response\?\.status !== expectedStatus/, "a review must not be reported successful without the server-confirmed terminal status");
+assert.match(companion, /response\?\.decision !== decision/, "the returned decision must match the caregiver's requested decision");
+assert.match(companion, /window\.dispatchEvent\(new Event\('careRecordUpdated'\)\)/, "an accepted Companion report must refresh canonical LCR consumers");
+assert.match(companion, /We couldn’t confirm whether this review was saved/, "ambiguous network outcomes must not be misreported as failed or successful");
+assert.match(companion, /source_message_id\?: string \| null/, "the Companion must retain the original persisted user-message ID");
+assert.match(companion, /from-message\//, "caregivers must be able to submit an exact original message for review");
+assert.match(companion, /confirm_care_report: true/, "creating a care report must require explicit caregiver confirmation");
+assert.match(companion, /not a question, possibility or guess/, "the confirmation must distinguish reports from questions and hypotheticals");
+assert.match(companion, /Save as a care note/, "the report action must be explicit and separate from ordinary chat");
+assert.match(companion, /Add to Care Record/, "adding a Companion report must require an explicit caregiver action");
+assert.match(companion, /Don’t add/, "caregivers must be able to decline a suggested update");
+assert.match(companion, /A healthcare professional has not confirmed it/, "accepted Companion reports must remain distinct from clinical verification");
+assert.match(companion, /Nothing is added to your Care Record unless you choose to save a message as a care note and approve it\./, "Companion must accurately explain the explicit approval boundary");
 assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
   "Delta comparison must not support hidden automatic reconciliation");
 assert.match(deltaPanel, /onSubmit=\{\(event\) => \{ event\.preventDefault\(\); void reconcile\(/,
