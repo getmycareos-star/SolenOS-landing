@@ -58,6 +58,7 @@ type SourceIntegrity = {
 }
 type Observation = {
   id: string
+  person_id: string
   evidence_id: string
   supersedes_observation_id?: string | null
   correction_rationale?: string | null
@@ -66,7 +67,12 @@ type Observation = {
   subject_label: string
   attribute: string
   value_text?: string | null
+  normalized_value?: string | null
   units?: string | null
+  context?: string | null
+  occurred_at?: string | null
+  observed_at?: string | null
+  reported_at?: string | null
   source_passage: string
   source_span_start: number
   source_span_end: number
@@ -909,15 +915,20 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
             <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(item.source_passage) || 'Original wording is not available.'}</blockquote>
+            {item.normalized_value && <div>Care detail: {caregiverSafeAssistantText(item.normalized_value)}</div>}
             {item.observation_method !== 'Daily Care form' && (
               <div>What was recorded: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
             )}
+            {item.context && <p>{caregiverSafeAssistantText(item.context)}</p>}
             {item.supersedes_observation_id && <div>Corrects an earlier saved detail: {item.correction_rationale || 'No correction rationale recorded'}</div>}
             {item.negated !== null && item.negated !== undefined && <div>Was this reported as not happening? {item.negated ? 'yes' : 'no'}</div>}
             {item.hedge_marker && <div>Words that show the report may be uncertain: {item.hedge_marker}</div>}
             {item.ambiguity_note && <div>What still needs clarification: {item.ambiguity_note}</div>}
             {item.observer_label && <div>Who shared this information: {item.observer_label}{item.observation_method ? ` · ${reviewStatusLabel(item.observation_method)}` : ''}</div>}
-            <small>Added to the record {new Date(item.recorded_at).toLocaleString()}</small>
+            <small>Happened: {item.occurred_at ? new Date(item.occurred_at).toLocaleString() : 'Not recorded'}</small>
+            {item.observed_at && <small>Observed: {new Date(item.observed_at).toLocaleString()}</small>}
+            <small>Reported: {item.reported_at ? new Date(item.reported_at).toLocaleString() : 'Not recorded'}</small>
+            <small>Saved: {item.recorded_at ? new Date(item.recorded_at).toLocaleString() : 'Not recorded'}</small>
           </article>)}
         </details>
 
