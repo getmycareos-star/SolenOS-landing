@@ -32,7 +32,7 @@ export const VOICE_CONVERSATION_MVP = {
   status: "FUTURE" as const,
   speechInput: "browser-web-speech" as const,
   speechOutput: "browser-speech-synthesis" as const,
-  reasoning: "gemini via POST /api/analyze",
+  reasoning: "private Qwen through authenticated backend care workflows",
   moduleRoot: "src/lib/voice",
   futureStt: "src/lib/voice/speech-to-text/future",
   futureTts: "src/lib/voice/speech-output/future",
