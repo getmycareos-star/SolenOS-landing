@@ -32,6 +32,9 @@ assert.doesNotMatch(capture, /HelpImproveSolenos|QwenAssistPanel/, "capture work
 assert.match(capture, /Start with one thing you want to remember/);
 assert.match(capture, /Add a new detail to the care record/, "first-time and returning caregivers retain the shared care-record capture workflow");
 assert.match(dailyCare, /StructuredDailyCapture/, "Daily Care retains its structured capture workflow");
+assert.match(dailyCare, /useState<CaptureMode \| null>\("something"\)/, "Share an update opens directly into natural-language capture");
+assert.match(dailyCare, /<NaturalLanguageDailyUpdate \/>/, "the main update entry uses the existing natural-language capture");
+assert.match(dailyCare, /href="\/workspace\/documents"[^>]*>Add a document<\/Link>/, "documents remain directly reachable from the main update flow");
 assert.match(durableWriteSender, /response\?\.success !== true \|\| response\.id === undefined \|\| response\.id === null/, "structured capture cannot show success unless the shared write sender receives a persisted server event receipt");
 assert.match(durableWriteSender, /response\?\.ok !== true \|\| typeof response\.care_event_id !== "string"/, "legacy situation writes require an explicit server event receipt");
 assert.match(durableWriteSender, /The server did not confirm that this care update was saved\./, "uncertain save outcomes remain explicit instead of displaying a false success");
