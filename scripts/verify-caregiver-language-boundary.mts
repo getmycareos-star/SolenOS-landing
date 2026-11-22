@@ -122,6 +122,12 @@ assert.match(dailyCare, /item\.corrected_text\.trim\(\)/, "corrected caregiver r
 assert.doesNotMatch(dailyCare, /caregiverSafeAssistantText\(item\.(original_text|corrected_text|reason)\)/, "assistant-output filtering must not be applied to caregiver source text");
 assert.doesNotMatch(dailyCare, /The latest information currently available in the care record|Processing has not started yet|Document understanding could not be completed|Document processing was stopped|Care Timeline|change and pattern assessments/);
 assert.match(dailyCare, /SolenOS has finished reading it/);
+assert.match(photoCapture, /We could not confirm which Care Record to use/);
+assert.match(photoCapture, /saved securely on this device/);
+assert.match(photoCapture, /waiting to be added to your Care Record/);
+assert.match(photoCapture, /Photograph saved with your care information/);
+assert.doesNotMatch(photoCapture, /care session could not be verified|care-record evidence|sync with the care record|encrypted and saved on this device/i,
+  "photo capture must explain save and connection states in caregiver language");
 assert.match(dailyCare, /This update is being checked\. You can keep using SolenOS\./, "technical processing messages must have a caregiver-readable fallback");
 assert.match(dailyCare, /Your saved note is still available\./, "processing failures must preserve the confirmed saved-note state");
 assert.match(dailyCare, /Open care history/);
