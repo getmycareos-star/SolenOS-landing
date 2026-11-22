@@ -17,7 +17,7 @@ assert(source.includes("decision_version"), "each displayed decision must retain
 assert(source.includes("historyErrors") && source.includes("A missing history does not mean no earlier decision was made"), "failed history retrieval must not be presented as an empty history");
 assert(source.includes("Review history") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
 assert(source.includes("corrected_pending_approval"), "corrections must remain pending until explicitly accepted");
-assert(source.includes("From the original document") && source.includes("candidate.source_quote"), "each candidate must show its exact source quotation in plain language");
+assert(source.includes("Text SolenOS read from the document") && source.includes("candidate.source_quote"), "each candidate must show its exact source quotation in plain language");
 assert(
   source.includes("caregiverSafeGeneratedText(candidate.subject)") &&
   source.includes("caregiverSafeGeneratedText(candidate.observation)"),
@@ -27,12 +27,12 @@ assert(
   source.includes("candidateNeedsRewrite") &&
   source.includes("disabled={busy !== null || candidateNeedsRewrite}") &&
   source.includes("disabled={busy !== null || !hasCorrectionSubject}") &&
-  source.includes("Check the original document and add a short label in plain words. The original wording will stay unchanged."),
+  source.includes("Check the original document and add a short label in plain words. The text SolenOS read will stay unchanged."),
   "an unreadable generated suggestion must be corrected using the preserved original wording before it can be accepted",
 );
 assert(
   source.includes("corrected_observation: sourceQuote") &&
-  source.includes("Exact wording from the original document") &&
+  source.includes("Text SolenOS read from the document") &&
   source.includes("readOnly") &&
   source.includes("hasCorrectionSubject") &&
   !source.includes("sourceQuote.toLowerCase().includes(correctedSubject.trim().toLowerCase())"),
