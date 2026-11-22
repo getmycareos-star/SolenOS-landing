@@ -1,5 +1,5 @@
 /**
- * Phase 9 — Reliability and Fallback Behavior verification.
+ * Phase 9 — Deterministic-only fallback and Qwen failure-boundary verification.
  *
  * Tests:
  * 1. Understanding failures do not crash the pipeline.
