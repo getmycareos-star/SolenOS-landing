@@ -482,6 +482,7 @@ assert.doesNotMatch(timeline, /Care Timeline|Follow-ups & open items/);
 assert.match(handoff, /Check what will be shared/);
 assert.doesNotMatch(handoff, /Saved information item:|Caregiver-added note \(not independently verified\)|Sharing reviewed handoff/);
 assert.match(sourceReview, /How often should this information be checked/);
+assert.match(sourceReview, /caregiverSafeGeneratedText\(item\.rationale\)/, "generated freshness-review explanations must use caregiver language");
 assert.doesNotMatch(sourceReview, /Choose a review rule set by the caregiver/);
 assert.match(sourceReview, /How sure are you about this information\?/);
 assert.doesNotMatch(sourceReview, /Information quality|How reliable this information is/);
@@ -679,6 +680,7 @@ assert.doesNotMatch(privacyIndicator, /Access information unavailable/);
 assert.doesNotMatch(lcr, /Checking linked evidence|View supporting information|What is known:/,
   "Care Record history must describe related notes and documents in everyday language");
 assert.match(lcr, /Checking related notes and documents/);
+assert.match(lcr, /caregiverSafeGeneratedText\(item\.interpretation_limit\)/, "generated Care Record limits must use caregiver language");
 assert.match(lcr, /See related notes and documents/);
 assert.match(lcr, /This view includes the care information saved here so far/);
 
