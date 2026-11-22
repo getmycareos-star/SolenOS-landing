@@ -141,7 +141,7 @@ const reviewStatusLabel = (value: string) => ({
   same_source: 'Same source',
   duplicate: 'Possible duplicate',
   derived_from: 'Based on another note',
-  related_to: 'Related information',
+  related_to: 'Related notes or documents',
   independent_source: 'Separate source',
   caregiver_form: 'Entered in Daily Care',
   caregiver_check_in: 'Daily Care check-in',
@@ -427,7 +427,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       if (freshnessPolicyId && !result.items.some(item => item.id === freshnessPolicyId)) setFreshnessPolicyId('')
     } catch {
       setFreshnessPolicies([])
-      setFreshnessPolicyError('Review rules for how recent this information should be could not be loaded. Try again when connected.')
+      setFreshnessPolicyError('We couldn’t load the settings for how often this information should be checked. Check your connection and try again.')
     } finally {
       setFreshnessPolicyLoading(false)
     }
@@ -457,7 +457,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setFreshnessAssessments(history.items)
       setFreshnessHistoryError('')
     } catch (cause) {
-      setFreshnessPolicyError('The review could not be confirmed as saved.')
+      setFreshnessPolicyError('We couldn’t confirm that this review was saved.')
     } finally {
       setFreshnessPolicySaving(false)
     }
@@ -556,7 +556,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setRecordHistory(result as Record<string, unknown>)
     } catch {
-      setRecordHistoryError('No verified saved copy of the full care record is available for that date. This does not mean the record was empty.')
+      setRecordHistoryError('No saved copy of your full Care Record is available for that date. This does not mean the record was empty.')
     } finally {
       setRecordHistoryLoading(false)
     }
@@ -622,7 +622,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
 
   const reconstructHistoricalState = useCallback(async () => {
     if (!selectedId || !personId || !historyAsOf) {
-      setHistoryReconstructionError('Choose a date and time before viewing the earlier source information.')
+      setHistoryReconstructionError('Choose a date and time before viewing the earlier care information.')
       return
     }
     setHistoryReconstructionLoading(true)
@@ -665,7 +665,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setRelationships(result as SourceRelationship[])
     } catch {
       setRelationships([])
-      setRelationshipsError('Links to other sources could not be loaded. No list is assumed; try again when connected.')
+      setRelationshipsError('We couldn’t load related notes and documents. Check your connection and try again.')
     } finally {
       setRelationshipsLoading(false)
     }
@@ -690,7 +690,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       setObservations(result as Observation[])
     } catch {
       setObservations([])
-      setObservationsError('Recorded details could not be loaded. No observation list is assumed; retry when connected.')
+      setObservationsError('We couldn’t load the saved care details. Check your connection and try again.')
     } finally {
       setObservationsLoading(false)
     }
@@ -822,7 +822,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           : 'Review saved and retrieved from your care record. The original source is unchanged.',
       )
     } catch {
-      setError('Your review could not be verified in the saved history. Retry this same review; SolenOS will recognize an exact retry and will not create a duplicate.')
+      setError('We couldn’t confirm that your review was saved. Check earlier reviews before trying again.')
     } finally {
       setSaving(false)
     }
@@ -853,7 +853,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>No earlier reviews were found for this information.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>
         <strong>{reviewStatusLabel(item.freshness_status)}</strong>
-        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (reviewStatusLabel(item.source_time_kind || 'not_recorded')) + ')' : 'unknown'} · Time since it was added {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
+        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · Date on the original note or document {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (reviewStatusLabel(item.source_time_kind || 'not_recorded')) + ')' : 'unknown'} · Days since it was added {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
         <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
       </article>)}
     </details>
@@ -870,11 +870,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>Shared by</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.reported_by_label || (selected.reported_by_caregiver_id || selected.uploaded_by_caregiver_id ? 'caregiver' : 'not_recorded'))}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Added to the care record</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>How it was shared</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || selected.evidence_kind || 'not_recorded')}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>How it reached your Care Record</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || selected.evidence_kind || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>What we know about this information</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
         </dl>
         <details style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", marginBottom: 12 }}>
-          <summary>More about this note or document</summary>
+          <summary>More details about this note or document</summary>
           <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, margin: '8px 0 12px' }}>
             <div><dt style={{ color: 'var(--text-secondary)' }}>Originally written by</dt><dd style={{ margin: 0 }}>{caregiverSafeAssistantText(selected.original_author) || 'Not recorded'}</dd></div>
             <div><dt style={{ color: 'var(--text-secondary)' }}>Entered by</dt><dd style={{ margin: 0 }}>{selected.collected_by_caregiver_id ? 'Caregiver' : 'Not recorded'}</dd></div>
@@ -884,7 +884,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <div><dt style={{ color: 'var(--text-secondary)' }}>Device</dt><dd style={{ margin: 0 }}>{selected.origin_device_ref ? 'A device was used' : 'Not recorded'}</dd></div>
             <div><dt style={{ color: 'var(--text-secondary)' }}>Where it came from</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.transfer_source || 'not_recorded')}</dd></div>
             <div><dt style={{ color: 'var(--text-secondary)' }}>Saved on</dt><dd style={{ margin: 0 }}>{selected.ingested_at ? new Date(selected.ingested_at).toLocaleString() : 'Not recorded'}</dd></div>
-            <div><dt style={{ color: 'var(--text-secondary)' }}>Related information</dt><dd style={{ margin: 0 }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
+            <div><dt style={{ color: 'var(--text-secondary)' }}>Related notes or documents</dt><dd style={{ margin: 0 }}>{selected.parent_evidence_id ? 'Another note or document is linked' : 'None recorded'}</dd></div>
           </dl>
         </details>
         <details style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", marginBottom: 12 }}>
@@ -1008,10 +1008,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             {sourceIntegrity.original_binary_status === 'mismatch' && (
               <p role="alert">The original file differs from the copy first saved.</p>
             )}
-            <p><strong>Other records with exactly the same wording:</strong> {sourceIntegrity.exact_source_text_duplicate_candidate_ids.length
+            <p><strong>Other notes with exactly the same wording:</strong> {sourceIntegrity.exact_source_text_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_source_text_duplicate_candidate_ids.length + ' possible match(es)'
               : 'No exact wording match was found. Similar wording has not been checked.'}</p>
-            <p><strong>Other records with the same original file:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
+            <p><strong>Other copies of this file:</strong> {sourceIntegrity.exact_binary_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_binary_duplicate_candidate_ids.length + ' possible match(es)'
               : 'No identical original file was found.'}</p>
             <p><strong>Check for similar wording:</strong> {sourceIntegrity.near_duplicate_comparison_status === 'complete' ? 'Finished' : sourceIntegrity.near_duplicate_comparison_status === 'not_run' ? 'Not checked' : 'Could not be completed'}</p>
