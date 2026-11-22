@@ -1440,12 +1440,21 @@ await record("03b source-backed caregiver question routing", async () => {
 // 4. Document upload: original bytes -> server extraction -> persisted extraction read.
 let documentId;
 await record("04 scanned document upload, original bytes, page tracking, idempotent retry and extraction", async () => {
-  const documentText = "Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today.";
+  const documentLines = [
+    "Caregiver observation: Mary ate half of her breakfast today.",
+    "Caregiver observation: Mary woke twice overnight.",
+    "Caregiver observation: Mary walked to the kitchen using her walking frame.",
+    "Discharge instruction: Follow-up appointment requested in two weeks.",
+    "The caregiver reports that Mary had no fever today.",
+  ];
   const scanPage = await browser.newPage({
     viewport: { width: 1200, height: 1600 },
     deviceScaleFactor: 2,
   });
-  await scanPage.setContent(`<!doctype html><html><body style="margin:0;background:#eee;font-family:Arial,sans-serif;color:#111"><article style="box-sizing:border-box;width:960px;min-height:1350px;margin:40px auto;padding:76px;background:#fff"><h1 style="font-size:42px;margin:0 0 42px">Discharge Summary</h1><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Caregiver observation: Mary ate half of her breakfast today.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Caregiver observation: Mary woke twice overnight.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Caregiver observation: Mary walked to the kitchen using her walking frame.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Discharge instruction: Follow-up appointment requested in two weeks.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">The caregiver reports that Mary had no fever today.</p></article></body></html>`);
+  const scanParagraphs = documentLines.map((line) =>
+    `<p style="font-size:30px;line-height:1.55;margin:0 0 30px">${line}</p>`
+  ).join("");
+  await scanPage.setContent(`<!doctype html><html><body style="margin:0;background:#eee;font-family:Arial,sans-serif;color:#111"><article style="box-sizing:border-box;width:960px;min-height:1350px;margin:40px auto;padding:76px;background:#fff"><h1 style="font-size:42px;margin:0 0 42px">Discharge Summary</h1>${scanParagraphs}</article></body></html>`);
   const documentBytes = await scanPage.locator("article").screenshot({ type: "png" });
   await scanPage.close();
 
