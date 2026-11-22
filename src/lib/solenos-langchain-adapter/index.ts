@@ -2,7 +2,6 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { buildSolenOSPrompt } from "./prompt";
 import {
   createSolenOSChatModel,
-  createGeminiChatModel,
   createMvpChatModel,
   resolveSolenOSLLMProvider,
   resolveMvpLLMProvider,
@@ -13,6 +12,8 @@ import { DEFAULT_SOLENOS_LANGUAGE, makeLanguageAwarePrompt } from "../multilingu
 import type { SolenOSLanguage } from "../multilingual-execution/types";
 
 export { extractRawLLMText } from "./raw-text";
+// Legacy analysis pipeline export. The production caregiver entry does not use
+// this disabled ops-only route; it is being retired separately.
 export { invokeGeminiExecution } from "./gemini";
 export type { GeminiExecutionParams } from "./gemini";
 
@@ -29,27 +30,17 @@ async function invokeSolenOSPrompt(
   return extractRawLLMText(response.content);
 }
 
-/** @deprecated Use invokeGeminiExecution with apiKey from route.ts */
+/** Qwen-only single-pass invocation. */
 export async function runSolenOSMvpLLM(
   input: string,
   extraUserContent?: string,
 ): Promise<string> {
   let userPrompt = buildSolenOSPrompt(input);
-  if (extraUserContent) {
-    userPrompt += `\n\n${extraUserContent}`;
-  }
+  if (extraUserContent) userPrompt += `\n\n${extraUserContent}`;
   return invokeSolenOSPrompt(userPrompt);
 }
 
-/** @deprecated */
-export async function runSolenOSGeminiLLM(
-  input: string,
-  extraUserContent?: string,
-): Promise<string> {
-  return runSolenOSMvpLLM(input, extraUserContent);
-}
-
-/** @deprecated Non-MVP helper */
+/** @deprecated Compatibility alias; still uses Qwen only. */
 export async function runSolenOSLLM(
   input: string,
   context?: any,
@@ -73,7 +64,6 @@ export {
 } from "./system-prompt";
 export {
   createSolenOSChatModel,
-  createGeminiChatModel,
   createOllamaChatModel,
   createMvpChatModel,
   resolveSolenOSLLMProvider,
