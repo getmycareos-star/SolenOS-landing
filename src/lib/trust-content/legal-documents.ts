@@ -14,8 +14,8 @@ export const PRIVACY_POLICY = {
     {
       title: "1. What SolenOS is — and is not",
       body: [
-        "SolenOS helps caregivers organize care notes, documents, observations, decisions, and changes over time in a Living Care Record. It is designed to support continuity and understanding, not to replace the person receiving care, their caregivers, or qualified professionals.",
-        "SolenOS is not a healthcare provider, medical-record system operated by a clinic, emergency service, advertising platform, or social network. It does not diagnose, prescribe, or make healthcare decisions. AI-generated information can be incomplete or wrong and must be reviewed by a person.",
+        "SolenOS helps caregivers keep care notes, documents, decisions, and changes together in one Care Record. It is designed to help families stay informed and keep care information up to date. It does not replace the person receiving care, their caregivers, or qualified professionals.",
+        "SolenOS is not a healthcare provider, a clinic's medical-record system, an emergency service, an advertising platform, or a social network. It does not diagnose, prescribe, or make healthcare decisions. Suggestions from SolenOS can be incomplete or wrong. Check them before relying on them.",
         "SolenOS is an early-access service. Features, availability, and workflows may change, and some privacy requests cannot yet be completed automatically. Please do not use SolenOS as your only copy of important care information.",
       ],
     },
@@ -33,20 +33,20 @@ export const PRIVACY_POLICY = {
     {
       title: "3. How we use information",
       body: [
-        "To create, maintain, retrieve, and protect the care workspace and its Living Care Record.",
+        "To create, maintain, find, and protect your Care Record.",
         "To preserve source information and attribution, organize events over time, identify missing or conflicting information, and help caregivers review changes and prepare for conversations with professionals.",
-        "To provide the AI-assisted functions you choose to use. The system may process relevant care context to generate a response or proposed extraction. AI-generated candidates are intended to remain reviewable; they are not a substitute for the original source or a professional assessment.",
+        "To provide the help you choose to use. SolenOS may use relevant care information to prepare a response or suggest details. These suggestions can be incomplete or wrong. You can check them before they are added to your Care Record, and they do not replace the original note or a professional assessment.",
         "To authenticate caregivers, maintain sessions, prevent unauthorized access, investigate service failures, and protect the service.",
         "If you separately opt in, to review feedback you explicitly submit for product improvement. The backend checks for a recorded improvement opt-in before accepting this feedback. This optional choice is separate from the processing needed to provide the core care-record service.",
         "We do not sell care stories or use care information to serve advertising.",
       ],
     },
     {
-      title: "4. AI processing and its limits",
+      title: "4. How SolenOS uses automated help",
       body: [
-        "Our current technical design routes Qwen-powered assistance through a private Ollama model runtime. SolenOS is not designed to send requests to a hosted Qwen API, OpenAI API, or Gemini API as a fallback if that runtime is unavailable. If the configured model is unavailable or fails, the backend is designed to return an error rather than silently substitute another hosted model.",
-        "When you use an AI-assisted function, the request and the relevant care information selected for that function may be sent from the backend to that configured model runtime for processing. Do not assume that AI processing is the same as keeping information solely on your device.",
-        "We have not yet independently confirmed the complete production runtime configuration, the exact physical processing location, or the model operator's logging and retention practices. We therefore do not promise a specific AI data-residency location or that all model-runtime diagnostics are immediately erased.",
+        "SolenOS currently uses a private AI service to help prepare responses and suggested details. It is not designed to send those requests to OpenAI, Google Gemini, or another hosted AI service as a backup. If this service is unavailable, the feature may not work rather than switching to another provider without notice.",
+        "When you ask SolenOS to help organize information or answer a question, the details needed for that task may be sent to the private AI service that runs that feature. This means the information is not kept only on your device.",
+        "We have not yet confirmed exactly where this service processes information or how long its service logs are kept. We cannot promise a specific processing location or immediate deletion of all service logs.",
         "AI output may omit context, misread a document, or make an incorrect interpretation. Review it against the source. SolenOS does not make an AI response an authoritative care fact merely because a model generated it.",
       ],
     },
@@ -85,7 +85,7 @@ export const PRIVACY_POLICY = {
       title: "8. Your choices and responsibilities",
       body: [
         "Use only information you have permission to provide. If you are acting for another person, consider their wishes, capacity, legal arrangements, and applicable requirements before entering or sharing their information.",
-        "Review AI-generated content and proposed records before relying on them. Correct errors and preserve the original source where it matters.",
+        "Check suggestions and proposed care details before relying on them. Correct mistakes and keep the original note or document when needed.",
         "Keep your sign-in details and any one-time recovery code private. Do not share a device or session with someone who should not see the care workspace.",
         "You can review the Privacy Policy and Terms of Use from the public site or inside SolenOS. Contact us if you need help understanding a data-use choice or making a privacy request.",
       ],
@@ -155,7 +155,7 @@ export const TERMS_OF_USE = {
       title: "5. AI-Generated Information",
       body: [
         "SolenOS may use artificial intelligence technology to help organize, analyze, and present information.",
-        "AI-generated outputs may contain errors.",
+        "Suggestions from SolenOS may contain mistakes.",
         "SolenOS does not guarantee that every interpretation, summary, or insight will be complete or accurate.",
         "Users should review information carefully and use professional judgment.",
         "SolenOS is designed to help users understand information, not replace human decision-making.",
