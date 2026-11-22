@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getJSON, postJSON } from "@/api/client";
+import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type CaptureCandidate = {
   subject?: string;
@@ -11,6 +12,26 @@ type CaptureCandidate = {
   corrected_observation?: string;
   review_status?: string;
 };
+
+function candidateReviewValues(candidate: CaptureCandidate) {
+  const safeSubject = caregiverSafeGeneratedText(candidate.subject);
+  const safeObservation = caregiverSafeGeneratedText(candidate.observation);
+  const correctedSubject = typeof candidate.corrected_subject === "string" && candidate.corrected_subject.trim()
+    ? candidate.corrected_subject
+    : null;
+  const correctedObservation = typeof candidate.corrected_observation === "string" && candidate.corrected_observation.trim()
+    ? candidate.corrected_observation
+    : null;
+  const subject = correctedSubject ?? safeSubject ?? "";
+  const observation = correctedObservation ?? safeObservation ?? "";
+  return {
+    safeSubject,
+    safeObservation,
+    subject,
+    observation,
+    needsRewrite: !subject.trim() || !observation.trim(),
+  };
+}
 
 type CaptureAnalysisPayload = {
   analysis_id: string;
@@ -58,12 +79,17 @@ export default function CaptureAnalysisReview({
   async function review(index: number, decision: "accept" | "correct" | "reject") {
     const candidate = analysis?.candidates?.observations?.[index];
     if (!candidate) return;
+    const values = candidateReviewValues(candidate);
     const draft = drafts[index] || {
-      subject: candidate.corrected_subject ?? candidate.subject ?? "",
-      observation: candidate.corrected_observation ?? candidate.observation ?? "",
+      subject: values.subject,
+      observation: values.observation,
     };
-    if (decision === "correct" && !(draft.subject.trim() || draft.observation.trim())) {
-      setFeedback("Enter a correction before saving it.");
+    if (decision === "accept" && values.needsRewrite) {
+      setFeedback("Check the original note and correct this suggestion before adding it to your Care Record.");
+      return;
+    }
+    if (decision === "correct" && (!draft.subject.trim() || !draft.observation.trim())) {
+      setFeedback("Enter both what this detail is about and what happened before saving a correction.");
       return;
     }
     setBusyIndex(index);
@@ -145,9 +171,10 @@ export default function CaptureAnalysisReview({
       {!loading && !error && (analysis?.candidates?.observations || []).map((candidate, index) => {
         const status = candidate.review_status || "pending_review";
         const final = status === "accepted_by_caregiver" || status === "rejected_by_caregiver";
+        const values = candidateReviewValues(candidate);
         const draft = drafts[index] || {
-          subject: candidate.corrected_subject ?? candidate.subject ?? "",
-          observation: candidate.corrected_observation ?? candidate.observation ?? "",
+          subject: values.subject,
+          observation: values.observation,
         };
         return (
           <article key={index} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 12 }}>
@@ -158,6 +185,11 @@ export default function CaptureAnalysisReview({
                   : status === "corrected_pending_approval" || status === "corrected_by_caregiver"
                     ? "Correction saved — waiting for approval" : "Waiting for your review"}
             </p>
+            {values.needsRewrite && !final ? (
+              <p role="status" style={{ color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>
+                We could not show this suggestion clearly. Check the original note and correct it before adding it to your Care Record.
+              </p>
+            ) : null}
             <div style={{ marginBottom: 8 }}>
               <strong>What is this about?</strong>
               {editingIndex === index ? (
@@ -203,7 +235,7 @@ export default function CaptureAnalysisReview({
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {editingIndex === index ? (
                   <>
-                    <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "correct")}>
+                    <button type="button" disabled={busyIndex !== null || !draft.subject.trim() || !draft.observation.trim()} onClick={() => void review(index, "correct")}>
                       Save correction
                     </button>
                     <button
@@ -213,8 +245,8 @@ export default function CaptureAnalysisReview({
                         setDrafts((current) => ({
                           ...current,
                           [index]: {
-                            subject: candidate.corrected_subject ?? candidate.subject ?? "",
-                            observation: candidate.corrected_observation ?? candidate.observation ?? "",
+                            subject: values.subject,
+                            observation: values.observation,
                           },
                         }));
                         setEditingIndex(null);
@@ -225,7 +257,7 @@ export default function CaptureAnalysisReview({
                   </>
                 ) : (
                   <>
-                    <button type="button" disabled={busyIndex !== null} onClick={() => void review(index, "accept")}>
+                    <button type="button" disabled={busyIndex !== null || values.needsRewrite} onClick={() => void review(index, "accept")}>
                       Accept and add to care record
                     </button>
                     <button type="button" disabled={busyIndex !== null} onClick={() => setEditingIndex(index)}>
