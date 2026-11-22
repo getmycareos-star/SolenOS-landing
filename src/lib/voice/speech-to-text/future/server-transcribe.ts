@@ -1,11 +1,12 @@
 /**
- * FUTURE — unified server STT routing (Whisper → Gemini).
- * MVP voice conversation does not POST audio blobs.
+ * Retired server-side speech transcription selector.
+ * The caregiver MVP does not upload audio to hosted STT providers.
+ * Browser Web Speech remains a separate browser-only capability.
  */
 export const FUTURE_SERVER_TRANSCRIBE = {
-  status: "FUTURE" as const,
+  status: "RETIRED" as const,
   module: "src/lib/voice/speech-to-text/future/server-transcribe.ts",
-  note: "Observation preview path only; not Voice Conversation Mode default.",
+  note: "No server-side Whisper or Gemini transcription; use typed input when browser speech is unavailable.",
 };
 
 export {
