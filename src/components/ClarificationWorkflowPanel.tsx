@@ -545,7 +545,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
               style={{ ...button, textAlign: "left", display: "grid", gap: 5, borderColor: selectedQuestionId === item.id ? "var(--accent)" : "var(--border)" }}
             >
               <span style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionAudienceLabel(item.intended_answerer_role)}</span>
-              <strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", fontWeight: 600 }}>{item.question}</strong>
+              <strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", fontWeight: 600 }}>{caregiverSafeGeneratedText(item.question) || "Question details are not available."}</strong>
               <span style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionHasLinkedSource(item) ? "Based on a saved note or document" : "No note or document is linked yet"}</span>
             </button>
           ))}
@@ -584,7 +584,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
                 {questions.filter((item) => item.status !== "open" && item.status !== "unresolved").map((item) => (
                   <button key={item.id} type="button" onClick={() => setSelectedQuestionId(item.id)} style={{ ...button, textAlign: "left" }}>
                     <span style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionStatusLabel(item.status, Boolean(item.claim_id))}</span>
-                    <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500 }}>{item.question}</strong>
+                    <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500 }}>{caregiverSafeGeneratedText(item.question) || "Question details are not available."}</strong>
                   </button>
                 ))}
               </div>
