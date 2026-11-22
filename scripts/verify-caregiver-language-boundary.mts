@@ -151,6 +151,7 @@ const quickCheckIn = read("../src/components/workflows/QuickDailyCheckIn.tsx");
 const cognitiveWorkspace = read("../src/components/mvp-workspace/CognitiveWorkspace.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
+assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
