@@ -1,57 +1,31 @@
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import {
-  buildGeminiExecutionEnvelope,
-  GEMINI_MVP_MODEL,
-  type GeminiEnvelopeOptions,
-} from "../gemini-contract";
-import { DEFAULT_SOLENOS_LANGUAGE, makeLanguageAwarePrompt } from "../multilingual-execution";
-import type { SolenOSLanguage } from "../multilingual-execution";
+import type { GeminiEnvelopeOptions } from "../gemini-contract";
 import type { ContextWindowOutput } from "../context-window-strategy";
 import type { DocumentIntakeOutput } from "../document-intake";
 import type { GroundingContextPackage } from "../telemetry-persistence/schema";
-import { extractRawLLMText } from "./raw-text";
 
+/**
+ * Compatibility shape for the retired /api/analyze pipeline.
+ * This function deliberately performs no model call. Caregiver inference must
+ * use authenticated backend Qwen workflows; this legacy route returns HTTP 410.
+ */
 export interface GeminiExecutionParams {
   contextWindow: ContextWindowOutput;
   documentIntake?: DocumentIntakeOutput | null;
   groundingContext?: GroundingContextPackage | null;
   envelopeOptions?: GeminiEnvelopeOptions | null;
-  apiKey: string;
+  /** @deprecated Ignored. No hosted provider key is accepted. */
+  apiKey?: string;
+  /** @deprecated Ignored. Model selection is owned by the backend. */
   model?: string;
   retry?: boolean;
-  userLanguage?: SolenOSLanguage;
+  userLanguage?: string;
 }
 
-/**
- * Single-pass Gemini invocation with required execution envelope.
- * API key is passed from route.ts — never read from env in this module.
- */
+/** @deprecated Retired compatibility export; never invokes Gemini or Qwen. */
 export async function invokeGeminiExecution(
-  params: GeminiExecutionParams,
+  _params: GeminiExecutionParams,
 ): Promise<string> {
-  const envelope = buildGeminiExecutionEnvelope(
-    params.contextWindow,
-    params.retry ?? false,
-    params.documentIntake,
-    params.envelopeOptions,
-    params.groundingContext,
+  throw new Error(
+    "Legacy analysis is retired. Use the authenticated backend Qwen workflows.",
   );
-
-  const userLanguage = params.userLanguage ?? DEFAULT_SOLENOS_LANGUAGE;
-  const wrappedUserPrompt = makeLanguageAwarePrompt(envelope.user, userLanguage);
-
-  const model = new ChatGoogleGenerativeAI({
-    model: params.model ?? GEMINI_MVP_MODEL,
-    apiKey: params.apiKey,
-    temperature: 0,
-    maxRetries: 0,
-  });
-
-  const response = await model.invoke([
-    new SystemMessage(envelope.system),
-    new HumanMessage(wrappedUserPrompt),
-  ]);
-
-  return extractRawLLMText(response.content);
 }
