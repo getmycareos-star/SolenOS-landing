@@ -110,7 +110,7 @@ export default function QwenAssistPanel({
   evidenceIds = [],
   appointmentId = null,
   title = "Help with your care information",
-  description = "Get help understanding or organizing the information here. Suggestions are not saved to the Living Care Record automatically.",
+  description = "Get help understanding or organizing the information here. Suggestions are not added to your Care Record unless you choose to save and approve them.",
   compact = false,
 }: Props) {
   const [question, setQuestion] = useState("");
