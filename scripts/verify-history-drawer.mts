@@ -10,6 +10,7 @@ const styles = fs.readFileSync(path.join(root, "src/app/mobile-app.css"), "utf8"
 const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 const followUpsPage = fs.readFileSync(path.join(root, "src/app/workspace/open-loops/page.tsx"), "utf8");
 const navigation = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
+const morePage = fs.readFileSync(path.join(root, "src/app/workspace/more/page.tsx"), "utf8");
 const evidenceReview = fs.readFileSync(path.join(root, "src/components/EvidenceReviewPanel.tsx"), "utf8");
 const caregiverLanguage = fs.readFileSync(path.join(root, "src/lib/caregiver-language.ts"), "utf8");
 const evidenceCompletenessRoute = path.join(root, "src/app/workspace/evidence-completeness/page.tsx");
@@ -121,20 +122,35 @@ assert.doesNotMatch(drawer, /history-action-menu|history-event-menu-trigger|Shar
 assert.match(drawer, /error && records.length === 0 \? \(/, "an unavailable history must render an error, not an empty state");
 assert.match(drawer, /sourceWarnings.length > 0 \? \(/, "incomplete source coverage must remain distinct from a genuinely empty history");
 assert.match(drawer, /<RecordState kind="first-empty" title="No saved care history yet"/, "a genuinely empty history must use the current concise empty-state copy");
-assert.match(shell, /<HistoryDrawer \/>/);
+assert.doesNotMatch(shell, /<HistoryDrawer \/>/, "care history must not crowd the primary navigation");
+assert.match(morePage, /<HistoryDrawer \/>/, "recent care history remains available under More");
+assert.match(morePage, /Recent care history/, "the history section uses plain caregiver language");
 assert.match(shell, /solenos-chat-sidebar/);
-assert.match(shell, /Search history/);
-assert.match(navigation, /href: "\/workspace\/daily-care"[\s\S]*?label: "Daily Care"/, "Daily Care is registered as its own navigation destination");
-assert.match(navigation, /href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups has a dedicated route");
-assert.match(navigation, /href: "\/workspace\/timeline"[\s\S]*?label: "Care history"/, "Care Timeline has a dedicated route");
-assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents has a dedicated route");
-assert.match(navigation, /href: "\/workspace\/companion"[\s\S]*?label: "Care Assistant"/, "AI Companion has a dedicated route");
-assert.match(navigation, /href: "\/workspace\/handoffs"[\s\S]*?label: "Share care information"/, "Share care information remains a separate workflow");
-assert.match(navigation, /href: "\/workspace\/appointments"[\s\S]*?label: "Appointments"/, "Appointments remains a separate workflow");
+assert.doesNotMatch(shell, /Search history/, "history search is not a primary navigation destination");
+for (const [route, label] of [
+  ["/workspace", "Today"],
+  ["/workspace/daily-care", "Share an update"],
+  ["/workspace/appointments", "Appointments"],
+  ["/workspace/companion", "Care Assistant"],
+  ["/workspace/more", "More"],
+]) {
+  assert.match(navigation, new RegExp('href: "' + route.replaceAll("/", "\\/") + '"[\\s\\S]*?label: "' + label + '"'),
+    label + " remains a primary caregiver destination");
+}
+for (const [route, label] of [
+  ["/workspace/open-loops", "Follow-ups"],
+  ["/workspace/timeline", "Care history"],
+  ["/workspace/documents", "Documents"],
+  ["/workspace/handoffs", "Share care information"],
+]) {
+  assert.match(navigation, new RegExp('href: "' + route.replaceAll("/", "\\/") + '"[\\s\\S]*?label: "' + label + '"'),
+    label + " remains available under More");
+}
+assert.match(navigation, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.doesNotMatch(shell, /Community/);
-assert.match(shell, /from "@\/components\/app-shell\/HistoryDrawer"/);
-assert.match(shell, /prefetch=\{false\}/, "secondary workspace routes must not be downloaded speculatively on first load");
-assert.match(shell, /onMouseEnter=\{\(\) => router\.prefetch\(href\)\}/, "navigation should prefetch only after explicit pointer intent");
+assert.match(morePage, /from "@\/components\/app-shell\/HistoryDrawer"/);
+assert.match(shell, /prefetch=\{false\}/, "primary destinations are not downloaded speculatively on first load");
+assert.match(shell, /onMouseEnter=\{\(\) => router\.prefetch\(href\)\}/, "navigation prefetch follows explicit pointer intent");
 assert.match(shell, /solenos\.workspace\.navigation-click/, "navigation intent timing must begin on caregiver action");
 assert.match(shell, /solenos\.workspace\.navigation-to-route-mounted/, "route mount timing must be measured after navigation");
 assert.match(shell, /const ShareCareSummaryPanel = dynamic\(/, "the share/export panel must not be part of the initial workspace bundle");
