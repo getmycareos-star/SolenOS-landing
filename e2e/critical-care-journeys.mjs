@@ -4112,10 +4112,15 @@ await record("17 saved Care History review actions preserve caregiver choice on 
     });
   });
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Updates to review", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Review suggested details", exact: true }).click();
+  const review = page.getByRole("region", { name: "Review suggested care details" });
+  await review.waitFor({ state: "visible", timeout: 10_000 });
+  await review.getByRole("button", { name: "Close review", exact: true }).click();
+  await page.goto(new URL("/workspace/timeline", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Care history", exact: true }).waitFor({ timeout: 20_000 });
   await page.locator(".timeline-event-toggle").first().click();
   await page.getByRole("button", { name: "Review suggested details", exact: true }).click();
-  const review = page.getByRole("region", { name: "Review suggested care details" });
   await review.waitFor({ state: "visible", timeout: 10_000 });
   await review.getByText("From your note", { exact: true }).first().waitFor();
   await review.getByRole("button", { name: "Accept and add to care record", exact: true }).nth(0).click();
