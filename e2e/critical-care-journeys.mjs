@@ -4112,7 +4112,7 @@ await record("17 saved Care History review actions preserve caregiver choice on 
     });
   });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Updates to review", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Updates to check", exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("button", { name: "Review suggested details", exact: true }).click();
   const review = page.getByRole("region", { name: "Review suggested care details" });
   await review.waitFor({ state: "visible", timeout: 10_000 });
