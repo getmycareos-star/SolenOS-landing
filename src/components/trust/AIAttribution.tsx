@@ -19,12 +19,7 @@ export default function AIAttribution({
     return null;
   }
 
-  const getConfidenceLabel = (): string => {
-    if (confidence === undefined) return 'AI-assisted';
-    if (confidence >= 0.8) return 'High confidence AI insight';
-    if (confidence >= 0.5) return 'Medium confidence AI insight';
-    return 'Low confidence AI insight';
-  };
+  const getConfidenceLabel = (): string => 'AI suggestion — please check';
 
   return (
     <div style={{ 
@@ -51,15 +46,7 @@ export default function AIAttribution({
             🤖
           </span>
           <span>{getConfidenceLabel()}</span>
-          {confidence !== undefined && (
-            <span style={{ 
-              fontSize: 'calc(10px * var(--solenos-text-scale, 1))', 
-              color: 'var(--text-secondary)',
-              marginLeft: '4px'
-            }}>
-              {Math.round(confidence * 100)}%
-            </span>
-          )}
+
         </div>
       )}
       
