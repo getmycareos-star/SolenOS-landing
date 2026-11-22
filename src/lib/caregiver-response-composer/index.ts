@@ -147,6 +147,7 @@ containsRawNoteEchoInCopy,
 } from "../output-quality";
 import { assertResponseAcceptanceGate } from "../response-acceptance-gate";
 import { applyRealCaregiverTestComposeGate } from "../real-caregiver-test";
+import { caregiverFieldLabel, caregiverStatusLabel } from "../caregiver-language";
 
 /** Phrases that must never reach a stressed caregiver. */
 export const CAREGIVER_RESPONSE_BANNED_PHRASES = [
@@ -918,15 +919,15 @@ export function composeCaregiverResponse(params: {
     );
     if (meaningful.length > 0) {
       const top = meaningful[0]!;
-      const domain = top.domain.replace(/_/g, " ");
-      const classification = top.classification.toLowerCase();
-      const confidence =
+      const domain = caregiverFieldLabel(top.domain) || "Care details";
+      const classification = caregiverStatusLabel(top.classification) || "Possible change";
+      const uncertaintyNote =
         top.confidence === "high"
           ? ""
           : top.confidence === "medium"
-            ? " (moderate confidence)"
-            : " (needs confirmation)";
-      what_changed = `${domain} change: ${classification}${confidence}`.slice(0, 200);
+            ? ". This may need checking."
+            : ". This needs confirmation.";
+      what_changed = `${domain}: ${classification}${uncertaintyNote}`.slice(0, 200);
     } else if (report.trajectory_summary && !improvement) {
       what_changed = scrub(report.trajectory_summary.slice(0, 200));
     }
