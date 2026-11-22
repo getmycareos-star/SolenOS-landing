@@ -103,6 +103,18 @@ function collectDisplayExpression(sourceFile: ts.SourceFile, node: ts.Expression
 for (const file of files) {
   const source = readFileSync(file, "utf8");
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith(".tsx") || file.endsWith(".jsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  if (sourceFile.parseDiagnostics.length > 0) {
+    const diagnostics = sourceFile.parseDiagnostics.map((diagnostic) => {
+      const position = diagnostic.start === undefined
+        ? { line: 1, character: 1 }
+        : sourceFile.getLineAndCharacterOfPosition(diagnostic.start);
+      const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, " ");
+      return `- ${file}:${position.line + 1}:${position.character + 1}: ${message}`;
+    });
+    process.stderr.write("Caregiver language scan could not safely inspect files with syntax errors:\\n" + diagnostics.join("\\n") + "\\n");
+    process.exitCode = 1;
+    continue;
+  }
 
   function collectFunctionReturns(node: ts.Node): void {
     if (ts.isReturnStatement(node) && node.expression) {
