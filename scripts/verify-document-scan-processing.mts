@@ -56,6 +56,10 @@ assert.match(intelligenceReviewSource, /retry_exhausted_page_numbers/, "exhauste
 assert.match(intelligenceReviewSource, /SolenOS is reading this document in the background\. You do not need to stay on this screen\./, "caregivers must not supervise background processing");
 assert.match(intelligenceReviewSource, /processing_jobs\?/, "the review panel must read durable background job state");
 assert.match(intelligenceReviewSource, /!processingJobs\.some\(\(job\) => job\.evidence_id === analysis\.source_evidence_id/, "background processing status must be scoped to the document's persisted job");
+assert.match(intelligenceReviewSource, /job\?\.status === "failed" \? "SolenOS could not finish reading this document\. The original file is still saved\."/,
+  "a failed or completed-without-analysis job must not be shown as still waiting");
+assert.match(intelligenceReviewSource, /job\?\.status === "failed" \? "Try reading again" : "Read document"/,
+  "a saved original whose processing did not finish must offer a processing-only retry");
 assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load\(\); \}, 3000\)/, "document review status must refresh while background processing is active");
 assert.match(intelligenceReviewSource, /postJSON\("\/documents\/" \+ encodeURIComponent\(evidenceId\) \+ "\/queue"/, "initial upload handoff must use the durable server processing queue");
 assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURIComponent(document.id) + "/extract"'), "the review screen must not perform blocking extraction");
