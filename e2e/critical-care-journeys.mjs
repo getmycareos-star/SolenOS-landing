@@ -340,15 +340,6 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
-  // Saved history is grouped under More in the simplified caregiver navigation.
-  // Verify the durable history row there, then return to Today for the rest of this journey.
-  await page.goto(new URL("/workspace/more", frontend).toString());
-  await page.getByRole("heading", { name: "Recent care history", exact: true })
-    .waitFor({ state: "visible", timeout: 15_000 });
-  const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
-    .filter({ hasText: firstNote }).first();
-  await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  await page.goto(new URL("/workspace", frontend).toString());
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
@@ -391,6 +382,23 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.equal(feedbackPayload?.event_type, "feedback");
   assert.equal(feedbackPayload?.source_type, "feedback");
   await page.locator(".research-feedback-thanks").waitFor({ state: "visible", timeout: 10_000 });
+  // Saved history is grouped under More in the simplified caregiver navigation.
+  // Verify the durable history row there, then return to Today for the rest of this journey.
+  await page.goto(new URL("/workspace/more", frontend).toString());
+  await page.getByRole("heading", { name: "Recent care history", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
+  const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
+    .filter({ hasText: firstNote }).first();
+  await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
+  await page.goto(new URL("/workspace", frontend).toString());
+  await page.getByRole("heading", { name: "Today", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByRole("heading", { name: "Your Living Care Record", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
+  for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
+    await page.getByRole("heading", { name: heading, exact: true })
+      .waitFor({ state: "visible", timeout: 15_000 });
+  }
   const firstVisitPersonId = String(firstVisitSession.person?.id ?? "").trim();
   assert.ok(firstVisitPersonId, "anonymous session must return its server-issued care-record ID");
   const learningEventsPath = `/api/v1/learning-events/${encodeURIComponent(firstVisitPersonId)}?person_id=${encodeURIComponent(firstVisitPersonId)}`;
