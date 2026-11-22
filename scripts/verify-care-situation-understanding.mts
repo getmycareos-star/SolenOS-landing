@@ -194,7 +194,18 @@ async function main() {
     setCareRecipientDisplayName({ careKey, displayName: "Mom" });
 
     const started = Date.now();
-    const understanding = await buildCareSituationUnderstanding({
+    await assert.rejects(
+      buildCareSituationUnderstanding({
+        rawText: MULTI_SIGNAL_GOLDEN,
+        evidenceId: "",
+        contributorId,
+        careKey,
+        personDisplayName: "Mom",
+      }),
+      /A saved care record is required/,
+      "Qwen understanding must reject when no persisted evidence ID is supplied",
+    );
+    const understanding = buildCareSituationUnderstandingFromExtraction({
       rawText: MULTI_SIGNAL_GOLDEN,
       contributorId,
       careKey,
