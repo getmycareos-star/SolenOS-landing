@@ -16,10 +16,8 @@ export async function enhanceWithLlm(
   _raw: string,
   _deterministic: { classification: ClassificationResult; signals: SignalVector },
 ): Promise<LlmEnhancement | null> {
-  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
-    return null;
-  }
-  // v1: bounded LLM hook — not wired; deterministic path only
+  // This legacy enhancement hook is intentionally disconnected. Active caregiver
+  // inference is owned by the authenticated backend Qwen workflows.
   return null;
 }
 
