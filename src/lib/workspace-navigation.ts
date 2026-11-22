@@ -9,8 +9,7 @@ export type WorkspaceNavigationItem = {
 };
 
 /**
- * Five caregiver-facing destinations. Existing feature routes remain available
- * through More; this registry changes navigation, not the underlying services.
+ * Core care destinations stay visible. Less-used tools remain available through More.
  */
 export const WORKSPACE_NAVIGATION = {
   care: [
@@ -35,14 +34,12 @@ export const WORKSPACE_NAVIGATION = {
       description: "Prepare and share care information",
       icon: CalendarDays,
     },
-  ],
-  support: [
     {
-      id: "care-assistant",
-      href: "/workspace/companion",
-      label: "Care Assistant",
-      description: "Ask about saved care information",
-      icon: MessageCircle,
+      id: "follow-ups",
+      href: "/workspace/open-loops",
+      label: "Follow-ups",
+      description: "Questions and agreed next steps",
+      icon: Clock3,
     },
   ],
   settings: [
@@ -56,7 +53,6 @@ export const WORKSPACE_NAVIGATION = {
   ],
 } satisfies {
   care: WorkspaceNavigationItem[];
-  support: WorkspaceNavigationItem[];
   settings: WorkspaceNavigationItem[];
 };
 
@@ -70,11 +66,11 @@ export const WORKSPACE_SECONDARY_NAVIGATION: WorkspaceNavigationItem[] = [
     icon: History,
   },
   {
-    id: "follow-ups",
-    href: "/workspace/open-loops",
-    label: "Follow-ups",
-    description: "Questions and agreed next steps",
-    icon: Clock3,
+    id: "care-assistant",
+    href: "/workspace/companion",
+    label: "Care Assistant",
+    description: "Ask about saved care information",
+    icon: MessageCircle,
   },
   {
     id: "documents",
