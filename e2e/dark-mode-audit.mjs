@@ -400,7 +400,7 @@ try {
 
           {
             const screenshotPath = `${artifactDir}/${slug(target.label)}-${slug(routePath)}-${viewport.label}.png`;
-            await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+            await page.screenshot({ path: screenshotPath, fullPage: true });
           }
           process.stdout.write(
             `${failures.includes(result) ? "FAIL" : "PASS"} ${target.label} ${routePath} ${viewport.label}: ${routeLoaded ? "route loaded" : "route not loaded"}, ${themeApplied ? "dark theme applied" : "dark theme missing"}, ${rendered.issues.length} contrast, ${routeIssues.length} route/API issues\n`,
