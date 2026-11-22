@@ -2,10 +2,10 @@ import type { FinalOutputContract } from "../final-output-contract/types";
 import type { DemandClassification } from "./types";
 
 const SEARCH_REFUSAL_HAPPENING_WITH_RECORD =
-  "This reads as a general information question. SolenOS holds this person's Living Care Record — it does not answer Medicare, cost, or program FAQs.";
+  "This sounds like a general question rather than an update about someone's care. SolenOS keeps the care details you share together; it is not a general information service for Medicare, costs, or programs.";
 
 const SEARCH_REFUSAL_HAPPENING_EMPTY =
-  "SolenOS is the memory system for this person's care journey, not a general Q&A engine. Share what is happening for them and it will be held in the Living Care Record.";
+  "SolenOS helps keep this person's care details together. Share what is happening with their care, and it will be saved in their Care Record.";
 
 /**
  * Search Demand must not produce FAQ / answer-engine output.
@@ -37,7 +37,7 @@ export function applySearchDemandContinuityRedirect(params: {
         rememberedChange ??
         "What helps next is recording what changed for this person — coverage and cost questions stay with their care team or benefits advisor.",
       what_to_ask_next:
-        "What is happening with their care that you want held in the Living Care Record?",
+        "What is happening with their care that you want to add to their Care Record?",
       what_can_wait: "Generic program eligibility, cost, and FAQ-style answers.",
       follow_up_items: [],
       risk_level: "low",
