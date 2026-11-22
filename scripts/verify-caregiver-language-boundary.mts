@@ -447,6 +447,13 @@ assert.doesNotMatch(appShellLanguage, /server-issued session|stored on SolenOS s
   "workspace confirmation and error messages must not expose internal session or hosting details");
 assert.match(appShellLanguage, /care information already saved in SolenOS/,
   "workspace deletion confirmation must explain in plain language what remains saved");
+assert.match(settings, /Ask us to delete care information/);
+assert.match(settings, /We first check that you are allowed to make the request/);
+assert.match(settings, /privacyRequestStatusLabel/);
+assert.doesNotMatch(settings, /server-held care information|legal holds|provider copies|backup-retention periods|server sign-out|previous session may remain valid|Submit care-record erasure request|erasureRequest\.status\.replace|item\.status\.replace/,
+  "privacy settings must explain deletion and sign-out outcomes without backend or legal-process jargon");
+assert.match(identityRecovery, /Devices and account access/);
+assert.match(identityRecovery, /A registered device alone cannot recover your account/);
 assert.match(appShellLanguage, /We couldn't confirm your access to SolenOS, so nothing was cleared/,
   "failed access revocation must clearly say that no local data was cleared");
 assert.doesNotMatch(restrictedRoleLanguage, /server-issued identity|permissions for this role|anonymous care session|unverified or demo dashboard/i,
