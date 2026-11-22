@@ -44,7 +44,7 @@ export default function AcceptCaregiverInvitationPage() {
       </div>
       {!token ? (
         <section className="mobile-settings-card">
-          <p className="mobile-settings-hint" role="alert">This invitation link is missing its secure code. Ask the person who invited you to share the original link again.</p>
+          <p className="mobile-settings-hint" role="alert">This invitation link is incomplete. Ask the person who invited you to send the original link again.</p>
         </section>
       ) : (
         <form className="mobile-settings-card" onSubmit={(event) => void submit(event)} style={{ display: "grid", gap: "0.9rem" }}>
@@ -54,7 +54,7 @@ export default function AcceptCaregiverInvitationPage() {
           <input id="invite-email" className="mobile-settings-input" type="email" required maxLength={320} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
           <label className="mobile-settings-label" htmlFor="invite-password">Create a password</label>
           <input id="invite-password" className="mobile-settings-input" type="password" required minLength={12} maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" />
-          <p className="mobile-settings-hint">Use at least 12 characters. Your access was authorised by the person who sent this invitation.</p>
+          <p className="mobile-settings-hint">Use at least 12 characters. The person who invited you has approved this access.</p>
           {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
           <Button type="submit" variant="primary" loading={busy} disabled={busy || !name.trim() || !email.trim() || password.length < 12}>Accept invitation</Button>
         </form>
