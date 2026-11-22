@@ -482,6 +482,8 @@ assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(candidate\.subject
 assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(candidate\.observation\)/, "Daily Care Qwen observations must use caregiver language");
 assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(question\)/, "Daily Care Qwen follow-up questions must use caregiver language");
 assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(situationResponse\.analysis_warning\)/, "server-generated Daily Care warnings must use caregiver language");
+assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(data\.reply\.trim\(\)\)/, "read-only Care Record orientation replies must pass the generated-language boundary before display");
+assert.doesNotMatch(cognitiveWorkspace, /setLcrOrientationReply\(data\.reply\.trim\(\)\)/, "raw generated orientation replies must never reach the caregiver UI");
 assert.match(earlyAccessConsent, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(earlyAccessConsent, /cause\.message/);
 assert.match(community, /caregiverSafeAssistantText\(result\.summary\)/);
