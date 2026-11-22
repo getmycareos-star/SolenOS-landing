@@ -88,8 +88,8 @@ assert.ok(component.includes("brief.appointment_context_status?.code === 'visit_
 assert.ok(component.includes("updateAppointmentLifecycle('completed')"), 'caregiver confirmation must be required before an overdue appointment is marked as occurred');
 assert.ok(component.includes("brief.appointment_context_status?.code === 'retrieval_failed'" ) || component.includes("brief.lcr_retrieval_status?.status === 'failed'"), 'technical retrieval failures must not appear as empty history');
 assert.ok(component.includes("brief?.source_coverage?.documents === 'failed'"), 'document retrieval failures must not be shown as an empty document list');
-assert.ok(component.includes('Retry care-record retrieval'), 'failed and partial care-record retrieval must have a retry action');
-assert.ok(component.includes('Retry document retrieval'), 'document retrieval failures must have a recoverable retry action');
+assert.ok(component.includes('We couldn’t load all of your Care Record.') && component.includes('Try again'), 'failed and partial care-record retrieval must have a caregiver-friendly retry action');
+assert.ok(component.includes('We couldn’t load your saved documents. They may still be there.') && component.includes('Try again'), 'document retrieval failures must have a caregiver-friendly retry action');
 assert.ok(component.includes('professionalStatement') && component.includes('recordedDecisions') && component.includes('recordedInstructions') && component.includes('unansweredQuestions'), 'optional after-visit capture must preserve separate professional statements, decisions, instructions and unanswered questions');
 assert.ok(component.includes('followUps: appointmentFollowUpsFromText(followUps, record?.payload, record?.id || appointmentId)'), 'explicit follow-ups must sync into existing Open Loop records while preserving their identities and metadata');
 assert.ok(component.includes("const appointmentFollowUpText = (payload?: Record<string, unknown>)"), 'saved follow-ups must be restored after refresh');
