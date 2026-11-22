@@ -105,7 +105,7 @@ for (const [source, pattern, label] of [
   [historyPanel, /SolenOS could not confirm that the source history for this comparison is current/, "unchecked source freshness must be disclosed to caregivers"],
   [timeline, /<CareChangeHistoryPanel personId=\{personId\} \/>/, "saved comparisons must appear in the dedicated Care Timeline"],
   [timeline, /<ChangeIntelligencePanel personId=\{personId\} \/>[\s\S]*?<CareChangeHistoryPanel personId=\{personId\} \/>/, "persisted change intelligence and Delta history must appear together in the historical view"],
-  [lcr, /<section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">[\s\S]*?<h2 id="lcr-current-understanding-heading">Your Living Care Record<\/h2>[\s\S]*?<section className="lcr-first-screen-summary" aria-label="Care at a glance">/, "the Care Record remains the current-understanding view"],
+  [lcr, /<section className="lcr-record-section" aria-labelledby="lcr-current-understanding-heading">[\s\S]*?<h2 id="lcr-current-understanding-heading">Your Care Record<\/h2>[\s\S]*?<section className="lcr-first-screen-summary" aria-label="Care at a glance">/, "the Care Record remains the current-understanding view"],
   [historyPanel, /if \(!personId\) return null/, "history must wait for a scoped care record"],
 ]) {
   assert(pattern.test(source), "Missing persisted care-change contract: " + label);
