@@ -12,7 +12,7 @@ const INDICATOR_LABELS: Record<TrustIndicatorKind, string> = {
   confirmed_follow_up: "✓ Checked during follow-up",
   awaiting_confirmation: "⚠ Needs confirmation",
   low_confidence: "⚠ Needs checking",
-  missing_evidence: "⚠ No note or document is linked",
+  missing_evidence: "⚠ Some details are still missing",
 };
 
 export function trustIndicatorLabel(kind: TrustIndicatorKind): string {
