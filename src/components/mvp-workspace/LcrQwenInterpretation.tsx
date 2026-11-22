@@ -69,6 +69,8 @@ export function LcrQwenInterpretation({
     if (!sourceEventId || !rawInput.trim()) return;
 
     let cancelled = false;
+    const controller = new AbortController();
+    const requestTimeout = setTimeout(() => controller.abort(), 20_000);
     setState({ status: "loading" });
 
     const request = async () => {
@@ -80,7 +82,7 @@ export function LcrQwenInterpretation({
             "Distinguish documented information from interpretation and uncertainty. Explain what may matter and " +
             "one proportionate next step only when supported. Do not diagnose, infer causation, or claim any record write. " +
             "Newly saved caregiver report: " + rawInput.trim(),
-        })) as AssistResult;
+        }, {}, { signal: controller.signal })) as AssistResult;
 
         if (
           !result ||
@@ -103,12 +105,16 @@ export function LcrQwenInterpretation({
         if (!cancelled) setState({ status: "ready", result });
       } catch {
         if (!cancelled) setState({ status: "unavailable" });
+      } finally {
+        clearTimeout(requestTimeout);
       }
     };
 
     void request();
     return () => {
       cancelled = true;
+      clearTimeout(requestTimeout);
+      controller.abort();
     };
   }, [rawInput, sourceEventId]);
 
