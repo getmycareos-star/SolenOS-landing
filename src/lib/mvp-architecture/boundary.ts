@@ -1,8 +1,8 @@
 /**
- * Executable MVP architecture boundary — caregiver product vs ops analyze path.
+ * Executable MVP architecture boundary — caregiver product and retired legacy routes.
  *
- * Caregiver MVP entry is POST /api/situation (Living Care Record).
- * /api/analyze remains an ops/engine transformation path — hard-gated for caregivers.
+ * Caregiver inference runs through authenticated backend Qwen workflows.
+ * The frontend never calls a hosted model provider or connects directly to Ollama.
  */
 
 import {
@@ -56,7 +56,7 @@ export const MVP_ALLOWED_FRONTEND_SHELL = [
   "src/app/global-error.tsx",
 ] as const;
 
-export const MVP_LLM = "gemini-1.5-pro" as const;
+export const MVP_LLM = "private-ollama-qwen" as const;
 
 export const MVP_MAX_LLM_CALLS = 3;
 
@@ -64,7 +64,7 @@ export const MVP_MAX_RETRIES = 2;
 
 export const MVP_LATENCY_BUDGET_MS = 10_000;
 
-export const MVP_GEMINI_KEY_ROUTE = "src/app/api/analyze/route.ts";
+export const MVP_QWEN_GATEWAY = "backend/app/services/qwen_gateway.py";
 
 export const MVP_LAYERS = [
   "input",
