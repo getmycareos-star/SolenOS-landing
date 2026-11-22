@@ -72,7 +72,7 @@ function simpleRecordLabel(value?: string | null): string {
     not_assessed: "Not checked",
     reported: "Reported by caregiver",
     observed: "Seen by a caregiver", 
-    verified: "Checked against a source", 
+    verified: "Checked against another note or report", 
     inferred: "Possible explanation", 
     uncertain: "Not sure yet", 
     conflicting: "Reports do not match", 
@@ -200,7 +200,7 @@ export default function CareContinuityIntegrityPanel({
               <span style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Review status: {simpleRecordLabel(item.assertion_status)}
+              Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Has this been checked? {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: '5px 0' }}>{caregiverSafeAssistantText(fresh.explanation) || 'No further explanation is available.'}</p>}
             {item.source_text && <><small>Original wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverReadableCaptureText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
@@ -215,7 +215,7 @@ export default function CareContinuityIntegrityPanel({
 
 
       <div style={cardStyle}>
-        <h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))", marginTop: 0 }}>Changes to the care record</h3>
+        <h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))", marginTop: 0 }}>Changes to your Care Record</h3>
         <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>See when care information was added or updated.</p>
         {caregiverVisibleRevisions.length === 0 ? <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>No changes have been recorded yet.</p> : caregiverVisibleRevisions.slice(0, 20).map((item) =>
           <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0' }}>
