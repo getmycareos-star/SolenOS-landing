@@ -226,6 +226,8 @@ assert.match(companion, /No review of this note or document has been recorded/);
 assert.match(companion, /history shown here may be incomplete/);
 
 assert.match(companion, /caregiverSafeGeneratedText\(response\.reply\)/);
+assert.match(companion, /caregiverSafeGeneratedText\(claim\.text\)/);
+assert.match(companion, /caregiverSafeGeneratedText\(claim\.aggregate_review\?\.interpretation_limit\)/);
 assert.doesNotMatch(companion, /text: response\.reply/);
 assert.doesNotMatch(documentReview, /candidate\.review_status\.replaceAll/);
 assert.doesNotMatch(documentReview, /model: \{analysis\.model_provenance\.model_tag/);
