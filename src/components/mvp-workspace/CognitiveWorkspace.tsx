@@ -1130,8 +1130,8 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
               <section className="panel panel-response" aria-label="Care update status" role="status">
                 <p>
                   Your original update: {situationResponse.care_continuity_execution.stages.source_preservation === "verified" ? "saved" : "not confirmed"}.
-                  {" "}Related notes or documents: {situationResponse.care_continuity_execution.stages.evidence === "verified" ? "linked" : situationResponse.care_continuity_execution.stages.evidence === "not_applicable" ? "not needed" : "not confirmed"}.
-                  {" "}Care Record: {situationResponse.care_continuity_execution.stages.reconciliation === "committed" ? "updated" : "not confirmed"}.
+                  {" "}Related notes or documents: {situationResponse.care_continuity_execution.stages.evidence === "verified" ? "linked" : situationResponse.care_continuity_execution.stages.evidence === "not_applicable" ? "not needed" : "not linked yet"}.
+                  {" "}Related care details: {situationResponse.care_continuity_execution.stages.reconciliation === "committed" ? "updated" : situationResponse.care_continuity_execution.stages.reconciliation === "pending" ? "still being checked" : situationResponse.care_continuity_execution.stages.reconciliation === "not_applicable" ? "not needed" : "not updated yet"}.
                 </p>
               </section>
             )}
