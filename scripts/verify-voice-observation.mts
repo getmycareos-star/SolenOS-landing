@@ -38,8 +38,18 @@ for (const route of [
 
 const workspace = read("src/components/mvp-workspace/CognitiveWorkspace.tsx");
 const shell = read("src/components/app-shell/AppShell.tsx");
-const companion = read("src/components/qwen/QwenAssistPanel.tsx");
-for (const [name, source] of [["caregiver workspace", workspace], ["app shell", shell], ["Companion", companion]] as const) {
+const addSituation = read("src/components/mvp-workspace/AddSituationPanel.tsx");
+const dailyCapture = read("src/components/workflows/StructuredDailyCapture.tsx");
+const companion = read("src/components/workflows/AICompanion.tsx");
+const qwenPanel = read("src/components/qwen/QwenAssistPanel.tsx");
+for (const [name, source] of [
+  ["caregiver workspace", workspace],
+  ["app shell", shell],
+  ["care update form", addSituation],
+  ["Daily Care", dailyCapture],
+  ["Care Assistant", companion],
+  ["Companion review panel", qwenPanel],
+] as const) {
   if (/VoiceConversationPanel|RealMomentPanel|useVoiceInput|SpeechRecognition|webkitSpeechRecognition|microphone|Voice Mode/i.test(source)) {
     throw new Error(`${name} must not expose voice capture or speech controls`);
   }
