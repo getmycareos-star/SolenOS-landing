@@ -740,9 +740,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       <p><strong>Details from your Care Record</strong></p>
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
-                          <p><strong>{claim.text}</strong></p>
+                          <p><strong>{caregiverSafeGeneratedText(claim.text) || "A possible care detail needs your review."}</strong></p>
                           {claim.support_status === 'aggregate_count_mismatch' && <p role="note">The saved care updates do not support this number. The saved information shows {claim.aggregate_review?.count ?? 'an unconfirmed number'} separate updates in the time period you asked about.</p>}
-                          {claim.support_status === 'aggregate_not_validated' && <p role="note">{claim.aggregate_review?.interpretation_limit || 'This total could not be confirmed from the saved care updates. Check the reports before relying on a number.'}</p>}
+                          {claim.support_status === 'aggregate_not_validated' && <p role="note">{caregiverSafeGeneratedText(claim.aggregate_review?.interpretation_limit) || 'This total could not be confirmed from the saved care updates. Check the reports before relying on a number.'}</p>}
                           {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
                               <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'We checked this count against separate care updates and their dates.' : 'This wording appears in your Care Record.'}</p>
