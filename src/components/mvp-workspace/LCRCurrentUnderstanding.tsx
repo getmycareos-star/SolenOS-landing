@@ -1702,7 +1702,7 @@ export function LCRCurrentUnderstanding() {
                   {expandedChangeId === change.id && changeEvidence[change.id]?.confirmation_history.map((transition) => (
                     <article key={transition.id}>
                       <strong>{caregiverLabel(transition.previous_status)} → {caregiverLabel(transition.new_status)}</strong>
-                      {transition.reason && <p>{caregiverSafeGeneratedText(transition.reason)}</p>}
+                      {transition.reason && <p>{caregiverSafeAssistantText(transition.reason)}</p>}
                       <small>Reviewed by a caregiver · {formatWhen(transition.created_at)}</small>
                       {transition.evidence_ids.length > 0 && <small>This check used {transition.evidence_ids.length} saved care detail{transition.evidence_ids.length === 1 ? "" : "s"}.</small>}
                     </article>
@@ -2331,7 +2331,7 @@ export function LCRCurrentUnderstanding() {
                           {changeEvidence[change.id].confirmation_history.map((transition) => (
                             <li key={transition.id}>
                               <p>{caregiverLabel(transition.previous_status)} → {caregiverLabel(transition.new_status)}</p>
-                              {transition.reason && <p>{caregiverSafeGeneratedText(transition.reason) || "A reason was recorded."}</p>}
+                              {transition.reason && <p>{caregiverSafeAssistantText(transition.reason) || "A reason was recorded."}</p>}
                               <small>Recorded {formatWhen(transition.created_at)} · reviewed by a caregiver</small>
                               {transition.evidence_ids.length > 0 && <small>This check used {transition.evidence_ids.length} saved care detail{transition.evidence_ids.length === 1 ? "" : "s"}.</small>}
                             </li>
