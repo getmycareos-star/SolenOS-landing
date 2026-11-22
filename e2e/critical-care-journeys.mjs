@@ -939,7 +939,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   for (let index = 0; index < await appointmentClaimReview.count(); index += 1) {
     await appointmentClaimReview.nth(index).check();
   }
-  await exportDialog.getByRole("checkbox", { name: /I understand this is an AI-assisted draft/ }).check();
+  await exportDialog.getByRole("checkbox", { name: /I understand this is a draft prepared with help from SolenOS/ }).check();
   const summaryDownloadPromise = page.waitForEvent("download");
   await exportDialog.getByRole("button", { name: "Download summary (.txt)", exact: true }).click();
   const summaryDownload = await summaryDownloadPromise;
