@@ -58,6 +58,13 @@ assert.match(page, /item\.source === "open_loop_records" \? caregiverSafeAssista
 assert.match(page, /title: caregiverSafeGeneratedText\(item\.title\)/, "new follow-ups must not persist an internal generated title");
 assert.match(page, /Last updated:[\s\S]*?loop\?\.updated_at/, "follow-up cards must show the last saved update when available");
 
+assert.match(page, /caregiverSafeGeneratedText\(line\)/, "system-generated follow-up reasons must be filtered before display");
+assert.match(page, /loopHistoryLoadFailed/, "a failed follow-up history read must be tracked separately from an empty history");
+assert.match(page, /We couldn’t check which follow-ups have been resolved just now\. Your last saved list remains visible\./, "a failed history read must not be presented as no resolved follow-ups");
+assert.match(page, /We couldn’t check what can wait or needs a check-in just now/, "a failed attention assessment must not be presented as an empty monitoring list");
+assert.match(page, /We couldn’t check which details need clarification just now/, "a failed attention assessment must not be presented as no clarification needed");
+
+
 assert.match(page, /const unclassifiedFollowUpItems: AttentionDecision\[\] = unclassifiedLoops\.map\([\s\S]*?category: "needs_clarification"[\s\S]*?We do not yet have enough information to tell whether this needs action or can wait/, "unclassified saved follow-ups must remain explicitly unassessed rather than being represented as safe to wait");
 assert.match(page, /<h2>Being monitored<\/h2>[\s\S]*?categorized\.monitored\.map\([\s\S]*?<h2>Needs clarification<\/h2>[\s\S]*?unclassifiedFollowUpItems\.map\(/, "unclassified follow-ups must appear in Needs clarification, not Being monitored");
 assert.doesNotMatch(page, /<h2>Being monitored<\/h2>[\s\S]*?unclassifiedLoops\.map\(/, "Being monitored must contain only items with an explicit documented basis to wait");
