@@ -8,10 +8,10 @@ export const HABIT_WINDOW_MIN_ENTRIES = 3;
 export const HABIT_WINDOW_HOUR_TOLERANCE = 1;
 
 export const ACTIVATION_ACKNOWLEDGEMENT =
-  "Held in the Living Care Record.";
+  "Saved in your Care Record.";
 
 export const REENGAGEMENT_MESSAGES = [
-  "Anything new for the Living Care Record?",
+  "Anything new to add to your Care Record?",
   "We can pick up where you left off.",
   "Anything changed since last time?",
 ] as const;
@@ -31,11 +31,11 @@ export const RESOLUTION_PROMPT =
   "That issue looks resolved. Anything else you're carrying?";
 
 export const HABIT_WINDOW_PROMPT_EVENING =
-  "Anything worth adding to the Living Care Record this evening?";
+  "Anything worth adding to your Care Record this evening?";
 export const HABIT_WINDOW_PROMPT_MORNING =
-  "Anything worth adding to the Living Care Record this morning?";
+  "Anything worth adding to your Care Record this morning?";
 export const HABIT_WINDOW_PROMPT_DEFAULT =
-  "Anything worth adding to the Living Care Record?";
+  "Anything worth adding to your Care Record?";
 
 export const ACTIVATION_FORBIDDEN = [
   "streaks",
