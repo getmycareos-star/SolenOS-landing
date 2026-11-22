@@ -257,9 +257,9 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
       ...(item.supporting_quote ? ["Source wording: " + (caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable in this preview.")] : []),
       "How it was reported: " + readableStatus(item.epistemic_status || "not_recorded"),
       "Review: " + readableStatus(item.record_status || "not_recorded"),
-      "Meaning check: " + (item.semantic_entailment_status === "source_text_only_no_paraphrase"
-        ? "Exact saved wording; no AI paraphrase."
-        : "Needs caregiver review. Exact quote matching does not prove the summary paraphrase is fully supported."),
+      "Please check: " + (item.semantic_entailment_status === "source_text_only_no_paraphrase"
+        ? "This uses the exact words from the saved note. They have not been rewritten."
+        : "Please check that this summary means the same thing as the saved note."),
       "When it happened: " + formatDate(item.event_at),
       "When it was saved: " + formatDate(item.recorded_at),
       "Date note: " + (item.stale_warning ? "This information may be old. Check it before relying on it." : "No warning that this information is old."),
@@ -851,7 +851,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             {(draft.generation?.sections ?? []).map((item, index) => (
               <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{readableSection(item.section)}</strong>
-                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>{caregiverSafeGeneratedText(item.summary || item.text) ?? "Some details could not be shown."}</p>
+                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>{(draft.generation?.status === "source_only_fallback" ? caregiverSafeAssistantText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details could not be shown."}</p>
                 {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Original wording from the saved note or document: {caregiverSafeAssistantText(item.supporting_quote) ?? "Original wording is not available."}</p>}
                 <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "This uses the exact words saved in your Care Record. They have not been rewritten." : "The original wording matches, but please check that the summary says the same thing before sharing."}</p>
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
@@ -860,7 +860,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Related notes and documents: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => readableEvidenceType(source.type || source.source_type)).join(", ")}</p>}
               </article>
             ))}
-            {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized or interpreted. Check each detail and its dates before using it.</p>}
+            {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>SolenOS could not prepare a summary. This draft uses the saved words without rewriting them. Check each detail and its date before using it.</p>}
             {draft.generation?.status !== "generated" && draft.generation?.status !== "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>We couldn’t prepare this summary. You can still review the saved care information and decide what to share.</p>}
           </section>
         </>
@@ -870,7 +870,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         <section style={panel} aria-labelledby="family-share-heading">
           <h4 id="family-share-heading" style={{ margin: "0 0 8px", fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>Review and share with family</h4>
           <p style={{ marginTop: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.55 }}>Only caregivers who can access this Care Record are listed. You must review the summary before sharing. The link expires automatically, you can stop sharing it, and it does not change your Care Record.</p>
-          {draft.generation?.status === "source_only_fallback" && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized. Check each detail and its dates before sharing.</p>}
+          {draft.generation?.status === "source_only_fallback" && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>SolenOS could not prepare a summary. This draft uses the saved words without rewriting them. Check each detail and its date before sharing.</p>}
           {consentRequired && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, padding: 10, borderRadius: 8, background: "#f5f6f1" }}>
             You cannot receive or share care summaries until you save the required privacy and shared-care choices for this Care Record. Review them in <Link href="/workspace/settings" style={{ textDecoration: "underline" }}>Settings → Privacy</Link>, then refresh this panel. Your care record remains available.
           </p>}
@@ -910,9 +910,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
                 {claimSourceFor(draft, item, index)?.reporter_label && <small style={{ display: "block", color: "#667267", margin: "3px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</small>}
                 {claimSourceFor(draft, item, index)?.source_state_label && <small style={{ display: "block", color: "#765b2b", margin: "3px 0" }}>{caregiverSafeGeneratedText(claimSourceFor(draft, item, index)?.source_state_label) || "Status not available."}</small>}
-                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{caregiverSafeGeneratedText(item.summary || item.text) ?? "Some details could not be shown in this preview."}</p>
+                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{(draft.generation?.status === "source_only_fallback" ? caregiverSafeAssistantText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details could not be shown in this preview."}</p>
                 {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 6px", color: "#667267" }}>From the saved record: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
-                <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Exact saved wording; no AI paraphrase." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
+                <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "This uses the exact words from the saved note. They have not been rewritten." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 9px" }}>
                   <input type="checkbox" checked={reviewedSourceRefs.includes(item.source_ref)} disabled={busy} onChange={event => {
                     setReviewedSourceRefs(current => event.target.checked
@@ -976,7 +976,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </section>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
-            <span>I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement.</span>
+            <span>I checked each detail against the saved note or document, including its date and what is still unclear.</span>
           </label>
           <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || !["generated", "source_only_fallback"].includes(draft.generation_status ?? "") || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || [...new Set(editedSections.map(item => item.source_ref))].some(ref => !reviewedSourceRefs.includes(ref)) || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing…" : "Share with selected caregivers"}
@@ -1015,7 +1015,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 {Object.entries(activeSnapshot.sections ?? {}).map(([name, value]) => (
                   <div key={name} style={{ marginBottom: 10 }}>
                     <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{readableSection(name)}</strong>
-                    <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{caregiverSafeAssistantText(String(value ?? "")) ?? "Some details are not available in this summary."}</pre>
+                    <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", font: "inherit", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{caregiverSafeGeneratedText(String(value ?? "")) ?? "Some details are not available in this summary."}</pre>
                   </div>
                 ))}
                 
