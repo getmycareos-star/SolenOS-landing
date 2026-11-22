@@ -350,7 +350,6 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 {candidate.canonical_candidate.modality === "tentative" && <span>Not certain</span>}
                 {candidate.canonical_candidate.conditionality === "conditional" && <span>Only applies in some situations</span>}
                 {candidate.canonical_candidate.temporal_context === "historical" && <span>Historical information</span>}
-                {candidate.canonical_candidate.statement_kind === "recommendation" && <span>This is a recommendation. The document does not say it happened.</span>}
                 {candidate.canonical_candidate.statement_kind === "recommendation" && <span>A recommendation; no result has been recorded yet.</span>}
               </div>}
               {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
