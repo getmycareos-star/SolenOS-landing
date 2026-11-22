@@ -13,7 +13,7 @@ import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDa
 import DailyCareOfflineQueueNotice from "@/components/workflows/DailyCareOfflineQueueNotice";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 const StructuredDailyCapture = dynamic(
@@ -421,16 +421,16 @@ export default function DailyCarePage() {
               );
               setDeliveryIssues(issues.map((item) => ({
                 id: item.id || `delivery-issue-${issues.indexOf(item)}`,
-                title: caregiverSafeAssistantText(item.title) || "Care notification",
-                message: caregiverSafeAssistantText(item.push_delivery?.message) || "This notification could not be sent to this device. It remains in your SolenOS inbox.",
+                title: caregiverSafeGeneratedText(item.title) || "Care notification",
+                message: caregiverSafeGeneratedText(item.push_delivery?.message) || "This notification could not be sent to this device. It remains in your SolenOS inbox.",
               })));
               setDeliveryStatusError("");
             } else {
-              setDeliveryStatusError("Notification delivery status could not be read just now.");
+              setDeliveryStatusError("We couldn’t check whether a notification reached this device just now.");
             }
           })
           .catch(() => {
-            if (active) setDeliveryStatusError("Notification delivery status could not be checked just now.");
+            if (active) setDeliveryStatusError("We couldn’t check whether a notification reached this device just now.");
           });
 
         // Current care and history control the page-level context loading state.
@@ -764,9 +764,9 @@ export default function DailyCarePage() {
             )}
             {deliveryIssues.length > 0 && (
               <div role="status" className="daily-care-medication-confirmation">
-                <strong>Notification delivery needs attention</strong>
+                <strong>A notification could not be sent</strong>
                 {deliveryIssues.slice(0, 3).map((issue) => (
-                  <p key={issue.id}>{issue.title}: {issue.message}</p>
+                  <p key={issue.id}>{issue.title}: {caregiverSafeGeneratedText(issue.message) || "This notification could not be sent. Your in-app updates remain available."}</p>
                 ))}
               </div>
             )}
@@ -839,7 +839,7 @@ export default function DailyCarePage() {
                         </Button>
                       </div>
                     ) : (
-                      <p className="daily-care-muted">{caregiverSafeAssistantText(item.capture_processing?.message) || (
+                      <p className="daily-care-muted">{caregiverSafeGeneratedText(item.capture_processing?.message) || (
                         ["queued", "processing"].includes(item.capture_processing?.job_status || "")
                           ? "This update is being checked. You can keep using SolenOS."
                           : "Your note is saved, but its details could not be organized."
