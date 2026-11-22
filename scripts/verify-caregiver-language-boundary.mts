@@ -111,6 +111,7 @@ const lcrQwenInterpretation = read("../src/components/mvp-workspace/LcrQwenInter
 const shareSummary = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
 const legalDocuments = read("../src/lib/trust-content/legal-documents.ts");
 const careCaptureLegacy = read("../src/components/CareCapture.tsx");
+const careContinuityIntegrityPanel = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const companion = read("../src/components/workflows/AICompanion.tsx");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
 const documentsPage = read("../src/app/workspace/documents/page.tsx");
@@ -283,6 +284,9 @@ assert.match(policySettings, /Your full Care Record or your full care history/);
 assert.doesNotMatch(identityRecovery, /device registration|registered devices|one-time recovery code|revokes every existing session/);
 assert.match(identityRecovery, /Get back into your account/);
 assert.doesNotMatch(caregiverAccess, /responsibility_type\.replaceAll|transfer responsibility|primary caregiver transfer declined|No change should be assumed/);
+assert.doesNotMatch(careContinuityIntegrityPanel, /Review status:|Checked against a source/);
+assert.match(careContinuityIntegrityPanel, /Has this been checked\?/);
+assert.match(careContinuityIntegrityPanel, /Changes to your Care Record/);
 assert.match(caregiverAccess, /Hand over a care task/);
 assert.doesNotMatch(appointment, /source completeness|Recorded observations and caregiver reports|Information status unavailable|item\(s\) shown|saved source\(s\)/);
 assert.doesNotMatch(detailedAppointment, /clinician findings|Consultation opening summary|clinical follow-up remains open|Closure status/);
