@@ -114,7 +114,7 @@ export function LcrQwenInterpretation({
   if (!sourceEventId || !rawInput.trim()) return null;
 
   return (
-    <section className="care-card-changed lcr-qwen-interpretation" aria-label="Record context interpretation">
+    <section className="care-card-changed lcr-qwen-interpretation" aria-label="Possible explanation for this update">
       <h3 className="section-kicker">What this update may mean</h3>
       {state.status === "loading" && (
         <p className="panel-muted" role="status">Looking at earlier care information…</p>
