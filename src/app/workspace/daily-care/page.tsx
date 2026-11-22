@@ -301,8 +301,8 @@ export default function DailyCarePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
-  const [captureOpen, setCaptureOpen] = useState(false);
-  const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
+  const [captureOpen, setCaptureOpen] = useState(true);
+  const [captureMode, setCaptureMode] = useState<CaptureMode | null>("something");
   const [reviewAnalysisId, setReviewAnalysisId] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
@@ -678,7 +678,7 @@ export default function DailyCarePage() {
                         checkin: "Quick check-in",
                         note: "Note",
                       } as const)[captureMode]}</strong>
-                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>Back to choices</Button>
+                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>More ways to share</Button>
                     </div>
                     {captureMode === "checkin" ? (
                       <QuickDailyCheckIn />
