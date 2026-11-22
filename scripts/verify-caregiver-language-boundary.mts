@@ -104,7 +104,7 @@ assert.equal(caregiverSafeGeneratedText("The backend could not confirm the claim
 assert.equal(caregiverSafeGeneratedText("The evidence retrieval pipeline is incomplete."), null);
 assert.equal(caregiverSafeGeneratedText("The claim assessment is still running."), null);
 assert.equal(caregiverSafeGeneratedText("The technical details are not available."), null);
-assert.equal(caregiverSafeGeneratedText("Your care assessment is scheduled for Tuesday, and the notes provide evidence of a change."), "Your care assessment is scheduled for Tuesday, and the notes provide evidence of a change.");
+assert.equal(caregiverSafeGeneratedText("Your care assessment is scheduled for Tuesday, and the notes describe a change."), "Your care assessment is scheduled for Tuesday, and the notes describe a change.");
 assert.equal(caregiverSafeGeneratedText("I cannot be confident about the cause yet."), "I cannot be confident about the cause yet.");
 assert.equal(caregiverSafeGeneratedText("Your care update was saved. We do not know what changed yet."), "Your care update was saved. We do not know what changed yet.");
 assert.equal(caregiverSafeGeneratedText("Your care update was saved. We do not know what caused the change yet."), "Your care update was saved. We do not know what caused the change yet.");
