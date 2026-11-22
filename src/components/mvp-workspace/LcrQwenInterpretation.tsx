@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { postJSON } from "@/api/client";
-import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type AssistResult = {
   reply?: string;
@@ -153,7 +153,7 @@ export function LcrQwenInterpretation({
                   {claim.support_status === "not_matched_to_saved_wording" && <p>We could not match this statement to the wording in a saved record. Check it before relying on it.</p>}
                   {claim.source_references.map((source, index) => (
                     <div key={(source.label || "source") + index}>
-                      <strong>{source.label || "Saved care information"}</strong>
+                      <strong>{caregiverSafeGeneratedText(source.label) || "Saved care information"}</strong>
                       {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
                       {source.recorded_at && <p>When it was recorded: {new Date(source.recorded_at).toLocaleString()}</p>}
                       {source.reported_by && <p>Reported by: {source.reported_by}</p>}
@@ -161,14 +161,14 @@ export function LcrQwenInterpretation({
                       {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                       {source.related_evidence?.map((evidence, evidenceIndex) => (
                         <div key={"related-" + evidenceIndex}>
-                          <strong>{evidence.label || "Related note or document"}</strong>
+                          <strong>{caregiverSafeGeneratedText(evidence.label) || "Related note or document"}</strong>
                           {evidence.reported_by && <p>Reported by: {evidence.reported_by}</p>}
                           {evidence.entered_by && <p>Added by: {evidence.entered_by}</p>}
                           {evidence.recorded_at && <p>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
                           {evidence.source_excerpt && <blockquote>{evidence.source_excerpt}</blockquote>}
                           {evidence.observations?.map((observation, observationIndex) => (
                             <div key={"observation-" + observationIndex}>
-                              <p>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
+                              <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {observation.value || "Details not supplied"}</p>
                               {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
                               {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
                               {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
