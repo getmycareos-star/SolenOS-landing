@@ -39,7 +39,7 @@ function downloadBriefing(draft: BriefingDraft) {
     draft.audience === "family"
       ? "SolenOS Family Care Briefing"
       : "SolenOS Professional Care Briefing",
-    "Source of truth: Living Care Record",
+    "Source: Care Record",
     "Prepared: " + (draft.prepared_at || "Not recorded"),
     "Period: " + (draft.window?.from || "Not recorded") + " to " + (draft.window?.to || "Not recorded"),
     ...(draft.selected_appointment ? [
@@ -230,7 +230,7 @@ export function ShareCareSummaryPanel({
             ))}
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "10px 0" }}>
               <input type="checkbox" checked={exportReviewed} onChange={event => setExportReviewed(event.target.checked)} />
-              <span>I understand this is an AI-assisted draft, not a medical opinion or a replacement for the full Care Record.</span>
+              <span>I understand this is a draft prepared with help from SolenOS, not a medical opinion or a replacement for the full Care Record.</span>
             </label>
             <button
               type="button"
