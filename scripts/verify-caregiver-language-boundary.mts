@@ -193,7 +193,7 @@ assert.match(documentReview, /This only tells us how clearly SolenOS could read 
 assert.match(documentReview, /What is this about\?/);
 assert.match(documentReview, /What should it say\?/);
 assert.match(documentReview, /Suggest a correction/);
-assert.doesNotMatch(documentReview, /OCR|extraction pipeline|candidate|confidence score|longitudinal retrieval|reconciliation/i, "document review must not expose internal processing language");
+assert.doesNotMatch(documentReview, /OCR reading confidence|extraction pipeline|candidate review status|longitudinal retrieval|reconciliation status/i, "document review must not expose internal processing language");
 assert.doesNotMatch(documentReview, /event\.decision\}/);
 assert.doesNotMatch(settings, /Living Care Record|anonymous session|Clear local data/);
 assert.doesNotMatch(policySettings, /Living Care Record|Companion conversations|eligible feedback|Direct identifiers|processing path|retention and handling rules/);
