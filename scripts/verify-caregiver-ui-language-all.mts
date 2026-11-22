@@ -59,7 +59,19 @@ for (const file of caregiverCopySources) {
 }
 files.push(...sharedLanguageHelpers);
 
-const forbidden = /\b(?:epistemic status|epistemic|provenance|reconciliation review|reconciliation|assertion|living care record|ai companion|ai doctor|care continuity|longitudinal history|assessment coverage|source attribution|care handoffs|handoff history|schema|database|backend|frontend|endpoint|payload|telemetry|inference|retrieval|extraction|lineage|pipeline|migration|idempotent|persistence|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|source attribution|candidate|projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline|technical|integrity|claim|observation window|source id|ai interpretation|ai-generated|ai-assisted|confidence|assessment|evidence|anonymous session|care session|session token)\b/i;
+const forbidden = /\b(?:epistemic(?: status)?|provenance|reconciliation(?: review)?|assertions?|living care record|ai companion|ai doctor|care continuity|longitudinal(?: history)?|assessment coverage|source attribution|handoff history|schema|database|backend|frontend|endpoint|payload|telemetry|inference(?: pipeline)?|retrieval(?: result| pipeline)?|extraction(?: pipeline)?|lineage|pipeline|migration|idempotent|persistence layer|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|claim (?:assessment|provenance|candidate|id)|evidence (?:review|assessment|completeness|freshness|retrieval|payload|id|projection|lineage|pipeline|chain)|confidence (?:score|level|threshold)|(?:low|high) confidence|candidate projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline comparison|technical (?:details|diagnostic|diagnostics|error)|data integrity|observation window|source id|ai interpretation|ai-generated|ai-assisted|anonymous session|care session|session token)\b/i;
+
+const vocabularyExamples: Array<{ text: string; shouldFlag: boolean }> = [
+  { text: "Your care assessment is scheduled for Tuesday.", shouldFlag: false },
+  { text: "The notes provide evidence of a change.", shouldFlag: false },
+  { text: "The insurer is still reviewing the claim.", shouldFlag: false },
+  { text: "The evidence retrieval pipeline is incomplete.", shouldFlag: true },
+  { text: "The confidence score is low.", shouldFlag: true },
+  { text: "The backend payload is incomplete.", shouldFlag: true },
+];
+for (const example of vocabularyExamples) {
+  assert.equal(forbidden.test(example.text), example.shouldFlag, `Unexpected caregiver vocabulary classification: ${example.text}`);
+}
 
 type Finding = { file: string; line: number; text: string; term: string };
 const findings: Finding[] = [];
