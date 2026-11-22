@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
-type Difference between reports = {
+type Conflict = {
   id: string;
   person_id: string;
   subject_type: string;
@@ -50,9 +50,9 @@ const button: CSSProperties = {
 };
 const statuses = ["unresolved", "partially_resolved", "qualified", "resolved", "superseded", "reopened"] as const;
 
-export default function Difference between reportsResolutionPanel({ personId }: { personId?: string }) {
+export default function ConflictResolutionPanel({ personId }: { personId?: string }) {
   const [scopedPersonId, setScopedPersonId] = useState("");
-  const [conflicts, setDifference between reportss] = useState<Difference between reports[]>([]);
+  const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [status, setStatus] = useState<(typeof statuses)[number]>("unresolved");
@@ -91,13 +91,13 @@ export default function Difference between reportsResolutionPanel({ personId }: 
         throw new Error("Invalid or cross-record evidence response");
       }
       setScopedPersonId(sessionPersonId);
-      setDifference between reportss(conflictRows as Difference between reports[]);
+      setConflicts(conflictRows as Conflict[]);
       setEvidence(evidenceRows as Evidence[]);
       setSelectedId((current) => current && conflictRows.some((row) => row.id === current)
         ? current : conflictRows[0]?.id ?? "");
     } catch {
       setScopedPersonId("");
-      setDifference between reportss([]);
+      setConflicts([]);
       setEvidence([]);
       setSelectedId("");
       setError("Reports that differ and their supporting information could not be loaded. No empty result is assumed.");
@@ -176,7 +176,7 @@ export default function Difference between reportsResolutionPanel({ personId }: 
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && conflicts.length === 0 && <p>No reports that disagree are saved here right now. This does not mean no disagreement exists elsewhere.</p>}
     {!loading && !error && conflicts.length > 0 && <>
-      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Difference between reports
+      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Reports that differ
         <select style={field} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
           {conflicts.map((item) => <option key={item.id} value={item.id}>Care detail: {caregiverSafeAssistantText(item.description) || "Saved reports differ"} · {caregiverStatusLabel(item.resolution_status) || "Status not available"}</option>)}
         </select>
