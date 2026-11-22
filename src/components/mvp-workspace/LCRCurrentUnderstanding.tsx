@@ -1103,7 +1103,7 @@ export function LCRCurrentUnderstanding() {
         setAssessment(null);
         setSourceFreshness(null);
         personIdRef.current = "";
-        setRegisteredActionsError("Agreed actions are unavailable because your care record session could not be confirmed.");
+        setRegisteredActionsError("We couldn't confirm your access to the Care Record. Refresh the page and try again.");
       }
       setError("The care history could not be loaded. Your previously saved information is still shown when available. Please try again.");
     } finally {
@@ -1366,7 +1366,7 @@ export function LCRCurrentUnderstanding() {
       setCreateReminderForSuggestion(false);
       setReminderDueInput("");
     } catch (cause) {
-      setActionApprovalError("The action could not be registered.");
+      setActionApprovalError("We couldn't save this as an agreed next step.");
     } finally {
       setActionApprovalLoadingId(null);
     }
@@ -1374,12 +1374,12 @@ export function LCRCurrentUnderstanding() {
 
   const deferSuggestion = async (item: (typeof openLoopItems)[number]) => {
     if (item.source !== "open_loop_records") {
-      setActionApprovalError("This item is not a directly editable Open Loop record. It remains informational; no deferral was written.");
+      setActionApprovalError("This item cannot be changed here. It is shown for information only; no change was made.");
       return;
     }
     const reason = (suggestionDispositionReasons[suggestionReference(item)] || "").trim();
     if (!reason) {
-      setActionApprovalError("Enter a reason before deferring this suggestion.");
+      setActionApprovalError("Add a reason before postponing this suggestion.");
       return;
     }
     setActionApprovalLoadingId(suggestionReference(item));
@@ -1401,7 +1401,7 @@ export function LCRCurrentUnderstanding() {
       setReviewingSuggestionId(null);
       await load(true);
     } catch (cause) {
-      setActionApprovalError("The suggestion could not be deferred.");
+      setActionApprovalError("We couldn't postpone this suggestion. Please try again.");
     } finally {
       setActionApprovalLoadingId(null);
     }
