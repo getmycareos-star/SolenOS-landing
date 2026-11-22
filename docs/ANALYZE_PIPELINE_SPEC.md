@@ -1,82 +1,26 @@
-> **Retired:** The `POST /api/analyze` endpoint described below was permanently closed on 2026-11-22 and returns HTTP 410 in every environment. Its former Gemini execution path is not part of the caregiver product and must not be re-enabled. The authenticated backend Qwen workflows are the supported inference boundary.
+# Retired legacy analysis pipeline
 
-# /api/analyze — Core Execution Pipeline v1
+<escape>**Status:** Permanently retired on 2026-11-22.</escape>
 
-## Role
+The former `POST /api/analyze` endpoint returns HTTP 410 in every environment. It is not a caregiver workflow and must not be re-enabled.
 
-The **only cognitive execution layer** in SolenOS MVP.
+The old Gemini execution pipeline, provider-key requirement, hosted model selector, and retry path are not supported. The compatibility module retained under `src/lib/solenos-langchain-adapter/gemini.ts` throws an explicit retirement error and performs no model call.
 
-Transforms: `input string → structured SolenOS Decision JSON`
+## Supported inference boundary
 
-Stateless. No memory, cache, events, or session persistence.
+Caregiver-facing inference runs through authenticated FastAPI endpoints and the private Qwen runtime configured by the backend. The browser does not connect directly to Ollama and does not receive model credentials.
 
-## Request
+Qwen output is untrusted assistance. It must remain source-grounded, person-scoped, reviewable, and read-only until the caregiver explicitly approves a permitted Living Care Record change. If inference is unavailable or invalid, the workflow reports failure; it does not silently substitute another provider or fabricated output.
 
-```typescript
-type AnalyzeRequest = {
-  input: string;
-  source_type: "text" | "document";
-};
-```
+## Current workflow entry points
 
-Document extraction happens **before** this endpoint (`/api/v1/ingest/extract`).
+- Companion conversation: `POST /api/v1/conversation/message`
+- Read-only assistance: `POST /api/v1/assistant/assist`
+- Durable Qwen jobs: `POST /api/v1/assistant/jobs`
+- Daily Care interpretation and review: `/api/v1/daily-care/intelligence`
+- Document extraction and review: `/api/v1/documents/intelligence`
+- Change detection: `/api/v1/care-delta`
+- Appointment continuity: `/api/v1/appointment-workspaces`
+- Handoff preparation: `/api/v1/handoff-drafts`
 
-## Pipeline (immutable order)
-
-```
-1. Input Normalization
-2. Prompt Assembly (LangChain)
-3. Gemini LLM Call (single pass)
-4. Zod Validation (SolenOSSchema)
-5. Retry (max 2, exact notice)
-6. Response Return
-```
-
-## Success response
-
-Returns the **exact** Zod-parsed object — six SolenOS fields, no metadata:
-
-```json
-{
-  "what_is_happening": "...",
-  "what_matters_now": "...",
-  "what_to_ask_next": "...",
-  "risk_level": "low",
-  "what_can_wait": "...",
-  "follow_up_items": []
-}
-```
-
-## Failure response (422)
-
-After 3 attempts (initial + 2 retries):
-
-```json
-{
-  "error": "unable_to_process",
-  "reason": "invalid_model_output"
-}
-```
-
-## Configuration
-
-Requires `GEMINI_API_KEY`. LLM provider for this endpoint is **Gemini only**.
-
-## Module layout
-
-| Path | Role |
-|------|------|
-| `src/app/api/analyze/route.ts` | HTTP boundary |
-| `src/lib/analyze-pipeline/` | Normalize, orchestrate, retry |
-| `src/lib/solenos-langchain-adapter/` | Prompt + Gemini invoke |
-| `src/lib/response-validator/` | Zod hard gate |
-
-## Verify
-
-```bash
-npm run verify:analyze
-```
-
-## Related endpoints
-
-`POST /api/v1/runtime/execute` remains the event-sourced deterministic runtime (separate path).
+These routes are owned by the backend. Their availability and live model behaviour must be verified through backend integration and live-Qwen acceptance tests, not inferred from this document.
