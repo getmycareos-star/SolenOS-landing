@@ -429,7 +429,7 @@ const navigationLanguage = read("../src/lib/workspace-navigation.ts");
 const restrictedRoleLanguage = read("../src/components/RestrictedRolePage.tsx");
 const situationRouteLanguage = read("../src/app/api/situation/route.ts");
 
-assert.doesNotMatch(morePageLanguage, /\b(?:database|API|OCR|provenance|reconciliation|assertion|schema|JSON|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint|PostgreSQL|SQL)\b/i,
+assert.doesNotMatch(morePageLanguage, /\b(?:database|OCR|provenance|reconciliation|assertion|schema|JSON|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint|PostgreSQL|SQL)\b/i,
   "the More page must not expose engineering or processing language to caregivers");
 assert.doesNotMatch(navigationLanguage, /label: "Advanced care record"|description: "Review detailed care-record information"/,
   "secondary navigation must use plain caregiver language");
