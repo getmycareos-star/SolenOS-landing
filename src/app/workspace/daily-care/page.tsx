@@ -889,7 +889,7 @@ export default function DailyCarePage() {
 
           <details className="daily-care-context-panel">
             <summary><h2>Need to review an earlier update?</h2></summary>
-            <p className="daily-care-muted">Use Daily Care to share new information. Care history shows all saved updates and corrections.</p>
+            <p className="daily-care-muted">Open care history to find earlier updates and any suggested details that still need your review.</p>
             <Link href="/workspace/timeline" className="care-reminders-inline-link">Open care history</Link>
           </details>
           {reviewAnalysisId && (
