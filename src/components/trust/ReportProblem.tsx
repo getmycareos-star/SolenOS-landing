@@ -23,22 +23,22 @@ export default function ReportProblem({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const categories = [
-    { value: 'factually-incorrect', label: 'Factually incorrect' },
-    { value: 'missing-context', label: 'Missing important context' },
-    { value: 'misleading-interpretation', label: 'Misleading interpretation' },
-    { value: 'unsupported-claim', label: 'Unsupported claim' },
-    { value: 'privacy-concern', label: 'Privacy or access concern' },
-    { value: 'unsafe-output', label: 'Potentially unsafe AI output' },
+    { value: 'factually-incorrect', label: 'This is not correct' },
+    { value: 'missing-context', label: 'Important details are missing' },
+    { value: 'misleading-interpretation', label: 'This does not reflect what happened' },
+    { value: 'unsupported-claim', label: 'This is not supported by the saved information' },
+    { value: 'privacy-concern', label: 'Privacy or sharing concern' },
+    { value: 'unsafe-output', label: 'Something here could be unsafe' },
     { value: 'other', label: 'Other' }
   ];
 
   const getContentTypeLabel = (): string => {
     switch (contentType) {
-      case 'ai-insight': return 'AI insight';
-      case 'extracted-info': return 'Extracted information';
-      case 'ai-summary': return 'AI summary';
+      case 'ai-insight': return 'suggested detail';
+      case 'extracted-info': return 'information read from a document';
+      case 'ai-summary': return 'summary';
       case 'recommendation': return 'Recommendation';
-      default: return 'Content';
+      default: return 'information';
     }
   };
 
@@ -64,10 +64,10 @@ export default function ReportProblem({
           setDescription('');
         }, 1500);
       } else {
-        setSubmitError('Failed to submit report');
+        setSubmitError('We couldn’t send your report. Please try again.');
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Unknown error');
+      setSubmitError('We couldn’t send your report. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +111,7 @@ export default function ReportProblem({
           color: 'var(--success)',
           fontWeight: '500'
         }}>
-          Report submitted
+          Thanks. Your report was sent.
         </span>
       </div>
     );
@@ -134,7 +134,7 @@ export default function ReportProblem({
           fontWeight: '500',
           color: 'var(--text)'
         }}>
-          Report a problem with {getContentTypeLabel()}
+          Report a problem with this {getContentTypeLabel()}
         </span>
         <AccessibleButton
           variant="outline"
@@ -201,13 +201,13 @@ export default function ReportProblem({
           display: 'block',
           marginBottom: '2px'
         }}>
-          Additional details (optional):
+          Anything else we should know? (optional)
         </span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          placeholder="Please describe the issue in more detail..."
+          placeholder="Tell us what went wrong..."
           style={{
             width: '100%',
             padding: '8px 12px',
@@ -236,7 +236,7 @@ export default function ReportProblem({
             display: 'block',
             marginBottom: '2px'
           }}>
-            Error:
+            We couldn’t send your report:
           </span>
           <p style={{ 
             fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
@@ -258,7 +258,7 @@ export default function ReportProblem({
           onClick={handleSubmit}
           disabled={submitting || !selectedCategory}
           isLoading={submitting}
-          children={submitting ? 'Submitting...' : 'Submit report'}
+          children={submitting ? 'Sending...' : 'Send report'}
         />
         
         <AccessibleButton
