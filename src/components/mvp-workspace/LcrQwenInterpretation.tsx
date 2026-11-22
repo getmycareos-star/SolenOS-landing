@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { postJSON } from "@/api/client";
+import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type AssistResult = {
   reply?: string;
