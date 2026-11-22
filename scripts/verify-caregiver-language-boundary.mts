@@ -233,6 +233,8 @@ assert.match(companion, /history shown here may be incomplete/);
 assert.match(companion, /caregiverSafeGeneratedText\(response\.reply\)/);
 assert.match(companion, /caregiverSafeGeneratedText\(msg\.safety_note\)/, "dynamic Companion safety notes must use caregiver language");
 assert.match(companion, /caregiverSafeGeneratedText\(source\.label\)/, "dynamic Companion source labels must use caregiver language");
+assert.match(companion, /caregiverSafeGeneratedText\(item\.label\)/, "related Companion source labels must use caregiver language");
+assert.match(companion, /caregiverFieldLabel\(observation\.attribute\)/, "internal care-field keys must be translated or omitted");
 assert.match(companion, /caregiverStatusLabel\(item\.status\)/, "saved Companion review statuses must use caregiver-facing labels");
 assert.match(companion, /caregiverStatusLabel\(entry\.decision\)/, "Companion review history decisions must use caregiver-facing labels");
 assert.doesNotMatch(companion, /item\.status\.replace\(|entry\.decision\.replace\(/, "raw backend status codes must never be shown to caregivers");
