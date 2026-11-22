@@ -250,6 +250,8 @@ assert.match(companion, /caregiverSafeGeneratedText\(item\.label\)/, "related Co
 assert.match(companion, /caregiverFieldLabel\(observation\.attribute\)/, "internal care-field keys must be translated or omitted");
 assert.match(companion, /caregiverStatusLabel\(item\.status\)/, "saved Companion review statuses must use caregiver-facing labels");
 assert.match(companion, /caregiverStatusLabel\(entry\.decision\)/, "Companion review history decisions must use caregiver-facing labels");
+assert.match(companion, /caregiverSafeGeneratedText\(entry\.rationale\)/, "server-generated review explanations must use caregiver language in every review-history view");
+assert.doesNotMatch(companion, /entry\.decision\.replace\(/, "raw review decision codes must never be rendered");
 assert.doesNotMatch(companion, /item\.status\.replace\(|entry\.decision\.replace\(/, "raw backend status codes must never be shown to caregivers");
 assert.match(companion, /caregiverSafeGeneratedText\(claim\.text\)/);
 assert.match(companion, /caregiverSafeGeneratedText\(claim\.aggregate_review\?\.interpretation_limit\)/);
