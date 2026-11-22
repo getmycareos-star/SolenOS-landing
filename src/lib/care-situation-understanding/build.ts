@@ -347,11 +347,13 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
  */
 async function getBestExtraction(params: {
   rawText: string;
+  evidenceId?: string;
   contributorId: string;
   signal?: AbortSignal;
 }): Promise<import("../care-reality-extraction").CareRealityExtractionResult> {
   return llmStructuredUnderstanding({
     rawText: params.rawText,
+    evidenceId: params.evidenceId,
     contributorId: params.contributorId,
     signal: params.signal,
   });
@@ -364,6 +366,7 @@ async function getBestExtraction(params: {
  */
 export async function buildCareSituationUnderstanding(params: {
   rawText: string;
+  evidenceId?: string;
   contributorId?: string;
   careKey?: string;
   personDisplayName?: string | null;
@@ -389,6 +392,7 @@ export async function buildCareSituationUnderstanding(params: {
     anchor.extraction ??
     (await getBestExtraction({
       rawText: raw,
+      evidenceId: params.evidenceId,
       contributorId: params.contributorId ?? careKey,
       signal: params.signal,
     }));
