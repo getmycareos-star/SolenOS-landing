@@ -4,10 +4,9 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
-import { WORKSPACE_NAVIGATION } from "@/lib/workspace-navigation";
+import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { WORKSPACE_NAVIGATION, WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 import { SolenosWordmark } from "@/components/brand";
-import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
 import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, revokeAnonymousSession } from "@/api/client";
 import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
@@ -307,10 +306,15 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
     }
   }, [installPrompt, router]);
 
-  const active = (href: string) =>
-    href === "/workspace"
-      ? pathname === href
-      : pathname === href || pathname.startsWith(href + "/");
+  const active = (href: string) => {
+    if (href === "/workspace") return pathname === href;
+    if (href === "/workspace/more") {
+      return pathname === href || WORKSPACE_SECONDARY_NAVIGATION.some((item) =>
+        pathname === item.href || pathname.startsWith(item.href + "/"),
+      );
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   return (
     <div className={`solenos-chat-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
@@ -353,18 +357,6 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           </div>
 
           <nav className="solenos-chat-primary-nav" aria-label="Primary navigation">
-            <button type="button" aria-label="Search care history" title="Search care history" className="solenos-chat-nav-item solenos-chat-history-search" onClick={() => {
-              const input = document.querySelector<HTMLInputElement>(".history-search-wrap input");
-              input?.focus();
-              input?.scrollIntoView({ block: "nearest" });
-            }}>
-              <span className="solenos-chat-nav-icon"><Search size={19} strokeWidth={1.8} /></span>
-              <span className="solenos-chat-nav-copy">
-                <span className="solenos-chat-nav-label">Search history</span>
-                <span className="solenos-chat-nav-description">Find something recorded before</span>
-              </span>
-            </button>
-
             <div className="solenos-chat-nav-group" role="group" aria-labelledby="solenos-nav-care-heading">
               <p id="solenos-nav-care-heading" className="solenos-chat-nav-heading">CARE</p>
               {WORKSPACE_NAVIGATION.care.map(({ id, href, label, description, icon: Icon }) => (
@@ -413,11 +405,6 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               ))}
             </div>
           </nav>
-
-          <div className="solenos-chat-history-section">
-            <div className="solenos-chat-history-heading">Recent history</div>
-            <HistoryDrawer />
-          </div>
 
           <div className="solenos-chat-sidebar-bottom">
             {WORKSPACE_NAVIGATION.settings.map(({ id, href, label, description, icon: Icon }) => (
