@@ -8,7 +8,7 @@ import {
 } from "./llm-schema";
 
 /**
- * Map LLM typed output to existing CareRealityExtractionResult types.
+ * Map private Qwen typed output to existing CareRealityExtractionResult types.
  * Assigns stable IDs and maintains structure compatibility.
  */
 function mapLlmOutputToExtractionResult(
@@ -105,8 +105,8 @@ function mapLlmOutputToExtractionResult(
 }
 
 /**
- * Attempt to extract care reality using Gemini LLM for structured understanding.
- * Falls back to deterministic/regex extraction on any failure.
+ * Extract care reality through authenticated backend Qwen inference.
+ * Qwen failures are surfaced; this function never substitutes deterministic extraction.
  *
  * @param rawText - The caregiver's raw input text (any length, any structure)
  * @param contributorId - Optional contributor id for attribution
@@ -114,13 +114,15 @@ function mapLlmOutputToExtractionResult(
  */
 export async function llmStructuredUnderstanding(params: {
   rawText: string;
-  evidenceId?: string;
+  evidenceId: string;
   contributorId?: string;
   signal?: AbortSignal;
 }): Promise<CareRealityExtractionResult> {
   const source = params.rawText ?? "";
   const contributor = params.contributorId ?? "caregiver";
-  if (!source.trim()) return extractCareRealityFromText({ rawText: "", source: contributor });
+  if (!source.trim()) {
+    throw new Error("Caregiver information is required before Qwen can process it.");
+  }
   if (!params.evidenceId) {
     throw new Error("A saved care record is required before Qwen can process this information.");
   }
