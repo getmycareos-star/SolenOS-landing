@@ -272,8 +272,8 @@ assert.doesNotMatch(documentReview, /Extraction status|Contains negative wording
 assert.doesNotMatch(sourceReview, /Evidence records could not be loaded|Saved evidence reviews could not be loaded/i,
   "saved note and document review errors must be caregiver-readable");
 assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/);
-assert.match(careContinuity, /More about your care information/);
-assert.match(careContinuity, /Information shared about care/);
+assert.match(careContinuity, /More about the care information saved here/);
+assert.match(careContinuity, /Care information shared/);
 assert.doesNotMatch(statusCareDelta, /Clinician-oriented summary/);
 assert.match(statusCareDelta, /Check the summary against saved information/);
 assert.match(statusCareDelta, /Model-generated clinician summaries are withheld until they have their own evidence evaluation/);
