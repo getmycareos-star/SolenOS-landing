@@ -258,6 +258,9 @@ assert.match(companion, /caregiverSafeGeneratedText\(claim\.aggregate_review\?\.
 
 assert.match(appointment, /caregiverFieldLabel\(item\.field\)/, "appointment details must translate internal field names");
 assert.match(appointment, /caregiverSafeGeneratedText\(item\.necessity_rationale\)/, "generated appointment explanations must use caregiver language");
+assert.match(appointment, /caregiverSafeGeneratedText\(item\.question\)/, "suggested appointment questions must use caregiver language");
+assert.match(appointment, /caregiverSafeGeneratedText\(item\.interpretation_limit\)/, "appointment limits must use caregiver language in every view");
+assert.match(appointment, /caregiverSafeGeneratedText\(item\.rationale\)/, "server-generated appointment review explanations must use caregiver language");
 assert.match(appointment, /caregiverSafeGeneratedText\(item\.interpretation_limit\)/, "generated appointment limits must use caregiver language");
 assert.match(appointment, /caregiverSafeGeneratedText\(item\.source_label\)/, "generated appointment source labels must use caregiver language");
 assert.match(appointment, /item\.missing_fields\.map\(field => caregiverFieldLabel\(field\)\)/, "missing field names must be translated before display");
