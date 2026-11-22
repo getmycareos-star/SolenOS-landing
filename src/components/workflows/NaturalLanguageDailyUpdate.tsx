@@ -55,12 +55,14 @@ export default function NaturalLanguageDailyUpdate() {
         };
         if (!active) return;
         if (status.status === "completed") {
+          const assessmentStatus = status.daily_capture?.assessment_status || "completed";
+          const assessmentFailed = assessmentStatus === "failed" || assessmentStatus === "unavailable";
           setReceipt((current) => current?.jobId === jobId
             ? {
                 ...current,
-                processingStatus: "completed",
-                extractionStatus: "available",
-                assessmentStatus: status.daily_capture?.assessment_status || "completed",
+                processingStatus: assessmentFailed ? "failed" : "completed",
+                extractionStatus: assessmentFailed ? assessmentStatus : "available",
+                assessmentStatus,
               }
             : current);
           window.dispatchEvent(new Event("careRecordUpdated"));
@@ -426,7 +428,7 @@ export default function NaturalLanguageDailyUpdate() {
           <p style={{ margin: 0 }}>Your update was saved to your Care Record.</p>
           {(receipt.processingStatus === "queued" || receipt.processingStatus === "processing") && (
             <p style={{ margin: "6px 0 0" }}>
-              SolenOS is reviewing the details you shared. You can keep using Daily Care.
+              SolenOS is organizing the details in the background. You can keep using Daily Care.
             </p>
           )}
           {receipt.processingStatus === "completed" && (
@@ -436,7 +438,7 @@ export default function NaturalLanguageDailyUpdate() {
           )}
           {(receipt.processingStatus === "failed" || receipt.processingStatus === "unavailable") && (
             <p style={{ margin: "6px 0 0" }}>
-              SolenOS couldn’t sort the details yet. Your original update is still saved. No suggested details have been added to your Care Record.
+              SolenOS couldn’t finish sorting this update. Your original report is still saved. No extracted details have been treated as confirmed or added to your Care Record.
             </p>
           )}
           {receipt.medicationNeedsConfirmation && (
