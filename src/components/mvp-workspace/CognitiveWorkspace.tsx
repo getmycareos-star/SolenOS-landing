@@ -19,6 +19,7 @@ import {
   type WorkspaceSituationResponse,
 } from "@/lib/situation-entry/backend-response";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
+import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import {
   CARE_RECIPIENT_ID_STORAGE,
   DURABLE_CARE_KEY_STORAGE,
@@ -1137,7 +1138,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
             )}
             {situationResponse.analysis_status === "partial" && (
               <p className="workspace-status-warning" role="status">
-                {situationResponse.analysis_warning ||
+                {caregiverSafeGeneratedText(situationResponse.analysis_warning) ||
                   "Your update was saved, but SolenOS could not check it against earlier care information. Your original note is still saved."}
               </p>
             )}
@@ -1147,17 +1148,26 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                 <p>These suggestions came from the note or document you shared. They have not been confirmed and have not been added to your Care Record.</p>
                 {(situationResponse.qwen_candidates.observations ?? []).length > 0 ? (
                   <ul>
-                    {(situationResponse.qwen_candidates.observations ?? []).map((candidate, index) => (
-                      <li key={`${candidate.source_quote}-${index}`}>
-                        <strong>{candidate.subject}:</strong> {candidate.observation}
-                        <blockquote>{candidate.source_quote}</blockquote>
-                      </li>
-                    ))}
+                    {(situationResponse.qwen_candidates.observations ?? []).map((candidate, index) => {
+                      const subject = caregiverSafeGeneratedText(candidate.subject);
+                      const observation = caregiverSafeGeneratedText(candidate.observation);
+                      return (
+                        <li key={`${candidate.source_quote}-${index}`}>
+                          {subject && observation
+                            ? <><strong>{subject}:</strong> {observation}</>
+                            : <p role="status">We couldn't show this suggested detail clearly. Check your original note before using it.</p>}
+                          <blockquote>{candidate.source_quote}</blockquote>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : <p>No suggested details are available to check.</p>}
-                {(situationResponse.qwen_candidates.open_questions ?? []).map((question, index) => (
-                  <p key={`${question}-${index}`}>Question to answer: {question}</p>
-                ))}
+                {(situationResponse.qwen_candidates.open_questions ?? []).map((question, index) => {
+                  const safeQuestion = caregiverSafeGeneratedText(question);
+                  return safeQuestion
+                    ? <p key={`${question}-${index}`}>Question to answer: {safeQuestion}</p>
+                    : null;
+                })}
               </section>
             )}
             {situationResponse.qwen_extraction_status === "unavailable" && (
