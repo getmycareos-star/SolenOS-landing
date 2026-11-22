@@ -663,6 +663,21 @@ function LegalCard() {
   );
 }
 
+function privacyRequestStatusLabel(status: string): string {
+  switch (status) {
+    case "received_pending_authority_review":
+      return "Waiting for review";
+    case "approved_pending_fulfilment_assessment":
+      return "Approved; deletion still needs to be checked";
+    case "fulfilled":
+      return "Completed";
+    case "rejected":
+      return "Not approved";
+    default:
+      return "We’ll update you when we know more";
+  }
+}
+
 /** Privacy & Data — clear/delete local data + data-training toggle. */
 function PrivacyCard() {
   const { show, render } = useToast();
@@ -807,9 +822,9 @@ function PrivacyCard() {
     }
 
     const cleanupWarnings = [
-      ...(!serverSessionRevoked ? ["server sign-out could not be confirmed; the previous session may remain valid until it expires"] : []),
+      ...(!serverSessionRevoked ? ["we couldn't confirm that you have been signed out everywhere. Your previous sign-in may stay active until it expires"] : []),
       ...(!localRevocationMarkerSaved ? ["this browser could not retain its deletion marker; automatic record creation may remain possible on a later visit"] : []),
-      ...(!pushSubscriptionRemoved ? ["push notification removal could not be confirmed; check Notification settings and your browser permissions"] : []),
+      ...(!pushSubscriptionRemoved ? ["we couldn't remove notifications from this browser. Check your notification settings"] : []),
     ];
     show(
       cleanupWarnings.length
@@ -832,11 +847,11 @@ function PrivacyCard() {
       <PolicySettingsPanel />
 
       <div className="mobile-settings-hint" role="note">
-        <strong>These are three different actions:</strong>
+        <strong>These actions do different things:</strong>
         <ul>
-          <li><strong>Clear this device:</strong> removes saved information and sign-in details from this browser. It does not erase information stored by SolenOS.</li>
-          <li><strong>Close or delete an account:</strong> removes account access where that account feature is available. It does not, by itself, erase the care record or other care-related information.</li>
-          <li><strong>Request care-record erasure:</strong> asks SolenOS to review and erase eligible server-held care information. Requests require identity and authority review. Shared records, legal holds, provider copies and backup-retention periods may affect what can be erased and when. We will confirm what was actually completed; submitting a request is not confirmation of erasure.</li>
+          <li><strong>Clear this device:</strong> removes saved information and sign-in details from this browser. It does not delete care information held by SolenOS.</li>
+          <li><strong>Close or delete an account:</strong> stops that account from being used. It does not delete the Care Record or other care information.</li>
+          <li><strong>Ask us to delete care information:</strong> asks SolenOS to review your request and remove information that can be deleted. We first check that you are allowed to make the request. If information is shared with others, must be kept for legal reasons, or is held in service-provider copies or backups, some parts may take longer or may not be removable. We will tell you what was actually deleted. Sending a request does not delete anything by itself.</li>
         </ul>
       </div>
 
@@ -860,42 +875,42 @@ function PrivacyCard() {
           </Button>
         )}
         <div className="mobile-settings-hint" style={{ display: "grid", gap: "0.65rem" }}>
-          <strong>Request erasure of your care record</strong>
+          <strong>Ask us to delete care information</strong>
           {erasureRequest && (
             <>
-              <p role="status">Request received. Reference: {erasureRequest.id}. Status: {erasureRequest.status.replace(/_/g, " ")}.</p>
+              <p role="status">We received your request. Reference: {erasureRequest.id}. {privacyRequestStatusLabel(erasureRequest.status)}.</p>
               <p>{erasureRequest.message}</p>
-              <p>This is a request only. Your care record remains in place unless and until an authorized review and separate fulfilment are completed.</p>
+              <p>This is only a request. Your Care Record stays in place until we finish reviewing it and tell you what has been deleted.</p>
             </>
           )}
           {erasureHistoryLoading ? <p>Loading previous requests…</p> : erasureHistory.length > 0 && (
-            <div aria-label="Previous care-record erasure requests">
+            <div aria-label="Previous requests to delete care information">
               <strong>Request history</strong>
               {erasureHistory.map((item) => (
-                <p key={item.id}>Reference {item.id} · {item.status.replace(/_/g, " ")} · {item.requested_at ? new Date(item.requested_at).toLocaleDateString() : "Date unavailable"}</p>
+                <p key={item.id}>Reference {item.id} · {privacyRequestStatusLabel(item.status)} · {item.requested_at ? new Date(item.requested_at).toLocaleDateString() : "Date unavailable"}</p>
               ))}
             </div>
           )}
           {!erasureRequest && (
             <>
-              <label className="mobile-settings-label" htmlFor="erasure-authority">Your authority for this care record</label>
+              <label className="mobile-settings-label" htmlFor="erasure-authority">Why you can make this request</label>
               <select id="erasure-authority" className="mobile-settings-input" value={erasureAuthority} disabled={erasureSubmitting} onChange={(event) => setErasureAuthority(event.target.value as typeof erasureAuthority)}>
-                <option value="self">I am the person the care record is about</option>
+                <option value="self">I am the person this care information is about</option>
                 <option value="parent_or_guardian">I am their parent or legal guardian</option>
                 <option value="legal_representative">I am their legal representative</option>
-                <option value="authorized_caregiver">I am an authorized caregiver</option>
-                <option value="other">Other authority</option>
+                <option value="authorized_caregiver">I have permission to manage this care information</option>
+                <option value="other">Another reason</option>
               </select>
               <label className="mobile-settings-label" style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
                 <input type="checkbox" checked={erasureAttested} disabled={erasureSubmitting} onChange={(event) => setErasureAttested(event.target.checked)} />
-                I confirm that the authority information above is accurate and that I am entitled to submit this request.
+                I confirm that the information above is correct and that I am allowed to make this request.
               </label>
               {erasureError && <p role="alert">{erasureError} <button type="button" onClick={() => void loadErasureHistory()}>Try again</button></p>}
-              {hasUnresolvedErasureRequest && <p role="status">You already have an erasure request awaiting review. Check the request history above; you do not need to submit it again.</p>}
+              {hasUnresolvedErasureRequest && <p role="status">You already have a request waiting for review. You do not need to send it again.</p>}
               <Button variant="secondary" onClick={() => void submitCareRecordErasureRequest()} disabled={!erasureAttested || erasureSubmitting || erasureHistoryLoading || Boolean(erasureError) || hasUnresolvedErasureRequest} loading={erasureSubmitting}>
-                {erasureSubmitting ? "Submitting request…" : "Submit care-record erasure request"}
+                {erasureSubmitting ? "Sending request…" : "Send deletion request"}
               </Button>
-              <p>Submitting creates a private request for review. It does not immediately delete data. SolenOS must verify identity and authority, assess shared-record and legal-hold restrictions, and complete a separate erasure process where eligible.</p>
+              <p>Sending this request does not delete your care information right away. We first check that you are allowed to make the request and whether any information must be kept. We will tell you what we can remove and when it is done.</p>
             </>
           )}
         </div>
