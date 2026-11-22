@@ -312,7 +312,7 @@ assert.doesNotMatch(detailedAppointment, /Extraction status not available/i,
 assert.doesNotMatch(handoff, /Linked evidence:|Validation:|retrieval limitations|Source freshness reviews|Record completeness reviews|Saved evidence/i,
   "care handoffs must describe notes, documents and review limits in everyday language");
 assert.match(handoff, /Related notes and documents:/);
-assert.doesNotMatch(lcr, /Your Living Care Record|Evidence:|Progress:|Shared through:|View supporting evidence|View supporting records|Loading saved evidence|Saved records show .*events every 30 days|Contains negative wording|Tentative wording|Conditional wording|baseline from prior observations/i,
+assert.doesNotMatch(lcr, /Your Living Care Record|Progress:|Shared through:|Review status:|Information status:|View supporting evidence|View supporting records|Loading saved evidence|Saved records show .*events every 30 days|Contains negative wording|Tentative wording|Conditional wording|baseline from prior observations/i,
   "the Care Record must not expose internal evidence, baseline or review terminology");
 assert.match(lcr, /Your Care Record/);
 assert.doesNotMatch(companion, /Source review:|No source review has been recorded|latest source reviews/i,
