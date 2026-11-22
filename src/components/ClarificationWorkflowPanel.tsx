@@ -728,12 +728,12 @@ SolenOS only asks when a missing detail could change what happens next. You can 
           {selectedQuestion.status === "answered" && latestAnswer && (
             latestReview ? (
               <p role="status" style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
-                Answer checked: {caregiverStatusLabel(latestReview.decision) || "Review recorded"}.
+                Answer checked: {caregiverStatusLabel(latestReview.decision) || "Saved"}.
                 {latestReview.resulting_claim_id ? " It is still saved as something someone shared. It has not been confirmed by a care professional." : ""}
               </p>
             ) : !selectedQuestion.claim_id ? (
               <p role="status" style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
-                This question is not tied to a specific care detail. Your answer is saved, but it has not been added to the Care Record.
+                This question is not about one specific care detail. Your answer is saved, but it has not been added to your Care Record.
               </p>
             ) : (
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
@@ -745,13 +745,13 @@ SolenOS only asks when a missing detail could change what happens next. You can 
                   <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} />
                 </label>
                 {selectedClaim?.assertion_kind === "current_state" && (
-                  <label style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Check again after (days)
+                  <label style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Check again in how many days?
                     <input type="number" min={1} max={3650} value={reviewAfterDays} onChange={(event) => setReviewAfterDays(event.target.value)} style={{ ...field, marginTop: 4 }} />
                   </label>
                 )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   <button type="button" style={button} onClick={() => void reviewAnswer("accepted")} disabled={reviewSaving}>
-                    {reviewSaving ? "Saving…" : "Save as caregiver update"}
+                    {reviewSaving ? "Saving…" : "Save this as a care update"}
                   </button>
                   <button type="button" style={button} onClick={() => void reviewAnswer("needs_clarification")} disabled={reviewSaving}>Need more information</button>
                   <button type="button" style={button} onClick={() => void reviewAnswer("rejected")} disabled={reviewSaving}>This answer doesn’t fit</button>
