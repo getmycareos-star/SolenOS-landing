@@ -153,7 +153,7 @@ assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/, "More renders the 
 assert.match(navigation, /care: \[[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups remains a primary care destination");
 assert.match(navigation, /href: "\/workspace\/timeline"[\s\S]*?label: "Care history"/, "care history remains available under More");
 assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents remains available under More");
-assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\\.map/, "Care Assistant is reachable under More through the shared secondary navigation");
+assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/, "Care Assistant is reachable under More through the shared secondary navigation");
 assert.ok(morePage.includes('href="/workspace/timeline">View all care history</Link>'), "Care history is reached from More through its current browsing link");
 assert.match(handoverInbox, /ensureAnonymousSession\(\)/, "handover requests wait for a valid caregiver session");
 assert.match(handoverInbox, /Promise\.allSettled/, "one unavailable handover list does not hide the other");
