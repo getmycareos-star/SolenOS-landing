@@ -341,9 +341,9 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
-  const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
+  const contextInterpretationState = page.getByRole("region", { name: "Possible explanation for this update", exact: true })
     .getByText(
-      /Context interpretation is temporarily unavailable|Connecting this update to the saved care history/,
+      /We couldn’t connect this update with earlier care information right now\. Your Care Record is unchanged\./,
     );
   await contextInterpretationState.waitFor({ state: "visible", timeout: 10_000 });
   assert.equal(
