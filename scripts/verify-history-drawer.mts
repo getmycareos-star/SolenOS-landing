@@ -125,6 +125,13 @@ assert.match(drawer, /<RecordState kind="first-empty" title="No saved care histo
 assert.doesNotMatch(shell, /<HistoryDrawer \/>/, "care history must not crowd the primary navigation");
 assert.match(morePage, /<HistoryDrawer \/>/, "recent care history remains available under More");
 assert.match(morePage, /Recent care history/, "the history section uses plain caregiver language");
+assert.match(drawer, /function historyLoadStatusLabel\(status: HistoryLoadStatus\)/,
+  "saved-history availability uses caregiver-readable labels");
+for (const status of ["Up to date", "Some entries may be missing", "Could not load", "No entries yet", "May be out of date"]) {
+  assert.ok(drawer.includes(status), "history status is explained in plain language: " + status);
+}
+assert.doesNotMatch(drawer, /sourceStatuses\[category\]\[0\]\.toUpperCase\(\)/,
+  "internal history status values are not printed directly");
 assert.match(shell, /solenos-chat-sidebar/);
 assert.doesNotMatch(shell, /Search history/, "history search is not a primary navigation destination");
 for (const [route, label] of [
