@@ -284,3 +284,20 @@ assert(documentReview.includes("blocked_page_numbers"), "Pages blocked by resour
 console.log("PASS: document candidate batches and retryable page states are preserved.");
 
 console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");
+
+const lcrInterpretation = read("src/components/mvp-workspace/LcrQwenInterpretation.tsx");
+assert.match(lcrInterpretation, /setTimeout\(\(\) => controller\.abort\(\), 20_000\)/,
+  "the optional care explanation must stop waiting and show an honest unavailable state");
+assert.match(lcrInterpretation, /postJSON\("\/assistant\/assist",[\s\S]*?signal: controller\.signal/,
+  "the optional care explanation must cancel its request when its wait limit is reached");
+assert.match(lcrInterpretation, /caregiverSafeGeneratedText\(source\.label\)/,
+  "generated source labels must use caregiver language");
+assert.match(lcrInterpretation, /caregiverFieldLabel\(observation\.attribute\)/,
+  "internal care field names must be translated before display");
+assert.match(lcrInterpretation, /We couldn’t connect this update with earlier care information right now/,
+  "a failed or timed-out explanation must tell the caregiver what happened");
+const apiClient = read("src/api/client.ts");
+assert.match(apiClient, /requestOptions: \{ signal\?: AbortSignal \} = \{\}/,
+  "POST requests must accept an optional cancellation signal");
+assert.match(apiClient, /signal: requestOptions\.signal/,
+  "POST requests must forward cancellation to fetch");
