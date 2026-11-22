@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 type HistorySourceKind = "care-event" | "document" | "appointment" | "handoff-in" | "handoff-out" | "lcr-revision" | "decision" | "outcome" | "follow-up";
@@ -1609,8 +1609,8 @@ export function HistoryDrawer() {
 
                   {handoffConsentRequired && !loading && (
                     <div className="history-source-info" role="status">
-                      <strong>Handoff history is protected</strong>
-                      <span>Incoming and outgoing handoffs stay hidden until the required sharing consent is completed in Care Handoffs.</span>
+                      <strong>Care handoffs are hidden for now</strong>
+                      <span>Sent and received care summaries will appear after you update the sharing permission in Care Handoffs.</span>
                     </div>
                   )}
 
@@ -1618,7 +1618,7 @@ export function HistoryDrawer() {
                     <div className="history-source-warning" role="status">
                       <strong>Some care history could not be loaded</strong>
                       <span>The entries that loaded are still shown. Some others may be missing. Review the affected sections below.</span>
-                      <ul aria-label="Care history sections with incomplete retrieval">
+                      <ul aria-label="Care history sections that could not be loaded">
                         {sourceWarnings.map((warning, index) => <li key={index}>{warning}</li>)}
                       </ul>
                     </div>
@@ -1637,7 +1637,7 @@ export function HistoryDrawer() {
                   {loading ? (
                     <RecordState kind="loading" title="Loading saved care history" />
                   ) : error && records.length === 0 ? (
-                    <RecordState kind={/may not have access|401|403|unauthori[sz]ed|forbidden/i.test(error) ? "forbidden" : "error"} title="History could not be loaded" description={error} onAction={() => void loadHistory(true)} />
+                    <RecordState kind={/may not have access|401|403|unauthori[sz]ed|forbidden/i.test(error) ? "forbidden" : "error"} title="History could not be loaded" description={caregiverSafeErrorMessage()} onAction={() => void loadHistory(true)} />
                   ) : visibleRecords.length === 0 ? (
                     records.length > 0 ? (
                       <RecordState kind="no-results" title="No matching records" description="Try a different search or filter." actionLabel="Clear search and filters" onAction={() => { setQuery(""); setFilter("all"); }} />
