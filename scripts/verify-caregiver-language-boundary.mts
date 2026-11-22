@@ -281,7 +281,7 @@ assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/)
 assert.match(careContinuity, /More about the care information saved here/);
 assert.match(careContinuity, /Care information shared/);
 assert.doesNotMatch(documentsPage, /upload session|encrypted on this device|sync when your connection returns|safely queued/i);
-assert.doesNotMatch(situationResponse, /Saved record reference|situation-reasoning state|persisted/i);
+assert.doesNotMatch(situationResponse, /Saved record reference|situation-reasoning state|This view is reconstructed/i);
 assert.doesNotMatch(sourceIndicator, /Source ID:|Viewing source evidence/);
 assert.doesNotMatch(careCaptureLegacy, /Qwen|pending_review|Qwen candidates/i);
 assert.doesNotMatch(historyDrawer, /incomplete retrieval|description=\{error\}/i);
