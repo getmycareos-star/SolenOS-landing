@@ -7,12 +7,12 @@ function createIndicatorId(): string {
 }
 
 const INDICATOR_LABELS: Record<TrustIndicatorKind, string> = {
-  verified_by_caregiver: "✓ Verified by caregiver",
-  extracted_from_document: "✓ Extracted from document",
-  confirmed_follow_up: "✓ Confirmed during follow-up",
-  awaiting_confirmation: "⚠ Awaiting confirmation",
-  low_confidence: "⚠ Low confidence",
-  missing_evidence: "⚠ Missing supporting evidence",
+  verified_by_caregiver: "✓ Checked by caregiver",
+  extracted_from_document: "✓ Details found in document",
+  confirmed_follow_up: "✓ Checked during follow-up",
+  awaiting_confirmation: "⚠ Needs confirmation",
+  low_confidence: "⚠ Needs checking",
+  missing_evidence: "⚠ No note or document is linked",
 };
 
 export function trustIndicatorLabel(kind: TrustIndicatorKind): string {
