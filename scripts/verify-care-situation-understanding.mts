@@ -305,10 +305,10 @@ async function main() {
 
   {
     // A factual entry is not automatically an understood or prioritised care situation.
-    // The same rule must hold in both async and synchronous extraction paths.
+    // The same rule must hold in the deterministic extraction path.
     resetAll();
     const raw = "Mom ate breakfast this morning.";
-    const asyncUnderstanding = await buildCareSituationUnderstanding({
+    const asyncUnderstanding = buildCareSituationUnderstandingFromExtraction({
       rawText: raw,
       contributorId: "csu_fact_without_orientation_async",
     });
@@ -396,7 +396,7 @@ async function main() {
     resetAll();
     const text =
       "I just feel like I'm drowning. Everything is on me and I don't know how much longer I can do this.";
-    const u = await buildCareSituationUnderstanding({
+    const u = buildCareSituationUnderstandingFromExtraction({
       rawText: text,
       contributorId: "csu_emotional",
     });
@@ -436,7 +436,7 @@ Notes: Family reports increased evening confusion since last week.`;
     const careKey = resolveCareRealityStoreKey(contributorId);
     setCareRecipientDisplayName({ careKey, displayName: "Mom" });
 
-    const first = await buildCareSituationUnderstanding({
+    const first = buildCareSituationUnderstandingFromExtraction({
       rawText: MULTI_SIGNAL_GOLDEN,
       contributorId,
       careKey,
