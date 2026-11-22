@@ -181,6 +181,7 @@ assert.doesNotMatch(documentsPage, /AI interpretation|Document library|Server pr
 assert.match(documentsPage, /Your original files are kept separate from suggested details/);
 
 assert.match(documentReview, /caregiverSafeGeneratedText\(question\)/, "generated document-review questions must use caregiver language");
+assert.match(documentReview, /items\.flatMap\(\(item\) => item\.open_questions \|\| \[\]\)\.map\(\(question, index\) =>[\s\S]*?caregiverSafeGeneratedText\(question\)/, "document-level review questions must use the same caregiver-language boundary as per-document questions");
 assert.match(documentReview, /caregiverSafeGeneratedText\(warning\)/, "generated document-review warnings must use caregiver language");
 assert.match(documentsPage, /caregiverSafeGeneratedText\(versionComparison\.reason\)/, "document comparison explanations must use caregiver language");
 
