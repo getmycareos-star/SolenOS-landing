@@ -1,8 +1,7 @@
 /**
  * verify-voice-observation.mts
  * Asserts Voice Observation Capture + TTS architecture:
- * exact 10 languages, Polly vs Google routing, SSML, multi-signal extraction,
- * STT→observation path with mocked Whisper.
+ * browser-only speech boundary, future TTS contracts, and observation extraction helpers.
  */
 
 import fs from "node:fs";
@@ -139,7 +138,7 @@ const voiceRec = recordObservation({
   source: "voice",
 });
 assert(voiceRec.observations_this_week >= 1, "voice source_type path");
-console.log("✓ STT→observation path (mocked server STT via edited transcript)");
+console.log("✓ browser-supplied transcript capture");
 
 // ─── STT provider routing ────────────────────────────────────────────────────
 const provider = resolveServerSttProvider();
@@ -194,14 +193,20 @@ const required = [
   "src/lib/voice-observation/transcribe.ts",
   "src/lib/voice-observation/speech-language.ts",
   "src/lib/voice-observation/voice-mode.ts",
-  "src/app/api/observations/voice/route.ts",
-  "src/app/api/tts/synthesize/route.ts",
   "db/migrations/013_voice_observation_tts.sql",
 ];
 for (const rel of required) {
   assert(fs.existsSync(path.join(root, rel)), `missing ${rel}`);
 }
-console.log("✓ module + API + migration files");
+assert(
+  !fs.existsSync(path.join(root, "src/app/api/observations/voice/route.ts")),
+  "server voice observation route remains disabled for the MVP",
+);
+assert(
+  !fs.existsSync(path.join(root, "src/app/api/tts/synthesize/route.ts")),
+  "server TTS route remains disabled for the MVP",
+);
+console.log("✓ voice helpers remain available; server voice routes remain disabled");
 
 assert(
   VOICE_OBSERVATION_MVP.successKpi === "observations_per_caregiver_per_week",
