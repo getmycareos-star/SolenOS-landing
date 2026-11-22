@@ -483,8 +483,17 @@ export default function AppointmentWorkspace() {
     try {
       const result = await postJSON('/appointment-workspaces/' + encodeURIComponent(record.id) + '/outcome-proposals', {}) as { items?: OutcomeProposal[]; count?: number; written_to_lcr?: boolean }
       setOutcomeProposals(result.items || [])
-      // Candidates stay in proposal storage until explicit caregiver acceptance creates an care record detail.
-      if (result.written_to_lcr === true) window.dispatchEvent(new Event("careRecordUpdated"))
+      // Preparing suggestions must never be described as read-only unless the server
+      // explicitly confirms that it did not write to the Care Record.
+      if (result.written_to_lcr !== false) {
+        if (result.written_to_lcr === true) {
+          window.dispatchEvent(new Event("careRecordUpdated"))
+          setError("SolenOS reported that a care detail was added before you reviewed it. Check your Care Record now before relying on these suggestions.")
+        } else {
+          setError("SolenOS could not confirm that your Care Record was left unchanged. Check your Care Record before relying on these suggestions.")
+        }
+        return
+      }
       setMessage((result.count || 0) + ' possible care updates were prepared from your saved appointment details. Nothing is added to your Care Record until you review and approve a suggested detail.')
     } catch (cause) {
       setError('Appointment information could not be prepared for review. Please try again.')
