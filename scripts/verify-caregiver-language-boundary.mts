@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   caregiverFieldLabel,
+  caregiverReadableCaptureText,
   caregiverProductTermLabel,
   caregiverInformationAreaLabel,
   caregiverInformationLabel,
@@ -39,6 +40,16 @@ assert.equal(caregiverFieldLabel("medication_name"), "Medication name as reporte
 assert.equal(caregiverFieldLabel("medication_status"), "Medication status as reported");
 assert.equal(caregiverFieldLabel("reported_weight_change"), "Weight change reported");
 assert.equal(caregiverFieldLabel("unknown_internal_field"), null);
+assert.equal(caregiverInformationAreaLabel("handoffs"), "Care information shared with another caregiver");
+assert.equal(caregiverInformationAreaLabel("caregiver_observations"), "What a caregiver noticed");
+assert.equal(caregiverInformationAreaLabel("reconciliations"), "Reports checked against each other");
+const readableCapture = caregiverReadableCaptureText(JSON.stringify({
+  quick_check_in: { kind: "same_as_usual", selected_areas: ["poor_sleep", "epistemic_status", "blood_pressure"] },
+}));
+assert.match(readableCapture ?? "", /Sleep/);
+assert.match(readableCapture ?? "", /Blood pressure/);
+assert.doesNotMatch(readableCapture ?? "", /epistemic|poor_sleep|blood_pressure/);
+
 assert.equal(caregiverFieldLabel("reconciliation"), "Updating your care information");
 assert.equal(caregiverFieldLabel("delta_engine"), "Changes since your last visit");
 assert.equal(caregiverProductTermLabel("provenance"), "Where this information came from");
