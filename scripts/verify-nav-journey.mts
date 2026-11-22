@@ -37,7 +37,7 @@ const morePage = fs.readFileSync(path.join(root, "src/app/workspace/more/page.ts
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 
 assert.match(appShell, /WORKSPACE_NAVIGATION\.care\.map/);
-assert.match(appShell, /WORKSPACE_NAVIGATION\.support\.map/);
+assert.doesNotMatch(appShell, /WORKSPACE_NAVIGATION\.support\.map/);
 assert.match(appShell, /WORKSPACE_NAVIGATION\.settings\.map/);
 assert.doesNotMatch(appShell, /const NAVIGATION\s*=|NAVIGATION\.map/);
 assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
@@ -45,14 +45,16 @@ assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct ro
 assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Today must not match every nested route");
 assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes keep More active");
 
-for (const label of ["Today", "Share an update", "Appointments", "Care Assistant", "More"]) {
+for (const label of ["Today", "Share an update", "Appointments", "Follow-ups", "Care Assistant", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
+assert.match(navigationRegistry, /care: \[[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups remains a primary care destination");
+assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION:[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Care Assistant"/, "Care Assistant remains available under More");
 assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/);
 for (const route of [
   "/workspace/timeline",
-  "/workspace/open-loops",
+  "/workspace/companion",
   "/workspace/documents",
   "/workspace/reminders",
   "/workspace/handoffs",
