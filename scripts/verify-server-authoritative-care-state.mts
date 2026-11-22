@@ -39,7 +39,7 @@ assert.doesNotMatch(situationStore, /localStorage/);
 assert.doesNotMatch(timelineStore, /localStorage/);
 assert.match(legacyFilesystemStore, /process\.env\.NODE_ENV === "production"/);
 assert.match(legacyFilesystemStore, /Legacy filesystem persistence is disabled in production/);
-assert.match(retiredAnalyzeRoute, /LEGACY_ANALYSIS_ENDPOINT_RETIRED = true/);
+assert.match(retiredAnalyzeRoute, /export async function POST\(_request: Request\)/);
 assert.match(retiredAnalyzeRoute, /This older analysis route is no longer available/);
 assert.match(retiredAnalyzeRoute, /status: 410/);
 assert.doesNotMatch(retiredAnalyzeRoute, /analyzePipelineDisabledResponse|isAnalyzePipelineEnabled|runAnalyzePipeline/);
