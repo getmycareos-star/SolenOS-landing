@@ -291,6 +291,9 @@ const informationStatus = read("../src/components/trust/InformationStatus.tsx");
 const statusCareDelta = read("../src/components/CareDeltaPanel.tsx");
 const careOverviewPage = read("../src/app/workspace/care-continuity/page.tsx");
 const sourceReview = read("../src/components/EvidenceReviewPanel.tsx");
+const conflictReview = read("../src/components/ConflictResolutionPanel.tsx");
+const clarificationReview = read("../src/components/ClarificationWorkflowPanel.tsx");
+const appointmentWorkspace = read("../src/components/workflows/AppointmentWorkspace.tsx");
 const careContinuity = read("../src/components/CareContinuityIntegrityPanel.tsx");
 assert.doesNotMatch(appointment, /technical retrieval failure|technical failure|Retry care-record retrieval|Retry document retrieval/i,
   "appointment messages must explain missing information without technical failure language");
@@ -521,3 +524,19 @@ for (const [term, expected] of [
 }
 assert.equal(caregiverInformationAreaLabel("delta_engine"), "Changes since your last visit");
 assert.equal(caregiverProductTermLabel("unapproved_internal_term"), null);
+
+assert.match(conflictReview, /When information differs/);
+assert.match(conflictReview, /If you can only check part of the information/);
+assert.match(conflictReview, /Earlier reviews/);
+assert.doesNotMatch(conflictReview, /partial review|supporting information and a reason; a partial review/i,
+  "caregivers must not be asked to understand internal review categories");
+assert.match(clarificationReview, /Questions to check/);
+assert.match(clarificationReview, /Who shared this:/);
+assert.doesNotMatch(clarificationReview, /Source: \{item\.answer_provenance/,
+  "follow-up history must not label who shared an answer as a source");
+assert.match(appointmentWorkspace, /We couldn’t find appointment information in the notes and documents available here/);
+assert.match(appointmentWorkspace, /What caregivers have shared/);
+assert.match(appointmentWorkspace, /Documents for this appointment/);
+assert.doesNotMatch(appointmentWorkspace, /SolenOS could not retrieve the full care record|Source evidence linked|No linked evidence returned|Review progress:|Care-recorded visit|Text extracted/,
+  "appointment summaries must not expose technical retrieval, evidence or review wording");
+
