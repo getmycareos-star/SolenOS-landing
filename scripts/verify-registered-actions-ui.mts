@@ -74,7 +74,7 @@ assert.ok(
   lcr.includes("onClick={openClarification}") &&
     lcr.includes("<ClarificationWorkflowPanel personId={personId} />") &&
     clarification.includes('getJSON(`/uncertainty/questions/${encodeURIComponent(sessionPersonId)}`)') &&
-    clarification.includes('patchJSON(`/uncertainty/questions/${encodeURIComponent(selectedQuestion.id)}`, payload)'),
+     /patchJSON\(`\/uncertainty\/questions\/\$\{encodeURIComponent\(selectedQuestion\.id\)\}`,\s*payload\)/.test(clarification),
   "Review questions must open, retrieve and update the persisted clarification workflow",
 );
 assert.ok(
