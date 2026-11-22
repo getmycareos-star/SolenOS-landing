@@ -99,6 +99,7 @@ const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
 const documentsPage = read("../src/app/workspace/documents/page.tsx");
 const settings = read("../src/app/workspace/settings/page.tsx");
 const reminders = read("../src/app/workspace/reminders/page.tsx");
+const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
@@ -489,6 +490,10 @@ assert.doesNotMatch(reminders, /CARE CONTINUITY|Living Care Record|in-app notifi
   "reminders must not expose internal continuity or delivery terminology");
 assert.match(reminders, /Reminders you add will appear here/,
   "reminders empty state must explain what the caregiver will see");
+assert.doesNotMatch(openLoopsPage, /\\b(?:database|API|OCR|provenance|reconciliation|assertion|schema|JSON|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint|PostgreSQL|SQL|idempotency|retrieval)\\b/i,
+  "Follow-ups must not expose internal record-processing terms");
+assert.match(openLoopsPage, /Follow-ups/);
+
 
 assert.doesNotMatch(shareSummaryLanguage, /server-issued care session|anonymous session|API error/i,
   "share-summary errors must not expose internal access or API terminology");
