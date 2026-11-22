@@ -120,7 +120,7 @@ const outcomes: Record<ReviewType, string[]> = {
 const labels: Record<ReviewType, string> = {
   quality: 'How clear this information is',
   reliability: 'How sure are you about this information?',
-  source_confidence: 'Can we identify the source?',
+  source_confidence: 'Do we know who shared it?',
   freshness: 'Is this still current?',
   completeness: 'Are any details missing?',
 }
