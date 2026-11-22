@@ -240,6 +240,13 @@ assert.match(companion, /caregiverStatusLabel\(entry\.decision\)/, "Companion re
 assert.doesNotMatch(companion, /item\.status\.replace\(|entry\.decision\.replace\(/, "raw backend status codes must never be shown to caregivers");
 assert.match(companion, /caregiverSafeGeneratedText\(claim\.text\)/);
 assert.match(companion, /caregiverSafeGeneratedText\(claim\.aggregate_review\?\.interpretation_limit\)/);
+
+assert.match(appointment, /caregiverFieldLabel\(item\.field\)/, "appointment details must translate internal field names");
+assert.match(appointment, /caregiverSafeGeneratedText\(item\.necessity_rationale\)/, "generated appointment explanations must use caregiver language");
+assert.match(appointment, /caregiverSafeGeneratedText\(item\.interpretation_limit\)/, "generated appointment limits must use caregiver language");
+assert.match(appointment, /caregiverSafeGeneratedText\(item\.source_label\)/, "generated appointment source labels must use caregiver language");
+assert.match(appointment, /item\.missing_fields\.map\(field => caregiverFieldLabel\(field\)\)/, "missing field names must be translated before display");
+
 assert.doesNotMatch(companion, /text: response\.reply/);
 assert.doesNotMatch(documentReview, /candidate\.review_status\.replaceAll/);
 assert.doesNotMatch(documentReview, /model: \{analysis\.model_provenance\.model_tag/);
