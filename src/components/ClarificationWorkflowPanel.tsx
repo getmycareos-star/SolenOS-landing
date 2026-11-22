@@ -571,7 +571,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
                     <span style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                       {questionAudienceLabel(item.intended_answerer_role)}
                     </span>
-                    <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500 }}>{item.question}</strong>
+                    <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 500 }}>{caregiverSafeGeneratedText(item.question) || "Question details are not available."}</strong>
                   </button>
                 ))}
               </div>
