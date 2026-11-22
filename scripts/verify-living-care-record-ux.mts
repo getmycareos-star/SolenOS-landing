@@ -97,7 +97,7 @@ assert(
   "ADR-019: what understood section",
 );
 assert(
-  /Still unclear|What to ask next|What would help understand|One thing that would help|Questions to resolve/.test(lcrPanel),
+  /Questions that may help|Still unclear|What to ask next|What would help understand|One thing that would help|Questions to resolve/.test(lcrPanel),
   "ADR-019: needs context (unknowns as care reality)",
 );
 assert(/What will be remembered/.test(lcrPanel), "ADR-019: remembered section");
