@@ -340,14 +340,16 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
-  // Recent History is already visible in this workspace layout; assert the
-  // saved event directly rather than requiring a mobile-only navigation toggle.
-  // The original caregiver note is the event title in the history list.
-  // The description is intentionally suppressed when it duplicates that title.
+  // Saved history is grouped under More in the simplified caregiver navigation.
+  // Verify the durable history row there, then return to Today for the rest of this journey.
+  await page.goto("/workspace/more");
+  await page.getByRole("heading", { name: "Recent care history", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 10_000 });
+  await page.goto("/workspace");
+  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
       /Context interpretation is temporarily unavailable|Connecting this update to the saved care history/,
