@@ -720,6 +720,9 @@ assert.match(lcr, /item\.priority_reasons[\s\S]*?map\(caregiverSafeGeneratedText
 assert.match(lcr, /caregiverSafeGeneratedText\(review\.rationale\)/, "generated source-review explanations must use caregiver language");
 assert.match(lcr, /caregiverSafeGeneratedText\(group\.interpretation\)/, "generated source-relationship explanations must use caregiver language");
 assert.match(lcr, /caregiverSafeGeneratedText\(projection\.notice\)/, "generated Care Record notices must use caregiver language");
+assert.match(careRecordOverview, /caregiverSafeGeneratedText\(item\.source_label\)/, "Care Record source labels must use caregiver language");
+assert.match(careRecordOverview, /caregiverSafeChangeText\(change\.previous_state\)/, "Care Record change summaries must use the change-language boundary");
+assert.match(careRecordOverview, /caregiverSafeChangeText\(change\.current_state\)/, "Care Record current-state summaries must use the change-language boundary");
 assert.match(lcr, /caregiverSafeGeneratedText\(transition\.reason\)/, "generated change-history explanations must use caregiver language");
 assert.match(lcr, /caregiverSafeGeneratedText\(alternative\)/, "generated care-pattern explanations must use caregiver language");
 assert.match(lcr, /const safeInterpretation = caregiverSafeGeneratedText\(item\)/, "repeated care-pattern explanations must use the generated-text boundary");
