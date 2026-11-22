@@ -542,8 +542,15 @@ export default function DailyCarePage() {
       const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
       return leftTime - rightTime;
     });
-  const reviewableHistoryItems = historyItems
-    .filter((item) => item.capture_processing?.review_required && item.capture_processing.analysis_id)
+  const captureStatusHistoryItems = historyItems
+    .filter((item) => {
+      const processing = item.capture_processing;
+      return Boolean(processing && (
+        processing.review_required
+        || ["queued", "processing", "failed"].includes(processing.job_status || "")
+        || ["failed", "unavailable"].includes(processing.extraction_status || "")
+      ));
+    })
     .sort((left, right) => {
       const leftTime = new Date(careEventTimestamp(left) || 0).getTime();
       const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
@@ -811,24 +818,33 @@ export default function DailyCarePage() {
             {historyMayBeTruncated && <p className="daily-care-muted">This summary shows the latest 200 saved updates. Open full care history to see older ones.</p>}
           </details>
 
-          {reviewableHistoryItems.length > 0 && (
+          {captureStatusHistoryItems.length > 0 && (
             <section aria-labelledby="daily-care-review-title" className="daily-care-context-panel">
-              <h2 id="daily-care-review-title">Updates to review</h2>
-              <p className="daily-care-muted">Your original notes are saved. Review the suggested details before they become reviewed care information.</p>
+              <h2 id="daily-care-review-title">Updates to check</h2>
+              <p className="daily-care-muted">Your original notes are saved. Some details may need a quick check.</p>
               <ul className="daily-care-record-list">
-                {reviewableHistoryItems.map((item, index) => (
-                  <li key={item.capture_processing?.analysis_id || historyRecordId(item) || ("review-" + index)}>
+                {captureStatusHistoryItems.map((item, index) => (
+                  <li key={item.capture_processing?.analysis_id || historyRecordId(item) || ("capture-status-" + index)}>
                     <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
-                    <div style={{ marginTop: 8 }}>
-                      <Button
-                        variant="secondary"
-                        onClick={() => setReviewAnalysisId(item.capture_processing?.analysis_id || null)}
-                      >
-                        Review suggested details
-                      </Button>
-                    </div>
+                    {item.capture_processing?.review_required && item.capture_processing.analysis_id ? (
+                      <div style={{ marginTop: 8 }}>
+                        <p className="daily-care-muted">Review the suggested details before they become reviewed care information.</p>
+                        <Button
+                          variant="secondary"
+                          onClick={() => setReviewAnalysisId(item.capture_processing?.analysis_id || null)}
+                        >
+                          Review suggested details
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="daily-care-muted">{caregiverSafeAssistantText(item.capture_processing?.message) || (
+                        ["queued", "processing"].includes(item.capture_processing?.job_status || "")
+                          ? "This update is being checked. You can keep using SolenOS."
+                          : "Your note is saved, but its details could not be organized."
+                      )}</p>
+                    )}
                   </li>
                 ))}
               </ul>
