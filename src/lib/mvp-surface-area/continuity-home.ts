@@ -145,7 +145,7 @@ export function buildContinuityHomeView(input: {
   const recentDocuments = docEvents.map((e) => ({
     event_id: e.id,
     name: sanitizeCaregiverDisplayText(e.document_id ?? e.raw_input).slice(0, 60),
-    impact: "Added to the Living Care Record.",
+    impact: "Added to your Care Record.",
   }));
 
   const upcoming = events
@@ -203,7 +203,7 @@ export function buildPostEntryBehavior(
 
   const documentRefinement =
     response.document_events_count > 0
-      ? `This document strengthened the Living Care Record in ${response.document_events_count} place${response.document_events_count === 1 ? "" : "s"}.`
+      ? `This document added details in ${response.document_events_count} place${response.document_events_count === 1 ? "" : "s"} in your Care Record.`
       : null;
 
   const count = response.events_created.length;
@@ -211,8 +211,8 @@ export function buildPostEntryBehavior(
     mode: "surface_impact",
     integration_summary:
       count === 1
-        ? "This note was added to the Living Care Record."
-        : `${count} notes were added to the Living Care Record.`,
+        ? "This note was added to your Care Record."
+        : `${count} notes were added to your Care Record.`,
     comparison_notes: sanitizeLineList(response.what_changed, 6),
     resolution_notes: sanitizeLineList(response.what_merged_or_split, 6),
     impact_summary:
