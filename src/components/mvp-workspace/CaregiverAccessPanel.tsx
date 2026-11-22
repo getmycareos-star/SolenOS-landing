@@ -610,7 +610,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         availability_notes: contextAvailabilityNotes.trim() || null,
         effective_start: new Date().toISOString(),
       });
-      setNotice("Your care context was shared with caregivers who have access to this Care Record.");
+      setNotice("Your care details were shared with caregivers who can access this Care Record.");
       setContextProximity("");
       setContextWindowStart("");
       setContextWindowEnd("");
@@ -627,7 +627,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const reviewResponsibilityGap = async (item: ResponsibilityGapReviewItem) => {
     const resolution = (gapReviewNotes[item.id] ?? "").trim();
     if (resolution.length < 5) {
-      setError("Add a short explanation before saving this care coverage review.");
+      setError("Add a short explanation before saving this update about who is responsible for care.");
       return;
     }
     setReviewingNetworkItemId(item.id);
@@ -638,10 +638,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         status: gapReviewStatuses[item.id] ?? "resolved",
         resolution,
       });
-      setNotice("Care coverage review saved. The earlier gap remains in the care history.");
+      setNotice("Your update about care responsibilities was saved. The earlier gap remains in your care history.");
       await load();
     } catch {
-      setError("We couldn't save this care coverage review. The existing responsibility record has not been changed.");
+      setError("We couldn’t save this update. The current care responsibilities have not changed.");
     } finally {
       setReviewingNetworkItemId(null);
     }
@@ -978,7 +978,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           <section style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
             <div>
               <h3 className="mobile-settings-label" style={{ margin: 0 }}>Your private care notes</h3>
-              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0 0" }}>These notes belong to you. They are not evidence in the Living Care Record and are not shared unless you choose to share them with the care circle.</p>
+              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0 0" }}>These notes are private to you. They are not part of your Care Record and are not shared unless you choose to share them with other caregivers.</p>
             </div>
             <form onSubmit={(event) => void savePrivateObservation(event)} style={{ display: "grid", gap: "0.5rem" }}>
               <label className="mobile-settings-label" htmlFor="private-care-observation">Record an observation</label>
@@ -1000,8 +1000,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.55rem" }}>
                     <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem" }}>{item.observation_content}</p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <span className="mobile-settings-hint">{item.is_promoted_to_shared ? "Shared with care circle" : "Private to you"}</span>
-                      {!item.is_promoted_to_shared && <Button type="button" variant="secondary" disabled={savingPrivateContext} onClick={() => void promotePrivateObservation(item)}>Share with care circle</Button>}
+                      <span className="mobile-settings-hint">{item.is_promoted_to_shared ? "Shared with other caregivers" : "Private to you"}</span>
+                      {!item.is_promoted_to_shared && <Button type="button" variant="secondary" disabled={savingPrivateContext} onClick={() => void promotePrivateObservation(item)}>Share with other caregivers</Button>}
                     </div>
                   </div>
                 ))}
@@ -1009,8 +1009,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.55rem" }}>
                     <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem" }}>{item.claim_content}</p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <span className="mobile-settings-hint">{item.is_promoted_to_shared ? "Shared with care circle" : "Private to you"}</span>
-                      {!item.is_promoted_to_shared && <Button type="button" variant="secondary" disabled={savingPrivateContext} onClick={() => void promotePrivatePerspective(item)}>Share with care circle</Button>}
+                      <span className="mobile-settings-hint">{item.is_promoted_to_shared ? "Shared with other caregivers" : "Private to you"}</span>
+                      {!item.is_promoted_to_shared && <Button type="button" variant="secondary" disabled={savingPrivateContext} onClick={() => void promotePrivatePerspective(item)}>Share with other caregivers</Button>}
                     </div>
                   </div>
                 ))}
@@ -1020,16 +1020,16 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
 
           {networkSummary && (
             <div style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
-              <h3 className="mobile-settings-label">Care coverage at a glance</h3>
-              <p className="mobile-settings-hint" style={{ margin: 0 }}>A shared view of who is involved and where care responsibilities may need attention. Only information shared with the care circle appears here.</p>
+              <h3 className="mobile-settings-label">Who is helping with care</h3>
+              <p className="mobile-settings-hint" style={{ margin: 0 }}>See who is helping with care and where a task still needs someone responsible. Only information shared with other caregivers appears here.</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "0.55rem" }}>
                 {[
                   ["Caregivers", networkSummary.caregivers],
-                  ["Active responsibilities", networkSummary.active_responsibilities],
-                  ["Active handovers", networkSummary.active_handoffs],
-                  ["Responsibility gaps", networkSummary.responsibility_gaps],
+                  ["Assigned care tasks", networkSummary.active_responsibilities],
+                  ["Care updates waiting to be accepted", networkSummary.active_handoffs],
+                  ["Tasks without someone responsible", networkSummary.responsibility_gaps],
                   ["Different views to review", networkSummary.perspective_conflicts],
-                  ["Possible duplicate actions", networkSummary.duplicate_actions],
+                  ["Actions that may be repeated", networkSummary.duplicate_actions],
                 ].map(([label, items]) => (
                   <div key={String(label)} style={{ padding: "0.55rem", background: "var(--surface-muted, #f5f7f5)", borderRadius: "9px" }}>
                     <strong style={{ display: "block", fontSize: "1.15rem" }}>{Array.isArray(items) ? items.length : 0}</strong>
@@ -1039,7 +1039,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               </div>
               {networkState && (
                 <p className="mobile-settings-hint" style={{ margin: 0 }}>
-                  {networkState.active_caregiver_count ?? 0} active caregivers · {networkState.unresolved_handoff_count ?? 0} handovers awaiting confirmation · {networkState.gap_count ?? 0} responsibility gaps · {networkState.conflict_count ?? 0} differences to review
+                  {networkState.active_caregiver_count ?? 0} caregivers helping · {networkState.unresolved_handoff_count ?? 0} care updates waiting to be accepted · {networkState.gap_count ?? 0} tasks without someone responsible · {networkState.conflict_count ?? 0} differences to review
                 </p>
               )}
               {currentProfileId && (
@@ -1063,10 +1063,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 || (networkSummary.perspective_conflicts?.length ?? 0) > 0
                 || (networkSummary.duplicate_actions?.filter((item) => item.status === "potential_duplicate").length ?? 0) > 0) && (
                 <section style={{ display: "grid", gap: "0.75rem" }}>
-                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care network items to review</h4>
+                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care responsibilities to review</h4>
                   {networkSummary.responsibility_gaps?.map((item) => (
                     <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
-                      <strong style={{ fontSize: "0.9rem" }}>Care coverage: {caregiverFieldLabel(item.type)}</strong>
+                      <strong style={{ fontSize: "0.9rem" }}>Responsibility: {caregiverFieldLabel(item.type)}</strong>
                       <span className="mobile-settings-hint">{item.scope || "No responsibility scope recorded"} · {caregiverStatusLabel(item.status)}</span>
                       <label className="mobile-settings-hint" htmlFor={"gap-review-status-" + item.id}>Review outcome</label>
                       <select
@@ -1077,7 +1077,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                       >
                         <option value="partially_covered">Partly covered — some care is still unassigned</option>
                         <option value="covered">Covered by an agreed caregiver</option>
-                        <option value="resolved">No longer a care coverage gap</option>
+                        <option value="resolved">This task now has someone responsible</option>
                       </select>
                       <textarea
                         className="mobile-settings-input"
@@ -1086,18 +1086,18 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                         value={gapReviewNotes[item.id] ?? ""}
                         onChange={(event) => setGapReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
                         placeholder="Describe who is covering this responsibility or what remains open."
-                        aria-label="Care coverage review explanation"
+                        aria-label="Explain who is responsible for this task"
                       />
                       <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (gapReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewResponsibilityGap(item)}>Save review</Button>
                     </div>
                   ))}
                   {networkSummary.perspective_conflicts?.map((item) => (
                     <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
-                      <strong style={{ fontSize: "0.9rem" }}>Different caregiver accounts</strong>
+                      <strong style={{ fontSize: "0.9rem" }}>Caregivers remember this differently</strong>
                       <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_a)}:</strong> {item.claim_a}</p>
                       <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_b)}:</strong> {item.claim_b}</p>
                       {(item.context_a || item.context_b) && <p className="mobile-settings-hint" style={{ margin: 0 }}>Context: {item.context_a || "Not recorded"} / {item.context_b || "Not recorded"}</p>}
-                      <p className="mobile-settings-hint" style={{ margin: 0 }}>These accounts are kept separate. A difference does not establish which account is correct or change the Living Care Record.</p>
+                      <p className="mobile-settings-hint" style={{ margin: 0 }}>We keep both reports separate. A difference does not tell us which one is right, and neither changes your Care Record.</p>
                       <textarea
                         className="mobile-settings-input"
                         rows={2}
