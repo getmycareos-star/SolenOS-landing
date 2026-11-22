@@ -13,6 +13,8 @@ const navigation = fs.readFileSync(path.join(root, "src/lib/workspace-navigation
 const morePage = fs.readFileSync(path.join(root, "src/app/workspace/more/page.tsx"), "utf8");
 const evidenceReview = fs.readFileSync(path.join(root, "src/components/EvidenceReviewPanel.tsx"), "utf8");
 const caregiverLanguage = fs.readFileSync(path.join(root, "src/lib/caregiver-language.ts"), "utf8");
+const darkStyles = fs.readFileSync(path.join(root, "src/app/dark-mode-remediation.css"), "utf8");
+const accessibilityOverrides = fs.readFileSync(path.join(root, "src/app/accessibility-overrides.css"), "utf8");
 const evidenceCompletenessRoute = path.join(root, "src/app/workspace/evidence-completeness/page.tsx");
 assert.equal(fs.existsSync(evidenceCompletenessRoute), false, "internal evidence policy configuration must not be routable in the caregiver workspace");
 assert.doesNotMatch(evidenceReview, /workspace\/evidence-completeness|Review source completeness/, "caregiver evidence review must not link to internal policy configuration");
@@ -164,6 +166,14 @@ assert.match(shell, /const ShareCareSummaryPanel = dynamic\(/, "the share/export
 assert.doesNotMatch(shell, /Community/, "the intentionally disabled Community module must remain absent");
 assert.match(styles, /\.history-backdrop/);
 assert.match(styles, /\.history-drawer/);
+assert.match(styles, /\.history-filter-row\s*\{[^}]*flex-wrap:\s*wrap/s,
+  "history filters must wrap on narrow screens instead of clipping primary controls");
+assert.match(darkStyles, /\.history-drawer-footer\s*\{[^}]*background:\s*var\(--theme-panel-bg\)/s,
+  "dark history footer text must sit on a dark surface");
+assert.match(darkStyles, /\.history-drawer-footer\s*\{[^}]*color:\s*var\(--theme-panel-muted\)/s,
+  "dark history footer must use readable muted text");
+assert.doesNotMatch(accessibilityOverrides, /history-drawer-header/,
+  "the light-surface accessibility override must not force dark text onto the dark history header");
 assert.match(styles, /\.history-source-warning/);
 assert.match(styles, /@media \(max-width: 480px\)/);
 assert.match(apiClient, /requestAuthorizationHeaders/);
