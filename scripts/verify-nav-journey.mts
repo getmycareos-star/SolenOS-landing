@@ -100,8 +100,8 @@ assert.match(workspaceStyles, /:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "A clearer picture of care"],
-  ["src/app/workspace/daily-care/page.tsx", "Daily Care"],
+  ["src/app/workspace/page.tsx", "Today"],
+  ["src/app/workspace/daily-care/page.tsx", "Share an update"],
   ["src/app/workspace/open-loops/page.tsx", "Follow-ups"],
   ["src/app/workspace/timeline/page.tsx", "Care history"],
   ["src/app/workspace/documents/page.tsx", "Documents"],
@@ -109,6 +109,7 @@ const routeContracts = [
   ["src/app/workspace/handoffs/page.tsx", "Share care information"],
   ["src/components/workflows/AICompanion.tsx", "Care Assistant"],
   ["src/app/workspace/settings/page.tsx", "Settings"],
+  ["src/app/workspace/more/page.tsx", "More"],
 ];
 for (const [route, title] of routeContracts) {
   const source = fs.readFileSync(path.join(root, route), "utf8");
