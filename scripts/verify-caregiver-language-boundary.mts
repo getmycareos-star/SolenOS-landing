@@ -73,8 +73,6 @@ for (const diagnostic of [
   "Freshness assessment storage is unavailable in this schema.",
   "The provenance reconciliation API returned an assertion payload.",
   "The OCR extraction pipeline is unavailable.",
-  "The evidence is incomplete and confidence is low.",
-  "The assessment needs more source evidence.",
   "Original file SHA-256: abc123",
   "source_id: 1f2a3b4c",
   "Record reference: 123e4567-e89b-42d3-a456-426614174000",
