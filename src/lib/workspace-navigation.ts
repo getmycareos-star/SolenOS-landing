@@ -29,6 +29,13 @@ export const WORKSPACE_NAVIGATION = {
       icon: MessageCircle,
     },
     {
+      id: "follow-ups",
+      href: "/workspace/open-loops",
+      label: "Follow-ups",
+      description: "Questions and agreed next steps",
+      icon: Clock3,
+    },
+    {
       id: "appointments",
       href: "/workspace/appointments",
       label: "Appointments",
@@ -36,15 +43,7 @@ export const WORKSPACE_NAVIGATION = {
       icon: CalendarDays,
     },
   ],
-  support: [
-    {
-      id: "care-assistant",
-      href: "/workspace/companion",
-      label: "Care Assistant",
-      description: "Ask about saved care information",
-      icon: MessageCircle,
-    },
-  ],
+  support: [] as WorkspaceNavigationItem[],
   settings: [
     {
       id: "more",
@@ -62,6 +61,13 @@ export const WORKSPACE_NAVIGATION = {
 
 /** Existing routes retained as secondary destinations; permissions stay at route/API boundaries. */
 export const WORKSPACE_SECONDARY_NAVIGATION: WorkspaceNavigationItem[] = [
+  {
+    id: "care-assistant",
+    href: "/workspace/companion",
+    label: "Care Assistant",
+    description: "Ask about saved care information",
+    icon: MessageCircle,
+  },
   {
     id: "care-history",
     href: "/workspace/timeline",
