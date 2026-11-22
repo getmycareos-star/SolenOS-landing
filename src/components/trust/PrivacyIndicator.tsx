@@ -23,8 +23,8 @@ export default function PrivacyIndicator({
     switch (accessLevel) {
       case 'private': return 'Private to you';
       case 'shared': return 'Shared with selected people';
-      case 'unknown': return 'Access information unavailable';
-      default: return 'Access information unavailable';
+      case 'unknown': return 'We couldn't check who can see this';
+      default: return 'We couldn't check who can see this';
     }
   };
 
