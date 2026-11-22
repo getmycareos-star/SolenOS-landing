@@ -618,7 +618,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setContextShareConfirmed(false);
       await load();
     } catch {
-      setError("We couldn't share this care context. Check your access and try again.");
+      setError("We couldn’t share your availability. Check your access and try again.");
     } finally {
       setSavingContext(false);
     }
@@ -1051,11 +1051,11 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                     <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.5rem" }}>
                       <strong style={{ fontSize: "0.88rem" }}>{caregiverFieldLabel(item.responsibility_type)} · {caregiverStatusLabel(item.status)}</strong>
                       <p className="mobile-settings-hint" style={{ margin: "0.2rem 0 0" }}>
-                        {item.scope || "No scope recorded"} · Started {item.effective_start ? new Date(item.effective_start).toLocaleDateString() : "date not recorded"} · {item.effective_end ? "Ended " + new Date(item.effective_end).toLocaleDateString() : "Current"}
+                        {item.scope || "No task details were recorded"} · Started {item.effective_start ? new Date(item.effective_start).toLocaleDateString() : "date not recorded"} · {item.effective_end ? "Ended " + new Date(item.effective_end).toLocaleDateString() : "Current"}
                       </p>
                     </div>
                   )) : (
-                    <p className="mobile-settings-hint" style={{ margin: 0 }}>No responsibility history has been recorded for your caregiver profile yet.</p>
+                    <p className="mobile-settings-hint" style={{ margin: 0 }}>No past care responsibilities have been saved for you yet.</p>
                   )}
                 </section>
               )}
@@ -1067,7 +1067,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   {networkSummary.responsibility_gaps?.map((item) => (
                     <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
                       <strong style={{ fontSize: "0.9rem" }}>Responsibility: {caregiverFieldLabel(item.type)}</strong>
-                      <span className="mobile-settings-hint">{item.scope || "No responsibility scope recorded"} · {caregiverStatusLabel(item.status)}</span>
+                      <span className="mobile-settings-hint">{item.scope || "No details about this task were recorded"} · {caregiverStatusLabel(item.status)}</span>
                       <label className="mobile-settings-hint" htmlFor={"gap-review-status-" + item.id}>Review outcome</label>
                       <select
                         id={"gap-review-status-" + item.id}
