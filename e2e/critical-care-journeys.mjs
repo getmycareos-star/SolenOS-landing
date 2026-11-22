@@ -393,7 +393,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.goto(new URL("/workspace", frontend).toString());
   await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  await page.getByRole("heading", { name: "Your Care Record", exact: true })
+  await page.getByRole("heading", { name: "Your Care Record", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
   for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
@@ -667,7 +667,7 @@ await record("01a dementia profile review window and observation persistence are
     "another care record must not retrieve this observation");
 
   const { context, page, observed, pageErrors } = await createBrowserPage(session, "/workspace/care-continuity");
-  await page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Your Care Record" }).first().waitFor({ timeout: 20_000 });
   const dementiaDisclosure = page.locator("details.lcr-history-details").filter({
     has: page.getByText("Dementia care profile and observations", { exact: true }),
   });
@@ -2814,7 +2814,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
     caregiver: { id: accepted.payload.caregiver_id },
     expires_at: accepted.payload.expires_at,
   }, "/workspace/care-continuity");
-  await page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Your Care Record" }).first().waitFor({ timeout: 20_000 });
   await page.getByText(scenarioReports[0], { exact: false }).first().waitFor({ timeout: 20_000 });
   await verifyMobile(page);
   assert.deepEqual(pageErrors, [], `invited caregiver browser must not throw: ${JSON.stringify(pageErrors)}`);
