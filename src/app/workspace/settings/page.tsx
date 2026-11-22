@@ -822,9 +822,9 @@ function PrivacyCard() {
     }
 
     const cleanupWarnings = [
-      ...(!serverSessionRevoked ? ["we couldn't confirm that you have been signed out everywhere. Your previous sign-in may stay active until it expires"] : []),
+      ...(!serverSessionRevoked ? ["We couldn’t confirm that you have been signed out everywhere. Your previous sign-in may stay active until it expires"] : []),
       ...(!localRevocationMarkerSaved ? ["this browser could not retain its deletion marker; automatic record creation may remain possible on a later visit"] : []),
-      ...(!pushSubscriptionRemoved ? ["we couldn't remove notifications from this browser. Check your notification settings"] : []),
+      ...(!pushSubscriptionRemoved ? ["We couldn’t remove notifications from this browser. Check your notification settings"] : []),
     ];
     show(
       cleanupWarnings.length
@@ -850,7 +850,7 @@ function PrivacyCard() {
         <strong>These actions do different things:</strong>
         <ul>
           <li><strong>Clear this device:</strong> removes saved information and sign-in details from this browser. It does not delete care information held by SolenOS.</li>
-          <li><strong>Close or delete an account:</strong> stops that account from being used. It does not delete the Care Record or other care information.</li>
+          <li><strong>Close or delete an account:</strong> if account closure is available, it stops that account from being used. It does not delete the Care Record or other care information.</li>
           <li><strong>Ask us to delete care information:</strong> asks SolenOS to review your request and remove information that can be deleted. We first check that you are allowed to make the request. If information is shared with others, must be kept for legal reasons, or is held in service-provider copies or backups, some parts may take longer or may not be removable. We will tell you what was actually deleted. Sending a request does not delete anything by itself.</li>
         </ul>
       </div>
