@@ -17,7 +17,7 @@ assert.equal(caregiverStatusLabel("needs_clarification"), "Needs checking");
 assert.equal(caregiverStatusLabel("completed"), "Completed");
 assert.equal(caregiverStatusLabel("awaiting_confirmation"), "Needs review");
 assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
-assert.equal(caregiverStatusLabel("verified"), "Checked against a source");
+assert.equal(caregiverStatusLabel("verified"), "Checked against another note or report");
 assert.equal(caregiverStatusLabel("uncertain"), "Not sure yet");
 assert.equal(caregiverStatusLabel("unresolved"), "Still needs attention");
 assert.equal(caregiverInformationLabel("observed"), "Seen by a caregiver");
@@ -41,6 +41,9 @@ assert.equal(caregiverFieldLabel("reported_weight_change"), "Weight change repor
 assert.equal(caregiverFieldLabel("unknown_internal_field"), null);
 assert.equal(caregiverFieldLabel("reconciliation"), "Updating your care information");
 assert.equal(caregiverFieldLabel("delta_engine"), "Changes since your last visit");
+assert.equal(caregiverProductTermLabel("provenance"), "Where this information came from");
+assert.equal(caregiverProductTermLabel("evidence"), "Related notes and documents");
+assert.equal(caregiverProductTermLabel("epistemic status"), "What is known, what is unclear, or not recorded");
 assert.equal(
   caregiverSafeChangeText("daily_care_entry was first observed in the available records; this is not a claim about onset. 2 event(s) recorded in the current observation window."),
   null,
@@ -84,6 +87,9 @@ assert.match(caregiverSafeErrorMessage(), /check your connection/i);
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
+const situationResponse = read("../src/components/mvp-workspace/SituationResponsePanel.tsx");
+const sourceIndicator = read("../src/components/trust/SourceIndicator.tsx");
+const careCaptureLegacy = read("../src/components/CareCapture.tsx");
 const companion = read("../src/components/workflows/AICompanion.tsx");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
 const documentsPage = read("../src/app/workspace/documents/page.tsx");
@@ -274,6 +280,11 @@ assert.doesNotMatch(sourceReview, /Evidence records could not be loaded|Saved ev
 assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/);
 assert.match(careContinuity, /More about the care information saved here/);
 assert.match(careContinuity, /Care information shared/);
+assert.doesNotMatch(documentsPage, /upload session|encrypted on this device|sync when your connection returns|safely queued/i);
+assert.doesNotMatch(situationResponse, /Saved record reference|situation-reasoning state|persisted/i);
+assert.doesNotMatch(sourceIndicator, /Source ID:|Viewing source evidence/);
+assert.doesNotMatch(careCaptureLegacy, /Qwen|pending_review|Qwen candidates/i);
+assert.doesNotMatch(historyDrawer, /incomplete retrieval|description=\{error\}/i);
 assert.doesNotMatch(statusCareDelta, /Clinician-oriented summary/);
 assert.match(statusCareDelta, /Check the summary against saved information/);
 assert.match(statusCareDelta, /Model-generated clinician summaries are withheld until they have their own evidence evaluation/);
