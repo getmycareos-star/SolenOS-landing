@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getJSON, patchJSON, getCaregiverId } from '../api/client'
-import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language'
 
 type Assertion = {
   id: string
@@ -200,9 +200,9 @@ export default function CareContinuityIntegrityPanel({
               <span style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)', margin: '5px 0' }}>
-              Shared by: {caregiverSafeAssistantText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Has this been checked? {simpleRecordLabel(item.assertion_status)}
+              Shared by: {caregiverSafeGeneratedText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Has this been checked? {simpleRecordLabel(item.assertion_status)}
             </p>
-            {fresh && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: '5px 0' }}>{caregiverSafeAssistantText(fresh.explanation) || 'No further explanation is available.'}</p>}
+            {fresh && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: '5px 0' }}>{caregiverSafeGeneratedText(fresh.explanation) || 'No further explanation is available.'}</p>}
             {item.source_text && <><small>Original wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverReadableCaptureText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
