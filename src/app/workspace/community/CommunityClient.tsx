@@ -16,8 +16,7 @@ export default function CommunityClient() {
         <section style={{ maxWidth: 560, margin: "0 auto", padding: 24 }}>
           <h1>Community is not available yet</h1>
           <p>
-            Peer posts, reactions, and saved stories are disabled until moderation,
-            caregiver-scoped persistence, and privacy controls are ready.
+            Community sharing is turned off for now while we work on safety and privacy.
           </p>
           <p>Community experiences are separate from your Care Record and are never added to it automatically.</p>
         </section>
