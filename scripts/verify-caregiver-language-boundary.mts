@@ -179,6 +179,11 @@ assert.match(dailyCare, /Your saved note is still available\./, "processing fail
 assert.match(dailyCare, /Open care history/);
 assert.doesNotMatch(documentsPage, /AI interpretation|Document library|Server processing after upload|extracted statements|document understanding|upload ID|10 MiB/);
 assert.match(documentsPage, /Your original files are kept separate from suggested details/);
+
+assert.match(documentReview, /caregiverSafeGeneratedText\(question\)/, "generated document-review questions must use caregiver language");
+assert.match(documentReview, /caregiverSafeGeneratedText\(warning\)/, "generated document-review warnings must use caregiver language");
+assert.match(documentsPage, /caregiverSafeGeneratedText\(versionComparison\.reason\)/, "document comparison explanations must use caregiver language");
+
 assert.match(documentsPage, /No differences were found in the text SolenOS could read/);
 assert.doesNotMatch(appointment, /source completeness|Recorded observations and caregiver reports|item\(s\) shown|saved source\(s\)/);
 assert.match(appointment, /Saved care details/);
