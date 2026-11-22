@@ -5,12 +5,15 @@
 **UI (runtime adapters):** `src/lib/ui-runtime` + `src/components/ui-runtime` (sidebar / situation continuity).  
 **Principle:** Logic over pixels for ranking; layout follows ADR-016 (calm B&W split workspace, not chat).
 
-## Frontend flow (MVP landing)
+## Current caregiver flow
+
+The older `/api/analyze` and standalone `/api/situation` diagram below is historical, not the current AI integration contract. The supported flow is: save caregiver input or a document through authenticated backend routes → preserve the original source in PostgreSQL → retrieve the shared Living Care Record → request private Qwen assistance through authenticated backend routes → show suggestions for caregiver review. The frontend never calls Ollama directly. A failed Qwen request remains visibly unavailable and does not trigger a fabricated deterministic answer.
 
 ```
 REAL_MOMENT (text notes + document upload / camera)
   → extract docs via POST /api/extract (when attached)
-  → POST /api/situation (primary Care Record path) and/or POST /api/analyze
+  → save through the authenticated backend care-record routes
+  → retrieve the persisted Living Care Record and request backend Qwen assistance
 CARRYING (reflection of load — not advice)
   → CLARITY (Matters now / Can wait / May become serious)
   → CONTINUITY (recorded + deferred + rest)
@@ -27,7 +30,7 @@ Accessibility float (`Aa`): theme inversion (black↔white panels), Serif/Sans, 
 |------|--------|
 | Text / paste → `POST /api/situation` (+ analyze) | IMPLEMENTED (live, no mocks) |
 | Image/PDF / camera → `POST /api/extract` (Tika + Tesseract) | IMPLEMENTED best-effort |
-| Voice mic / Whisper / TTS / Hear SolenOS | FUTURE (ADR-018) — libraries unmounted |
+| Voice input | Browser Web Speech only; server-side Whisper/Gemini transcription is retired |
 | PaddleOCR self-host | FUTURE — not wired; Tesseract stands in for images |
 
 Failed extraction still lists the attachment; only ready text is concatenated into the understanding input. MVP accepts messy incomplete input — no perfect structure required.
@@ -42,7 +45,7 @@ Answer: **“What should I do now?”** with clarity sections on the CLARITY pan
 Input → Load engines → Attention (Now/Watch/Later)
   → STATE/BELIEF → Responsibility Graph → CLI → ELS
   → Priority Contract (deterministic ranking)
-  → LLM structured clarity JSON (5 fields only)
+  → Private Qwen assistance through authenticated backend routes (review-only)
   → Fail-Safe → Crisis → Confidence → Delegation
   → Human Trust explanation → Safety enforcement
   → DecisionCard / sidebar adapters
@@ -89,7 +92,7 @@ Produced by `computeConfidenceState` (DERIVED), surfaced via confidence layer pa
 | Condition | Surface behavior |
 |-----------|------------------|
 | Pipeline validation fail | HTTP 422; no inventing urgency |
-| Missing GEMINI_API_KEY | HTTP 503 on analyze |
+| Qwen unavailable or invalid | Show that help is unavailable; preserve the saved care information and do not substitute another model |
 | Fail-safe engaged | Clarify prompts; capped confidence |
 | No situation | Soft empty — system has no STATE root |
 
