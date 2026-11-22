@@ -3517,7 +3517,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   const clarificationDetails = page.locator("#lcr-clarification-workflow > details");
   await clarificationDetails.locator(":scope > summary").click();
   await page.waitForFunction(() => document.querySelector("#lcr-clarification-workflow > details")?.open === true);
-  await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Questions to check" }).waitFor({ timeout: 20_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(answerQuestionText, { exact: true }).first().click();
   await page.getByRole("button", { name: "Add what you know", exact: true }).click();
@@ -3538,7 +3538,7 @@ await record("clarification questions are linked, answerable, skippable and dura
   assert.equal(answerHistory.payload[0].evidence_ids.length, 1);
   // The answer was saved with provenance above. The invariant is that an unlinked answer cannot be promoted; do not couple this check to optional explanatory copy.
   assert.equal(
-    await page.getByRole("button", { name: "Accept as caregiver report", exact: true }).count(),
+    await page.getByRole("button", { name: "Save as caregiver update", exact: true }).count(),
     0,
     "an unlinked clarification must not offer a review action that cannot be completed",
   );
@@ -3573,13 +3573,13 @@ await record("clarification questions are linked, answerable, skippable and dura
   await page.waitForFunction(() => document.querySelector("details.lcr-history-details.lcr-progressive-disclosure")?.open === true);
   await clarificationDetails.locator(":scope > summary").click();
   await page.waitForFunction(() => document.querySelector("#lcr-clarification-workflow > details")?.open === true);
-  await page.getByRole("heading", { name: "Questions worth clarifying" }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Questions to check" }).waitFor({ timeout: 20_000 });
   await page.getByText(skipQuestionText, { exact: true }).first().waitFor({ timeout: 15_000 });
-  await page.getByText("View answered and closed questions", { exact: true }).click();
+  await page.getByText("See questions already answered", { exact: true }).click();
   await page.getByRole("button", { name: new RegExp(answerQuestionText) }).click();
   await page.getByText(exactAnswer, { exact: true }).first().waitFor({ timeout: 15_000 });
   await page.getByText(exactProvenance, { exact: false }).first().waitFor({ timeout: 15_000 });
-  await page.getByText("Earlier answers", { exact: true }).waitFor();
+  await page.getByText("Previous answers", { exact: true }).waitFor();
   await verifyMobile(page);
   await context.close();
 });
