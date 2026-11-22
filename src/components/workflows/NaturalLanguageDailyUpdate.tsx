@@ -319,7 +319,7 @@ export default function NaturalLanguageDailyUpdate() {
                 const name = caregiverSafeAssistantText(document.document_name) || "Saved document";
                 const quote = caregiverSafeAssistantText(candidate.source_quote) || "The document text could not be read.";
                 const page = candidate.page_number ? `, page ${candidate.page_number}` : "";
-                contextParts.push(`${name}${page} contains this medication detail: “${quote.slice(0, 220)}”${detailText ? ` Details: ${detailText}.` : "."} These words do not confirm a new dose.`);
+                contextParts.push(`${name}${page} contains this medication detail: “${quote.slice(0, 220)}”${detailText ? ` Details: ${detailText}.` : "."} This extraction is not confirmation of a new dose.`);
               }
             } else if (Array.isArray(documents?.processing_jobs) && documents.processing_jobs.length) {
               contextParts.push("Some saved documents are still being checked. They cannot confirm a new dose yet.");
