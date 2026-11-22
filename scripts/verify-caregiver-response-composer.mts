@@ -699,3 +699,14 @@ assert(crs != null && crs.observation_count === ev2.crs_observation_count, "CRS 
 console.log("✓ Evidence maturity from CRS observation/revision");
 
 console.log("\n=== Caregiver Response Contract: all checks passed ===\n");
+
+const caregiverComposerSource = await (await import("node:fs")).promises.readFile(
+  "src/lib/caregiver-response-composer/index.ts",
+  "utf8",
+);
+assert.match(caregiverComposerSource, /caregiverFieldLabel\(top\.domain\)/,
+  "care change domains must use familiar labels");
+assert.match(caregiverComposerSource, /caregiverStatusLabel\(top\.classification\)/,
+  "care change classifications must use caregiver-facing labels");
+assert.doesNotMatch(caregiverComposerSource, /moderate confidence|low confidence/,
+  "internal confidence levels must not appear in caregiver change summaries");
