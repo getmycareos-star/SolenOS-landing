@@ -346,11 +346,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 {candidate.canonical_candidate.source_attribution === "patient_reported" && <span>Reported by the patient</span>}
                 {candidate.canonical_candidate.source_attribution === "caregiver_reported" && <span>Reported by a family caregiver</span>}
                 {candidate.canonical_candidate.source_attribution === "professional_observed" && <span>Documented or observed by a care professional</span>}
-                {candidate.canonical_candidate.negation_status === "explicitly_negated" && <span>Contains negative wording</span>}
-                {candidate.canonical_candidate.modality === "tentative" && <span>Tentative wording</span>}
-                {candidate.canonical_candidate.conditionality === "conditional" && <span>Conditional wording</span>}
+                {candidate.canonical_candidate.negation_status === "explicitly_negated" && <span>Says this did not happen</span>}
+                {candidate.canonical_candidate.modality === "tentative" && <span>Not certain</span>}
+                {candidate.canonical_candidate.conditionality === "conditional" && <span>Only applies in some situations</span>}
                 {candidate.canonical_candidate.temporal_context === "historical" && <span>Historical information</span>}
-                {candidate.canonical_candidate.statement_kind === "recommendation" && <span>Recommendation — outcome not established here</span>}
+                {candidate.canonical_candidate.statement_kind === "recommendation" && <span>A recommendation; no result has been recorded yet.</span>}
               </div>}
               {candidate.canonical_candidate?.medication_details && <div style={{ padding: 9, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
                 <strong>Medicine details — not changed</strong>
@@ -361,7 +361,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Needs clarification</strong>
                 {candidate.warnings.map((warning, warningIndex) => <p key={warningIndex} style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverSafeAssistantText(warning) || "This detail may need another look."}</p>)}
               </div>}
-              <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: "calc(11px * var(--solenos-text-scale, 1))", fontWeight: 700, color: "var(--text-secondary)" }}>ORIGINAL WORDS IN THE DOCUMENT</span><p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(candidate.source_quote) || "The original wording is available in the document."}</p></div>
+              <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: "calc(11px * var(--solenos-text-scale, 1))", fontWeight: 700, color: "var(--text-secondary)" }}>WORDS FROM THE DOCUMENT</span><p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(candidate.source_quote) || "The original wording is available in the document."}</p></div>
               {pending && <>
                 <label style={{ display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>What is this about?<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
                 <label style={{ display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>What should it say?<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
