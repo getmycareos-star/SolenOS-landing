@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
-import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from '../lib/caregiver-language'
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverStatusLabel } from '../lib/caregiver-language'
 
 interface CareCaptureProps {
   personId?: string
