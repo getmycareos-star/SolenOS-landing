@@ -271,6 +271,7 @@ export default function FollowUpsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [attentionWarning, setAttentionWarning] = useState("");
+  const [loopHistoryLoadFailed, setLoopHistoryLoadFailed] = useState(false);
 
   const refresh = useCallback(async () => {
     const requestSequence = ++refreshSequence.current;
@@ -307,6 +308,7 @@ export default function FollowUpsPage() {
       ? nextAssessmentResponse.assessment : null;
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
     if (nextLoops !== null) {
+      setLoopHistoryLoadFailed(false);
       // The API paginates by immutable creation order so edits cannot move
       // records across page boundaries. Restore the caregiver-facing priority
       // order only after the complete list has been retrieved.
@@ -323,6 +325,7 @@ export default function FollowUpsPage() {
       setLoops(displayOrdered);
     }
     if (nextAssessment !== null) setAssessment(nextAssessment);
+    if (nextLoops === null) setLoopHistoryLoadFailed(true);
     if (!nextLoops || !nextAssessment) setAttentionWarning("Some care information could not be loaded. This view is incomplete; unavailable information is not treated as empty or resolved.");
     else if (!reassessmentFailed) setAttentionWarning("");
   }, []);
@@ -518,19 +521,19 @@ export default function FollowUpsPage() {
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length}</span></div>
         {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} occurrences={item.record_id ? occurrencesById[item.record_id] : undefined} />)}
-        {categorized.monitored.length === 0 && <p className="followups-empty-inline">Nothing is currently marked for a check-in.</p>}
+        {categorized.monitored.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked for a check-in the last time we checked." : "We couldn’t check what can wait or needs a check-in just now. Your saved follow-ups are still shown below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs clarification</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length + unclassifiedFollowUpItems.length}</span></div>
         {categorized.needsClarification.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} occurrences={item.record_id ? occurrencesById[item.record_id] : undefined} />)}
         {unclassifiedFollowUpItems.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} occurrences={item.record_id ? occurrencesById[item.record_id] : undefined} />)}
-        {categorized.needsClarification.length === 0 && unclassifiedFollowUpItems.length === 0 && <p className="followups-empty-inline">Nothing here needs a closer look right now.</p>}
+        {categorized.needsClarification.length === 0 && unclassifiedFollowUpItems.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing clarification the last time we checked." : "We couldn’t check which details need clarification just now. Your saved follow-ups are still shown below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items marked done or no longer active.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
         {loops.filter((loop) => loop.status === "closed").map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Closed · {statusLabel(loop.outcome_status)}</p><h3>{caregiverSafeAssistantText(loop.title) || "Follow-up"}</h3><p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p></article>)}
         {loops.some((loop) => loop.status === "cancelled") && <p className="followups-empty-inline">{loops.filter((loop) => loop.status === "cancelled").length} stopped {loops.filter((loop) => loop.status === "cancelled").length === 1 ? "follow-up is" : "follow-ups are"} not shown as completed.</p>}
-        {loops.filter((loop) => loop.status === "closed").length === 0 && <p className="followups-empty-inline">There are no resolved follow-ups here yet.</p>}
+        {loops.filter((loop) => loop.status === "closed").length === 0 && <p className="followups-empty-inline">{loopHistoryLoadFailed ? "We couldn’t check which follow-ups have been resolved just now. Your last saved list remains visible." : "There are no resolved follow-ups here yet."}</p>}
       </section>
     </>}
 
