@@ -231,7 +231,7 @@ assert.doesNotMatch(publicHome, /Care Assistant/, "the public home page uses AI 
 
 console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
 
-assert.match(currentUnderstanding, /<h2 id="lcr-current-understanding-heading">Your Living Care Record<\/h2>/, "the primary care view is clearly named as the Living Care Record");
+assert.match(currentUnderstanding, /<h2 id="lcr-current-understanding-heading">Your Care Record<\/h2>/, "the primary care view uses the caregiver-facing Care Record name");
 assert.match(currentUnderstanding, /<h3>What matters now<\/h3>/, "the first attention summary uses caregiver language");
 assert.match(currentUnderstanding, /Questions that still need answers[\s\S]*?clarificationCareDecisions\.length[\s\S]*?Review questions/, "saved clarification decisions are presented in a concise caregiver-readable summary without duplicating the full question list");
 assert.match(currentUnderstanding, /<h4 id="lcr-registered-actions-heading">What’s been agreed<\/h4>/, "recorded actions are presented as agreed care");
