@@ -557,3 +557,15 @@ assert.doesNotMatch(appointmentWorkspace, /SolenOS could not retrieve the full c
 assert.match(livingCareRecordPanel, /What we know so far/);
 assert.match(livingCareRecordPanel, /Notes and documents behind this summary/);
 assert.match(livingCareRecordPanel, /What you can do next/);
+
+const continuityHome = read("../src/components/mvp-workspace/ContinuityHomePanel.tsx");
+const communityUnavailable = read("../src/app/workspace/community/CommunityClient.tsx");
+const caregiverInvite = read("../src/app/invite/caregiver/page.tsx");
+assert.doesNotMatch(continuityHome, /Living Care Record|No notes in this session yet/,
+  "the Care Record home must use familiar names and avoid session terminology");
+assert.match(continuityHome, /No care notes have been added yet/);
+assert.doesNotMatch(communityUnavailable, /Living Care Record/,
+  "the disabled community screen must still use the caregiver-facing Care Record name");
+assert.doesNotMatch(caregiverInvite, /missing its secure code|access was authorised/i,
+  "caregiver invitations must not expose internal link-security or authorization language");
+assert.match(caregiverInvite, /This invitation link is incomplete/);
