@@ -1,7 +1,7 @@
 /**
- * SolenOS — ops Cognitive Compression Engine path (POST /api/analyze).
- * Product identity remains: evolving intelligence layer / Living Care Record.
- * This prompt is for the hard-gated analyze transform — not caregiver MVP entry.
+ * Legacy internal prompt retained for compatibility with the retired analysis
+ * pipeline. The /api/analyze route returns HTTP 410 and has no active product
+ * caller. Caregiver inference uses authenticated backend Qwen workflows.
  */
 export const SOLENOS_SYSTEM_PROMPT = `META-RULE: The system behavior is the product. The UI, AI model, and features are only delivery mechanisms. Because if the behavior is wrong, adding more AI capability will only make the wrong behavior more powerful.
 
