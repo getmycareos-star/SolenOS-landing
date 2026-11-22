@@ -160,7 +160,7 @@ export default function QuickDailyCheckIn() {
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
     if (!personId || !caregiverId) {
-      setError("Your care session could not be verified. Reopen Daily Care before saving.");
+      setError("We couldn’t reconnect to your Care Record. Open Daily Care again before saving.");
       return;
     }
 
@@ -238,7 +238,7 @@ export default function QuickDailyCheckIn() {
           setAttentionCount(summary.blocked + summary.failed_recoverable);
         }
         if (status === 401 || status === 403) {
-          setError("This check-in is encrypted on this device, but your care session must be verified before it can reach the care record.");
+          setError("Your check-in is safely saved on this device. Reopen Daily Care to reconnect before adding it to your Care Record.");
         } else if (status === 400 || status === 409 || status === 422) {
           setError("This check-in is kept on this device, but the server needs the update reviewed before it can be saved.");
         } else {
