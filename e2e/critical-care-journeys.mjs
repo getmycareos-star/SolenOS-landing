@@ -724,14 +724,15 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
     document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
     document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
   , undefined, { timeout: 5_000 });
-  const moreNavigationLink = page.locator("#solenos-navigation")
-    .getByRole("link", { name: /More/ });
+  const primaryNavigation = page.locator("#solenos-navigation");
+  const followUpsNavigationLink = primaryNavigation.getByRole("link", { name: /Follow-ups/ });
+  await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
+  const moreNavigationLink = primaryNavigation.getByRole("link", { name: /More/ });
   await moreNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
   await moreNavigationLink.click();
   await page.waitForURL("**/workspace/more", { timeout: 15_000 });
-  const followUpsNavigationLink = page.getByRole("link", { name: /Follow-ups/ });
-  await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
-  assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
+  await page.getByRole("link", { name: /Care Assistant/ }).waitFor({ state: "visible", timeout: 10_000 });
   await context.close();
 });
 
