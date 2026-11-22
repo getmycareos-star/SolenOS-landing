@@ -392,7 +392,7 @@ export default function ClaimAssessmentPanel() {
       Compare a care detail with the saved notes or documents. Any quoted words must match the original exactly. Your review is saved, and the original report is kept. A review does not prove a medical fact.
     </p>
     {loading && <p role="status">Loading saved care details and related notes…</p>}
-    {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
+    {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Try again</button></p>}
     {!loading && !error && claims.length === 0 && <p>There are no care details to review yet.</p>}
     {!loading && !error && claims.length > 0 && <>
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Care detail
@@ -405,7 +405,7 @@ export default function ClaimAssessmentPanel() {
         <div><strong>Who reported it:</strong> {caregiverSafeAssistantText(selectedClaim.source_label) || "Not recorded"}</div>
         <div><strong>What we know:</strong> {caregiverInformationLabel(selectedClaim.epistemic_state || "reported") || "Not yet confirmed"}</div>
         <div><strong>Review:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
-        <div><strong>Related notes or documents:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
+        <div><strong>Related notes and documents:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
       </div>}
       <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 12, minWidth: 0 }}>
         <legend style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>How this care detail is connected to others</legend>
@@ -486,25 +486,25 @@ export default function ClaimAssessmentPanel() {
       {notice && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{notice}</p>}
       <section aria-label="Check for new information" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginTop: 12 }}>
         <h4 style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginTop: 0, marginBottom: 5 }}>Check whether anything new changes this review</h4>
-        <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>This check looks for new or missing notes or documents, changes to related care details, and reports that do not match. It does not prove that the information is true or complete.</p>
+        <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>We look for new or missing notes or documents, changes to related care details, and reports that do not match. This cannot prove that the information is true or complete.</p>
         {impactLoading && <p role="status">Checking whether new information affects this review…</p>}
         {impactError && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{impactError} <button type="button" style={button} onClick={() => void loadAssessmentImpact()} disabled={impactLoading}>Retry check</button></p>}
         {!impactLoading && !impactError && assessmentImpact && <>
           <strong>{assessmentImpact.review_required ? "This information needs another review" : "No new information was found that requires another review"}</strong>
-          <div style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginTop: 5 }}>Review: {simpleReviewStatus(assessmentImpact.status)}</div>
+          <div style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginTop: 5 }}>Check result: {simpleReviewStatus(assessmentImpact.status)}</div>
           {assessmentImpact.reasons.length > 0
             ? <ul>{assessmentImpact.reasons.map((reason) => <li key={reason}>{simpleReviewStatus(reason)}</li>)}</ul>
-            : <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No new information was found that requires another review in the information checked. This does not prove that the review is complete or correct.</p>}
+            : <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>We found no new information that calls for another review in the items we checked. This does not mean the review is complete or correct.</p>}
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Notes or documents that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Notes or documents not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
-          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Another care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
+          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Other care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
           {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {simpleReviewStatus(item.field)}</strong><div>{caregiverSafeAssistantText(item.description) || "The saved reports do not match."}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
           <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{caregiverSafeAssistantText(assessmentImpact.interpretation_limit) || "This check may not include every relevant detail."}</p>
         </>}
       </section>
       <h4 style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 5 }}>Past reviews</h4>
-      {historyLoading && <p role="status">Loading saved review versions…</p>}
+      {historyLoading && <p role="status">Loading earlier reviews…</p>}
       {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{historyError} <button type="button" style={button} onClick={() => void loadHistory()} disabled={historyLoading}>Retry history</button></p>}
       {!historyLoading && !historyError && history.length === 0 && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>No earlier reviews are saved for this care detail.</p>}
       {history.map((item) => <article key={item.id} style={{ borderTop: "1px solid var(--border)", padding: "9px 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
