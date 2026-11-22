@@ -1,6 +1,7 @@
 "use client";
 
 import type { LivingCareRecordResponseView } from "@/lib/living-care-record-ux";
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import { UnderstandingFeedbackPrompt } from "./UnderstandingFeedbackPrompt";
 
 type Props = {
@@ -24,55 +25,79 @@ export function LivingCareRecordPanel({
   rawInputExcerpt = null,
 }: Props) {
   const { care_event_added: event, disclosure_plan: plan } = view;
-  const facts = view.what_understood.slice(0, 2);
+  const facts = view.what_understood.slice(0, 2)
+    .map((item) => caregiverSafeGeneratedText(item))
+    .filter((item): item is string => Boolean(item));
   const stillUnclear =
     plan.show_questions && view.what_needs_context.length > 0
-      ? view.what_needs_context.slice(0, plan.max_questions)
+      ? view.what_needs_context
+          .map((item) => caregiverSafeGeneratedText(item))
+          .filter((item): item is string => Boolean(item))
+          .slice(0, plan.max_questions)
       : [];
-  const showMatters =
-    plan.show_what_matters_now &&
-    Boolean(view.what_matters_now || view.what_can_wait || view.what_may_become_serious);
-  const showChanged =
-    plan.show_what_changed &&
-    Boolean(view.what_changed_in_understanding) &&
-    view.observation_count > 1;
-  const showKnow =
-    plan.show_current_understanding &&
-    (Boolean(view.what_seems_happening) || facts.length > 0);
+  const recognitionLine = caregiverSafeGeneratedText(view.recognition_line);
+  const confirmation = caregiverSafeGeneratedText(event.confirmation);
+  const evidenceLine = caregiverSafeGeneratedText(view.evidence_line);
+  const attentionLabel = caregiverSafeGeneratedText(view.attention_label);
+  const mentalLoadSignal = caregiverSafeGeneratedText(view.mental_load_signal);
+  const situationSummary = caregiverSafeGeneratedText(view.what_seems_happening);
+  const changedSummary = caregiverSafeGeneratedText(view.what_changed_in_understanding);
+  const connectionNote = caregiverSafeGeneratedText(view.connection_note);
+  const mattersNow = caregiverSafeGeneratedText(view.what_matters_now);
+  const canWait = caregiverSafeGeneratedText(view.what_can_wait);
+  const mayBecomeSerious = caregiverSafeGeneratedText(view.what_may_become_serious);
+  const trajectory = caregiverSafeGeneratedText(view.trajectory);
+  const baselineSummary = caregiverSafeGeneratedText(view.baseline_summary);
+  const contradictions = view.contradictions
+    .map((item) => caregiverSafeGeneratedText(item))
+    .filter((item): item is string => Boolean(item));
+  const whyAsking = caregiverSafeGeneratedText(view.why_asking);
   const remembered =
     plan.show_remembered && view.what_will_be_remembered.length > 0
-      ? view.what_will_be_remembered.slice(0, 3)
+      ? view.what_will_be_remembered
+          .map((item) => caregiverSafeGeneratedText(item))
+          .filter((item): item is string => Boolean(item))
+          .slice(0, 3)
       : [];
   const supportingEvidence =
     view.evidence_maturity >= 2 && (view.expandable.evidence?.length ?? 0) > 0
-      ? (view.expandable.evidence ?? []).slice(0, 4)
+      ? (view.expandable.evidence ?? [])
+          .map((item) => caregiverSafeAssistantText(item))
+          .filter((item): item is string => Boolean(item))
+          .slice(0, 4)
       : [];
-  const renderEvidenceMeta = view.has_documents && Boolean(event.event);
-  const showMentalLoad = Boolean(view.mental_load_signal);
+  const followUpItems = view.follow_up_items
+    .slice(0, 2)
+    .map((item) => caregiverSafeGeneratedText(item))
+    .filter((item): item is string => Boolean(item));
+  const careStoryUpdate = caregiverSafeGeneratedText(view.care_story_update);
+  const eventLabel = caregiverFieldLabel(event.event) || caregiverInformationLabel(event.event) || caregiverSafeAssistantText(event.event);
+  const renderEvidenceMeta = view.has_documents && Boolean(eventLabel);
+  const showMentalLoad = Boolean(mentalLoadSignal);
 
   return (
     <section className="living-care-record-panel" aria-label="Care Record update">
       <h2 className="workspace-headline">Care Record</h2>
       {view.recognition_line && (
-        <p className="workspace-lede lcr-recognition">{view.recognition_line}</p>
+        <p className="workspace-lede lcr-recognition">{recognitionLine}</p>
       )}
       {plan.show_confirmation && (
         <p className={view.recognition_line ? "panel-muted" : "workspace-lede"}>
-          {event.confirmation}
+          {confirmation || "Your update was saved."}
         </p>
       )}
       {view.evidence_line && view.evidence_maturity >= 1 && (
-        <p className="panel-muted lcr-evidence-line">{view.evidence_line}</p>
+        <p className="panel-muted lcr-evidence-line">{evidenceLine}</p>
       )}
       {view.disclosure_plan.show_attention_level && view.attention_label && (
         <p className="panel-muted lcr-attention" aria-label="Attention level">
-          {view.attention_label}
+          {attentionLabel}
         </p>
       )}
 
       {showMentalLoad && (
-        <p className="panel-muted lcr-mental-load" aria-label="Caregiver load note">
-          {view.mental_load_signal}
+        <p className="panel-muted lcr-mental-load" aria-label="A note about how much you are managing">
+          {mentalLoadSignal}
         </p>
       )}
 
@@ -87,12 +112,12 @@ export function LivingCareRecordPanel({
               : "What we know so far"}
           </h3>
           {plan.show_situation_summary && view.what_seems_happening && (
-            <p className="panel-muted" aria-label="Observation layer">
-              You shared: {view.what_seems_happening}
+            <p className="panel-muted" aria-label="What you shared">
+              You shared: {situationSummary}
             </p>
           )}
           {facts.length > 0 && (
-            <ul aria-label="Caregiver observations">
+            <ul aria-label="Care details you shared">
               {facts.map((item) => (
                 <li key={item}>{item}</li>
               ))}
@@ -113,7 +138,7 @@ export function LivingCareRecordPanel({
             What changed
           </h3>
           <p className="panel-muted">This is what SolenOS thinks may be happening. Please check if it matches what you know.</p>
-          <p>{view.what_changed_in_understanding}</p>
+          <p>{changedSummary}</p>
         </section>
       )}
 
@@ -123,7 +148,7 @@ export function LivingCareRecordPanel({
             What may matter
           </h3>
           <p className="panel-muted">This may be connected. It still needs checking.</p>
-          <p>{view.connection_note}</p>
+          <p>{connectionNote}</p>
         </section>
       )}
 
@@ -136,25 +161,25 @@ export function LivingCareRecordPanel({
             {view.what_matters_now && (
               <div>
                 <dt>Most important now</dt>
-                <dd>{view.what_matters_now}</dd>
+                <dd>{mattersNow}</dd>
               </div>
             )}
             {view.what_can_wait && (
               <div>
                 <dt>Can wait</dt>
-                <dd>{view.what_can_wait}</dd>
+                <dd>{canWait}</dd>
               </div>
             )}
             {view.what_may_become_serious && (
               <div>
                 <dt>May need attention later</dt>
-                <dd>{view.what_may_become_serious}</dd>
+                <dd>{mayBecomeSerious}</dd>
               </div>
             )}
             {view.trajectory && (
               <div>
                 <dt>How things seem to be changing</dt>
-                <dd>{view.trajectory}</dd>
+                <dd>{trajectory}</dd>
               </div>
             )}
           </dl>
@@ -167,18 +192,18 @@ export function LivingCareRecordPanel({
             What is usual
           </h3>
           <p className="panel-muted">Based on earlier care updates.</p>
-          <p>{view.baseline_summary}</p>
+          <p>{baselineSummary}</p>
         </section>
       )}
 
-      {view.contradictions.length > 0 && (
+      {contradictions.length > 0 && (
         <section className="care-card-contradictions" aria-labelledby="lcr-conflict-heading">
           <h3 id="lcr-conflict-heading" className="section-kicker">
             Information that does not match
           </h3>
           <p className="panel-muted">We’ve kept both versions because they do not match yet.</p>
           <ul>
-            {view.contradictions.map((item) => (
+            {contradictions.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
@@ -196,10 +221,10 @@ export function LivingCareRecordPanel({
               <li key={item}>{item}</li>
             ))}
           </ul>
-          {view.why_asking && (
+          {whyAsking && (
             <details className="lcr-expandable lcr-why-asking">
               <summary className="panel-muted">Why these questions?</summary>
-              <p className="panel-muted">{view.why_asking}</p>
+              <p className="panel-muted">{whyAsking}</p>
             </details>
           )}
         </section>
@@ -232,22 +257,22 @@ export function LivingCareRecordPanel({
         </details>
       )}
 
-      {view.follow_up_items.length > 0 && (
+      {followUpItems.length > 0 && (
         <section className="care-card-actions" aria-labelledby="lcr-actions-heading">
           <h3 id="lcr-actions-heading" className="section-kicker">
             What you can do next
           </h3>
           <p className="panel-muted">These are suggestions. Choose what works for you.</p>
           <ul>
-            {view.follow_up_items.slice(0, 2).map((item) => (
+            {followUpItems.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
         </section>
       )}
 
-      {view.care_story_update && (
-        <p className="panel-muted lcr-care-story">{view.care_story_update}</p>
+      {careStoryUpdate && (
+        <p className="panel-muted lcr-care-story">{careStoryUpdate}</p>
       )}
 
       {careKey?.trim() && (
