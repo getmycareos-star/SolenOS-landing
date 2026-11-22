@@ -35,7 +35,7 @@ export default function ReportProblem({
   const getContentTypeLabel = (): string => {
     switch (contentType) {
       case 'ai-insight': return 'suggested detail';
-      case 'extracted-info': return 'information read from a document';
+      case 'extracted-info': return 'information from a document';
       case 'ai-summary': return 'summary';
       case 'recommendation': return 'Recommendation';
       default: return 'information';
