@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverStatusLabel, caregiverSituationStateLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel, caregiverSituationStateLabel } from "@/lib/caregiver-language";
 import {
   getPersistedChangeDetail,
   getPersistedPatternDetail,
@@ -574,7 +574,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 {pattern.alternative_interpretations?.length ? (
                   <ul>
                     {pattern.alternative_interpretations.slice(0, 3).map((item, index) => (
-                      <li key={`${pattern.id}-limit-${index}`}>{typeof item === "string" ? caregiverSafeAssistantText(item) ?? "Another explanation may be possible." : "Another explanation may be possible."}</li>
+                      <li key={`${pattern.id}-limit-${index}`}>{caregiverSafeGeneratedText(item) ?? "Another explanation may be possible."}</li>
                     ))}
                   </ul>
                 ) : null}
@@ -599,7 +599,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                         {patternDetails[pattern.id].changes.map((change) => (
                           <article key={change.id}>
                             <strong>{caregiverStatusLabel(change.change_type) ?? "Care change"} · {caregiverStatusLabel(change.change_direction) ?? "Direction not recorded"}</strong>
-                            <p>{caregiverSafeAssistantText(change.explanation) ?? "A change was recorded in the care history."}</p>
+                            <p>{caregiverSafeChangeText(change.explanation) ?? "A change was recorded in the care history."}</p>
                             <p className="panel-muted">{caregiverStatusLabel(change.confirmation_status) ?? "Needs review"} · {change.evidence_ids.length} saved care {change.evidence_ids.length === 1 ? "detail" : "details"}</p>
                           </article>
                         ))}
