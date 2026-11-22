@@ -1,56 +1,15 @@
-/* SolenOS root-scoped Web Push service worker.
- * Lock-screen content stays generic; care details remain in the authenticated feed.
+/* Retire the legacy browser-push worker.
+ * SolenOS notifications are delivered inside the authenticated app only.
+ * Existing registrations update to this worker and then unregister themselves.
  */
-self.addEventListener("push", (event) => {
-  let notificationId = "care-update";
-  if (event.data) {
-    try {
-      const payload = event.data.json();
-      if (typeof payload?.notification_id === "string" && payload.notification_id.length <= 180) {
-        notificationId = payload.notification_id;
-      }
-    } catch {
-      // Non-JSON payloads still produce a generic notification.
-    }
-  }
-
-  event.waitUntil(
-    self.registration.showNotification("SolenOS", {
-      body: "You have a care update. Open SolenOS to review it.",
-      tag: `solenos-${notificationId}`,
-      renotify: false,
-      data: { path: "/workspace" },
-    }),
-  );
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
+self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
-    const requestedPath = event.notification?.data?.path;
-    let target = new URL("/workspace", self.location.origin);
-    if (typeof requestedPath === "string") {
-      try {
-        const candidate = new URL(requestedPath, self.location.origin);
-        if (
-          candidate.origin === self.location.origin &&
-          (candidate.pathname === "/workspace" || candidate.pathname.startsWith("/workspace/"))
-        ) {
-          target = candidate;
-        }
-      } catch {
-        // Keep the safe workspace default.
-      }
-    }
-
-    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const client of windows) {
-      if (new URL(client.url).origin === self.location.origin && "focus" in client) {
-        if ("navigate" in client) await client.navigate(target.href);
-        await client.focus();
-        return;
-      }
-    }
-    await self.clients.openWindow(target.href);
+    await self.registration.unregister();
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map((name) => caches.delete(name)));
   })());
 });
