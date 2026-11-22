@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type CurrentCareItem = {
   id: string;
@@ -143,7 +143,7 @@ export function PersistedCareOrientation() {
               <strong>{caregiverSafeAssistantText(item.title) || "Saved care detail"}</strong>
               {caregiverSafeAssistantText(item.description) && <p>{caregiverSafeAssistantText(item.description)}</p>}
               <p>{readableStatus(item.epistemic_status)} · {readableStatus(item.status)}</p>
-              <p>{caregiverSafeAssistantText(item.source_label) || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
+              <p>{caregiverSafeGeneratedText(item.source_label) || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
               {item.evidence_ids.length > 0 && (
                 <small>The original note or document is available to review.</small>
               )}
@@ -164,7 +164,7 @@ export function PersistedCareOrientation() {
           Some parts of the record may not be available in this view. Missing information does not mean that nothing happened.
         </p>
       )}
-      {caregiverSafeAssistantText(projection.notice) && <p role="note">{caregiverSafeAssistantText(projection.notice)}</p>}
+      {projection.notice && <p role="note">{caregiverSafeGeneratedText(projection.notice) || "This view reflects the care information currently available."}</p>}
 
       <div className="persisted-care-orientation-links">
         <Link href="/workspace/timeline">View care history</Link>
