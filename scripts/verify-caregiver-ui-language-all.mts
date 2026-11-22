@@ -30,7 +30,7 @@ function collect(directory: string): void {
       collect(absolute);
       continue;
     }
-    if (!/\.(tsx|jsx)$/.test(relative) || /\.test\.(tsx|jsx)$/.test(relative)) continue;
+    if (!/\.(tsx|jsx|ts|js)$/.test(relative) || /\.(test|spec)\.(tsx|jsx|ts|js)$/.test(relative) || relative.endsWith(".d.ts")) continue;
     if (excludedFiles.has(relative)) continue;
     files.push(relative);
   }
