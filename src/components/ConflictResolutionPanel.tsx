@@ -100,7 +100,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       setConflicts([]);
       setEvidence([]);
       setSelectedId("");
-      setError("Reports that differ and their supporting information could not be loaded. No empty result is assumed.");
+      setError("Reports that do not match and their supporting information could not be loaded. No empty result is assumed.");
     } finally {
       setLoading(false);
     }
@@ -167,16 +167,16 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
     }
   }
 
-  return <section style={panel} aria-label="Review reports that differ">
+  return <section style={panel} aria-label="Review reports that do not match">
     <h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))", marginTop: 0 }}>When information differs</h3>
     <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
-      A newer timestamp or majority of reports does not automatically resolve a conflict. Every completed or partial review needs supporting information and a reason; a partial review must name the exact detail reviewed.
+      A newer date or several similar reports do not automatically mean one version is right. Every review needs supporting information and a reason. If you can only check part of the information, say exactly which part.
     </p>
     {loading && <p role="status">Loading reports that differ…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
     {!loading && !error && conflicts.length === 0 && <p>No reports that disagree are saved here right now. This does not mean no disagreement exists elsewhere.</p>}
     {!loading && !error && conflicts.length > 0 && <>
-      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Reports that differ
+      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Reports that do not match
         <select style={field} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
           {conflicts.map((item) => <option key={item.id} value={item.id}>Care detail: {caregiverSafeAssistantText(item.description) || "Saved reports differ"} · {caregiverStatusLabel(item.resolution_status) || "Status not available"}</option>)}
         </select>
@@ -186,23 +186,23 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         <p>{caregiverSafeAssistantText(selected.description) || "Saved reports differ."}</p>
          
         <p><strong>Dates this applies to:</strong> {selected.effective_from || "Start unknown"} — {selected.effective_to || "End unknown"}</p>
-        <p><strong>What has been reviewed:</strong> {caregiverSafeAssistantText(selected.resolution_scope) || "Nothing has been marked as resolved."}</p>
+        <p><strong>What have you checked:</strong> {caregiverSafeAssistantText(selected.resolution_scope) || "Nothing has been marked as resolved."}</p>
         <p><strong>What still needs checking:</strong> {caregiverSafeAssistantText(selected.unresolved_remainder) || "Not recorded"}</p>
         <p><strong>Related notes or documents:</strong> {selected.evidence_ids?.length ? selected.evidence_ids.length + " saved item(s)" : "None recorded"}</p>
-        {selected.matching_candidate_ids?.length ? <p><strong>Related reports:</strong> {selected.matching_candidate_ids.length}</p> : null}
+        {selected.matching_candidate_ids?.length ? <p><strong>Other reports:</strong> {selected.matching_candidate_ids.length}</p> : null}
       </div>}
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Review status
         <select style={field} value={status} onChange={(event) => setStatus(event.target.value as (typeof statuses)[number])}>
           {statuses.map((value) => <option key={value} value={value}>{caregiverStatusLabel(value) || "Not available"}</option>)}
         </select>
       </label>
-      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Why is this status changing?
+      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Why are you changing this?
         <textarea style={{ ...field, minHeight: 72 }} value={rationale} onChange={(event) => setRationale(event.target.value)} />
       </label>
-      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>What part has been resolved? (required for a partial review)
+      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Which part have you checked? (if you have only checked part)
         <textarea style={{ ...field, minHeight: 60 }} value={scope} onChange={(event) => setScope(event.target.value)} />
       </label>
-      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>What still needs checking? (required for a partial review)
+      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>What still needs checking?
         <textarea style={{ ...field, minHeight: 60 }} value={unresolvedRemainder} onChange={(event) => setUnresolvedRemainder(event.target.value)} />
       </label>
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Supporting information
@@ -215,7 +215,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       </button>
       {notice && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{notice}</p>}
       <div style={{ marginTop: 14 }}>
-        <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Previous review decisions</strong>
+        <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Earlier reviews</strong>
         {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{historyError}</p>}
         {history.length === 0 && !historyError && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No earlier review decisions have been recorded yet.</p>}
         <ol style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
@@ -224,7 +224,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
             <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
             {item.resolution_scope && <p>Reviewed: {caregiverSafeAssistantText(item.resolution_scope) || "Not recorded"}</p>}
             {item.unresolved_remainder && <p>Still needs checking: {caregiverSafeAssistantText(item.unresolved_remainder) || "Not recorded"}</p>}
-            <p>Related notes or documents: {item.evidence_ids?.length ? item.evidence_ids.length + " saved item(s)" : "None recorded"} · {new Date(item.created_at).toLocaleString()}</p>
+            <p>Related notes or documents: {item.evidence_ids?.length ? item.evidence_ids.length : "None recorded"} · {new Date(item.created_at).toLocaleString()}</p>
           </li>)}
         </ol>
       </div>
