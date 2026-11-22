@@ -329,7 +329,7 @@ export default function QwenAssistPanel({
                     if (!result?.proposal?.id || result.proposal.status !== "pending_authorization") throw new Error("Not reviewable");
                     setProposal(result.proposal);
                   } catch {
-                    setReviewMessage("This suggestion cannot be added to the care record because its original saved sources could not be verified.");
+                    setReviewMessage("This suggestion cannot be added because we could not match it to the information you saved.");
                   } finally {
                     setReviewing(false);
                   }
@@ -351,7 +351,7 @@ export default function QwenAssistPanel({
                       const result = await postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "accept" }) as { status?: string; written_to_lcr?: boolean };
                       if (result.status !== "accepted" || result.written_to_lcr !== true) throw new Error("Approval not confirmed");
                       setProposal({ ...proposal, status: "accepted" });
-                      setReviewMessage("Approved. The summary was added to the Living Care Record as an AI-assisted interpretation.");
+                      setReviewMessage("Added to your Care Record as a summary of the information you reviewed.");
                     } catch {
                       setReviewMessage("We couldn’t save the approved summary. Please check the care record before trying again.");
                     } finally {
@@ -370,7 +370,7 @@ export default function QwenAssistPanel({
                       const result = await postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "reject" }) as { status?: string; written_to_lcr?: boolean };
                       if (result.status !== "rejected" || result.written_to_lcr !== false) throw new Error("Rejection not confirmed");
                       setProposal({ ...proposal, status: "rejected" });
-                      setReviewMessage("Declined. Nothing was added to the Living Care Record.");
+                      setReviewMessage("Declined. Nothing was added to your Care Record.");
                     } catch {
                       setReviewMessage("We couldn’t record your decision. Please try again.");
                     } finally {
