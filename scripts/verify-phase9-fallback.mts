@@ -39,30 +39,30 @@ function resetAll() {
 async function main() {
   console.log("=== Phase 9 — Reliability and Fallback Behavior ===\n");
 
-  // 1. Async fallback — empty/garbled input must not crash
+  // 1. Deterministic-only path — empty/garbled input must not crash
   {
     resetAll();
-    const fallbackAsync = await buildCareSituationUnderstanding({
+    const fallbackAsync = buildCareSituationUnderstandingFromExtraction({
       rawText: "asdf qwerty zxcv",
       contributorId: "phase9_fallback_async",
     });
-    assert.ok(!fallbackAsync.can_orient, "async fallback must not orient");
+    assert.ok(!fallbackAsync.can_orient, "deterministic-only path must not orient");
     assert.equal(fallbackAsync.confidence, "low");
     assert.equal(fallbackAsync.instant_path, true);
     assert.ok(
       fallbackAsync.facts.some((f) => f.text === "asdf qwerty zxcv"),
-      "async fallback must preserve raw text as fact",
+      "deterministic-only path must preserve raw text as fact",
     );
-    assert.ok(fallbackAsync.unknowns.length > 0, "async fallback must preserve unknowns");
+    assert.ok(fallbackAsync.unknowns.length > 0, "deterministic-only path must preserve unknowns");
     assert.ok(
       fallbackAsync.follow_up_questions.length > 0,
-      "async fallback must request minimal clarification",
+      "deterministic-only path must request minimal clarification",
     );
 
     const validation = assertUnderstandingValid(fallbackAsync);
     assert.ok(
       validation.ok,
-      `async fallback invalid: ${validation.failures.join(", ")}`,
+      `deterministic-only path invalid: ${validation.failures.join(", ")}`,
     );
 
     // Projection must not crash on fallback
@@ -71,9 +71,9 @@ async function main() {
 
     const contract = projectCareSituationToResponseContract(fallbackAsync);
     assert.ok(contract.what_is_happening.length > 0, "contract must not be empty");
-    assert.equal(contract.risk_level, "low", "fallback risk must be low");
+    assert.equal(contract.risk_level, "low", "deterministic-only path risk must be low");
 
-    console.log("✓ Async fallback — garbled input preserved, no crash, projection safe");
+    console.log("✓ Deterministic-only path — garbled input preserved, no crash, projection safe");
   }
 
   // 2. Sync fallback — buildCareSituationUnderstandingFromExtraction crash safety
@@ -83,19 +83,19 @@ async function main() {
       rawText: "asdf qwerty zxcv",
       contributorId: "phase9_fallback_sync",
     });
-    assert.ok(!fallbackSync.can_orient, "sync fallback must not orient");
+    assert.ok(!fallbackSync.can_orient, "sync deterministic-only path must not orient");
     assert.equal(fallbackSync.confidence, "low");
     assert.equal(fallbackSync.instant_path, true);
     assert.ok(
       fallbackSync.facts.some((f) => f.text === "asdf qwerty zxcv"),
-      "sync fallback must preserve raw text as fact",
+      "sync deterministic-only path must preserve raw text as fact",
     );
-    assert.ok(fallbackSync.unknowns.length > 0, "sync fallback must preserve unknowns");
+    assert.ok(fallbackSync.unknowns.length > 0, "sync deterministic-only path must preserve unknowns");
 
     const validation = assertUnderstandingValid(fallbackSync);
     assert.ok(
       validation.ok,
-      `sync fallback invalid: ${validation.failures.join(", ")}`,
+      `sync deterministic-only path invalid: ${validation.failures.join(", ")}`,
     );
 
     console.log("✓ Sync fallback — garbled input preserved, no crash");
@@ -104,11 +104,11 @@ async function main() {
   // 3. Extremely short input must not crash or invent facts
   {
     resetAll();
-    const shortAsync = await buildCareSituationUnderstanding({
+    const shortAsync = buildCareSituationUnderstandingFromExtraction({
       rawText: "hi",
       contributorId: "phase9_fallback_short",
     });
-    assert.ok(!shortAsync.can_orient, "short input fallback must not orient");
+    assert.ok(!shortAsync.can_orient, "short input deterministic-only path must not orient");
     assert.equal(shortAsync.confidence, "low");
     assert.equal(shortAsync.instant_path, true);
     assert.ok(shortAsync.facts.length === 0, "short input must not invent facts");
@@ -116,17 +116,17 @@ async function main() {
     const validation = assertUnderstandingValid(shortAsync);
     assert.ok(
       validation.ok,
-      `short input fallback invalid: ${validation.failures.join(", ")}`,
+      `short input deterministic-only path invalid: ${validation.failures.join(", ")}`,
     );
 
     console.log("✓ Short input fallback — no crash, no invented facts");
   }
 
-  // 4. Original input is preserved through fallback
+  // 4. Original input is preserved through the deterministic-only path
   {
     resetAll();
     const originalInput = "asdf qwerty zxcv";
-    const fallback = await buildCareSituationUnderstanding({
+    const fallback = buildCareSituationUnderstandingFromExtraction({
       rawText: originalInput,
       contributorId: "phase9_preserve_input",
     });
@@ -134,16 +134,16 @@ async function main() {
       fallback.facts.some((f) => f.text === originalInput),
       "original input must be preserved as fact in fallback",
     );
-    assert.ok(!fallback.can_orient, "fallback must not orient when extraction is empty");
+    assert.ok(!fallback.can_orient, "deterministic-only path must not orient when extraction is empty");
 
-    console.log("✓ Original input preserved through fallback");
+    console.log("✓ Original input preserved through the deterministic-only path");
   }
 
-  // 5. Successful understanding path still works
+  // 5. Successful deterministic-only path still works
   {
     resetAll();
     const golden = `Mom fell again this morning but she says she's fine. Her walking has been getting worse.`;
-    const u = await buildCareSituationUnderstanding({
+    const u = buildCareSituationUnderstandingFromExtraction({
       rawText: golden,
       contributorId: "phase9_success",
     });
@@ -153,13 +153,13 @@ async function main() {
     const accepted = acceptCareSituationUnderstanding(u);
     assert.ok(accepted.ok, `successful path failed acceptance: ${accepted.reasons.join(", ")}`);
 
-    console.log("✓ Successful understanding path unaffected");
+    console.log("✓ Successful deterministic-only path unaffected");
   }
 
   // 6. Fallback never produces fabricated objects
   {
     resetAll();
-    const u = await buildCareSituationUnderstanding({
+    const u = buildCareSituationUnderstandingFromExtraction({
       rawText: "xyzzy",
       contributorId: "phase9_no_fabrication",
     });
@@ -174,7 +174,7 @@ async function main() {
       .join(" ");
 
     assert.ok(!/\b(?:medication|medicine|diagnos|treatment|caused|fell|hospital)\b/i.test(blob), {
-      message: "fallback must not invent care facts",
+      message: "deterministic-only path must not invent care facts",
       actual: blob,
     });
 
