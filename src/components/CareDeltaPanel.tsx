@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getPersonId, getJSON, postJSON } from '../api/client'
-import { caregiverSafeAssistantText, caregiverStatusLabel } from '../lib/caregiver-language'
+import { caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '../lib/caregiver-language'
 
 type DeltaHistoryEntry = { id: string; source: string; event_date: string; created_at: string; delta?: DeltaResult | null }
 
@@ -144,7 +144,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       </p>}
       {visibleRows.length > 0 && <div style={{ display: 'grid', gap: 8 }}>
         {visibleRows.map((row, index) => <article key={index} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 9 }}>
-          <strong style={{ fontSize: 12 }}>{caregiverSafeAssistantText(String(row.name || row.action || row.topic || row.gap || row.field || title)) || 'Care information'}</strong>
+          <strong style={{ fontSize: 12 }}>{caregiverSafeGeneratedText(String(row.name || row.action || row.topic || row.gap || row.field || title)) || 'Care information'}</strong>
           <p style={{ fontSize: 12, margin: '4px 0' }}>
             {row.change_type ? `Change: ${caregiverStatusLabel(String(row.change_type)) || 'Changed'} · ` : ''}
             {row.previous != null ? `Previous: ${caregiverSafeAssistantText(String(row.previous)) || 'Not available'} · ` : ''}
@@ -152,7 +152,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
             {row.status ? `Status: ${caregiverStatusLabel(String(row.status)) || 'Not available'} · ` : ''}
             {row.certainty ? `Information: ${caregiverStatusLabel(String(row.certainty)) || 'Not confirmed'} · ` : ''}
             {row.result_present === false ? 'This result was not found in the information provided. ' : ''}
-            {caregiverSafeAssistantText(String(row.next_question || row.why_conflicting || row.why_it_matters || '')) || ''}
+            {caregiverSafeGeneratedText(String(row.next_question || row.why_conflicting || row.why_it_matters || '')) || 'More information may be needed.'}
           </p>
           {row.evidence_excerpt && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Original wording: “{row.evidence_excerpt}”</p>}
           {row.source_reference_status === 'not_matched' && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>We could not find the note or document behind this finding. Do not rely on it yet.</p>}
@@ -161,7 +161,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
               <strong style={{ fontSize: 11 }}>Saved information behind this finding</strong>
               {row.source_record_refs.map((reference: Record<string, any>, referenceIndex: number) => (
                 <div key={(reference.record_type || 'source') + '-' + referenceIndex} style={{ marginTop: 6 }}>
-                  <p style={{ fontSize: 11, margin: 0, fontWeight: 600 }}>{reference.label || (reference.record_type === 'care_event' ? 'Care update' : reference.record_type === 'evidence' ? 'Original note or document' : 'Care record detail')}</p>
+                  <p style={{ fontSize: 11, margin: 0, fontWeight: 600 }}>{caregiverSafeGeneratedText(String(reference.label || '')) || (reference.record_type === 'care_event' ? 'Care update' : reference.record_type === 'evidence' ? 'Original note or document' : 'Care record detail')}</p>
                   {reference.occurred_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it happened: {new Date(reference.occurred_at).toLocaleString()}</p>}
                   {reference.recorded_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it was recorded: {new Date(reference.recorded_at).toLocaleString()}</p>}
                   {reference.reported_by && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>Reported by: {caregiverSafeAssistantText(String(reference.reported_by)) || 'Not recorded'}</p>}
@@ -173,8 +173,8 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
           )}
           {row.claim_supported === false && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>We could not match this detail to the care update or current information. It has not been confirmed or saved as current information.</p>}
           {row.historical_only && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>This was reported earlier. It has not been treated as current information.</p>}
-          {row.promotion_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeAssistantText(String(row.promotion_warning)) || 'This item needs review before it is used.'}</p>}
-          {row.provenance_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeAssistantText(String(row.provenance_warning)) || 'Where this information came from needs checking.'}</p>}
+          {row.promotion_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeGeneratedText(String(row.promotion_warning)) || 'This item needs review before it is used.'}</p>}
+          {row.provenance_warning && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '5px 0 0' }}>{caregiverSafeGeneratedText(String(row.provenance_warning)) || 'Where this information came from needs checking.'}</p>}
           {Array.isArray(row.reports) && <ul style={{ fontSize: 12, margin: '4px 0', paddingLeft: 18 }}>{row.reports.map((report: string, i: number) => <li key={i}>{report}</li>)}</ul>}
         </article>)}
       </div>}
@@ -223,7 +223,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
         {history.slice(0, 10).map((entry) => <button key={entry.id} type="button" onClick={() => entry.delta && setResult(entry.delta)} style={{ textAlign: 'left', border: '1px solid var(--border)', borderRadius: 7, padding: 8, background: 'var(--bg)', color: 'var(--text)', cursor: entry.delta ? 'pointer' : 'default' }}>
           <strong style={{ fontSize: 12 }}>{caregiverSafeAssistantText(entry.source) || 'Care update'}</strong>
           <span style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>{new Date(entry.event_date).toLocaleDateString()} · saved {new Date(entry.created_at).toLocaleString()}</span>
-          <span style={{ display: 'block', fontSize: 11, marginTop: 3 }}>{caregiverSafeAssistantText(entry.delta?.event_summary) || 'Saved care update'}</span>
+          <span style={{ display: 'block', fontSize: 11, marginTop: 3 }}>{caregiverSafeGeneratedText(entry.delta?.event_summary) || 'Saved care update'}</span>
         </button>)}
       </div>
     </section>}
@@ -265,7 +265,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
           <h4 style={{ fontSize: 13, margin: '0 0 7px' }}>Check the summary against saved information</h4>
           {result.claim_provenance?.claims?.filter((claim) => claim.claim_type === 'summary' && claim.support_status === 'matched_exact_source_wording').map((claim) => (
             <article key={claim.claim_id} style={{ marginBottom: 8 }}>
-              <p style={{ fontSize: 12, margin: '0 0 4px' }}>{caregiverSafeAssistantText(claim.text) || 'Summary wording is not available.'}</p>
+              <p style={{ fontSize: 12, margin: '0 0 4px' }}>{caregiverSafeGeneratedText(claim.text) || 'Summary wording is not available.'}</p>
               {claim.support_status === 'matched_exact_source_wording' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears in a saved note or document.</p>}
               {claim.support_status === 'historical_only' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears only in earlier information.</p>}
               {claim.support_status === 'not_matched_to_source' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>We could not match this summary to the words in a saved note or document. Check it before relying on it.</p>}
@@ -280,7 +280,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
           <p style={{ margin: 0 }}>
             <strong>{caregiverSafeAssistantText(String(item.name || 'Care information')) || 'Care information'}</strong> · {caregiverStatusLabel(String(item.change_type || 'uncertain')) || 'Not confirmed'} · {caregiverSafeAssistantText(String(item.previous ?? 'No prior value')) || 'Not available'} → {caregiverSafeAssistantText(String(item.current ?? 'Not available')) || 'Not available'} · {caregiverStatusLabel(String(item.interpretation_status || item.certainty || 'uncertain')) || 'Not confirmed'}
           </p>
-          {item.interpretation_uncertainty_justification && item.interpretation_status !== 'supported' && <p role="note" style={{ color: 'var(--text-secondary)', margin: '3px 0 0' }}>{caregiverSafeAssistantText(String(item.interpretation_uncertainty_justification)) || 'This comparison needs review.'}</p>}
+          {item.interpretation_uncertainty_justification && item.interpretation_status !== 'supported' && <p role="note" style={{ color: 'var(--text-secondary)', margin: '3px 0 0' }}>{caregiverSafeGeneratedText(String(item.interpretation_uncertainty_justification)) || 'This comparison needs review.'}</p>}
         </article>)}
         {result.computed_changes.some((item) => item.interpretation_caregiver_visible === false) && <p role="note" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Some possible changes were withheld because the evidence was missing, unsupported or out of date.</p>}
       </section> : null}
