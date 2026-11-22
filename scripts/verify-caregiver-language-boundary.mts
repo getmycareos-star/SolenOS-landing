@@ -162,6 +162,12 @@ assert.match(dailyCare, /item\.corrected_text\.trim\(\)/, "corrected caregiver r
 assert.doesNotMatch(dailyCare, /caregiverSafeAssistantText\(item\.(original_text|corrected_text|reason)\)/, "assistant-output filtering must not be applied to caregiver source text");
 assert.doesNotMatch(dailyCare, /The latest information currently available in the care record|Processing has not started yet|Document understanding could not be completed|Document processing was stopped|Care Timeline|change and pattern assessments/);
 assert.match(dailyCare, /SolenOS has finished reading it/);
+
+assert.match(dailyCare, /caregiverSafeGeneratedText\(item\.capture_processing\?\.message\)/, "Daily Care processing messages from the server must use caregiver language");
+assert.match(dailyCare, /caregiverSafeGeneratedText\(item\.push_delivery\?\.message\)/, "notification messages from the server must use caregiver language");
+assert.doesNotMatch(dailyCare, /Notification delivery needs attention|Notification delivery status could not be/i,
+  "Daily Care must not expose technical notification-delivery terminology");
+
 assert.match(photoCapture, /We could not confirm which Care Record to use/);
 assert.match(photoCapture, /saved securely on this device/);
 assert.match(photoCapture, /waiting to be added to your Care Record/);
