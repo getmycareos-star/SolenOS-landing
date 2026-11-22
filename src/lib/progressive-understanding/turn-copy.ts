@@ -50,8 +50,8 @@ export function buildProgressiveTurnCopy(params: {
 
   if (relation === "opens_new" || observationCount <= 1) {
     return {
-      confirmation_title: "Held in the Living Care Record",
-      confirmation_body: "This is preserved in the Living Care Record.",
+      confirmation_title: "Saved in your Care Record",
+      confirmation_body: "This is saved in your Care Record.",
       understanding_heading: "What we know so far",
       insufficiency_note: null,
     };
@@ -101,7 +101,7 @@ export function connectionNoteForProgress(params: {
     return "These may be parts of the same day — kept together.";
   }
   if (params.stage === "synthesizing" || params.count >= 3) {
-    return "Related updates stay connected in the Living Care Record.";
+    return "Your related updates stay together in your Care Record.";
   }
   return null;
 }
