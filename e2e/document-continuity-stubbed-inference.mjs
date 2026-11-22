@@ -211,7 +211,7 @@ try {
   assert.notEqual(nutritionCandidate.observation, nutritionCandidate.source_quote, "the test correction must repair a shortened model summary using the preserved source wording");
   const correctedObservation = nutritionCandidate.source_quote;
   const nutritionCard = page.getByTestId(`document-candidate-${nutritionIndex}`);
-  await nutritionCard.getByLabel("Corrected detail").fill(correctedObservation);
+  await nutritionCard.getByLabel("What should it say?").fill(correctedObservation);
   await nutritionCard.getByTestId(`correct-document-candidate-${nutritionIndex}`).click();
   await nutritionCard.getByText("Correction saved — waiting for approval", { exact: true }).waitFor({ timeout: 30_000 });
   await nutritionCard.getByTestId(`accept-document-candidate-${nutritionIndex}`).click();
