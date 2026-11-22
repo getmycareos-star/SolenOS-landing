@@ -137,7 +137,7 @@ export function LcrQwenInterpretation({
                 <article key={claim.claim_id}>
                   <p><strong>{claim.text}</strong></p>
                   {claim.support_status === "matched_validated_aggregate" && (
-                    <p>Counted from {claim.aggregate?.count ?? claim.source_references.length} distinct saved care updates{claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.</p>
+                    <p>Based on {claim.aggregate?.count ?? claim.source_references.length} separate care updates saved{claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.</p>
                   )}
                   {claim.support_status === "aggregate_count_mismatch" && <p>The saved care updates do not support this number. The count check found {claim.aggregate_review?.count ?? "an unconfirmed number"} distinct updates in the requested time window.</p>}
                   {claim.support_status === "aggregate_not_validated" && <p>{claim.aggregate_review?.interpretation_limit || "This total could not be confirmed from the saved care updates. Check the reports before relying on a number."}</p>}
@@ -154,7 +154,7 @@ export function LcrQwenInterpretation({
                       {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                       {source.related_evidence?.map((evidence, evidenceIndex) => (
                         <div key={"related-" + evidenceIndex}>
-                          <strong>{evidence.label || "Supporting note or document"}</strong>
+                          <strong>{evidence.label || "Related note or document"}</strong>
                           {evidence.reported_by && <p>Reported by: {evidence.reported_by}</p>}
                           {evidence.entered_by && <p>Added by: {evidence.entered_by}</p>}
                           {evidence.recorded_at && <p>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
