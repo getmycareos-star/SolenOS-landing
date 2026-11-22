@@ -157,10 +157,10 @@ assert.doesNotMatch(companion, /distinct, dated|The same wording appears in .*sa
 assert.match(companion, /Based on saved information/);
 assert.match(companion, /source\.evidence_reviews/);
 assert.match(companion, /item\.evidence_reviews/);
-assert.match(companion, /not independent confirmation/);
-assert.match(companion, /Only the latest source reviews are shown here/);
-assert.match(companion, /No source review has been recorded for this note or document/);
-assert.match(companion, /review history shown here may be incomplete/);
+assert.match(companion, /Reviewing a note or document does not by itself confirm that a care detail is true/);
+assert.match(companion, /Only the latest reviews are shown here/);
+assert.match(companion, /No review of this note or document has been recorded/);
+assert.match(companion, /history shown here may be incomplete/);
 
 assert.match(companion, /caregiverSafeAssistantText\(response\.reply\)/);
 assert.doesNotMatch(companion, /text: response\.reply/);
@@ -255,6 +255,22 @@ const statusCareDelta = read("../src/components/CareDeltaPanel.tsx");
 const careOverviewPage = read("../src/app/workspace/care-continuity/page.tsx");
 const sourceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const careContinuity = read("../src/components/CareContinuityIntegrityPanel.tsx");
+assert.doesNotMatch(appointment, /technical retrieval failure|technical failure|Retry care-record retrieval|Retry document retrieval/i,
+  "appointment messages must explain missing information without technical failure language");
+assert.doesNotMatch(detailedAppointment, /Extraction status not available/i,
+  "appointment details must not expose document-processing labels");
+assert.doesNotMatch(handoff, /Linked evidence:|Validation:|retrieval limitations|Source freshness reviews|Record completeness reviews|Saved evidence/i,
+  "care handoffs must describe notes, documents and review limits in everyday language");
+assert.match(handoff, /Related notes and documents:/);
+assert.doesNotMatch(lcr, /Your Living Care Record|Evidence:|Progress:|What we know:|Shared through:|View supporting evidence|View supporting records|Loading saved evidence|Saved records show .*events every 30 days|Contains negative wording|Tentative wording|Conditional wording|baseline from prior observations/i,
+  "the Care Record must not expose internal evidence, baseline or review terminology");
+assert.match(lcr, /Your Care Record/);
+assert.doesNotMatch(companion, /Source review:|No source review has been recorded|latest source reviews/i,
+  "Care Assistant explanations must refer to notes and documents, not source-review terminology");
+assert.doesNotMatch(documentReview, /Extraction status|Contains negative wording|Tentative wording|Conditional wording|ORIGINAL WORDS IN THE DOCUMENT/i,
+  "document review must use ordinary language");
+assert.doesNotMatch(sourceReview, /Evidence records could not be loaded|Saved evidence reviews could not be loaded|source-integrity response/i,
+  "saved note and document review errors must be caregiver-readable");
 assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/);
 assert.match(careContinuity, /More about your care information/);
 assert.match(careContinuity, /Information shared about care/);
