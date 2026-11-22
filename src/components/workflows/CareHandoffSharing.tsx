@@ -171,8 +171,8 @@ function readableSection(value: string): string {
     care_timeline_entries: "Care history", daily_care: "Daily Care", documents: "Documents",
     appointments: "Appointments", actions: "Follow-up actions", care_action_outcomes: "Follow-up outcomes",
     medications: "Medication reports", allergies: "Allergy information",
-    evidence_review_records: "Source reviews", evidence_claim_assessments: "Care claim reviews",
-    evidence_freshness_assessments: "Source freshness reviews", evidence_completeness_assessments: "Record completeness reviews",
+    evidence_review_records: "Reviews of notes and documents", evidence_claim_assessments: "Reviews of care details",
+    evidence_freshness_assessments: "Checks on how recent information is", evidence_completeness_assessments: "Checks on what information is included",
     open_questions: "Questions that still need answers", information_gaps: "Information still needed",
     uncertainty_assessments: "Information that needs checking", medications_and_allergies: "Medications and allergies",
   };
@@ -841,16 +841,16 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
               <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{readableSection(item.section)}</strong>
                 <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>{caregiverSafeAssistantText(item.summary || item.text) ?? "Some details could not be shown."}</p>
-                {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Saved source wording: {caregiverSafeAssistantText(item.supporting_quote) ?? "Source wording unavailable."}</p>}
-                <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "Validation: exact saved wording; no AI paraphrase." : "Validation: source quote matched. The summary wording still needs your review; quote matching does not prove the paraphrase is fully supported."}</p>
+                {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Original wording from the saved note or document: {caregiverSafeAssistantText(item.supporting_quote) ?? "Original wording is not available."}</p>}
+                <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "This uses the exact words saved in your Care Record. They have not been rewritten." : "The original wording matches, but please check that the summary says the same thing before sharing."}</p>
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
                 {claimSourceFor(draft, item, index)?.reporter_label && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</p>}
                 {claimSourceFor(draft, item, index)?.source_state_label && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#765b2b", margin: "4px 0" }}>{claimSourceFor(draft, item, index)?.source_state_label}</p>}
-                {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Linked evidence: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => source.type || source.source_type || "Saved evidence").join(", ")}</p>}
+                {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Related notes and documents: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => source.type || source.source_type || "Saved evidence").join(", ")}</p>}
               </article>
             ))}
             {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized or interpreted. Check each detail and its dates before using it.</p>}
-            {draft.generation?.status !== "generated" && draft.generation?.status !== "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Draft preparation could not be completed. The saved source records and retrieval limitations remain available for review.</p>}
+            {draft.generation?.status !== "generated" && draft.generation?.status !== "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>We couldn’t prepare this summary. You can still review the saved care information and decide what to share.</p>}
           </section>
         </>
       )}
