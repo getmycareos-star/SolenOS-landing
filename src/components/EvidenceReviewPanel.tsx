@@ -818,8 +818,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       pendingReviewRequestRef.current = null
       setNotice(
         saved.care_continuity_execution?.stages?.reconciliation === 'committed'
-          ? 'Review saved and the care record was reassessed. The original source is unchanged, and this review does not confirm a medical fact.'
-          : 'Review saved and retrieved from your care record. The original source is unchanged.',
+          ? 'Your review was saved, and the care information was checked again. The original note or document has not changed. This review does not confirm a medical fact.'
+          : 'Your review was saved and loaded from your Care Record. The original note or document has not changed.',
       )
     } catch {
       setError('We couldn’t confirm that your review was saved. Check earlier reviews before trying again.')
@@ -832,8 +832,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
   return <section style={panel} aria-label="Reviews of saved notes and documents">
     <h3 style={{ fontSize: "calc(16px * var(--solenos-text-scale, 1))", marginTop: 0 }}>Notes and documents behind care information</h3>
     {evidenceError && <p role="alert" style={{ color: 'var(--error)', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{evidenceError} <button type="button" style={button} onClick={() => void loadEvidence()} disabled={evidenceLoading}>Try loading again</button></p>}
-    {evidenceLoading && <p role="status" style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Loading saved notes and documents…</p>}
-    <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>Your review is saved separately. The original information stays unchanged. A caregiver review does not mean a healthcare professional has confirmed the information.</p>
+    {evidenceLoading && <p role="status" style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Loading your saved notes and documents…</p>}
+    <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>Your review is saved separately. The original note or document stays unchanged. A caregiver review does not mean a healthcare professional has confirmed the information.</p>
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: "calc(16px * var(--solenos-text-scale, 1))", fontWeight: 650 }}>Check whether information is still up to date</summary>
       <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>Choose how often this information should be checked. Different kinds of information may need different check-in times. A review does not prove that information is true or still applies today.</p>
@@ -869,7 +869,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           <div><dt style={{ color: 'var(--text-secondary)' }}>Type of note or document</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.type || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>Shared by</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.reported_by_label || (selected.reported_by_caregiver_id || selected.uploaded_by_caregiver_id ? 'caregiver' : 'not_recorded'))}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>When it happened</dt><dd style={{ margin: 0 }}>{selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : 'Not recorded'}{selected.occurred_at_timezone ? ` · ${selected.occurred_at_timezone}` : ''}</dd></div>
-          <div><dt style={{ color: 'var(--text-secondary)' }}>Added to the care record</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
+          <div><dt style={{ color: 'var(--text-secondary)' }}>Added to your Care Record</dt><dd style={{ margin: 0 }}>{selected.uploaded_at ? new Date(selected.uploaded_at).toLocaleString() : 'Not recorded'}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>How it reached your Care Record</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.origin_channel || selected.evidence_kind || 'not_recorded')}</dd></div>
           <div><dt style={{ color: 'var(--text-secondary)' }}>What we know about this information</dt><dd style={{ margin: 0 }}>{reviewStatusLabel(selected.epistemic_status || 'not_assessed')}</dd></div>
         </dl>
@@ -1003,10 +1003,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Saved wording:</strong> {sourceIntegrity.source_text_integrity_status === 'match' ? 'Matches the original saved copy' : sourceIntegrity.source_text_integrity_status === 'mismatch' ? 'Does not match the original saved copy' : 'Comparison is not available'}</p>
             <p><strong>Original file:</strong> {sourceIntegrity.original_binary_status === 'match' ? 'Matches the saved copy' : sourceIntegrity.original_binary_status === 'mismatch' ? 'Does not match the saved copy' : sourceIntegrity.original_binary_available === false ? 'Cannot be opened' : 'Not checked'}</p>
             {sourceIntegrity.original_binary_status === 'match' && (
-              <p>The original file matches the copy first saved.</p>
+              <p>The original document matches the copy first saved.</p>
             )}
             {sourceIntegrity.original_binary_status === 'mismatch' && (
-              <p role="alert">The original file differs from the copy first saved.</p>
+              <p role="alert">The original document differs from the copy first saved.</p>
             )}
             <p><strong>Other notes with exactly the same wording:</strong> {sourceIntegrity.exact_source_text_duplicate_candidate_ids.length
               ? sourceIntegrity.exact_source_text_duplicate_candidate_ids.length + ' possible match(es)'
@@ -1022,7 +1022,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             ))}
             <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
             <p><strong>How recent it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How much information is included:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
-            <p><strong>Original file or link:</strong> {sourceIntegrity.external_source_reference ? 'An original reference is saved' : 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
+            <p><strong>Original document or link:</strong> {sourceIntegrity.external_source_reference ? 'An original reference is saved' : 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
           </>}
           {!sourceIntegrityLoading && !sourceIntegrityError && !sourceIntegrity && <p>The saved wording has not been checked yet.</p>}
@@ -1045,7 +1045,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 9, marginTop: 9 }}>
-        <label style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Can we identify the source?
+        <label style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Do we know who shared this?
           <select style={field} value={sourceResult} onChange={event => setSourceResult(event.target.value)}>
             <option value="not_assessed">Not checked</option><option value="present">Identified</option><option value="incomplete">Partly identified</option><option value="unverified">Not confirmed</option>
           </select>
