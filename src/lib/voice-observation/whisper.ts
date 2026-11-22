@@ -27,7 +27,7 @@ export async function captureVoiceObservation(params: {
     return {
       ok: false,
       code: params.audio instanceof Blob && params.audio.size === 0 ? "EMPTY_AUDIO" : "NO_SERVER_STT",
-      error: "Server transcription is not available. Use browser voice recognition or type your observation.",
+      error: "Voice typing isn't available right now. Type your update instead.",
     };
   }
   const observation = params.record({
