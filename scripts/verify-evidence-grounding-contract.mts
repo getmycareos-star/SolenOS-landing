@@ -105,7 +105,7 @@ assert(companion.includes("claim_provenance: response.claim_provenance"), "Compa
 assert(companion.includes("This statement does not match the wording in a saved record. Check it before relying on it."), "Companion must visibly mark statements without a matching source");
 assert(companion.includes("Where this answer came from"), "Companion must show source details beside the specific statement they support");
 assert(companion.includes("does not prove that a report is true or that two records came from different people"), "Companion must not present source matching as proof of truth or source independence");
-assert(companion.includes("Supporting note or document"), "Matched care entries must expose their linked original notes and documents");
+assert(companion.includes("source.label") && companion.includes("Related note or document") && companion.includes("source.related_evidence"), "Matched care entries must expose linked original notes and documents using their saved labels and excerpts");
 assert(companion.includes("source_independence_status === 'shared_origin'"), "Companion must distinguish sources with a shared original");
 assert(companion.includes("exact_wording_duplicate_count"), "Companion must disclose repeated wording without counting it as separate corroboration");
 assert(companion.includes("matched_historical_only"), "Corrected or replaced source wording must remain visible as history, not current support");
