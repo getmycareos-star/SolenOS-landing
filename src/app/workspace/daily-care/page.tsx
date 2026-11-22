@@ -593,6 +593,27 @@ export default function DailyCarePage() {
                     <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p className="daily-care-summary-detail">{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
+                          {item.capture_processing?.message && (
+                            <p className="daily-care-muted">{caregiverSafeAssistantText(item.capture_processing.message) || (
+                              item.capture_processing.review_required
+                                ? "Your original report is saved. Review the suggested details before treating them as reviewed care information."
+                                : item.capture_processing.job_status === "failed"
+                                  ? "Your note is saved, but its details could not be organized."
+                                  : ["queued", "processing"].includes(item.capture_processing.job_status || "")
+                                    ? "This update is being checked. You can keep using SolenOS."
+                                    : "The latest update details are not available yet."
+                            )}</p>
+                          )}
+                          {item.capture_processing?.review_required && item.capture_processing.analysis_id && (
+                            <div style={{ marginTop: 8 }}>
+                              <Button
+                                variant="secondary"
+                                onClick={() => setReviewAnalysisId(item.capture_processing?.analysis_id || null)}
+                              >
+                                Review suggested details
+                              </Button>
+                            </div>
+                          )}
                     <span> · {displayHistorySource(item)}</span>
                     {caregiverInformationLabel(item.epistemic_status) && <span> · {caregiverInformationLabel(item.epistemic_status)}</span>}
                     {caregiverStatusLabel(item.status) && <span> · {caregiverStatusLabel(item.status)}</span>}
