@@ -12,10 +12,6 @@ import { DEFAULT_SOLENOS_LANGUAGE, makeLanguageAwarePrompt } from "../multilingu
 import type { SolenOSLanguage } from "../multilingual-execution/types";
 
 export { extractRawLLMText } from "./raw-text";
-// Legacy analysis pipeline export. The production caregiver entry does not use
-// this disabled ops-only route; it is being retired separately.
-export { invokeGeminiExecution } from "./gemini";
-export type { GeminiExecutionParams } from "./gemini";
 
 async function invokeSolenOSPrompt(
   userPrompt: string,
