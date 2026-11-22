@@ -538,13 +538,13 @@ export default function DocumentsPage() {
       } else {
         setUploadMessage({
           kind: "error",
-          text: "No files were saved or safely queued. Your selected files remain here so you can try again.",
+          text: "No files were saved. Your selected files are still here so you can try again.",
         });
       }
     } catch {
       setUploadMessage({
         kind: "error",
-        text: "SolenOS could not confirm the upload session. Your selected files remain here; nothing has been reported as saved.",
+        text: "We couldn’t confirm that your files were saved. Your selected files are still here, and nothing has been marked as saved.",
       });
     } finally {
       setUploading(false);
@@ -842,12 +842,12 @@ export default function DocumentsPage() {
                   <option value="">Choose earlier document…</option>
                   {documents.filter((doc) => doc.id === selected.possibleVersionOfEvidenceId).map((doc) => <option key={doc.id} value={doc.id}>{doc.title} · {formatDate(doc.uploadedAt)}</option>)}
                 </select>
-                <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid var(--theme-action-border)", borderRadius: 8, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700 }}>{linkingVersion ? "Linking…" : "Link versions"}</button>
+                <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid var(--theme-action-border)", borderRadius: 8, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700 }}>{linkingVersion ? "Saving…" : "Mark as corrected copy"}</button>
               </div>
             </section>}
             {versionComparison && <section aria-label="Document version comparison" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
               <strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>What changed in this corrected copy</strong>
-              {versionComparison.comparison_status === "pending" ? <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{caregiverSafeAssistantText(versionComparison.reason) || "SolenOS is still reading both versions."}</p> : <>
+              {versionComparison.comparison_status === "pending" ? <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{caregiverSafeAssistantText(versionComparison.reason) || "SolenOS is still checking both copies."}</p> : <>
                 <p style={{ margin: "6px 0 10px", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>This only compares the words found in each document. A healthcare professional has not confirmed these differences, and your Care Record has not changed.</p>
                 {!(versionComparison.added?.length || versionComparison.removed?.length || versionComparison.changed?.length) && <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>No differences were found in the text SolenOS could read.</p>}
                 {[...(versionComparison.changed || []).map((item) => ({ kind: "Changed", subject: item.subject, details: (item.previous_statements || []).map((v) => v.statement).join("; ") + " → " + (item.replacement_statements || []).map((v) => v.statement).join("; ") })), ...(versionComparison.added || []).map((item) => ({ kind: "Added", subject: item.subject, details: item.statement || "" })), ...(versionComparison.removed || []).map((item) => ({ kind: "Removed", subject: item.subject, details: item.statement || "" }))].map((item, index) => <p key={item.kind + "-" + index} style={{ margin: "8px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}><strong>{item.kind + (caregiverSafeAssistantText(item.subject) ? " · " + caregiverSafeAssistantText(item.subject) : "")}:</strong> {caregiverSafeAssistantText(item.details) || "No further details are available."}</p>)}
