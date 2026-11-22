@@ -504,6 +504,7 @@ assert.match(evidenceReview, /caregiverSafeGeneratedText\(criterion\.rationale\)
 assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(data\.reply\.trim\(\)\)/, "read-only Care Record orientation replies must pass the generated-language boundary before display");
 assert.doesNotMatch(cognitiveWorkspace, /setLcrOrientationReply\(data\.reply\.trim\(\)\)/, "raw generated orientation replies must never reach the caregiver UI");
 assert.match(clarificationReview, /caregiverSafeGeneratedText\(selectedQuestion\.question\)/, "generated clarification questions must use caregiver language");
+assert.match(clarificationReview, /questions\.filter\(\(item\) => item\.status !== "open" && item\.status !== "unresolved"\)[\s\S]*?caregiverSafeGeneratedText\(item\.question\)/, "restored clarification questions must use the same generated-language boundary");
 assert.match(clarificationReview, /caregiverSafeGeneratedText\(guidance\.why\)/, "generated clarification explanations must use caregiver language");
 assert.match(careDelta, /caregiverSafeGeneratedText\(claim\.text\)/, "generated care-change summaries must use caregiver language");
 assert.match(careDelta, /caregiverSafeGeneratedText\(String\(row\.next_question/, "generated care-change questions must use caregiver language");
