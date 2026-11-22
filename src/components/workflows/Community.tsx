@@ -350,7 +350,7 @@ export default function Community() {
       {actionMessage && <div role="status" aria-live="polite" style={{ ...cardStyle, padding: '12px 15px', fontSize: 13, display: 'flex', gap: 9, alignItems: 'center' }}><ShieldCheck size={17} style={{ color: 'var(--accent)', flexShrink: 0 }} />{actionMessage}<button type="button" aria-label="Dismiss message" onClick={() => setActionMessage('')} style={{ ...baseButton, marginLeft: 'auto', minHeight: 30, width: 30, padding: 0 }}><X size={14} /></button></div>}
       <footer style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '4px 2px 12px', ...muted }}>
         <ShieldCheck size={17} style={{ flexShrink: 0, marginTop: 2 }} />
-        <p style={{ margin: 0, fontSize: 12, lineHeight: 1.7 }}>Community stories describe personal experiences, not medical advice. Do not post identifying information. Confirm care decisions and medication changes with a qualified clinician. Community posts never update your Living Care Record automatically.</p>
+        <p style={{ margin: 0, fontSize: 12, lineHeight: 1.7 }}>Community stories describe personal experiences, not medical advice. Do not post identifying information. Confirm care decisions and medication changes with a qualified clinician. Posts shared here are never added to your care information automatically.</p>
       </footer>
     </section>
   )
