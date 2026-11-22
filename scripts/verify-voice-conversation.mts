@@ -65,7 +65,7 @@ assert(
   VOICE_CONVERSATION_MVP.speechOutput === "browser-speech-synthesis",
   "preferred TTS",
 );
-assert(VOICE_CONVERSATION_MVP.reasoning.includes("/api/analyze"), "Gemini analyze path");
+assert(VOICE_CONVERSATION_MVP.reasoning.includes("private Qwen"), "future reasoning must use the authenticated private Qwen boundary");
 assert(MAP_VOICE_CONVERSATION.moduleRoot === "src/lib/voice", "architecture map module root");
 console.log("✓ FUTURE status + providers + MVP input architecture");
 
@@ -151,7 +151,7 @@ const analyzeRoute = fs.readFileSync(
   path.join(root, "src/app/api/analyze/route.ts"),
   "utf-8",
 );
-assert(analyzeRoute.includes("getGeminiApiKey"), "analyze uses Gemini key");
+assert(analyzeRoute.includes("LEGACY_ANALYSIS_ENDPOINT_RETIRED") && analyzeRoute.includes("status: 410"), "legacy analyze endpoint must remain retired");
 assert(!analyzeRoute.includes("whisper"), "analyze route no whisper");
 
 const adr017 = fs.readFileSync(
