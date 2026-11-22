@@ -98,11 +98,11 @@ assert(buildVoiceModeGreeting("en").includes("listening"), "en greeting");
 assert(buildVoiceModeGreeting("es").length > 10, "es greeting");
 console.log("✓ buildVoiceModeGreeting");
 
-assert(FUTURE_WHISPER_STT.status === "FUTURE", "whisper future");
-assert(FUTURE_GEMINI_STT.status === "FUTURE", "gemini stt future");
+assert(FUTURE_WHISPER_STT.status === "RETIRED", "hosted Whisper server transcription retired");
+assert(FUTURE_GEMINI_STT.status === "RETIRED", "hosted Gemini server transcription retired");
 assert(FUTURE_CLOUD_TTS.status === "FUTURE", "cloud tts future");
 assert(VOICE_OBSERVATION_MVP.ttsEngines[0] === "browser-speech-synthesis", "obs browser TTS");
-console.log("✓ server STT + cloud TTS demoted to FUTURE");
+console.log("✓ hosted server STT retired; browser speech adapter remains separate");
 
 const workspace = fs.readFileSync(
   path.join(root, "src/components/mvp-workspace/CognitiveWorkspace.tsx"),
