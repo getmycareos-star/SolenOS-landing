@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AccessibleButton } from '../accessible/AccessibleButton';
-import { caregiverSafeAssistantText } from '@/lib/caregiver-language';
+import { caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language';
 
 interface WhyAmISeeingThisProps {
   recordSays?: string;
@@ -27,7 +27,7 @@ export default function WhyAmISeeingThis({
 }: WhyAmISeeingThisProps) {
   const [expanded, setExpanded] = useState(showDetails || false);
   const safeRecordSays = caregiverSafeAssistantText(recordSays);
-  const safeAiInterpreted = caregiverSafeAssistantText(aiInterpreted);
+  const safeAiInterpreted = caregiverSafeGeneratedText(aiInterpreted);
   const safeWhyItMatters = caregiverSafeAssistantText(whyItMatters);
   const safeRemainsUnclear = caregiverSafeAssistantText(remainsUnclear);
   const safeCouldClarify = caregiverSafeAssistantText(couldClarify);
