@@ -78,10 +78,10 @@ console.log("PASS: LCR claim assessment UI exposes explicit statuses, exact pass
 assert(claimPanel.includes("/assessment-impact"), "claim assessment panel must retrieve persisted evidence-change/reassessment impact");
 assert(claimPanel.includes("changed_observation_ids"), "claim assessment panel must consume source-correction impact");
 assert(claimPanel.includes("A note or document was added or corrected after this review"), "claim assessment panel must explain source correction impact in plain English");
-assert(claimPanel.includes("Related care details that need another review"), "claim assessment panel must explain downstream dependency reassessment");
+assert(claimPanel.includes("Other care details that need another review"), "claim assessment panel must explain downstream dependency reassessment");
 assert(claimPanel.includes("New information could not be checked"), "failed assessment-impact reads must not imply that the assessment is current");
-assert(claimPanel.includes("No new information was found that requires another review in the information checked"), "assessment-impact UI must state the bounded nature of a no-trigger result");
-assert(claimPanel.includes("does not prove that the information is true or complete"), "assessment-impact UI must disclose that deterministic triggers do not establish truth or completeness");
+assert(claimPanel.includes("We found no new information that calls for another review in the items we checked."), "assessment-impact UI must state the bounded nature of a no-trigger result");
+assert(claimPanel.includes("This does not mean the review is complete or correct."), "assessment-impact UI must disclose that deterministic triggers do not establish truth or completeness");
 console.log("PASS: claim assessment impact is connected to the LCR with fail-safe error messaging and explicit interpretation limits.");
 assert(claimPanel.includes("/uncertainty/claims/dependencies"), "claim dependency UI must persist relationships through the authenticated backend API");
 assert(claimPanel.includes("/uncertainty/claims/"), "claim dependency UI must retrieve the persisted dependency graph");
