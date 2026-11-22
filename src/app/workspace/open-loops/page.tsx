@@ -214,10 +214,10 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       <span>Who is following up: {loop?.owner_label ? caregiverSafeAssistantText(loop.owner_label) : "No one is assigned yet"}</span>
       <span>Last updated: {loop?.updated_at ? dateLabel(loop.updated_at) : "Not available yet"}</span>
       {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
-      {item.evidence_status && <span>What we know: {caregiverStatusLabel(item.evidence_status) || "Not confirmed"}</span>}
+      {item.evidence_status && <span>What we know so far: {caregiverStatusLabel(item.evidence_status) || "Not confirmed"}</span>}
       {item.history_completeness && item.history_completeness !== "complete" && <span>Some earlier care information may be missing.</span>}
       {item.action_status === "not_recorded" && <span>No follow-up action has been saved yet.</span>}
-      {item.action_status && item.action_status !== "not_recorded" && <span>What was done: {caregiverStatusLabel(item.action_status) || "Not recorded"}</span>}
+      {item.action_status && item.action_status !== "not_recorded" && <span>What has been done: {caregiverStatusLabel(item.action_status) || "Not recorded"}</span>}
       {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <span>Result: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</span>}
       {loop?.appointment_id && <span>Related to a saved appointment</span>}
     </div>
@@ -226,7 +226,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
       {loop?.appointment_id && <p><strong>Related appointment</strong><br />This follow-up is connected to a saved appointment and its history.</p>}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
-      {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Review requested" : "Next review date"}</strong><br />{dateLabel(item.review_at)}</p>}
+      {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Check-in requested" : "Next check-in"}</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
       {occurrences && occurrences.length > 0 && <section className="followup-history"><strong>Happened more than once</strong><ol>{occurrences.map((item) => <li key={item.id}>{caregiverInformationAreaLabel(item.source_type) || "Care event"} · {dateLabel(item.occurred_at)}</li>)}</ol></section>}
     </div>}
@@ -499,7 +499,7 @@ export default function FollowUpsPage() {
       <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
       <p className="followups-kicker">YOUR FOLLOW-UPS</p>
       <div className="followups-title-row">
-        <div><h1>Follow-ups</h1><p>SolenOS checks the care information you have saved and keeps follow-ups easy to find. You only need to step in when we need your knowledge or action.</p></div>
+        <div><h1>Follow-ups</h1><p>Follow-ups are based on the care information saved here. You may need to add details or take action when something is unclear.</p></div>
         <button type="button" className="followups-refresh" onClick={() => { setLoading(loops.length === 0 && !assessment); void refresh().catch(() => setError("Follow-ups could not be refreshed. Your previously saved information remains visible.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
       </div>
     </header>
@@ -511,12 +511,12 @@ export default function FollowUpsPage() {
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
         {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} occurrences={loops.find((loop) => loop.id === item.record_id) ? occurrencesById[item.record_id || ""] : undefined} />)}
-        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention the last time we checked. This does not mean there is nothing to follow up on." : "We couldn’t check what needs attention just now. Your saved follow-ups are still shown below."}</p>}
+        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention the last time we checked. There may still be things your family wants to follow up on." : "We couldn’t check what needs attention just now. Your saved follow-ups are still shown below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length}</span></div>
         {categorized.monitored.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={item.record_id ? historyById[item.record_id] : undefined} occurrences={item.record_id ? occurrencesById[item.record_id] : undefined} />)}
-        {categorized.monitored.length === 0 && <p className="followups-empty-inline">Nothing is currently marked for monitoring.</p>}
+        {categorized.monitored.length === 0 && <p className="followups-empty-inline">Nothing is currently marked for a check-in.</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs clarification</h2><p>Information that is missing, unclear or does not match. SolenOS will not guess which version is right.</p></div><span>{categorized.needsClarification.length + unclassifiedFollowUpItems.length}</span></div>
