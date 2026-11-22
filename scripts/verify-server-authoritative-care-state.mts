@@ -39,11 +39,10 @@ assert.doesNotMatch(situationStore, /localStorage/);
 assert.doesNotMatch(timelineStore, /localStorage/);
 assert.match(legacyFilesystemStore, /process\.env\.NODE_ENV === "production"/);
 assert.match(legacyFilesystemStore, /Legacy filesystem persistence is disabled in production/);
-assert.match(retiredAnalyzeRoute, /analyzePipelineDisabledResponse\(\)/);
-assert.match(retiredAnalyzeRoute, /status:\s*disabled\.status/);
-assert.match(retiredAnalyzeRoute, /caregiver_entry:\s*disabled\.caregiver_entry/);
-assert.match(retiredAnalyzeRoute, /runAnalyzePipeline/);
-assert.match(retiredAnalyzeRoute, /if \(\s*process\.env\.NODE_ENV === "production"/);
+assert.match(retiredAnalyzeRoute, /LEGACY_ANALYSIS_ENDPOINT_RETIRED = true/);
+assert.match(retiredAnalyzeRoute, /This older analysis route is no longer available/);
+assert.match(retiredAnalyzeRoute, /status: 410/);
+assert.doesNotMatch(retiredAnalyzeRoute, /analyzePipelineDisabledResponse|isAnalyzePipelineEnabled|runAnalyzePipeline/);
 assert.match(
   workspace,
   /Always replace the visible projection with the server result[\s\S]*?including an empty result/,
