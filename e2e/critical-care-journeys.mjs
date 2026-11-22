@@ -95,9 +95,11 @@ async function createBrowserPage(
     localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
     localStorage.setItem("solenos_anonymous_session_expires_at", identity.expiresAt);
     if (identity.failCompanionPointerWrites) {
+      window.__solenosCompanionPointerWriteFailures = 0;
       const originalSetItem = Storage.prototype.setItem;
       Storage.prototype.setItem = function (key, value) {
         if (String(key).startsWith("solenos_companion_session:")) {
+          window.__solenosCompanionPointerWriteFailures += 1;
           throw new DOMException("Simulated browser storage quota failure", "QuotaExceededError");
         }
         return originalSetItem.call(this, key, value);
@@ -3422,6 +3424,10 @@ await record("browser renders caregiver surfaces and submits Companion through t
     }, undefined, { timeout: 210_000 });
     const assistantReply = await companion.page.locator(".companion-message.is-assistant").last().innerText();
     assert.ok(assistantReply.trim().length > 30, "Companion UI did not render the backend response");
+    const pointerWriteFailures = await companion.page.evaluate(
+      () => window.__solenosCompanionPointerWriteFailures || 0,
+    );
+    assert.ok(pointerWriteFailures >= 1, "the browser journey must exercise a failed optional Companion pointer write");
     await companion.page.getByRole("status", { name: "Care history coverage" }).waitFor({ timeout: 15_000 });
     await companion.page.getByText("How much of the saved care history was checked", { exact: true }).waitFor();
     await verifyMobile(companion.page);
