@@ -4,7 +4,7 @@ import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
-import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
+import { caregiverSafeErrorMessage, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import {
   discardBlockedDurableWrites,
   getDurableWriteSummary,
@@ -772,12 +772,25 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       setReviewFeedback('This suggestion is no longer available. Refresh the page and try again.');
       return;
     }
+    const safeSubject = caregiverSafeGeneratedText(candidate.subject);
+    const safeObservation = caregiverSafeGeneratedText(candidate.observation);
+    const correctedSubject = typeof candidate.corrected_subject === 'string' && candidate.corrected_subject.trim()
+      ? candidate.corrected_subject
+      : null;
+    const correctedObservation = typeof candidate.corrected_observation === 'string' && candidate.corrected_observation.trim()
+      ? candidate.corrected_observation
+      : null;
     const draft = reviewDrafts[index] || {
-      subject: candidate.corrected_subject ?? candidate.subject ?? '',
-      observation: candidate.corrected_observation ?? candidate.observation ?? '',
+      subject: correctedSubject ?? safeSubject ?? '',
+      observation: correctedObservation ?? safeObservation ?? '',
     };
-    if (decision === 'correct' && !(draft.subject.trim() || draft.observation.trim())) {
-      setReviewFeedback('Enter a corrected subject or observation before saving a correction.');
+    const candidateNeedsRewrite = !(correctedSubject || safeSubject) || !(correctedObservation || safeObservation);
+    if (decision === 'accept' && candidateNeedsRewrite) {
+      setReviewFeedback('Check the original note and correct this suggestion before adding it to your Care Record.');
+      return;
+    }
+    if (decision === 'correct' && (!draft.subject.trim() || !draft.observation.trim())) {
+      setReviewFeedback('Enter both what this detail is about and what happened before saving a correction.');
       return;
     }
     setReviewingCandidate(index);
@@ -1462,9 +1475,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
               {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => {
+                const safeSubject = caregiverSafeGeneratedText(candidate.subject);
+                const safeObservation = caregiverSafeGeneratedText(candidate.observation);
+                const hasCorrectedSubject = typeof candidate.corrected_subject === 'string' && candidate.corrected_subject.trim().length > 0;
+                const hasCorrectedObservation = typeof candidate.corrected_observation === 'string' && candidate.corrected_observation.trim().length > 0;
+                const candidateNeedsRewrite = !(hasCorrectedSubject || safeSubject) || !(hasCorrectedObservation || safeObservation);
                 const draft = reviewDrafts[index] || {
-                  subject: candidate.corrected_subject ?? candidate.subject ?? '',
-                  observation: candidate.corrected_observation ?? candidate.observation ?? '',
+                  subject: hasCorrectedSubject ? candidate.corrected_subject : safeSubject || '',
+                  observation: hasCorrectedObservation ? candidate.corrected_observation : safeObservation || '',
                 };
                 const reviewStatus = String(candidate.review_status || 'pending_review');
                 const alreadyReviewed = ['accepted_by_caregiver', 'rejected_by_caregiver'].includes(reviewStatus);
@@ -1475,7 +1493,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                       {reviewStatus === 'pending_review' ? 'Waiting for your review' : reviewStatus === 'corrected_pending_approval' || reviewStatus === 'corrected_by_caregiver' ? 'Correction saved — waiting for your approval' : reviewStatus === 'accepted_by_caregiver' ? 'Added to your Care Record' : reviewStatus === 'rejected_by_caregiver' ? 'Not added to your Care Record' : 'Review status unavailable'}
                     </p>
                     <div style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                      <div><strong>Original suggestion:</strong> {candidate.subject ? `${candidate.subject}: ` : ''}{candidate.observation || 'No suggested detail is available.'}</div>
+                      <div>
+                        <strong>Original suggestion:</strong>{' '}
+                        {safeSubject && safeObservation
+                          ? `${safeSubject}: ${safeObservation}`
+                          : 'We could not show this suggestion clearly. Check your original note and correct it before adding it.'}
+                      </div>
                       {candidate.corrected_observation !== undefined && (
                         <div style={{ marginTop: '4px' }}>
                           <strong>Your correction:</strong> {candidate.corrected_subject ? `${candidate.corrected_subject}: ` : ''}{candidate.corrected_observation}
@@ -1488,7 +1511,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                         aria-label={`Corrected subject ${index + 1}`}
                         value={draft.subject}
                         disabled={alreadyReviewed || reviewingCandidate !== null}
-                        onChange={event => setReviewDrafts(current => ({ ...current, [index]: { ...(current[index] || { subject: candidate.subject || '', observation: candidate.observation || '' }), subject: event.target.value } }))}
+                        onChange={event => setReviewDrafts(current => ({ ...current, [index]: { ...(current[index] || draft), subject: event.target.value } }))}
                         maxLength={160}
                         style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '4px', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'var(--text)' }}
                       />
@@ -1499,7 +1522,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                         aria-label={`Corrected observation ${index + 1}`}
                         value={draft.observation}
                         disabled={alreadyReviewed || reviewingCandidate !== null}
-                        onChange={event => setReviewDrafts(current => ({ ...current, [index]: { ...(current[index] || { subject: candidate.subject || '', observation: candidate.observation || '' }), observation: event.target.value } }))}
+                        onChange={event => setReviewDrafts(current => ({ ...current, [index]: { ...(current[index] || draft), observation: event.target.value } }))}
                         maxLength={500}
                         rows={3}
                         style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: '4px', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bg)', color: 'var(--text)' }}
@@ -1512,8 +1535,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                     )}
                     {!alreadyReviewed && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Add to Care Record</button>
-                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
+                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId || candidateNeedsRewrite} onClick={() => void reviewCaptureCandidate(index, 'accept')}>Add to Care Record</button>
+                        <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId || !draft.subject.trim() || !draft.observation.trim()} onClick={() => void reviewCaptureCandidate(index, 'correct')}>Save correction</button>
                         <button type="button" className="workspace-primary" style={{ minHeight: 44, padding: '9px 12px', borderRadius: 8 }} disabled={reviewingCandidate !== null || !qwenAnalysis.analysisId} onClick={() => void reviewCaptureCandidate(index, 'reject')}>Dismiss suggestion</button>
                       </div>
                     )}
@@ -1537,9 +1560,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             <div style={{ marginTop: '10px' }}>
               <strong style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))' }}>Questions to answer</strong>
               <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
-                {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => (
-                  <li key={index} style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', marginBottom: '4px' }}>{question}</li>
-                ))}
+                {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => {
+                  const safeQuestion = caregiverSafeGeneratedText(question);
+                  return safeQuestion
+                    ? <li key={index} style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', marginBottom: '4px' }}>{safeQuestion}</li>
+                    : null;
+                })}
               </ul>
             </div>
           )}
