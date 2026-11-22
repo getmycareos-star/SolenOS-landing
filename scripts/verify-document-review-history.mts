@@ -26,15 +26,16 @@ assert(
 assert(
   source.includes("candidateNeedsRewrite") &&
   source.includes("disabled={busy !== null || candidateNeedsRewrite}") &&
-  source.includes("disabled={busy !== null || !correctionSubjectMatchesSource}") &&
-  source.includes("Check the original document. Use a short label that appears in it; the original wording will stay unchanged."),
+  source.includes("disabled={busy !== null || !hasCorrectionSubject}") &&
+  source.includes("Check the original document and add a short label in plain words. The original wording will stay unchanged."),
   "an unreadable generated suggestion must be corrected using the preserved original wording before it can be accepted",
 );
 assert(
   source.includes("corrected_observation: sourceQuote") &&
   source.includes("Exact wording from the original document") &&
   source.includes("readOnly") &&
-  source.includes("sourceQuote.toLowerCase().includes(correctedSubject.trim().toLowerCase())"),
+  source.includes("hasCorrectionSubject") &&
+  !source.includes("sourceQuote.toLowerCase().includes(correctedSubject.trim().toLowerCase())"),
   "document corrections must preserve the exact source quotation and use a label found in that quotation",
 );
 assert(
