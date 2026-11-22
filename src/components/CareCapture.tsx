@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { postJSON, getPersonId, getCaregiverId } from '../api/client'
 import { useOptimisticMutation } from '../lib/optimistic'
-import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverStatusLabel } from '../lib/caregiver-language'
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from '../lib/caregiver-language'
 
 interface CareCaptureProps {
   personId?: string
@@ -197,14 +197,20 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
           </p>
           {Array.isArray(qwenAnalysis.candidates?.observations) && qwenAnalysis.candidates.observations.length > 0 ? (
             <ul style={{ paddingLeft: '18px', marginTop: '8px' }}>
-              {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => (
-                <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
-                  <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
-                  <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Original wording: “{candidate.source_quote}” · {caregiverStatusLabel(candidate.review_status) || "Needs review"}
-                  </div>
-                </li>
-              ))}
+              {qwenAnalysis.candidates.observations.map((candidate: any, index: number) => {
+                const subject = caregiverSafeGeneratedText(candidate.subject);
+                const observation = caregiverSafeGeneratedText(candidate.observation);
+                return (
+                  <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                    {subject && observation
+                      ? <><strong>{subject}:</strong> {observation}</>
+                      : <span>We couldn't show this suggested detail clearly. Check your original note before using it.</span>}
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Original wording: “{candidate.source_quote}” · {caregiverStatusLabel(candidate.review_status) || "Needs review"}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
