@@ -125,7 +125,7 @@ try {
   // the same idempotency key and the backend must not append a second report.
   await card.getByRole("button", { name: "Share update" }).click();
   await page.getByRole("status").filter({
-    hasText: "Your update was saved as a caregiver report. SolenOS has not marked the matter resolved.",
+    hasText: "Your update was saved. SolenOS has not marked this as resolved.",
   }).waitFor({ timeout: 15_000 });
 
   const persistedResponse = await fetch(new URL("/api/v1/open-loops?limit=100", backend), {
@@ -168,7 +168,7 @@ try {
   }).waitFor({ timeout: 15_000 });
   await afterReload.getByRole("button", { name: "Record action" }).click();
   await page.getByRole("status").filter({
-    hasText: "Your action was recorded as a caregiver report. The outcome has not been marked as verified.",
+    hasText: "Your action was saved. The concern has not been marked as resolved.",
   }).waitFor({ timeout: 15_000 });
 
   // Read after the action succeeds. The earlier snapshot only proves the
@@ -239,7 +239,7 @@ try {
   }).waitFor({ timeout: 15_000 });
   await candidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).click();
   await page.getByRole("status").filter({
-    hasText: "Added to Follow-ups. The original care report remains unchanged.",
+    hasText: "Added to Follow-ups. The original care information has not changed.",
   }).waitFor({ timeout: 15_000 });
 
   const createdLoopsResponse = await fetch(new URL("/api/v1/open-loops?limit=100", backend), {

@@ -388,7 +388,7 @@ export default function FollowUpsPage() {
       }
       await refresh();
       delete pendingUpdateKeys.current[loop.id];
-      setNotice("Your update was saved as a caregiver report. SolenOS has not marked the matter resolved.");
+      setNotice("Your update was saved. SolenOS has not marked this as resolved.");
     } catch {
       // Retain the key and the caregiver's text while the result is uncertain.
       // A retry must converge on the original write rather than append a duplicate.
@@ -411,7 +411,7 @@ export default function FollowUpsPage() {
       item.reason,
       ...(item.priority_basis || []),
     ].filter((value): value is string => Boolean(value && value.trim())).join(" · ")
-      || "This saved care information was marked for follow-up during the latest review.";
+      || "This care detail needs a follow-up.";
     try {
       await postJSON("/open-loops", {
         loop_type: "follow_up",
@@ -425,7 +425,7 @@ export default function FollowUpsPage() {
       });
       await refresh();
       delete pendingCreateKeys.current[sourceKey];
-      setNotice("Added to Follow-ups. The original care report remains unchanged.");
+      setNotice("Added to Follow-ups. The original care information has not changed.");
     } catch {
       setError("The follow-up could not be confirmed. Keep this item open and try again.");
     } finally {
@@ -449,7 +449,7 @@ export default function FollowUpsPage() {
       });
       await refresh();
       delete pendingActionKeys.current[loop.id];
-      setNotice("Your action was recorded as a caregiver report. The outcome has not been marked as verified.");
+      setNotice("Your action was saved. The concern has not been marked as resolved.");
     } catch {
       setError("The action could not be confirmed. Keep the report available and try again.");
       throw new Error("Caregiver action was not confirmed; preserve the draft for retry.");
@@ -487,7 +487,7 @@ export default function FollowUpsPage() {
     category: "needs_clarification",
     source: "open_loop_records",
     record_id: loop.id,
-    reason: "This saved follow-up was not classified in the latest care review. Its current care significance is unknown, so SolenOS cannot safely describe it as something that can wait.",
+    reason: "We do not yet have enough information to tell whether this needs action or can wait.",
     review_at: loop.review_at,
     evidence_ids: loop.evidence.flatMap((item) =>
       typeof item.evidence_id === "string" && item.evidence_id.trim() ? [item.evidence_id] : []
