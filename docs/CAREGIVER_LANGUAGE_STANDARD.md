@@ -34,6 +34,9 @@ This standard applies to every caregiver-facing screen, message, button, empty s
 | Longitudinal history | Care history over time |
 | Epistemic status | What is known, not sure yet, or not recorded |
 | Assessment coverage | What information was checked |
+| Assessment (when used as a system label) | Check or review |
+| Confidence (when used as a system label) | How sure we are; what is still unclear |
+| Evidence (when referring to saved support) | Notes and documents |
 | Source attribution | Who reported it; where it came from |
 | Unresolved | Still needs attention |
 | Incomplete record | Some information is not available |
@@ -58,6 +61,7 @@ Use clear wording to preserve these meanings:
 - Never show database IDs, caregiver IDs, source IDs, evidence IDs, hashes, raw enum values, JSON, or API error details as interface copy. Show a useful human label or a safe fallback instead.
 - Do not turn an unknown system value into a label by replacing underscores with spaces. Use an approved label or a neutral fallback such as “Not available”.
 - Do not show a generated explanation unless it passes the caregiver-language safety check. If it does not, show a short, honest fallback and keep the underlying information available to the appropriate reviewer.
+- Apply stricter wording checks to SolenOS-generated explanations and suggestions. Do not apply those generated-text rules to rewrite original caregiver reports or source documents.
 - Avoid words such as “verified”, “confirmed”, and “resolved” unless the interface says who performed the check and what was actually checked.
 - Use “Care Assistant” in navigation and headings. Keep internal component and code names unchanged where changing them would create unnecessary engineering risk.
 - A plain-English label must not change the meaning of the saved information or imply that a caregiver review is a clinical confirmation.
