@@ -69,7 +69,7 @@ export function ContinuityHomePanel({ home, events = [], className }: Props) {
       {isSparse ? (
         <>
           <TrustEmptyStateNote />
-          <h3 className="continuity-home-headline">Living Care Record</h3>
+          <h3 className="continuity-home-headline">Care Record</h3>
           <p className="workspace-lede">
             Share anything that is happening — notes, messages, documents, or photos. We will help
             organize what matters.
@@ -77,7 +77,7 @@ export function ContinuityHomePanel({ home, events = [], className }: Props) {
         </>
       ) : (
         <>
-          <h3 className="continuity-home-headline">Living Care Record</h3>
+          <h3 className="continuity-home-headline">Care Record</h3>
           <p className="workspace-lede">
             What you have already shared is held here — so you do not have to reconstruct it from
             memory.
@@ -94,7 +94,7 @@ export function ContinuityHomePanel({ home, events = [], className }: Props) {
           ) : recent.length > 0 ? (
             recent.map((line) => <li key={line}>{line}</li>)
           ) : (
-            <li className="panel-muted">No notes in this session yet.</li>
+            <li className="panel-muted">No care notes have been added yet.</li>
           )}
         </ul>
       </section>
