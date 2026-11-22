@@ -58,7 +58,7 @@ assert.match(documents, /getBlob\("\/upload\//, "saved original files remain ret
 assert.doesNotMatch(home, /compose=1|CognitiveWorkspace|lcr-add-screen/, "the legacy LCR entry screen is removed from Companion home");
 assert.match(dailyCare, /StructuredDailyCapture/);
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask|Ask Daily Care Qwen/);
-assert.match(navigation, /href: "\/workspace\/companion",[\s\S]*?label: "Care Assistant"/, "AI Companion is the named caregiver destination");
+assert.match(navigation, /WORKSPACE_SECONDARY_NAVIGATION:[\s\S]*?href: "\/workspace\/companion",[\s\S]*?label: "Care Assistant"/, "Care Assistant is available under More");
 assert.doesNotMatch(shell, /href: "\/workspace\/record"/);
 assert.match(shell, /useState\(false\)/);
 assert.match(shell, /is-sidebar-open/);
@@ -150,10 +150,10 @@ assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWo
 assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.ok(lcrHome.includes('href="/workspace/daily-care"'), "Daily Care is directly reachable from the Care Record");
 assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/, "More renders the secondary care destinations");
-assert.match(navigation, /href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups remains available under More");
+assert.match(navigation, /care: \[[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups remains a primary care destination");
 assert.match(navigation, /href: "\/workspace\/timeline"[\s\S]*?label: "Care history"/, "care history remains available under More");
 assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents remains available under More");
-assert.ok(lcrHome.includes('href="/workspace/companion"'), "Care Assistant is directly reachable from the Care Record");
+assert.ok(morePage.includes('href="/workspace/companion"'), "Care Assistant is reachable under More");
 assert.ok(morePage.includes('href="/workspace/timeline">View all care history</Link>'), "Care history is reached from More through its current browsing link");
 assert.match(handoverInbox, /ensureAnonymousSession\(\)/, "handover requests wait for a valid caregiver session");
 assert.match(handoverInbox, /Promise\.allSettled/, "one unavailable handover list does not hide the other");
