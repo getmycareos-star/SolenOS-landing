@@ -195,7 +195,7 @@ export function CareRecordOverview() {
             )}
           </section>
 
-          <p className="care-record-overview__disclaimer">This view shows saved information only. It does not diagnose, decide which conflicting report is correct, or treat missing information as proof that nothing happened.</p>
+          <p className="care-record-overview__disclaimer">This view shows the information saved here. It does not diagnose, choose between reports that do not match, or assume nothing happened just because information is missing.</p>
         </>
       )}
     </section>
