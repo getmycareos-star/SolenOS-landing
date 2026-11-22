@@ -16,13 +16,13 @@ type DementiaObservation = {
 
 const CATEGORIES = [
   ["memory", "Memory and repeated questions"],
-  ["behaviour", "Behaviour or distress"],
+  ["behaviour", "Behavior or distress"],
   ["wandering", "Wandering or getting lost"],
   ["sleep", "Sleep"],
   ["mood", "Mood and emotional wellbeing"],
   ["eating", "Eating and drinking"],
   ["medication", "Medication routine or support"],
-  ["mobility", "Mobility and falls"],
+  ["mobility", "Moving around and falls"],
   ["communication", "Communication"],
   ["daily_activities", "Everyday activities"],
   ["safety", "Safety"],
@@ -97,7 +97,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
       setObservedAt("");
       setCategory("");
       setObservationType("");
-      setNotice("Observation saved to this care record.");
+      setNotice("Your note was saved to your Care Record.");
       window.dispatchEvent(new Event("careRecordUpdated"));
       await load();
     } catch {
@@ -108,11 +108,11 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
   }
 
   return (
-    <section aria-label="Dementia observations" className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <section aria-label="Notes about memory and daily life" className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <div className="mb-3">
-        <h3 className="text-base font-semibold text-[var(--text)]">Dementia observations</h3>
+        <h3 className="text-base font-semibold text-[var(--text)]">Notes about memory and daily life</h3>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Record what happened in your own words. SolenOS keeps when it happened separate from when it was recorded.
+          Record what happened in your own words. We keep the date it happened separate from the date you saved it.
         </p>
       </div>
       {error ? <p role="alert" className="mb-3 text-sm text-red-700">{error}</p> : null}
@@ -143,7 +143,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
           />
         </label>
         <label className="grid gap-1 text-sm font-medium text-[var(--text)]">
-          Who observed it?
+          Who saw or heard this?
           <select
             value={observationType}
             disabled={saving}
@@ -172,19 +172,19 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
             onClick={() => void saveObservation()}
             className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text)] disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save observation"}
+            {saving ? "Saving…" : "Save note"}
           </button>
         </div>
       </div>
       <div className="mt-5 border-t border-[var(--border)] pt-4">
         <div className="mb-2 flex items-center justify-between gap-3">
-          <h4 className="text-sm font-semibold text-[var(--text)]">Recent observations</h4>
+          <h4 className="text-sm font-semibold text-[var(--text)]">Recent notes</h4>
           <button type="button" onClick={() => void load()} disabled={loading || saving} className="text-sm underline disabled:opacity-50">
             Refresh
           </button>
         </div>
         {loading ? <p role="status" className="text-sm text-[var(--muted)]">Loading observations…</p> : null}
-        {!loading && observations.length === 0 ? <p className="text-sm text-[var(--muted)]">No dementia observations have been recorded yet.</p> : null}
+        {!loading && observations.length === 0 ? <p className="text-sm text-[var(--muted)]">No notes about memory or daily life have been saved yet.</p> : null}
         <ul className="space-y-3">
           {observations.map((item) => (
             <li key={item.id} className="rounded-lg border border-[var(--border)] p-3">
@@ -196,7 +196,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
                 Happened: {formatTime(item.observed_at)} · Recorded: {formatTime(item.recorded_at)}
               </p>
               <p className="mt-1 text-xs text-[var(--muted)]">
-                {item.observation_type === "DIRECT" || item.observation_type === "direct" ? "Direct observation" : "Reported by someone else"}
+                {item.observation_type === "DIRECT" || item.observation_type === "direct" ? "Seen directly" : "Reported by someone else"}
                 {item.recorded_by_caregiver_id === caregiverId ? " · Recorded by you" : " · Recorded by another caregiver"}
               </p>
             </li>
