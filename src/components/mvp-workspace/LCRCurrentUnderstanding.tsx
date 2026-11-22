@@ -2136,7 +2136,7 @@ export function LCRCurrentUnderstanding() {
                       <p>Previously recorded: {change.previous_state ?? "Not recorded"} · Currently recorded: {change.current_state ?? "Not recorded"}</p>
                       <p className="lcr-entry-status">Review this when a new report or correction changes the saved information. This change is not a medical conclusion.</p>
                       <p className="lcr-entry-status">
-                        Review status: {caregiverLabel(change.confirmation_status || "not recorded")}. 
+                        Review: {caregiverLabel(change.confirmation_status || "not recorded")}. 
                         {change.confirmation_status === "rejected"
                           ? " A caregiver disputed this change. It is not shown as confirmed."
                           : change.confirmation_status === "inconclusive"
@@ -2245,7 +2245,7 @@ export function LCRCurrentUnderstanding() {
                   Previous: {caregiverSafeChangeText(change.previous_state) || "Not enough earlier information to compare"} · Current: {caregiverSafeChangeText(change.current_state) || "Saved change details need a closer look"}
                 </p>
                 <p className="lcr-entry-status">
-                  Review status: {caregiverLabel(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected")}
+                  Review: {caregiverLabel(change.is_active === false || change.superseded_by_change_id ? "superseded" : change.confirmation_status || "detected")}
                 </p>
                 <label className="lcr-evidence-reason">
                   Review note
