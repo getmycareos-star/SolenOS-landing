@@ -124,6 +124,25 @@ for (const file of files) {
     ts.forEachChild(node, collectFunctionReturns);
   }
 
+  function isInsideNonCopyElement(node: ts.Node): boolean {
+    let current: ts.Node | undefined = node.parent;
+    while (current) {
+      if (ts.isJsxElement(current) || ts.isJsxSelfClosingElement(current)) {
+        const tag = current.openingElement.tagName.getText(sourceFile).toLowerCase();
+        if (tag === "style" || tag === "script") return true;
+      }
+      current = current.parent;
+    }
+    return false;
+  }
+
+  const caregiverTextAttributes = new Set([
+    "alt", "aria-description", "aria-label", "aria-placeholder", "aria-roledescription",
+    "aria-valuetext", "caption", "confirmtext", "description", "emptylabel", "errormessage",
+    "helpertext", "label", "loadingtext", "message", "placeholder", "statusmessage",
+    "submittext", "title", "tooltip",
+  ]);
+
   function visit(node: ts.Node): void {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer &&
       ts.isObjectLiteralExpression(node.initializer) &&
@@ -144,19 +163,22 @@ for (const file of files) {
       collectFunctionReturns(node.body);
     }
     if (ts.isJsxText(node)) {
-      addText(sourceFile, node, node.getText(sourceFile));
+      if (!isInsideNonCopyElement(node)) addText(sourceFile, node, node.getText(sourceFile));
       return;
     }
     if (ts.isJsxAttribute(node) && node.initializer) {
-      if (ts.isStringLiteralLike(node.initializer)) {
-        addText(sourceFile, node, node.initializer.text);
-      } else if (ts.isJsxExpression(node.initializer) && node.initializer.expression) {
-        collectDisplayExpression(sourceFile, node.initializer.expression);
+      const attributeName = node.name.getText(sourceFile).toLowerCase();
+      if (caregiverTextAttributes.has(attributeName)) {
+        if (ts.isStringLiteralLike(node.initializer)) {
+          addText(sourceFile, node, node.initializer.text);
+        } else if (ts.isJsxExpression(node.initializer) && node.initializer.expression) {
+          collectDisplayExpression(sourceFile, node.initializer.expression);
+        }
       }
       return;
     }
     if (ts.isJsxExpression(node) && node.expression) {
-      collectDisplayExpression(sourceFile, node.expression);
+      if (!isInsideNonCopyElement(node)) collectDisplayExpression(sourceFile, node.expression);
       return;
     }
     ts.forEachChild(node, visit);
