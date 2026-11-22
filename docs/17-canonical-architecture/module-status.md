@@ -137,7 +137,7 @@
 
 | Module | Role | Status | Verify |
 |--------|------|--------|--------|
-| `analyze-pipeline` | v1.4 LLM + engine assembly | **INTERNAL · IMPLEMENTED** | `verify:analyze` |
+| `analyze-pipeline` | Retired legacy hosted-analysis pipeline; `/api/analyze` returns HTTP 410 and its compatibility adapter performs no model call | **RETIRED · LEGACY TEST SURFACE** | `verify:analyze`, `verify-server-authoritative-care-state` |
 | `continuous-execution-loop` | Mode compile before ACS | **INTERNAL** | `verify:continuous-execution-loop` |
 | `priority-resolution-system` / runtime arbitration | Dominant output mode | **INTERNAL** | `verify:runtime-arbitration` |
 | `final_output` | Compiled dominant mode | **INTERNAL** | `verify:final-output-contract` |
