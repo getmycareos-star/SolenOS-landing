@@ -278,7 +278,7 @@ export default function ClaimAssessmentPanel() {
       } catch {
         if (!cancelled) {
           setDependencies([]);
-          setDependencyError("Related care details could not be loaded. This does not mean there are no related details.");
+          setDependencyError("Another care details could not be loaded. This does not mean there are no related details.");
         }
       } finally {
         if (!cancelled) setDependencyLoading(false);
@@ -408,13 +408,13 @@ export default function ClaimAssessmentPanel() {
         <div><strong>Related notes or documents:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
       </div>}
       <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10, marginBottom: 12, minWidth: 0 }}>
-        <legend style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>How this detail relates to other details</legend>
-        <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Show how this care detail relates to another. These links help organize information; they do not prove it is true.</p>
+        <legend style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>How this care detail is connected to others</legend>
+        <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Show how this care detail is connected to another. These connections help organize information; they do not prove it is true.</p>
         {dependencyLoading && <p role="status">Loading related care details…</p>}
         {dependencyError && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{dependencyError}</p>}
         {dependencyNotice && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{dependencyNotice}</p>}
         {!dependencyLoading && !dependencyError && dependencies.length === 0 &&
-          <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No related care details are linked to this one yet.</p>}
+          <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No other care details are connected to this one yet.</p>}
         {dependencies.length > 0 && <ul style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "This detail depends on" : "This detail is needed by"}{" "}
@@ -422,7 +422,7 @@ export default function ClaimAssessmentPanel() {
             {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSafeAssistantText(edge.rationale) || "No further explanation is available."}
           </li>)}
         </ul>}
-        <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Related care detail
+        <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Another care detail
           <select style={field} value={dependencyTargetId} onChange={(event) => setDependencyTargetId(event.target.value)}>
             <option value="">Select a different care detail</option>
             {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
@@ -439,10 +439,10 @@ export default function ClaimAssessmentPanel() {
           <textarea style={{ ...field, minHeight: 60 }} value={dependencyRationale} onChange={(event) => setDependencyRationale(event.target.value)} />
         </label>
         <button type="button" style={button} onClick={() => void submitDependency()} disabled={dependencySaving || dependencyLoading}>
-          {dependencySaving ? "Saving link…" : "Link these details"}
+          {dependencySaving ? "Saving connection…" : "Connect these details"}
         </button>
       </fieldset>
-      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Review result
+      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>What did you find?
         <select style={field} value={status} onChange={(event) => setStatus(event.target.value as (typeof statuses)[number])}>
           {statuses.map((value) => <option key={value} value={value}>{simpleReviewStatus(value)}</option>)}
         </select>
@@ -498,7 +498,7 @@ export default function ClaimAssessmentPanel() {
           {assessmentImpact.missing_evidence_ids.length > 0 && <p>Notes or documents that could not be found: {assessmentImpact.missing_evidence_ids.length}</p>}
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Notes or documents not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
-          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Related care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
+          {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Another care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
           {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {simpleReviewStatus(item.field)}</strong><div>{caregiverSafeAssistantText(item.description) || "The saved reports do not match."}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
           <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{caregiverSafeAssistantText(assessmentImpact.interpretation_limit) || "This check may not include every relevant detail."}</p>
         </>}
