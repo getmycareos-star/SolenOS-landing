@@ -89,7 +89,7 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   care_events: 'Care update',
   assertions: 'Caregiver report',
   care_assertions: 'Caregiver report',
-  handoffs: 'Caregiver handoff',
+  handoffs: 'Care summary shared with another caregiver',
   decisions: 'Care decision',
   decision_outcomes: 'What happened after a decision',
   corrections: 'Correction to saved information',
@@ -97,7 +97,7 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   open_questions: 'Question still to answer',
   missing_information: 'Information not recorded',
   conflicts: 'Reports that do not match',
-  reconciliations: 'Reviewed comparison',
+  reconciliations: 'Information checked against other reports',
   appointments: 'Appointment',
   caregiver_observations: 'What a caregiver noticed',
   caregiver_perspectives: 'Caregiver view',
@@ -763,7 +763,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.recorded_at && <p>When it was added: {new Date(source.recorded_at).toLocaleString()}</p>}
                                   {source.reported_by && <p>Reported by: {source.reported_by}</p>}
                                   {source.entered_by && <p>{source.entered_by}</p>}
-                                  {source.source_state_label && <p>{caregiverSafeAssistantText(source.source_state_label) || 'Status not available'}</p>}
+                                  {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || 'Status not available'}</p>}
                                   {source.correction_note && <p>{source.correction_note}</p>}
                                   {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
                                   {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
@@ -774,7 +774,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
                                     <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
-                                    <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
+                                    <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
                                     <small>{caregiverSafeGeneratedText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
                                   </div>)}
                                   {(!source.evidence_reviews_status || source.evidence_reviews_status === "unavailable" || source.evidence_reviews_status === "failed") && <p>We couldn’t load earlier reviews of this note or document.</p>}
@@ -796,7 +796,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
                                       {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
                                         <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
-                                        <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
+                                        <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
                                         <small>{caregiverSafeGeneratedText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
                                       </div>)}
                                       {(!item.evidence_reviews_status || item.evidence_reviews_status === "unavailable" || item.evidence_reviews_status === "failed") && <p>We couldn’t load earlier reviews of this note or document.</p>}
