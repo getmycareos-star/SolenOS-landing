@@ -845,13 +845,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {reviewedCareUpdatesLoading && <small>Loading previous decisions…</small>}
           {!reviewedCareUpdatesLoading && reviewedCareUpdates.length === 0 && <small>No reviewed care reports were found.</small>}
           {reviewedCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
-            <div><strong>{item.status.replace(/_/g, ' ')}</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p></div>
+            <div><strong>{caregiverStatusLabel(item.status) || 'Reviewed'}</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p></div>
             <div className="companion-care-update-actions">
               <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
             </div>
             {careUpdateHistory[item.id] && <div className="companion-care-update-history">
               {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
-                <strong>{entry.decision.replace(/_/g, ' ')}</strong>
+                <strong>{caregiverStatusLabel(entry.decision) || 'Reviewed'}</strong>
                 {entry.rationale && <p>{entry.rationale}</p>}
                 {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
                 {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
