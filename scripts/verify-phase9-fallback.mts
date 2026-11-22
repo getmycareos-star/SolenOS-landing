@@ -37,7 +37,7 @@ function resetAll() {
 }
 
 async function main() {
-  console.log("=== Phase 9 — Deterministic-only path and Qwen failure boundary ===\\n");
+  console.log("=== Phase 9 — Deterministic-only path and Qwen failure boundary ===\n");
 
   await assert.rejects(
     buildCareSituationUnderstanding({
