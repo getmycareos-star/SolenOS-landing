@@ -382,30 +382,6 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
               ))}
             </div>
 
-            <div className="solenos-chat-nav-group" role="group" aria-labelledby="solenos-nav-support-heading">
-              <p id="solenos-nav-support-heading" className="solenos-chat-nav-heading">SUPPORT</p>
-              {WORKSPACE_NAVIGATION.support.map(({ id, href, label, description, icon: Icon }) => (
-                <Link
-                  key={id}
-                  href={href}
-                  prefetch={false}
-                  title={label}
-                  aria-label={label}
-                  className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
-                  aria-current={active(href) ? "page" : undefined}
-                  onMouseEnter={() => router.prefetch(href)}
-                  onFocus={() => router.prefetch(href)}
-                  onTouchStart={() => router.prefetch(href)}
-                  onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
-                >
-                  <span className="solenos-chat-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
-                  <span className="solenos-chat-nav-copy">
-                    <span className="solenos-chat-nav-label">{label}</span>
-                    <span className="solenos-chat-nav-description">{description}</span>
-                  </span>
-                </Link>
-              ))}
-            </div>
           </nav>
 
           <div className="solenos-chat-sidebar-bottom">
