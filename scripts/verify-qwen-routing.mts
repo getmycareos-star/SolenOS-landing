@@ -135,7 +135,7 @@ requireText("src/components/workflows/Community.tsx", [
   "postJSON('/community/experience/summary'",
   "Find experiences like yours",
   "Community stories",
-  "Community posts never update your Living Care Record automatically.",
+  "Posts shared here are never added to your care information automatically.",
 ]);
 assert(!read("src/components/workflows/Community.tsx").includes("QwenAssistPanel"), "Community must not expose internal assistant workflow controls.");
 assert(!read("src/components/workflows/Community.tsx").includes("Qwen support for Community"), "Community must not show internal model branding.");
