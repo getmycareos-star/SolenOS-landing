@@ -11,6 +11,8 @@ const excludedPathParts = [
   "/ops-devtools/",
   "/ops-clarity/",
   "/ui-runtime/",
+  // Operational metrics are an authenticated internal screen, not a caregiver experience.
+  "/metrics/",
 ];
 // Exclude only components with no caregiver-route references: two legacy panels and the debug visualizer.
 const excludedFiles = new Set([
