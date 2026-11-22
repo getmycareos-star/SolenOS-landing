@@ -2182,7 +2182,10 @@
 
 @media (max-width: 480px) {
   .history-drawer {
-    width: min(390px, 94vw);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .history-event-time {
     font-size: 0.64rem;
