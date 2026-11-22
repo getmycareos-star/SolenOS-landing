@@ -56,6 +56,7 @@ assert.match(page, /item\.history_completeness/, "follow-up cards must disclose 
 assert.match(page, /Who is following up:[\s\S]*?loop\?\.owner_label/, "follow-up cards must show who is responsible or say no one is assigned");
 assert.match(page, /item\.source === "open_loop_records" \? caregiverSafeAssistantText\(item\.title\) : caregiverSafeGeneratedText\(item\.title\)/, "generated follow-up titles must not expose internal system terms while caregiver-written titles remain intact");
 assert.match(page, /title: caregiverSafeGeneratedText\(item\.title\)/, "new follow-ups must not persist an internal generated title");
+assert.match(page, /rawDescriptionLines[\s\S]*?safeDescriptionLines[\s\S]*?safeDescriptionLines\.length === rawDescriptionLines\.length[\s\S]*?The reason needs to be checked against the original care information/, "generated follow-up explanations must be caregiver-safe before persistence; rejected text must not be stored raw");
 assert.match(page, /Last updated:[\s\S]*?loop\?\.updated_at/, "follow-up cards must show the last saved update when available");
 
 assert.match(page, /caregiverSafeGeneratedText\(line\)/, "system-generated follow-up reasons must be filtered before display");
