@@ -128,25 +128,25 @@ const CARE_ACTIVITY_OPTIONS = [
   { value: "communicated", label: "Communicated with another caregiver" },
   { value: "coordinated_appointment", label: "Coordinated an appointment" },
   { value: "uploaded_document", label: "Added a care document" },
-  { value: "acknowledged_instruction", label: "Acknowledged care information" },
-  { value: "delegated", label: "Assigned a care responsibility" },
-  { value: "handed_off", label: "Handed over a care responsibility" },
-  { value: "requested_clarification", label: "Requested clarification" },
-  { value: "updated_medication_info", label: "Updated medication information" },
+  { value: "acknowledged_instruction", label: "Read care information" },
+  { value: "delegated", label: "Assigned a care task" },
+  { value: "handed_off", label: "Passed a care task to someone else" },
+  { value: "requested_clarification", label: "Asked for more information" },
+  { value: "updated_medication_info", label: "Updated medication details" },
 ] as const;
 
 const CARE_PERMISSION_OPTIONS = [
-  { value: "view_lcr", label: "View the Care Record" },
-  { value: "add_evidence", label: "Add care notes and observations" },
-  { value: "correct_records", label: "Submit corrections to care information" },
-  { value: "manage_responsibilities", label: "Assign and change care responsibilities" },
-  { value: "manage_reminders", label: "Create and manage reminders" },
-  { value: "complete_assigned_reminders", label: "Complete assigned reminders" },
-  { value: "manage_handoffs", label: "Send and manage care handoffs" },
-  { value: "share_summaries", label: "Share care summaries" },
-  { value: "share_observations", label: "Share observations with the care team" },
-  { value: "view_documents", label: "View care documents" },
-  { value: "view_communications", label: "View caregiver updates" },
+  { value: "view_lcr", label: "See the Care Record" },
+  { value: "add_evidence", label: "Add care notes" },
+  { value: "correct_records", label: "Suggest a correction to care information" },
+  { value: "manage_responsibilities", label: "Assign care tasks and change who handles them" },
+  { value: "manage_reminders", label: "Set and update reminders" },
+  { value: "complete_assigned_reminders", label: "Mark reminders as done" },
+  { value: "manage_handoffs", label: "Hand care tasks to another caregiver" },
+  { value: "share_summaries", label: "Share a care summary" },
+  { value: "share_observations", label: "Share notes with other caregivers" },
+  { value: "view_documents", label: "See care documents" },
+  { value: "view_communications", label: "See updates from other caregivers" },
 ] as const;
 
 const CARE_ROLE_OPTIONS = [
@@ -986,9 +986,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               <Button type="submit" variant="secondary" disabled={savingPrivateContext || !observationDraft.trim()} loading={savingPrivateContext}>Save privately</Button>
             </form>
             <form onSubmit={(event) => void savePrivatePerspective(event)} style={{ display: "grid", gap: "0.5rem" }}>
-              <label className="mobile-settings-label" htmlFor="private-care-perspective">Record your perspective</label>
+              <label className="mobile-settings-label" htmlFor="private-care-perspective">Share what you think is happening</label>
               <select id="private-care-perspective-type" className="mobile-settings-input" value={perspectiveType} onChange={(event) => setPerspectiveType(event.target.value as "belief" | "interpretation")}>
-                <option value="interpretation">My interpretation</option>
+                <option value="interpretation">What I think is happening</option>
                 <option value="belief">What I believe</option>
               </select>
               <textarea id="private-care-perspective" className="mobile-settings-input" rows={3} maxLength={2000} required value={perspectiveDraft} onChange={(event) => setPerspectiveDraft(event.target.value)} placeholder="Add context about how you understand what happened…" />
@@ -1341,7 +1341,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             <form onSubmit={createCareResponsibility} style={{ display: "grid", gap: "0.5rem" }}>
               <label className="mobile-settings-label" htmlFor="caregiver-responsibility-type">Add a care task</label>
               <input id="caregiver-responsibility-type" className="mobile-settings-input" required maxLength={120} value={newResponsibilityType} onChange={(event) => setNewResponsibilityType(event.target.value)} placeholder="What will you take care of?" />
-              <input className="mobile-settings-input" aria-label="Care responsibility details (optional)" maxLength={300} value={newResponsibilityScope} onChange={(event) => setNewResponsibilityScope(event.target.value)} placeholder="Optional: add a little detail" />
+              <input className="mobile-settings-input" aria-label="Care task details (optional)" maxLength={300} value={newResponsibilityScope} onChange={(event) => setNewResponsibilityScope(event.target.value)} placeholder="Optional: add a little detail" />
               <Button type="submit" variant="secondary" disabled={savingResponsibility || !newResponsibilityType.trim()} loading={savingResponsibility}>Save care task</Button>
             </form>
           </section>
