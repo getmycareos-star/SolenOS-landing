@@ -69,7 +69,7 @@ export default function DailyCarePhotoCapture() {
           setSaved(true);
         }
         if (result.synced > 0) {
-          setSyncNotice("A pending update has synced to the care record.");
+          setSyncNotice("A saved update has been added to your Care Record.");
           window.dispatchEvent(new Event("careRecordUpdated"));
         }
       } catch {
@@ -94,7 +94,7 @@ export default function DailyCarePhotoCapture() {
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
     if (!personId || !caregiverId) {
-      setError("Your care session could not be verified. Reopen Daily Care before uploading.");
+      setError("We could not confirm which Care Record to use. Reopen Daily Care and try again.");
       return;
     }
 
@@ -130,11 +130,11 @@ export default function DailyCarePhotoCapture() {
           pendingQueueId.current = queueId;
         } catch {
           if (typeof navigator !== "undefined" && !navigator.onLine) {
-            throw new Error("This device could not securely keep an offline copy. The photo was not saved.");
+            throw new Error("This photo could not be saved safely on this device. It was not saved.");
           }
         }
       } else if (typeof navigator !== "undefined" && !navigator.onLine) {
-        throw new Error("This photo is too large to keep safely on this device while offline. Reconnect before uploading it.");
+        throw new Error("This photo is too large to save on this device without a connection. Connect to the internet before trying again.");
       }
 
       const form = new FormData();
@@ -160,7 +160,7 @@ export default function DailyCarePhotoCapture() {
         setPendingLocal(true);
         const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
         if (summary) setPendingCount(summary.pending);
-        setError("This photo is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.");
+        setError("This photo is saved securely on this device, but it has not been added to your Care Record yet. It will be sent when your connection returns.");
       } else {
         setError(caregiverSafeErrorMessage());
       }
@@ -226,10 +226,10 @@ export default function DailyCarePhotoCapture() {
         </button>
       )}
       {pendingCount > 0 && !pendingLocal && (
-        <p role="status">{pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to sync with the care record.</p>
+        <p role="status">{pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to be added to your Care Record.</p>
       )}
       {syncNotice && <p role="status">{syncNotice}</p>}
-      {saved && <p role="status">Photograph saved as care-record evidence.</p>}
+      {saved && <p role="status">Photograph saved with your care information.</p>}
     </section>
   );
 }
