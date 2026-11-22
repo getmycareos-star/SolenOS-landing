@@ -36,7 +36,7 @@ assert(
   source.includes("readOnly") &&
   source.includes("hasCorrectionSubject") &&
   !source.includes("sourceQuote.toLowerCase().includes(correctedSubject.trim().toLowerCase())"),
-  "document corrections must preserve the exact source quotation and use a label found in that quotation",
+  "document corrections must preserve the exact source quotation while allowing a separate caregiver-authored label",
 );
 assert(
   source.includes('candidate.review_status === "corrected_pending_approval"') &&
