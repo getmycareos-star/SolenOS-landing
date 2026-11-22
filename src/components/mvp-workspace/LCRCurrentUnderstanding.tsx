@@ -1537,7 +1537,7 @@ export function LCRCurrentUnderstanding() {
             <>
               <p>
                 {projection.schema_status !== "complete" || projection.missing_required_sources.length > 0
-                  ? "This picture is based on the information currently available and may be incomplete."
+                  ? "This summary uses the care information saved here so far and may be incomplete."
                   : "These are the details currently saved. They do not replace advice from a healthcare professional."}
                 {projection.as_of ? ` Updated ${formatWhen(projection.as_of)}.` : ""}
               </p>
@@ -1704,7 +1704,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{caregiverLabel(transition.previous_status)} → {caregiverLabel(transition.new_status)}</strong>
                       {transition.reason && <p>{caregiverSafeGeneratedText(transition.reason)}</p>}
                       <small>Reviewed by a caregiver · {formatWhen(transition.created_at)}</small>
-                      {transition.evidence_ids.length > 0 && <small>Information used for this review: {transition.evidence_ids.length} saved item(s)</small>}
+                      {transition.evidence_ids.length > 0 && <small>This check used {transition.evidence_ids.length} saved care detail{transition.evidence_ids.length === 1 ? "" : "s"}.</small>}
                     </article>
                   ))}
                 </li>
@@ -1736,7 +1736,7 @@ export function LCRCurrentUnderstanding() {
                       <strong>{caregiverSafeAssistantText(action.normalized_action) || "Saved care action"}</strong>
                       <p className="lcr-entry-status">Agreed next step · {caregiverStatusLabel(action.status) || "Status not available"}</p>
                       <small>Approved: {formatWhen(action.approved_at)} · Responsible caregiver: {action.responsible_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"} · Created by: {action.created_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}</small>
-                      <small>Based on {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved item(s)</small>
+                      <small>Related to {(action.source_evidence_ids ?? [action.source_evidence_id]).length} saved care detail{(action.source_evidence_ids ?? [action.source_evidence_id]).length === 1 ? "" : "s"}</small>
                       {action.deadline && <small>Due date: {formatWhen(action.deadline)}</small>}
                       {action.linked_reminder_status && <small>Linked reminder: {caregiverStatusLabel(action.linked_reminder_status) || "Status not available"} · Due {formatWhen(action.linked_reminder_due_at)}</small>}
                       {action.completed_at && <small>Explicitly marked completed: {formatWhen(action.completed_at)}</small>}
@@ -1778,7 +1778,7 @@ export function LCRCurrentUnderstanding() {
                             <li key={event.id}>
                               {caregiverStatusLabel(event.previous_status) || "Not recorded"} → {caregiverStatusLabel(event.new_status) || "Status not available"} · {formatWhen(event.created_at)} · Changed by: {event.actor_caregiver_id === currentCaregiverId ? "You" : "Another caregiver"}
                               {event.reason && <p>{caregiverSafeAssistantText(event.reason) || "A reason was recorded."}</p>}
-                              <small>Based on {event.evidence_ids.length} saved item(s)</small>
+                              <small>Related to {event.evidence_ids.length} saved care detail{event.evidence_ids.length === 1 ? "" : "s"}</small>
                             </li>
                           ))}
                         </ol>
@@ -1802,7 +1802,7 @@ export function LCRCurrentUnderstanding() {
                   {outcome.related_record_type && outcome.related_record_id && (
                     <small>Linked to {outcome.related_record_type === "care_decision" ? "a recorded care decision" : outcome.related_record_type === "care_action" ? "an agreed care action" : "a follow-up"}</small>
                   )}
-                  {outcome.evidence_ids.length > 0 && <small>Based on {outcome.evidence_ids.length} saved source item(s)</small>}
+                  {outcome.evidence_ids.length > 0 && <small>Related to {outcome.evidence_ids.length} saved care detail{outcome.evidence_ids.length === 1 ? "" : "s"}</small>}
                 </li>
               ))}
             </ul>
@@ -2146,7 +2146,7 @@ export function LCRCurrentUnderstanding() {
                               : " This possible change has not been confirmed."}
                       </p>
                       {change.comparison_window_start && change.comparison_window_end && <small>Compared from {formatWhen(change.comparison_window_start)} to {formatWhen(change.comparison_window_end)}</small>}
-                      {change.evidence_ids.length > 0 && <small>Based on {change.evidence_ids.length} saved item(s)</small>}
+                      {change.evidence_ids.length > 0 && <small>Related to {change.evidence_ids.length} saved care detail{change.evidence_ids.length === 1 ? "" : "s"}</small>}
                       <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
                         {expandedChangeId === change.id ? "Hide notes and documents" : "View related notes and documents"}
                       </button>
@@ -2277,7 +2277,7 @@ export function LCRCurrentUnderstanding() {
                   <small>A newer review replaced this one. The earlier review remains in the care history.</small>
                 )}
                 {change.comparison_window_start && change.comparison_window_end && <small>Compared from {formatWhen(change.comparison_window_start)} to {formatWhen(change.comparison_window_end)}</small>}
-                {change.evidence_ids.length > 0 && <small>Based on {change.evidence_ids.length} saved item(s)</small>}
+                {change.evidence_ids.length > 0 && <small>Related to {change.evidence_ids.length} saved care detail{change.evidence_ids.length === 1 ? "" : "s"}</small>}
                 <button
                   type="button"
                   className="lcr-text-action"
@@ -2333,7 +2333,7 @@ export function LCRCurrentUnderstanding() {
                               <p>{caregiverLabel(transition.previous_status)} → {caregiverLabel(transition.new_status)}</p>
                               {transition.reason && <p>{caregiverSafeGeneratedText(transition.reason) || "A reason was recorded."}</p>}
                               <small>Recorded {formatWhen(transition.created_at)} · reviewed by a caregiver</small>
-                              {transition.evidence_ids.length > 0 && <small>Information used for this review: {transition.evidence_ids.length} saved item(s)</small>}
+                              {transition.evidence_ids.length > 0 && <small>This check used {transition.evidence_ids.length} saved care detail{transition.evidence_ids.length === 1 ? "" : "s"}.</small>}
                             </li>
                           ))}
                         </ul>
@@ -2498,7 +2498,7 @@ export function LCRCurrentUnderstanding() {
                               <div>
                                 <small>Check for similar wording: {caregiverStatusLabel(evidenceIntegrityByFact[item.id].near_duplicate_analysis?.status) || "Not checked"} · {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.records_considered ?? 0} of {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.records_available ?? 0} saved items checked.</small>
                                 {evidenceIntegrityByFact[item.id].near_duplicate_analysis?.candidate_groups?.map(group => (
-                                  <p key={group.evidence_ids.join(":")}><small>Similar wording appears in {group.evidence_ids.length} saved item(s). {caregiverSafeGeneratedText(group.interpretation) || "This does not prove the reports are the same."}</small></p>
+                                  <p key={group.evidence_ids.join(":")}><small>Similar wording appears in {group.evidence_ids.length} saved care detail{group.evidence_ids.length === 1 ? "" : "s"}. {caregiverSafeGeneratedText(group.interpretation) || "This does not prove the reports are about the same event."}</small></p>
                                 ))}
                                 <small>{caregiverSafeGeneratedText(evidenceIntegrityByFact[item.id].near_duplicate_analysis?.interpretation_limit) || "Similar wording does not prove that reports came from the same source."}</small>
                               </div>
