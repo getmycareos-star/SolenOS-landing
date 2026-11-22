@@ -154,11 +154,17 @@ try {
   assert.ok(stopped, "the backend did not stop before restart");
 
   const restarted = spawn(
-    "uvicorn",
-    ["app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+    "python",
+    ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
     {
       cwd: backendService,
-      env: { ...process.env },
+      env: {
+        ...process.env,
+        APP_ENV: "test",
+        SOLENOS_TEST_DISABLE_QWEN: process.env.SOLENOS_TEST_DISABLE_QWEN ?? "true",
+        CORS_ORIGINS: "http://127.0.0.1:3000",
+        BACKEND_SERVICE_DIR: backendService,
+      },
       detached: true,
       stdio: "ignore",
     },
