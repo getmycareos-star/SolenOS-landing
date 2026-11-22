@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AccessibleButton } from '../accessible/AccessibleButton';
+import { caregiverSafeAssistantText } from '@/lib/caregiver-language';
 
 interface WhyAmISeeingThisProps {
   recordSays?: string;
@@ -25,6 +26,11 @@ export default function WhyAmISeeingThis({
   showDetails = false
 }: WhyAmISeeingThisProps) {
   const [expanded, setExpanded] = useState(showDetails || false);
+  const safeRecordSays = caregiverSafeAssistantText(recordSays);
+  const safeAiInterpreted = caregiverSafeAssistantText(aiInterpreted);
+  const safeWhyItMatters = caregiverSafeAssistantText(whyItMatters);
+  const safeRemainsUnclear = caregiverSafeAssistantText(remainsUnclear);
+  const safeCouldClarify = caregiverSafeAssistantText(couldClarify);
 
   return (
     <div style={{ 
@@ -70,7 +76,7 @@ export default function WhyAmISeeingThis({
             />
           </div>
           
-          {recordSays && (
+          {safeRecordSays && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -87,12 +93,12 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {recordSays}
+                {safeRecordSays}
               </p>
             </div>
           )}
           
-          {aiInterpreted && (
+          {safeAiInterpreted && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -101,7 +107,7 @@ export default function WhyAmISeeingThis({
                 marginBottom: '2px',
                 fontWeight: '500'
               }}>
-                What SolenOS interpreted:
+                What this might mean:
               </span>
               <p style={{ 
                 fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
@@ -109,12 +115,12 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {aiInterpreted}
+                {safeAiInterpreted}
               </p>
             </div>
           )}
           
-          {whyItMatters && (
+          {safeWhyItMatters && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -131,12 +137,12 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {whyItMatters}
+                {safeWhyItMatters}
               </p>
             </div>
           )}
           
-          {remainsUnclear && (
+          {safeRemainsUnclear && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -153,12 +159,12 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {remainsUnclear}
+                {safeRemainsUnclear}
               </p>
             </div>
           )}
           
-          {couldClarify && (
+          {safeCouldClarify && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -175,7 +181,7 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {couldClarify}
+                {safeCouldClarify}
               </p>
             </div>
           )}
@@ -189,7 +195,7 @@ export default function WhyAmISeeingThis({
                 marginBottom: '2px',
                 fontWeight: '500'
               }}>
-                Supporting sources:
+                Related notes and documents:
               </span>
               <div style={{ 
                 display: 'flex', 
@@ -209,7 +215,7 @@ export default function WhyAmISeeingThis({
                       fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                       color: 'var(--text)'
                     }}>
-                      {source.description}
+                      {caregiverSafeAssistantText(source.description) || 'Related care information'}
                     </span>
                     {source.date && (
                       <span style={{ 
@@ -219,15 +225,7 @@ export default function WhyAmISeeingThis({
                         {new Date(source.date).toLocaleDateString()}
                       </span>
                     )}
-                    <AccessibleButton
-                      variant="outline"
-                      size="small"
-                      onClick={() => {
-                        // In a real app, this would navigate to the source evidence
-                        alert(`Viewing source: ${source.id}`);
-                      }}
-                      children="View"
-                    />
+
                   </div>
                 ))}
               </div>
