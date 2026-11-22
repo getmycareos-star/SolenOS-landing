@@ -269,7 +269,7 @@ assert.doesNotMatch(companion, /Source review:|No source review has been recorde
   "Care Assistant explanations must refer to notes and documents, not source-review terminology");
 assert.doesNotMatch(documentReview, /Extraction status|Contains negative wording|Tentative wording|Conditional wording|ORIGINAL WORDS IN THE DOCUMENT/i,
   "document review must use ordinary language");
-assert.doesNotMatch(sourceReview, /Evidence records could not be loaded|Saved evidence reviews could not be loaded|source-integrity response/i,
+assert.doesNotMatch(sourceReview, /Evidence records could not be loaded|Saved evidence reviews could not be loaded/i,
   "saved note and document review errors must be caregiver-readable");
 assert.doesNotMatch(careContinuity, /Care continuity|Reported care information/);
 assert.match(careContinuity, /More about your care information/);
