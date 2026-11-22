@@ -949,7 +949,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
 
           <section style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
             <div>
-              <h3 className="mobile-settings-label" style={{ margin: 0 }}>Caregiver activity history</h3>
+              <h3 className="mobile-settings-label" style={{ margin: 0 }}>Care activities</h3>
               <p className="mobile-settings-hint" style={{ margin: "0.25rem 0 0" }}>Record something you did while helping with care. This is kept separately from the person’s Care Record and may be visible to other caregivers with access.</p>
             </div>
             <form onSubmit={(event) => void saveCaregiverActivity(event)} style={{ display: "grid", gap: "0.5rem" }}>
@@ -971,7 +971,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 ))}
               </div>
             ) : (
-              <p className="mobile-settings-hint" style={{ margin: 0 }}>No caregiver activities have been recorded yet.</p>
+              <p className="mobile-settings-hint" style={{ margin: 0 }}>No care activities have been added yet.</p>
             )}
           </section>
 
@@ -1044,7 +1044,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               )}
               {currentProfileId && (
                 <section style={{ display: "grid", gap: "0.55rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
-                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Your responsibility history</h4>
+                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care tasks you've taken on</h4>
                   {responsibilityHistoryUnavailable ? (
                     <p className="mobile-settings-hint" style={{ margin: 0 }}>We couldn't load your responsibility history. Refresh this section to try again.</p>
                   ) : responsibilityHistory.length > 0 ? responsibilityHistory.slice(0, 12).map((item) => (
@@ -1055,7 +1055,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                       </p>
                     </div>
                   )) : (
-                    <p className="mobile-settings-hint" style={{ margin: 0 }}>No past care responsibilities have been saved for you yet.</p>
+                    <p className="mobile-settings-hint" style={{ margin: 0 }}>You haven't saved any past care tasks yet.</p>
                   )}
                 </section>
               )}
@@ -1063,21 +1063,21 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 || (networkSummary.perspective_conflicts?.length ?? 0) > 0
                 || (networkSummary.duplicate_actions?.filter((item) => item.status === "potential_duplicate").length ?? 0) > 0) && (
                 <section style={{ display: "grid", gap: "0.75rem" }}>
-                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care responsibilities to review</h4>
+                  <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care tasks to review</h4>
                   {networkSummary.responsibility_gaps?.map((item) => (
                     <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
-                      <strong style={{ fontSize: "0.9rem" }}>Responsibility: {caregiverFieldLabel(item.type)}</strong>
+                      <strong style={{ fontSize: "0.9rem" }}>Care task: {caregiverFieldLabel(item.type)}</strong>
                       <span className="mobile-settings-hint">{item.scope || "No details about this task were recorded"} · {caregiverStatusLabel(item.status)}</span>
-                      <label className="mobile-settings-hint" htmlFor={"gap-review-status-" + item.id}>Review outcome</label>
+                      <label className="mobile-settings-hint" htmlFor={"gap-review-status-" + item.id}>What happened?</label>
                       <select
                         id={"gap-review-status-" + item.id}
                         className="mobile-settings-input"
                         value={gapReviewStatuses[item.id] ?? "resolved"}
                         onChange={(event) => setGapReviewStatuses((current) => ({ ...current, [item.id]: event.target.value as "covered" | "partially_covered" | "resolved" }))}
                       >
-                        <option value="partially_covered">Partly covered — some care is still unassigned</option>
-                        <option value="covered">Covered by an agreed caregiver</option>
-                        <option value="resolved">This task now has someone responsible</option>
+                        <option value="partially_covered">Some of this task still needs someone</option>
+                        <option value="covered">Someone has agreed to do this</option>
+                        <option value="resolved">Someone is now responsible for this task</option>
                       </select>
                       <textarea
                         className="mobile-settings-input"
@@ -1088,7 +1088,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                         placeholder="Describe who is covering this responsibility or what remains open."
                         aria-label="Explain who is responsible for this task"
                       />
-                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (gapReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewResponsibilityGap(item)}>Save review</Button>
+                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (gapReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewResponsibilityGap(item)}>Save update</Button>
                     </div>
                   ))}
                   {networkSummary.perspective_conflicts?.map((item) => (
@@ -1107,23 +1107,23 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                         placeholder="Record what was clarified, or why both accounts should remain."
                         aria-label="Perspective review explanation"
                       />
-                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (conflictReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void resolvePerspectiveConflict(item)}>Complete review</Button>
+                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (conflictReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void resolvePerspectiveConflict(item)}>Save update</Button>
                     </div>
                   ))}
                   {networkSummary.duplicate_actions?.filter((item) => item.status === "potential_duplicate").map((item) => (
                     <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
-                      <strong style={{ fontSize: "0.9rem" }}>Possible duplicate: {caregiverFieldLabel(item.action_type)}</strong>
+                      <strong style={{ fontSize: "0.9rem" }}>These updates may describe the same task: {caregiverFieldLabel(item.action_type)}</strong>
                       <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_a)}:</strong> {item.action_description_a}</p>
                       <p style={{ margin: 0, fontSize: "0.88rem" }}><strong>{caregiverNameFor(item.caregiver_b)}:</strong> {item.action_description_b}</p>
-                      <label className="mobile-settings-hint" htmlFor={"duplicate-review-status-" + item.id}>Review outcome</label>
+                      <label className="mobile-settings-hint" htmlFor={"duplicate-review-status-" + item.id}>What happened?</label>
                       <select
                         id={"duplicate-review-status-" + item.id}
                         className="mobile-settings-input"
                         value={duplicateReviewStatuses[item.id] ?? "confirmed_duplicate"}
                         onChange={(event) => setDuplicateReviewStatuses((current) => ({ ...current, [item.id]: event.target.value as "confirmed_duplicate" | "appropriate_parallel" }))}
                       >
-                        <option value="confirmed_duplicate">These are the same action</option>
-                        <option value="appropriate_parallel">These are separate, appropriate actions</option>
+                        <option value="confirmed_duplicate">These are the same task</option>
+                        <option value="appropriate_parallel">These are two different tasks</option>
                       </select>
                       <textarea
                         className="mobile-settings-input"
@@ -1131,10 +1131,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                         maxLength={2000}
                         value={duplicateReviewNotes[item.id] ?? ""}
                         onChange={(event) => setDuplicateReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
-                        placeholder="Explain the review outcome."
+                        placeholder="Explain what you found."
                         aria-label="Possible duplicate review explanation"
                       />
-                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (duplicateReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewDuplicateAction(item)}>Save review</Button>
+                      <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (duplicateReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewDuplicateAction(item)}>Save update</Button>
                     </div>
                   ))}
                 </section>
@@ -1187,7 +1187,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                     <div key={item.id} style={{ padding: "0.45rem 0", borderTop: "1px solid var(--border, #d8ded8)" }}>
                       {item.subject && <strong style={{ display: "block", fontSize: "0.9rem" }}>{item.subject}</strong>}
                       {item.content_summary && <p style={{ margin: "0.15rem 0", fontSize: "0.88rem" }}>{item.content_summary}</p>}
-                      <span className="mobile-settings-hint">{item.acknowledgment_level ? `Acknowledgment: ${item.acknowledgment_level}` : "Update"}</span>
+                      <span className="mobile-settings-hint">{item.acknowledgment_level ? `Response: ${caregiverStatusLabel(item.acknowledgment_level) || "Received"}` : "Update"}</span>
                     </div>
                   ))}
                 </div>
@@ -1196,15 +1196,15 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <section key={caregiver.caregiver_id} style={{ display: "grid", gap: "0.35rem", paddingTop: "0.65rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
                     <strong>{caregiver.name}</strong>
-                    <span className="mobile-settings-hint">{caregiver.relationship} · {caregiver.involvement_status}</span>
+                    <span className="mobile-settings-hint">{caregiver.relationship} · {caregiverStatusLabel(caregiver.involvement_status) || "Not recorded"}</span>
                   </div>
-                  {(caregiver.roles?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Roles: {caregiver.roles?.map((role) => role.custom_role_name || role.role_type || "Care role").join(", ")}</p>}
-                  {(caregiver.responsibilities?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Responsibilities: {caregiver.responsibilities?.map((item) => item.type).filter(Boolean).join(", ")}</p>}
+                  {(caregiver.roles?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>How they help: {caregiver.roles?.map((role) => role.custom_role_name || caregiverFieldLabel(role.role_type) || caregiverStatusLabel(role.role_type) || "Care role").join(", ")}</p>}
+                  {(caregiver.responsibilities?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Care tasks: {caregiver.responsibilities?.map((item) => caregiverFieldLabel(item.type) || caregiverStatusLabel(item.type) || "Care task").join(", ")}</p>}
                   {(caregiver.recent_observations?.length ?? 0) > 0 && (
-                    <div><span className="mobile-settings-hint">Shared observations</span>{caregiver.recent_observations?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.content}</p>)}</div>
+                    <div><span className="mobile-settings-hint">Shared notes</span>{caregiver.recent_observations?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.content}</p>)}</div>
                   )}
                   {(caregiver.recent_perspectives?.length ?? 0) > 0 && (
-                    <div><span className="mobile-settings-hint">Shared perspectives</span>{caregiver.recent_perspectives?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.claim_content}</p>)}</div>
+                    <div><span className="mobile-settings-hint">What they've shared</span>{caregiver.recent_perspectives?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.claim_content}</p>)}</div>
                   )}
                   {(caregiver.recent_activities?.length ?? 0) > 0 && (
                     <div><span className="mobile-settings-hint">Recent care activity</span>{caregiver.recent_activities?.slice(0, 3).map((item, index) => <p key={index} style={{ margin: "0.2rem 0", fontSize: "0.9rem" }}>{item.description}</p>)}</div>
@@ -1221,7 +1221,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               <div key={member.caregiver_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.8rem", borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
                 <div>
                   <strong>{member.name}</strong>
-                  <p className="mobile-settings-hint" style={{ margin: 0 }}>{member.email ?? "No email"} · {member.role === "primary" ? "Main caregiver" : "Family caregiver"} · {caregiverStatusLabel(member.status) || "Status not available"}</p>
+                  <p className="mobile-settings-hint" style={{ margin: 0 }}>{member.email ?? "No email"} · {member.role === "primary" ? "Main caregiver" : "Family caregiver"} · {caregiverStatusLabel(member.status) || "Not recorded"}</p>
                   <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>Access: {member.access_scope === "documents_only" ? "Documents and appointment paperwork" : "Full care record"}</p>
                   {member.status === "active" && !member.can_manage_members && (
                     <select
@@ -1279,7 +1279,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           {canManageMembers && (
           <div style={{ display: "grid", gap: "0.7rem", marginTop: "1.2rem" }}>
             <h3 className="mobile-settings-label"><Shield size={15} aria-hidden /> Change the main caregiver</h3>
-            <p className="mobile-settings-hint">This changes who manages access for other caregivers. It does not move individual care tasks; you can hand those over separately below.</p>
+            <p className="mobile-settings-hint">This changes who can invite or remove other caregivers. It does not change who is responsible for individual care tasks; you can hand those over separately below.</p>
             <form onSubmit={(event) => void createPrimaryTransfer(event)} style={{ display: "grid", gap: "0.65rem" }}>
               <label className="mobile-settings-label" htmlFor="primary-transfer-recipient">New main caregiver</label>
               <select id="primary-transfer-recipient" className="mobile-settings-input" required value={selectedPrimaryRecipient} onChange={(event) => setSelectedPrimaryRecipient(event.target.value)}>
@@ -1288,7 +1288,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               </select>
               <label className="mobile-settings-label" htmlFor="primary-transfer-reason">Reason (optional)</label>
               <input id="primary-transfer-reason" className="mobile-settings-input" maxLength={1000} value={primaryReason} onChange={(event) => setPrimaryReason(event.target.value)} />
-              <Button type="submit" variant="primary" disabled={busy || !selectedPrimaryRecipient} loading={busy}>Request change of main caregiver</Button>
+              <Button type="submit" variant="primary" disabled={busy || !selectedPrimaryRecipient} loading={busy}>Ask to change the main caregiver</Button>
             </form>
           </div>
 
@@ -1308,9 +1308,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <option value="">Choose a caregiver</option>
                 {members.filter((member) => member.status === "active" && member.caregiver_profile_id && !member.can_manage_members).map((member) => <option key={member.caregiver_profile_id} value={member.caregiver_profile_id!}>{member.name}</option>)}
               </select>
-              <label className="mobile-settings-label" htmlFor="transfer-open-loop">Existing follow-up (optional)</label>
+              <label className="mobile-settings-label" htmlFor="transfer-open-loop">Related follow-up (optional)</label>
               <select id="transfer-open-loop" className="mobile-settings-input" value={selectedOpenLoop} onChange={(event) => setSelectedOpenLoop(event.target.value)}>
-                <option value="">No linked follow-up</option>
+                <option value="">No follow-up selected</option>
                 {openLoops.filter((item) => !["closed", "cancelled"].includes(item.status)).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
               </select>
               <label className="mobile-settings-label" htmlFor="transfer-reason">Reason (optional)</label>
@@ -1321,44 +1321,44 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           )}
         </>
       ) : (
-        <p className="mobile-settings-hint">Shared caregiver information is not available with your current access. You can still manage your own care responsibilities and care role.</p>
+        <p className="mobile-settings-hint">You can't see information shared by other caregivers with your current access. You can still manage your own care tasks and role.</p>
       )}
 
       {currentProfileId && (
         <>
           <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
-            <h4 className="mobile-settings-label" style={{ margin: 0 }}>Your care responsibilities</h4>
+            <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care tasks you're handling</h4>
             <p className="mobile-settings-hint" style={{ margin: 0 }}>Keep track of the care tasks you have agreed to handle. A task stays with you until it is handed over or ended.</p>
             {responsibilities.filter((item) => item.caregiver_id === currentProfileId).map((item) => (
               <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "0.9rem" }}>
                   {caregiverFieldLabel(item.responsibility_type) || item.responsibility_type}
-                  {item.scope ? <span className="mobile-settings-hint"> · {item.scope}</span> : null}
+                  {item.scope ? <span className="mobile-settings-hint"> · {caregiverFieldLabel(item.scope) || caregiverSafeAssistantText(item.scope)}</span> : null}
                 </span>
-                <Button type="button" variant="secondary" disabled={savingResponsibility} onClick={() => void endCareResponsibility(item)}>End responsibility</Button>
+                <Button type="button" variant="secondary" disabled={savingResponsibility} onClick={() => void endCareResponsibility(item)}>Stop handling this task</Button>
               </div>
             ))}
             <form onSubmit={createCareResponsibility} style={{ display: "grid", gap: "0.5rem" }}>
-              <label className="mobile-settings-label" htmlFor="caregiver-responsibility-type">Add a care responsibility</label>
+              <label className="mobile-settings-label" htmlFor="caregiver-responsibility-type">Add a care task</label>
               <input id="caregiver-responsibility-type" className="mobile-settings-input" required maxLength={120} value={newResponsibilityType} onChange={(event) => setNewResponsibilityType(event.target.value)} placeholder="What will you take care of?" />
               <input className="mobile-settings-input" aria-label="Care responsibility details (optional)" maxLength={300} value={newResponsibilityScope} onChange={(event) => setNewResponsibilityScope(event.target.value)} placeholder="Optional: add a little detail" />
-              <Button type="submit" variant="secondary" disabled={savingResponsibility || !newResponsibilityType.trim()} loading={savingResponsibility}>Save responsibility</Button>
+              <Button type="submit" variant="secondary" disabled={savingResponsibility || !newResponsibilityType.trim()} loading={savingResponsibility}>Save care task</Button>
             </form>
           </section>
           <section style={{ display: "grid", gap: "0.5rem", paddingTop: "0.7rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
-            <h4 className="mobile-settings-label" style={{ margin: 0 }}>What you help with</h4>
-            <p className="mobile-settings-hint" style={{ margin: 0 }}>Share your care role so the team knows where you can help. This does not change your account access.</p>
+            <h4 className="mobile-settings-label" style={{ margin: 0 }}>How you help with care</h4>
+            <p className="mobile-settings-hint" style={{ margin: 0 }}>Share how you help so the team knows where you can help. This does not change what you can see or do in SolenOS.</p>
             {myRoles.map((role) => (
               <div key={role.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "0.9rem" }}>
                   {role.custom_role_name || CARE_ROLE_OPTIONS.find((item) => item.value === role.role_type)?.label || "Care role"}
                   {role.scope ? <span className="mobile-settings-hint"> · {role.scope}</span> : null}
                 </span>
-                <Button type="button" variant="secondary" disabled={savingCareRole} onClick={() => void endCareRole(role)}>End role</Button>
+                <Button type="button" variant="secondary" disabled={savingCareRole} onClick={() => void endCareRole(role)}>Stop this role</Button>
               </div>
             ))}
             <form onSubmit={saveCareRole} style={{ display: "grid", gap: "0.5rem" }}>
-              <label className="mobile-settings-label" htmlFor="caregiver-role-type">Add a care role</label>
+              <label className="mobile-settings-label" htmlFor="caregiver-role-type">Add how you help</label>
               <select id="caregiver-role-type" className="mobile-settings-input" value={selectedCareRole} onChange={(event) => setSelectedCareRole(event.target.value)}>
                 {CARE_ROLE_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
@@ -1377,7 +1377,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           <h3 className="mobile-settings-label">Main caregiver changes</h3>
           {primaryTransfers.map((transfer) => (
             <div key={transfer.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
-              <strong>Change main caregiver · {caregiverStatusLabel(transfer.status) || "Status not available"}</strong>
+              <strong>Change main caregiver · {caregiverStatusLabel(transfer.status) || "Not recorded"}</strong>
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
               {transfer.status === "pending" && transfer.to_caregiver_id === currentSessionCaregiverId && (
                 <div className="mobile-settings-buttons">
@@ -1392,11 +1392,11 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
 
       {transfers.length > 0 && (
         <div style={{ display: "grid", gap: "0.7rem", marginTop: "1rem" }}>
-          <h3 className="mobile-settings-label">Care tasks being handed over</h3>
+          <h3 className="mobile-settings-label">Care tasks being passed to someone else</h3>
           {transfers.map((transfer) => (
             <div key={transfer.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
               <strong>{caregiverFieldLabel(transfer.responsibility_type) || caregiverStatusLabel(transfer.responsibility_type) || "Care task"}</strong>
-              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>{transfer.from_caregiver_name} → {transfer.to_caregiver_name} · {caregiverStatusLabel(transfer.status) || "Status not available"}</p>
+              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>{transfer.from_caregiver_name} → {transfer.to_caregiver_name} · {caregiverStatusLabel(transfer.status) || "Not recorded"}</p>
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
               {transfer.status === "pending" && transfer.to_caregiver_profile_id === currentProfileId && (
                 <div className="mobile-settings-buttons">
