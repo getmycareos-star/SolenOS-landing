@@ -160,7 +160,7 @@ function readableScope(value: string): string {
   if (value === "lcr_summary") return "Care record and Daily Care";
   if (value === "documents") return "Uploaded documents";
   if (value === "appointments") return "Appointments";
-  if (value === "open_loops") return "Open care actions and questions";
+  if (value === "open_loops") return "Follow-ups and questions";
   return "Other care information";
 }
 
