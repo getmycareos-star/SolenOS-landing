@@ -4,6 +4,20 @@ import path from "node:path";
 import * as ts from "typescript";
 
 const roots = ["src/app", "src/components"];
+const caregiverCopySources = [
+  "src/lib/progressive-understanding/turn-copy.ts",
+  "src/lib/caregiver-load-engine/burden-messages.ts",
+  "src/lib/mvp-surface-area/continuity-home.ts",
+  "src/lib/activation-system/contract-constants.ts",
+  "src/lib/product-north-star/search-demand-redirect.ts",
+  "src/lib/caregiver-response-composer/index.ts",
+  "src/lib/care-memory-maturity/index.ts",
+  "src/lib/response-intelligence/ai-product-language.ts",
+  "src/lib/situation-entry/caregiver-facing-uncertainty.ts",
+  "src/lib/caregiver-response-dto.ts",
+  "src/lib/support-signal-system/message-templates.ts",
+  "src/lib/mvp-workspace/caregiver-surface.ts",
+];
 const sharedLanguageHelpers = ["src/lib/caregiver-language.ts"];
 const excludedPathParts = [
   "/api/",
@@ -39,6 +53,10 @@ function collect(directory: string): void {
 }
 
 for (const root of roots) collect(root);
+for (const file of caregiverCopySources) {
+  statSync(file);
+  if (!files.includes(file)) files.push(file);
+}
 files.push(...sharedLanguageHelpers);
 
 const forbidden = /\b(?:epistemic status|epistemic|provenance|reconciliation review|reconciliation|assertion|living care record|ai companion|ai doctor|care continuity|longitudinal history|assessment coverage|source attribution|care handoffs|handoff history|schema|database|backend|frontend|endpoint|payload|telemetry|inference|retrieval|extraction|lineage|pipeline|migration|idempotent|persistence|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|source attribution|candidate|projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline|technical|integrity|claim|observation window|source id|ai interpretation|ai-generated|ai-assisted|confidence|assessment|evidence|anonymous session|care session|session token)\b/i;
@@ -147,21 +165,20 @@ for (const file of files) {
 
   function visit(node: ts.Node): void {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer &&
-      ts.isObjectLiteralExpression(node.initializer) &&
-      /(?:LABELS|MESSAGES|COPY|TITLES|DESCRIPTIONS)$/.test(node.name.text)) {
-      for (const property of node.initializer.properties) {
-        if (ts.isPropertyAssignment(property)) collectDisplayExpression(sourceFile, property.initializer);
-      }
+      !/(?:FORBIDDEN|BANNED)/i.test(node.name.text) &&
+      /(?:LABEL|MESSAGE|COPY|TITLE|DESCRIPTION|ACKNOWLEDGEMENT|REFUSAL|PROMPT|QUESTION)/i.test(node.name.text) &&
+      (ts.isObjectLiteralExpression(node.initializer) || ts.isArrayLiteralExpression(node.initializer) || ts.isStringLiteralLike(node.initializer) || ts.isNoSubstitutionTemplateLiteral(node.initializer))) {
+      collectDisplayExpression(sourceFile, node.initializer);
     }
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer &&
       (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) &&
-      /(?:Label|Message|Status|Title|Description|Text)$/.test(node.name.text)) {
+      /(?:Label|Message|Status|Title|Description|Text|Copy|Response|Summary|Recognition|Confirmation|Acknowledgement|Redirect|View|Behavior|Progress|MetaLabel|WhatChanged|OrientationLines)$/.test(node.name.text)) {
       if (ts.isBlock(node.initializer.body)) collectFunctionReturns(node.initializer.body);
       else collectDisplayExpression(sourceFile, node.initializer.body);
     }
     if ((ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) &&
       node.name && ts.isIdentifier(node.name) &&
-      /(?:Label|Message|Status|Title|Description|Text)$/.test(node.name.text) && node.body) {
+      /(?:Label|Message|Status|Title|Description|Text|Copy|Response|Summary|Recognition|Confirmation|Acknowledgement|Redirect|View|Behavior|Progress|MetaLabel|WhatChanged|OrientationLines)$/.test(node.name.text) && node.body) {
       collectFunctionReturns(node.body);
     }
     if (ts.isJsxText(node)) {
