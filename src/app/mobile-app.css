@@ -1677,10 +1677,12 @@
 .history-filter-row {
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
   gap: 0.45rem;
-  overflow-x: auto;
+  overflow-x: visible;
   padding: 0.15rem 1rem 0.8rem;
-  scrollbar-width: thin;
 }
 
 .history-filter-chip {
