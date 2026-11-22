@@ -30,7 +30,7 @@ import {
 } from "@/api/client";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
-import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import {
@@ -847,7 +847,7 @@ export default function DocumentsPage() {
             </section>}
             {versionComparison && <section aria-label="Document version comparison" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
               <strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>What changed in this corrected copy</strong>
-              {versionComparison.comparison_status === "pending" ? <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{caregiverSafeAssistantText(versionComparison.reason) || "SolenOS is still checking both copies."}</p> : <>
+              {versionComparison.comparison_status === "pending" ? <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{caregiverSafeGeneratedText(versionComparison.reason) || "SolenOS is still checking both copies."}</p> : <>
                 <p style={{ margin: "6px 0 10px", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>This only compares the words found in each document. A healthcare professional has not confirmed these differences, and your Care Record has not changed.</p>
                 {!(versionComparison.added?.length || versionComparison.removed?.length || versionComparison.changed?.length) && <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>No differences were found in the text SolenOS could read.</p>}
                 {[...(versionComparison.changed || []).map((item) => ({ kind: "Changed", subject: item.subject, details: (item.previous_statements || []).map((v) => v.statement).join("; ") + " → " + (item.replacement_statements || []).map((v) => v.statement).join("; ") })), ...(versionComparison.added || []).map((item) => ({ kind: "Added", subject: item.subject, details: item.statement || "" })), ...(versionComparison.removed || []).map((item) => ({ kind: "Removed", subject: item.subject, details: item.statement || "" }))].map((item, index) => <p key={item.kind + "-" + index} style={{ margin: "8px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}><strong>{item.kind + (caregiverSafeAssistantText(item.subject) ? " · " + caregiverSafeAssistantText(item.subject) : "")}:</strong> {caregiverSafeAssistantText(item.details) || "No further details are available."}</p>)}
