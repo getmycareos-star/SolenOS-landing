@@ -1,6 +1,6 @@
 # Retired legacy analysis pipeline
 
-<escape>**Status:** Permanently retired on 2026-11-22.</escape>
+**Status:** Permanently retired on 2026-11-22.
 
 The former `POST /api/analyze` endpoint returns HTTP 410 in every environment. It is not a caregiver workflow and must not be re-enabled.
 
