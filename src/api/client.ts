@@ -545,7 +545,7 @@ function hasStableIdempotencyKey(body: unknown): boolean {
   );
 }
 
-export async function postJSON(path: string, body: unknown, extraHeaders: Record<string, string> = {}) {
+export async function postJSON(path: string, body: unknown, extraHeaders: Record<string, string> = {}, requestOptions: { signal?: AbortSignal } = {}) {
   const authHeaders = await requestAuthorizationHeaders(path);
   const url = resolveApiUrl(path);
   const requestBody = JSON.stringify(body);
@@ -553,6 +553,7 @@ export async function postJSON(path: string, body: unknown, extraHeaders: Record
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders, ...extraHeaders },
     body: requestBody,
+    signal: requestOptions.signal,
   });
   // Retry a rejected bearer only when the write carries a stable server-side
   // idempotency key. Never replay an arbitrary POST after an ambiguous outcome.
@@ -563,6 +564,7 @@ export async function postJSON(path: string, body: unknown, extraHeaders: Record
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders, ...extraHeaders, Authorization: `Bearer ${nextToken}` },
       body: requestBody,
+      signal: requestOptions.signal,
     });
   }
   return handleResponse(res);
