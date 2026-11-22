@@ -131,9 +131,8 @@ try {
   const moreLink = page.locator("#solenos-navigation").getByRole("link", { name: "More", exact: true });
   await moreLink.click();
   await page.waitForURL(/\/workspace\/more(?:\?|$)/);
-  const documentsLink = page.getByRole("navigation", { name: "More care record tools" })
-    .getByRole("link", { name: "Documents", exact: true });
-  await documentsLink.hover(); // route prefetch is intentionally triggered only by user intent
+  const documentsLink = page.locator('a[href="/workspace/documents"]').last();
+  await documentsLink.waitFor({ state: "visible" });
   const routeStartedAt = Date.now();
   await documentsLink.click();
   await page.waitForURL(/\/workspace\/documents(?:\?|$)/);
