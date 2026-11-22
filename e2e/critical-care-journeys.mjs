@@ -1439,30 +1439,41 @@ await record("03b source-backed caregiver question routing", async () => {
 
 // 4. Document upload: original bytes -> server extraction -> persisted extraction read.
 let documentId;
-await record("04 document upload, binary retrieval, idempotent retry and extraction", async () => {
+await record("04 scanned document upload, original bytes, page tracking, idempotent retry and extraction", async () => {
   const documentText = "Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today.";
+  const scanPage = await browser.newPage({
+    viewport: { width: 1200, height: 1600 },
+    deviceScaleFactor: 2,
+  });
+  await scanPage.setContent(`<!doctype html><html><body style="margin:0;background:#eee;font-family:Arial,sans-serif;color:#111"><article style="box-sizing:border-box;width:960px;min-height:1350px;margin:40px auto;padding:76px;background:#fff"><h1 style="font-size:42px;margin:0 0 42px">Discharge Summary</h1><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Caregiver observation: Mary ate half of her breakfast today.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Caregiver observation: Mary woke twice overnight.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Caregiver observation: Mary walked to the kitchen using her walking frame.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">Discharge instruction: Follow-up appointment requested in two weeks.</p><p style="font-size:30px;line-height:1.55;margin:0 0 30px">The caregiver reports that Mary had no fever today.</p></article></body></html>`);
+  const documentBytes = await scanPage.locator("article").screenshot({ type: "png" });
+  await scanPage.close();
+
   const uploadRetryKey = `document-retry-${randomUUID()}`;
   const form = new FormData();
   form.append("person_id", identity.personId);
   form.append("caregiver_id", identity.caregiverId);
   form.append("evidence_type", "document");
   form.append("ingestion_key", uploadRetryKey);
-  form.append("file", new Blob([documentText], { type: "text/plain" }), "journey-discharge-note.txt");
+  form.append("file", new Blob([documentBytes], { type: "image/png" }), "journey-discharge-note-scan.png");
   const uploaded = await request("/api/v1/upload", { token: identity.token, method: "POST", form });
   assert.equal(uploaded.status, 201, JSON.stringify(uploaded.payload));
   documentId = uploaded.payload.evidence_id;
   assert.equal(uploaded.payload.persisted, true);
 
-  const originalBinary = await request(`/api/v1/upload/${documentId}`, { token: identity.token });
-  assert.equal(originalBinary.status, 200, JSON.stringify(originalBinary.payload));
-  assert.equal(originalBinary.payload, documentText, "the original uploaded bytes must be retrievable from durable storage");
+  const originalBinaryResponse = await fetch(new URL(`/api/v1/upload/${documentId}`, backend), {
+    headers: { authorization: `Bearer ${identity.token}` },
+  });
+  assert.equal(originalBinaryResponse.status, 200);
+  const originalBinary = Buffer.from(await originalBinaryResponse.arrayBuffer());
+  assert.ok(originalBinary.equals(documentBytes), "the exact original scanned image bytes must remain retrievable");
 
   const retryForm = new FormData();
   retryForm.append("person_id", identity.personId);
   retryForm.append("caregiver_id", identity.caregiverId);
   retryForm.append("evidence_type", "document");
   retryForm.append("ingestion_key", uploadRetryKey);
-  retryForm.append("file", new Blob([documentText], { type: "text/plain" }), "journey-discharge-note.txt");
+  retryForm.append("file", new Blob([documentBytes], { type: "image/png" }), "journey-discharge-note-scan.png");
   const replay = await request("/api/v1/upload", { token: identity.token, method: "POST", form: retryForm });
   assert.equal(replay.status, 201, JSON.stringify(replay.payload));
   assert.equal(replay.payload.evidence_id, documentId, "a lost upload response must not create a second evidence record");
@@ -1472,7 +1483,13 @@ await record("04 document upload, binary retrieval, idempotent retry and extract
   assert.equal(extracted.status, 201, JSON.stringify(extracted.payload));
   const reviewed = await request(`/api/v1/documents/analyses/${extracted.payload.analysis_id}`, { token: identity.token });
   assert.equal(reviewed.status, 200, JSON.stringify(reviewed.payload));
-  assert.ok(String(reviewed.payload.extracted_text).toLowerCase().includes("follow-up appointment"));
+  assert.match(String(reviewed.payload.extracted_text), /follow.?up appointment/i);
+  const processing = await request("/api/v1/documents/status?limit=20", { token: identity.token });
+  assert.equal(processing.status, 200, JSON.stringify(processing.payload));
+  const processedScan = processing.payload.items.find((item) => item.evidence_id === documentId);
+  assert.ok(processedScan, "the uploaded scan must appear in the saved-document list");
+  assert.equal(processedScan.page_count, 1, "the scan must retain its one-page source count");
+  assert.ok(processedScan.processed_page_numbers.includes(1), "page one must be recorded as processed");
   const intelligence = await request("/api/v1/documents/" + documentId + "/intelligence", { token: identity.token, method: "POST", body: {} });
   const beforeAcceptance = await request("/api/v1/care-continuity/current-care?limit_per_source=50", { token: identity.token });
   assert.equal(beforeAcceptance.status, 200, JSON.stringify(beforeAcceptance.payload));
@@ -1506,7 +1523,7 @@ await record("04 document upload, binary retrieval, idempotent retry and extract
   duplicateForm.append("person_id", identity.personId);
   duplicateForm.append("caregiver_id", identity.caregiverId);
   duplicateForm.append("evidence_type", "document");
-  duplicateForm.append("file", new Blob(["Caregiver observation: Mary ate half of her breakfast today. Caregiver observation: Mary woke twice overnight. Caregiver observation: Mary walked to the kitchen using her walking frame. Discharge instruction: Follow-up appointment requested in two weeks. The caregiver reports that Mary had no fever today."], { type: "text/plain" }), "journey-discharge-note-copy.txt");
+  duplicateForm.append("file", new Blob([documentBytes], { type: "image/png" }), "journey-discharge-note-scan-copy.png");
   const duplicate = await request("/api/v1/upload", { token: identity.token, method: "POST", form: duplicateForm });
   assert.equal(duplicate.status, 201, JSON.stringify(duplicate.payload));
   assert.equal(duplicate.payload.duplicate_detected, true);
