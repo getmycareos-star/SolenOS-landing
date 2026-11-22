@@ -4061,7 +4061,7 @@ await record("17 saved Care History review actions preserve caregiver choice on 
           extraction_status: "available",
           job_status: "completed",
           review_required: true,
-          message: "Your original report is saved. Review the suggested details before they are added as reviewed care information.",
+          message: "Your original note is saved. Check these details before adding them to your Care Record.",
         },
       }],
       page: { has_more: false },
