@@ -80,9 +80,6 @@ export function SituationResponsePanel({
               Your update was saved, but SolenOS could not refresh your Care Record. We won’t ask you to submit the same information again.
             </p>
             {savedTitle && <p className="saved-entry-receipt">{savedTitle}</p>}
-            {receipt.care_event_id && (
-              
-            )}
             <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
             {onContinue && (
               <button type="button" onClick={onContinue}>
