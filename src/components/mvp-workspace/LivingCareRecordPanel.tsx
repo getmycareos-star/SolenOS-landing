@@ -166,7 +166,7 @@ export function LivingCareRecordPanel({
           <h3 id="lcr-baseline-heading" className="section-kicker">
             What is usual
           </h3>
-          <p className="panel-muted">Established baseline from prior observations.</p>
+          <p className="panel-muted">Based on earlier care updates.</p>
           <p>{view.baseline_summary}</p>
         </section>
       )}
@@ -224,7 +224,7 @@ export function LivingCareRecordPanel({
       {supportingEvidence.length > 0 && (
         <details className="lcr-expandable">
           <summary className="panel-muted">What supports this understanding</summary>
-          <ul aria-label="Source evidence">
+          <ul aria-label="Notes and documents behind this information">
             {supportingEvidence.map((item) => (
               <li key={item}>{item}</li>
             ))}
