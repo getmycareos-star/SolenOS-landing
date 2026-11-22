@@ -5,7 +5,6 @@ interface SourceIndicatorProps {
   sourceType?: 'user-recorded' | 'imported' | 'extracted' | 'ai-generated';
   sourceDate?: string;
   eventDate?: string;
-  sourceId?: string;
   description?: string;
   showDetails?: boolean;
 }
@@ -14,7 +13,6 @@ export default function SourceIndicator({
   sourceType,
   sourceDate,
   eventDate,
-  sourceId,
   description,
   showDetails = false
 }: SourceIndicatorProps) {
@@ -33,10 +31,10 @@ export default function SourceIndicator({
   const getSourceTypeLabel = (): string => {
     switch (sourceType) {
       case 'user-recorded': return 'Recorded by you';
-      case 'imported': return 'Imported';
+      case 'imported': return 'Added from another app';
       case 'extracted': return 'Details found in document';
       case 'ai-generated': return 'Suggested by SolenOS';
-      default: return 'Unknown source';
+      default: return 'Who shared this is not recorded';
     }
   };
 
@@ -94,7 +92,7 @@ export default function SourceIndicator({
               fontWeight: '500',
               color: 'var(--text)'
             }}>
-              Source Information
+              About this information
             </span>
             <AccessibleButton
               variant="outline"
@@ -111,7 +109,7 @@ export default function SourceIndicator({
               display: 'block',
               marginBottom: '2px'
             }}>
-              Source type:
+              How it was added:
             </span>
             <span style={{ 
               fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
@@ -150,7 +148,7 @@ export default function SourceIndicator({
                 display: 'block',
                 marginBottom: '2px'
               }}>
-                Event date:
+                When it happened:
               </span>
               <span style={{ 
                 fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
@@ -170,7 +168,7 @@ export default function SourceIndicator({
                 display: 'block',
                 marginBottom: '2px'
               }}>
-                Description:
+                More details:
               </span>
               <p style={{ 
                 fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
@@ -182,9 +180,7 @@ export default function SourceIndicator({
             </div>
           )}
           
-          {sourceId && (
 
-          )}
         </div>
       )}
     </div>
