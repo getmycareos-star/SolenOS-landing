@@ -81,7 +81,7 @@ export function SituationResponsePanel({
             </p>
             {savedTitle && <p className="saved-entry-receipt">{savedTitle}</p>}
             {receipt.care_event_id && (
-              <p className="panel-muted">Saved record reference: {receipt.care_event_id}</p>
+              
             )}
             <LcrQwenInterpretation rawInput={rawInput} sourceEventId={sourceEventId} />
             {onContinue && (
@@ -102,9 +102,9 @@ export function SituationResponsePanel({
     return (
       <section className="panel panel-output situation-response" aria-label="Care Record" role="status">
         <div className="workspace-panel-inner lcr-side">
-          <h3>Saved status could not be confirmed</h3>
+          <h3>We couldn’t check whether your update was saved</h3>
           <p>
-            We couldn’t confirm the saved entry from the care record. Your input has not been resubmitted. Refresh the record to check its status before trying again.
+            We couldn’t confirm whether your update was saved. We have not sent it again. Refresh your Care Record before trying again.
           </p>
         </div>
       </section>
@@ -131,7 +131,7 @@ export function SituationResponsePanel({
     <section className="panel panel-output situation-response" aria-label="Care Record">
       {isReconstructedProjection && (
         <p className="workspace-status-warning" role="status">
-          This view is reconstructed from saved evidence and events. A separate situation-reasoning state has not been persisted.
+          This summary was put together from saved care updates. Some details about how they fit together may not be available yet.
         </p>
       )}
       <div className="workspace-panel-inner lcr-side">
