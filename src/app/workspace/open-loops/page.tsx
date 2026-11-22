@@ -214,21 +214,21 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
       {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
-      {item.evidence_status && <span>Evidence: {caregiverStatusLabel(item.evidence_status) || "Not established"}</span>}
+      {item.evidence_status && <span>What we know: {caregiverStatusLabel(item.evidence_status) || "Not established"}</span>}
       {item.history_completeness && item.history_completeness !== "complete" && <span>Some earlier care information may be missing.</span>}
       {item.action_status === "not_recorded" && <span>No follow-up action has been saved yet.</span>}
-      {item.action_status && item.action_status !== "not_recorded" && <span>Follow-up: {caregiverStatusLabel(item.action_status) || "Status not recorded"}</span>}
-      {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <span>Outcome: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</span>}
+      {item.action_status && item.action_status !== "not_recorded" && <span>Action: {caregiverStatusLabel(item.action_status) || "Not recorded"}</span>}
+      {item.linked_follow_up_outcome_status && item.linked_follow_up_outcome_status !== "not_recorded" && <span>Result: {caregiverStatusLabel(item.linked_follow_up_outcome_status) || "Not recorded"}</span>}
       {loop?.appointment_id && <span>Linked to an appointment in this care record</span>}
     </div>
     {expanded && <div className="followup-detail">
-      <p><strong>Why this needs attention</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
+      <p><strong>{item.category === "can_wait_with_documented_basis" ? "Why this is being monitored" : item.category === "needs_clarification" ? "What still needs checking" : "Why this needs attention"}</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
       {loop?.appointment_id && <p><strong>Appointment connection</strong><br />This follow-up remains linked to a saved appointment and its appointment history.</p>}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
       {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Review requested" : "Next review date"}</strong><br />{dateLabel(item.review_at)}</p>}
       {history && <section className="followup-history"><strong>Previous updates</strong>{history.length === 0 ? <p>No previous updates are available.</p> : <ol>{history.map((event) => <li key={event.id}>{statusLabel(event.event_type)} · {dateLabel(event.created_at)}{event.evidence?.length ? " · " + event.evidence.length + " saved note(s) or document(s)" : ""}</li>)}</ol>}</section>}
-      {occurrences && occurrences.length > 0 && <section className="followup-history"><strong>Repeated events</strong><ol>{occurrences.map((item) => <li key={item.id}>{caregiverInformationAreaLabel(item.source_type) || "Care event"} · {dateLabel(item.occurred_at)}</li>)}</ol></section>}
+      {occurrences && occurrences.length > 0 && <section className="followup-history"><strong>Happened more than once</strong><ol>{occurrences.map((item) => <li key={item.id}>{caregiverInformationAreaLabel(item.source_type) || "Care event"} · {dateLabel(item.occurred_at)}</li>)}</ol></section>}
     </div>}
     {loop && !["closed", "cancelled"].includes(loop.status) && <div className="followup-update-area">
       {showUpdate ? <form onSubmit={(event) => { event.preventDefault(); if (updateText.trim()) void onUpdate(loop, updateText.trim()).then(() => { setUpdateText(""); setShowUpdate(false); }).catch(() => { /* Keep the exact report text available for a safe retry. */ }); }}>
@@ -237,13 +237,13 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
         <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowUpdate(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !updateText.trim()}>{busy ? "Saving…" : "Share update"}</button></div>
       </form> : <button type="button" className="followup-text-button" onClick={() => setShowUpdate(true)}>Share what changed</button>}
       {showAction ? <form onSubmit={(event) => { event.preventDefault(); if (actionText.trim()) void onAction(loop, actionText.trim()).then(() => { setActionText(""); setShowAction(false); }).catch(() => { /* Keep the caregiver's action report available for retry. */ }); }}>
-        <label htmlFor={"followup-action-" + loop.id}>What action did you take? This records your report; it does not verify the outcome.</label>
+        <label htmlFor={"followup-action-" + loop.id}>What did you do? This saves what you tell us. It does not mean the concern is resolved.</label>
         <textarea id={"followup-action-" + loop.id} rows={3} value={actionText} onChange={(event) => setActionText(event.target.value)} maxLength={12000} placeholder="Describe the action in your own words…" />
         <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowAction(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !actionText.trim()}>{busy ? "Saving…" : "Record action"}</button></div>
       </form> : <button type="button" className="followup-text-button" onClick={() => setShowAction(true)}>Record action taken</button>}
     </div>}
     <div className="followup-actions">
-      <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "See why this appeared"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
+      <button type="button" className="followup-text-button" onClick={() => setExpanded((value) => !value)}>{expanded ? "Hide details" : "Why am I seeing this?"} {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
       {loop && <button type="button" className="followup-text-button" onClick={() => void onHistory(loop)}>View previous updates</button>}
       {!loop && (item.source === "events" || item.source === "persisted_change") && item.record_id && (
         <button type="button" className="followup-primary-button" onClick={() => void onCreate(item)} disabled={busy}>
