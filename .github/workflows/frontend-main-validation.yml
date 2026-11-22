@@ -44,6 +44,8 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci
+      - name: Verify caregiver-facing language before other checks
+        run: npm run verify:caregiver-ui-language-all
 
       - name: Verify production telemetry cannot fall back to process memory
         run: npm run verify:telemetry-production-fail-closed
