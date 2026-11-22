@@ -484,16 +484,16 @@ for (const [term, expected] of [
   ["Living Care Record", "Care Record"], ["LCR", "Care Record"],
   ["Care continuity", "Keeping care information together"],
   ["reconciliation", "Updating your care information"],
-  ["provenance", "What was recorded and where it came from"],
-  ["evidence", "What was recorded and where it came from"],
+  ["provenance", "Where this information came from"],
+  ["evidence", "Related notes and documents"],
   ["Delta Engine", "Changes since your last visit"], ["delta_engine", "Changes since your last visit"],
-  ["retrieval", "Finding past care information"],
+  ["retrieval", "Finding earlier care information"],
   ["open loops", "Things that still need attention"],
   ["longitudinal history", "Care history over time"],
   ["AI Companion", "Care Assistant"],
-  ["epistemic status", "What is known, not sure yet, or not recorded"],
+  ["epistemic status", "What is known, what is unclear, or not recorded"],
   ["assessment_coverage", "What information was checked"],
-  ["source attribution", "Who reported it and where it came from"],
+  ["source attribution", "Who shared this information"],
 ] as const) {
   assert.equal(caregiverProductTermLabel(term), expected, "caregiver wording for " + term);
 }
