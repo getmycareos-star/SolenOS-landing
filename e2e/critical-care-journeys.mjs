@@ -707,7 +707,7 @@ await record("01a dementia profile review window and observation persistence are
 await record("01b visible Follow-ups link and mobile navigation", async () => {
   const { context, page } = await createBrowserPage(
     session,
-    "/workspace/daily-care",
+    "/workspace/timeline",
     { width: 390, height: 844 },
   );
   await page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" }).click();
@@ -4019,7 +4019,7 @@ await record("16 clearing this device revokes the session and removes SolenOS br
 });
 
 
-await record("17 Daily Care suggested-detail review actions preserve caregiver choice on mobile", async () => {
+await record("17 saved Care History review actions preserve caregiver choice on mobile", async () => {
   const reviewSession = await newSession("suggested detail review UI");
   const { context, page, pageErrors } = await createBrowserPage(
     reviewSession,
@@ -4112,7 +4112,8 @@ await record("17 Daily Care suggested-detail review actions preserve caregiver c
     });
   });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Share an update", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Care history", exact: true }).waitFor({ timeout: 20_000 });
+  await page.locator(".timeline-event-toggle").first().click();
   await page.getByRole("button", { name: "Review suggested details", exact: true }).click();
   const review = page.getByRole("region", { name: "Review suggested care details" });
   await review.waitFor({ state: "visible", timeout: 10_000 });
