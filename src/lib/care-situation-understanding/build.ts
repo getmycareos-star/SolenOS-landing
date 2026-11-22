@@ -1,11 +1,9 @@
 /**
- * Build Care Situation Understanding from messy caregiver input.
- * Uses structured LLM extraction as primary path (when available),
- * falls back to deterministic/regex extraction (instant path).
- *
- * Never blocks orientation on LLM — fail-closed to deterministic path.
- * Never feeds /api/analyze 5-field compression into caregiver panel.
- * Accepts any caregiver input: text, document OCR, screenshots, mixed content.
+ * Build Care Situation Understanding from persisted caregiver input.
+ * Asynchronous understanding requires a saved evidence record and private Qwen.
+ * Qwen failures are surfaced; this path never substitutes deterministic extraction.
+ * The synchronous extraction-only helper remains separate for explicitly
+ * deterministic internal composition.
  */
 
 import { extractCareRealityFromText } from "../care-reality-extraction";
@@ -347,7 +345,7 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
  */
 async function getBestExtraction(params: {
   rawText: string;
-  evidenceId?: string;
+  evidenceId: string;
   contributorId: string;
   signal?: AbortSignal;
 }): Promise<import("../care-reality-extraction").CareRealityExtractionResult> {
@@ -366,7 +364,7 @@ async function getBestExtraction(params: {
  */
 export async function buildCareSituationUnderstanding(params: {
   rawText: string;
-  evidenceId?: string;
+  evidenceId: string;
   contributorId?: string;
   careKey?: string;
   personDisplayName?: string | null;
