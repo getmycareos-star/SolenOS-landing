@@ -16,7 +16,7 @@
  */
 import type { CareRealityExtractionResult } from "../care-reality-extraction/types";
 import { extractCareRealityFromText } from "../care-reality-extraction/extract";
-import { CARE_UNDERSTANDING_LLM_SYSTEM_PROMPT } from "./llm-prompt";
+import { postJSON } from "@/api/client";
 import {
   LlmUnderstandingOutputSchema,
   validateMedicalBoundary,
@@ -139,109 +139,51 @@ export async function llmStructuredUnderstanding(params: {
   contributorId?: string;
   signal?: AbortSignal;
 }): Promise<CareRealityExtractionResult> {
-  const { rawText } = params;
-  const source = params.contributorId ?? "caregiver";
-
-  // Trim excessively long input — LLM context preserved but extraction bounded
-  const trimmedText = rawText.trim();
-  if (!trimmedText) {
-    return extractCareRealityFromText({ rawText: "", source });
+  const source = params.rawText ?? "";
+  if (!source.trim()) {
+    return extractCareRealityFromText({ rawText: "", source: params.contributorId ?? "caregiver" });
   }
 
-  // Check if Gemini API key is available
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey || apiKey.length === 0) {
-    // Fallback to deterministic extraction when no LLM available
-    return extractCareRealityFromText({ rawText: trimmedText, source });
+  const response = await postJSON("/assistant/care-understanding", {
+    raw_text: source,
+  }) as {
+    understanding?: unknown;
+    provider?: string;
+    written_to_lcr?: boolean;
+    review_required?: boolean;
+  };
+
+  if (
+    response.provider !== "private_ollama_qwen" ||
+    response.written_to_lcr !== false ||
+    response.review_required !== true
+  ) {
+    throw new Error("The Qwen care-understanding response did not meet the review-only contract.");
   }
 
-  // ─── Constitution-Aware Reasoning (Phase 5) ────────────────────────────
-  // Apply the 4-step thinking model before the LLM call
-  const questionType = classifyQuestionType(trimmedText);
-  const dependsOnRecord = dependsOnLivingCareRecord(questionType);
-  const confidence = estimateConfidence({
-    hasCareRecord: false, // Will be determined at runtime by calling context
-    eventCount: 0,
-    uncertaintyCount: 0,
-    hasPriorContext: false,
-  });
-  const careSignal = detectCareIntelligenceSignal(trimmedText);
-
-  // Log constitution analysis for observability
-  console.debug(
-    `[llm-understanding] Constitution analysis: questionType=${questionType}, dependsOnRecord=${dependsOnRecord}, confidence=${confidence}, careSignal=${careSignal}`,
-  );
-
-  try {
-    // Dynamic import to avoid hard dependency when LLM not used
-    const { ChatGoogleGenerativeAI } = await import(
-      "@langchain/google-genai"
-    );
-    const { HumanMessage, SystemMessage } = await import(
-      "@langchain/core/messages"
-    );
-
-    const model = new ChatGoogleGenerativeAI({
-      model: process.env.SOLENOS_LLM_MODEL ?? "gemini-2.0-flash",
-      apiKey,
-      temperature: 0,
-      maxRetries: 0,
-    });
-
-    const response = await model.invoke(
-      [
-        new SystemMessage(CARE_UNDERSTANDING_LLM_SYSTEM_PROMPT),
-        new HumanMessage(trimmedText),
-      ],
-      { signal: params.signal },
-    );
-
-    const content =
-      typeof response.content === "string"
-        ? response.content
-        : Array.isArray(response.content)
-          ? response.content.map((c) => (typeof c === "string" ? c : "")).join("")
-          : "";
-
-    // Extract JSON from response (handle markdown-wrapped JSON)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return extractCareRealityFromText({ rawText: trimmedText, source });
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    // Validate against Zod schema
-    const validation = LlmUnderstandingOutputSchema.safeParse(parsed);
-    if (!validation.success) {
-      console.warn(
-        "[llm-understanding] Zod validation failed:",
-        validation.error.issues.map((i) => i.message).join("; "),
-      );
-      return extractCareRealityFromText({ rawText: trimmedText, source });
-    }
-
-    const validated: LlmUnderstandingOutput = validation.data;
-
-    // Medical boundary check — forbid diagnosis/advice/empathy/causation
-    const boundary = validateMedicalBoundary(validated);
-    if (!boundary.ok) {
-      console.warn(
-        "[llm-understanding] Medical boundary violation:",
-        boundary.failures.join("; "),
-      );
-      return extractCareRealityFromText({ rawText: trimmedText, source });
-    }
-
-    // Map to existing types and return
-    return mapLlmOutputToExtractionResult(validated, source);
-  } catch (err: unknown) {
-    console.warn(
-      "[llm-understanding] LLM extraction failed, falling back to deterministic:",
-      err instanceof Error ? err.message : String(err),
-    );
-    return extractCareRealityFromText({ rawText: trimmedText, source });
+  const validation = LlmUnderstandingOutputSchema.safeParse(response.understanding);
+  if (!validation.success) {
+    throw new Error("Qwen returned care-understanding data that did not match the required format.");
   }
+
+  const boundary = validateMedicalBoundary(validation.data);
+  if (!boundary.ok) {
+    throw new Error("Qwen returned care-understanding data outside SolenOS's safety boundaries.");
+  }
+
+  const fragments = [
+    ...validation.data.observations.map((item) => item.raw_fragment),
+    ...validation.data.events.map((item) => item.raw_fragment),
+    ...validation.data.decisions.map((item) => item.raw_fragment),
+    ...validation.data.outcomes.map((item) => item.raw_fragment),
+    ...validation.data.unknowns.map((item) => item.raw_fragment),
+    ...validation.data.non_care_facts.map((item) => item.raw_fragment),
+  ];
+  if (fragments.some((fragment) => !source.includes(fragment))) {
+    throw new Error("Qwen returned a source quotation that could not be verified.");
+  }
+
+  return mapLlmOutputToExtractionResult(validation.data, params.contributorId ?? "caregiver");
 }
 
 /**
