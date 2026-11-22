@@ -160,7 +160,7 @@ export function AddSituationPanel({
           documents.map((d) => (d.id === doc.id ? { ...next, id: d.id } : d)),
         );
         if (next.errorNote || next.status === "failed" || (next.status === "ready" && !next.extractedText.trim())) {
-          setLocalHint(next.errorNote ?? "Text extraction is not available for this file. Type the key details instead.");
+          setLocalHint(next.errorNote ?? "We couldn’t read the text in this file. Type the key details instead.");
         } else {
           setLocalHint(null);
         }
@@ -206,7 +206,7 @@ export function AddSituationPanel({
           autoFocus
         />
 
-        <div className="composer-toolbar" role="group" aria-label="Evidence entry">
+        <div className="composer-toolbar" role="group" aria-label="Add a note or document">
           <div className="composer-actions">
             <button
               type="button"
