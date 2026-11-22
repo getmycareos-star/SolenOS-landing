@@ -196,6 +196,7 @@ const CARE_FIELD_LABELS: Readonly<Record<string, string>> = {
   mobility: "Movement",
   pain: "Pain",
   mood: "Mood",
+  blood_pressure: "Blood pressure",
   blood_pressure_systolic: "Blood pressure (top number)",
   blood_pressure_diastolic: "Blood pressure (bottom number)",
   oxygen_saturation: "Oxygen level",
@@ -220,23 +221,23 @@ const CARE_INFORMATION_AREA_LABELS: Readonly<Record<string, string>> = {
   care_assertions: "Caregiver reports",
   open_questions: "Questions to answer",
   open_loop_records: "Follow-ups",
-  information_gaps: "Information not recorded",
-  uncertainty_assessments: "Information that needs checking",
+  information_gaps: "Details not yet recorded",
+  uncertainty_assessments: "Details that still need checking",
   contradictions: "Reports that do not match",
   conflicts: "Reports that do not match",
-  reconciliations: "Reviewed comparisons",
-  evidence_freshness_assessments: "Information dates",
+  reconciliations: "Reports checked against each other",
+  evidence_freshness_assessments: "How recent the information is",
   medications_and_allergies: "Medicines and allergies",
   documents: "Documents",
   evidence: "Notes and documents",
   document_evidence: "Documents",
-  caregiver_observations: "Caregiver observations",
+  caregiver_observations: "What a caregiver noticed",
   caregiver_reports: "Caregiver reports",
-  professional_reports: "Healthcare professional reports",
-  caregiver_perspectives: "Caregiver views",
+  professional_reports: "Information from healthcare professionals",
+  caregiver_perspectives: "What caregivers shared",
   decisions: "Care decisions",
   decision_outcomes: "What happened after a decision",
-  handoffs: "Care handoffs",
+  handoffs: "Care information shared with another caregiver",
 };
 
 export function caregiverInformationAreaLabel(value?: string | null): string | null {
@@ -378,7 +379,7 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
   const readableLabel = (item: unknown): string => {
     const raw = safeText(item);
     if (!raw) return "";
-    return caregiverFieldLabel(raw) || caregiverStatusLabel(raw) || caregiverInformationAreaLabel(raw) || raw.replace(/[_-]+/g, " ");
+    return caregiverFieldLabel(raw) || caregiverStatusLabel(raw) || caregiverInformationAreaLabel(raw) || (raw.includes("_") || isTechnicalDiagnosticText(raw) ? "" : raw);
   };
   try {
     const parsed: unknown = JSON.parse(value);
