@@ -172,13 +172,13 @@ for (const file of files) {
     }
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer &&
       (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) &&
-      /(?:Label|Message|Status|Title|Description|Text|Copy|Response|Summary|Recognition|Confirmation|Acknowledgement|Redirect|View|Behavior|Progress|MetaLabel|WhatChanged|OrientationLines)$/.test(node.name.text)) {
+      /(?:Label|Message|Messages|Status|Title|Description|Text|Copy|Response|Summary|Recognition|Confirmation|Acknowledgement|Redirect|View|Behavior|Progress|MetaLabel|WhatChanged|OrientationLines)$/.test(node.name.text)) {
       if (ts.isBlock(node.initializer.body)) collectFunctionReturns(node.initializer.body);
       else collectDisplayExpression(sourceFile, node.initializer.body);
     }
     if ((ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) &&
       node.name && ts.isIdentifier(node.name) &&
-      /(?:Label|Message|Status|Title|Description|Text|Copy|Response|Summary|Recognition|Confirmation|Acknowledgement|Redirect|View|Behavior|Progress|MetaLabel|WhatChanged|OrientationLines)$/.test(node.name.text) && node.body) {
+      /(?:Label|Message|Messages|Status|Title|Description|Text|Copy|Response|Summary|Recognition|Confirmation|Acknowledgement|Redirect|View|Behavior|Progress|MetaLabel|WhatChanged|OrientationLines)$/.test(node.name.text) && node.body) {
       collectFunctionReturns(node.body);
     }
     if (ts.isJsxText(node)) {
