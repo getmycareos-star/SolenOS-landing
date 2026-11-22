@@ -26,6 +26,7 @@ assert(
 assert(
   source.includes("candidateNeedsRewrite") &&
   source.includes("disabled={busy !== null || candidateNeedsRewrite}") &&
+  source.includes("disabled={busy !== null || !correction.subject.trim() || !correction.observation.trim()}") &&
   source.includes("Check the original document and write the detail in your own words"),
   "an internal or unreadable generated suggestion must be corrected against the original before it can be accepted",
 );
