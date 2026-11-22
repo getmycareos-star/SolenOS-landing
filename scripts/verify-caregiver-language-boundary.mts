@@ -345,9 +345,17 @@ assert.doesNotMatch(humanValidation, /data\.detail \?\? data\.error/);
 
 
 const appShellLanguage = read("../src/components/app-shell/AppShell.tsx");
+const morePageLanguage = read("../src/app/workspace/more/page.tsx");
+const navigationLanguage = read("../src/lib/workspace-navigation.ts");
 const restrictedRoleLanguage = read("../src/components/RestrictedRolePage.tsx");
 const situationRouteLanguage = read("../src/app/api/situation/route.ts");
 
+assert.doesNotMatch(morePageLanguage, /\b(?:database|API|OCR|provenance|reconciliation|assertion|schema|JSON|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint|PostgreSQL|SQL)\b/i,
+  "the More page must not expose engineering or processing language to caregivers");
+assert.doesNotMatch(navigationLanguage, /label: "Advanced care record"|description: "Review detailed care-record information"/,
+  "secondary navigation must use plain caregiver language");
+assert.match(morePageLanguage, /<h1>More<\/h1>/,
+  "secondary destinations are grouped under the plain-language More heading");
 assert.doesNotMatch(appShellLanguage, /server-issued session|stored on SolenOS servers/i,
   "workspace confirmation and error messages must not expose internal session or hosting details");
 assert.match(appShellLanguage, /care information already saved in SolenOS/,
