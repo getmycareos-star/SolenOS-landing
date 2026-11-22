@@ -211,6 +211,8 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
     <div className="followup-meta">
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
+      <span>Who is following up: {loop?.owner_label ? caregiverSafeAssistantText(loop.owner_label) : "No one is assigned yet"}</span>
+      <span>Last updated: {loop?.updated_at ? dateLabel(loop.updated_at) : "Not available yet"}</span>
       {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
       {item.evidence_status && <span>What we know: {caregiverStatusLabel(item.evidence_status) || "Not established"}</span>}
       {item.history_completeness && item.history_completeness !== "complete" && <span>Some earlier care information may be missing.</span>}
