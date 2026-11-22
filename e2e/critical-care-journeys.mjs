@@ -281,6 +281,21 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     throw error;
   }
   const capturePayload = await captureResponse.json().catch(() => null);
+  const persistedEventRead = await request(
+    `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
+    { token: firstVisitSession.access_token },
+  );
+  const persistedEvents = Array.isArray(persistedEventRead.payload) ? persistedEventRead.payload : [];
+  const capturedEvent = persistedEvents.find((event) => event?.id === capturePayload?.care_event_id);
+  assert.equal(persistedEventRead.status, 200, JSON.stringify(persistedEventRead.payload));
+  assert.ok(capturedEvent, "the saved capture event must be retrievable from the authenticated event-history API");
+  assert.equal(capturedEvent.person_id, firstVisitSession.person.id);
+  assert.ok(
+    [capturedEvent.title, capturedEvent.description].some((value) =>
+      typeof value === "string" && value.includes(firstNote)
+    ),
+    "the persisted event must retain the caregiver's original note",
+  );
   assert.equal(capturePayload?.qwen_extraction_status, "queued", "a saved free-text care report must receive a durable extraction job");
   assert.equal(typeof capturePayload?.qwen_analysis_id, "string", "the capture receipt must identify its persisted analysis");
   assert.ok(capturePayload.qwen_analysis_id, "the persisted analysis ID must not be empty");
