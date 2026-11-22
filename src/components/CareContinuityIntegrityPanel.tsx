@@ -196,7 +196,7 @@ export default function CareContinuityIntegrityPanel({
           const fresh = freshnessById.get(item.id)
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <strong>{caregiverFieldLabel(item.field) || caregiverSafeAssistantText(item.field) || 'Care information'}: {caregiverSafeAssistantText(item.asserted_value) || 'Saved care information'}</strong>
+              <strong>{caregiverFieldLabel(item.field) || caregiverInformationLabel(item.field) || 'Care detail'}: {caregiverSafeAssistantText(item.asserted_value) || 'Saved care information'}</strong>
               <span style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)', margin: '5px 0' }}>
