@@ -20,6 +20,7 @@ import {
 } from "@/lib/situation-entry/backend-response";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
 import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import {
   CARE_RECIPIENT_ID_STORAGE,
   DURABLE_CARE_KEY_STORAGE,
@@ -474,7 +475,11 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
     if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) {
       throw new Error(data.detail || "We couldn’t prepare a reply from your saved care information. Your message was not saved.");
     }
-    setLcrOrientationReply(data.reply.trim());
+    const safeReply = caregiverSafeGeneratedText(data.reply.trim());
+    if (!safeReply) {
+      throw new Error("SolenOS could not put this explanation into clear language. Your message was not saved.");
+    }
+    setLcrOrientationReply(safeReply);
     setCaregiverError(null);
     setRawInput("");
   }
