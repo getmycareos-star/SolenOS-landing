@@ -1424,9 +1424,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       
       {saved && careContinuityExecution?.stages && (
         <p role="status" style={{ color: 'var(--text-secondary)', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', marginTop: '-12px', marginBottom: '20px' }}>
-          Original information: {careContinuityExecution.stages.source_preservation === 'verified' ? 'saved' : 'not confirmed'}.  
-          {' '}Related notes or documents: {careContinuityExecution.stages.evidence === 'verified' ? 'linked' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not needed' : 'not confirmed'}. 
-          {' '}Care Record: {['committed', 'completed'].includes(careContinuityExecution.stages.reconciliation || '') ? 'updated' : 'not confirmed'}. 
+          Your original update: {careContinuityExecution.stages.source_preservation === 'verified' ? 'saved' : 'not confirmed'}.  
+          {' '}Related notes or documents: {careContinuityExecution.stages.evidence === 'verified' ? 'linked' : careContinuityExecution.stages.evidence === 'not_applicable' ? 'not needed' : 'not linked yet'}. 
+          {' '}Related care details: {['committed', 'completed'].includes(careContinuityExecution.stages.reconciliation || '') ? 'updated' : careContinuityExecution.stages.reconciliation === 'pending' ? 'still being checked' : careContinuityExecution.stages.reconciliation === 'not_applicable' ? 'not needed' : 'not updated yet'}. 
         </p>
       )}
       {saved && changeIntelligenceStatus === 'available' && (
