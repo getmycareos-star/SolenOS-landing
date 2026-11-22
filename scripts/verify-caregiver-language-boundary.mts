@@ -584,3 +584,9 @@ assert.match(correctionLabels, /Details read from a document/);
 assert.match(correctionLabels, /Suggested by SolenOS/);
 assert.match(privacyIndicator, /We couldn't check who can see this/);
 assert.doesNotMatch(privacyIndicator, /Access information unavailable/);
+
+assert.doesNotMatch(lcr, /Checking linked evidence|View supporting information|What is known:/,
+  "Care Record history must describe related notes and documents in everyday language");
+assert.match(lcr, /Checking related notes and documents/);
+assert.match(lcr, /See related notes and documents/);
+assert.match(lcr, /This view includes the care information saved here so far/);
