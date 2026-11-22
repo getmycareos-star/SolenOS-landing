@@ -161,7 +161,7 @@ try {
   // An action report is distinct from a response and still cannot verify the outcome.
   await afterReload.getByRole("button", { name: "Record action taken" }).click();
   const actionText = "CI-only caregiver action: I called the clinic to request the updated appointment date.";
-  await afterReload.getByLabel(/What action did you take/).fill(actionText);
+  await afterReload.getByLabel(/What did you do/).fill(actionText);
   await afterReload.getByRole("button", { name: "Record action" }).click();
   await page.getByRole("alert").filter({
     hasText: "The action could not be confirmed. Keep the report available and try again.",
