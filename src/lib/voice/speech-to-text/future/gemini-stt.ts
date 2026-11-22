@@ -1,12 +1,6 @@
-/**
- * FUTURE — Gemini audio STT. Not MVP default.
- * GEMINI_API_KEY is for reasoning via /api/analyze, not server-side transcription in MVP.
- */
+/** Retired: Gemini server transcription is not supported. */
 export const FUTURE_GEMINI_STT = {
-  status: "FUTURE" as const,
+  status: "RETIRED" as const,
   module: "src/lib/voice/speech-to-text/future/gemini-stt.ts",
-  requires: ["GEMINI_API_KEY"],
-  note: "MVP uses browser SpeechRecognition only. See ADR-017.",
+  note: "Caregiver MVP uses browser Web Speech only. No hosted transcription provider is configured.",
 };
-
-export { transcribeWithGemini } from "@/lib/voice-observation/gemini-stt";
