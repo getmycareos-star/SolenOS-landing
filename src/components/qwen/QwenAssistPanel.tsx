@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { LivingArchiveMark } from "@/components/brand";
 
@@ -76,6 +76,9 @@ type QwenBackgroundJobResult = {
   claim_provenance?: QwenClaimProvenance | null;
   review_required: boolean;
   output_review_status?: string | null;
+  review_history?: Array<{ decision: string; reviewed_at: string | null }>;
+  output_id?: string | null;
+  created_at?: string | null;
   written_to_lcr: false;
   persistence: "read_only_assistance";
 };
@@ -117,6 +120,25 @@ export default function QwenAssistPanel({
   const [proposal, setProposal] = useState<QwenLcrProposal | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [pastTwoWeekReviews, setPastTwoWeekReviews] = useState<QwenBackgroundJobResult[]>([]);
+  const [pastReviewsLoading, setPastReviewsLoading] = useState(true);
+  const [pastReviewsError, setPastReviewsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        await ensureAnonymousSession();
+        const response = await getJSON("/assistant/reviews/two-week?limit=10") as { items?: QwenBackgroundJobResult[] };
+        if (active) setPastTwoWeekReviews(Array.isArray(response.items) ? response.items : []);
+      } catch {
+        if (active) setPastReviewsError("Past two-week reviews could not be loaded.");
+      } finally {
+        if (active) setPastReviewsLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   async function askQwen() {
     const requestText = question.trim();
@@ -258,9 +280,11 @@ export default function QwenAssistPanel({
                     setReviewing(true);
                     setReviewMessage(null);
                     try {
-                      const result = await postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/review", { decision: "reviewed" }) as { review_status?: string; review_required?: boolean; written_to_lcr?: boolean };
+                      const result = await postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/review", { decision: "reviewed" }) as { review_status?: string; review_required?: boolean; written_to_lcr?: boolean; review_history?: Array<{ decision: string; reviewed_at: string | null }> };
                       if (result.review_status !== "reviewed" || result.review_required !== false || result.written_to_lcr !== false) throw new Error("Review receipt not confirmed");
-                      setReply({ ...reply, output_review_status: "reviewed", review_required: false });
+                      const updated = { ...reply, output_review_status: "reviewed", review_required: false, review_history: result.review_history ?? reply.review_history };
+                      setReply(updated);
+                      setPastTwoWeekReviews((items) => [updated, ...items.filter((item) => item.job_id !== reply.job_id)].slice(0, 10));
                       setReviewMessage("Review marked as read. Nothing was changed in the care record.");
                     } catch {
                       setReviewMessage("We couldn’t save that review decision. Please try again.");
@@ -277,9 +301,11 @@ export default function QwenAssistPanel({
                     setReviewing(true);
                     setReviewMessage(null);
                     try {
-                      const result = await postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/review", { decision: "needs_follow_up" }) as { review_status?: string; review_required?: boolean; written_to_lcr?: boolean };
+                      const result = await postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/review", { decision: "needs_follow_up" }) as { review_status?: string; review_required?: boolean; written_to_lcr?: boolean; review_history?: Array<{ decision: string; reviewed_at: string | null }> };
                       if (result.review_status !== "needs_follow_up" || result.review_required !== false || result.written_to_lcr !== false) throw new Error("Review receipt not confirmed");
-                      setReply({ ...reply, output_review_status: "needs_follow_up", review_required: false });
+                      const updated = { ...reply, output_review_status: "needs_follow_up", review_required: false, review_history: result.review_history ?? reply.review_history };
+                      setReply(updated);
+                      setPastTwoWeekReviews((items) => [updated, ...items.filter((item) => item.job_id !== reply.job_id)].slice(0, 10));
                       setReviewMessage("Flagged for follow-up. No follow-up task has been created.");
                     } catch {
                       setReviewMessage("We couldn’t save that review decision. Please try again.");
@@ -433,8 +459,40 @@ export default function QwenAssistPanel({
               ))}
             </div>
           )}
+          {reply.workflow === "two_week_review" && (reply.review_history?.length ?? 0) > 0 && (
+            <div style={{ marginTop: "12px", borderTop: "1px solid var(--border)", paddingTop: "9px" }}>
+              <p style={{ fontSize: "12px", fontWeight: 650, margin: "0 0 6px" }}>Review history</p>
+              {reply.review_history?.map((entry, index) => (
+                <p key={entry.reviewed_at ?? index} style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "4px 0" }}>
+                  {entry.decision === "needs_follow_up" ? "Flagged for follow-up" : "Marked reviewed"}{entry.reviewed_at ? " · " + new Date(entry.reviewed_at).toLocaleString() : ""}
+                </p>
+              ))}
+            </div>
+          )}
           {/* Source details are shown beside the statements they support above; avoid a generic list of unrelated source IDs. */}
         </div>
+      )}
+      {pastReviewsLoading && <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Loading past two-week reviews…</p>}
+      {pastReviewsError && <p role="status" style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{pastReviewsError}</p>}
+      {pastTwoWeekReviews.length > 0 && (
+        <section aria-label="Past two-week reviews" style={{ marginTop: "14px", borderTop: "1px solid var(--theme-panel-border)", paddingTop: "12px" }}>
+          <h3 style={{ fontSize: "13px", fontWeight: 650, margin: "0 0 8px" }}>Past two-week reviews</h3>
+          <div style={{ display: "grid", gap: "8px" }}>
+            {pastTwoWeekReviews.map((item) => (
+              <button
+                key={item.job_id}
+                type="button"
+                onClick={() => { setReply(item); setProposal(null); setReviewMessage(null); }}
+                style={{ textAlign: "left", border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 10px", background: "var(--theme-panel-bg)", color: "var(--text-primary)", cursor: "pointer" }}
+              >
+                <span style={{ display: "block", fontSize: "11px", color: "var(--text-secondary)" }}>
+                  {item.created_at ? new Date(item.created_at).toLocaleString() : "Saved review"} · {item.review_required ? "Needs review" : item.output_review_status === "needs_follow_up" ? "Flagged for follow-up" : "Reviewed"}
+                </span>
+                <span style={{ display: "block", fontSize: "12px", lineHeight: 1.5, marginTop: "4px" }}>{(item.reply || "").slice(0, 180)}{(item.reply || "").length > 180 ? "…" : ""}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       )}
     </section>
   );
