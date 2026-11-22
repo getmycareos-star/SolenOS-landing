@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getPersonId, postJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type SourceRecord = {
   source_type: string;
@@ -87,7 +87,7 @@ export default function DailyCareQwen() {
       })) as AskResult;
       setResult(response);
       if (response.status !== "completed") {
-        setFeedback(caregiverSafeAssistantText(response.answer) || "I could not safely display that response. Your saved care information has not been changed.");
+        setFeedback(caregiverSafeGeneratedText(response.answer) || "I could not safely display that response. Your saved care information has not been changed.");
       }
     } catch (cause) {
       setError(caregiverSafeErrorMessage());
@@ -175,7 +175,7 @@ export default function DailyCareQwen() {
       {result ? (
         <div className="daily-care-qwen__result" aria-live="polite">
           <h3>Care history response</h3>
-          <p className="daily-care-qwen__answer">{caregiverSafeAssistantText(result.answer) || "I could not safely display that response. Your saved care information has not been changed."}</p>
+          <p className="daily-care-qwen__answer">{caregiverSafeGeneratedText(result.answer) || "I could not safely display that response. Your saved care information has not been changed."}</p>
           {result.history_scope ? (
             <p className="daily-care-qwen__scope">
               Found {result.history_scope.matched_records ?? 0} matching saved care updates.
@@ -218,10 +218,10 @@ export default function DailyCareQwen() {
                 const final = ["accepted_by_caregiver", "rejected_by_caregiver"].includes(proposal.review_status);
                 return (
                   <article className="daily-care-qwen__proposal" key={`${result.proposal_analysis_id}:${index}`}>
-                    <h4>{caregiverSafeAssistantText(proposal.title) || "Suggested care update"}</h4>
-                    <p><strong>Suggested update:</strong> {caregiverSafeAssistantText(proposal.proposed_value) || "A possible update is ready for review."}</p>
-                    <p><strong>Why it may matter:</strong> {caregiverSafeAssistantText(proposal.reason) || "No explanation is available."}</p>
-                    <p><strong>What is still unclear:</strong> {caregiverSafeAssistantText(proposal.uncertainty) || "This suggestion may need checking."}</p>
+                    <h4>{caregiverSafeGeneratedText(proposal.title) || "Suggested care update"}</h4>
+                    <p><strong>Suggested update:</strong> {caregiverSafeGeneratedText(proposal.proposed_value) || "A possible update is ready for review."}</p>
+                    <p><strong>Why it may matter:</strong> {caregiverSafeGeneratedText(proposal.reason) || "No explanation is available."}</p>
+                    <p><strong>What is still unclear:</strong> {caregiverSafeGeneratedText(proposal.uncertainty) || "This suggestion may need checking."}</p>
                     
                     <p className="daily-care-qwen__status">{caregiverStatusLabel(proposal.review_status) ?? "Review status unavailable"}</p>
                     {!final ? (
@@ -249,7 +249,7 @@ export default function DailyCareQwen() {
               })}
             </div>
           ) : null}
-          <p className="daily-care-qwen__disclaimer">{caregiverSafeAssistantText(result.notice) || "Generating this response did not change the care record."}</p>
+          <p className="daily-care-qwen__disclaimer">{caregiverSafeGeneratedText(result.notice) || "Generating this response did not change the care record."}</p>
         </div>
       ) : null}
 
