@@ -471,7 +471,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       companion_history_unchanged?: boolean;
     };
     if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) {
-      throw new Error(data.detail || "LCR could not generate a grounded response. Your message was not saved.");
+      throw new Error(data.detail || "We couldn’t prepare a reply from your saved care information. Your message was not saved.");
     }
     setLcrOrientationReply(data.reply.trim());
     setCaregiverError(null);
@@ -1118,7 +1118,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                 <article className="care-card-note">
                   <p className="care-card-note-label">Caregiver note</p>
                   <p className="care-card-note-body">
-                    {lastSharedDisplay || rawInput || "Document added to the Living Care Record."}
+                    {lastSharedDisplay || rawInput || "Document added to your Care Record."}
                   </p>
                   <p className="care-card-note-meta">
                     {caregiverNoteMetaLabelFromResponse(situationResponse)}
@@ -1131,7 +1131,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                 <p>
                   Your original update: {situationResponse.care_continuity_execution.stages.source_preservation === "verified" ? "saved" : "not confirmed"}.
                   {" "}Related notes or documents: {situationResponse.care_continuity_execution.stages.evidence === "verified" ? "linked" : situationResponse.care_continuity_execution.stages.evidence === "not_applicable" ? "not needed" : "not linked yet"}.
-                  {" "}Related care details: {situationResponse.care_continuity_execution.stages.reconciliation === "committed" ? "updated" : situationResponse.care_continuity_execution.stages.reconciliation === "pending" ? "still being checked" : situationResponse.care_continuity_execution.stages.reconciliation === "not_applicable" ? "not needed" : "not updated yet"}.
+                  {" "}Other saved care details: {situationResponse.care_continuity_execution.stages.reconciliation === "committed" ? "updated" : situationResponse.care_continuity_execution.stages.reconciliation === "pending" ? "still being checked" : situationResponse.care_continuity_execution.stages.reconciliation === "not_applicable" ? "not needed" : "not updated yet"}.
                 </p>
               </section>
             )}
