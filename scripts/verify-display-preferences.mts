@@ -40,7 +40,6 @@ const inlineTypographyPaths = [
   "src/components/trust/ReportProblem.tsx",
   "src/components/trust/SourceIndicator.tsx",
   "src/components/trust/WhyAmISeeingThis.tsx",
-  "src/components/trust/PrivacyIndicator.tsx",
   "src/components/trust/InformationStatus.tsx",
   "src/components/ConflictResolutionPanel.tsx",
   "src/components/CareContinuityIntegrityPanel.tsx",
