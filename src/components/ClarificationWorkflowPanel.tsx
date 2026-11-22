@@ -729,7 +729,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
             latestReview ? (
               <p role="status" style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                 Answer checked: {caregiverStatusLabel(latestReview.decision) || "Review recorded"}.
-                {latestReview.resulting_claim_id ? " It is still recorded as something a caregiver shared, not as a confirmed medical fact." : ""}
+                {latestReview.resulting_claim_id ? " It is still saved as something someone shared. It has not been confirmed by a care professional." : ""}
               </p>
             ) : !selectedQuestion.claim_id ? (
               <p role="status" style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
@@ -739,7 +739,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
                 <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Review this answer</strong>
                 <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
-                  Accepting saves the answer as something a caregiver shared. It does not confirm that the information is medically correct.
+                  Accepting saves the answer as something someone shared. It does not mean a care professional has checked that it is correct.
                 </p>
                 <label style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Why are you accepting or declining this answer?
                   <textarea style={{ ...field, minHeight: 55, marginTop: 4 }} value={reviewRationale} onChange={(event) => setReviewRationale(event.target.value)} />
