@@ -25,6 +25,17 @@ const HISTORY_STATUS_CATEGORIES: HistoryStatusCategory[] = [
   "daily-care", "document", "appointment", "handoff", "decision", "outcome", "follow-up",
 ];
 
+function historyLoadStatusLabel(status: HistoryLoadStatus): string {
+  switch (status) {
+    case "loading": return "Loading";
+    case "complete": return "Up to date";
+    case "partial": return "Some entries may be missing";
+    case "failed": return "Could not load";
+    case "empty": return "No entries yet";
+    case "stale": return "May be out of date";
+  }
+}
+
 type HistoryCategory =
   | "daily-care"
   | "document"
@@ -1590,7 +1601,7 @@ export function HistoryDrawer() {
                     <ul>
                       {HISTORY_STATUS_CATEGORIES.map((category) => (
                         <li key={category}>
-                          {categoryLabel(category)}: {sourceStatuses[category][0].toUpperCase() + sourceStatuses[category].slice(1)}
+                          {categoryLabel(category)}: {historyLoadStatusLabel(sourceStatuses[category])}
                         </li>
                       ))}
                     </ul>
