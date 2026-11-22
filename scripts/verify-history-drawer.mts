@@ -140,14 +140,14 @@ for (const [route, label] of [
   ["/workspace", "Today"],
   ["/workspace/daily-care", "Share an update"],
   ["/workspace/appointments", "Appointments"],
-  ["/workspace/companion", "Care Assistant"],
+  ["/workspace/open-loops", "Follow-ups"],
   ["/workspace/more", "More"],
 ]) {
   assert.match(navigation, new RegExp('href: "' + route.replaceAll("/", "\\/") + '"[\\s\\S]*?label: "' + label + '"'),
     label + " remains a primary caregiver destination");
 }
 for (const [route, label] of [
-  ["/workspace/open-loops", "Follow-ups"],
+  ["/workspace/companion", "Care Assistant"],
   ["/workspace/timeline", "Care history"],
   ["/workspace/documents", "Documents"],
   ["/workspace/handoffs", "Share care information"],
