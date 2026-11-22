@@ -56,6 +56,7 @@ export function SituationResponsePanel({
       evidence_id?: string;
       message?: string;
       events?: Array<{ id?: string; title?: string; description?: string | null; occurred_at?: string }>;
+      events_created?: Array<{ id?: string; raw_input?: string }>;
     };
     const persistedEvent =
       receipt.ok === true &&
