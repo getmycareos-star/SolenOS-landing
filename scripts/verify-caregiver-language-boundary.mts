@@ -825,3 +825,8 @@ assert.doesNotMatch(careDiffCopy, /moderate confidence|confidence decreased|fact
 assert.match(responseComposerCopy, /caregiverFieldLabel\(top\.domain\)/);
 assert.match(responseComposerCopy, /caregiverStatusLabel\(top\.classification\)/);
 assert.doesNotMatch(responseComposerCopy, /moderate confidence|low confidence/);
+
+const careContinuityIntegrity = read("../src/components/CareContinuityIntegrityPanel.tsx");
+assert.match(careContinuityIntegrity, /caregiverFieldLabel\(item\.field\) \|\| caregiverInformationLabel\(item\.field\) \|\| 'Care detail'/);
+assert.doesNotMatch(careContinuityIntegrity, /caregiverSafeAssistantText\(item\.field\)/,
+  "expanded Care Record details must not display raw field codes");
