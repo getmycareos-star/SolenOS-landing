@@ -3,48 +3,41 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const source = readFileSync(new URL("../public/sw.js", import.meta.url), "utf8");
+assert.doesNotMatch(source, /addEventListener\(["']push["']/);
+assert.doesNotMatch(source, /addEventListener\(["']notificationclick["']/);
+assert.doesNotMatch(source, /showNotification|pushManager|Notification\.requestPermission/);
+
 const listeners = new Map();
-const shown = [];
-const opened = [];
+const deletedCaches = [];
+let unregistered = false;
+let skippedWaiting = false;
 const self = {
-  location: { origin: "https://solenosai.netlify.app" },
-  registration: { showNotification: async (title, options) => shown.push({ title, options }) },
-  clients: { matchAll: async () => [], openWindow: async (url) => opened.push(url) },
+  skipWaiting: async () => { skippedWaiting = true; },
+  registration: {
+    unregister: async () => { unregistered = true; return true; },
+  },
   addEventListener: (name, callback) => listeners.set(name, callback),
 };
-vm.runInNewContext(source, { self, URL, Promise });
+const caches = {
+  keys: async () => ["solenos-legacy-push-cache"],
+  delete: async (name) => { deletedCaches.push(name); return true; },
+};
+vm.runInNewContext(source, { self, caches, Promise });
 
-assert.equal(typeof listeners.get("push"), "function");
-assert.equal(typeof listeners.get("notificationclick"), "function");
+assert.equal(typeof listeners.get("install"), "function");
+assert.equal(typeof listeners.get("activate"), "function");
+assert.equal(listeners.has("push"), false);
+assert.equal(listeners.has("notificationclick"), false);
 
-let pushWork;
-listeners.get("push")({
-  data: { json: () => ({
-    title: "Private care title",
-    body: "Private care details",
-    url: "https://attacker.invalid/phishing",
-    notification_id: "safe-id",
-  }) },
-  waitUntil: (promise) => { pushWork = promise; },
-});
-await pushWork;
-assert.equal(shown[0].title, "SolenOS");
-assert.equal(shown[0].options.body, "You have a care update. Open SolenOS to review it.");
-assert.equal(shown[0].options.data.path, "/workspace");
-assert.equal(shown[0].options.tag, "solenos-safe-id");
-assert.ok(!JSON.stringify(shown[0]).includes("Private care details"));
+let installWork;
+listeners.get("install")({ waitUntil: (promise) => { installWork = promise; } });
+await installWork;
+assert.equal(skippedWaiting, true);
 
-let clickWork;
-let closed = false;
-listeners.get("notificationclick")({
-  notification: {
-    data: { path: "https://attacker.invalid/phishing" },
-    close: () => { closed = true; },
-  },
-  waitUntil: (promise) => { clickWork = promise; },
-});
-await clickWork;
-assert.equal(closed, true);
-assert.deepEqual(opened, ["https://solenosai.netlify.app/workspace"]);
+let activateWork;
+listeners.get("activate")({ waitUntil: (promise) => { activateWork = promise; } });
+await activateWork;
+assert.equal(unregistered, true);
+assert.deepEqual(deletedCaches, ["solenos-legacy-push-cache"]);
 
-console.log("Web Push service worker privacy and navigation checks passed.");
+console.log("Legacy browser-push worker unregisters itself; no push or browser-notification events are handled.");
