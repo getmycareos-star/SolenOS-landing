@@ -506,7 +506,6 @@ assert.doesNotMatch(cognitiveWorkspace, /setLcrOrientationReply\(data\.reply\.tr
 assert.match(clarificationReview, /caregiverSafeGeneratedText\(selectedQuestion\.question\)/, "generated clarification questions must use caregiver language");
 assert.match(clarificationReview, /caregiverOpenQuestions[\s\S]*?caregiverSafeGeneratedText\(item\.question\)/, "open clarification question lists must filter generated wording");
 assert.match(clarificationReview, /questions\.filter\(\(item\) => item\.status !== "open" && item\.status !== "unresolved"\)[\s\S]*?caregiverSafeGeneratedText\(item\.question\)/, "restored clarification questions must use the same generated-language boundary");
-assert.match(clarificationReview, /questions\.filter\(\(item\) => item\.status !== "open" && item\.status !== "unresolved"\)[\s\S]*?caregiverSafeGeneratedText\(item\.question\)/, "restored clarification questions must use the same generated-language boundary");
 assert.match(clarificationReview, /caregiverSafeGeneratedText\(guidance\.why\)/, "generated clarification explanations must use caregiver language");
 assert.match(careDelta, /caregiverSafeGeneratedText\(claim\.text\)/, "generated care-change summaries must use caregiver language");
 assert.match(careDelta, /caregiverSafeGeneratedText\(String\(row\.next_question/, "generated care-change questions must use caregiver language");
