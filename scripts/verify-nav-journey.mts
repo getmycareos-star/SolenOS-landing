@@ -33,6 +33,7 @@ console.log("✓ workspace access is not blocked by a checkbox or acknowledgemen
 // Canonical workspace navigation contract: one registry, visible labels, real routes.
 const appShell = fs.readFileSync(path.join(root, "src/components/app-shell/AppShell.tsx"), "utf8");
 const navigationRegistry = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
+const morePage = fs.readFileSync(path.join(root, "src/app/workspace/more/page.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 
 assert.match(appShell, /WORKSPACE_NAVIGATION\.care\.map/);
@@ -46,6 +47,20 @@ assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes
 
 for (const label of ["Today", "Share an update", "Appointments", "Care Assistant", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
+}
+assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION/);
+assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/);
+for (const route of [
+  "/workspace/timeline",
+  "/workspace/open-loops",
+  "/workspace/documents",
+  "/workspace/reminders",
+  "/workspace/handoffs",
+  "/workspace/notifications",
+  "/workspace/care-continuity",
+  "/workspace/settings",
+]) {
+  assert.ok(morePage.includes(route), `More preserves the secondary destination ${route}`);
 }
 for (const route of [
   "src/app/workspace/page.tsx",
