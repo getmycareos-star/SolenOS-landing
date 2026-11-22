@@ -120,27 +120,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ./backend-service/backend
 
-      - name: Generate ephemeral VAPID keys for real browser push verification
-        run: |
-          python - <<'PY'
-          import base64
-          import os
-          import uuid
-          from cryptography.hazmat.primitives.asymmetric import ec
-          from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, PublicFormat
-
-          private = ec.generate_private_key(ec.SECP256R1())
-          public = private.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
-          pem = private.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode("ascii")
-          public_key = base64.urlsafe_b64encode(public).rstrip(b"=").decode("ascii")
-          private_key_b64 = base64.b64encode(pem.encode("ascii")).decode("ascii")
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-              env.write("VAPID_PUBLIC_KEY=" + public_key + "\n")
-              env.write("VAPID_SUBJECT=mailto:ci@solenosai.net\n")
-              env.write("VAPID_PRIVATE_KEY_B64=" + private_key_b64 + "\n")
-          print("::add-mask::" + private_key_b64)
-          PY
-
       - name: Configure ephemeral independent privacy reviewers for deletion acceptance
         run: |
           python - <<'PY'
@@ -168,8 +147,7 @@ jobs:
       - name: Start FastAPI on the isolated PostgreSQL database
         working-directory: backend-service/backend
         run: |
-          VAPID_PRIVATE_KEY="$(printf '%s' "$VAPID_PRIVATE_KEY_B64" | base64 --decode)"
-          nohup env APP_ENV=test SOLENOS_TEST_DISABLE_QWEN="$SOLENOS_TEST_DISABLE_QWEN" SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 BACKEND_SERVICE_DIR="$GITHUB_WORKSPACE/backend-service/backend" python "$GITHUB_WORKSPACE/e2e/document-test-backend.py" >/tmp/solenos-critical-backend.log 2>&1 &
+          nohup env APP_ENV=test SOLENOS_TEST_DISABLE_QWEN="$SOLENOS_TEST_DISABLE_QWEN" SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 BACKEND_SERVICE_DIR="$GITHUB_WORKSPACE/backend-service/backend" python "$GITHUB_WORKSPACE/e2e/document-test-backend.py" >/tmp/solenos-critical-backend.log 2>&1 &
           echo $! >/tmp/solenos-critical-backend.pid
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
@@ -209,19 +187,12 @@ jobs:
           SOLENOS_REQUIRE_LIVE_QWEN: "0"
         run: node e2e/document-continuity-stubbed-inference.mjs
 
-      - name: Ensure a virtual display is available for headed Chromium
-        run: |
-          if ! command -v xvfb-run >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y xvfb
-          fi
-
-      - name: Verify real browser Web Push delivery through persistent Chrome and PostgreSQL
+      - name: Verify in-app notification delivery, disabled browser push and restart persistence
         env:
           FRONTEND_URL: http://127.0.0.1:3000
           BACKEND_URL: http://127.0.0.1:8000
           BACKEND_SERVICE_DIR: ${{ github.workspace }}/backend-service/backend
-        run: xvfb-run -a node e2e/web-push-delivery.mjs
+        run: node e2e/web-push-delivery.mjs
 
       - name: Audit rendered dark mode on the isolated browser build
         if: always()
