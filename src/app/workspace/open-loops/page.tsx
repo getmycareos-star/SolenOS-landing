@@ -412,11 +412,19 @@ export default function FollowUpsPage() {
     setNotice("");
     const idempotencyKey = pendingCreateKeys.current[sourceKey] || crypto.randomUUID();
     pendingCreateKeys.current[sourceKey] = idempotencyKey;
-    const description = [
+    const rawDescriptionLines = [
       item.reason,
       ...(item.priority_basis || []),
-    ].filter((value): value is string => Boolean(value && value.trim())).join(" · ")
-      || "This care detail needs a follow-up.";
+    ].filter((value): value is string => Boolean(value && value.trim()));
+    const safeDescriptionLines = rawDescriptionLines
+      .map((value) => caregiverSafeGeneratedText(value))
+      .filter((value): value is string => Boolean(value));
+    // Never persist rejected model wording into a caregiver-created follow-up.
+    // If any part cannot be shown safely, preserve the need for review without
+    // silently changing the meaning of the remaining explanation.
+    const description = safeDescriptionLines.length === rawDescriptionLines.length && safeDescriptionLines.length > 0
+      ? safeDescriptionLines.join(" · ")
+      : "The reason needs to be checked against the original care information.";
     try {
       await postJSON("/open-loops", {
         loop_type: "follow_up",
