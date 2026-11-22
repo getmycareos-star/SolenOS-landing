@@ -17,7 +17,7 @@ assert(source.includes("decision_version"), "each displayed decision must retain
 assert(source.includes("historyErrors") && source.includes("A missing history does not mean no earlier decision was made"), "failed history retrieval must not be presented as an empty history");
 assert(source.includes("Review history") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
 assert(source.includes("corrected_pending_approval"), "corrections must remain pending until explicitly accepted");
-assert(source.includes("WORDS FROM THE DOCUMENT") && source.includes("candidate.source_quote"), "each candidate must show its exact source quotation in plain language");
+assert(source.includes("From the original document") && source.includes("candidate.source_quote"), "each candidate must show its exact source quotation in plain language");
 assert(source.includes("No care-related details were found in this document. Nothing was added to your Care Record."), "empty interpretation must not imply a care fact");
 assert(
   source.includes("You can check the original document and the text SolenOS read"),
@@ -70,7 +70,7 @@ assert(source.includes("source_attribution") && source.includes("negation_status
 assert(source.includes("modality") && source.includes("conditionality") && source.includes("temporal_context"), "document candidates must preserve tentative, conditional and historical wording");
 assert(source.includes("statement_kind") && source.includes("A recommendation; no result has been recorded yet."), "recommendations must not be represented as completed outcomes");
 assert(source.includes("Reported by the patient") && source.includes("Reported by a family caregiver") && source.includes("Documented or observed by a care professional"), "caregivers must be able to distinguish the explicit source of a statement");
-assert(source.includes("Contains negative wording") && source.includes("Tentative wording") && source.includes("Conditional wording") && source.includes("Historical information"), "caregivers must see qualifiers before accepting document-derived details");
+assert(source.includes("Says this did not happen") && source.includes("Not certain") && source.includes("Only applies in some situations") && source.includes("Historical information"), "caregivers must see qualifiers before accepting document-derived details");
 
 console.log("✓ negation, uncertainty, conditionality, historical context and attribution remain visible in review");
 
