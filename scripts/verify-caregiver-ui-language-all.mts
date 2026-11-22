@@ -12,8 +12,10 @@ const excludedPathParts = [
   "/ops-clarity/",
   "/ui-runtime/",
 ];
-// Only the debug-only state visualizer is excluded from caregiver copy checks.
+// Exclude only components with no caregiver-route references: two legacy panels and the debug visualizer.
 const excludedFiles = new Set([
+  "src/components/EvidenceCompletenessPanel.tsx",
+  "src/components/routine-moments/RoutineMomentLogger.tsx",
   "src/components/StateVisualizer.tsx",
 ]);
 const files: string[] = [];
