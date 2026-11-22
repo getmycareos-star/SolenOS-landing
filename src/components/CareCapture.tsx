@@ -126,7 +126,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
             fontSize: '11px', color: 'var(--error)', fontWeight: 500,
             background: 'var(--error-soft)', padding: '2px 8px', borderRadius: '999px',
           }}>
-            {identityError ? 'Your care session could not be confirmed. Reopen Daily Care and try again.' : caregiverSafeErrorMessage()}
+            {identityError ? 'We couldn’t confirm your sign-in. Open Daily Care again and try saving your update.' : caregiverSafeErrorMessage()}
           </span>
         )}
       </div>
@@ -190,7 +190,7 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
       )}
 
       {savedMessage && qwenAnalysis && (
-        <section aria-label="Qwen capture analysis" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+        <section aria-label="Suggested details from your care update" style={{ marginTop: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
           <strong style={{ fontSize: '12px' }}>Suggested care details</strong>
           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
             {qwenAnalysis.status === 'available' ? 'Possible details are ready for review. They are not confirmed care facts.' : 'Your original update is saved. Suggested details are not available yet.'}
@@ -201,14 +201,14 @@ export default function CareCapture({ personId: pid, onCapture }: CareCapturePro
                 <li key={index} style={{ fontSize: '12px', marginBottom: '8px' }}>
                   <strong>{candidate.subject || 'Observation'}:</strong> {candidate.observation}
                   <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Source: “{candidate.source_quote}” · {candidate.review_status || 'pending_review'}
+                    Original wording: “{candidate.source_quote}” · {caregiverStatusLabel(candidate.review_status) || "Needs review"}
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-              No verified Qwen candidates are available. The saved input remains preserved.
+              No suggested details are ready yet. Your saved update is still here.
             </p>
           )}
           {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
