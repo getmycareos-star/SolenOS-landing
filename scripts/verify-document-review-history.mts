@@ -68,7 +68,7 @@ console.log("✓ accepting a document observation refreshes the LCR and care-con
 
 assert(source.includes("source_attribution") && source.includes("negation_status"), "document candidates must preserve explicit reporter attribution and negation metadata");
 assert(source.includes("modality") && source.includes("conditionality") && source.includes("temporal_context"), "document candidates must preserve tentative, conditional and historical wording");
-assert(source.includes("statement_kind") && source.includes("Recommendation — outcome not established here"), "recommendations must not be represented as completed outcomes");
+assert(source.includes("statement_kind") && source.includes("A recommendation; no result has been recorded yet."), "recommendations must not be represented as completed outcomes");
 assert(source.includes("Reported by the patient") && source.includes("Reported by a family caregiver") && source.includes("Documented or observed by a care professional"), "caregivers must be able to distinguish the explicit source of a statement");
 assert(source.includes("Contains negative wording") && source.includes("Tentative wording") && source.includes("Conditional wording") && source.includes("Historical information"), "caregivers must see qualifiers before accepting document-derived details");
 
