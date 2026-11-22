@@ -554,7 +554,8 @@ assert.doesNotMatch(appointmentWorkspace, /SolenOS could not retrieve the full c
 assert.doesNotMatch(appointmentWorkspace, /Status not available|Priority not available|Review status:|caregiver-recorded event|external booking confirmation|clinical fact/i,
   "appointment summaries must use plain language for missing details and review limits");
 
-\nassert.doesNotMatch(livingCareRecordPanel, /Living Care Record|System interpretation|Conflicting reports|Questions to resolve|Next actions/,
+
+assert.doesNotMatch(livingCareRecordPanel, /Living Care Record|System interpretation|Conflicting reports|Questions to resolve|Next actions/,
   "the main Care Record summary must not expose internal product or reasoning labels");
 assert.match(livingCareRecordPanel, /What we know so far/);
 assert.match(livingCareRecordPanel, /Notes and documents behind this summary/);
@@ -602,4 +603,24 @@ assert.doesNotMatch(openLoopsPage, /Appointment connection|Linked to an appointm
   "Follow-ups must describe appointments and actions in familiar terms");
 assert.match(openLoopsPage, /Related appointment/);
 assert.match(openLoopsPage, /Save what you did/);
-assert.match(openLoopsPage, /If nothing appears here, there may still be something that needs attention/);
+assert.match(openLoopsPage, /There may still be something that needs attention, even if it is not shown here/);
+
+const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
+const conflictReview = read("../src/components/ConflictResolutionPanel.tsx");
+assert.doesNotMatch(changeIntelligence, /Loading saved notes and documents|Review notes and documents|Care updates considered|Time period:|Information:.*Review:/,
+  "care change history must avoid internal labels and stiff technical phrasing");
+assert.match(changeIntelligence, /See the notes and documents/);
+assert.match(changeIntelligence, /When this happened:/);
+assert.match(changeIntelligence, /What we know:/);
+assert.doesNotMatch(claimReview, /Loading saved review versions|Retry load|source completeness|semantic sufficiency|assessment rationale/i,
+  "care detail reviews must not expose internal assessment terminology");
+assert.match(claimReview, /Check whether anything new changes this review/);
+assert.match(claimReview, /Check result:/);
+assert.doesNotMatch(conflictReview, /Review status|Supporting information|review decisions have been recorded/i,
+  "reports that differ must use plain caregiver wording");
+assert.match(conflictReview, /What did you find\?/);
+assert.match(conflictReview, /Notes or documents you checked/);
+assert.doesNotMatch(openLoopsPage, /SolenOS could not check what needs attention|Record action|CARE FOLLOW-UPS/i,
+  "Follow-ups must not expose internal workflow wording");
+assert.match(openLoopsPage, /We couldn’t check what needs attention just now/);
+assert.match(openLoopsPage, /Tell us what has changed/);
