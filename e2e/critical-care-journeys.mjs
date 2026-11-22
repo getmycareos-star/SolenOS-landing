@@ -1001,11 +1001,20 @@ await record("01c workspace links, browser back, More menu and account form vali
   }
   await familyDialog.getByRole("heading", { name: "Review and share with family", exact: true }).waitFor({ timeout: 10_000 });
   await familyDialog.getByText(/Allergy information could not be checked from a connected source/).waitFor({ timeout: 10_000 });
-  const familyFreshnessLabel = familyDialog.getByText(/Last check:/);
-  await familyFreshnessLabel.waitFor({ timeout: 10_000 });
-  const familyFreshnessText = await familyFreshnessLabel.innerText();
-  if (familyDraft.source_freshness.status !== "current" || !/current/i.test(familyFreshnessText)) {
+  const expectedFamilyFreshnessLabel = familyDraft.source_freshness.status === "current"
+    ? /Last check: Up to date/i
+    : familyDraft.source_freshness.status === "stale"
+      ? /Last check: May be out of date/i
+      : /Last check: Not checked/i;
+  await familyDialog.getByText(expectedFamilyFreshnessLabel).waitFor({ timeout: 15_000 });
+  if (familyDraft.source_freshness.status !== "current") {
     await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).waitFor({ timeout: 10_000 });
+  } else {
+    assert.equal(
+      await familyDialog.getByRole("alert").filter({ hasText: /Prepare a new draft before sharing/ }).count(),
+      0,
+      "a current draft must not show the out-of-date warning",
+    );
   }
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
     "family briefing must contain actual LCR-derived content");
