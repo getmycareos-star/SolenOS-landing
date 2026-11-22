@@ -154,7 +154,7 @@ assert.match(navigation, /href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-
 assert.match(navigation, /href: "\/workspace\/timeline"[\s\S]*?label: "Care history"/, "care history remains available under More");
 assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents remains available under More");
 assert.ok(lcrHome.includes('href="/workspace/companion"'), "Care Assistant is directly reachable from the Care Record");
-assert.match(lcrHome, /Review earlier updates and corrections\./, "the Care Timeline link describes its current browsing purpose");
+assert.ok(morePage.includes('href="/workspace/timeline">View all care history</Link>'), "Care history is reached from More through its current browsing link");
 assert.match(handoverInbox, /ensureAnonymousSession\(\)/, "handover requests wait for a valid caregiver session");
 assert.match(handoverInbox, /Promise\.allSettled/, "one unavailable handover list does not hide the other");
 assert.match(handoverInbox, /We couldn't check all pending care handovers/);
