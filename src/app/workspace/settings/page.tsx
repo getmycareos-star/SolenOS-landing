@@ -89,29 +89,34 @@ function NotificationsCard() {
   const [inboxError, setInboxError] = useState("");
   const [busyNotificationId, setBusyNotificationId] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState("");
-  const [pushBusy, setPushBusy] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushAvailable, setPushAvailable] = useState(false);
 
   useEffect(() => {
     let active = true;
-    if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.getRegistration("/").then(async (registration) => {
+    const turnOffLegacyBrowserAlerts = async () => {
+      try {
+        await ensureAnonymousSession();
+        const registration = await navigator.serviceWorker.getRegistration("/");
         const subscription = await registration?.pushManager.getSubscription();
-        if (active) setPushEnabled(Boolean(subscription));
-      }).catch(() => {
-        if (active) setPushEnabled(false);
-      });
-    }
-    void ensureAnonymousSession()
-      .then(() => getJSON("/notifications/push/public-key"))
-      .then((result) => {
-        const capability = result as { available?: boolean; public_key?: string | null };
-        if (active) setPushAvailable(Boolean(capability.available && capability.public_key));
-      })
-      .catch(() => {
-        if (active) setPushAvailable(false);
-      });
+        if (!subscription) return;
+        try {
+          await deleteJSON("/notifications/push/subscriptions", { endpoint: subscription.endpoint });
+        } catch {
+          // The browser subscription is still removed locally; the server worker
+          // also revokes any remaining legacy subscriptions.
+        }
+        const unsubscribed = await subscription.unsubscribe();
+        if (active) {
+          setPushStatus(
+            unsubscribed
+              ? "Browser alerts are off. Reminders appear only in your in-app notifications."
+              : "Reminders and care updates appear only in your in-app notifications.",
+          );
+        }
+      } catch {
+        if (active) setPushStatus("Reminders and care updates appear only in your in-app notifications.");
+      }
+    };
+    if ("serviceWorker" in navigator) void turnOffLegacyBrowserAlerts();
     return () => { active = false; };
   }, []);
 
@@ -132,73 +137,6 @@ function NotificationsCard() {
       if (!options?.silent) setInboxLoading(false);
     }
   }, []);
-
-  const enablePushNotifications = async () => {
-    setPushBusy(true);
-    setPushStatus("");
-    try {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-        throw new Error("This browser does not support Web Push notifications.");
-      }
-      await ensureAnonymousSession();
-      const permission = Notification.permission === "granted"
-        ? "granted"
-        : await Notification.requestPermission();
-      if (permission !== "granted") {
-        throw new Error("Notification permission was not granted. You can enable it in your browser settings.");
-      }
-      const keyResult = await getJSON("/notifications/push/public-key") as { available?: boolean; public_key?: string | null };
-      if (!keyResult.available || !keyResult.public_key) {
-        setPushAvailable(false);
-        throw new Error("Browser push is not configured on this server yet. In-app notifications remain available.");
-      }
-      const publicKey = keyResult.public_key;
-      const padding = "=".repeat((4 - publicKey.length % 4) % 4);
-      const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-      const raw = window.atob(base64);
-      const applicationServerKey = new Uint8Array(raw.length);
-      for (let index = 0; index < raw.length; index += 1) applicationServerKey[index] = raw.charCodeAt(index);
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription()
-        || await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey,
-        });
-      await postJSON("/notifications/push/subscriptions", subscription.toJSON());
-      setPushEnabled(true);
-      setPushStatus("Push is enabled on this browser. Delivery is reported when the push provider accepts it; device display still depends on browser and operating-system settings.");
-      show("Push notifications enabled on this browser.", "success");
-    } catch (reason) {
-      const message = "We couldn't enable push notifications. In-app notifications are still available.";
-      setPushStatus(message);
-      show("Push notifications weren't enabled.", "error");
-    } finally {
-      setPushBusy(false);
-    }
-  };
-
-  const disablePushNotifications = async () => {
-    setPushBusy(true);
-    setPushStatus("");
-    try {
-      const registration = await navigator.serviceWorker.getRegistration("/");
-      const subscription = await registration?.pushManager.getSubscription();
-      if (subscription) {
-        await ensureAnonymousSession();
-        await deleteJSON("/notifications/push/subscriptions", { endpoint: subscription.endpoint });
-        await subscription.unsubscribe();
-      }
-      setPushEnabled(false);
-      setPushStatus("Push notifications are disabled on this browser.");
-      show("Push notifications disabled.", "success");
-    } catch {
-      setPushStatus("We couldn't disable push notifications. The existing subscription has been left unchanged.");
-      show("Push notifications weren't disabled.", "error");
-    } finally {
-      setPushBusy(false);
-    }
-  };
 
   const markNotificationRead = async (item: CareNotification) => {
     if (item.is_read) return;
@@ -307,14 +245,14 @@ function NotificationsCard() {
         <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error) || !scheduleSupported} onChange={(event) => void persist("quiet_hours_enabled", event.target.checked)} /><span className="mobile-toggle-track" /></span>
       </div>
       <label className="mobile-settings-row">
-        <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">When enabled, due reminders appear in your in-app notifications. Browser push is optional; SolenOS does not send email alerts.</span></span>
+        <span><span className="mobile-settings-label">Care reminders</span><span className="mobile-settings-hint">When enabled, due reminders appear in your in-app notifications. SolenOS does not send email, text, or browser alerts.</span></span>
         <span className="mobile-toggle"><input type="checkbox" checked={reminders} disabled={loading || saving || Boolean(error)} onChange={(e) => void persist("reminders_enabled", e.target.checked)} /><span className="mobile-toggle-track" /></span>
       </label>
       <div className="mobile-settings-actions">
         <Button variant="secondary" asChild><Link href="/workspace/reminders">Manage care reminders</Link></Button>
-        {pushAvailable ? (pushEnabled ? <Button variant="secondary" onClick={disablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Updating…" : "Disable push alerts"}</Button> : <Button variant="secondary" onClick={enablePushNotifications} disabled={pushBusy || loading}>{pushBusy ? "Enabling…" : "Enable push alerts"}</Button>) : <span className="mobile-settings-hint">Browser push is not configured on this server yet. In-app notifications remain available.</span>}
         <Button variant="secondary" onClick={() => void loadInbox()} disabled={inboxLoading}>Refresh notifications</Button>
       </div>
+      <p className="mobile-settings-hint">Reminders and care updates appear only in your in-app notifications.</p>
       {pushStatus && <p className="mobile-settings-hint" role="status">{pushStatus}</p>}
       <div id="settings-notifications" className="settings-notification-inbox" aria-label="Notification inbox">
         <h3 className="mobile-settings-label">Recent notifications · {unreadCount} unread</h3>
@@ -326,11 +264,6 @@ function NotificationsCard() {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span className="mobile-settings-label">{item.title}</span>
               <span className="mobile-settings-hint">{item.body}</span>
-              {item.push_delivery && item.push_delivery.status !== "in_app_only" && (
-                <span className="mobile-settings-hint" role={["failed", "partial_failure"].includes(item.push_delivery.status) ? "status" : undefined}>
-                  {item.push_delivery.message}
-                </span>
-              )}
               <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {notificationCategoryLabel(item.category)}</span>
               {notificationReviewHref(item.category) && (
                 <Link href={notificationReviewHref(item.category)!} className="mobile-settings-hint">
