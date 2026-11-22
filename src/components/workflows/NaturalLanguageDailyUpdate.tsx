@@ -141,10 +141,10 @@ export default function NaturalLanguageDailyUpdate() {
           setPendingLocal(false);
           setRequestKey(null);
           setReport("");
-          setSyncNotice("Your pending update has now synced to the care record.");
+          setSyncNotice("Your saved update has now been added to your Care Record.");
           window.dispatchEvent(new Event("careRecordUpdated"));
         } else if (result.synced > 0) {
-          setSyncNotice("A pending update has synced to the care record.");
+          setSyncNotice("Your saved update has been added to your Care Record.");
           window.dispatchEvent(new Event("careRecordUpdated"));
         }
       } catch {
@@ -181,7 +181,7 @@ export default function NaturalLanguageDailyUpdate() {
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
     if (!personId || !caregiverId) {
-      setError("Your care session could not be verified. Reopen Daily Care before saving.");
+      setError("We couldn’t confirm which Care Record to use. Please reopen SolenOS and try again.");
       return;
     }
 
@@ -351,11 +351,11 @@ export default function NaturalLanguageDailyUpdate() {
           setAttentionCount(summary.blocked + summary.failed_recoverable);
         }
         if (status === 401 || status === 403) {
-          setError("This update is encrypted on this device, but your care session must be verified before it can reach the care record.");
+          setError("Your update is saved on this device, but we couldn’t confirm which Care Record to use. Please reopen SolenOS and try again.");
         } else if (status === 400 || status === 409 || status === 422) {
-          setError("This update is kept on this device, but the server needs it reviewed before it can be saved.");
+          setError("Your update is saved on this device, but it needs a quick review before it can be added to your Care Record.");
         } else {
-          setError("This update is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.");
+          setError("Your update is saved on this device. It hasn’t reached your Care Record yet. We’ll try again when your connection returns.");
         }
       } else {
         const reason = cause instanceof Error ? cause.message : "";
@@ -412,12 +412,12 @@ export default function NaturalLanguageDailyUpdate() {
       )}
       {pendingCount > 0 && !pendingLocal && (
         <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>
-          {pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to sync with the care record.
+          {pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to be added to your Care Record.
         </p>
       )}
       {attentionCount > 0 && (
         <p role="alert" style={{ margin: 0, color: "var(--theme-danger-fg, #9b3434)" }}>
-          {attentionCount} update{attentionCount === 1 ? "" : "s"} need attention and have not been saved to the care record. Use the pending-update controls in Daily Care to retry or remove them.
+          {attentionCount} update{attentionCount === 1 ? "" : "s"} still need attention. They have not been added to your Care Record yet.
         </p>
       )}
       {syncNotice && <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{syncNotice}</p>}
