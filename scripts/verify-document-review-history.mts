@@ -18,6 +18,17 @@ assert(source.includes("historyErrors") && source.includes("A missing history do
 assert(source.includes("Review history") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
 assert(source.includes("corrected_pending_approval"), "corrections must remain pending until explicitly accepted");
 assert(source.includes("From the original document") && source.includes("candidate.source_quote"), "each candidate must show its exact source quotation in plain language");
+assert(
+  source.includes("caregiverSafeGeneratedText(candidate.subject)") &&
+  source.includes("caregiverSafeGeneratedText(candidate.observation)"),
+  "generated document subjects and observations must pass through the caregiver-language boundary",
+);
+assert(
+  source.includes("candidateNeedsRewrite") &&
+  source.includes("disabled={busy !== null || candidateNeedsRewrite}") &&
+  source.includes("Check the original document and write the detail in your own words"),
+  "an internal or unreadable generated suggestion must be corrected against the original before it can be accepted",
+);
 assert(source.includes("No care-related details were found in this document. Nothing was added to your Care Record."), "empty interpretation must not imply a care fact");
 assert(
   source.includes("You can check the original document and the text SolenOS read"),
