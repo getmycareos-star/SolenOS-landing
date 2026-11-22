@@ -336,12 +336,7 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
   };
 
   if (isUnderstandingEmpty(understanding)) {
-    return createFallbackUnderstanding({
-      rawText: raw,
-      careKey,
-      personDisplayName: params.personDisplayName,
-      situation,
-    });
+    throw new Error("Qwen did not return enough source-grounded care information to build an understanding.");
   }
 
   return understanding;
@@ -357,22 +352,11 @@ async function getBestExtraction(params: {
   contributorId: string;
   signal?: AbortSignal;
 }): Promise<import("../care-reality-extraction").CareRealityExtractionResult> {
-  try {
-    return await llmStructuredUnderstanding({
-      rawText: params.rawText,
-      contributorId: params.contributorId,
-      signal: params.signal,
-    });
-  } catch {
-    try {
-      return extractCareRealityFromText({
-        rawText: params.rawText,
-        source: params.contributorId,
-      });
-    } catch {
-      throw new Error("Deterministic extraction failed");
-    }
-  }
+  return llmStructuredUnderstanding({
+    rawText: params.rawText,
+    contributorId: params.contributorId,
+    signal: params.signal,
+  });
 }
 
 /**
@@ -403,23 +387,13 @@ export async function buildCareSituationUnderstanding(params: {
     careKey,
   });
 
-  let extraction: import("../care-reality-extraction").CareRealityExtractionResult;
-  try {
-    extraction =
-      anchor.extraction ??
-      (await getBestExtraction({
-        rawText: raw,
-        contributorId: params.contributorId ?? careKey,
-        signal: params.signal,
-      }));
-  } catch {
-    return createFallbackUnderstanding({
+  const extraction: import("../care-reality-extraction").CareRealityExtractionResult =
+    anchor.extraction ??
+    (await getBestExtraction({
       rawText: raw,
-      careKey,
-      personDisplayName: params.personDisplayName,
-      situation,
-    });
-  }
+      contributorId: params.contributorId ?? careKey,
+      signal: params.signal,
+    }));
 
   const facts: CareSituationFact[] = [];
   const interpretations: CareSituationInterpretation[] = [];
