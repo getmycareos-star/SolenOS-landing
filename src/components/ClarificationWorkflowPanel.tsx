@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Claim = {
   id: string;
@@ -598,12 +598,12 @@ SolenOS only asks when a missing detail could change what happens next. You can 
         )}
         {selectedQuestion && <div style={{ marginTop: 12, border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
           <p style={{ marginTop: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{questionAudienceLabel(selectedQuestion.intended_answerer_role)}</p>
-          <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", fontWeight: 600 }}>{selectedQuestion.question}</p>
+          <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", fontWeight: 600 }}>{caregiverSafeGeneratedText(selectedQuestion.question) || "A question needs review."}</p>
           {(() => {
             const guidance = caregiverQuestionGuidance(selectedQuestion);
             const why = guidance?.why
-              ? caregiverSafeAssistantText(guidance.why)
-              : caregiverSafeAssistantText(selectedQuestion.necessity_rationale);
+              ? caregiverSafeGeneratedText(guidance.why)
+              : caregiverSafeGeneratedText(selectedQuestion.necessity_rationale);
             return (
               <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
                 <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Why this came up</strong>
