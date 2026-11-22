@@ -341,11 +341,18 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
     .waitFor({ state: "visible", timeout: 30_000 });
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
-  const contextInterpretationState = page.getByRole("region", { name: "Possible explanation for this update", exact: true })
-    .getByText(
-      /We couldn’t connect this update with earlier care information right now\. Your Care Record is unchanged\./,
-    );
-  await contextInterpretationState.waitFor({ state: "visible", timeout: 30_000 });
+  const contextInterpretationRegion = page.getByRole("region", { name: "Possible explanation for this update", exact: true });
+  await contextInterpretationRegion.waitFor({ state: "visible", timeout: 10_000 });
+  await page.waitForFunction(() => {
+    const region = document.querySelector('[aria-label="Possible explanation for this update"]');
+    const text = region?.textContent ?? "";
+    return text.includes("We couldn’t connect this update with earlier care information right now.")
+      || text.includes("Suggested explanation for you to review.");
+  }, undefined, { timeout: 30_000 });
+  const contextInterpretationText = await contextInterpretationRegion.innerText();
+  assert.match(contextInterpretationText, /Your Care Record has not changed\./,
+    "the optional interpretation must never imply that it changed the Care Record");
+
   assert.equal(
     await page.locator(".care-card-understanding").count(),
     0,
