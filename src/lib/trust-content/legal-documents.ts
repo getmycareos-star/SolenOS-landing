@@ -44,7 +44,7 @@ export const PRIVACY_POLICY = {
     {
       title: "4. How SolenOS uses automated help",
       body: [
-        "SolenOS currently uses a private AI service to help prepare responses and suggested details. It is not designed to send those requests to OpenAI, Google Gemini, or another hosted AI service as a backup. If this service is unavailable, the feature may not work rather than switching to another provider without notice.",
+        "SolenOS is designed to use a private AI service to help prepare responses and suggested details. It is not designed to send those requests to OpenAI, Google Gemini, or another hosted AI service as a backup. If this service is unavailable, the feature may not work rather than switching to another provider without notice.",
         "When you ask SolenOS to help organize information or answer a question, the details needed for that task may be sent to the private AI service that runs that feature. This means the information is not kept only on your device.",
         "We have not yet confirmed exactly where this service processes information or how long its service logs are kept. We cannot promise a specific processing location or immediate deletion of all service logs.",
         "AI output may omit context, misread a document, or make an incorrect interpretation. Review it against the source. SolenOS does not make an AI response an authoritative care fact merely because a model generated it.",
