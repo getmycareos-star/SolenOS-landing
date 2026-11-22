@@ -58,7 +58,7 @@ type QwenExtractionResponse = {
 
 function toRunOutput(modelRun: { claims: unknown[] }, runId: string, input: ConsistencyGateInput, rawInputId: string): ExtractionRunOutput {
   const output = JSON.stringify({ claims: modelRun.claims });
-  const claims = parseClaimsFromOutput(output, runId, input.evidence_id, rawInputId, input.raw_text.trim());
+  const claims = parseClaimsFromOutput(output, runId, input.evidence_id, rawInputId, input.raw_text);
   const parsed = ClaimExtractionOutputSchema.safeParse({ claims: modelRun.claims });
   if (!parsed.success) {
     return { run_id: runId, claims: [], raw_output: output, success: false, error: "Qwen returned claims that did not match the required format." };
@@ -69,7 +69,7 @@ function toRunOutput(modelRun: { claims: unknown[] }, runId: string, input: Cons
 async function requestTwoRuns(input: ConsistencyGateInput): Promise<QwenExtractionResponse> {
   const response = await postJSON("/assistant/claim-extraction", {
     evidence_id: input.evidence_id,
-    raw_text: input.raw_text.trim(),
+    raw_text: input.raw_text,
   }) as QwenExtractionResponse;
   if (
     response.evidence_id !== input.evidence_id ||
