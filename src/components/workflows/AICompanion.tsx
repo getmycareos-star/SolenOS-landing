@@ -401,10 +401,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (response.session_id) {
         setSessionId(response.session_id)
-        window.localStorage.setItem(
-          companionConversationStorageKey(session.person.id, session.caregiver.id),
-          response.session_id,
-        )
+        try {
+          // The server is the durable source of conversation history. This
+          // browser pointer is only a convenience and must never turn a
+          // successful, persisted reply into a failed send.
+          window.localStorage.setItem(
+            companionConversationStorageKey(session.person.id, session.caregiver.id),
+            response.session_id,
+          )
+        } catch {
+          // Server-backed conversation listing restores history without this pointer.
+        }
       }
       const isEmergency = isEmergencyCompanionResponse(response)
       if (isEmergency) setEmergency(true)
