@@ -384,7 +384,7 @@ export default function AppointmentWorkspace() {
             } catch {
               if (!cancelled) {
                 setOutcome(null)
-                setError('Your saved appointment note is still stored, but its details could not be loaded. Try refreshing.')
+                setError('Your appointment note is still saved, but we couldn’t load its details. Try refreshing.')
               }
             }
           } else if (!cancelled) {
@@ -397,7 +397,7 @@ export default function AppointmentWorkspace() {
           setError('Saved appointment information could not be loaded. Your care record has not been changed.')
         }
       } catch (cause) {
-        if (!cancelled) setError('Appointment support could not be opened. Please try again.')
+        if (!cancelled) setError('We couldn’t open the appointment details. Please try again.')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -523,7 +523,7 @@ export default function AppointmentWorkspace() {
       try {
         await refreshSavedWorkspace()
       } catch {
-        setError('Your review was saved. Appointment details could not refresh; reopen appointment support to retry.')
+        setError('Your review was saved, but appointment details could not refresh. Open the appointment again and try refreshing.')
       }
       setMessage(decision === 'accept'
         ? (result.written_to_lcr
@@ -579,7 +579,7 @@ export default function AppointmentWorkspace() {
       setAttachedEvidenceIds(nextIds)
       setPendingDocumentEvidenceId('')
       setPendingDocumentName('')
-      setDocumentMessage('The saved original is now linked to this appointment.')
+      setDocumentMessage('The original document is now attached to this appointment.')
       setMessage('Document attached to the saved appointment record.')
       window.dispatchEvent(new Event('careRecordUpdated'))
       try { await refreshSavedWorkspace() } catch { /* the persisted link remains available on reload */ }
@@ -622,7 +622,7 @@ export default function AppointmentWorkspace() {
 
   const saveNote = async () => {
     if (!appointmentId && !record?.appointment_id) {
-      setError('There is no existing appointment record to attach this note to. SolenOS has not created an unlinked appointment record.')
+      setError('We couldn’t find an existing appointment to add this note to. No new appointment was created.')
       return
     }
     if (!note.trim() && !professionalStatement.trim() && !recordedDecisions.trim() && !recordedInstructions.trim() && !unansweredQuestions.trim() && !followUps.trim()) {
@@ -785,14 +785,14 @@ export default function AppointmentWorkspace() {
                     {brief.appointment_recorded_events?.length ? <section><h6>Earlier visits and clinic discussions</h6><ul>{brief.appointment_recorded_events.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Visit saved by a caregiver"}</strong>{item.description && <p>{caregiverSafeAssistantText(item.description)}</p>}<small>{item.occurred_at ? new Date(item.occurred_at).toLocaleString() : "Date not recorded"} · {item.recorded_by_role === 'caregiver' ? 'Shared by a caregiver' : 'Who shared this is not recorded'} · Not an external booking confirmation</small></li>)}</ul></section> : null}
                     {brief.previous_appointment && <section><h6>Previous visit</h6><strong>{caregiverSafeAssistantText(brief.previous_appointment.title) || "Appointment"}</strong><p>{brief.previous_appointment.scheduled_at ? new Date(brief.previous_appointment.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(brief.previous_appointment.status) || "Status not available"}</p></section>}
                     {brief.next_appointment ? <section><h6>{['cancelled', 'canceled'].includes(brief.next_appointment.status.toLowerCase()) ? 'Appointment cancelled' : brief.next_appointment.status === 'overdue' ? 'Appointment date has passed · visit not confirmed' : brief.next_appointment.scheduled_at ? 'Next appointment recorded' : 'Appointment · date not recorded'}</h6><strong>{caregiverSafeAssistantText(brief.next_appointment.title) || "Appointment"}</strong><p>{brief.next_appointment.scheduled_at ? new Date(brief.next_appointment.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(brief.next_appointment.status) || "Status not available"}</p><small>This is saved information only. SolenOS has not booked or confirmed the appointment with the clinic.</small>{brief.next_appointment.provider && <small>{caregiverSafeAssistantText(brief.next_appointment.provider)}</small>}{brief.next_appointment.location && <small>{caregiverSafeAssistantText(brief.next_appointment.location)}</small>}
-                      <details className="guided-optional-capture"><summary>Correct appointment status (optional)</summary>
-                        <p className="guided-footnote">Only update this when you know the provider or family changed the visit. This records information in SolenOS; it does not contact the provider.</p>
+                      <details className="guided-optional-capture"><summary>Change appointment details (optional)</summary>
+                        <p className="guided-footnote">Only change this if you know the clinic or family changed the visit. This updates your Care Record; it does not contact the clinic.</p>
                         {brief.next_appointment.status === 'overdue' && <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('completed')}>Confirm the visit occurred</button>}
                         {!['cancelled', 'canceled'].includes(brief.next_appointment.status.toLowerCase()) && <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('cancelled')}>Mark as cancelled</button>}
                         <label className="guided-capture-label">New date, if known
                           <input type="datetime-local" value={rescheduleDate} onChange={event => setRescheduleDate(event.target.value)} />
                         </label>
-                        <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('rescheduled')}>Save as rescheduled</button>
+                        <button type="button" className="guided-secondary" disabled={proposalBusy} onClick={() => void updateAppointmentLifecycle('rescheduled')}>Save the new date</button>
                       </details></section> : brief.appointments.length > 0 ? <section><h6>Appointments in your Care Record</h6><ul>{brief.appointments.slice(0, 2).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Appointment"}</strong><small>{item.scheduled_at ? new Date(item.scheduled_at).toLocaleString() : "Date not recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</small></li>)}</ul></section> : null}
                     {brief.open_loops?.length ? <section><h6>Still being followed up</h6><ul>{brief.open_loops.slice(0, 3).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>{item.description && item.description !== item.title && <p>{caregiverSafeAssistantText(item.description)}</p>}<small>{caregiverStatusLabel(item.status) || "Status not available"}{item.deadline_at ? ` · Due ${new Date(item.deadline_at).toLocaleDateString()}` : ""}{item.owner_label ? ` · ${caregiverSafeAssistantText(item.owner_label)}` : ""}{item.appointment_id ? ` · Linked to ${caregiverSafeAssistantText(brief.appointments.find(appointment => appointment.source_id === item.appointment_id)?.title) || 'a recorded appointment'}` : ""}</small></li>)}</ul></section> : null}
                     {linkedAppointmentDocuments.length ? <section><h6>Documents for this appointment</h6><ul>{linkedAppointmentDocuments.slice(0, 5).map(item => <li key={item.source_id}><strong>{caregiverSafeAssistantText(item.filename) || "Care document"}</strong>{item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 280))}</p>}<small>{caregiverStatusLabel(item.extraction_status || "available") || "Text read from the document"} · {item.recorded_at ? new Date(item.recorded_at).toLocaleDateString() : "Date not recorded"} · {caregiverSafeAssistantText(item.interpretation_limit) || "This is from a document and has not been confirmed as a care detail"}</small></li>)}</ul></section> : null}
@@ -876,7 +876,7 @@ export default function AppointmentWorkspace() {
                     <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
                     <small>{caregiverSafeAssistantText(item.interpretation_limit) || "A list of details does not prove that the information is complete enough to guide care."}</small>
                   </li>)}</ul>
-                  : <p className="guided-muted">No check for missing source details is recorded for the linked notes.</p>}
+                  : <p className="guided-muted">We haven’t checked whether details are missing from the linked notes yet.</p>}
             </section>
               </details>
 
@@ -934,7 +934,7 @@ export default function AppointmentWorkspace() {
                 let uploadedEvidenceId = ''
                 try {
                   const saved = await extractAttachedDocument(file, 'upload')
-                  if (saved.status !== 'saved' || !saved.evidenceId) throw new Error(saved.errorNote || 'The original document was not confirmed as saved.')
+                  if (saved.status !== 'saved' || !saved.evidenceId) throw new Error(saved.errorNote || 'We couldn’t confirm that the original document was saved.')
                   uploadedEvidenceId = saved.evidenceId
                   setPendingDocumentEvidenceId(saved.evidenceId)
                   setPendingDocumentName(file.name)
@@ -952,7 +952,7 @@ export default function AppointmentWorkspace() {
             {brief?.source_coverage?.documents === 'restricted' && <p className="guided-muted" role="status">Document access is restricted for this caregiver. We can’t show the document or its details here.</p>}
             {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>}
             {documentMessage && <p className="guided-muted" role="status">{documentMessage}</p>}
-            {pendingDocumentEvidenceId && <div className="guided-actions"><span className="guided-muted">Saved file: {caregiverSafeAssistantText(pendingDocumentName) || 'Document'}</span><button type="button" className="guided-secondary" disabled={documentBusy} onClick={() => void retryDocumentLink()}>Retry linking saved document</button></div>}
+            {pendingDocumentEvidenceId && <div className="guided-actions"><span className="guided-muted">Saved file: {caregiverSafeAssistantText(pendingDocumentName) || 'Document'}</span><button type="button" className="guided-secondary" disabled={documentBusy} onClick={() => void retryDocumentLink()}>Try adding the saved document again</button></div>}
             {attachedEvidenceIds.length > 0 && <p className="guided-footnote">{attachedEvidenceIds.length} document {attachedEvidenceIds.length === 1 ? 'is' : 'items are'} linked to this appointment.</p>}
           </details>
           <div className="guided-actions">
@@ -971,12 +971,12 @@ export default function AppointmentWorkspace() {
             </div>}
             {outcomeProposals.length > 0 && <div className="guided-proposals">
               <h5>Check these care details</h5>
-              <p className="guided-muted">Each item is linked to the appointment information it came from. Accepting adds it as a caregiver report; it does not mean a healthcare professional has confirmed it.</p>
+              <p className="guided-muted">Each item is connected to the appointment information it came from. Accepting adds it as a caregiver report; it does not mean a healthcare professional has confirmed it.</p>
               {outcomeProposals.filter(item => item.proposed_change.source_record_version === record?.version_number).map(item => <article key={item.id} className="guided-proposal">
                 <strong>{caregiverSafeAssistantText(item.proposed_change.label) || "Care detail"}</strong>
                 <p>{caregiverSafeAssistantText(item.proposed_change.asserted_value) || "The saved wording is available for review."}</p>
-                {item.proposed_change.asserted_value !== item.proposed_change.source_quote && <p><small>Original saved wording: {caregiverSafeAssistantText(item.proposed_change.source_quote) || "The original wording is available in the saved record."}</small></p>}
-                <small>{caregiverStatusLabel(item.status) || 'Status not available'} · caregiver reported · not independently verified</small>
+                {item.proposed_change.asserted_value !== item.proposed_change.source_quote && <p><small>Original saved wording: {caregiverSafeAssistantText(item.proposed_change.source_quote) || "The original wording is saved in your Care Record."}</small></p>}
+                <small>{caregiverStatusLabel(item.status) || 'Status not available'} · Shared by a caregiver · not confirmed by a healthcare professional</small>
                 {item.status === 'pending_authorization' && <>
                   <label className="guided-capture-label">Correction, if needed
                     <textarea rows={2} value={correctionDrafts[item.id] || ''} onChange={event => setCorrectionDrafts(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Enter the corrected statement." />
