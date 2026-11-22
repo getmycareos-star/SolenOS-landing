@@ -107,6 +107,9 @@ const dailyCapture = read("../src/components/workflows/StructuredDailyCapture.ts
 const policySettings = read("../src/components/mvp-workspace/PolicySettingsPanel.tsx");
 const identityRecovery = read("../src/components/mvp-workspace/IdentityDeviceRecoveryPanel.tsx");
 const caregiverAccess = read("../src/components/mvp-workspace/CaregiverAccessPanel.tsx");
+const dementiaProfile = read("../src/components/mvp-workspace/DementiaCareProfilePanel.tsx");
+const dementiaObservation = read("../src/components/mvp-workspace/DementiaObservationPanel.tsx");
+const aiAttribution = read("../src/components/trust/AIAttribution.tsx");
 const companionRoute = read("../src/app/workspace/companion/page.tsx");
 const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
 const careDelta = read("../src/components/CareDeltaPanel.tsx");
@@ -153,6 +156,12 @@ assert.doesNotMatch(caregiverAccess, /Living Care Record|care circle|Care covera
   "caregiver sharing and responsibility screens must use everyday language");
 assert.match(caregiverAccess, /Who is helping with care/);
 assert.match(caregiverAccess, /Share with other caregivers/);
+assert.doesNotMatch(dementiaProfile, /Behaviour and emotional wellbeing|Mobility and coordination|Recorded dementia stage/);
+assert.match(dementiaProfile, /Memory and knowing where you are/);
+assert.doesNotMatch(dementiaObservation, /Dementia observations|Save observation|Recent observations/);
+assert.match(dementiaObservation, /Notes about memory and daily life/);
+assert.doesNotMatch(aiAttribution, /High confidence AI insight|Medium confidence AI insight|Low confidence AI insight|Confidence level:|AI Attribution/);
+assert.match(aiAttribution, /Suggested detail — please check/);
 assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Grounded, not guesswork|saved item\(s\)/);
 assert.doesNotMatch(documentReview, /Background processing|processing problem|processing in the background|SolenOS is processing|SolenOS is retrying/);
 assert.match(documentReview, /SolenOS is reading the document in the background/);
