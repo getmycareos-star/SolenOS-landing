@@ -52,7 +52,12 @@ assert.match(layout, /recordLoadError/);
 assert.match(layout, /window\.location\.reload\(\)/);
 assert.match(companion, /getJSON\('\/conversations\?limit=1'\)/);
 assert.match(companion, /listing\.person_id !== session\.person\.id/);
-assert.match(companion, /latest\.session_id/);
+assert.match(companion, /latest\\.session_id/);
+assert.match(
+  companion,
+  /if \(response\.session_id\) \{[\\s\\S]*?try \{[\\s\\S]*?window\.localStorage\.setItem\([\\s\\S]*?\)\s*\} catch \{[\\s\\S]*?Server-backed conversation listing restores history without this pointer\./,
+  "a failed optional browser pointer write must not discard a successfully saved Companion reply",
+);
 assert.match(communityClient, /FEATURE_FLAGS\.community/);
 assert.match(communityClient, /Community is not available yet/);
 
