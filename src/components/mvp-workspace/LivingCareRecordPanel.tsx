@@ -72,6 +72,16 @@ export function LivingCareRecordPanel({
     .filter((item): item is string => Boolean(item));
   const careStoryUpdate = caregiverSafeGeneratedText(view.care_story_update);
   const eventLabel = caregiverFieldLabel(event.event) || caregiverInformationLabel(event.event) || caregiverSafeAssistantText(event.event);
+  const showMatters =
+    plan.show_what_matters_now &&
+    Boolean(mattersNow || canWait || mayBecomeSerious || trajectory);
+  const showChanged =
+    plan.show_what_changed &&
+    Boolean(changedSummary) &&
+    view.observation_count > 1;
+  const showKnow =
+    plan.show_current_understanding &&
+    (Boolean(situationSummary) || facts.length > 0);
   const renderEvidenceMeta = view.has_documents && Boolean(eventLabel);
   const showMentalLoad = Boolean(mentalLoadSignal);
 
@@ -82,7 +92,7 @@ export function LivingCareRecordPanel({
         <p className="workspace-lede lcr-recognition">{recognitionLine}</p>
       )}
       {plan.show_confirmation && (
-        <p className={view.recognition_line ? "panel-muted" : "workspace-lede"}>
+        <p className={recognitionLine ? "panel-muted" : "workspace-lede"}>
           {confirmation || "Your update was saved."}
         </p>
       )}
@@ -111,7 +121,7 @@ export function LivingCareRecordPanel({
               ? "What is happening"
               : "What we know so far"}
           </h3>
-          {plan.show_situation_summary && view.what_seems_happening && (
+          {plan.show_situation_summary && situationSummary && (
             <p className="panel-muted" aria-label="What you shared">
               You shared: {situationSummary}
             </p>
@@ -158,25 +168,25 @@ export function LivingCareRecordPanel({
             What to watch
           </h3>
           <dl className="lcr-pillars">
-            {view.what_matters_now && (
+            {mattersNow && (
               <div>
                 <dt>Most important now</dt>
                 <dd>{mattersNow}</dd>
               </div>
             )}
-            {view.what_can_wait && (
+            {canWait && (
               <div>
                 <dt>Can wait</dt>
                 <dd>{canWait}</dd>
               </div>
             )}
-            {view.what_may_become_serious && (
+            {mayBecomeSerious && (
               <div>
                 <dt>May need attention later</dt>
                 <dd>{mayBecomeSerious}</dd>
               </div>
             )}
-            {view.trajectory && (
+            {trajectory && (
               <div>
                 <dt>How things seem to be changing</dt>
                 <dd>{trajectory}</dd>
