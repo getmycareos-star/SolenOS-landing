@@ -19,7 +19,7 @@ export default function CommunityClient() {
             Peer posts, reactions, and saved stories are disabled until moderation,
             caregiver-scoped persistence, and privacy controls are ready.
           </p>
-          <p>Community experiences are separate from the Living Care Record and are never added to it automatically.</p>
+          <p>Community experiences are separate from your Care Record and are never added to it automatically.</p>
         </section>
       </div>
     );
