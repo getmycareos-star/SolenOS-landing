@@ -91,6 +91,7 @@ const situationResponse = read("../src/components/mvp-workspace/SituationRespons
 const sourceIndicator = read("../src/components/trust/SourceIndicator.tsx");
 const trustIndicators = read("../src/lib/trust-provenance/trust-indicators.ts");
 const qwenAssist = read("../src/components/qwen/QwenAssistPanel.tsx");
+const lcrQwenInterpretation = read("../src/components/mvp-workspace/LcrQwenInterpretation.tsx");
 const shareSummary = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
 const legalDocuments = read("../src/lib/trust-content/legal-documents.ts");
 const careCaptureLegacy = read("../src/components/CareCapture.tsx");
@@ -176,6 +177,11 @@ assert.match(trustIndicators, /Needs checking/);
 assert.match(trustIndicators, /Some details are still missing/);
 assert.doesNotMatch(qwenAssist, /Living Care Record|AI-assisted interpretation|Suggestions are not saved to the Living Care Record/);
 assert.match(qwenAssist, /Suggestions are not added to your Care Record unless you choose to save and approve them/);
+assert.match(lcrQwenInterpretation, /What this update may mean/);
+assert.match(lcrQwenInterpretation, /Looking at earlier care information/);
+assert.match(lcrQwenInterpretation, /notes or documents/);
+assert.doesNotMatch(lcrQwenInterpretation, /Record context|Context interpretation is temporarily unavailable|Context supplied:|No saved source records were returned/,
+  "care-update interpretation must use plain language for context and missing information");
 assert.doesNotMatch(careDelta, /Do not present AI suggestions/);
 assert.match(shareSummary, /draft prepared with help from SolenOS/);
 assert.doesNotMatch(shareSummary, /AI-assisted draft|Living Care Record/);
