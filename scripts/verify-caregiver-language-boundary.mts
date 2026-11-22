@@ -701,6 +701,12 @@ assert.doesNotMatch(lcr, /Checking linked evidence|View supporting information|W
   "Care Record history must describe related notes and documents in everyday language");
 assert.match(lcr, /Checking related notes and documents/);
 assert.match(lcr, /caregiverSafeGeneratedText\(item\.interpretation_limit\)/, "generated Care Record limits must use caregiver language");
+assert.match(lcr, /caregiverSafeGeneratedText\(decision\.reason \|\| decision\.priority_basis\?\.join\("; "\)\)/, "generated attention reasons must use the stricter caregiver-language boundary");
+assert.match(lcr, /item\.priority_reasons[\s\S]*?map\(caregiverSafeGeneratedText\)/, "generated priority explanations must be filtered before display");
+assert.match(lcr, /caregiverSafeGeneratedText\(review\.rationale\)/, "generated source-review explanations must use caregiver language");
+assert.match(lcr, /caregiverSafeGeneratedText\(group\.interpretation\)/, "generated source-relationship explanations must use caregiver language");
+assert.match(lcr, /caregiverSafeGeneratedText\(projection\.notice\)/, "generated Care Record notices must use caregiver language");
+assert.match(lcr, /caregiverSafeGeneratedText\(transition\.reason\)/, "generated change-history explanations must use caregiver language");
 assert.match(lcr, /See related notes and documents/);
 assert.match(lcr, /This view includes the care information saved here so far/);
 
