@@ -342,13 +342,13 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     .waitFor({ state: "visible", timeout: 30_000 });
   // Saved history is grouped under More in the simplified caregiver navigation.
   // Verify the durable history row there, then return to Today for the rest of this journey.
-  await page.goto("/workspace/more");
+  await page.goto(new URL("/workspace/more", frontend).toString());
   await page.getByRole("heading", { name: "Recent care history", exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
   const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
-  await page.goto("/workspace");
+  await page.goto(new URL("/workspace", frontend).toString());
   await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
   const contextInterpretationState = page.getByRole("region", { name: "Record context interpretation", exact: true })
     .getByText(
