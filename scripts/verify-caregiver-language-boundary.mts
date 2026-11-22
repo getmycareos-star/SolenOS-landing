@@ -674,6 +674,14 @@ assert.match(livingCareRecordPanel, /What we know so far/);
 assert.match(livingCareRecordPanel, /Notes and documents behind this summary/);
 assert.match(livingCareRecordPanel, /What you can do next/);
 
+assert.match(livingCareRecordPanel, /caregiverSafeGeneratedText\(view\.what_changed_in_understanding\)/, "generated Care Record change summaries must use caregiver language");
+assert.match(livingCareRecordPanel, /caregiverSafeGeneratedText\(view\.what_matters_now\)/, "generated Care Record priorities must use caregiver language");
+assert.match(livingCareRecordPanel, /caregiverSafeGeneratedText\(view\.follow_up_items|followUpItems/, "generated next steps must use caregiver language");
+assert.match(livingCareRecordPanel, /caregiverFieldLabel\(event\.event\).*Care update/s, "raw event codes must never be shown in the Care Record");
+assert.doesNotMatch(livingCareRecordPanel, /Observation layer|Caregiver observations|Caregiver load note/,
+  "accessible Care Record labels must not expose internal layer names");
+
+
 const continuityHome = read("../src/components/mvp-workspace/ContinuityHomePanel.tsx");
 const communityUnavailable = read("../src/app/workspace/community/CommunityClient.tsx");
 const caregiverInvite = read("../src/app/invite/caregiver/page.tsx");
