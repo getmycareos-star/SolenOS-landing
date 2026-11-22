@@ -4041,17 +4041,31 @@ await record("17 Daily Care suggested-detail review actions preserve caregiver c
       title: "Daily Care update",
       description: "A saved update is ready for review.",
       source_type: "caregiver_report",
-      event_type: "structured_daily_capture",
-      capture_processing: {
-        analysis_id: analysisId,
-        extraction_status: "available",
-        review_required: true,
-        message: "Suggested details are ready to review.",
-      },
+      event_type: "natural_language_update",
     }] }),
   }));
   await page.route("**/api/v1/daily-care/intelligence/history**", (route) => route.fulfill({
-    status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      records: [{
+        id: "e2e-daily-care-source",
+        source_id: "e2e-daily-care-source",
+        source_type: "care_event",
+        title: "Daily Care update",
+        description: "A saved update is ready for review.",
+        event_type: "natural_language_update",
+        recorded_at: new Date().toISOString(),
+        capture_processing: {
+          analysis_id: analysisId,
+          extraction_status: "available",
+          job_status: "completed",
+          review_required: true,
+          message: "Your original report is saved. Review the suggested details before they are added as reviewed care information.",
+        },
+      }],
+      page: { has_more: false },
+    }),
   }));
   await page.route("**/api/v1/open-loops**", (route) => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify({ items: [] }),
