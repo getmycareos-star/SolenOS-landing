@@ -15,7 +15,7 @@ This document is retained only as historical context. Gemini is not an approved 
 
 The former `POST /api/analyze` Gemini pipeline is closed and is not a caregiver entry point. Do not restore its provider key, model selector, or retry path.
 
-Legacy Gemini adapter and server-side speech-to-text modules are being removed only after their callers and tests have been verified. The supported MVP speech input remains browser Web Speech recognition.
+The direct Gemini client, Gemini environment-key helper, and server-side Gemini transcription module have been removed. The remaining legacy adapter is a fail-closed compatibility stub and performs no inference. Server-side Whisper transcription is disabled. The supported MVP speech input remains browser Web Speech recognition.
 
 ## Current configuration
 
