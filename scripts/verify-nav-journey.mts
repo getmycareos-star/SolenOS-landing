@@ -45,9 +45,14 @@ assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct ro
 assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Today must not match every nested route");
 assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes keep More active");
 
-for (const label of ["Today", "Share an update", "Appointments", "Care Assistant", "More"]) {
-  assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
+for (const label of ["Today", "Share an update", "Follow-ups", "Appointments", "More"]) {
+  assert.ok(navigationRegistry.includes(`label: "${label}"`), `primary navigation includes ${label}`);
 }
+assert.match(
+  navigationRegistry,
+  /export const WORKSPACE_SECONDARY_NAVIGATION[\\s\\S]*?label: "Care Assistant"/,
+  "Care Assistant remains available under More rather than displacing follow-ups from primary navigation",
+);
 assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/);
 for (const route of [
