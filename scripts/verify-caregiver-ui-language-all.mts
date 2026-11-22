@@ -11,10 +11,9 @@ const excludedPathParts = [
   "/ops-clarity/",
   "/ui-runtime/",
 ];
-const excludedFiles = new Set([
+// These are unmounted legacy or developer-only panels, not caregiver routes.\nconst excludedFiles = new Set([
   "src/components/EvidenceCompletenessPanel.tsx",
   "src/components/routine-moments/RoutineMomentLogger.tsx",
-  "src/components/InputBox.tsx",
   "src/components/StateVisualizer.tsx",
 ]);
 const files: string[] = [];
