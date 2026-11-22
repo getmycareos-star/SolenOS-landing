@@ -851,7 +851,7 @@ function PrivacyCard() {
         <ul>
           <li><strong>Clear this device:</strong> removes saved information and sign-in details from this browser. It does not delete care information held by SolenOS.</li>
           <li><strong>Close or delete an account:</strong> if account closure is available, it stops that account from being used. It does not delete the Care Record or other care information.</li>
-          <li><strong>Ask us to delete care information:</strong> asks SolenOS to review your request and remove information that can be deleted. We first check that you are allowed to make the request. If information is shared with others, must be kept for legal reasons, or is held in service-provider copies or backups, some parts may take longer or may not be removable. We will tell you what was actually deleted. Sending a request does not delete anything by itself.</li>
+          <li><strong>Ask us to delete care information:</strong> asks SolenOS to review your request and remove information that can be deleted. We first check that you are allowed to make the request. If information is shared with others, must be kept for legal reasons, or is still in saved backups or copies held by other services, some parts may take longer or may not be removable. We will tell you what was actually deleted. Sending a request does not delete anything by itself.</li>
         </ul>
       </div>
 
