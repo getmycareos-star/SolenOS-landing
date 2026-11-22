@@ -2,55 +2,37 @@
 
 ## Goal
 
-A completely new engineer should reach: local app running → understand architecture SoT → run critical verify scripts → know where docs live.
+Run the caregiver application locally, understand the Living Care Record as the source of truth, and verify the authenticated backend workflows.
 
 ## Run locally
 
-```bash
+```powershell
 npm install
 copy .env.local.example .env.local
-# set GEMINI_API_KEY
 npm run dev
 ```
 
-Open http://localhost:3000
+The frontend does not require a Gemini or OpenAI API key. Configure the existing private Qwen/Ollama service on the backend using its deployment environment settings (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and bounded runtime settings). Never expose the private model URL or credentials to browser code.
 
-## Architecture overview path (read in order)
+## Architecture overview
 
-1. [`docs/README.md`](../README.md) — governance completion rule
-2. [`docs/17-canonical-architecture/`](../17-canonical-architecture/) — living SoT
-3. `src/lib/solenos-layers/architecture-map.ts` — machine contract
-4. [`docs/02-product/`](../02-product/) + PRDs
-5. Module docs 05–10 matching your task
-6. ADRs in [`15-architecture-decisions/`](../15-architecture-decisions/)
+1. The caregiver enters information through the authenticated workspace.
+2. The frontend sends requests through the shared API client with the server-issued bearer session.
+3. The backend scopes access to the caregiver's record and retrieves authorized source information.
+4. Qwen supports extraction and explanation through the existing backend gateway.
+5. Validation, reconciliation and explicit caregiver review control what becomes part of the Living Care Record.
 
-## Core verify starter (Path A)
+## Core verification
 
-```bash
+```powershell
 npm run verify:product-path
 npm run verify:product-identity
+npm run verify:langchain
+npm run verify:analyze
 ```
 
-Path A: caregiver input → `POST /api/situation` → Living Care Record.  
-Preview qualification: [`docs/13-infrastructure/preview-qualification.md`](../13-infrastructure/preview-qualification.md) · Integrity: [`docs/02-product/solenos-product-integrity.md`](../02-product/solenos-product-integrity.md)
-
-Ops/analyze path (`verify:analyze`, `verify:solenos-v14`) is **not** the caregiver product gate. Full script list in root `package.json`.
-
-## Mental model
-
-```
-Text/Documents → POST /api/situation → Extraction → SRE
-  → CRS / ACS / Decision Memory → Response Contract → Caregiver DTO → LCR Panel
-```
-
-## Honest gaps to expect
-
-- Auth credentials & care graph: process memory / soft care keys
-- ACS/CRS durability: single-process `.data/` JSON (not multi-instance)
-- Human override / reality drift: stubs
-- External clinical integrations: not built
-- Multi-instance / cloud production: not qualified
+The legacy `/api/analyze` endpoint is retired. Its verification script checks that it remains closed; it is not a caregiver product gate.
 
 ## Done means
 
-Code + verify + **docs + canonical architecture (+ PRD if behavior)** per `docs/README.md`.
+Code changes, relevant tests, deployment evidence and documentation must agree. A queued deployment or a successful source commit is not proof that deployed Qwen inference or the complete caregiver workflow works.
