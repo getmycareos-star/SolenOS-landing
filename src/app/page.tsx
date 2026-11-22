@@ -7,7 +7,7 @@ import "./landing.css";
 export const metadata: Metadata = {
   title: "SolenOS — The care journey, remembered.",
   description:
-    "A Living Care Record for family caregivers. Keep care moments, changes and decisions together over time.",
+    "A Care Record for family caregivers. Keep care moments, changes and decisions together over time.",
 };
 
 const start = "/workspace?enter=1";
@@ -36,7 +36,7 @@ const careSteps = [
   {
     number: "05",
     title: "Ask about the record",
-    body: "Ask the AI Companion about information saved in SolenOS. It should be clear when the record has no answer.",
+    body: "Ask the Care Assistant about information saved in your Care Record. It should be clear when the record has no answer.",
   },
   {
     number: "06",
@@ -71,7 +71,7 @@ export default function LandingPage() {
       <div className="editorial-landing">
         <section className="el-hero">
           <div className="el-hero-copy">
-            <p className="el-kicker">A LIVING CARE RECORD FOR FAMILY CAREGIVERS</p>
+            <p className="el-kicker">A CARE RECORD FOR FAMILY CAREGIVERS</p>
             <h1>The whole care story, in one place.</h1>
             <p>
               Care is made up of everyday moments: a change, a conversation,
@@ -82,7 +82,7 @@ export default function LandingPage() {
               easier to return to the details and understand what has changed.
             </p>
             <LandingStartLink href={start} className="el-button">
-              Start your Living Care Record <span aria-hidden="true">↗</span>
+              Start your Care Record <span aria-hidden="true">↗</span>
             </LandingStartLink>
             <p className="el-early-note">
               SolenOS is in early access. We are learning with family caregivers.
