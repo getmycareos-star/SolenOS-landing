@@ -569,3 +569,9 @@ assert.doesNotMatch(communityUnavailable, /Living Care Record/,
 assert.doesNotMatch(caregiverInvite, /missing its secure code|access was authorised/i,
   "caregiver invitations must not expose internal link-security or authorization language");
 assert.match(caregiverInvite, /This invitation link is incomplete/);
+
+const caregiverHandoverInbox = read("../src/components/mvp-workspace/CaregiverHandoverInbox.tsx");
+assert.doesNotMatch(caregiverHandoverInbox, /Care handover|primary caregiver|responsibility_type\.replaceAll/,
+  "caregiver responsibility requests must not expose internal handover or raw responsibility labels");
+assert.match(caregiverHandoverInbox, /Care responsibilities waiting for you/);
+assert.match(caregiverHandoverInbox, /take over a care responsibility/);
