@@ -1499,9 +1499,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                           ? `${safeSubject}: ${safeObservation}`
                           : 'We could not show this suggestion clearly. Check your original note and correct it before adding it.'}
                       </div>
-                      {candidate.corrected_observation !== undefined && (
+                      {(candidate.corrected_subject !== undefined || candidate.corrected_observation !== undefined) && (
                         <div style={{ marginTop: '4px' }}>
-                          <strong>Your correction:</strong> {candidate.corrected_subject ? `${candidate.corrected_subject}: ` : ''}{candidate.corrected_observation}
+                          <strong>Your correction:</strong> {candidate.corrected_subject ? `${candidate.corrected_subject}: ` : ''}{candidate.corrected_observation || ''}
                         </div>
                       )}
                     </div>
@@ -1556,7 +1556,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             </p>
           )}
           {reviewFeedback && <p role="status" style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
-          {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
+          {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.some((question: string) => caregiverSafeGeneratedText(question)) && (
             <div style={{ marginTop: '10px' }}>
               <strong style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))' }}>Questions to answer</strong>
               <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
