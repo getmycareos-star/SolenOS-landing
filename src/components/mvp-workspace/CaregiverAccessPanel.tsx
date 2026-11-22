@@ -418,7 +418,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       if (!created?.id) throw new Error("The server did not return a saved activity record.");
       setActivities((current) => [created, ...current.filter((item) => item.id !== created.id)].slice(0, 30));
       setActivityDescription("");
-      setNotice("Activity saved to the caregiver history. It does not change the Living Care Record.");
+      setNotice("Your activity was saved separately. It does not change the person’s Care Record.");
     } catch {
       setError("We couldn't confirm that this activity was saved. Refresh the caregiver history before trying again.");
     } finally {
@@ -518,7 +518,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       await postJSON("/caregiver-access/responsibility-transfers/" + encodeURIComponent(transfer.id) + "/" + decision, {});
       setNotice(decision === "accept"
         ? "This care task is now assigned to you. The earlier assignment is kept in the Care Record."
-         : "You declined this handover. The current caregiver remains responsible.");
+         : "You did not accept the transfer of care. The current caregiver remains responsible.");
       await load();
     } catch {
       setError("We couldn't save your response. No change has been made.");
@@ -582,10 +582,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       });
       setCommunicationSubject("");
       setCommunicationBody("");
-      setNotice("Your update has been shared with the care circle.");
+      setNotice("Your update has been shared with other caregivers who can access this Care Record.");
       await load();
     } catch {
-      setError("We couldn't share this update. Nothing was sent to the care circle.");
+      setError("We couldn’t share this update. Nothing was sent to other caregivers.");
     } finally {
       setSendingCommunication(false);
     }
@@ -658,7 +658,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setNotice("");
     try {
       await postJSON("/perspective-conflicts/" + encodeURIComponent(item.id) + "/resolve", { resolution });
-      setNotice("Review saved. Both caregiver accounts remain preserved; this does not change the Living Care Record.");
+      setNotice("Your review was saved. Both caregivers’ reports remain separate. Your Care Record has not changed.");
       await load();
     } catch {
       setError("We couldn't complete this review. Both original caregiver accounts remain unchanged.");
@@ -751,7 +751,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setNotice("");
     try {
       await postJSON("/caregiver-observations/" + encodeURIComponent(item.id) + "/promote", {});
-      setNotice("Your observation is now shared with the care circle.");
+      setNotice("Your note is now shared with other caregivers.");
       await load();
     } catch {
       setError("We couldn't share this observation. It remains private.");
@@ -766,7 +766,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setNotice("");
     try {
       await postJSON("/caregiver-perspectives/" + encodeURIComponent(item.id) + "/promote", {});
-      setNotice("Your perspective is now shared with the care circle.");
+      setNotice("Your perspective is now shared with other caregivers.");
       await load();
     } catch {
       setError("We couldn't share this perspective. It remains private.");
@@ -840,7 +840,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       });
       setCustomCareRole("");
       setCareRoleScope("");
-      setNotice("Your care role has been shared with the care circle. It does not change anyone's account access.");
+      setNotice("Your care role is now visible to other caregivers who can access this Care Record. It does not change anyone’s sign-in access.");
       await load();
     } catch {
       setError("We couldn't save this care role. No access permissions were changed.");
@@ -936,7 +936,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             </>
           )}
           <form onSubmit={(event) => void sendCareCircleUpdate(event)} style={{ display: "grid", gap: "0.6rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
-            <h3 className="mobile-settings-label" style={{ margin: 0 }}>Share an update with the care circle</h3>
+            <h3 className="mobile-settings-label" style={{ margin: 0 }}>Share an update with other caregivers</h3>
             <p className="mobile-settings-hint" style={{ margin: 0 }}>This update will be visible to caregivers who have access to this Care Record. Do not include information you want to keep private.</p>
             <label className="mobile-settings-label" htmlFor="care-circle-update-subject">Subject (optional)</label>
             <input id="care-circle-update-subject" className="mobile-settings-input" maxLength={160} value={communicationSubject} onChange={(event) => setCommunicationSubject(event.target.value)} placeholder="e.g. Update after today's visit" />
@@ -950,7 +950,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           <section style={{ display: "grid", gap: "0.75rem", marginTop: "1rem", padding: "0.85rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "12px" }}>
             <div>
               <h3 className="mobile-settings-label" style={{ margin: 0 }}>Caregiver activity history</h3>
-              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0 0" }}>Record an action you took while helping with care. This history is separate from the Living Care Record and may be visible to caregivers who have access.</p>
+              <p className="mobile-settings-hint" style={{ margin: "0.25rem 0 0" }}>Record something you did while helping with care. This is kept separately from the person’s Care Record and may be visible to other caregivers with access.</p>
             </div>
             <form onSubmit={(event) => void saveCaregiverActivity(event)} style={{ display: "grid", gap: "0.5rem" }}>
               <label className="mobile-settings-label" htmlFor="caregiver-activity-type">What kind of activity was it?</label>
@@ -1140,8 +1140,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 </section>
               )}
               <section style={{ display: "grid", gap: "0.55rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
-                <h3 className="mobile-settings-label">Share your care context</h3>
-                <p className="mobile-settings-hint">Help the care team understand when and how you can help. This information is shared with caregivers who have access to this Care Record; it does not change the person's Living Care Record.</p>
+                <h3 className="mobile-settings-label">Tell others when you can help</h3>
+                <p className="mobile-settings-hint">Let other caregivers know when and how you can help. This is shared only with people who can access this Care Record. It does not change the person’s Care Record.</p>
                 <form onSubmit={(event) => void saveCaregiverContext(event)} style={{ display: "grid", gap: "0.55rem" }}>
                   <label className="mobile-settings-label" htmlFor="care-context-proximity">Where are you based relative to the person you help?</label>
                   <select id="care-context-proximity" className="mobile-settings-input" value={contextProximity} onChange={(event) => setContextProximity(event.target.value as typeof contextProximity)}>
@@ -1159,19 +1159,19 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   <label className="mobile-settings-label" htmlFor="care-context-notes">Anything else the care team should know? (optional)</label>
                   <textarea id="care-context-notes" className="mobile-settings-input" rows={3} maxLength={1200} value={contextAvailabilityNotes} onChange={(event) => setContextAvailabilityNotes(event.target.value)} placeholder="Share practical availability details, not medical conclusions." />
                   <label className="mobile-settings-hint" style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                    <input type="checkbox" checked={contextShareConfirmed} onChange={(event) => setContextShareConfirmed(event.target.checked)} aria-label="Care context sharing confirmation" />
+                    <input type="checkbox" checked={contextShareConfirmed} onChange={(event) => setContextShareConfirmed(event.target.checked)} aria-label="Confirm that you want to share your availability" />
                     I understand this information will be shared with caregivers who have access to this Care Record.
                   </label>
-                  <Button type="submit" variant="secondary" disabled={savingContext || !contextShareConfirmed} loading={savingContext}>Share care context</Button>
+                  <Button type="submit" variant="secondary" disabled={savingContext || !contextShareConfirmed} loading={savingContext}>Share availability</Button>
                 </form>
               </section>
               {careContexts.length > 0 && (
                 <div>
-                  <span className="mobile-settings-hint">Care availability and context</span>
+                  <span className="mobile-settings-hint">When you can help</span>
                   {careContexts.slice(0, 5).map((item) => (
                     <div key={item.id} style={{ margin: "0.35rem 0", fontSize: "0.88rem" }}>
                       <p style={{ margin: 0 }}>
-                        {item.proximity_category ? caregiverFieldLabel(item.proximity_category) : "Care context"}
+                        {item.proximity_category ? caregiverFieldLabel(item.proximity_category) : "Availability details"}
                         {item.observation_window_start ? ` · ${item.observation_window_start}` : ""}
                         {item.observation_window_end ? ` to ${item.observation_window_end}` : ""}
                       </p>
@@ -1315,7 +1315,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               </select>
               <label className="mobile-settings-label" htmlFor="transfer-reason">Reason (optional)</label>
               <input id="transfer-reason" className="mobile-settings-input" maxLength={1000} value={transferReason} onChange={(event) => setTransferReason(event.target.value)} />
-              <Button type="submit" variant="primary" disabled={busy || !selectedResponsibility || !selectedRecipient} loading={busy}>Request handover</Button>
+              <Button type="submit" variant="primary" disabled={busy || !selectedResponsibility || !selectedRecipient} loading={busy}>Ask another caregiver to take over</Button>
             </form>
           </div>
           )}
@@ -1392,7 +1392,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
 
       {transfers.length > 0 && (
         <div style={{ display: "grid", gap: "0.7rem", marginTop: "1rem" }}>
-          <h3 className="mobile-settings-label">Care task handovers</h3>
+          <h3 className="mobile-settings-label">Care tasks being handed over</h3>
           {transfers.map((transfer) => (
             <div key={transfer.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.7rem" }}>
               <strong>{caregiverFieldLabel(transfer.responsibility_type) || caregiverStatusLabel(transfer.responsibility_type) || "Care task"}</strong>
