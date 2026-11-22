@@ -22,6 +22,17 @@ assert.equal(caregiverStatusLabel("within_review_window"), "Recently reviewed");
 assert.equal(caregiverStatusLabel("verified"), "Checked against another note or report");
 assert.equal(caregiverStatusLabel("uncertain"), "Not sure yet");
 assert.equal(caregiverStatusLabel("unresolved"), "Still needs attention");
+
+assert.equal(caregiverStatusLabel("worsened"), "May be getting worse");
+assert.equal(caregiverStatusLabel("improved"), "May be improving");
+assert.equal(caregiverStatusLabel("new"), "New");
+assert.equal(caregiverFieldLabel("sleep"), "Sleep");
+assert.equal(caregiverFieldLabel("mobility"), "Movement");
+assert.equal(caregiverSafeGeneratedText("This has moderate confidence."), null);
+assert.equal(caregiverSafeGeneratedText("The evidence supports this conclusion."), null);
+assert.equal(caregiverSafeGeneratedText("A few details may need checking."), "A few details may need checking.");
+assert.equal(caregiverSafeAssistantText("I am not confident about this detail."), "I am not confident about this detail.");
+
 assert.equal(caregiverInformationLabel("observed"), "Seen by a caregiver");
 assert.equal(caregiverInformationLabel("inferred"), "Possible explanation");
 assert.equal(caregiverInformationLabel("uncertain"), "Not sure yet");
