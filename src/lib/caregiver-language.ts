@@ -33,7 +33,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   closed: "Closed after review",
   reported: "Reported by caregiver",
   observed: "Seen by a caregiver",
-  verified: "Checked against a source",
+  verified: "Checked against other information",
   inferred: "Possible explanation",
   uncertain: "Not sure yet",
   conflicting: "Reports do not match",
@@ -175,7 +175,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
 const INFORMATION_LABELS: Readonly<Record<string, string>> = {
   reported: "Caregiver report",
   observed: "Seen by a caregiver",
-  verified: "Checked against a source",
+  verified: "Checked against other information",
   inferred: "Possible explanation",
   uncertain: "Not sure yet",
   conflicting: "Reports do not match",
