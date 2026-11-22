@@ -210,14 +210,14 @@ try {
 
   assert.notEqual(nutritionCandidate.observation, nutritionCandidate.source_quote, "the test correction must repair a shortened model summary using the preserved source wording");
   const correctedObservation = nutritionCandidate.source_quote;
-  const correctedSubject = nutritionCandidate.subject;
-  assert.ok(correctedObservation.toLowerCase().includes(correctedSubject.toLowerCase()),
-    "the caregiver correction label must be drawn from the preserved source quotation");
+  const correctedSubject = "Caregiver note";
+  assert.ok(!correctedObservation.toLowerCase().includes(correctedSubject.toLowerCase()),
+    "caregivers must be able to add a plain-language label without altering the original quotation");
   const nutritionCard = page.getByTestId(`document-candidate-${nutritionIndex}`);
   const preservedWording = nutritionCard.getByLabel("Exact wording from the original document");
   assert.equal(await preservedWording.inputValue(), correctedObservation);
   assert.equal(await preservedWording.getAttribute("readonly"), "");
-  await nutritionCard.getByLabel("Short label from the document").fill(correctedSubject);
+  await nutritionCard.getByLabel("Short label for this detail").fill(correctedSubject);
   await nutritionCard.getByTestId(`correct-document-candidate-${nutritionIndex}`).click();
   await nutritionCard.getByText("Correction saved — waiting for approval", { exact: true }).waitFor({ timeout: 30_000 });
   await nutritionCard.getByTestId(`accept-document-candidate-${nutritionIndex}`).click();
