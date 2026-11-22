@@ -4,7 +4,7 @@ import { strict as assert } from "node:assert";
 const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 const dailyCare = readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
 const review = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
-assert.match(review, /The reading score only describes how clearly the text was recognized\. It does not tell us whether the words are correct or whether a suggested care detail is accurate/);
+assert.match(review, /This only tells us how clearly SolenOS could read the words\. It does not tell us whether the words or suggested care details are correct/);
 assert(!source.includes("extractText("), "the Documents screen must not upload a file for separate preflight extraction");
 assert(!source.includes("review and correct its extracted text first"), "caregivers must not be asked to manually review client-only OCR before saving");
 assert(!source.includes("page.reviewed") && !source.includes("page.text"), "the upload draft must not carry discarded client-side text or review flags");
