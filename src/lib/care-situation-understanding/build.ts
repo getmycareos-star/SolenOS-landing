@@ -388,14 +388,15 @@ export async function buildCareSituationUnderstanding(params: {
     careKey,
   });
 
+  // The anchor may contain deterministic context for identity continuity,
+  // but it must never substitute for the required Qwen understanding pass.
   const extraction: import("../care-reality-extraction").CareRealityExtractionResult =
-    anchor.extraction ??
-    (await getBestExtraction({
+    await getBestExtraction({
       rawText: raw,
       evidenceId: params.evidenceId,
       contributorId: params.contributorId ?? careKey,
       signal: params.signal,
-    }));
+    });
 
   const facts: CareSituationFact[] = [];
   const interpretations: CareSituationInterpretation[] = [];
