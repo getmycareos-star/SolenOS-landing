@@ -383,7 +383,7 @@ export default function DetailedAppointmentWorkspace() {
                     {lcrBrief.documents?.length
                       ? <ul>{lcrBrief.documents.slice(0, 8).map(item => <li key={item.source_id}>
                         <span>{caregiverSafeAssistantText(item.filename) || 'Saved document'}</span>
-                        <small>{caregiverStatusLabel(item.extraction_status) || 'Extraction status not available'} · Uploaded: {item.uploaded_at ? new Date(item.uploaded_at).toLocaleString() : 'Date not recorded'}</small>
+                        <small>{caregiverStatusLabel(item.extraction_status) || 'Reading status not available'} · Uploaded: {item.uploaded_at ? new Date(item.uploaded_at).toLocaleString() : 'Date not recorded'}</small>
                         {item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 500))}</p>}
                         <small>{caregiverSafeAssistantText(item.interpretation_limit) || 'Document text is source material, not an accepted care fact or clinical verification.'}</small>
                       </li>)}</ul>
@@ -391,7 +391,7 @@ export default function DetailedAppointmentWorkspace() {
                   </div>
                 </div>
               </section>}
-              <div className="appointment-source-coverage"><strong>Available care information</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{caregiverInformationAreaLabel(source) || "Other care information"}</b><small>{caregiverStatusLabel(String(status)) || 'Status not available'}</small></span>)}</div></div>
+              <div className="appointment-source-coverage"><strong>Care information available</strong><div>{Object.entries(lcrBrief.source_coverage).map(([source, status]) => <span key={source} className="appointment-coverage-item"><b>{caregiverInformationAreaLabel(source) || "Other care information"}</b><small>{caregiverStatusLabel(String(status)) || 'Status not available'}</small></span>)}</div></div>
               <section className="appointment-source-coverage" aria-label="How recent this information is">
                 <strong>How recent this information is</strong>
                 <p>These checks can help show whether information may need another look. They do not prove that a report is true or still applies today.</p>
@@ -407,8 +407,8 @@ export default function DetailedAppointmentWorkspace() {
                     ? <p role="status">We couldn’t check how recent this information is. Its current status is unknown.</p>
                     : <p>We couldn’t find a review of how recent this information is. This does not mean it is current.</p>}
               </section>
-              {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="How the notes and documents are related">
-                <strong>How the notes and documents are related</strong>
+              {lcrBrief.evidence_lineage && <section className="appointment-source-coverage" aria-label="How these notes and documents are connected">
+                <strong>How these notes and documents are connected</strong>
                 {lcrBrief.evidence_lineage.scope_truncated && <p role="status">Only some connections between these notes and documents could be checked. The rest are unknown.</p>}
                 {lcrBrief.evidence_lineage.groups.length ? lcrBrief.evidence_lineage.groups.map(group => <div key={group.lineage_id} className="appointment-coverage-item">
                   <b>{group.source_independence_status === 'shared_origin' ? 'Same original' : group.source_independence_status === 'independent' ? 'Reported separately' : group.source_independence_status === 'not_assessed' ? 'Not checked' : 'Not known'}</b>
