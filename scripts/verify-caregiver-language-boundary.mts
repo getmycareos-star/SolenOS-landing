@@ -149,6 +149,10 @@ assert.match(policySettings, /Your choice is saved/);
 assert.doesNotMatch(identityRecovery, /device registration|registered devices|one-time recovery code|revokes every existing session/);
 assert.doesNotMatch(caregiverAccess, /responsibility_type\.replaceAll|transfer responsibility|primary caregiver transfer declined|No change should be assumed|invitation_token}</);
 assert.match(caregiverAccess, /Copy invitation link/);
+assert.doesNotMatch(caregiverAccess, /Living Care Record|care circle|Care coverage|care coverage gap|care context/i,
+  "caregiver sharing and responsibility screens must use everyday language");
+assert.match(caregiverAccess, /Who is helping with care/);
+assert.match(caregiverAccess, /Share with other caregivers/);
 assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Grounded, not guesswork|saved item\(s\)/);
 assert.doesNotMatch(documentReview, /Background processing|processing problem|processing in the background|SolenOS is processing|SolenOS is retrying/);
 assert.match(documentReview, /SolenOS is reading the document in the background/);
