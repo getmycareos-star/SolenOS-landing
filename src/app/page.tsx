@@ -217,7 +217,7 @@ export default function LandingPage() {
             <p>
               Dementia can bring changing needs, difficult decisions and
               responsibilities shared across a family. We started here because
-              the need for care continuity is especially clear.
+              the need to keep care information connected over time is especially clear.
             </p>
           </div>
           <div className="el-dementia-note">
@@ -238,7 +238,7 @@ export default function LandingPage() {
             <p className="el-kicker">THE CARE ASSISTANT</p>
             <h2>Ask about what has been recorded.</h2>
             <p>
-              The AI Companion is designed to help find relevant details
+              The Companion helps you find relevant details
               in the care record, including information you may not remember
               exactly.
             </p>
@@ -274,9 +274,9 @@ export default function LandingPage() {
               Start with what you know. Add to the story when you are ready.
             </p>
             <LandingStartLink href={start} className="el-button">
-              Start your Living Care Record <span aria-hidden="true">↗</span>
+              Start your Care Record <span aria-hidden="true">↗</span>
             </LandingStartLink>
-            <p className="el-tagline">A Living Care Record for family caregivers.</p>
+            <p className="el-tagline">One Care Record for family caregivers.</p>
           </div>
           <aside>
             <strong>David Abuchi</strong>
