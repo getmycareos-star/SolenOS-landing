@@ -852,7 +852,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             {careUpdateHistory[item.id] && <div className="companion-care-update-history">
               {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
                 <strong>{caregiverStatusLabel(entry.decision) || 'Reviewed'}</strong>
-                {entry.rationale && <p>{entry.rationale}</p>}
+                {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || 'No further explanation was recorded.'}</p>}
                 {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
                 {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
               </div>)}
@@ -884,8 +884,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           </div>
           {careUpdateHistory[item.id] && <div className="companion-care-update-history" aria-label="Care update review history">
             {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
-              <strong>{entry.decision.replace(/_/g, ' ')}</strong>
-              {entry.rationale && <p>{entry.rationale}</p>}
+              <strong>{caregiverStatusLabel(entry.decision) || 'Reviewed'}</strong>
+              {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || 'No further explanation was recorded.'}</p>}
               {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
               {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
             </div>)}
