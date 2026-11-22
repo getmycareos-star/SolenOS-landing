@@ -68,6 +68,13 @@ function collectDisplayExpression(sourceFile: ts.SourceFile, node: ts.Expression
     for (const element of node.elements) collectDisplayExpression(sourceFile, element);
     return;
   }
+  if (ts.isElementAccessExpression(node) || ts.isPropertyAccessExpression(node)) {
+    collectDisplayExpression(sourceFile, node.expression);
+    if (ts.isElementAccessExpression(node) && node.argumentExpression) {
+      collectDisplayExpression(sourceFile, node.argumentExpression);
+    }
+    return;
+  }
   if (ts.isTemplateExpression(node)) {
     addText(sourceFile, node, node.head.text);
     for (const span of node.templateSpans) addText(sourceFile, span, span.literal.text);
