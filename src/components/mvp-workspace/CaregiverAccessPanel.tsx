@@ -484,7 +484,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       });
       setSelectedPrimaryRecipient("");
       setPrimaryReason("");
-      setNotice("Request to change the main caregiver sent. Your access and care tasks stay the same until the other caregiver accepts.");
+      setNotice("We sent your request to change the main caregiver. Nothing changes until the other caregiver accepts.");
       await load();
     } catch {
       setError("We couldn't request this change. The current main caregiver remains in place.");
@@ -540,7 +540,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         : member.name + " can access the full Care Record.");
       await load();
     } catch {
-      setError("We couldn't change this caregiver's access. Their previous access remains in place.");
+      setError("We couldn't change what this caregiver can see. Their previous access stays the same.");
     } finally {
       setBusy(false);
     }
@@ -554,10 +554,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       await patchJSON("/caregiver-access/members/" + encodeURIComponent(member.caregiver_id) + "/permissions", {
         permissions,
       });
-      setNotice("Access permissions updated for " + member.name + ".");
+      setNotice("What " + member.name + " can see and do has been updated.");
       await load();
     } catch {
-      setError("We couldn't update these permissions. " + member.name + "'s previous access remains in place.");
+      setError("We couldn't change what " + member.name + " can see or do. Their previous access stays the same.");
     } finally {
       setBusy(false);
     }
@@ -811,10 +811,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setNotice("");
     try {
       await patchJSON("/caregiver-responsibilities/" + encodeURIComponent(item.id) + "/end", {});
-      setNotice("Your care responsibility has ended. Its history is kept.");
+      setNotice("You are no longer responsible for this care task. Its history is still saved.");
       await load();
     } catch {
-      setError("We couldn't end this care responsibility. It remains active.");
+      setError("We couldn't stop this care task. You are still listed as responsible.");
     } finally {
       setSavingResponsibility(false);
     }
@@ -840,10 +840,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       });
       setCustomCareRole("");
       setCareRoleScope("");
-      setNotice("Your care role is now visible to other caregivers who can access this Care Record. It does not change anyone’s sign-in access.");
+      setNotice("Other caregivers who can access this Care Record can now see how you help. This does not change what anyone can see or do in SolenOS.");
       await load();
     } catch {
-      setError("We couldn't save this care role. No access permissions were changed.");
+      setError("We couldn't save this role. No one's access was changed.");
     } finally {
       setSavingCareRole(false);
     }
@@ -858,7 +858,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setNotice("Your care role has ended. Its history is kept.");
       await load();
     } catch {
-      setError("We couldn't end this care role. It remains active.");
+      setError("We couldn't end this role. It is still listed.");
     } finally {
       setSavingCareRole(false);
     }
@@ -1027,9 +1027,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   ["Caregivers", networkSummary.caregivers],
                   ["Assigned care tasks", networkSummary.active_responsibilities],
                   ["Care updates waiting to be accepted", networkSummary.active_handoffs],
-                  ["Tasks without someone responsible", networkSummary.responsibility_gaps],
+                  ["Tasks no one has taken on yet", networkSummary.responsibility_gaps],
                   ["Different views to review", networkSummary.perspective_conflicts],
-                  ["Actions that may be repeated", networkSummary.duplicate_actions],
+                  ["Tasks that may have been entered twice", networkSummary.duplicate_actions],
                 ].map(([label, items]) => (
                   <div key={String(label)} style={{ padding: "0.55rem", background: "var(--surface-muted, #f5f7f5)", borderRadius: "9px" }}>
                     <strong style={{ display: "block", fontSize: "1.15rem" }}>{Array.isArray(items) ? items.length : 0}</strong>
@@ -1046,12 +1046,12 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <section style={{ display: "grid", gap: "0.55rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                   <h4 className="mobile-settings-label" style={{ margin: 0 }}>Care tasks you've taken on</h4>
                   {responsibilityHistoryUnavailable ? (
-                    <p className="mobile-settings-hint" style={{ margin: 0 }}>We couldn't load your responsibility history. Refresh this section to try again.</p>
+                    <p className="mobile-settings-hint" style={{ margin: 0 }}>We couldn't load the care tasks you've taken on. Refresh this section to try again.</p>
                   ) : responsibilityHistory.length > 0 ? responsibilityHistory.slice(0, 12).map((item) => (
                     <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.5rem" }}>
                       <strong style={{ fontSize: "0.88rem" }}>{caregiverFieldLabel(item.responsibility_type)} · {caregiverStatusLabel(item.status)}</strong>
                       <p className="mobile-settings-hint" style={{ margin: "0.2rem 0 0" }}>
-                        {item.scope || "No task details were recorded"} · Started {item.effective_start ? new Date(item.effective_start).toLocaleDateString() : "date not recorded"} · {item.effective_end ? "Ended " + new Date(item.effective_end).toLocaleDateString() : "Current"}
+                        {caregiverFieldLabel(item.scope) || caregiverSafeAssistantText(item.scope) || "No task details were recorded"} · Started {item.effective_start ? new Date(item.effective_start).toLocaleDateString() : "date not recorded"} · {item.effective_end ? "Ended " + new Date(item.effective_end).toLocaleDateString() : "Current"}
                       </p>
                     </div>
                   )) : (
@@ -1067,7 +1067,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   {networkSummary.responsibility_gaps?.map((item) => (
                     <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
                       <strong style={{ fontSize: "0.9rem" }}>Care task: {caregiverFieldLabel(item.type)}</strong>
-                      <span className="mobile-settings-hint">{item.scope || "No details about this task were recorded"} · {caregiverStatusLabel(item.status)}</span>
+                      <span className="mobile-settings-hint">{caregiverFieldLabel(item.scope) || caregiverSafeAssistantText(item.scope) || "No details about this task were recorded"} · {caregiverStatusLabel(item.status)}</span>
                       <label className="mobile-settings-hint" htmlFor={"gap-review-status-" + item.id}>What happened?</label>
                       <select
                         id={"gap-review-status-" + item.id}
@@ -1085,7 +1085,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                         maxLength={2000}
                         value={gapReviewNotes[item.id] ?? ""}
                         onChange={(event) => setGapReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
-                        placeholder="Describe who is covering this responsibility or what remains open."
+                        placeholder="Tell us who is taking care of this task or what still needs to be done."
                         aria-label="Explain who is responsible for this task"
                       />
                       <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (gapReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewResponsibilityGap(item)}>Save update</Button>
@@ -1105,7 +1105,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                         value={conflictReviewNotes[item.id] ?? ""}
                         onChange={(event) => setConflictReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
                         placeholder="Record what was clarified, or why both accounts should remain."
-                        aria-label="Perspective review explanation"
+                        aria-label="Explain what is different about these accounts"
                       />
                       <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (conflictReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void resolvePerspectiveConflict(item)}>Save update</Button>
                     </div>
@@ -1132,7 +1132,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                         value={duplicateReviewNotes[item.id] ?? ""}
                         onChange={(event) => setDuplicateReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
                         placeholder="Explain what you found."
-                        aria-label="Possible duplicate review explanation"
+                        aria-label="Explain whether these are the same task"
                       />
                       <Button type="button" variant="secondary" disabled={reviewingNetworkItemId === item.id || (duplicateReviewNotes[item.id] ?? "").trim().length < 5} loading={reviewingNetworkItemId === item.id} onClick={() => void reviewDuplicateAction(item)}>Save update</Button>
                     </div>
@@ -1196,7 +1196,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <section key={caregiver.caregiver_id} style={{ display: "grid", gap: "0.35rem", paddingTop: "0.65rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
                     <strong>{caregiver.name}</strong>
-                    <span className="mobile-settings-hint">{caregiver.relationship} · {caregiverStatusLabel(caregiver.involvement_status) || "Not recorded"}</span>
+                    <span className="mobile-settings-hint">{caregiverFieldLabel(caregiver.relationship) || caregiverSafeAssistantText(caregiver.relationship)} · {caregiverStatusLabel(caregiver.involvement_status) || "Not recorded"}</span>
                   </div>
                   {(caregiver.roles?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>How they help: {caregiver.roles?.map((role) => role.custom_role_name || caregiverFieldLabel(role.role_type) || caregiverStatusLabel(role.role_type) || "Care role").join(", ")}</p>}
                   {(caregiver.responsibilities?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Care tasks: {caregiver.responsibilities?.map((item) => caregiverFieldLabel(item.type) || caregiverStatusLabel(item.type) || "Care task").join(", ")}</p>}
@@ -1225,7 +1225,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   <p className="mobile-settings-hint" style={{ margin: "0.25rem 0" }}>Access: {member.access_scope === "documents_only" ? "Documents and appointment paperwork" : "Full care record"}</p>
                   {member.status === "active" && !member.can_manage_members && (
                     <select
-                      aria-label={"Access scope for " + member.name}
+                      aria-label={"What " + member.name + " can see"}
                       className="mobile-settings-input"
                       value={member.access_scope || "full_record"}
                       disabled={busy}
@@ -1300,7 +1300,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             <form onSubmit={(event) => void createTransfer(event)} style={{ display: "grid", gap: "0.65rem" }}>
               <label className="mobile-settings-label" htmlFor="transfer-responsibility">Care task to hand over</label>
               <select id="transfer-responsibility" className="mobile-settings-input" required value={selectedResponsibility} onChange={(event) => setSelectedResponsibility(event.target.value)}>
-                <option value="">Choose a responsibility</option>
+                <option value="">Choose a care task</option>
                 {responsibilities.map((item) => <option key={item.id} value={item.id}>{caregiverFieldLabel(item.responsibility_type) || caregiverStatusLabel(item.responsibility_type) || "Care task"} — {caregiverFieldLabel(item.scope) || caregiverStatusLabel(item.scope) || ((item.scope || "").includes("_") ? "No additional detail" : caregiverSafeAssistantText(item.scope)) || "No additional detail"}</option>)}
               </select>
               <label className="mobile-settings-label" htmlFor="transfer-recipient">New caregiver</label>
@@ -1332,7 +1332,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
             {responsibilities.filter((item) => item.caregiver_id === currentProfileId).map((item) => (
               <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "0.9rem" }}>
-                  {caregiverFieldLabel(item.responsibility_type) || item.responsibility_type}
+                  {caregiverFieldLabel(item.responsibility_type) || caregiverSafeAssistantText(item.responsibility_type) || "Care task"}
                   {item.scope ? <span className="mobile-settings-hint"> · {caregiverFieldLabel(item.scope) || caregiverSafeAssistantText(item.scope)}</span> : null}
                 </span>
                 <Button type="button" variant="secondary" disabled={savingResponsibility} onClick={() => void endCareResponsibility(item)}>Stop handling this task</Button>
@@ -1352,7 +1352,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               <div key={role.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "0.9rem" }}>
                   {role.custom_role_name || CARE_ROLE_OPTIONS.find((item) => item.value === role.role_type)?.label || "Care role"}
-                  {role.scope ? <span className="mobile-settings-hint"> · {role.scope}</span> : null}
+                  {role.scope ? <span className="mobile-settings-hint"> · {caregiverFieldLabel(role.scope) || caregiverSafeAssistantText(role.scope)}</span> : null}
                 </span>
                 <Button type="button" variant="secondary" disabled={savingCareRole} onClick={() => void endCareRole(role)}>Stop this role</Button>
               </div>
