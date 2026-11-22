@@ -30,6 +30,7 @@ type OpenLoop = {
   appointment_id?: string | null;
   appointment_workspace_id?: string | null;
   owner_label?: string | null;
+  cancellation_reason?: string | null;
 };
 
 type AttentionDecision = {
@@ -169,6 +170,25 @@ function statusLabel(value: string): string {
   return caregiverStatusLabel(value) || "Update";
 }
 
+function lifecycleLabel(loop: OpenLoop | undefined): string {
+  if (!loop) return "Status not recorded";
+  if (loop.status === "closed") return "Resolved";
+  if (loop.status === "cancelled") return "No longer relevant";
+  if (loop.status === "deferred") return "Waiting for check-in";
+  if (loop.status === "blocked") return "Waiting for another step";
+  if (loop.status === "review_abandoned") return "Needs review";
+  if (loop.status === "pending_closure_verification") return "Waiting to confirm completion";
+  if (["awaiting_response", "missing_information", "professional_input"].includes(loop.loop_type)) {
+    return "Waiting for information";
+  }
+  if (["pending_action", "follow_up"].includes(loop.loop_type)) {
+    return "Waiting for someone to act";
+  }
+  if (loop.status === "waiting") return "Waiting";
+  if (loop.status === "open") return "In progress";
+  return "Status not recorded";
+}
+
 function decisionKey(item: AttentionDecision): string {
   return String(item.source || "unknown") + ":" + String(item.record_id || item.id || item.title);
 }
@@ -214,6 +234,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
       <span>Who is following up: {loop?.owner_label ? caregiverSafeAssistantText(loop.owner_label) : "No one is assigned yet"}</span>
+      <span>Status: {lifecycleLabel(loop)}</span>
       <span>Last updated: {loop?.updated_at ? dateLabel(loop.updated_at) : "Not available yet"}</span>
       {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
       {item.evidence_status && <span>What we know so far: {caregiverStatusLabel(item.evidence_status) || "Not confirmed"}</span>}
@@ -538,9 +559,19 @@ export default function FollowUpsPage() {
         {categorized.needsClarification.length === 0 && unclassifiedFollowUpItems.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing clarification the last time we checked." : "We couldn’t check which details need clarification just now. Your saved follow-ups are still shown below."}</p>}
       </section>
       <section className="followups-section">
-        <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items marked done or no longer active.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
+        <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items marked as resolved.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
         {loops.filter((loop) => loop.status === "closed").map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Closed · {statusLabel(loop.outcome_status)}</p><h3>{caregiverSafeAssistantText(loop.title) || "Follow-up"}</h3><p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p></article>)}
-        {loops.some((loop) => loop.status === "cancelled") && <p className="followups-empty-inline">{loops.filter((loop) => loop.status === "cancelled").length} stopped {loops.filter((loop) => loop.status === "cancelled").length === 1 ? "follow-up is" : "follow-ups are"} not shown as completed.</p>}
+              <section className="followups-section">
+        <div className="followups-section-heading"><div><h2>No longer relevant</h2><p>Stopped follow-ups. They are not marked as completed.</p></div><span>{loops.filter((loop) => loop.status === "cancelled").length}</span></div>
+        {loops.filter((loop) => loop.status === "cancelled").map((loop) => <article key={loop.id} className="followup-card">
+          <p className="followup-eyebrow">No longer relevant</p>
+          <h3>{caregiverSafeAssistantText(loop.title) || "Follow-up"}</h3>
+          <p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p>
+          {loop.cancellation_reason && <p>Why it was stopped: {caregiverSafeAssistantText(loop.cancellation_reason) || "No reason was recorded."}</p>}
+          <p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p>
+        </article>)}
+        {loops.filter((loop) => loop.status === "cancelled").length === 0 && <p className="followups-empty-inline">No follow-ups have been stopped.</p>}
+      </section>
         {loops.filter((loop) => loop.status === "closed").length === 0 && <p className="followups-empty-inline">{loopHistoryLoadFailed ? "We couldn’t check which follow-ups have been resolved just now. Your last saved list remains visible." : "There are no resolved follow-ups here yet."}</p>}
       </section>
     </>}
