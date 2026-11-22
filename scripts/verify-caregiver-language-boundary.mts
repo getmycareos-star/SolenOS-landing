@@ -279,7 +279,7 @@ assert.match(changeIntelligence, /CHANGES IN CARE OVER TIME/);
 assert.match(changeIntelligence, /Review notes and documents/);
 assert.doesNotMatch(changeIntelligence, /LONGITUDINAL UNDERSTANDING|Past assessment|Review source evidence/);
 assert.match(sourceReview, /Notes and documents behind care information/);
-assert.match(sourceReview, /suggested details?/);
+assert.match(sourceReview, /Each detail keeps the exact words from the original note or document/);
 assert.doesNotMatch(sourceReview, /Saved source reviews|Sources and supporting information/);
 assert.match(claimReview, /Choose a note or document/);
 assert.match(claimReview, /This information needs another review/);
