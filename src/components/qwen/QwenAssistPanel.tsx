@@ -336,7 +336,7 @@ export default function QwenAssistPanel({
                 }}
                 style={{ border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 12px", minHeight: "40px", background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontSize: "12px", fontWeight: 650, cursor: reviewing ? "wait" : "pointer" }}
               >
-                {reviewing ? "Preparing review…" : "Review for care record"}
+                {reviewing ? "Preparing review…" : "Review this suggestion"}
               </button>
             )}
             {proposal?.status === "pending_authorization" && (
@@ -359,7 +359,7 @@ export default function QwenAssistPanel({
                     }
                   }}
                   style={{ border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 12px", minHeight: "40px", background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontSize: "12px", fontWeight: 650, cursor: reviewing ? "wait" : "pointer" }}
-                >Approve and add to care record</button>
+                >Approve and add to your Care Record</button>
                 <button
                   type="button"
                   disabled={reviewing}
