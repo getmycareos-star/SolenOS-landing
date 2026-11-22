@@ -1,70 +1,46 @@
-# LangChain Adapter — MVP Execution Spec v1
+# LangChain Adapter — Qwen-only Execution Spec
 
 ## Role
 
-`solenos-langchain-adapter` is a **deterministic prompt builder + single-pass LLM invocation wrapper**.
+`solenos-langchain-adapter` builds deterministic prompts and makes a single
+Qwen inference request through the private Ollama service.
 
-It is **not** an agent, reasoning system, workflow engine, memory system, tool router, or multi-step chain executor.
+It is not an agent, workflow engine, memory system, tool router, or multi-step
+chain executor.
 
 ## Pipeline position
 
 ```
 Input
-  → Prompt Builder (deterministic)
-  → LangChain LLM Call (single pass)
-  → Raw Output (plain string)
-  → Zod Validation Layer (response-validator — external)
-  → UI
+  → Prompt Builder
+  → Private Ollama / Qwen
+  → Raw Output
+  → Existing validation boundary
+  → Caller
 ```
-
-## Core API
-
-```typescript
-function runSolenOSLLM(input: string, context?: any): Promise<string>
-```
-
-### Behavior
-
-1. **Build prompt** — inject fixed SolenOS system prompt, user input, optional context
-2. **Call LLM** — LangChain `invoke()` only (Gemini or OpenAI-compatible)
-3. **Return raw output** — exact model text; no parsing, validation, or transformation
-
-## Module layout
-
-| File | Purpose |
-|------|---------|
-| `system-prompt.ts` | Static SolenOS JSON schema instructions |
-| `prompt.ts` | Deterministic user-message assembly |
-| `model.ts` | Provider resolution + chat model factory |
-| `index.ts` | `runSolenOSLLM` export |
 
 ## Configuration
 
 | Variable | Purpose |
 |----------|---------|
-| `GEMINI_API_KEY` | Google Gemini (default when set) |
-| `OPENAI_API_KEY` | OpenAI or compatible endpoint |
-| `OPENAI_BASE_URL` | Optional base URL (Llama / local OpenAI-compatible) |
-| `SOLENOS_LLM_PROVIDER` | Force `gemini` or `openai` |
-| `SOLENOS_LLM_MODEL` | Model name override |
+| `OLLAMA_BASE_URL` | Private Railway Ollama service URL |
+| `OLLAMA_MODEL` | Qwen model name; defaults to `qwen3.5:4b` |
+| `OLLAMA_API_KEY` | Optional compatibility-client value; not a Qwen API key |
+| `SOLENOS_LLM_PROVIDER` | If supplied, must be `ollama`; other values are rejected |
 
-Stable defaults: `temperature: 0`, `maxRetries: 0`.
+There is no OpenAI-hosted or Gemini provider selection, API key, or fallback
+in this adapter. The `@langchain/openai` package is retained only as an
+OpenAI-compatible HTTP client for Ollama's `/v1` endpoint; it does not mean
+SolenOS sends inference requests to OpenAI.
 
-## Forbidden inside this module
+The production caregiver workflows use the backend's native Ollama HTTP
+integration. This adapter is a legacy compatibility surface and must not be
+mistaken for proof of deployed production inference.
 
-- Agents, ReAct, tool calling, memory, state, loops, retries
-- Output parsing, schema validation, correction, or interpretation
+## Failure behavior
 
-## Integration with validation
-
-```typescript
-import { runSolenOSLLM } from "@/lib/solenos-langchain-adapter";
-import { validateAIResponse } from "@/lib/response-validator";
-
-const raw = await runSolenOSLLM(input, context);
-const parsed = JSON.parse(raw); // orchestration layer — not in adapter
-const output = validateAIResponse(parsed); // hard gate
-```
+Missing or invalid private Ollama configuration fails explicitly. This adapter
+does not switch to another provider.
 
 ## Verify
 
