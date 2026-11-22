@@ -34,8 +34,8 @@ export default function SourceIndicator({
     switch (sourceType) {
       case 'user-recorded': return 'Recorded by you';
       case 'imported': return 'Imported';
-      case 'extracted': return 'Extracted from document';
-      case 'ai-generated': return 'AI-generated';
+      case 'extracted': return 'Details found in document';
+      case 'ai-generated': return 'Suggested by SolenOS';
       default: return 'Unknown source';
     }
   };
