@@ -97,7 +97,7 @@ assert(panel.includes("/relationships"), "source-lineage UI must use the persist
 assert(panel.includes("source_independence_status"), "source-lineage UI must display explicit source-independence state");
 assert(panel.includes("shared_origin"), "source-lineage UI must preserve shared-origin/dependent-source state");
 assert(panel.includes("They do not prove that two reports are separate"), "source-lineage UI must not equate a relationship with verified truth");
-assert(panel.includes("Links to other sources could not be loaded") && panel.includes("No list is assumed"), "failed relationship reads must not be presented as an empty lineage history");
+assert(panel.includes("We couldn’t load related notes and documents. Check your connection and try again.") && panel.includes("!relationshipsLoading && !relationshipsError && relationships.length === 0"), "failed relationship reads must not be presented as an empty lineage history");
 console.log("PASS: source-lineage UI persists explicit relationship assessments without claiming they prove truth.");
 
 const companion = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AICompanion.tsx"), "utf8");
