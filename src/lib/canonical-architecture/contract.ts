@@ -331,7 +331,7 @@ export const CANONICAL_ARCHITECTURE_FLOW = [
   "Document type tagging (organizational only)",
   "Structural extraction + signal prioritization",
   "Context window stabilization",
-  "Structured transformation (Gemini envelope + fixed schema)",
+  "Structured Qwen extraction (typed schema + source quotations)",
   "JSON parse + Schema validation",
   "Input grounding validation",
   "No-inference validation",
