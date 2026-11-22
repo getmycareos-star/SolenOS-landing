@@ -417,7 +417,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
@@ -743,7 +743,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
 
   const homeHeading = page.locator(".solenos-chat-main .solenos-workspace-page-heading h1").first();
   const defaultHeadingSize = await homeHeading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
@@ -800,7 +800,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("heading", { name: "Workspace archived", exact: true }).waitFor({ timeout: 10_000 });
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Restore", exact: true }).click();
-  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 10_000 });
+  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 10_000 });
 
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "View record details", exact: true }).click();
@@ -1045,23 +1045,21 @@ await record("01c workspace links, browser back, More menu and account form vali
   const expectedRoutes = [
     "/workspace",
     "/workspace/daily-care",
-    "/workspace/open-loops",
-    "/workspace/timeline",
-    "/workspace/documents",
     "/workspace/appointments",
-    "/workspace/handoffs",
     "/workspace/companion",
-    "/workspace/settings",
+    "/workspace/more",
   ];
   for (const route of expectedRoutes) {
     assert.ok(links.includes(route), `primary navigation is missing ${route}`);
   }
-  await navigation.getByRole("link", { name: /Documents/ }).click();
+  await navigation.getByRole("link", { name: "More", exact: true }).click();
+  await page.waitForURL("**/workspace/more", { timeout: 15_000 });
+  await page.getByRole("link", { name: /Documents/ }).click();
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
   await page.goBack({ waitUntil: "domcontentloaded" });
   await page.waitForURL("**/workspace", { timeout: 15_000 });
-  await page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15_000 });
   await verifyMobile(page);
 
   await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
@@ -1115,7 +1113,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await disposable.page.getByRole("heading", { name: "A clearer picture of care.", exact: true }).waitFor({ timeout: 20_000 });
+  await disposable.page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
   const identityBeforeDeletion = await disposable.page.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
     personId: localStorage.getItem("solenos_backend_person_id"),
@@ -4027,7 +4025,7 @@ await record("17 Daily Care suggested-detail review actions preserve caregiver c
     });
   });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Daily Care", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Share an update", exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("button", { name: "Review suggested details", exact: true }).click();
   const review = page.getByRole("region", { name: "Review suggested care details" });
   await review.waitFor({ state: "visible", timeout: 10_000 });
