@@ -322,7 +322,7 @@ const TECHNICAL_DIAGNOSTIC_PATTERNS = [
   /database schema/i,
   /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint)\b/i,
   /\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\b/i,
-  /\b(?:epistemic|serialization|normalization|embedding|vector index)\b/i,
+  /\b(?:epistemic|serialization|normalization|embedding|vector index|evidence|assessment|confidence)\b/i,
   /schema (?:is )?unavailable/i,
   /sql(?:ite|alchemy)?\b/i,
   /\b(?:postgres(?:ql)?|mysql)\b/i,
