@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { caregiverSafeAssistantText } from '@/lib/caregiver-language';
+import { caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language';
 
 interface AIAttributionProps {
   isAIGenerated: boolean;
@@ -14,7 +14,7 @@ export default function AIAttribution({
   showDetails = false
 }: AIAttributionProps) {
   const [expanded, setExpanded] = useState(showDetails || false);
-  const safeExplanation = caregiverSafeAssistantText(explanation);
+  const safeExplanation = caregiverSafeGeneratedText(explanation);
 
   if (!isAIGenerated) {
     return null;
