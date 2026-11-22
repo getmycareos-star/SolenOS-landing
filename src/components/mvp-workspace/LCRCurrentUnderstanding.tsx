@@ -1349,7 +1349,7 @@ export function LCRCurrentUnderstanding() {
           title: item.request_text.trim(),
           action_type: "follow_up",
           rationale: (item.priority_reasons ?? []).join("; ") || item.description || "A follow-up request is saved in the care record.",
-          limitations: `Information status: ${caregiverLabel(item.epistemic_status)}. Saving this suggestion does not confirm the information or show how urgent it is.`,
+          limitations: `What we know: ${caregiverLabel(item.epistemic_status)}. Saving this suggestion does not confirm it or tell us how urgent it is.`,
           evidence_ids: item.evidence_ids,
           responsible_caregiver_id: responsibleCaregiverId || session.caregiver.id,
           create_reminder: createReminderForSuggestion,
@@ -1904,14 +1904,14 @@ export function LCRCurrentUnderstanding() {
                               setActionApprovalError(null);
                               setCreateReminderForSuggestion(false);
                               setReminderDueInput("");
-                            }}>Review suggested follow-up for approval</button>
+                            }}>Review suggested follow-up</button>
                             {reviewingSuggestionId === suggestionReference(item) && (
                               <div className="lcr-current-fact" aria-label="Review suggested action before approval">
                                 <strong>Suggested next step — not yet agreed</strong>
-                                <p>Proposed action: {caregiverSafeAssistantText(item.request_text) || "A follow-up request was saved."}</p>
-                                <p>Why suggested: {(item.priority_reasons ?? []).map(caregiverSafeAssistantText).filter(Boolean).join("; ") || caregiverSafeAssistantText(item.description) || "A follow-up request is saved in the care record."}</p>
-                                <p>Related notes or documents: {item.evidence_ids.length}</p>
-                                <p>What this does not tell us: This information is marked {caregiverLabel(item.epistemic_status)}. This suggestion does not establish clinical urgency or resolve uncertainty.</p>
+                                <p>Suggested next step: {caregiverSafeAssistantText(item.request_text) || "A follow-up request was saved."}</p>
+                                <p>Why this may help: {(item.priority_reasons ?? []).map(caregiverSafeAssistantText).filter(Boolean).join("; ") || caregiverSafeAssistantText(item.description) || "A follow-up request is saved in the care record."}</p>
+                                <p>Related notes and documents: {item.evidence_ids.length}</p>
+                                <p>What we know: {caregiverLabel(item.epistemic_status)}. This does not tell us how urgent the situation is.</p>
                                 <label>
                                   Responsible caregiver
                                   <select
@@ -2316,8 +2316,8 @@ export function LCRCurrentUnderstanding() {
                           {changeEvidence[change.id].assertions.map((assertion) => (
                             <li key={assertion.id}>
                               <p>{caregiverFieldLabel(assertion.field) || caregiverLabel(assertion.field)}: {assertion.asserted_value}</p>
-                              <small>{caregiverLabel(assertion.subject_type)} · What we know: {caregiverInformationLabel(assertion.epistemic_state || "reported") || "Caregiver report"} · Review status: {caregiverLabel(assertion.assertion_status)} · {caregiverSafeAssistantText(assertion.source_label) || "Saved care record"}</small>
-                              <small>Observed on: {formatWhen(assertion.observed_at)} · Saved: {formatWhen(assertion.recorded_at)}</small>
+                              <small>{caregiverLabel(assertion.subject_type)} · What we know: {caregiverInformationLabel(assertion.epistemic_state || "reported") || "Caregiver report"} · Review: {caregiverLabel(assertion.assertion_status)} · {caregiverSafeAssistantText(assertion.source_label) || "Saved care record"}</small>
+                              <small>Date noticed: {formatWhen(assertion.observed_at)} · Saved: {formatWhen(assertion.recorded_at)}</small>
                               {assertion.source_text && <p>{caregiverReadableCaptureText(assertion.source_text) || "The original wording is saved."}</p>}
                             </li>
                           ))}
