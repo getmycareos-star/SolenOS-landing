@@ -88,6 +88,9 @@ assert.equal(caregiverSafeAssistantText("true"), null);
 assert.equal(caregiverSafeAssistantText("LCR Delta Engine completed"), null);
 assert.equal(caregiverSafeAssistantText("Qwen inference is unavailable"), null);
 assert.equal(caregiverSafeGeneratedText("The evidence is incomplete and confidence is low."), null);
+assert.equal(caregiverSafeGeneratedText("The provenance and retrieval results are incomplete."), null);
+assert.equal(caregiverSafeGeneratedText("The backend could not confirm the claim."), null);
+assert.equal(caregiverSafeGeneratedText("Your care update was saved. We do not know what changed yet."), "Your care update was saved. We do not know what changed yet.");
 assert.equal(caregiverSafeGeneratedText("Your care update was saved. We do not know what caused the change yet."), "Your care update was saved. We do not know what caused the change yet.");
 assert.equal(caregiverSafeAssistantText("Your note mentions evidence and confidence."), "Your note mentions evidence and confidence.");
 
