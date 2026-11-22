@@ -119,7 +119,7 @@ assert(!companion.includes("Inspect source record references"), "caregivers must
 console.log("PASS: Companion handoff preview exposes source-lineage groups and truncation limits.");
 
 const appointment = fs.readFileSync(path.join(process.cwd(), "src/components/workflows/AppointmentWorkspace.tsx"), "utf8");
-assert(appointment.includes("How the notes and documents are related"), "Appointment preparation must render source lineage");
+assert(appointment.includes("How these notes and documents are connected") && appointment.includes("brief.evidence_lineage.groups"), "Appointment preparation must render source lineage groups");
 assert(appointment.includes("scope_truncated"), "Appointment preparation must disclose bounded lineage retrieval");
 assert(appointment.includes("Do not assume they are separate"), "Appointment preparation must not infer independence from missing lineage");
 console.log("PASS: appointment preparation exposes evidence lineage and bounded-scope limits.");
