@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { caregiverSafeAssistantText } from '@/lib/caregiver-language';
 
 interface AIAttributionProps {
   isAIGenerated: boolean;
@@ -13,12 +14,13 @@ export default function AIAttribution({
   showDetails = false
 }: AIAttributionProps) {
   const [expanded, setExpanded] = useState(showDetails || false);
+  const safeExplanation = caregiverSafeAssistantText(explanation);
 
   if (!isAIGenerated) {
     return null;
   }
 
-  const getConfidenceLabel = (): string => 'AI suggestion — please check';
+  const getConfidenceLabel = (): string => 'Suggested detail — please check';
 
   return (
     <div style={{ 
@@ -97,7 +99,7 @@ export default function AIAttribution({
               color: 'var(--text)',
               fontWeight: '500'
             }}>
-              Suggested by AI
+              Suggested by SolenOS
             </span>
           </div>
           
@@ -122,7 +124,7 @@ export default function AIAttribution({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {explanation}
+                {safeExplanation || 'This suggestion needs your review.'}
               </p>
             </div>
           )}
