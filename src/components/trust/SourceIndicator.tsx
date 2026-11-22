@@ -183,27 +183,7 @@ export default function SourceIndicator({
           )}
           
           {sourceId && (
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center'
-            }}>
-              <span style={{ 
-                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
-                color: 'var(--text-secondary)'
-              }}>
-                Source ID:
-              </span>
-              <AccessibleButton
-                variant="outline"
-                size="small"
-                onClick={() => {
-                  // In a real app, this would navigate to the source evidence
-                  alert(`Viewing source evidence: ${sourceId}`);
-                }}
-                children="View source"
-              />
-            </div>
+
           )}
         </div>
       )}
