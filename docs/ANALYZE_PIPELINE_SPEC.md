@@ -1,3 +1,5 @@
+> **Retired:** The `POST /api/analyze` endpoint described below was permanently closed on 2026-11-22 and returns HTTP 410 in every environment. Its former Gemini execution path is not part of the caregiver product and must not be re-enabled. The authenticated backend Qwen workflows are the supported inference boundary.
+
 # /api/analyze — Core Execution Pipeline v1
 
 ## Role
