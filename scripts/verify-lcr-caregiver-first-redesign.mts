@@ -66,7 +66,7 @@ assert.match(styles, /\.lcr-home/, "existing responsive LCR style system is pres
 assert.doesNotMatch(evidenceReview, /fontSize: 12\b|<small>/, "caregiver source review details must not use dense small text");
 assert.ok(evidenceReview.includes('fontSize: "calc(14px * var(--solenos-text-scale, 1))"'), "source and review information remains comfortably readable and follows the caregiver’s saved text size");
 assert.match(experienceStyles, /lcr-current-fact :where\(p,small,li\)[\s\S]*?font-size: 0\.95rem;[\s\S]*?line-height: 1\.7;/, "care-record detail text remains comfortably readable");
-assert.match(experienceStyles, /lcr-current-fact h4[\s\S]*?font-size: 15px;/, "care-record section labels are not rendered in small dense text");
+assert.match(experienceStyles, /lcr-current-fact h4[\s\S]*?font-size: calc\(15px \* var\(--solenos-text-scale, 1\)\);/, "care-record section labels remain readable and follow the caregiver’s saved text size");
 assert.match(styles, /@media \(max-width: 540px\)/, "mobile layout remains explicitly handled");
 const caregiverRenderedCode = currentUnderstanding.slice(currentUnderstanding.indexOf("export function LCRCurrentUnderstanding"));
 assert.notEqual(currentUnderstanding.indexOf("export function LCRCurrentUnderstanding"), -1, "caregiver LCR component must exist");
