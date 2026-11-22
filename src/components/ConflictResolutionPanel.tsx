@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
-type Conflict = {
+type Difference between reports = {
   id: string;
   person_id: string;
   subject_type: string;
@@ -50,9 +50,9 @@ const button: CSSProperties = {
 };
 const statuses = ["unresolved", "partially_resolved", "qualified", "resolved", "superseded", "reopened"] as const;
 
-export default function ConflictResolutionPanel({ personId }: { personId?: string }) {
+export default function Difference between reportsResolutionPanel({ personId }: { personId?: string }) {
   const [scopedPersonId, setScopedPersonId] = useState("");
-  const [conflicts, setConflicts] = useState<Conflict[]>([]);
+  const [conflicts, setDifference between reportss] = useState<Difference between reports[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [status, setStatus] = useState<(typeof statuses)[number]>("unresolved");
@@ -91,13 +91,13 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         throw new Error("Invalid or cross-record evidence response");
       }
       setScopedPersonId(sessionPersonId);
-      setConflicts(conflictRows as Conflict[]);
+      setDifference between reportss(conflictRows as Difference between reports[]);
       setEvidence(evidenceRows as Evidence[]);
       setSelectedId((current) => current && conflictRows.some((row) => row.id === current)
         ? current : conflictRows[0]?.id ?? "");
     } catch {
       setScopedPersonId("");
-      setConflicts([]);
+      setDifference between reportss([]);
       setEvidence([]);
       setSelectedId("");
       setError("Reports that differ and their supporting information could not be loaded. No empty result is assumed.");
@@ -140,7 +140,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       return;
     }
     if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopedPersonId))) {
-      setError("Every selected evidence item must belong to the authenticated care record.");
+      setError("Every selected note or document must belong to this Care Record.");
       return;
     }
     setSaving(true);
@@ -174,9 +174,9 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
     </p>
     {loading && <p role="status">Loading reports that differ…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
-    {!loading && !error && conflicts.length === 0 && <p>No conflicting reports are currently recorded in this care record. This does not establish that no disagreement exists outside the information available to SolenOS.</p>}
+    {!loading && !error && conflicts.length === 0 && <p>No reports that disagree are saved here right now. This does not mean no disagreement exists elsewhere.</p>}
     {!loading && !error && conflicts.length > 0 && <>
-      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Conflict
+      <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Difference between reports
         <select style={field} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
           {conflicts.map((item) => <option key={item.id} value={item.id}>Care detail: {caregiverSafeAssistantText(item.description) || "Saved reports differ"} · {caregiverStatusLabel(item.resolution_status) || "Status not available"}</option>)}
         </select>
@@ -188,7 +188,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
         <p><strong>Dates this applies to:</strong> {selected.effective_from || "Start unknown"} — {selected.effective_to || "End unknown"}</p>
         <p><strong>What has been reviewed:</strong> {caregiverSafeAssistantText(selected.resolution_scope) || "Nothing has been marked as resolved."}</p>
         <p><strong>What still needs checking:</strong> {caregiverSafeAssistantText(selected.unresolved_remainder) || "Not recorded"}</p>
-        <p><strong>Supporting information:</strong> {selected.evidence_ids?.length ? selected.evidence_ids.length + " saved item(s)" : "None recorded"}</p>
+        <p><strong>Related notes or documents:</strong> {selected.evidence_ids?.length ? selected.evidence_ids.length + " saved item(s)" : "None recorded"}</p>
         {selected.matching_candidate_ids?.length ? <p><strong>Related reports:</strong> {selected.matching_candidate_ids.length}</p> : null}
       </div>}
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Review status
@@ -207,7 +207,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       </label>
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Supporting information
         <select multiple style={{ ...field, minHeight: 100 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-          {evidence.map((item) => <option key={item.id} value={item.id}>Saved source · {caregiverSafeAssistantText(item.source_text.slice(0, 80)) || "Source text not available"}</option>)}
+          {evidence.map((item) => <option key={item.id} value={item.id}>Saved note or document · {caregiverSafeAssistantText(item.source_text.slice(0, 80)) || "Original wording is not available"}</option>)}
         </select>
       </label>
       <button type="button" style={button} onClick={() => void submitResolution()} disabled={saving || loading}>
@@ -224,7 +224,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
             <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
             {item.resolution_scope && <p>Reviewed: {caregiverSafeAssistantText(item.resolution_scope) || "Not recorded"}</p>}
             {item.unresolved_remainder && <p>Still needs checking: {caregiverSafeAssistantText(item.unresolved_remainder) || "Not recorded"}</p>}
-            <p>Supporting information: {item.evidence_ids?.length ? item.evidence_ids.length + " saved item(s)" : "None recorded"} · {new Date(item.created_at).toLocaleString()}</p>
+            <p>Related notes or documents: {item.evidence_ids?.length ? item.evidence_ids.length + " saved item(s)" : "None recorded"} · {new Date(item.created_at).toLocaleString()}</p>
           </li>)}
         </ol>
       </div>
