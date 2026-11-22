@@ -73,6 +73,7 @@ jobs:
       SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
       DATABASE_URL: postgresql+psycopg2://solenos_ci:solenos_ci@localhost:5432/solenos_critical_journeys
       SOLENOS_REQUIRE_LIVE_QWEN: "0"
+      SOLENOS_TEST_DISABLE_QWEN: "1"
     steps:
       - name: Check out triggering frontend commit
         uses: actions/checkout@v4
@@ -166,7 +167,7 @@ jobs:
         working-directory: backend-service/backend
         run: |
           VAPID_PRIVATE_KEY="$(printf '%s' "$VAPID_PRIVATE_KEY_B64" | base64 --decode)"
-          nohup env APP_ENV=test SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
+          nohup env APP_ENV=test SOLENOS_TEST_DISABLE_QWEN="$SOLENOS_TEST_DISABLE_QWEN" SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY" VAPID_SUBJECT="$VAPID_SUBJECT" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
           echo $! >/tmp/solenos-critical-backend.pid
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
