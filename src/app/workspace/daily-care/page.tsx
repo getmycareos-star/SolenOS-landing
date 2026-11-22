@@ -127,7 +127,7 @@ function displayHistorySource(item: CareItem): string {
     const normalized = item.source_label.trim().toLowerCase();
     if (normalized === "system-generated update") return "SolenOS update";
     if (normalized === "professional contribution") return "Shared by a care professional";
-    return caregiverSafeAssistantText(item.source_label) || "Saved care record";
+    return caregiverSafeGeneratedText(item.source_label) || "Saved care record";
   }
   if (item.source_type === "caregiver_report" || item.source_type === "care_event" || item.created_by_caregiver_id) {
     return "Recorded by caregiver";
