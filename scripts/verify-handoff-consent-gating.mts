@@ -18,3 +18,14 @@ assert.match(inbox, /if \(primary\.status === "fulfilled"\) \{[\s\S]*?setPrimary
   "a failed primary-caregiver request must not clear previously loaded requests");
 assert.doesNotMatch(inbox, /responsibilities\.status === "fulfilled"[\s\S]*?: \[\]\);/,
   "a failed request must not be converted into an empty list");
+
+assert.match(source, /caregiverSafeGeneratedText\(draft\.warning\)/,
+  "generated handoff warnings must use caregiver language");
+assert.match(source, /caregiverSafeGeneratedText\(item\.coverage_note\)/,
+  "generated handoff coverage notes must use caregiver language");
+assert.match(source, /caregiverSafeGeneratedText\(item\.summary \|\| item\.text\)/,
+  "generated handoff summaries must use caregiver language");
+assert.match(source, /readableEvidenceType\(source\.type \|\| source\.source_type\)/,
+  "internal evidence type codes must not be shown in shared summaries");
+assert.match(source, /Please check that this summary means the same thing as the saved note/,
+  "summary review instructions must explain the check in everyday language");
