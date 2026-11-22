@@ -716,7 +716,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && msg.ai_generated === false && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.response_mode === 'deterministic_low_capacity_support_fallback'
                         ? msg.safety_note || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
-                        : `The Care Assistant did not write this reply. ${msg.safety_note || "It uses a safety check or information already saved. Nothing was changed in your Care Record."}`}</p>
+                        : `This is a brief support message, not an answer based on your Care Record. ${msg.safety_note || "It uses a safety check or information already saved. Nothing was changed in your Care Record."}`}</p>
                     </section>}
                     {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
@@ -724,8 +724,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                         ? 'We couldn’t check every saved note or document, so this answer may miss important details.'
                         : 'We checked the saved notes and documents available for this question. If something is missing from your Care Record, we may not know about it.'}</p>
                     </section>}
-                    {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="Information used to answer">
-                      <strong>Information used to answer</strong>
+                    {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="What this answer is based on">
+                      <strong>What this answer is based on</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
                         <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
                           <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
@@ -737,7 +737,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     {!isUser && msg.ai_generated && msg.claim_provenance && <section className="companion-provenance" aria-label="Saved information behind this answer">
                       <strong>Where this answer came from</strong>
                       <p>Each statement is checked against the wording in saved records. A match does not prove that a report is true or that two records came from different people.</p>
-                      <p><strong>Details from saved information</strong></p>
+                      <p><strong>Details from your Care Record</strong></p>
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{claim.text}</strong></p>
@@ -745,8 +745,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           {claim.support_status === 'aggregate_not_validated' && <p role="note">{claim.aggregate_review?.interpretation_limit || 'This total could not be confirmed from the saved care updates. Check the reports before relying on a number.'}</p>}
                           {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
-                              <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'This count was checked against separate care updates with dates.' : 'This wording appears in a saved record.'}</p>
-                              {claim.support_status === 'matched_validated_aggregate' && <p>Counted {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? ' during ' + claim.aggregate.window_label : ''}. Repeated records were not counted twice.</p>}
+                              <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'We checked this count against separate care updates and their dates.' : 'This wording appears in your Care Record.'}</p>
+                              {claim.support_status === 'matched_validated_aggregate' && <p>This count includes {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? ' during ' + claim.aggregate.window_label : ''}. Repeated records were not counted twice.</p>}
                               {claim.source_references.map((source, sourceIndex) => (
                                 <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
                                   <strong>{source.label}</strong>
@@ -773,7 +773,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.evidence_reviews_status === "empty" && <p>No review of this note or document has been recorded.</p>}
                                   {source.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
-                                    <strong>Supporting note or document</strong>
+                                    <strong>Related note or document</strong>
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
                                       <p>{item.label}</p>
                                       {item.reported_by && <p>Reported by: {item.reported_by}</p>}
