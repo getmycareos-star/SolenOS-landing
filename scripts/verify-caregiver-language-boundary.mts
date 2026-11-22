@@ -707,6 +707,8 @@ assert.match(lcr, /caregiverSafeGeneratedText\(review\.rationale\)/, "generated 
 assert.match(lcr, /caregiverSafeGeneratedText\(group\.interpretation\)/, "generated source-relationship explanations must use caregiver language");
 assert.match(lcr, /caregiverSafeGeneratedText\(projection\.notice\)/, "generated Care Record notices must use caregiver language");
 assert.match(lcr, /caregiverSafeGeneratedText\(transition\.reason\)/, "generated change-history explanations must use caregiver language");
+assert.match(lcr, /caregiverSafeGeneratedText\(alternative\)/, "generated care-pattern explanations must use caregiver language");
+assert.match(lcr, /const safeInterpretation = caregiverSafeGeneratedText\(item\)/, "repeated care-pattern explanations must use the generated-text boundary");
 assert.match(lcr, /See related notes and documents/);
 assert.match(lcr, /This view includes the care information saved here so far/);
 
