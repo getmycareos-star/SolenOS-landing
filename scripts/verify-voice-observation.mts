@@ -30,7 +30,7 @@ import {
   generateWeeklySummary,
   listStructuredForCaregiver,
 } from "../src/lib/observation-intelligence";
-import { captureVoiceObservation, resolveServerSttProvider } from "../src/lib/voice-observation";
+import { captureVoiceObservation, resolveServerSttProvider, transcribeAudio } from "../src/lib/voice-observation";
 import { VOICE_OBSERVATION_MVP, OBSERVATION_INTELLIGENCE_MVP } from "../src/lib/solenos-layers/architecture-map";
 
 const root = process.cwd();
@@ -143,11 +143,10 @@ console.log("✓ STT→observation path (mocked server STT via edited transcript
 
 // ─── STT provider routing ────────────────────────────────────────────────────
 const provider = resolveServerSttProvider();
-assert(
-  provider === null || provider === "whisper" || provider === "gemini",
-  "resolveServerSttProvider returns whisper, gemini, or null",
-);
-console.log(`✓ STT provider routing (${provider ?? "browser-only"})`);
+assert(provider === null, "server STT is disabled; browser recognition is the only MVP path");
+const serverStt = await transcribeAudio({ audio: new Blob(["audio"]) });
+assert(serverStt.ok === false && serverStt.code === "NO_SERVER_STT", "server STT fails closed without hosted providers");
+console.log("✓ Browser-only speech recognition; server transcription is disabled");
 
 // ─── Schema aliases ──────────────────────────────────────────────────────────
 assert(
@@ -192,7 +191,6 @@ const required = [
   "src/lib/tts/google-tts.ts",
   "src/lib/tts/synthesize.ts",
   "src/lib/voice-observation/whisper.ts",
-  "src/lib/voice-observation/gemini-stt.ts",
   "src/lib/voice-observation/transcribe.ts",
   "src/lib/voice-observation/speech-language.ts",
   "src/lib/voice-observation/voice-mode.ts",
