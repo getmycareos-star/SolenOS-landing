@@ -286,7 +286,7 @@ assert.match(claimReview, /This information needs another review/);
 assert.match(statusCareDelta, /Compare with saved care information/);
 assert.match(careRecordOverview, /See what has been saved, who shared it/);
 assert.match(persistedOrientation, /Your Care Record does not have any care information yet/);
-assert.match(workspaceNav, /label: "Care Record"/);
+assert.match(workspaceNav, /href: "\/workspace"[\s\S]*?label: "Today"/, "the primary Today destination opens the Care Record");
 assert.match(workspaceNav, /label: "Care Assistant"/);
 assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
 assert.match(informationStatus, /Known/);
