@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language';
+import { caregiverSafeGeneratedText } from '@/lib/caregiver-language';
 
 interface AIAttributionProps {
   isAIGenerated: boolean;
