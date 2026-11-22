@@ -7,6 +7,7 @@ import type { CareContextDiffSections, ProcessCareContextDiffInput } from "./typ
 import type { CanonicalCareEvent } from "../situation-entry/types";
 import type { ChangeCategory } from "./types";
 import { domainForEvent } from "../care-state-change-detector";
+import { caregiverFieldLabel, caregiverSafeGeneratedText, caregiverStatusLabel } from "../caregiver-language";
 
 function classifyChange(text: string): ChangeCategory {
   for (const { category, pattern } of CATEGORY_PATTERNS) {
@@ -57,25 +58,19 @@ export function computeCareContextDiffSections(
     )
     .slice(0, 5);
   for (const change of semanticChanges) {
-    const domain = change.domain.replace(/_/g, " ");
-    const classification = change.classification.toLowerCase();
-    const confidence =
-      change.confidence === "high"
-        ? ""
-        : change.confidence === "medium"
-          ? " (moderate confidence)"
-          : " (needs confirmation)";
-    factual_delta.push(`${domain} — ${classification}${confidence}`);
+    const domain = caregiverFieldLabel(change.domain) || "Care details";
+    const classification = caregiverStatusLabel(change.classification) || "Possible change";
+    const uncertaintyNote = change.confidence === "medium" ? ". This may need checking." : "";
+    factual_delta.push(`${domain}: ${classification}${uncertaintyNote}`);
   }
 
   // Fallback: structural event changes
   if (factual_delta.length === 0) {
     for (const event of events_created) {
-      const domain = domainForEvent(event);
-      const typeLabel = event.extracted_type.replace(/_/g, " ");
+      const domain = caregiverFieldLabel(domainForEvent(event) || "");
       const text = domain
-        ? `New ${domain} observation recorded`
-        : `New ${typeLabel} recorded`;
+        ? `A new ${domain.toLowerCase()} detail was saved.`
+        : "A new care detail was saved.";
       factual_delta.push(text);
     }
   }
@@ -83,26 +78,27 @@ export function computeCareContextDiffSections(
   for (const id of state_diff.updated_events.slice(0, 2)) {
     const event = context.events.find((e) => e.id === id);
     if (event) {
-      const domain = domainForEvent(event);
+      const domain = caregiverFieldLabel(domainForEvent(event) || "");
       const text = domain
-        ? `Existing ${domain} observation updated`
-        : "Existing observation updated";
+        ? `Earlier ${domain.toLowerCase()} details were updated.`
+        : "An earlier care detail was updated.";
       factual_delta.push(text);
     }
   }
   for (const id of state_diff.invalidated_events.slice(0, 2)) {
-    factual_delta.push("Prior observation marked as no longer valid");
+    factual_delta.push("An earlier care detail was marked as no longer accurate.");
     void id;
   }
   for (const id of state_diff.resolved_uncertainty.slice(0, 2)) {
-    factual_delta.push("Previously uncertain area received clarification");
+    factual_delta.push("A detail that was unclear has now been clarified.");
     void id;
   }
   for (const line of what_changed.slice(0, 3)) {
-    if (!factual_delta.some((d) => d === line)) factual_delta.push(line);
+    const safeLine = caregiverSafeGeneratedText(line);
+    if (safeLine && !factual_delta.some((d) => d === safeLine)) factual_delta.push(safeLine);
   }
   if (factual_delta.length === 0) {
-    factual_delta.push("No new factual changes since last comprehension point");
+    factual_delta.push("No new care changes were found in the information checked.");
   }
 
   const directional_change: string[] = [];
@@ -118,20 +114,19 @@ export function computeCareContextDiffSections(
     const newDomains = stateChanges.filter((c) => c.classification === "NEW");
 
     if (worsening.length >= 2) {
-      const domains = worsening.map((c) => c.domain.replace(/_/g, " ")).join(" and ");
-      directional_change.push(`Multiple areas showing concerning signals: ${domains}`);
+      const domains = worsening.map((c) => caregiverFieldLabel(c.domain) || "care details").join(" and ");
+      directional_change.push(`Changes may be getting harder in more than one area: ${domains}.`);
     } else if (worsening.length === 1) {
-      directional_change.push(
-        `${worsening[0]!.domain.replace(/_/g, " ")} showing concerning signals`,
-      );
+      const domain = caregiverFieldLabel(worsening[0]!.domain) || "Care details";
+      directional_change.push(`A change in ${domain.toLowerCase()} may need attention.`);
     }
     if (improving.length > 0 && worsening.length === 0) {
-      const domains = improving.map((c) => c.domain.replace(/_/g, " ")).join(" and ");
-      directional_change.push(`Positive signals in: ${domains}`);
+      const domains = improving.map((c) => caregiverFieldLabel(c.domain) || "care details").join(" and ");
+      directional_change.push(`Some changes may be improving: ${domains}.`);
     }
     if (newDomains.length >= 2) {
-      const domains = newDomains.map((c) => c.domain.replace(/_/g, " ")).join(" and ");
-      directional_change.push(`New observations across: ${domains}`);
+      const domains = newDomains.map((c) => caregiverFieldLabel(c.domain) || "care details").join(" and ");
+      directional_change.push(`New care details were shared about: ${domains}.`);
     }
   }
 
@@ -142,92 +137,95 @@ export function computeCareContextDiffSections(
     const deteriorationCount = activeEvents.filter((e) => DETERIORATION_SIGNALS.test(e.raw_input)).length;
 
     if (behavior.behavioral_change_detected) {
-      directional_change.push("Behavioral pattern shift detected in recent period");
+      directional_change.push("A change in behavior was noticed recently.");
     }
     if (deteriorationCount > improvementCount) {
-      directional_change.push("Available signals suggest deterioration or increased care needs");
+      directional_change.push("The information shared may point to increasing care needs.");
     } else if (improvementCount > deteriorationCount && deteriorationCount === 0) {
-      directional_change.push("Available signals suggest improvement or stabilization");
+      directional_change.push("The information shared may point to improvement.");
     }
     for (const pattern of input.multi_caregiver?.conflict_log.slice(-2) ?? []) {
       directional_change.push(pattern.shared_abstract_message);
     }
     if (DETERIORATION_SIGNALS.test(recentText) && directional_change.length === 0) {
-      directional_change.push("Recent observations include deterioration indicators");
+      directional_change.push("Recent care updates may point to a change that needs attention.");
     }
   }
 
   const newly_important: string[] = [];
   if (input.attention_event_ids.length > 0) {
-    newly_important.push(`${input.attention_event_ids.length} item(s) elevated to attention priority`);
+    newly_important.push(`${input.attention_event_ids.length} care detail${input.attention_event_ids.length === 1 ? "" : "s"} may need attention.`);
   }
   if (behavior.escalation.risk_elevation === "high") {
-    newly_important.push("Safety-related escalation signals newly elevated");
+    newly_important.push("A possible safety concern needs a closer look.");
   }
   for (const risk of input.multi_caregiver?.shared_reality.active_risks.slice(0, 2) ?? []) {
-    newly_important.push(risk);
+    const safeRisk = caregiverSafeGeneratedText(risk);
+    if (safeRisk) newly_important.push(safeRisk);
   }
   for (const gap of continuity_decay.continuity_gaps.filter((g) => g.importance === "high").slice(0, 2)) {
-    newly_important.push(`New continuity gap: ${gap.label}`);
+    const gapLabel = caregiverSafeGeneratedText(gap.label);
+    newly_important.push(gapLabel ? `Some care information may be missing: ${gapLabel}.` : "Some care information may be missing.");
   }
 
   const lost_confidence: string[] = [];
   for (const stale of continuity_decay.stale_items.slice(0, 3)) {
     lost_confidence.push(
-      `${stale.label} confidence decreased (${stale.stale_reason})`,
+      `Some information about ${caregiverSafeGeneratedText(stale.label) || "this care detail"} may be out of date: ${caregiverSafeGeneratedText(stale.stale_reason) || "we have not received a recent update"}.`,
     );
   }
   for (const [domain, score] of Object.entries(
     input.multi_caregiver?.shared_reality.confidence_map ?? {},
   )) {
     if (score < 0.5) {
-      lost_confidence.push(`${domain} confidence reduced due to conflicting inputs`);
+      lost_confidence.push(`Reports about ${caregiverFieldLabel(domain)?.toLowerCase() || "this care detail"} do not match.`);
     }
   }
   if (continuity_decay.family_rhythm.meaningful_gap) {
     const days = continuity_decay.family_rhythm.days_since_last_update;
-    lost_confidence.push(`Continuity confidence decreased — no update in ${days} day(s)`);
+    lost_confidence.push(`No care updates have been added in ${days} days, so some details may be out of date.`);
   }
 
   const stabilized: string[] = [];
   if (state_diff.resolved_uncertainty.length > 0) {
-    stabilized.push("Some previously uncertain areas are now clarified");
+    stabilized.push("Some details that were unclear have now been explained.");
   }
   if (what_changed.length === 0 && events_created.length === 0) {
-    stabilized.push("No changes in core care domains since last review");
+    stabilized.push("No changes were found in the care details checked since the last review.");
   }
   if (input.state_of_care?.sections.what_is_stable.length) {
     for (const line of input.state_of_care.sections.what_is_stable.slice(0, 2)) {
-      if (!stabilized.includes(line)) stabilized.push(line);
+      const safeLine = caregiverSafeGeneratedText(line);
+      if (safeLine && !stabilized.includes(safeLine)) stabilized.push(safeLine);
     }
   }
 
   const system_interpretation: string[] = [];
   if (input.state_of_care) {
     system_interpretation.push(
-      `Current focus: ${input.state_of_care.what_matters_most}`,
+      `Current focus: ${caregiverSafeGeneratedText(input.state_of_care.what_matters_most) || "the care details shared so far"}`,
     );
   }
 
   // Use semantic trajectory summary when available
   if (care_state_change_report?.trajectory_summary) {
-    system_interpretation.push(care_state_change_report.trajectory_summary);
+    system_interpretation.push(caregiverSafeGeneratedText(care_state_change_report.trajectory_summary) || "Recent care updates may show a change over time.");
   } else if (directional_change.length > 0 && newly_important.length > 0) {
     system_interpretation.push(
-      "Overall care stability may be decreasing due to compounding recent changes",
+      "Several recent changes may mean care needs are increasing.",
     );
   } else if (what_changed.length === 0 && events_created.length === 0) {
-    system_interpretation.push("Care context appears stable relative to last comprehension point");
+    system_interpretation.push("No important changes were found in the information checked since the last review.");
   } else if (directional_change.length > 0 && /improvement|stabilization/i.test(directional_change.join(" "))) {
-    system_interpretation.push("Recent changes suggest cautious improvement or stabilization");
+    system_interpretation.push("Recent care updates may point to some improvement.");
   } else {
-    system_interpretation.push("Care context updated — review attention items and next steps");
+    system_interpretation.push("Care information has changed. Check what needs attention and what to do next.");
   }
 
   if (priorComprehendedAt) {
     const days = daysBetween(priorComprehendedAt, input.as_of ?? new Date().toISOString());
     if (days >= 3 && directional_change.length === 0) {
-      system_interpretation.push(`No directional shift detected over the past ${days} day(s)`);
+      system_interpretation.push(`We have not found a clear change in the past ${days} days.`);
     }
   }
 
@@ -249,7 +247,7 @@ export function derivePrimaryChange(sections: CareContextDiffSections): string {
     ...sections.directional_change,
     ...sections.system_interpretation,
   ];
-  return safetyFirst[0] ?? "No significant change detected";
+  return safetyFirst[0] ?? "No important changes were found in the information checked.";
 }
 
 export function deriveTimeFrame(
@@ -258,7 +256,7 @@ export function deriveTimeFrame(
 ): { time_frame: string; relative_to: string } {
   if (!priorComprehendedAt) {
     return {
-      time_frame: "since care context initialization",
+      time_frame: "since the first care update",
       relative_to: asOf,
     };
   }
@@ -269,7 +267,7 @@ export function deriveTimeFrame(
   if (days <= 3) {
     return { time_frame: `over past ${days} day(s)`, relative_to: priorComprehendedAt };
   }
-  return { time_frame: "since last meaningful change", relative_to: priorComprehendedAt };
+  return { time_frame: "since the last clear change", relative_to: priorComprehendedAt };
 }
 
 export function hasMeaningfulChange(sections: CareContextDiffSections, eventsCreated: number): boolean {
