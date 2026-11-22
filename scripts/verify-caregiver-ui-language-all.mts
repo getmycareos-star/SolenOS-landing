@@ -43,6 +43,7 @@ const forbidden = /\b(?:epistemic status|epistemic|provenance|reconciliation rev
 
 type Finding = { file: string; line: number; text: string; term: string };
 const findings: Finding[] = [];
+const syntaxErrors: string[] = [];
 
 function addText(sourceFile: ts.SourceFile, node: ts.Node, value: string): void {
   const text = value.replace(/\s+/g, " ").trim();
@@ -111,8 +112,7 @@ for (const file of files) {
       const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, " ");
       return `- ${file}:${position.line + 1}:${position.character + 1}: ${message}`;
     });
-    process.stderr.write("Caregiver language scan could not safely inspect files with syntax errors:\\n" + diagnostics.join("\\n") + "\\n");
-    process.exitCode = 1;
+    syntaxErrors.push(...diagnostics);
     continue;
   }
 
@@ -164,6 +164,11 @@ for (const file of files) {
 
   visit(sourceFile);
 }
+
+if (syntaxErrors.length > 0) {
+  process.stderr.write("Caregiver language scan could not safely inspect files with syntax errors:\n" + syntaxErrors.join("\n") + "\n");
+}
+assert.equal(syntaxErrors.length, 0, `${syntaxErrors.length} caregiver-facing source file(s) could not be parsed.`);
 
 if (findings.length > 0) {
   process.stderr.write(
