@@ -252,6 +252,7 @@ assert.match(dailyCarePage, /quick\.note\.trim\(\)/, "Daily Care must preserve o
 assert.doesNotMatch(dailyCarePage, /caregiverSafeAssistantText\(item\.(original_text|corrected_text|reason)\)/, "caregiver-authored source text must not be filtered as assistant output");
 assert.ok(dailyCarePage.includes("Review suggested details"), "returning caregivers must be able to reopen pending Daily Care suggestions");
 assert.ok(dailyCarePage.includes("<CaptureAnalysisReview"), "Daily Care history must render the persisted review flow");
+assert.ok(dailyCarePage.includes("any suggested details that still need your review"), "Daily Care must direct caregivers to earlier pending reviews in care history");
 assert.ok(captureReview.includes('getJSON(`/capture/analyses/${encodeURIComponent(analysisId)}`)'), "review UI must load the caregiver-scoped persisted extraction");
 assert.ok(captureReview.includes('postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {'), "review decisions must use the persisted source-bound review endpoint");
 assert.match(captureReview, /const persisted = await getJSON\([\s\S]*?capture\/analyses/,
