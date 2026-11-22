@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
-import { caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
+import { caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { RecordState } from '@/components/ui/RecordState'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
 
@@ -388,7 +388,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             client_turn_id: clientTurnId,
           }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
-      const caregiverReply = caregiverSafeAssistantText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
+      const caregiverReply = caregiverSafeGeneratedText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
       // A successful HTTP response may be a deterministic support fallback.
       // Only the explicit AI-generated flag proves that Qwen produced this answer.
@@ -766,7 +766,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
                                     <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                     <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
-                                    <small>{caregiverSafeAssistantText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
+                                    <small>{caregiverSafeGeneratedText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
                                   </div>)}
                                   {(!source.evidence_reviews_status || source.evidence_reviews_status === "unavailable" || source.evidence_reviews_status === "failed") && <p>We couldn’t load earlier reviews of this note or document.</p>}
                                   {source.evidence_reviews_status === "partial" && <p>We couldn’t check all reviews. The history shown here may be incomplete.</p>}
@@ -788,7 +788,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
                                         <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                         <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
-                                        <small>{caregiverSafeAssistantText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
+                                        <small>{caregiverSafeGeneratedText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
                                       </div>)}
                                       {(!item.evidence_reviews_status || item.evidence_reviews_status === "unavailable" || item.evidence_reviews_status === "failed") && <p>We couldn’t load earlier reviews of this note or document.</p>}
                                       {item.evidence_reviews_status === "partial" && <p>We couldn’t check all reviews. The history shown here may be incomplete.</p>}
