@@ -25,10 +25,10 @@ export default function CorrectThis({
   const getFieldTypeLabel = (): string => {
     switch (fieldType) {
       case 'original-entry': return 'Original entry';
-      case 'extracted-info': return 'Extracted information';
-      case 'ai-interpretation': return 'AI interpretation';
+      case 'extracted-info': return 'Details read from a document';
+      case 'ai-interpretation': return 'Suggested by SolenOS';
       case 'date': return 'Date';
-      case 'source-association': return 'Source association';
+      case 'source-association': return 'Where this came from';
       default: return 'Field';
     }
   };
