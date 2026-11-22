@@ -1658,7 +1658,7 @@ export function LCRCurrentUnderstanding() {
                   <p>{caregiverSafeChangeText(change.explanation) || "A possible change was saved. Its importance has not been established."}</p>
                   {change.comparison_window_start && change.comparison_window_end && <small>Compared from {formatWhen(change.comparison_window_start)} to {formatWhen(change.comparison_window_end)}</small>}
                   <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
-                    {evidenceLoadingId === change.id ? "Loading supporting information…" : expandedChangeId === change.id ? "Hide supporting information" : "Review supporting information"}
+                    {evidenceLoadingId === change.id ? "Loading related notes and documents…" : expandedChangeId === change.id ? "Hide related notes and documents" : "See related notes and documents"}
                   </button>
                   {expandedChangeId === change.id && changeEvidence[change.id]?.error && <p role="status">{changeEvidence[change.id]?.error}</p>}
                   {expandedChangeId === change.id && changeEvidence[change.id]?.missing_source_count ? (
