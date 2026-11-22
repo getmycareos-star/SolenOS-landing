@@ -199,15 +199,13 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
   const loop = loops.find((candidate) => candidate.id === item.record_id || (candidate.source_type === item.source && candidate.source_id === item.record_id));
   const evidenceIds = uniqueEvidenceIds(item);
   const reasonLines = [...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])].filter(Boolean);
-  const categoryLabel = item.category === "needs_attention_now" ? "Needs attention now"
-    : item.category === "important_to_address" ? "Important to address"
+  const categoryLabel = item.category === "needs_attention_now" || item.category === "important_to_address" ? "Needs attention"
     : item.category === "can_wait_with_documented_basis" ? "Being monitored"
     : item.category === "needs_clarification" ? "Needs clarification" : "Follow-up";
 
   return <article className="followup-card">
     <div className="followup-card-heading">
       <div><p className="followup-eyebrow">{categoryLabel}</p><h3>{caregiverSafeAssistantText(item.title) || "Follow-up"}</h3></div>
-      <span className="followup-status">{categoryLabel}</span>
     </div>
     {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join(" · ")}</p>}
     <div className="followup-meta">

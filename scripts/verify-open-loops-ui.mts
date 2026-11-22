@@ -44,6 +44,8 @@ for (const [label, pattern] of required) {
   assert.match(allCareViews, pattern, `Follow-ups contract missing: ${label}`);
 }
 
+assert.match(page, /item\.category === "needs_attention_now" \|\| item\.category === "important_to_address" \? "Needs attention"/, "all items needing action use the same simple label");
+assert.doesNotMatch(page, /Needs attention now|Important to address|followup-status/, "follow-up cards avoid extra labels and repeated status text");
 const openLoopCreateWrites = page.match(/postJSON\("\/open-loops",/g) ?? [];
 assert.equal(openLoopCreateWrites.length, 1, "event-derived follow-ups must use one canonical create writer");
 assert.match(page, /async function createFollowUp\(item: AttentionDecision\)[\s\S]*?if \(\(item\.source !== "events" && item\.source !== "persisted_change"\) \|\| !item\.record_id\) return;[\s\S]*?postJSON\("\/open-loops",\s*\{[\s\S]*?source_type: item\.source,[\s\S]*?source_id: item\.record_id,[\s\S]*?idempotency_key: idempotencyKey/s, "follow-up creation must remain bound to a persisted source record and retry-safe");
