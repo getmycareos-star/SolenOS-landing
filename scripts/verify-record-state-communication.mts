@@ -82,7 +82,7 @@ assert(dailyCare.includes("historyError ? null : (") && dailyCare.includes("No n
 console.log("PASS: Daily Care preserves previously loaded care and history when a refresh fails.");
 
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
-assert(followUps.includes("if (nextLoops !== null) setLoops(nextLoops)"), "a failed follow-up read must not clear previously loaded follow-ups");
+assert(followUps.includes("if (nextLoops !== null) {") && followUps.includes("setLoops(displayOrdered)"), "a failed follow-up read must not clear previously loaded follow-ups; successful reads retain the caregiver-facing sort order");
 assert(followUps.includes("if (nextAssessment !== null) setAssessment(nextAssessment)"), "a failed attention review must not clear the previous review");
 assert(followUps.includes("Your previously saved information remains visible"), "follow-up refresh errors must explain that saved information remains visible");
 console.log("PASS: partial follow-up refresh failures preserve the last successfully loaded information.");
