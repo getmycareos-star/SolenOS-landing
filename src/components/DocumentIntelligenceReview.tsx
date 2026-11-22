@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type Candidate = {
   candidate_index?: number;
@@ -296,7 +296,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               Some words may be misread, especially handwriting. Check the original document before accepting suggested details. This only tells us how clearly SolenOS could read the words. It does not tell us whether the words or suggested care details are correct.
             </p>}
             {!!analysis.open_questions?.length && <div role="note" style={{ marginTop: 7, padding: 8, border: "1px solid var(--border)", borderRadius: 7, display: "grid", gap: 4 }}>
-              {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverSafeAssistantText(question) || "More information may be needed."}</p>)}
+              {analysis.open_questions.map((question, questionIndex) => <p key={questionIndex} style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverSafeGeneratedText(question) || "More information may be needed."}</p>)}
             </div>}
           </div>
           <details onToggle={(event) => { if (event.currentTarget.open) void loadExtractedText(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
@@ -359,7 +359,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               </div>}
               {!!candidate.warnings?.length && <div role="note" style={{ padding: 9, border: "1px solid #b99a62", borderRadius: 8, background: "var(--surface)", display: "grid", gap: 4 }}>
                 <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Needs clarification</strong>
-                {candidate.warnings.map((warning, warningIndex) => <p key={warningIndex} style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverSafeAssistantText(warning) || "This detail may need another look."}</p>)}
+                {candidate.warnings.map((warning, warningIndex) => <p key={warningIndex} style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverSafeGeneratedText(warning) || "This detail may need another look."}</p>)}
               </div>}
               <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: "calc(11px * var(--solenos-text-scale, 1))", fontWeight: 700, color: "var(--text-secondary)" }}>From the original document</span><p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(candidate.source_quote) || "The original wording is available in the document."}</p></div>
               {pending && <>
