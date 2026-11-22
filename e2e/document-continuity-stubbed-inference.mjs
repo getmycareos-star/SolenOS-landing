@@ -214,7 +214,7 @@ try {
   assert.ok(!correctedObservation.toLowerCase().includes(correctedSubject.toLowerCase()),
     "caregivers must be able to add a plain-language label without altering the original quotation");
   const nutritionCard = page.getByTestId(`document-candidate-${nutritionIndex}`);
-  const preservedWording = nutritionCard.getByLabel("Exact wording from the original document");
+  const preservedWording = nutritionCard.getByLabel("Text SolenOS read from the document");
   assert.equal(await preservedWording.inputValue(), correctedObservation);
   assert.equal(await preservedWording.getAttribute("readonly"), "");
   await nutritionCard.getByLabel("Short label for this detail").fill(correctedSubject);
