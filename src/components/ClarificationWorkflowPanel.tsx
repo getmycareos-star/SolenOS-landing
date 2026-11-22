@@ -519,7 +519,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
     {loading && <p role="status">Loading questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && partialLoadWarning.length > 0 && (
-      <p role="status">We couldn’t load some of your saved care information: {partialLoadWarning.join(", ")}. The information shown may be incomplete. Try again.</p>
+      <p role="status">We couldn’t load some of your saved care information. What you see here may be incomplete. Try again.</p>
     )}
     {!loading && !error && <>
       {recommendationUnavailable && <p role="status">We couldn’t check for care questions just now. Your saved care information has not changed. Try again later.</p>}
@@ -720,7 +720,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
               />
             </label>
             <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Your answer and how you know will be saved. The original note will stay as it is.</p>
-            <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Your answer will not be marked as confirmed until it has been checked.</p>
+            <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Your answer will not be treated as confirmed until it has been checked.</p>
             <button type="button" style={button} onClick={() => void updateQuestion("answered")} disabled={saving}>{saving ? "Saving…" : "Save answer"}</button>{" "}
             <button type="button" style={button} onClick={() => { setAnswerEntryOpen(false); setAnswer(""); setAnswerProvenance(""); }}>Not now</button>
             </>}
@@ -767,7 +767,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
             <ol style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
                 <p>{item.answer?.trim() || "The saved answer is available for review."}</p>
-                <p>Source: {item.answer_provenance?.trim() || "Not recorded"}</p>
+                <p>Who shared this: {item.answer_provenance?.trim() || "Not recorded"}</p>
                 <p>Saved {displayDate(item.created_at)}</p>
               </li>)}
             </ol>
