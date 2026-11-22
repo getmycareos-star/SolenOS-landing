@@ -60,7 +60,7 @@ for (const route of [
   "/workspace/care-continuity",
   "/workspace/settings",
 ]) {
-  assert.ok(morePage.includes(route), `More preserves the secondary destination ${route}`);
+  assert.ok(navigationRegistry.includes(route), `More preserves the secondary destination ${route}`);
 }
 for (const route of [
   "src/app/workspace/page.tsx",
