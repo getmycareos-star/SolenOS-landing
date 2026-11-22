@@ -65,7 +65,7 @@ const inlineTypographyPaths = [
 ];
 for (const path of inlineTypographyPaths) {
   const component = readFileSync(path, "utf8");
-  assert.doesNotMatch(component, /fontSize:\s*(?:\d+(?:\.\d+)?|["'](?:\d+(?:\.\d+)?px|clamp\()/,
+  assert.doesNotMatch(component, /fontSize:\s*(?:\d+(?:\.\d+)?|["'](?:\d+(?:\.\d+)?px|clamp\()))/,
     `${path} must apply the saved text scale to inline pixel font sizes`);
 }
 assert.match(source, /setSaveState\("saved"\)/);
