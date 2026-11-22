@@ -417,7 +417,7 @@ Patient: Jane Doe
 Medications changed: Donepezil increased
 Follow-up: Primary care in 2 weeks
 Notes: Family reports increased evening confusion since last week.`;
-    const u = await buildCareSituationUnderstanding({
+    const u = buildCareSituationUnderstandingFromExtraction({
       rawText: docText,
       contributorId: "csu_doc",
       personDisplayName: "Jane",
