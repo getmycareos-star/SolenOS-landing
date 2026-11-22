@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const LEGACY_ANALYSIS_ENDPOINT_RETIRED = true;
-
 /**
  * Retired legacy analysis endpoint.
  *
@@ -10,7 +8,7 @@ export const LEGACY_ANALYSIS_ENDPOINT_RETIRED = true;
  * backend-owned Qwen service. This prototype endpoint is closed in every
  * environment so its legacy hosted-provider pipeline cannot be reactivated.
  */
-export async function POST() {
+export async function POST(_request: Request) {
   return NextResponse.json(
     {
       error: "This older analysis route is no longer available.",
