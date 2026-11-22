@@ -14,7 +14,7 @@ const caregiverCopySources = [
   "src/lib/care-memory-maturity/index.ts",
   "src/lib/response-intelligence/ai-product-language.ts",
   "src/lib/situation-entry/caregiver-facing-uncertainty.ts",
-  "src/lib/caregiver-response-dto.ts",
+  "src/lib/situation-entry/caregiver-response-dto.ts",
   "src/lib/support-signal-system/message-templates.ts",
   "src/lib/mvp-workspace/caregiver-surface.ts",
 ];
