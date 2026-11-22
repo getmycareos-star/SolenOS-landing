@@ -41,9 +41,10 @@ assert.match(appShell, /WORKSPACE_NAVIGATION\.settings\.map/);
 assert.doesNotMatch(appShell, /const NAVIGATION\s*=|NAVIGATION\.map/);
 assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
 assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct route to the Care Record");
-assert.match(appShell, /href === "\/workspace"\s*\? pathname === href/, "the Care Record active state must not match every nested route");
+assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Today must not match every nested route");
+assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes keep More active");
 
-for (const label of ["Care Record", "Daily Care", "Follow-ups", "Care history", "Documents", "Appointments", "Share care information", "Care Assistant", "Settings"]) {
+for (const label of ["Today", "Share an update", "Appointments", "Care Assistant", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
 for (const route of [
@@ -56,6 +57,7 @@ for (const route of [
   "src/app/workspace/handoffs/page.tsx",
   "src/app/workspace/companion/page.tsx",
   "src/app/workspace/settings/page.tsx",
+  "src/app/workspace/more/page.tsx",
 ]) {
   assert.ok(fs.existsSync(path.join(root, route)), `navigation destination exists: ${route}`);
 }
