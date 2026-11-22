@@ -1,67 +1,49 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatOpenAI } from "@langchain/openai";
 
-/** @deprecated Non-MVP OpenAI path — use gemini or ollama. */
-export type SolenOSLLMProvider = "gemini" | "openai";
+/**
+ * Qwen is the only supported model provider.
+ *
+ * ChatOpenAI is used here only as an OpenAI-compatible transport client for
+ * the private Ollama endpoint. It does not send requests to OpenAI.
+ */
+export type SolenOSLLMProvider = "ollama";
+export type MvpLLMProvider = "ollama";
 
-export type MvpLLMProvider = "gemini" | "ollama";
-
-const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
-const DEFAULT_OLLAMA_MODEL = "qwen2.5:1.5b";
-const DEFAULT_OLLAMA_BASE_URL = "";
+const DEFAULT_QWEN_MODEL = "qwen3.5:4b";
 
 export function resolveMvpLLMProvider(): MvpLLMProvider | null {
-  const explicit = process.env.SOLENOS_LLM_PROVIDER?.toLowerCase();
-  if (explicit === "gemini" || explicit === "ollama") {
-    return explicit;
+  const explicit = process.env.SOLENOS_LLM_PROVIDER?.trim().toLowerCase();
+  if (explicit && explicit !== "ollama") return null;
+  if (process.env.OLLAMA_BASE_URL?.trim() || process.env.OLLAMA_HOST?.trim()) {
+    return "ollama";
   }
-  if (process.env.GEMINI_API_KEY) return "gemini";
-  if (process.env.OLLAMA_BASE_URL || process.env.OLLAMA_HOST) return "ollama";
   return null;
 }
 
-/** @deprecated Use resolveMvpLLMProvider for /api/analyze. */
+/** Compatibility alias for older callers; it resolves to Qwen/Ollama only. */
 export function resolveSolenOSLLMProvider(): SolenOSLLMProvider | null {
-  const explicit = process.env.SOLENOS_LLM_PROVIDER?.toLowerCase();
-  if (explicit === "gemini" || explicit === "openai") {
-    return explicit;
-  }
-  if (process.env.GEMINI_API_KEY) return "gemini";
-  if (process.env.OPENAI_API_KEY) return "openai";
-  return null;
-}
-
-export function createGeminiChatModel(): BaseChatModel {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is required for Gemini invocation.");
-  }
-
-  return new ChatGoogleGenerativeAI({
-    model: process.env.SOLENOS_LLM_MODEL ?? DEFAULT_GEMINI_MODEL,
-    apiKey: process.env.GEMINI_API_KEY,
-    temperature: 0,
-    maxRetries: 0,
-  });
+  return resolveMvpLLMProvider();
 }
 
 export function createOllamaChatModel(): BaseChatModel {
   const baseURL = (
     process.env.OLLAMA_BASE_URL ??
     process.env.OLLAMA_HOST ??
-    DEFAULT_OLLAMA_BASE_URL
-  ).replace(/\/$/, "");
+    ""
+  ).trim().replace(/\/$/, "");
+
   if (!baseURL) {
-    throw new Error(
-      "Direct Ollama invocation is disabled by default. Configure the private Railway Qwen service URL; desktop localhost is not supported."
-    );
+    throw new Error("Qwen is unavailable: configure the private OLLAMA_BASE_URL.");
   }
+
   let parsedURL: URL;
   try {
     parsedURL = new URL(baseURL);
   } catch {
-    throw new Error("OLLAMA_BASE_URL must be a valid Railway private service URL.");
+    throw new Error("OLLAMA_BASE_URL must be a valid private Railway service URL.");
   }
+
   if (
     parsedURL.protocol !== "http:" ||
     !parsedURL.hostname.toLowerCase().endsWith(".railway.internal") ||
@@ -69,11 +51,11 @@ export function createOllamaChatModel(): BaseChatModel {
     parsedURL.hostname === "127.0.0.1" ||
     parsedURL.hostname === "::1"
   ) {
-    throw new Error("SolenOS accepts only a private Railway Qwen service URL; local/public Ollama URLs are rejected.");
+    throw new Error("SolenOS accepts only a private Railway Ollama service URL.");
   }
 
   return new ChatOpenAI({
-    model: process.env.SOLENOS_LLM_MODEL ?? DEFAULT_OLLAMA_MODEL,
+    model: process.env.OLLAMA_MODEL?.trim() || DEFAULT_QWEN_MODEL,
     apiKey: process.env.OLLAMA_API_KEY ?? "ollama",
     temperature: 0,
     maxRetries: 0,
@@ -83,44 +65,17 @@ export function createOllamaChatModel(): BaseChatModel {
   });
 }
 
-/** MVP: Gemini or Ollama only — single pass, no retries at provider level. */
+/** Qwen/Ollama only. No Gemini or hosted-model fallback is permitted. */
 export function createMvpChatModel(): BaseChatModel {
-  const provider = resolveMvpLLMProvider();
-  if (!provider) {
+  if (!resolveMvpLLMProvider()) {
     throw new Error(
-      "No MVP LLM configured. Set GEMINI_API_KEY or OLLAMA_BASE_URL.",
+      "Qwen is unavailable. Configure OLLAMA_BASE_URL for the private Ollama service.",
     );
   }
-
-  if (provider === "gemini") {
-    return createGeminiChatModel();
-  }
-
   return createOllamaChatModel();
 }
 
-/**
- * @deprecated Non-MVP multi-provider helper.
- */
+/** Compatibility alias for older callers; always creates the Qwen model. */
 export function createSolenOSChatModel(): BaseChatModel {
-  const provider = resolveSolenOSLLMProvider();
-  if (!provider) {
-    throw new Error(
-      "No LLM credentials configured. Set GEMINI_API_KEY or OPENAI_API_KEY.",
-    );
-  }
-
-  if (provider === "gemini") {
-    return createGeminiChatModel();
-  }
-
-  return new ChatOpenAI({
-    model: process.env.SOLENOS_LLM_MODEL ?? "gpt-4o-mini",
-    apiKey: process.env.OPENAI_API_KEY,
-    temperature: 0,
-    maxRetries: 0,
-    configuration: process.env.OPENAI_BASE_URL
-      ? { baseURL: process.env.OPENAI_BASE_URL }
-      : undefined,
-  });
+  return createMvpChatModel();
 }
