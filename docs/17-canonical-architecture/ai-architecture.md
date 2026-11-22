@@ -13,7 +13,7 @@
 | Daily Care | Existing capture pipeline, Qwen extraction and backend reconciliation | Produce reviewable candidates; never silently accept model output |
 | Change intelligence | Deterministic backend Delta and care-continuity services, with Qwen support where configured | Compare source-backed care information and preserve uncertainty |
 | Appointments and handoffs | Authenticated backend workflows with scoped LCR retrieval | Prepare review-only summaries and drafts |
-| Browser voice | Browser Web Speech only where supported | Transcription input; no hosted server-side STT in the MVP |
+| Browser voice | Browser Web Speech adapter preserved as a future capability | Voice capture is not exposed in the current caregiver MVP; no hosted server-side STT |
 
 ## Separation of concerns
 
@@ -34,6 +34,6 @@
 
 ## Retired paths
 
-POST /api/analyze is permanently retired and returns HTTP 410. Its former Gemini pipeline and provider selection are not part of the caregiver architecture. Server-side Whisper and Gemini speech recognition are disabled; browser transcription remains separate.
+POST /api/analyze is permanently retired and returns HTTP 410. Its former Gemini pipeline and provider selection are not part of the caregiver architecture. Server-side Whisper and Gemini speech recognition are disabled. The browser Web Speech adapter remains in source for future use, but voice capture controls are not exposed in the current caregiver MVP.
 
 See [AI Systems](../10-ai-systems/README.md) for the operational boundary and [module status](./module-status.md) for implementation status.
