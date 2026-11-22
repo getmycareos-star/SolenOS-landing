@@ -70,7 +70,7 @@ assert.match(
 );
 assert.match(
   clarificationPanel,
-  /See other care questions/,
+  /See more questions/,
   "Additional questions must remain available without displaying a pressure-inducing count.",
 );
 assert.doesNotMatch(
@@ -104,7 +104,7 @@ assert.match(clarificationPanel, /We couldn’t check for care questions just no
 assert.match(clarificationPanel, /caregiverOpenQuestions\.length === 0 && !recommendationUnavailable/, "an empty successful result must be distinct from an unavailable result");
 assert.match(
   clarificationPanel,
-  /There are no care questions for you to review right now/,
+  /There are no questions for you to check right now/,
   "The empty state must only appear after a successful recommendation read.",
 );
 assert.doesNotMatch(
