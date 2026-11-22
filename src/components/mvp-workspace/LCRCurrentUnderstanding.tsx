@@ -718,7 +718,7 @@ const HISTORY_SOURCE_LABELS: Record<string, string> = {
   caregiver_observations: "Caregiver observations",
   professional_reports: "Healthcare professional reports",
   appointments: "Appointments",
-  handoffs: "Care handoffs",
+  handoffs: "Care updates shared with another caregiver",
   decisions: "Care decisions",
   decision_outcomes: "What happened after a decision",
   action_outcomes: "Follow-up results",
