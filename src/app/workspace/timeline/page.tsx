@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
 const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
@@ -51,6 +52,12 @@ type CareEvent = {
   follow_up_candidate?: boolean | null;
   confidence?: number | null;
   situation_id?: string | null;
+  capture_processing?: {
+    analysis_id?: string | null;
+    review_required?: boolean;
+    job_status?: string | null;
+    message?: string | null;
+  } | null;
 };
 
 type FilterKey = "all" | "observations" | "decisions" | "documents" | "open";
@@ -134,6 +141,9 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
     follow_up_candidate: row.follow_up_candidate === true,
     confidence: typeof row.confidence === "number" ? row.confidence : null,
     situation_id: typeof row.situation_id === "string" ? row.situation_id : null,
+    capture_processing: row.capture_processing && typeof row.capture_processing === "object" && !Array.isArray(row.capture_processing)
+      ? row.capture_processing as CareEvent["capture_processing"]
+      : null,
   };
 }
 
@@ -298,6 +308,7 @@ export default function TimelinePage() {
   const [correctionMessage, setCorrectionMessage] = useState("");
   const [correctionIdempotencyKey, setCorrectionIdempotencyKey] = useState<string | null>(null);
   const [pendingCorrectionId, setPendingCorrectionId] = useState<string | null>(null);
+  const [reviewAnalysisId, setReviewAnalysisId] = useState<string | null>(null);
   const [retryingCorrection, setRetryingCorrection] = useState(false);
 
   const loadEvents = useCallback(async (manual = false, searchTerm = "") => {
@@ -659,6 +670,7 @@ export default function TimelinePage() {
                           <span className="timeline-event-date">{formatDateTime(event.occurred_at)}</span>
                           {event.follow_up_candidate && <span className="timeline-event-flag">May need follow-up</span>}
                           {event.attention_candidate && <span className="timeline-event-flag">May need attention</span>}
+                          {event.capture_processing?.review_required && <span className="timeline-event-flag">Review suggested details</span>}
                           <span className="timeline-event-disclosure">{expanded ? "Hide details" : "Details"} <ChevronDown size={16} aria-hidden className={expanded ? "is-expanded" : ""} /></span>
                         </span>
                         <strong className="timeline-event-title">{caregiverSafeAssistantText(event.title) || "Care update"}</strong>
@@ -693,6 +705,14 @@ export default function TimelinePage() {
                             <dt>Updated</dt><dd>{formatDateTime(event.updated_at)}</dd>
                           </dl>
                           {event.significance_verdict && <p className="timeline-event-significance"><strong>Why this may matter:</strong> {caregiverSafeAssistantText(event.significance_verdict) || "No further explanation is available."}</p>}
+                          {event.capture_processing?.review_required && event.capture_processing.analysis_id && (
+                            <div className="timeline-correction-area">
+                              <p className="timeline-correction-note">SolenOS found details in this update that have not been added to the Care Record. Check them before deciding whether to keep them.</p>
+                              <Button variant="secondary" onClick={() => setReviewAnalysisId(event.capture_processing?.analysis_id || null)}>
+                                Review suggested details
+                              </Button>
+                            </div>
+                          )}
                           {(event.source_type === "care_event" || (
                             event.source_type === "care_assertion" &&
                             !["superseded", "retracted"].includes(event.status.toLowerCase())
@@ -795,6 +815,17 @@ export default function TimelinePage() {
             )}
           </details>
         </section>
+      )}
+
+      {reviewAnalysisId && (
+        <CaptureAnalysisReview
+          analysisId={reviewAnalysisId}
+          onClose={() => setReviewAnalysisId(null)}
+          onReviewed={() => {
+            void loadEvents(true, appliedQuery);
+            window.dispatchEvent(new Event("careRecordUpdated"));
+          }}
+        />
       )}
 
       <footer className="timeline-provenance-footer">
