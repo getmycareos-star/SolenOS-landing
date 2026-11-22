@@ -1915,7 +1915,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
   });
   await resilient.page.getByRole("button", { name: "Save photograph", exact: true }).click();
   await resilient.page.getByRole("alert")
-    .filter({ hasText: "photo is encrypted and saved on this device" })
+    .filter({ hasText: "photo is saved securely on this device" })
     .waitFor({ timeout: 10_000 });
   const photoQueueRows = await resilient.page.evaluate(async () => {
     return await new Promise((resolve, reject) => {
@@ -1945,7 +1945,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
   assert.equal(photoSyncPayload.persisted, true, JSON.stringify(photoSyncPayload));
   assert.ok(typeof photoSyncPayload.evidence_id === "string" && photoSyncPayload.evidence_id);
   await resilient.page.getByRole("status")
-    .filter({ hasText: "Photograph saved as care-record evidence." })
+    .filter({ hasText: "Photograph saved with your care information." })
     .waitFor({ timeout: 15_000 });
   const retrievedPhoto = await request(
     `/api/v1/upload/${photoSyncPayload.evidence_id}`,
