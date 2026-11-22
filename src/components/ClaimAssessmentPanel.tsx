@@ -417,7 +417,7 @@ export default function ClaimAssessmentPanel() {
           <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No related care details are linked to this one yet.</p>}
         {dependencies.length > 0 && <ul style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
           {dependencies.map((edge) => <li key={edge.id}>
-            {edge.claim_id === selectedClaimId ? "Depends on" : "Required by"}{" "}
+            {edge.claim_id === selectedClaimId ? "This detail depends on" : "This detail is needed by"}{" "}
             <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Care detail not in this list"}</strong>
             {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSafeAssistantText(edge.rationale) || "No further explanation is available."}
           </li>)}
