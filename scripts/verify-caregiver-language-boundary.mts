@@ -595,3 +595,9 @@ assert.doesNotMatch(lcr, /care record session|Open Loop record|action could not 
   "Care Record errors and follow-up actions must not expose internal workflow names");
 assert.match(lcr, /We couldn't confirm your access to the Care Record/);
 assert.match(lcr, /We couldn't save this as an agreed next step/);
+
+assert.doesNotMatch(openLoopsPage, /Appointment connection|Linked to an appointment in this care record|Not established|Record action taken|What we know:.*epistemic/i,
+  "Follow-ups must describe appointments and actions in familiar terms");
+assert.match(openLoopsPage, /Related appointment/);
+assert.match(openLoopsPage, /Save what you did/);
+assert.match(openLoopsPage, /If nothing appears here, there may still be something that needs attention/);
