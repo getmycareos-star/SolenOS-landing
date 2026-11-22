@@ -9,7 +9,6 @@ interface AIAttributionProps {
 
 export default function AIAttribution({
   isAIGenerated,
-  confidence,
   explanation,
   showDetails = false
 }: AIAttributionProps) {
@@ -67,7 +66,7 @@ export default function AIAttribution({
               fontWeight: '500',
               color: 'var(--text)'
             }}>
-              AI Attribution
+              About this suggestion
             </span>
             <button
               onClick={() => setExpanded(false)}
@@ -91,56 +90,16 @@ export default function AIAttribution({
               display: 'block',
               marginBottom: '2px'
             }}>
-              Content type:
+              How it was made:
             </span>
             <span style={{ 
               fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
               color: 'var(--text)',
               fontWeight: '500'
             }}>
-              AI-generated insight
+              Suggested by AI
             </span>
           </div>
-          
-          {confidence !== undefined && (
-            <div style={{ marginBottom: '8px' }}>
-              <span style={{ 
-                fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
-                color: 'var(--text-secondary)',
-                display: 'block',
-                marginBottom: '2px'
-              }}>
-                Confidence level:
-              </span>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px'
-              }}>
-                <span style={{ 
-                  fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
-                  color: 'var(--text)'
-                }}>
-                  {Math.round(confidence * 100)}%
-                </span>
-                <div style={{ 
-                  width: '80px', 
-                  height: '4px', 
-                  background: 'var(--bg)',
-                  borderRadius: '2px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ 
-                    width: `${confidence * 100}%`, 
-                    height: '100%', 
-                    background: confidence >= 0.8 ? 'var(--trust)' : 
-                              confidence >= 0.5 ? 'var(--unknown)' : 
-                              'var(--error)'
-                  }}></div>
-                </div>
-              </div>
-            </div>
-          )}
           
           {explanation && (
             <div style={{ 
