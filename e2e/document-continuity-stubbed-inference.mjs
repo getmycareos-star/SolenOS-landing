@@ -210,8 +210,12 @@ try {
 
   assert.notEqual(nutritionCandidate.observation, nutritionCandidate.source_quote, "the test correction must repair a shortened model summary using the preserved source wording");
   const correctedObservation = nutritionCandidate.source_quote;
+  const correctedSubject = correctedObservation.slice(0, Math.min(30, correctedObservation.length)).trim();
   const nutritionCard = page.getByTestId(`document-candidate-${nutritionIndex}`);
-  await nutritionCard.getByLabel("What should it say?").fill(correctedObservation);
+  const preservedWording = nutritionCard.getByLabel("Exact wording from the original document");
+  assert.equal(await preservedWording.inputValue(), correctedObservation);
+  assert.equal(await preservedWording.getAttribute("readonly"), "");
+  await nutritionCard.getByLabel("Short label from the document").fill(correctedSubject);
   await nutritionCard.getByTestId(`correct-document-candidate-${nutritionIndex}`).click();
   await nutritionCard.getByText("Correction saved — waiting for approval", { exact: true }).waitFor({ timeout: 30_000 });
   await nutritionCard.getByTestId(`accept-document-candidate-${nutritionIndex}`).click();
@@ -232,7 +236,7 @@ try {
   );
   const nutritionCorrected = reviewItems.find((item) =>
     item.decision === "correct" && item.after?.source_quote === nutritionCandidate.source_quote &&
-    item.after?.observation === correctedObservation,
+    item.after?.subject === correctedSubject && item.after?.observation === correctedObservation,
   );
   const nutritionAccepted = reviewItems.find((item) =>
     item.decision === "accept" && item.after?.source_quote === nutritionCandidate.source_quote &&
