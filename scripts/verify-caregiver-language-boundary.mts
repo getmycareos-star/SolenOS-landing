@@ -316,7 +316,7 @@ assert.match(careContinuity, /More about the care information saved here/);
 assert.match(careContinuity, /Care information shared/);
 assert.doesNotMatch(documentsPage, /upload session|encrypted on this device|sync when your connection returns|safely queued/i);
 assert.doesNotMatch(situationResponse, /Saved record reference|situation-reasoning state|This view is reconstructed/i);
-assert.doesNotMatch(sourceIndicator, /Source ID:|Viewing source evidence/);
+assert.doesNotMatch(sourceIndicator, /Source ID:|Source type:|Source Information|Viewing source evidence|sourceId &&/);
 assert.doesNotMatch(careCaptureLegacy, /Qwen capture analysis|No verified Qwen candidates|pending_review/);
 assert.doesNotMatch(historyDrawer, /incomplete retrieval|description=\{error\}/i);
 assert.doesNotMatch(statusCareDelta, /Clinician-oriented summary/);
