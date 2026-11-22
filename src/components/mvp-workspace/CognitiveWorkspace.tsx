@@ -1006,7 +1006,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       </div>
       {showSoftPrivacyNote && (
         <p className="soft-privacy-note" role="note">
-          What you share stays in the Living Care Record for this care journey. It is not sold or used
+          What you share stays in your Care Record for this care journey. It is not sold or used
           for advertising.
         </p>
       )}
