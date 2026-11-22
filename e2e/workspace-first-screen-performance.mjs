@@ -128,7 +128,11 @@ try {
   await page.getByRole("navigation", { name: "Primary navigation" }).waitFor({ state: "visible" });
   const mobileMenuOpenMs = Date.now() - menuStartedAt;
 
-  const documentsLink = page.locator("#solenos-navigation").getByRole("link", { name: "Documents" });
+  const moreLink = page.locator("#solenos-navigation").getByRole("link", { name: "More", exact: true });
+  await moreLink.click();
+  await page.waitForURL(/\/workspace\/more(?:\?|$)/);
+  const documentsLink = page.getByRole("navigation", { name: "More care record tools" })
+    .getByRole("link", { name: "Documents", exact: true });
   await documentsLink.hover(); // route prefetch is intentionally triggered only by user intent
   const routeStartedAt = Date.now();
   await documentsLink.click();
