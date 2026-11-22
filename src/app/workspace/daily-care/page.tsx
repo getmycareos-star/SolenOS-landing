@@ -542,6 +542,13 @@ export default function DailyCarePage() {
       const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
       return leftTime - rightTime;
     });
+  const reviewableHistoryItems = historyItems
+    .filter((item) => item.capture_processing?.review_required && item.capture_processing.analysis_id)
+    .sort((left, right) => {
+      const leftTime = new Date(careEventTimestamp(left) || 0).getTime();
+      const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
+      return rightTime - leftTime;
+    });
   const medicationConcern = [...todayItems].reverse().find((item) =>
     isUnconfirmedMedicationChange(displayHistoryText(item))
   ) || null;
@@ -804,6 +811,29 @@ export default function DailyCarePage() {
             {historyMayBeTruncated && <p className="daily-care-muted">This summary shows the latest 200 saved updates. Open full care history to see older ones.</p>}
           </details>
 
+          {reviewableHistoryItems.length > 0 && (
+            <section aria-labelledby="daily-care-review-title" className="daily-care-context-panel">
+              <h2 id="daily-care-review-title">Updates to review</h2>
+              <p className="daily-care-muted">Your original notes are saved. Review the suggested details before they become reviewed care information.</p>
+              <ul className="daily-care-record-list">
+                {reviewableHistoryItems.map((item, index) => (
+                  <li key={item.capture_processing?.analysis_id || historyRecordId(item) || ("review-" + index)}>
+                    <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
+                    {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
+                    <span>{displayHistoryTime(item)}</span>
+                    <div style={{ marginTop: 8 }}>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setReviewAnalysisId(item.capture_processing?.analysis_id || null)}
+                      >
+                        Review suggested details
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
             <h2 id="daily-care-today-title">Care today</h2>
             <p className="daily-care-muted">Updates saved today, in time order. No daily entry is required.</p>
@@ -829,27 +859,7 @@ export default function DailyCarePage() {
                           <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
                           {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                           <span>{displayHistoryTime(item)}</span>
-                          {item.capture_processing?.message && (
-                            <p className="daily-care-muted">{caregiverSafeAssistantText(item.capture_processing.message) || (
-                              item.capture_processing.review_required
-                                ? "Your original report is saved. Review the suggested details before treating them as reviewed care information."
-                                : item.capture_processing.job_status === "failed"
-                                  ? "Your note is saved, but its details could not be organized."
-                                  : ["queued", "processing"].includes(item.capture_processing.job_status || "")
-                                    ? "This update is being checked. You can keep using SolenOS."
-                                    : "The latest update details are not available yet."
-                            )}</p>
-                          )}
-                          {item.capture_processing?.review_required && item.capture_processing.analysis_id && (
-                            <div style={{ marginTop: 8 }}>
-                              <Button
-                                variant="secondary"
-                                onClick={() => setReviewAnalysisId(item.capture_processing?.analysis_id || null)}
-                              >
-                                Review suggested details
-                              </Button>
-                            </div>
-                          )}
+
                         </li>
                       ))}
                     </ul>
