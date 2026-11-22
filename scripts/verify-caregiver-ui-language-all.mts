@@ -106,7 +106,7 @@ for (const file of files) {
   if (sourceFile.parseDiagnostics.length > 0) {
     const diagnostics = sourceFile.parseDiagnostics.map((diagnostic) => {
       const position = diagnostic.start === undefined
-        ? { line: 1, character: 1 }
+        ? { line: 0, character: 0 }
         : sourceFile.getLineAndCharacterOfPosition(diagnostic.start);
       const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, " ");
       return `- ${file}:${position.line + 1}:${position.character + 1}: ${message}`;
