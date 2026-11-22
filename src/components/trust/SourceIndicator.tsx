@@ -31,7 +31,7 @@ export default function SourceIndicator({
   const getSourceTypeLabel = (): string => {
     switch (sourceType) {
       case 'user-recorded': return 'Recorded by you';
-      case 'imported': return 'Added from another app';
+      case 'imported': return 'Added from another place';
       case 'extracted': return 'Details found in document';
       case 'ai-generated': return 'Suggested by SolenOS';
       default: return 'Who shared this is not recorded';
@@ -128,7 +128,7 @@ export default function SourceIndicator({
                 display: 'block',
                 marginBottom: '2px'
               }}>
-                Recorded on:
+                Added on:
               </span>
               <span style={{ 
                 fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
