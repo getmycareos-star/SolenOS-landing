@@ -101,6 +101,7 @@ const settings = read("../src/app/workspace/settings/page.tsx");
 const reminders = read("../src/app/workspace/reminders/page.tsx");
 const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
+const livingCareRecordPanel = read("../src/components/mvp-workspace/LivingCareRecordPanel.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
 const naturalDailyUpdate = read("../src/components/workflows/NaturalLanguageDailyUpdate.tsx");
@@ -551,3 +552,8 @@ assert.doesNotMatch(claimReview, /Review result|Depends on|Required by/,
 assert.doesNotMatch(appointmentWorkspace, /SolenOS could not retrieve the full care record|Source evidence linked|No linked evidence returned|Review progress:|Care-recorded visit|Text extracted/,
   "appointment summaries must not expose technical retrieval, evidence or review wording");
 
+\nassert.doesNotMatch(livingCareRecordPanel, /Living Care Record|System interpretation|Conflicting reports|Questions to resolve|Next actions/,
+  "the main Care Record summary must not expose internal product or reasoning labels");
+assert.match(livingCareRecordPanel, /What we know so far/);
+assert.match(livingCareRecordPanel, /Notes and documents behind this summary/);
+assert.match(livingCareRecordPanel, /What you can do next/);
