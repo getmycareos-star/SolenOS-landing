@@ -218,7 +218,7 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
   const sections = Array.from(new Set(FIELDS.map((field) => field.section)));
 
   return (
-    <section aria-label="Care profile" className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <section aria-label="About the person and their care" className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <div className="mb-3">
         <h3 className="text-base font-semibold text-[var(--text)]">About the person and their care</h3>
         <p className="mt-1 text-sm text-[var(--muted)]">
