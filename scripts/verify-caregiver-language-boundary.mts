@@ -167,6 +167,7 @@ const quickCheckIn = read("../src/components/workflows/QuickDailyCheckIn.tsx");
 const cognitiveWorkspace = read("../src/components/mvp-workspace/CognitiveWorkspace.tsx");
 const structuredDailyCapture = read("../src/components/workflows/StructuredDailyCapture.tsx");
 const captureAnalysisReview = read("../src/components/workflows/CaptureAnalysisReview.tsx");
+const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
@@ -496,6 +497,10 @@ assert.match(captureAnalysisReview, /caregiverSafeGeneratedText\(candidate\.subj
 assert.match(captureAnalysisReview, /caregiverSafeGeneratedText\(candidate\.observation\)/, "saved Daily Care review observations must use caregiver language");
 assert.match(captureAnalysisReview, /decision === "accept" && values\.needsRewrite/, "saved Daily Care reviews must block unsafe suggestions");
 assert.match(captureAnalysisReview, /disabled=\{busyIndex !== null \|\| values\.needsRewrite\}/, "saved Daily Care review acceptance must be disabled for unsafe suggestions");
+assert.match(evidenceReview, /caregiverSafeGeneratedText\(item\.rationale\)/, "evidence review explanations must use caregiver language");
+assert.match(evidenceReview, /caregiverSafeGeneratedText\(group\.interpretation\)/, "similar-record explanations must use caregiver language");
+assert.match(evidenceReview, /caregiverSafeGeneratedText\(review\.rationale\)/, "saved evidence-review summaries must use caregiver language");
+assert.match(evidenceReview, /caregiverSafeGeneratedText\(criterion\.rationale\)/, "evidence-review criteria must use caregiver language");
 assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(data\.reply\.trim\(\)\)/, "read-only Care Record orientation replies must pass the generated-language boundary before display");
 assert.doesNotMatch(cognitiveWorkspace, /setLcrOrientationReply\(data\.reply\.trim\(\)\)/, "raw generated orientation replies must never reach the caregiver UI");
 assert.match(clarificationReview, /caregiverSafeGeneratedText\(selectedQuestion\.question\)/, "generated clarification questions must use caregiver language");
