@@ -207,7 +207,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
 
   return <article className="followup-card">
     <div className="followup-card-heading">
-      <div><p className="followup-eyebrow">{categoryLabel}</p><h3>{caregiverSafeAssistantText(item.title) || "Follow-up"}</h3></div>
+      <div><p className="followup-eyebrow">{categoryLabel}</p><h3>{(item.source === "open_loop_records" ? caregiverSafeAssistantText(item.title) : caregiverSafeGeneratedText(item.title)) || "Follow-up"}</h3></div>
     </div>
     {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.join(" · ")}</p>}
     <div className="followup-meta">
@@ -420,7 +420,7 @@ export default function FollowUpsPage() {
     try {
       await postJSON("/open-loops", {
         loop_type: "follow_up",
-        title: caregiverSafeAssistantText(item.title) || "Care follow-up",
+        title: caregiverSafeGeneratedText(item.title) || "Care follow-up",
         description,
         source_type: item.source,
         source_id: item.record_id,
