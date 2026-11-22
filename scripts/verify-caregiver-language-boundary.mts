@@ -551,6 +551,8 @@ assert.doesNotMatch(claimReview, /Review result|Depends on|Required by/,
   "care detail reviews must avoid internal relationship and review labels");
 assert.doesNotMatch(appointmentWorkspace, /SolenOS could not retrieve the full care record|Source evidence linked|No linked evidence returned|Review progress:|Care-recorded visit|Text extracted/,
   "appointment summaries must not expose technical retrieval, evidence or review wording");
+assert.doesNotMatch(appointmentWorkspace, /Status not available|Priority not available|Review status:|caregiver-recorded event|external booking confirmation|clinical fact/i,
+  "appointment summaries must use plain language for missing details and review limits");
 
 \nassert.doesNotMatch(livingCareRecordPanel, /Living Care Record|System interpretation|Conflicting reports|Questions to resolve|Next actions/,
   "the main Care Record summary must not expose internal product or reasoning labels");
