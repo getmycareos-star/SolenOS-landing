@@ -393,7 +393,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.goto(new URL("/workspace", frontend).toString());
   await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  await page.getByRole("heading", { name: "Your Living Care Record", exact: true })
+  await page.getByRole("heading", { name: "Your Care Record", exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
   for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
