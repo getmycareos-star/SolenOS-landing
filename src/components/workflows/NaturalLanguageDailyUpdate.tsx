@@ -269,11 +269,11 @@ export default function NaturalLanguageDailyUpdate() {
               [item.name, item.dose].filter(Boolean).map((value) => caregiverSafeAssistantText(value) || "").filter(Boolean).join(" — ")
             ).filter(Boolean);
             if (currentText.length) {
-              contextParts.push(`The existing reviewed medication record lists: ${currentText.join("; ")}. This does not confirm a change reported today.`);
+              contextParts.push(`The Care Record lists: ${currentText.join("; ")}. This does not confirm a change reported today.`);
             } else if (pendingText.length) {
-              contextParts.push(`Medication information already awaiting review: ${pendingText.join("; ")}. It is not a confirmed current dose.`);
+              contextParts.push(`Medication information waiting for your review: ${pendingText.join("; ")}. It may not be the current dose.`);
             } else {
-              contextParts.push("No reviewed medication record is available to confirm the reported change.");
+              contextParts.push("We couldn’t find a reviewed medication record to check this change against.");
             }
           } else {
             contextParts.push("Existing medication records could not be checked just now.");
@@ -317,12 +317,12 @@ export default function NaturalLanguageDailyUpdate() {
                 const name = caregiverSafeAssistantText(document.document_name) || "Saved document";
                 const quote = caregiverSafeAssistantText(candidate.source_quote) || "No readable medication excerpt was returned.";
                 const page = candidate.page_number ? `, page ${candidate.page_number}` : "";
-                contextParts.push(`${name}${page} contains an extracted medication detail: “${quote.slice(0, 220)}”${detailText ? ` Details: ${detailText}.` : "."} This extraction is not confirmation of a new dose.`);
+                contextParts.push(`${name}${page} contains this medication detail: “${quote.slice(0, 220)}”${detailText ? ` Details: ${detailText}.` : "."} This extraction is not confirmation of a new dose.`);
               }
             } else if (Array.isArray(documents?.processing_jobs) && documents.processing_jobs.length) {
-              contextParts.push("Some saved documents are still being processed and cannot confirm a new dose yet.");
+              contextParts.push("Some saved documents are still being checked. They cannot confirm a new dose yet.");
             } else {
-              contextParts.push("No medication-specific details were returned from saved-document extraction. This does not rule out information in a document that has not been processed.");
+              contextParts.push("We couldn’t find medicine details in the documents we checked. A document that has not been checked yet may still contain this information.");
             }
           } else {
             contextParts.push("Saved document information could not be checked just now.");
@@ -423,20 +423,20 @@ export default function NaturalLanguageDailyUpdate() {
       {syncNotice && <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{syncNotice}</p>}
       {receipt && (
         <div role="status" style={{ color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
-          <p style={{ margin: 0 }}>Your update was saved to the care record.</p>
+          <p style={{ margin: 0 }}>Your update was saved to your Care Record.</p>
           {(receipt.processingStatus === "queued" || receipt.processingStatus === "processing") && (
             <p style={{ margin: "6px 0 0" }}>
-              SolenOS is organizing the details in the background. You can keep using Daily Care.
+              SolenOS is reviewing the details you shared. You can keep using Daily Care.
             </p>
           )}
           {receipt.processingStatus === "completed" && (
             <p style={{ margin: "6px 0 0" }}>
-              The source-grounded details are now available in the care record.
+              The details from your update are ready for you to review.
             </p>
           )}
           {(receipt.processingStatus === "failed" || receipt.processingStatus === "unavailable") && (
             <p style={{ margin: "6px 0 0" }}>
-              SolenOS could not organize the details yet. Your original report is still saved, and no extracted details have been treated as confirmed.
+              SolenOS couldn’t sort the details yet. Your original update is still saved. No suggested details have been added to your Care Record.
             </p>
           )}
           {receipt.medicationNeedsConfirmation && (
