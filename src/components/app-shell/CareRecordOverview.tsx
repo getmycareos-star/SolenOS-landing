@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, getPersonId } from "@/api/client";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSituationStateLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeGeneratedText, caregiverSituationStateLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 type CareItem = {
@@ -170,7 +170,7 @@ export function CareRecordOverview() {
                       <span className="care-record-overview__status">{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
                     {caregiverSafeAssistantText(item.description) && <p className="care-record-overview__description">{caregiverSafeAssistantText(item.description)}</p>}
-                    <p className="care-record-overview__meta">Shared by: {caregiverSafeAssistantText(item.source_label) || "Not recorded"} · Happened: {when(item.occurred_at)} · Saved: {when(item.recorded_at)}</p>
+                    <p className="care-record-overview__meta">Shared by: {caregiverSafeGeneratedText(item.source_label) || "Not recorded"} · Happened: {when(item.occurred_at)} · Saved: {when(item.recorded_at)}</p>
                   </article>
                 ))}
               </div>
@@ -187,7 +187,7 @@ export function CareRecordOverview() {
                 {changes.map((change) => (
                   <article key={change.id} className="care-record-overview__change">
                     <strong className="care-record-overview__change-title">{plainStatus(change.change_type)}{change.change_direction ? " · " + plainStatus(change.change_direction) : ""}</strong>
-                    <p className="care-record-overview__change-description">{caregiverSafeAssistantText(change.previous_state) || "Earlier details not recorded"} → {caregiverSafeAssistantText(change.current_state) || "Latest details not recorded"}</p>
+                    <p className="care-record-overview__change-description">{caregiverSafeChangeText(change.previous_state) || "Earlier details not recorded"} → {caregiverSafeChangeText(change.current_state) || "Latest details not recorded"}</p>
                     <small className="care-record-overview__change-date">Recorded: {when(change.created_at)}</small>
                   </article>
                 ))}
