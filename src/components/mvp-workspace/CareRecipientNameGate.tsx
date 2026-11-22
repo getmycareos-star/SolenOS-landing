@@ -64,7 +64,7 @@ export function CareRecipientNameGate({
 
   return (
     <section className="panel panel-input care-recipient-name-gate" aria-label="Who this record is for">
-      <h2 className="workspace-headline">Who is this Living Care Record about?</h2>
+      <h2 className="workspace-headline">Who is this Care Record for?</h2>
       <p className="workspace-lede">
         What should we call the person this Care Reality is about? You can change this later.
       </p>
