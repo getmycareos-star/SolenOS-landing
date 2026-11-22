@@ -53,7 +53,16 @@
   .history-detail-list dt,
   .history-drawer-footer
 ) {
-  color: var(--theme-panel-muted);
+  color: var(--theme-panel-muted) !important;
+}
+:root[data-solenos-theme="dark"] .history-drawer-footer {
+  background: var(--theme-panel-bg) !important;
+  color: var(--theme-panel-muted) !important;
+  border-color: var(--theme-panel-border) !important;
+}
+:root[data-solenos-theme="dark"] .history-drawer-header .history-drawer-mark,
+:root[data-solenos-theme="dark"] .history-drawer-footer svg {
+  color: var(--theme-panel-muted) !important;
 }
 :root[data-solenos-theme="dark"] .history-search-wrap {
   background: var(--theme-field-bg) !important;
