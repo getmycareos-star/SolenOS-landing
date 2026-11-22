@@ -520,7 +520,7 @@ export default function DocumentsPage() {
           parts.push("SolenOS saved " + saved + " original " + (saved === 1 ? "file" : "files") + " to your care record.");
         }
         if (queuedLocally > 0) {
-          parts.push(queuedLocally + " " + (queuedLocally === 1 ? "file is" : "files are") + " encrypted on this device. They have not reached the care record yet and will sync when your connection returns.");
+          parts.push(queuedLocally + " " + (queuedLocally === 1 ? "file is" : "files are") + " kept on this device for now. They have not been added to your Care Record yet. They will upload when your connection returns.");
         }
         if (backgroundProcessingQueued > 0) {
           parts.push("SolenOS has started reading " + backgroundProcessingQueued + " " + (backgroundProcessingQueued === 1 ? "file" : "files") + ". You can leave this page while it finishes.");
@@ -529,7 +529,7 @@ export default function DocumentsPage() {
           parts.push(backgroundQueueUnavailable + " " + (backgroundQueueUnavailable === 1 ? "file needs" : "files need") + " another look after upload.");
         }
         if (failed > 0) {
-          parts.push(failed + " file" + (failed === 1 ? " could" : "s could") + " not be saved or queued. " + (failed === 1 ? "It remains" : "They remain") + " here so you can try again.");
+          parts.push(failed + " file" + (failed === 1 ? " could" : "s could") + " not be saved. " + (failed === 1 ? "It remains" : "They remain") + " here so you can try again.");
         }
         parts.push("Suggested details will not be added to your Care Record until you check and approve them.");
         setUploadMessage({ kind: failed > 0 ? "error" : "success", text: parts.join(" ") });
@@ -759,7 +759,7 @@ export default function DocumentsPage() {
         {uploadMessage && <p role={uploadMessage.kind === "error" ? "alert" : "status"} style={{ margin: "12px 0 0", padding: 12, borderRadius: 9, border: "1px solid var(--border)", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{uploadMessage.kind === "success" ? <CheckCircle2 size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} /> : <AlertCircle size={17} style={{ display: "inline", verticalAlign: "text-bottom", marginRight: 6 }} />}{uploadMessage.text}</p>}
         {pendingUploads > 0 && (
           <p role="status" style={{ margin: "10px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
-            {pendingUploads} original file{pendingUploads === 1 ? " is" : "s are"} encrypted on this device and waiting to sync. They are not in the care record until the server confirms them.
+            {pendingUploads} original file{pendingUploads === 1 ? " is" : "s are"} kept on this device for now. They are not in your Care Record until the upload is confirmed.
           </p>
         )}
         {attentionUploads > 0 && (
@@ -853,7 +853,7 @@ export default function DocumentsPage() {
                 {[...(versionComparison.changed || []).map((item) => ({ kind: "Changed", subject: item.subject, details: (item.previous_statements || []).map((v) => v.statement).join("; ") + " → " + (item.replacement_statements || []).map((v) => v.statement).join("; ") })), ...(versionComparison.added || []).map((item) => ({ kind: "Added", subject: item.subject, details: item.statement || "" })), ...(versionComparison.removed || []).map((item) => ({ kind: "Removed", subject: item.subject, details: item.statement || "" }))].map((item, index) => <p key={item.kind + "-" + index} style={{ margin: "8px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}><strong>{item.kind + (caregiverSafeAssistantText(item.subject) ? " · " + caregiverSafeAssistantText(item.subject) : "")}:</strong> {caregiverSafeAssistantText(item.details) || "No further details are available."}</p>)}
               </>}
             </section>}
-            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Opening original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>The original file was opened successfully. Download it to open it in another app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>{caregiverSafeAssistantText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>Original file preview is not available yet.</p>}
+            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Opening original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>The original file was opened successfully. Download it to open it in another app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>{caregiverSafeAssistantText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>This file cannot be previewed here yet. Try downloading it instead.</p>}
           </div>
         </section>
       </div>}
