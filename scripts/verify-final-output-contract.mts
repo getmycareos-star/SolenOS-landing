@@ -124,3 +124,14 @@ assert(fs.existsSync(uiPanel), "FinalOutputPanel exists under ops-clarity quaran
 console.log("✓ UI renderer contract (ops-quarantined)");
 
 console.log("\n=== All final output contract checks passed ===\n");
+
+const finalOutputComposerSource = fs.readFileSync(
+  path.join(root, "src/lib/final-output-contract/compile.ts"),
+  "utf8",
+);
+assert.match(finalOutputComposerSource, /caregiverFieldLabel\(c\.domain\)/,
+  "final caregiver summaries must translate care-change domains");
+assert.match(finalOutputComposerSource, /caregiverStatusLabel\(c\.classification\)/,
+  "final caregiver summaries must translate care-change classifications");
+assert.doesNotMatch(finalOutputComposerSource, /moderate confidence|low confidence/,
+  "final caregiver summaries must not expose confidence-level jargon");
