@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
-import { caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
+import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { RecordState } from '@/components/ui/RecordState'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
 
@@ -777,7 +777,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Related note or document</strong>
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
-                                      <p>{item.label}</p>
+                                      <p>{caregiverSafeGeneratedText(item.label) || 'Related care information'}</p>
                                       {item.reported_by && <p>Reported by: {item.reported_by}</p>}
                                       {item.entered_by && <p>Added by: {item.entered_by}</p>}
                                       {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved note or document. It is not a separate report.</p>}
@@ -797,7 +797,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.evidence_reviews_status === "empty" && <p>No review of this note or document has been recorded.</p>}
                                       {item.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                       {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
-                                        <p>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
+                                        <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {observation.value || "Details not supplied"}</p>
                                         {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
                                         {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
                                         {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
