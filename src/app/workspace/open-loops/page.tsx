@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, AlertCircle, Clock3, FileText, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type OpenLoop = {
   id: string;
@@ -198,7 +198,9 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
   const [actionText, setActionText] = useState("");
   const loop = loops.find((candidate) => candidate.id === item.record_id || (candidate.source_type === item.source && candidate.source_id === item.record_id));
   const evidenceIds = uniqueEvidenceIds(item);
-  const reasonLines = [...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])].filter(Boolean);
+  const reasonLines = [...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])]
+    .map((line) => caregiverSafeGeneratedText(line))
+    .filter((line): line is string => Boolean(line));
   const categoryLabel = item.category === "needs_attention_now" || item.category === "important_to_address" ? "Needs attention"
     : item.category === "can_wait_with_documented_basis" ? "Being monitored"
     : item.category === "needs_clarification" ? "Needs clarification" : "Follow-up";
@@ -207,7 +209,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
     <div className="followup-card-heading">
       <div><p className="followup-eyebrow">{categoryLabel}</p><h3>{caregiverSafeAssistantText(item.title) || "Follow-up"}</h3></div>
     </div>
-    {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join(" · ")}</p>}
+    {reasonLines.length > 0 && <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.join(" · ")}</p>}
     <div className="followup-meta">
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
@@ -222,7 +224,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       {loop?.appointment_id && <span>Related to a saved appointment</span>}
     </div>
     {expanded && <div className="followup-detail">
-      <p><strong>{item.category === "can_wait_with_documented_basis" ? "Why this is being monitored" : item.category === "needs_clarification" ? "What still needs checking" : "Why this needs attention"}</strong><br />{reasonLines.length ? reasonLines.map((line) => caregiverSafeAssistantText(line)).filter(Boolean).join("; ") : "No separate explanation was provided."}</p>
+      <p><strong>{item.category === "can_wait_with_documented_basis" ? "Why this is being monitored" : item.category === "needs_clarification" ? "What still needs checking" : "Why this needs attention"}</strong><br />{reasonLines.length ? reasonLines.join("; ") : "The reason is not clear from the saved information yet."}</p>
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
       {loop?.appointment_id && <p><strong>Related appointment</strong><br />This follow-up is connected to a saved appointment and its history.</p>}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
