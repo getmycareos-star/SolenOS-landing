@@ -18,9 +18,9 @@ MVP first proves text + documents → understandable next steps. Voice plugs int
 
 | Layer | Preferred first path | Upgrade behind interface |
 |-------|----------------------|---------------------------|
-| Speech input | Browser `SpeechRecognition` | Whisper, Gemini STT, server STT |
+| Speech input | Browser `SpeechRecognition` only | Hosted server STT is retired |
 | Speech output | Browser `speechSynthesis` | Polly, Google Cloud TTS |
-| Reasoning | Gemini via `/api/analyze` / situation pipeline | — |
+| Care understanding | Private Qwen through authenticated backend care workflows | No Gemini or OpenAI-hosted inference |
 
 ## Voice Conversation Mode (when mounted)
 
