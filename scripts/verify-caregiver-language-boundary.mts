@@ -171,6 +171,7 @@ assert.match(sourceIndicator, /Suggested by SolenOS/);
 assert.doesNotMatch(sourceIndicator, /Extracted from document|AI-generated/);
 assert.doesNotMatch(trustIndicators, /Extracted from document|Low confidence|Missing supporting evidence|Awaiting confirmation/);
 assert.match(trustIndicators, /Needs checking/);
+assert.match(trustIndicators, /Some details are still missing/);
 assert.doesNotMatch(qwenAssist, /Living Care Record|AI-assisted interpretation|Suggestions are not saved to the Living Care Record/);
 assert.match(qwenAssist, /Suggestions are not added to your Care Record unless you choose to save and approve them/);
 assert.doesNotMatch(careDelta, /Do not present AI suggestions/);
