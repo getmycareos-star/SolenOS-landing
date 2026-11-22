@@ -232,14 +232,14 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
     </div>}
     {loop && !["closed", "cancelled"].includes(loop.status) && <div className="followup-update-area">
       {showUpdate ? <form onSubmit={(event) => { event.preventDefault(); if (updateText.trim()) void onUpdate(loop, updateText.trim()).then(() => { setUpdateText(""); setShowUpdate(false); }).catch(() => { /* Keep the exact report text available for a safe retry. */ }); }}>
-        <label htmlFor={"followup-update-" + loop.id}>Tell SolenOS what has changed. This will be saved as your report. It will not be treated as confirmed.</label>
+        <label htmlFor={"followup-update-" + loop.id}>Tell us what has changed. We’ll save your update, but it will not be treated as confirmed.</label>
         <textarea id={"followup-update-" + loop.id} rows={3} value={updateText} onChange={(event) => setUpdateText(event.target.value)} maxLength={12000} placeholder="Share an update in your own words…" />
         <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowUpdate(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !updateText.trim()}>{busy ? "Saving…" : "Share update"}</button></div>
       </form> : <button type="button" className="followup-text-button" onClick={() => setShowUpdate(true)}>Share what changed</button>}
       {showAction ? <form onSubmit={(event) => { event.preventDefault(); if (actionText.trim()) void onAction(loop, actionText.trim()).then(() => { setActionText(""); setShowAction(false); }).catch(() => { /* Keep the caregiver's action report available for retry. */ }); }}>
         <label htmlFor={"followup-action-" + loop.id}>What did you do? This saves what you tell us. It does not mean the concern is resolved.</label>
         <textarea id={"followup-action-" + loop.id} rows={3} value={actionText} onChange={(event) => setActionText(event.target.value)} maxLength={12000} placeholder="Describe the action in your own words…" />
-        <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowAction(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !actionText.trim()}>{busy ? "Saving…" : "Record action"}</button></div>
+        <div className="followup-actions"><button type="button" className="followup-text-button" onClick={() => setShowAction(false)}>Cancel</button><button type="submit" className="followup-primary-button" disabled={busy || !actionText.trim()}>{busy ? "Saving…" : "Save next step"}</button></div>
       </form> : <button type="button" className="followup-text-button" onClick={() => setShowAction(true)}>Save what you did</button>}
     </div>}
     <div className="followup-actions">
@@ -506,12 +506,12 @@ export default function FollowUpsPage() {
     {error && <p className="followups-alert" role="alert">{error}</p>}
     {notice && <p className="followups-notice" role="status">{notice}</p>}
     {attentionWarning && <p className="followups-limitation" role="note">{attentionWarning}</p>}
-    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked. If nothing appears here, there may still be something that needs attention.</p>}
+    {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked. There may still be something that needs attention, even if it is not shown here.</p>}
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>We can’t tell what still needs attention until your Care Record loads.</p></section> : <>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
         {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} occurrences={loops.find((loop) => loop.id === item.record_id) ? occurrencesById[item.record_id || ""] : undefined} />)}
-        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing in your saved care information was marked as needing attention the last time we checked." : "SolenOS could not check what needs attention. Your saved follow-ups remain visible below."}</p>}
+        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention the last time we checked. This does not mean there is nothing to follow up on." : "We couldn’t check what needs attention just now. Your saved follow-ups are still shown below."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length}</span></div>
