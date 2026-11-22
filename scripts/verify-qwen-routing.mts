@@ -52,8 +52,8 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/proposal", {})',
   'postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "accept" })',
   'postJSON("/companion/care-updates/qwen/" + encodeURIComponent(proposal.id) + "/review", { decision: "reject" })',
-  "Review for care record",
-  "Approve and add to care record",
+  "Review this suggestion",
+  "Approve and add to your Care Record",
   "Decline",
   "Nothing was added to your Care Record.",
 
