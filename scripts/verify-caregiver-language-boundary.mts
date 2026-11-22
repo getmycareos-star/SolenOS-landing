@@ -537,6 +537,12 @@ assert.doesNotMatch(clarificationReview, /Source: \{item\.answer_provenance/,
 assert.match(appointmentWorkspace, /We couldn’t find appointment information in the notes and documents available here/);
 assert.match(appointmentWorkspace, /What caregivers have shared/);
 assert.match(appointmentWorkspace, /Documents for this appointment/);
+assert.match(sourceReview, /Do we know who shared it\?/);
+assert.match(claimReview, /What did you find\?/);
+assert.match(claimReview, /How this care detail is connected to others/);
+assert.match(claimReview, /This detail depends on/);
+assert.doesNotMatch(claimReview, /Review result|Depends on|Required by/,
+  "care detail reviews must avoid internal relationship and review labels");
 assert.doesNotMatch(appointmentWorkspace, /SolenOS could not retrieve the full care record|Source evidence linked|No linked evidence returned|Review progress:|Care-recorded visit|Text extracted/,
   "appointment summaries must not expose technical retrieval, evidence or review wording");
 
