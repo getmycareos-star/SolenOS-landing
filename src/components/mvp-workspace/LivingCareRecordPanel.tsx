@@ -14,7 +14,7 @@ type Props = {
 
 /**
  * Sole caregiver surface for a turn — ADR-019 + Visual Language.
- * Living Care Record cards — never chatbot bubbles.
+ * Care Record cards — never chatbot bubbles.
  */
 export function LivingCareRecordPanel({
   view,
