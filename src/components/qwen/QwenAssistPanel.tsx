@@ -75,6 +75,7 @@ type QwenBackgroundJobResult = {
   source_freshness_assessment_ids: string[];
   claim_provenance?: QwenClaimProvenance | null;
   review_required: boolean;
+  output_review_status?: string | null;
   written_to_lcr: false;
   persistence: "read_only_assistance";
 };
@@ -248,7 +249,49 @@ export default function QwenAssistPanel({
         <div style={{ marginTop: "12px", border: "1px solid var(--border)", borderRadius: "9px", padding: "12px", background: "var(--bg)" }}>
           <p style={{ fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{reply.reply}</p>
           <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            {!proposal && (
+            {reply.workflow === "two_week_review" && reply.review_required && (
+              <>
+                <button
+                  type="button"
+                  disabled={reviewing}
+                  onClick={async () => {
+                    setReviewing(true);
+                    setReviewMessage(null);
+                    try {
+                      const result = await postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/review", { decision: "reviewed" }) as { review_status?: string; review_required?: boolean; written_to_lcr?: boolean };
+                      if (result.review_status !== "reviewed" || result.review_required !== false || result.written_to_lcr !== false) throw new Error("Review receipt not confirmed");
+                      setReply({ ...reply, output_review_status: "reviewed", review_required: false });
+                      setReviewMessage("Review marked as read. Nothing was changed in the care record.");
+                    } catch {
+                      setReviewMessage("We couldn’t save that review decision. Please try again.");
+                    } finally {
+                      setReviewing(false);
+                    }
+                  }}
+                  style={{ border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 12px", minHeight: "40px", background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontSize: "12px", fontWeight: 650, cursor: reviewing ? "wait" : "pointer" }}
+                >Mark reviewed</button>
+                <button
+                  type="button"
+                  disabled={reviewing}
+                  onClick={async () => {
+                    setReviewing(true);
+                    setReviewMessage(null);
+                    try {
+                      const result = await postJSON("/assistant/jobs/" + encodeURIComponent(reply.job_id) + "/review", { decision: "needs_follow_up" }) as { review_status?: string; review_required?: boolean; written_to_lcr?: boolean };
+                      if (result.review_status !== "needs_follow_up" || result.review_required !== false || result.written_to_lcr !== false) throw new Error("Review receipt not confirmed");
+                      setReply({ ...reply, output_review_status: "needs_follow_up", review_required: false });
+                      setReviewMessage("Flagged for follow-up. No follow-up task has been created.");
+                    } catch {
+                      setReviewMessage("We couldn’t save that review decision. Please try again.");
+                    } finally {
+                      setReviewing(false);
+                    }
+                  }}
+                  style={{ border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 12px", minHeight: "40px", background: "transparent", color: "var(--text-primary)", fontSize: "12px", fontWeight: 600, cursor: reviewing ? "wait" : "pointer" }}
+                >Flag for follow-up</button>
+              </>
+            )}
+            {reply.workflow !== "two_week_review" && !proposal && (
               <button
                 type="button"
                 disabled={reviewing}
@@ -314,9 +357,15 @@ export default function QwenAssistPanel({
             )}
           </div>
           {reviewMessage && <p role="status" style={{ fontSize: "12px", lineHeight: 1.5, margin: "8px 0 0", color: "var(--text-secondary)" }}>{reviewMessage}</p>}
-          <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "10px" }}>
-            Suggestion · Please review it. This does not change your care record.
-          </p>
+          {reply.workflow === "two_week_review" && reply.review_required === false ? (
+            <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "10px" }}>
+              {reply.output_review_status === "needs_follow_up" ? "Flagged for follow-up. This did not create a follow-up task or change the care record." : "Reviewed. This did not change the care record."}
+            </p>
+          ) : (
+            <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "10px" }}>
+              Suggestion · Please review it. This does not change your care record.
+            </p>
+          )}
           {reply.claim_provenance?.claims && reply.claim_provenance.claims.length > 0 && (
             <div aria-label="What each statement is based on" style={{ marginTop: "12px", borderTop: "1px solid var(--border)", paddingTop: "10px", display: "grid", gap: "10px" }}>
               <p style={{ fontSize: "12px", fontWeight: 650, margin: 0 }}>What each statement is based on</p>
