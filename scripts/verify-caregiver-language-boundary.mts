@@ -181,6 +181,10 @@ assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(proposal\.title
 assert.match(dailyCareIntelligence, /caregiverSafeAssistantText\(result\.notice\)/);
 assert.match(dailyCareIntelligence, /caregiverSafeErrorMessage/);
 assert.match(naturalDailyUpdate, /caregiverSafeErrorMessage/);
+assert.match(naturalDailyUpdate, /We couldn’t confirm which Care Record to use/);
+assert.match(naturalDailyUpdate, /Your update is saved on this device/);
+assert.doesNotMatch(naturalDailyUpdate, /care session could not be verified|encrypted on this device|encrypted and saved|waiting to sync|pending-update controls/i,
+  "offline capture messages must describe what happened in everyday language");
 assert.doesNotMatch(naturalDailyUpdate, /setError\(\s*cause\.message/);
 assert.match(naturalDailyUpdate, /reason\.includes\("could not securely keep an offline copy"\)/, "only the explicit local-save error may be surfaced; raw backend errors remain sanitized");
 assert.match(claimReview, /caregiverStatusLabel/);
