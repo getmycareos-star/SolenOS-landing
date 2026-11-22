@@ -380,7 +380,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     } catch {
       setPersonId('')
       setEvidenceItems([])
-      setEvidenceError('Evidence records could not be loaded from the care record. No evidence list is assumed; retry when the connection is available.')
+      setEvidenceError('We couldn’t load your saved notes and documents. They may still be there. Check your connection and try again.')
     } finally {
       setEvidenceLoading(false)
     }
@@ -576,7 +576,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     } catch {
       setReviews([])
       setHistoryUnavailable(true)
-      setError('Saved evidence reviews could not be loaded. Check the connection and retry; no review history is assumed.')
+      setError('Earlier reviews could not be loaded. Check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -641,7 +641,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       }
       setReconstructedHistory(result as Record<string, unknown>)
     } catch {
-      setHistoryReconstructionError('An earlier version of this information could not be shown for that date. This does not establish that the evidence did not exist or that the information was never saved. Try again or choose another date.')
+      setHistoryReconstructionError('We couldn’t show the earlier version from that date. This doesn’t mean the information was never saved. Try again or choose another date.')
     } finally {
       setHistoryReconstructionLoading(false)
     }
@@ -837,11 +837,11 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
     <details style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
       <summary style={{ cursor: 'pointer', fontSize: "calc(16px * var(--solenos-text-scale, 1))", fontWeight: 650 }}>Check whether information is still up to date</summary>
       <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>Choose how often this information should be checked. Different kinds of information may need different check-in times. A review does not prove that information is true or still applies today.</p>
-      {freshnessPolicyLoading && <p role="status">Loading saved review rules…</p>}
-      {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Retry review rules</button></p>}
+      {freshnessPolicyLoading && <p role="status">Loading your review settings…</p>}
+      {freshnessPolicyError && <p role="alert" style={{ color: 'var(--error)', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{freshnessPolicyError} <button type="button" style={button} onClick={() => void loadFreshnessPolicies()} disabled={freshnessPolicyLoading}>Try again</button></p>}
       <label style={{ display: 'block', fontSize: "calc(14px * var(--solenos-text-scale, 1))", marginTop: 10 }}>How often should this information be checked?
         <select style={field} value={freshnessPolicyId} onChange={event => setFreshnessPolicyId(event.target.value)}>
-          <option value="">Choose a review rule</option>
+          <option value="">Choose how often to check</option>
           {freshnessPolicies.map(policy => <option key={policy.id} value={policy.id}>{reviewStatusLabel(policy.domain_key)} · {policy.max_age_days == null ? 'No time limit set' : 'Review after ' + policy.max_age_days + ' days'}</option>)}
         </select>
       </label>
@@ -853,7 +853,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {!freshnessHistoryLoading && !freshnessHistoryError && freshnessAssessments.length === 0 && <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>No earlier reviews were found for this information.</p>}
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>
         <strong>{reviewStatusLabel(item.freshness_status)}</strong>
-        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (reviewStatusLabel(item.source_time_kind || 'not_recorded')) + ')' : 'unknown'} · time since it was recorded {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
+        <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · information date {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (reviewStatusLabel(item.source_time_kind || 'not_recorded')) + ')' : 'unknown'} · Time since it was added {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
         <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
       </article>)}
     </details>
