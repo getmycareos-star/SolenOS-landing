@@ -27,7 +27,8 @@ requireText("src/components/workflows/AppointmentWorkspace.tsx", [
   "patchJSON('/appointments/' + encodeURIComponent(appointmentId) + '/lifecycle'",
   "Your note is saved as a caregiver report.",
   "nothing here changes your Care Record without your approval.",
-  "Retry care-record retrieval",
+  "We couldn’t load all of your Care Record.",
+  "Try again",
 ]);
 requireText("src/components/qwen/QwenAssistPanel.tsx", [
   'postJSON("/assistant/jobs"',
