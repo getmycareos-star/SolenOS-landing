@@ -755,7 +755,7 @@ export default function AppointmentWorkspace() {
               {brief.lcr_retrieval_status?.status === 'failed'
                 ? <div role="alert"><p className="guided-muted">SolenOS could not retrieve the full care record. We couldn’t load all of your Care Record. Your care history may still contain information that isn’t showing here.</p><button type="button" className="guided-secondary" disabled={loading} onClick={() => setReloadToken(value => value + 1)}>Try again</button></div>
                 : brief.lcr_retrieval_status?.status === 'partial'
-                  ? <div role="status"><p className="guided-muted">We couldn’t check all of your saved care information. This summary may be missing details.</p><button type="button" className="guided-secondary" disabled={loading} onClick={() => setReloadToken(value => value + 1)}>Retry care-record retrieval</button></div>
+                  ? <div role="status"><p className="guided-muted">We couldn’t check all of your saved care information. This summary may be missing details.</p><button type="button" className="guided-secondary" disabled={loading} onClick={() => setReloadToken(value => value + 1)}>Try again</button></div>
                   : null}
               {brief?.source_coverage?.documents === 'failed' && <div role="alert"><p className="guided-muted">Saved document information could not be retrieved. We couldn’t load your saved documents. They may still be there.</p><button type="button" className="guided-secondary" disabled={loading} onClick={() => setReloadToken(value => value + 1)}>Try again</button></div>}
               {brief.appointment_context_status?.code === 'date_unknown' && <p className="guided-muted" role="status">Appointment information exists, but its date has not been recorded. SolenOS has not supplied or assumed a date.</p>}
@@ -949,7 +949,7 @@ export default function AppointmentWorkspace() {
                 }
               }} />
             </label>
-            {brief?.source_coverage?.documents === 'restricted' && <p className="guided-muted" role="status">Document access is restricted for this caregiver. No document content or metadata is shown here.</p>}
+            {brief?.source_coverage?.documents === 'restricted' && <p className="guided-muted" role="status">Document access is restricted for this caregiver. We can’t show the document or its details here.</p>}
             {documentBusy && <p className="guided-muted" role="status">Saving the original document…</p>}
             {documentMessage && <p className="guided-muted" role="status">{documentMessage}</p>}
             {pendingDocumentEvidenceId && <div className="guided-actions"><span className="guided-muted">Saved file: {caregiverSafeAssistantText(pendingDocumentName) || 'Document'}</span><button type="button" className="guided-secondary" disabled={documentBusy} onClick={() => void retryDocumentLink()}>Retry linking saved document</button></div>}
