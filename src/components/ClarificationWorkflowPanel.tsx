@@ -467,7 +467,7 @@ export default function ClarificationWorkflowPanel({ personId }: { personId?: st
     const latestAnswer = history[history.length - 1];
     if (!latestAnswer) return;
     if (decision === "accepted" && !latestAnswer.evidence_ids?.length) {
-      setError("This answer has no saved supporting evidence and cannot be added to the care record.");
+      setError("There is no saved note or document to support this answer, so it cannot be added to your Care Record.");
       return;
     }
     const interval = Number(reviewAfterDays);
@@ -519,7 +519,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
     {loading && <p role="status">Loading questions…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadAll()} disabled={loading}>Try again</button></p>}
     {!loading && !error && partialLoadWarning.length > 0 && (
-      <p role="status">Some saved care information could not be loaded: {partialLoadWarning.join(", ")}. The information shown may be incomplete. Try again.</p>
+      <p role="status">We couldn’t load some of your saved care information: {partialLoadWarning.join(", ")}. The information shown may be incomplete. Try again.</p>
     )}
     {!loading && !error && <>
       {recommendationUnavailable && <p role="status">We couldn’t check for care questions just now. Your saved care information has not changed. Try again later.</p>}
@@ -629,7 +629,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
             ).slice(0, 3);
             return linkedEvidence.length > 0 ? (
               <div style={{ margin: "8px 0 12px", padding: 10, borderRadius: 8, background: "var(--bg)" }}>
-                <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>What this question is based on</strong>
+                <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Why we are asking</strong>
                 {linkedEvidence.map((item) => (
                   <div key={item.id} style={{ marginTop: 7 }}>
                     <span style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
@@ -655,7 +655,7 @@ SolenOS only asks when a missing detail could change what happens next. You can 
           {selectedQuestion.answer && <div style={{ background: "var(--bg)", borderRadius: 7, padding: 10, marginBottom: 10 }}>
             <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Last answer</strong>
             <p>{selectedQuestion.answer?.trim() || "The saved answer is available for review."}</p>
-            <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Where this came from: {selectedQuestion.answer_provenance?.trim() || "Not recorded"}</p>
+            <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Who shared this: {selectedQuestion.answer_provenance?.trim() || "Not recorded"}</p>
             <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Answered {displayDate(selectedQuestion.answered_at)}</p>
           </div>}
           {(selectedQuestion.status === "open" || selectedQuestion.status === "unresolved") && <>
