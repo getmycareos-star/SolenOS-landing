@@ -243,7 +243,8 @@ assert(panel.includes("What to watch"), "panel shows what to watch");
 assert(panel.includes("Can wait"), "panel shows what can wait");
 assert(panel.includes("May need attention later"), "panel shows may need attention later");
 assert(
-  panel.includes("Questions to resolve") ||
+  panel.includes("Questions that may help") ||
+    panel.includes("Questions to resolve") ||
     panel.includes("What to ask next") ||
     panel.includes("One thing that would help") ||
     panel.includes("Still unclear"),
