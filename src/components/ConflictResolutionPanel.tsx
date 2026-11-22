@@ -136,7 +136,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       return;
     }
     if (status === "partially_resolved" && (!scope.trim() || !unresolvedRemainder.trim() || evidenceIds.length === 0)) {
-      setError("A partial review needs the exact part being reviewed, what remains unclear, and supporting information for the detail.");
+      setError("If you have only checked part of the information, say which part, what is still unclear, and add the notes or documents that support it.");
       return;
     }
     if (evidenceIds.some((id) => !evidence.some((row) => row.id === id && row.person_id === scopedPersonId))) {
