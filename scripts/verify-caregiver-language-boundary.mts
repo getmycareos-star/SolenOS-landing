@@ -690,14 +690,14 @@ assert.match(livingCareRecordPanel, /caregiverSafeGeneratedText\(view\.what_matt
 assert.match(livingCareRecordPanel, /caregiverSafeGeneratedText\(view\.follow_up_items|followUpItems/, "generated next steps must use caregiver language");
 assert.match(livingCareRecordPanel, /caregiverFieldLabel\(event\.event\).*Care update/s, "raw event codes must never be shown in the Care Record");
 
-assert.match(currentUnderstanding, /return HISTORY_SOURCE_LABELS\[source\] \?\? "Care information"/,
+assert.match(lcr, /return HISTORY_SOURCE_LABELS\[source\] \?\? "Care information"/,
   "unknown history source codes must never be shown as raw labels");
-assert.match(currentUnderstanding, /caregiverSafeGeneratedText\(change\.explanation\)/,
+assert.match(lcr, /caregiverSafeGeneratedText\(change\.explanation\)/,
   "generated change explanations must use caregiver language");
-assert.match(currentUnderstanding, /caregiverLabel\(change\.previous_state\).*caregiverLabel\(change\.current_state\)/,
+assert.match(lcr, /caregiverLabel\(change\.previous_state\).*caregiverLabel\(change\.current_state\)/,
   "change history must translate internal state codes before display");
-assert.match(currentUnderstanding, /What shows this was done/);
-assert.doesNotMatch(currentUnderstanding, /Care priorities could not be reviewed|Not enough information to review priorities|No priority has been assumed|Based on .*saved item\(s\)/,
+assert.match(lcr, /What shows this was done/);
+assert.doesNotMatch(lcr, /Care priorities could not be reviewed|Not enough information to review priorities|No priority has been assumed|Based on .*saved item\(s\)/,
   "the Care Record must not expose internal priority or evidence-count wording");
 
 assert.doesNotMatch(livingCareRecordPanel, /Observation layer|Caregiver observations|Caregiver load note/,
