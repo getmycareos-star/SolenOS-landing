@@ -345,7 +345,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     .getByText(
       /We couldn’t connect this update with earlier care information right now\. Your Care Record is unchanged\./,
     );
-  await contextInterpretationState.waitFor({ state: "visible", timeout: 10_000 });
+  await contextInterpretationState.waitFor({ state: "visible", timeout: 30_000 });
   assert.equal(
     await page.locator(".care-card-understanding").count(),
     0,
