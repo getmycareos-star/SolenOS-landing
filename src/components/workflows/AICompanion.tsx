@@ -717,8 +717,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                     </div>}
                     {!isUser && msg.ai_generated === false && <section className="companion-provenance" role="status" aria-label="Response note">
                       <p>{msg.response_mode === 'deterministic_low_capacity_support_fallback'
-                        ? msg.safety_note || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
-                        : `This is a brief support message, not an answer based on your Care Record. ${msg.safety_note || "It uses a safety check or information already saved. Nothing was changed in your Care Record."}`}</p>
+                        ? caregiverSafeGeneratedText(msg.safety_note) || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
+                        : `This is a brief support message, not an answer based on your Care Record. ${caregiverSafeGeneratedText(msg.safety_note) || "It uses a safety check or information already saved. Nothing was changed in your Care Record."}`}</p>
                     </section>}
                     {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
@@ -751,12 +751,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                               {claim.support_status === 'matched_validated_aggregate' && <p>This count includes {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? ' during ' + claim.aggregate.window_label : ''}. Repeated records were not counted twice.</p>}
                               {claim.source_references.map((source, sourceIndex) => (
                                 <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
-                                  <strong>{source.label}</strong>
+                                  <strong>{caregiverSafeGeneratedText(source.label) || 'Saved care information'}</strong>
                                   {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
                                   {source.recorded_at && <p>When it was added: {new Date(source.recorded_at).toLocaleString()}</p>}
                                   {source.reported_by && <p>Reported by: {source.reported_by}</p>}
                                   {source.entered_by && <p>{source.entered_by}</p>}
-                                  {source.source_state_label && <p>{source.source_state_label}</p>}
+                                  {source.source_state_label && <p>{caregiverSafeAssistantText(source.source_state_label) || 'Status not available'}</p>}
                                   {source.correction_note && <p>{source.correction_note}</p>}
                                   {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
                                   {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
