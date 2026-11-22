@@ -107,8 +107,8 @@ export const WORKSPACE_SECONDARY_NAVIGATION: WorkspaceNavigationItem[] = [
   {
     id: "advanced-care-record",
     href: "/workspace/care-continuity",
-    label: "Advanced care record",
-    description: "Review detailed care-record information",
+    label: "Full care details",
+    description: "See more of the saved care information.",
     icon: FileText,
   },
   {
