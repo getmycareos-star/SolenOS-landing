@@ -35,7 +35,7 @@ export function buildBurdenMessages(params: BuildBurdenMessagesParams): string[]
 
   if (params.scores.dependencyLoadScore >= 35) {
     statements.push(
-      "Growing care needs are reflected in the Living Care Record.",
+      "Changes in care needs are shown in your Care Record.",
     );
   }
 
@@ -46,7 +46,7 @@ export function buildBurdenMessages(params: BuildBurdenMessagesParams): string[]
   }
 
   if (statements.length === 0) {
-    statements.push("What you shared is held in the Living Care Record.");
+    statements.push("What you shared is saved in your Care Record.");
   }
 
   return statements;
