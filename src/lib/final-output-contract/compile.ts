@@ -17,6 +17,7 @@ import type { FinalOutputContract } from "./types";
 import { validateFinalOutput, extractFinalOutputPayload } from "./schema";
 import { applyCrisisOverlay } from "./crisis-overlay";
 import { compileWithEntryBehavior } from "./entry-compile";
+import { caregiverFieldLabel, caregiverStatusLabel } from "../caregiver-language";
 
 type CompileSource = Omit<SituationResponse, "final_output">;
 
@@ -39,9 +40,9 @@ function buildWhatIsHappening(response: CompileSource): string {
   const stateChanges = response.care_state_change_report?.primary_changes ?? [];
   const changeLines = stateChanges
     .map((c) => {
-      const domain = c.domain.replace(/_/g, " ");
-      const classification = c.classification.toLowerCase();
-      return `${domain} — ${classification}`;
+      const domain = caregiverFieldLabel(c.domain) || "Care details";
+      const classification = caregiverStatusLabel(c.classification) || "Possible change";
+      return `${domain}: ${classification}`;
     })
     .slice(0, 3);
   if (changeLines.length > 0) {
@@ -146,15 +147,15 @@ function buildWhatMattersNow(response: CompileSource): string {
   );
   if (meaningfulChanges.length > 0) {
     const top = meaningfulChanges[0]!;
-    const domain = top.domain.replace(/_/g, " ");
-    const classification = top.classification.toLowerCase();
-    const confidence =
+    const domain = caregiverFieldLabel(top.domain) || "Care details";
+    const classification = caregiverStatusLabel(top.classification) || "Possible change";
+    const uncertaintyNote =
       top.confidence === "high"
         ? ""
         : top.confidence === "medium"
-          ? " (moderate confidence)"
-          : " (low confidence — needs confirmation)";
-    const text = `${domain} change: ${classification}${confidence}`;
+          ? ". This may need checking."
+          : ". This needs confirmation.";
+    const text = `${domain}: ${classification}${uncertaintyNote}`;
     return text.slice(0, 160);
   }
 
