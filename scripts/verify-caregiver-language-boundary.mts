@@ -345,7 +345,7 @@ assert.match(handoff, /Check what will be shared/);
 assert.doesNotMatch(handoff, /Saved information item:|Caregiver-added note \(not independently verified\)|Sharing reviewed handoff/);
 assert.match(sourceReview, /How often should this information be checked/);
 assert.doesNotMatch(sourceReview, /Choose a review rule set by the caregiver/);
-assert.match(sourceReview, /How much to rely on this information/);
+assert.match(sourceReview, /How sure are you about this information\?/);
 assert.doesNotMatch(sourceReview, /Information quality|How reliable this information is/);
 assert.match(careContinuity, /Recently checked/);
 assert.match(careContinuity, /Needs a fresh check/);
