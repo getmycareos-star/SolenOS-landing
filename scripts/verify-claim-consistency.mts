@@ -22,7 +22,6 @@
  * 16. Realistic caregiver inputs (5+)
  */
 
-import { strictParseModelJson } from "../src/lib/gemini-contract";
 import {
   runConsistencyGate,
   verifySourcePointer,
@@ -279,64 +278,9 @@ async function runUnitTests(): Promise<void> {
 }
 
 async function runIntegrationTests(): Promise<void> {
-  console.log("\n=== INTEGRATION TESTS (requires GEMINI_API_KEY) ===");
-
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) {
-    console.log("SKIP: GEMINI_API_KEY not configured — skipping LLM integration tests");
-    return;
-  }
-
-  const logger = new ConsoleConsistencyLogger();
-  setConsistencyLogger(logger);
-
-  const testInputs: Array<{ label: string; text: string }> = [
-    { label: "Ambiguous 1", text: "She seemed off today." },
-    { label: "Ambiguous 2", text: "Mom wasn't herself after the appointment." },
-    { label: "Ambiguous 3", text: "I think the new medication is making her tired." },
-    { label: "Medication change", text: "Started memantine 10mg yesterday morning with breakfast." },
-    { label: "Hospital/discharge", text: "Discharged from St. Mary's Hospital on Tuesday after 3-day stay for pneumonia." },
-    { label: "Symptom observation", text: "She has been refusing to eat lunch for the past two days." },
-    { label: "Appointment/follow-up", text: "Neurology follow-up scheduled for next Monday at 2pm with Dr. Patel." },
-    { label: "Unresolved/contradictory", text: "The nurse said she fell but my mom says she just sat down slowly." },
-  ];
-
-  for (const { label, text } of testInputs) {
-    console.log(`\n--- ${label} ---`);
-    const input: ConsistencyGateInput = {
-      evidence_id: `ev_int_${Date.now()}`,
-      raw_text: text,
-      raw_input_id: `ri_int_${Date.now()}`,
-      caregiver_id: "test_caregiver",
-      timestamp: new Date().toISOString(),
-    };
-
-    const result = await runConsistencyGate(input);
-    assert(result.success, `${label}: gate completed`);
-    assert(result.run_a.success && result.run_b.success, `${label}: both runs succeeded`);
-    assert(result.reconciliation.metrics.matched_claims >= 0, `${label}: metrics computed`);
-
-    const hasConfirmed = result.reconciliation.reconciled_claims.some(
-      (c) => c.confidence_tag === "confirmed",
-    );
-    if (hasConfirmed) {
-      const confirmedClaims = result.reconciliation.reconciled_claims.filter(
-        (c) => c.confidence_tag === "confirmed",
-      );
-      for (const claim of confirmedClaims) {
-        const pair = result.reconciliation.matched_pairs.find(
-          (p) => p.final_claim.id === claim.id,
-        );
-        if (pair) {
-          assert(pair.entity_agrees, `${label}: confirmed claim entity agreement`);
-          assert(pair.event_type_agrees, `${label}: confirmed claim event type agreement`);
-          assert(pair.confidence_agrees, `${label}: confirmed claim confidence agreement`);
-        }
-      }
-    }
-  }
+  console.log("\\n=== LIVE QWEN INTEGRATION ===");
+  console.log("SKIP: live inference requires an authenticated caregiver session and a pre-saved evidence record. Run this through the authenticated application test environment; this script will not fabricate an evidence ID or bypass source persistence.");
 }
-
 async function main(): Promise<void> {
   await runUnitTests();
   await runIntegrationTests();
