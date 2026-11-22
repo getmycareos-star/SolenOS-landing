@@ -325,7 +325,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         setSessionId(savedSessionId)
         setMessages(response.messages.map(message => ({
           role: message.role,
-          text: message.text,
+          text: message.role === 'assistant'
+            ? caregiverSafeGeneratedText(message.text) ?? 'I could not safely display part of that earlier response. Your Care Record has not changed. You can ask again using your saved care information.'
+            : message.text,
           source_message_id: message.role === 'user' ? (message.source_message_id || message.id || null) : null,
           guard_verdict: message.guard_verdict,
           safety_note: message.safety_note,
