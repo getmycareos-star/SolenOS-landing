@@ -12,6 +12,7 @@ const navigation = read("src/lib/workspace-navigation.ts");
 const moreMenu = read("src/components/mvp-workspace/WorkspaceMoreMenu.tsx");
 const history = read("src/components/app-shell/HistoryDrawer.tsx");
 const morePage = read("src/app/workspace/more/page.tsx");
+const handoverInbox = read("src/components/mvp-workspace/CaregiverHandoverInbox.tsx");
 const shellStyles = read("src/app/globals.css");
 const addPanel = read("src/components/mvp-workspace/AddSituationPanel.tsx");
 const cognitive = read("src/components/mvp-workspace/CognitiveWorkspace.tsx");
@@ -153,6 +154,11 @@ assert.ok(morePage.includes('href="/workspace/timeline"'), "care history remains
 assert.ok(morePage.includes('href="/workspace/documents"'), "Documents remains available under More");
 assert.ok(lcrHome.includes('href="/workspace/companion"'), "Care Assistant is directly reachable from the Care Record");
 assert.match(lcrHome, /Review earlier updates and corrections\./, "the Care Timeline link describes its current browsing purpose");
+assert.match(handoverInbox, /ensureAnonymousSession\(\)/, "handover requests wait for a valid caregiver session");
+assert.match(handoverInbox, /Promise\.allSettled/, "one unavailable handover list does not hide the other");
+assert.match(handoverInbox, /We couldn't check all pending care handovers/);
+assert.match(handoverInbox, /Try again/, "a failed handover check can be retried");
+assert.match(handoverInbox, /!loading/, "an empty handover list is hidden only after checking finishes");
 assert.match(lcrHome, /LCRCurrentUnderstanding/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
