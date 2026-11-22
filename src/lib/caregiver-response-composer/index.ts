@@ -2219,15 +2219,15 @@ connection_note = scrubPasteField(connection_note);
     );
     if (meaningful.length > 0 && (!what_matters_now || /most important next|how this sits|what was usual|understanding what is changing/i.test(what_matters_now))) {
       const top = meaningful[0]!;
-      const domain = top.domain.replace(/_/g, " ");
-      const classification = top.classification.toLowerCase();
-      const confidence =
+      const domain = caregiverFieldLabel(top.domain) || "Care details";
+      const classification = caregiverStatusLabel(top.classification) || "Possible change";
+      const uncertaintyNote =
         top.confidence === "high"
           ? ""
           : top.confidence === "medium"
-            ? " (moderate confidence)"
-            : " (needs confirmation)";
-      what_matters_now = `${domain} change: ${classification}${confidence}`.slice(0, 160);
+            ? ". This may need checking."
+            : ". This needs confirmation.";
+      what_matters_now = `${domain}: ${classification}${uncertaintyNote}`.slice(0, 160);
     }
   }
 
