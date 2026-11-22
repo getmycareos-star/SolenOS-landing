@@ -33,7 +33,7 @@ const required: Array<[string, RegExp]> = [
   ["explains that appointment follow-ups remain connected to the visit history", /Appointment connection[\s\S]*?saved appointment and its appointment history/],
   ["passes a linked follow-up review date into its card", /review_at: loop\.review_at/],
   ["labels a due review as requested rather than as a future date", /Review requested/],
-  ["records caregiver actions without claiming the outcome is verified", /function recordAction[\s\S]*?postJSON\("\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/actions"[\s\S]*?outcome has not been marked as verified/],
+  ["records caregiver actions without marking the concern resolved", /function recordAction[\s\S]*?postJSON\("\/open-loops\/" \+ encodeURIComponent\(loop\.id\) \+ "\/actions"[\s\S]*?The concern has not been marked as resolved\./],
   ["does not expose a second general-purpose follow-up writer", /function shareUpdate[\s\S]*?const updatePayload =[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/outcomes`, updatePayload\)/],
   ["reassesses saved follow-ups before refreshing the page", /postJSON\("\/open-loops\/reassess"/],
   ["loads all follow-up event and occurrence history pages", /loadAllLoopRecords<LoopHistoryEvent>[\s\S]*?\/history[\s\S]*?loadAllLoopRecords<LoopOccurrence>[\s\S]*?\/occurrences/],
