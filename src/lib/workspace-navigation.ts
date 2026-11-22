@@ -9,8 +9,8 @@ export type WorkspaceNavigationItem = {
 };
 
 /**
- * Five caregiver-facing destinations. Existing feature routes remain available
- * through More; this registry changes navigation, not the underlying services.
+ * Caregiver navigation: keep the next steps visible without making people
+ * search through More. Other less-frequent destinations remain secondary.
  */
 export const WORKSPACE_NAVIGATION = {
   care: [
@@ -34,6 +34,13 @@ export const WORKSPACE_NAVIGATION = {
       label: "Appointments",
       description: "Prepare and share care information",
       icon: CalendarDays,
+    },
+    {
+      id: "follow-ups",
+      href: "/workspace/open-loops",
+      label: "Follow-ups",
+      description: "See what needs attention and what happens next",
+      icon: Clock3,
     },
   ],
   support: [
@@ -68,13 +75,6 @@ export const WORKSPACE_SECONDARY_NAVIGATION: WorkspaceNavigationItem[] = [
     label: "Care history",
     description: "Earlier updates, changes and corrections",
     icon: History,
-  },
-  {
-    id: "follow-ups",
-    href: "/workspace/open-loops",
-    label: "Follow-ups",
-    description: "Questions and agreed next steps",
-    icon: Clock3,
   },
   {
     id: "documents",
