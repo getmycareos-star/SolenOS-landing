@@ -78,7 +78,7 @@ export function LivingCareRecordPanel({
   return (
     <section className="living-care-record-panel" aria-label="Care Record update">
       <h2 className="workspace-headline">Care Record</h2>
-      {view.recognition_line && (
+      {recognitionLine && (
         <p className="workspace-lede lcr-recognition">{recognitionLine}</p>
       )}
       {plan.show_confirmation && (
@@ -86,10 +86,10 @@ export function LivingCareRecordPanel({
           {confirmation || "Your update was saved."}
         </p>
       )}
-      {view.evidence_line && view.evidence_maturity >= 1 && (
+      {evidenceLine && view.evidence_maturity >= 1 && (
         <p className="panel-muted lcr-evidence-line">{evidenceLine}</p>
       )}
-      {view.disclosure_plan.show_attention_level && view.attention_label && (
+      {view.disclosure_plan.show_attention_level && attentionLabel && (
         <p className="panel-muted lcr-attention" aria-label="Attention level">
           {attentionLabel}
         </p>
@@ -125,7 +125,7 @@ export function LivingCareRecordPanel({
           )}
           {renderEvidenceMeta && (
             <p className="panel-muted">
-              {event.event}
+              {eventLabel || "Care update"}
               {event.date ? ` · ${event.date}` : ""}
             </p>
           )}
@@ -142,7 +142,7 @@ export function LivingCareRecordPanel({
         </section>
       )}
 
-      {plan.show_connection && view.connection_note && (
+      {plan.show_connection && connectionNote && (
         <section className="care-card-changed" aria-labelledby="lcr-connect-heading">
           <h3 id="lcr-connect-heading" className="section-kicker">
             What may matter
@@ -186,7 +186,7 @@ export function LivingCareRecordPanel({
         </section>
       )}
 
-      {view.baseline_summary && (
+      {baselineSummary && (
         <section className="care-card-baseline" aria-labelledby="lcr-baseline-heading">
           <h3 id="lcr-baseline-heading" className="section-kicker">
             What is usual
