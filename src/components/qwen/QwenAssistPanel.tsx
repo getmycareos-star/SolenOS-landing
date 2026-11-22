@@ -434,13 +434,13 @@ export default function QwenAssistPanel({
                       {source.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{source.source_excerpt}</blockquote>}
                       {source.related_evidence?.map((evidence, evidenceIndex) => (
                         <div key={"linked-evidence-" + evidenceIndex} style={{ marginTop: "6px", padding: "7px", background: "var(--theme-panel-bg)", borderRadius: "6px" }}>
-                          <p style={{ fontSize: "11px", fontWeight: 600, margin: 0 }}>Supporting {evidence.label || "note or document"}</p>
+                          <p style={{ fontSize: "11px", fontWeight: 600, margin: 0 }}>Related {evidence.label || "note or document"}</p>
                           {evidence.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Reported by: {evidence.reported_by}</p>}
                           {evidence.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Added by: {evidence.entered_by}</p>}
-                          {evidence.source_independence_status === "shared_origin" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>This note shares its original with another saved record. It is not a separate report.</p>}
-                          {evidence.source_independence_status === "independent" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>A caregiver review marks this as a separate report.</p>}
+                          {evidence.source_independence_status === "shared_origin" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>This note or document came from the same original as another saved item. It is not a separate report.</p>}
+                          {evidence.source_independence_status === "independent" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>A caregiver marked this as a separate report.</p>}
                           {evidence.source_independence_status === "not_assessed" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Whether this note is separate from other reports has not been checked.</p>}
-                          {(evidence.exact_wording_duplicate_count ?? 0) > 0 && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>The same wording appears in {evidence.exact_wording_duplicate_count} other saved record(s). Do not count these as separate reports.</p>}
+                          {(evidence.exact_wording_duplicate_count ?? 0) > 0 && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>The same wording appears in {evidence.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                           {evidence.recorded_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
                           {evidence.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{evidence.source_excerpt}</blockquote>}
                           {evidence.observations?.map((observation, observationIndex) => (
