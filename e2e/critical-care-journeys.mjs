@@ -874,6 +874,12 @@ await record("01c workspace links, browser back, More menu and account form vali
     "Qwen briefing must declare the Living Care Record as its source of truth");
   assert.ok(appointmentDraft.source_snapshot_id && appointmentDraft.source_snapshot_sha256,
     "the appointment briefing must be bound to a versioned LCR source snapshot");
+  console.log("APPOINTMENT_BRIEFING_SOURCE_FRESHNESS", JSON.stringify({
+    status: appointmentDraft.source_freshness?.status ?? null,
+    staleSourceCount: appointmentDraft.source_freshness?.stale_source_count ?? null,
+    unknownSourceCount: appointmentDraft.source_freshness?.unknown_source_count ?? null,
+    reason: appointmentDraft.source_freshness?.reason ?? null,
+  }));
   assert.equal(appointmentDraft.source_freshness?.status, "current",
     "a newly prepared appointment briefing must return its verified source freshness");
   assert.equal(appointmentDraft.appointment_id, shareAppointment.payload.id,
