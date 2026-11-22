@@ -17,6 +17,7 @@ const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8
 const structuredDailyCapture = fs.readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
 const durableWriteSender = fs.readFileSync("src/lib/offline-sync/send-queued-care-write.ts", "utf8");
 const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const workspaceMore = fs.readFileSync("src/app/workspace/more/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
@@ -98,12 +99,14 @@ assert.doesNotMatch(currentUnderstanding, /Missing information does not mean eve
 assert.match(currentUnderstanding, /There isn’t enough recorded care information to assess immediate priorities yet/, "an empty care record is described as insufficient information, not a reassuring finding");
 assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) => void load\(true\)\}/s, "failed current-care retrieval renders an actionable error state with a real retry");
 assert.ok(
-  workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf('className="solenos-care-next-step"') &&
-  workspaceHome.indexOf('className="solenos-care-next-step"') < workspaceHome.indexOf("<CaregiverHandoverInbox />"),
-  "workspace order is care orientation, primary actions, then handover inbox"
+  workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf('className="solenos-care-next-step"'),
+  "Today presents current care information before its primary actions"
 );
-assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Ask SolenOS remains directly accessible");
-assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Add a care update remains directly accessible");
+assert.doesNotMatch(workspaceHome, /<CaregiverHandoverInbox \/>/, "the Today page does not carry a secondary inbox");
+assert.match(workspaceMore, /<CaregiverHandoverInbox \/>/, "the handover inbox remains available under More");
+assert.match(workspaceMore, /<HistoryDrawer \/>/, "recent care history remains available under More");
+assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Care Assistant remains directly accessible");
+assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Share an update remains directly accessible");
 assert.match(currentUnderstanding, /evidenceReviewOpen \? <EvidenceReviewPanel personId={personId} \/>/, "evidence review mounts only when its own disclosure is opened");
 assert.match(currentUnderstanding, /claimAssessmentOpen \? <ClaimAssessmentPanel \/>/, "claim review mounts only when its own disclosure is opened");
 assert.match(currentUnderstanding, /conflictReviewOpen \? <ConflictResolutionPanel personId={personId} \/>/, "conflict review mounts only when its own disclosure is opened");
