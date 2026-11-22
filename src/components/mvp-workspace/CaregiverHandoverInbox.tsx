@@ -79,13 +79,13 @@ export function CaregiverHandoverInbox() {
     <section aria-labelledby="caregiver-handover-heading" className="mobile-settings-card" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <ArrowRightLeft size={18} aria-hidden />
-        <h2 id="caregiver-handover-heading" style={{ margin: 0, fontSize: "calc(17px * var(--solenos-text-scale, 1))" }}>Care handover</h2>
+        <h2 id="caregiver-handover-heading" style={{ margin: 0, fontSize: "calc(17px * var(--solenos-text-scale, 1))" }}>Care responsibilities waiting for you</h2>
       </div>
       {loading && <p className="mobile-settings-hint">Checking for care handovers…</p>}
-      {(responsibilityTransfers.length > 0 || primaryTransfers.length > 0) && <p className="mobile-settings-hint">These changes need your response. Nothing is reassigned until you accept.</p>}
+      {(responsibilityTransfers.length > 0 || primaryTransfers.length > 0) && <p className="mobile-settings-hint">Please review these requests. Your care responsibilities will not change unless you accept.</p>}
       {primaryTransfers.map(item => (
         <div key={item.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 10 }}>
-          <strong>{item.from_caregiver_name} has asked you to become the primary caregiver.</strong>
+          <strong>{item.from_caregiver_name} has asked you to become the main caregiver.</strong>
           {item.reason && <p className="mobile-settings-hint">{item.reason}</p>}
           <div className="mobile-settings-buttons">
             <Button type="button" variant="primary" disabled={busy} onClick={() => void respond("primary", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
@@ -95,7 +95,7 @@ export function CaregiverHandoverInbox() {
       ))}
       {responsibilityTransfers.map(item => (
         <div key={item.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 10 }}>
-          <strong>{item.from_caregiver_name} has asked you to take over {item.responsibility_type.replaceAll("_", " ")}.</strong>
+          <strong>{item.from_caregiver_name} has asked you to take over a care responsibility.</strong>
           {item.reason && <p className="mobile-settings-hint">{item.reason}</p>}
           <div className="mobile-settings-buttons">
             <Button type="button" variant="primary" disabled={busy} onClick={() => void respond("responsibility", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
