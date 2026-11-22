@@ -449,6 +449,7 @@ assert.match(situationRouteLanguage, /Your access to SolenOS could not be confir
 const shareHelpLanguage = read("../src/app/share/page.tsx");
 const earlyAccessLanguage = read("../src/app/early-access/page.tsx");
 const publicShellLanguage = read("../src/components/public/PublicShell.tsx");
+const landingPageLanguage = read("../src/app/page.tsx");
 
 assert.doesNotMatch(shareHelpLanguage, /Living Care Record|care understanding path|provide evidence/i,
   "share instructions and metadata must use everyday caregiver language");
@@ -460,6 +461,9 @@ assert.match(earlyAccessLanguage, /Open your Care Record/,
   "early-access entry must use the caregiver-facing Care Record name");
 assert.doesNotMatch(publicShellLanguage, /Living Care Record/,
   "public navigation and footer must use the same Care Record name as the workspace");
+assert.doesNotMatch(landingPageLanguage, /Living Care Record|AI Companion/, "the public landing page must use Care Record and Care Assistant");
+assert.match(landingPageLanguage, /A CARE RECORD FOR FAMILY CAREGIVERS/);
+assert.match(landingPageLanguage, /Start your Care Record/);
 
 
 const documentExtractionRouteLanguage = read("../src/app/api/extract/route.ts");
