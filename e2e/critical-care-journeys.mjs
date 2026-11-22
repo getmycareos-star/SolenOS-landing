@@ -1953,17 +1953,10 @@ await record("Daily Care capture survives secondary read failures", async () => 
 });
 
 await record("Care history opens the original caregiver report and its source details", async () => {
-  const history = await createBrowserPage(session, "/workspace/care-continuity");
-  await history.page.getByRole("heading", { name: "Your Care Record" }).waitFor({ timeout: 20_000 });
+  const history = await createBrowserPage(session, "/workspace/more");
+  await history.page.getByRole("heading", { name: "More", exact: true }).waitFor({ timeout: 20_000 });
 
-  // Recent history lives inside the collapsible workspace navigation sidebar.
-  // Open it before interacting with the history controls; do not force a click
-  // on an inert element inside the closed sidebar.
-  await history.page.getByRole("button", { name: "Open navigation" }).click();
-  await history.page.getByRole("dialog", { name: "SolenOS navigation" })
-    .getByRole("button", { name: "Close navigation", exact: true })
-    .waitFor({ state: "visible", timeout: 5_000 });
-
+  // Recent history is shown on More, not in the primary navigation.
   const reportCard = history.page.locator(".history-event-card")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
