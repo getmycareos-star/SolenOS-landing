@@ -715,7 +715,7 @@ const HISTORY_SOURCE_LABELS: Record<string, string> = {
   care_facts: "Saved care details",
   assertions: "Caregiver reports",
   care_assertions: "Caregiver reports",
-  caregiver_observations: "Caregiver observations",
+  caregiver_observations: "What caregivers noticed",
   professional_reports: "Healthcare professional reports",
   appointments: "Appointments",
   handoffs: "Care updates shared with another caregiver",
@@ -729,7 +729,7 @@ const HISTORY_SOURCE_LABELS: Record<string, string> = {
   information_gaps: "Information still needed",
   uncertainty_assessments: "Details that need checking",
   conflicts: "Reports that do not match",
-  reconciliations: "Reviews of reports that differ",
+  reconciliations: "Information checked against other reports",
 };
 
 function historySourceLabel(source: string): string {
