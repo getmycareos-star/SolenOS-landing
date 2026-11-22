@@ -37,7 +37,17 @@ function resetAll() {
 }
 
 async function main() {
-  console.log("=== Phase 9 — Reliability and Fallback Behavior ===\n");
+  console.log("=== Phase 9 — Deterministic-only path and Qwen failure boundary ===\\n");
+
+  await assert.rejects(
+    buildCareSituationUnderstanding({
+      rawText: "A saved caregiver update.",
+      evidenceId: "",
+      contributorId: "phase9_missing_evidence",
+    }),
+    /A saved care record is required/,
+    "the asynchronous Qwen path must reject missing persisted evidence",
+  );
 
   // 1. Deterministic-only path — empty/garbled input must not crash
   {
