@@ -830,7 +830,7 @@ export default function DailyCarePage() {
                     <span>{displayHistoryTime(item)}</span>
                     {item.capture_processing?.review_required && item.capture_processing.analysis_id ? (
                       <div style={{ marginTop: 8 }}>
-                        <p className="daily-care-muted">Review the suggested details before they become reviewed care information.</p>
+                        <p className="daily-care-muted">Check these details before adding them to your Care Record.</p>
                         <Button
                           variant="secondary"
                           onClick={() => setReviewAnalysisId(item.capture_processing?.analysis_id || null)}
