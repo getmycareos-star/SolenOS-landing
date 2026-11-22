@@ -219,7 +219,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     ] : []),
     "",
     "Important: Information that has not been checked, was not accepted, or may be out of date is labelled. This summary is not a medical opinion.",
-    ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["Briefing selection: " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available source records. This is not the full Care Record."] : []),
+    ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["This summary includes " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " available care notes and updates. It is not the full Care Record."] : []),
     caregiverSafeAssistantText(draft.warning) ?? "Some information may be incomplete. Review the details before sharing.",
     ...(draft.template_sections ?? []).filter(item => /medication/i.test(item.title)).map(item => item.coverage_note),
     "",
@@ -817,8 +817,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         <section role="status" aria-label="Care information included and missing" style={{ ...panel, marginTop: 0, background: "#fbf8ef", borderColor: "#d8c9a5" }}>
           {draft.selected_appointment && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}><b>Appointment:</b> {draft.selected_appointment.title} · {formatDate(draft.selected_appointment.scheduled_at)}{draft.selected_appointment.provider ? " · " + draft.selected_appointment.provider : ""}</p>}
           <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Check what information is missing</strong>
-          {draft.retrieval_complete === false && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>This briefing does not include all available Care Record information. Review the listed gaps before relying on or sharing it.</p>}
-          {draft.partial_sources?.map(item => <p key={item.source} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were retrieved; more may be available.</p>)}
+          {draft.retrieval_complete === false && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>This summary does not include everything saved in your Care Record. Check the missing items before relying on or sharing it.</p>}
+          {draft.partial_sources?.map(item => <p key={item.source} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0" }}>{readableSection(item.source)}: at least {item.returned_count} saved details were included. There may be more.</p>)}
           {draft.template_sections?.filter(item => /medication/i.test(item.title)).map(item => <p key={item.title} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0" }}>{item.coverage_note}</p>)}
           {draft.limitations?.map((item, index) => <p key={item.source + index} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0" }}>
             {item.source === "allergies"
@@ -833,7 +833,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <strong>Healthcare professional briefing — private review only</strong>
             <p style={{ marginBottom: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.55 }}>This briefing is prepared from the saved Care Record. SolenOS cannot yet confirm a professional recipient's identity and role, so professional sharing is not available from this screen.</p>
             {draft.generation?.interpretation_limit && <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{caregiverSafeAssistantText(draft.generation.interpretation_limit) ?? "Check each generated statement against its saved source."}</p>}
-            {typeof draft.generation?.sources_available === "number" && typeof draft.generation?.sources_considered === "number" && draft.generation.sources_available > draft.generation.sources_considered && <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>This briefing highlights {draft.generation.sources_considered} of {draft.generation.sources_available} available source records. It does not replace the full Care Record.</p>}
+            {typeof draft.generation?.sources_available === "number" && typeof draft.generation?.sources_considered === "number" && draft.generation.sources_available > draft.generation.sources_considered && <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>This summary includes {draft.generation.sources_considered} of {draft.generation.sources_available} available care notes and updates. It does not replace the full Care Record.</p>}
           </div>
           <section style={{ ...panel, marginTop: 0 }} aria-label="Professional briefing review">
             <h4 style={{ marginTop: 0 }}>Professional briefing</h4>
