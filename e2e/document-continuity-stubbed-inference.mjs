@@ -210,7 +210,9 @@ try {
 
   assert.notEqual(nutritionCandidate.observation, nutritionCandidate.source_quote, "the test correction must repair a shortened model summary using the preserved source wording");
   const correctedObservation = nutritionCandidate.source_quote;
-  const correctedSubject = correctedObservation.slice(0, Math.min(30, correctedObservation.length)).trim();
+  const correctedSubject = nutritionCandidate.subject;
+  assert.ok(correctedObservation.toLowerCase().includes(correctedSubject.toLowerCase()),
+    "the caregiver correction label must be drawn from the preserved source quotation");
   const nutritionCard = page.getByTestId(`document-candidate-${nutritionIndex}`);
   const preservedWording = nutritionCard.getByLabel("Exact wording from the original document");
   assert.equal(await preservedWording.inputValue(), correctedObservation);
