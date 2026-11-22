@@ -178,14 +178,17 @@ function lifecycleLabel(loop: OpenLoop | undefined): string {
   if (loop.status === "blocked") return "Waiting for another step";
   if (loop.status === "review_abandoned") return "Needs review";
   if (loop.status === "pending_closure_verification") return "Waiting to confirm completion";
-  if (["awaiting_response", "missing_information", "professional_input"].includes(loop.loop_type)) {
+  if (loop.status === "open" && (loop.response_evidence.length > 0 || loop.outcome_evidence.length > 0)) {
+    return "In progress";
+  }
+  if (["awaiting_response", "missing_information", "professional_input", "unconfirmed_outcome"].includes(loop.loop_type)) {
     return "Waiting for information";
   }
-  if (["pending_action", "follow_up"].includes(loop.loop_type)) {
+  if (["pending_action", "follow_up", "pending_decision"].includes(loop.loop_type)) {
     return "Waiting for someone to act";
   }
-  if (loop.status === "waiting") return "Waiting";
-  if (loop.status === "open") return "In progress";
+  if (loop.status === "waiting") return "Waiting for information";
+  if (loop.status === "open") return "Needs attention";
   return "Status not recorded";
 }
 
