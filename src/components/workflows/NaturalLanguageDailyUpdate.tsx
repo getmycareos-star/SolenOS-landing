@@ -271,7 +271,7 @@ export default function NaturalLanguageDailyUpdate() {
               [item.name, item.dose].filter(Boolean).map((value) => caregiverSafeAssistantText(value) || "").filter(Boolean).join(" — ")
             ).filter(Boolean);
             if (currentText.length) {
-              contextParts.push(`The Care Record lists: ${currentText.join("; ")}. This does not confirm a change reported today.`);
+              contextParts.push(`The existing reviewed medication record lists: ${currentText.join("; ")}. This does not confirm a change reported today.`);
             } else if (pendingText.length) {
               contextParts.push(`Medication information waiting for your review: ${pendingText.join("; ")}. It may not be the current dose.`);
             } else {
