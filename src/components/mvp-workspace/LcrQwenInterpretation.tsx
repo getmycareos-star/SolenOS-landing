@@ -115,13 +115,13 @@ export function LcrQwenInterpretation({
 
   return (
     <section className="care-card-changed lcr-qwen-interpretation" aria-label="Record context interpretation">
-      <h3 className="section-kicker">Record context</h3>
+      <h3 className="section-kicker">What this update may mean</h3>
       {state.status === "loading" && (
-        <p className="panel-muted" role="status">Connecting this update to the saved care history…</p>
+        <p className="panel-muted" role="status">Looking at earlier care information…</p>
       )}
       {state.status === "unavailable" && (
         <p className="panel-muted" role="status">
-          Context interpretation is temporarily unavailable. Your saved care record is unchanged; you do not need to submit the update again.
+          We couldn’t connect this update with earlier care information right now. Your Care Record is unchanged. You do not need to add the update again.
         </p>
       )}
       {state.status === "ready" && (
@@ -139,8 +139,8 @@ export function LcrQwenInterpretation({
                   {claim.support_status === "matched_validated_aggregate" && (
                     <p>Based on {claim.aggregate?.count ?? claim.source_references.length} separate care updates saved{claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.</p>
                   )}
-                  {claim.support_status === "aggregate_count_mismatch" && <p>The saved care updates do not support this number. The count check found {claim.aggregate_review?.count ?? "an unconfirmed number"} distinct updates in the requested time window.</p>}
-                  {claim.support_status === "aggregate_not_validated" && <p>{claim.aggregate_review?.interpretation_limit || "This total could not be confirmed from the saved care updates. Check the reports before relying on a number."}</p>}
+                  {claim.support_status === "aggregate_count_mismatch" && <p>We couldn’t confirm this total from the saved care updates. The check found {claim.aggregate_review?.count ?? "an unconfirmed number"} separate updates in this time period.</p>}
+                  {claim.support_status === "aggregate_not_validated" && <p>{claim.aggregate_review?.interpretation_limit || "We couldn’t confirm this total from the saved care updates. Check the reports before relying on a number."}</p>}
                   {claim.support_status === "matched_saved_wording" && <p>This wording appears in a saved record.</p>}
                   {claim.support_status === "matched_historical_only" && <p>This wording appears only in an earlier or corrected record. It is not treated as current information.</p>}
                   {claim.support_status === "not_matched_to_saved_wording" && <p>We could not match this statement to the wording in a saved record. Check it before relying on it.</p>}
@@ -177,10 +177,10 @@ export function LcrQwenInterpretation({
           )}
           {(state.result.source_event_ids?.length || state.result.source_evidence_ids?.length) ? (
             <p className="panel-muted">
-              Context supplied: {state.result.source_event_ids?.length ?? 0} saved care updates and {state.result.source_evidence_ids?.length ?? 0} source records.
+              Based on {state.result.source_event_ids?.length ?? 0} saved care updates and {state.result.source_evidence_ids?.length ?? 0} notes or documents.
             </p>
           ) : (
-            <p className="panel-muted">No saved source records were returned with this interpretation.</p>
+            <p className="panel-muted">No earlier care updates or notes were available for this explanation.</p>
           )}
         </>
       )}
