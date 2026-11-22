@@ -457,13 +457,13 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 </p>
                 <p className="panel-muted">Some earlier care information may be missing. That does not mean the event did not happen.</p>
                 <button type="button" className="lcr-text-action" onClick={() => void toggleEvidence(change.id)} aria-expanded={expandedChangeId === change.id}>
-                  {expandedChangeId === change.id ? "Hide notes and documents" : "Review notes and documents"} <span aria-hidden="true">→</span>
+                  {expandedChangeId === change.id ? "Hide notes and documents" : "See the notes and documents"} <span aria-hidden="true">→</span>
                 </button>
                 {expandedChangeId === change.id && detailErrors[change.id] ? <p role="alert" className="panel-muted">{detailErrors[change.id]}</p> : null}
                 {expandedChangeId === change.id && details[change.id] ? (
                   <div>
                     <label>
-                      <span>Why are you confirming or correcting this change?</span>
+                      <span>Why are you saying this change is right or needs correcting?</span>
                       <textarea
                         value={confirmationReasons[change.id] ?? ""}
                         onChange={(event) => setConfirmationReasons((current) => ({ ...current, [change.id]: event.target.value }))}
@@ -525,7 +525,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       <article key={source.id}>
                         <strong>{caregiverSafeAssistantText(source.field) ?? "Care detail"}: {caregiverSafeAssistantText(source.asserted_value) ?? "Saved care detail"}</strong>
                         <p>{caregiverSafeAssistantText(source.source_text ?? source.source_label) ?? "The original report is saved."}</p>
-                        <p className="panel-muted">Information: {caregiverInformationLabel(source.epistemic_state) ?? "Caregiver report"} · Review: {caregiverStatusLabel(source.assertion_status) ?? "Not checked"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Time not recorded"}</p>
+                        <p className="panel-muted">What we know: {caregiverInformationLabel(source.epistemic_state) ?? "Caregiver report"} · Has this been checked? {caregiverStatusLabel(source.assertion_status) ?? "Not checked"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Time not recorded"}</p>
                       </article>
                     ))}
                     {details[change.id].observations.map((source) => (
@@ -566,7 +566,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                   <h3>{caregiverStatusLabel(pattern.pattern_type) ?? "Repeated care change"}</h3>
                   <span>{pattern.is_active ? caregiverStatusLabel(pattern.pattern_strength) ?? "Not rated yet" : "Earlier pattern"}</span>
                 </div>
-                <p>Time period: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
+                <p>When this happened: {formatWindow(pattern.temporal_start, pattern.temporal_end)}.</p>
                 <p className="panel-muted">
                   Based on {pattern.event_ids.length} care update(s).
                 </p>
@@ -584,7 +584,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 {expandedPatternId === pattern.id && patternDetailErrors[pattern.id] ? <p role="alert" className="panel-muted">{patternDetailErrors[pattern.id]}</p> : null}
                 {expandedPatternId === pattern.id && patternDetails[pattern.id] ? (
                   <div>
-                    <strong>Care updates considered</strong>
+                    <strong>Care updates included</strong>
                     {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No matching care updates were found.</p> : null}
                     {patternDetails[pattern.id].events.map((source) => (
                       <article key={source.id}>
@@ -661,7 +661,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     {expandedSituationIds.includes(situation.id) ? (
                       <div className="lcr-evidence-list">
                         {situationDetailLoadingIds.includes(situation.id) ? (
-                          <p className="panel-muted">Loading saved notes and documents…</p>
+                          <p className="panel-muted">Loading notes and documents…</p>
                         ) : situationDetail && situationDetail.source_records.length > 0 ? (
                           situationDetail.source_records.map((record) => (
                             <article key={record.source_type + ":" + record.id} className="lcr-evidence-item">
@@ -685,7 +685,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               ) : null}
                               {record.negated ? <p className="panel-muted">Recorded as not present</p> : null}
                               {record.hedge_marker || record.ambiguity_note ? (
-                                <p className="panel-muted">This record needs clarification before it is treated as a confirmed change.</p>
+                                <p className="panel-muted">This information needs to be checked before we treat it as a confirmed change.</p>
                               ) : null}
                             </article>
                           ))
@@ -714,7 +714,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                           </select>
                         </label>
                         <label>
-                          <span>Reason for this status (required)</span>
+                          <span>Why are you changing this?</span>
                           <textarea
                             value={situationReasons[situation.id] ?? ""}
                             onChange={(event) => setSituationReasons((current) => ({
@@ -743,7 +743,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     )}
                     {stateHistory.length > 0 ? (
                       <details>
-                        <summary>Previous status updates ({stateHistory.length})</summary>
+                        <summary>Earlier updates ({stateHistory.length})</summary>
                         <ul>
                           {stateHistory.map((entry, index) => (
                             <li key={situation.id + "-state-" + index}>
