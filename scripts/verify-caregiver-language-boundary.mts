@@ -244,7 +244,7 @@ assert.match(careChangeHistory, /readableChangeType\(item\.change_type,\s*item\.
 assert.match(careChangeHistory, /displayChangeText\(item\.comparison_basis/);
 assert.doesNotMatch(careChangeHistory, /display\(run\.source/);
 assert.doesNotMatch(lcr, /<p>\{change\.explanation\}<\/p>/);
-assert.match(lcr, /caregiverSafeAssistantText\(source\.source_passage\)/);
+assert.match(lcr, /caregiverReadableCaptureText\(source\.source_passage\)/, "original caregiver notes must remain readable without exposing serialized data");
 
 const workspaceNav = read("../src/lib/workspace-navigation.ts");
 const workspaceHome = read("../src/app/workspace/page.tsx");
