@@ -180,7 +180,7 @@ assert(clarificationPanel.includes("You can leave this unanswered if you do not 
 assert(clarificationPanel.includes("An answer will not be treated as confirmed until it has been reviewed"), "answer capture must not automatically confirm the care record");
 assert(clarificationPanel.includes("intended_answerer_role"), "clarification must record who is best placed to answer when known");
 assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
-assert(clarificationPanel.includes("Earlier answers"), "earlier clarification answers must remain visible");
+assert(clarificationPanel.includes("Previous answers"), "earlier clarification answers must remain visible");
 assert(clarificationPanel.includes("Earlier answers or their review history could not be loaded. Please try again."), "failed answer-history reads must show a clear retry message");
 assert(lcr.includes('const ClarificationWorkflowPanel = dynamic(() => import("@/components/ClarificationWorkflowPanel")'), "LCR must code-split import the clarification workflow");
 assert(lcr.includes("<ClarificationWorkflowPanel personId={personId}"), "clarification workflow must be mounted in the actual LCR");
