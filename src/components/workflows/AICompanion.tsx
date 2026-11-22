@@ -764,14 +764,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                   {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
-                                    <p><strong>Source review: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
+                                    <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                     <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
-                                    <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review is not independent confirmation of a care detail."}</small>
+                                    <small>{caregiverSafeAssistantText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
                                   </div>)}
-                                  {(!source.evidence_reviews_status || source.evidence_reviews_status === "unavailable" || source.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
-                                  {source.evidence_reviews_status === "partial" && <p>We could not check all source reviews. The review history shown here may be incomplete.</p>}
-                                  {source.evidence_reviews_status === "empty" && <p>No source review has been recorded for this note or document.</p>}
-                                  {source.evidence_reviews_has_more && <p>Only the latest source reviews are shown here. Earlier reviews remain in the care history.</p>}
+                                  {(!source.evidence_reviews_status || source.evidence_reviews_status === "unavailable" || source.evidence_reviews_status === "failed") && <p>We couldn’t load earlier reviews of this note or document.</p>}
+                                  {source.evidence_reviews_status === "partial" && <p>We couldn’t check all reviews. The history shown here may be incomplete.</p>}
+                                  {source.evidence_reviews_status === "empty" && <p>No review of this note or document has been recorded.</p>}
+                                  {source.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Supporting note or document</strong>
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
@@ -786,14 +786,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
                                       {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
                                       {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
-                                        <p><strong>Source review: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
+                                        <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                         <p>{caregiverSafeAssistantText(review.rationale) || "No review explanation was recorded."}</p>
-                                        <small>{caregiverSafeAssistantText(review.interpretation_limit) || "A source review is not independent confirmation of a care detail."}</small>
+                                        <small>{caregiverSafeAssistantText(review.interpretation_limit) || "Reviewing a note or document does not by itself confirm that a care detail is true."}</small>
                                       </div>)}
-                                      {(!item.evidence_reviews_status || item.evidence_reviews_status === "unavailable" || item.evidence_reviews_status === "failed") && <p>We couldn’t load the review history for this note or document.</p>}
-                                      {item.evidence_reviews_status === "partial" && <p>We could not check all source reviews. The review history shown here may be incomplete.</p>}
-                                      {item.evidence_reviews_status === "empty" && <p>No source review has been recorded for this note or document.</p>}
-                                      {item.evidence_reviews_has_more && <p>Only the latest source reviews are shown here. Earlier reviews remain in the care history.</p>}
+                                      {(!item.evidence_reviews_status || item.evidence_reviews_status === "unavailable" || item.evidence_reviews_status === "failed") && <p>We couldn’t load earlier reviews of this note or document.</p>}
+                                      {item.evidence_reviews_status === "partial" && <p>We couldn’t check all reviews. The history shown here may be incomplete.</p>}
+                                      {item.evidence_reviews_status === "empty" && <p>No review of this note or document has been recorded.</p>}
+                                      {item.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                       {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
                                         <p>{observation.label || "Recorded detail"}: {observation.value || observation.attribute || "Details not supplied"}</p>
                                         {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
