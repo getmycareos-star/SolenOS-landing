@@ -9,7 +9,7 @@ import {
 
 /**
  * Map private Qwen typed output to existing CareRealityExtractionResult types.
- * Assigns stable IDs and maintains structure compatibility.
+ * Assigns unique in-memory IDs and maintains structure compatibility.
  */
 function mapLlmOutputToExtractionResult(
   llm: LlmUnderstandingOutput,
@@ -68,7 +68,7 @@ function mapLlmOutputToExtractionResult(
     related_object_id: null as string | null,
     related_object_type: null as "observation" | "event" | "decision" | null,
     source,
-    importance: "Identified by structured understanding layer — needs confirmation.",
+    importance: "Needs to be checked with a caregiver.",
     status: u.status,
     raw_fragment: u.raw_fragment,
   }));
@@ -110,7 +110,7 @@ function mapLlmOutputToExtractionResult(
  *
  * @param rawText - The caregiver's raw input text (any length, any structure)
  * @param contributorId - Optional contributor id for attribution
- * @returns CareRealityExtractionResult from LLM (if successful) or deterministic fallback
+ * @returns A source-grounded CareRealityExtractionResult from backend Qwen; throws if validation fails.
  */
 export async function llmStructuredUnderstanding(params: {
   rawText: string;
