@@ -67,9 +67,11 @@ function toRunOutput(modelRun: { claims: unknown[] }, runId: string, input: Cons
 }
 
 async function requestTwoRuns(input: ConsistencyGateInput): Promise<QwenExtractionResponse> {
+  // The canonical evidence writer stores trimmed source_text. Send that
+  // exact persisted representation so the backend can verify identity/content.
   const response = await postJSON("/assistant/claim-extraction", {
     evidence_id: input.evidence_id,
-    raw_text: input.raw_text,
+    raw_text: input.raw_text.trim(),
   }) as QwenExtractionResponse;
   if (
     response.evidence_id !== input.evidence_id ||
