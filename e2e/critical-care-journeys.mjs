@@ -1085,14 +1085,17 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     "/workspace/daily-care",
     "/workspace/appointments",
-    "/workspace/companion",
     "/workspace/more",
   ];
   for (const route of expectedRoutes) {
     assert.ok(links.includes(route), `primary navigation is missing ${route}`);
   }
+  assert.ok(!links.includes("/workspace/companion"), "Care Assistant must remain under More, not in primary navigation");
   await navigation.getByRole("link", { name: /More/ }).click();
   await page.waitForURL("**/workspace/more", { timeout: 15_000 });
+  const careAssistantLink = page.getByRole("link", { name: /Care Assistant/ });
+  await careAssistantLink.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await careAssistantLink.getAttribute("href"), "/workspace/companion");
   await page.getByRole("link", { name: /Documents/ }).click();
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
