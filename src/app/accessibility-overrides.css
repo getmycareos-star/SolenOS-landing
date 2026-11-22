@@ -557,7 +557,6 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
   .appointment-fields,
   .appointment-followup,
   .appointment-review-status,
-  .history-drawer-header,
   .history-search-wrap,
   .continuity-prompt-form,
   .continuity-prompt-form label,
@@ -575,7 +574,6 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
   .companion-handoff-sharing > section,
   .companion-handoff-source-item,
   .appointment-brief-grid > div,
-  .history-drawer-header,
   .history-search-wrap,
   .continuity-prompt-form
 ) :is(h1,h2,h3,h4,h5,p,span,strong,small,label,li,dt,dd,summary) {
@@ -621,7 +619,6 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 :root[data-solenos-theme="dark"] .appointment-lcr-brief-heading p {
   color: #52645a !important;
 }
-:root[data-solenos-theme="dark"] .history-drawer-header :is(h1,h2,h3,p,span,strong,small,button),
 :root[data-solenos-theme="dark"] .history-search-wrap :is(input,button,span) {
   color: #172b35 !important;
 }
