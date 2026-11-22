@@ -55,7 +55,7 @@ requireText("src/components/qwen/QwenAssistPanel.tsx", [
   "Review for care record",
   "Approve and add to care record",
   "Decline",
-  "Nothing was added to the Living Care Record.",
+  "Nothing was added to your Care Record.",
 
   "Suggestions are not saved to the Living Care Record automatically.",
   "What would you like help with?",
