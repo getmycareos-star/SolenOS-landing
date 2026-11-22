@@ -1057,6 +1057,11 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("link", { name: /Documents/ }).click();
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
+  assert.equal(
+    await navigation.getByRole("link", { name: /More/ }).getAttribute("aria-current"),
+    "page",
+    "More stays selected while a secondary destination is open",
+  );
   await page.goBack({ waitUntil: "domcontentloaded" });
   await page.waitForURL("**/workspace", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15_000 });
