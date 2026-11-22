@@ -89,6 +89,10 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
 const situationResponse = read("../src/components/mvp-workspace/SituationResponsePanel.tsx");
 const sourceIndicator = read("../src/components/trust/SourceIndicator.tsx");
+const trustIndicators = read("../src/lib/trust-provenance/trust-indicators.ts");
+const qwenAssist = read("../src/components/qwen/QwenAssistPanel.tsx");
+const shareSummary = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
+const legalDocuments = read("../src/lib/trust-content/legal-documents.ts");
 const careCaptureLegacy = read("../src/components/CareCapture.tsx");
 const companion = read("../src/components/workflows/AICompanion.tsx");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
@@ -162,6 +166,19 @@ assert.doesNotMatch(dementiaObservation, /Dementia observations|Save observation
 assert.match(dementiaObservation, /Notes about memory and daily life/);
 assert.doesNotMatch(aiAttribution, /High confidence AI insight|Medium confidence AI insight|Low confidence AI insight|Confidence level:|AI Attribution/);
 assert.match(aiAttribution, /Suggested detail — please check/);
+assert.match(sourceIndicator, /Details found in document/);
+assert.match(sourceIndicator, /Suggested by SolenOS/);
+assert.doesNotMatch(sourceIndicator, /Extracted from document|AI-generated/);
+assert.doesNotMatch(trustIndicators, /Extracted from document|Low confidence|Missing supporting evidence|Awaiting confirmation/);
+assert.match(trustIndicators, /Needs checking/);
+assert.doesNotMatch(qwenAssist, /Living Care Record|AI-assisted interpretation|Suggestions are not saved to the Living Care Record/);
+assert.match(qwenAssist, /Suggestions are not added to your Care Record unless you choose to save and approve them/);
+assert.doesNotMatch(careDelta, /Do not present AI suggestions/);
+assert.match(shareSummary, /draft prepared with help from SolenOS/);
+assert.doesNotMatch(shareSummary, /AI-assisted draft|Living Care Record/);
+assert.doesNotMatch(legalDocuments, /Living Care Record|AI-assisted|AI-generated|Qwen-powered|Ollama|model runtime|technical design/);
+assert.match(legalDocuments, /SolenOS is designed to use a private AI service/);
+
 assert.doesNotMatch(companion, /SolenOS Companion|AI Companion|Grounded, not guesswork|saved item\(s\)/);
 assert.doesNotMatch(documentReview, /Background processing|processing problem|processing in the background|SolenOS is processing|SolenOS is retrying/);
 assert.match(documentReview, /SolenOS is reading the document in the background/);
