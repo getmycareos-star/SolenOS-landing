@@ -39,7 +39,7 @@ function collect(directory: string): void {
 for (const root of roots) collect(root);
 files.push(...sharedLanguageHelpers);
 
-const forbidden = /\b(?:epistemic|provenance|reconciliation|assertion|schema|database|backend|frontend|endpoint|payload|telemetry|inference|retrieval|extraction|lineage|pipeline|migration|idempotent|persistence|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|source attribution|candidate|projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline|technical|integrity|claim|observation window|source id|ai interpretation|ai-generated|ai-assisted|confidence score|confidence level|high confidence|medium confidence|low confidence|anonymous session|care session|session token)\b/i;
+const forbidden = /\b(?:epistemic|provenance|reconciliation|assertion|schema|database|backend|frontend|endpoint|payload|telemetry|inference|retrieval|extraction|lineage|pipeline|migration|idempotent|persistence|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|source attribution|candidate|projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline|technical|integrity|claim|observation window|source id|ai interpretation|ai-generated|ai-assisted|confidence|assessment|evidence|anonymous session|care session|session token)\b/i;
 
 type Finding = { file: string; line: number; text: string; term: string };
 const findings: Finding[] = [];
