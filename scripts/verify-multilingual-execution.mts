@@ -37,14 +37,14 @@ if (!wrapped.includes("Medi-Cal") || !wrapped.includes("Medicare")) {
 }
 console.log("✓ makeLanguageAwarePrompt wraps tasks with output language rules");
 
-const geminiSource = fs.readFileSync(
+const legacyAdapter = fs.readFileSync(
   path.join(process.cwd(), "src/lib/solenos-langchain-adapter/gemini.ts"),
   "utf-8",
 );
-if (!geminiSource.includes("makeLanguageAwarePrompt")) {
-  throw new Error("invokeGeminiExecution must wrap prompts via makeLanguageAwarePrompt");
+if (!legacyAdapter.includes("Legacy analysis is retired") || !legacyAdapter.includes("never invokes Gemini or Qwen")) {
+  throw new Error("legacy hosted inference adapter must remain retired");
 }
-console.log("✓ invokeGeminiExecution wraps every Gemini user prompt");
+console.log("✓ legacy hosted inference adapter cannot invoke a model");
 
 const pipelineSource = fs.readFileSync(
   path.join(process.cwd(), "src/lib/analyze-pipeline/index.ts"),
@@ -62,22 +62,10 @@ const routeSource = fs.readFileSync(
   path.join(process.cwd(), "src/app/api/analyze/route.ts"),
   "utf-8",
 );
-if (!routeSource.includes("resolveUserLanguage")) {
-  throw new Error("/api/analyze must resolve user language preference");
+if (!routeSource.includes("LEGACY_ANALYSIS_ENDPOINT_RETIRED") || !routeSource.includes("status: 410")) {
+  throw new Error("legacy /api/analyze route must remain permanently retired");
 }
-if (!routeSource.includes("MULTILINGUAL_RESPONSE_HEADER")) {
-  throw new Error("/api/analyze must set multilingual response header");
-}
-console.log("✓ /api/analyze resolves language and sets response header");
-
-const reasoningSource = fs.readFileSync(
-  path.join(process.cwd(), "src/lib/reasoning/analyze.ts"),
-  "utf-8",
-);
-if (!reasoningSource.includes("makeLanguageAwarePrompt")) {
-  throw new Error("reasoning/analyze legacy Gemini path must use language wrapper");
-}
-console.log("✓ legacy reasoning Gemini path wrapped");
+console.log("✓ legacy /api/analyze route is closed");
 
 const pageSource = fs.readFileSync(
   path.join(process.cwd(), "src/app/page.tsx"),
