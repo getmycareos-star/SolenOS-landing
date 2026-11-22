@@ -126,7 +126,7 @@ export function LcrQwenInterpretation({
       )}
       {state.status === "ready" && (
         <>
-          <p>{state.result.reply}</p>
+          <p>{caregiverSafeGeneratedText(state.result.reply) || "This explanation could not be shown in plain language. Your Care Record has not changed."}</p>
           <p className="panel-muted">
             Suggested explanation for you to review. Your Care Record has not changed. This suggestion has not been added to it.
           </p>
@@ -135,12 +135,12 @@ export function LcrQwenInterpretation({
               <strong>What each statement is based on</strong>
               {state.result.claim_provenance.claims.map((claim) => (
                 <article key={claim.claim_id}>
-                  <p><strong>{claim.text}</strong></p>
+                  <p><strong>{caregiverSafeGeneratedText(claim.text) || "A possible care detail needs your review."}</strong></p>
                   {claim.support_status === "matched_validated_aggregate" && (
                     <p>Based on {claim.aggregate?.count ?? claim.source_references.length} separate care updates saved{claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.</p>
                   )}
                   {claim.support_status === "aggregate_count_mismatch" && <p>We couldn’t confirm this total from the saved care updates. The check found {claim.aggregate_review?.count ?? "an unconfirmed number"} separate updates in this time period.</p>}
-                  {claim.support_status === "aggregate_not_validated" && <p>{claim.aggregate_review?.interpretation_limit || "We couldn’t confirm this total from the saved care updates. Check the reports before relying on a number."}</p>}
+                  {claim.support_status === "aggregate_not_validated" && <p>{caregiverSafeGeneratedText(claim.aggregate_review?.interpretation_limit) || "We couldn’t confirm this total from the saved care updates. Check the reports before relying on a number."}</p>}
                   {claim.support_status === "matched_saved_wording" && <p>This wording appears in a saved record.</p>}
                   {claim.support_status === "matched_historical_only" && <p>This wording appears only in an earlier or corrected record. It is not treated as current information.</p>}
                   {claim.support_status === "not_matched_to_saved_wording" && <p>We could not match this statement to the wording in a saved record. Check it before relying on it.</p>}
