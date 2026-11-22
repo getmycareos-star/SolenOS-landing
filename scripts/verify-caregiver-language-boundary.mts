@@ -99,6 +99,7 @@ const companion = read("../src/components/workflows/AICompanion.tsx");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
 const documentsPage = read("../src/app/workspace/documents/page.tsx");
 const settings = read("../src/app/workspace/settings/page.tsx");
+const caregiverAccessPanel = read("../src/components/mvp-workspace/CaregiverAccessPanel.tsx");
 const reminders = read("../src/app/workspace/reminders/page.tsx");
 const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
@@ -454,6 +455,12 @@ assert.doesNotMatch(settings, /server-held care information|legal holds|provider
   "privacy settings must explain deletion and sign-out outcomes without backend or legal-process jargon");
 assert.match(identityRecovery, /Devices and account access/);
 assert.match(identityRecovery, /A registered device alone cannot recover your account/);
+assert.match(caregiverAccessPanel, /Care tasks to review/);
+assert.match(caregiverAccessPanel, /What this caregiver can do/);
+assert.doesNotMatch(caregiverAccessPanel, /Caregiver activity history|Your responsibility history|Care responsibilities to review|Responsibility:|Review outcome|Possible duplicate:|Acknowledgment:|Access permissions|sign-in access|Status not available|No linked follow-up|Choose a responsibility|Care responsibility details|Tasks without someone responsible|Actions that may be repeated/,
+  "caregiver access settings must describe care tasks and sharing in everyday language");
+assert.match(caregiverAccessPanel, /Suggest a correction to care information/);
+assert.match(caregiverAccessPanel, /Hand care tasks to another caregiver/);
 assert.match(appShellLanguage, /We couldn't confirm your access to SolenOS, so nothing was cleared/,
   "failed access revocation must clearly say that no local data was cleared");
 assert.doesNotMatch(restrictedRoleLanguage, /server-issued identity|permissions for this role|anonymous care session|unverified or demo dashboard/i,
