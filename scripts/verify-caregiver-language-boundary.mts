@@ -489,6 +489,8 @@ assert.match(structuredDailyCapture, /caregiverSafeGeneratedText\(question\)/, "
 assert.match(structuredDailyCapture, /decision === 'accept' && candidateNeedsRewrite/, "unsafe Daily Care suggestions must not be accepted into the Care Record");
 assert.match(structuredDailyCapture, /candidateNeedsRewrite\} onClick=\{\(\) => void reviewCaptureCandidate\(index, 'accept'\)/, "unsafe Daily Care suggestions must have acceptance disabled");
 assert.match(structuredDailyCapture, /Check the original note and correct this suggestion before adding it to your Care Record/, "unsafe Daily Care suggestions must direct caregivers to the original note");
+assert.match(careCapture, /caregiverSafeGeneratedText\(candidate\.subject\)/, "CareCapture generated subjects must use caregiver language");
+assert.match(careCapture, /caregiverSafeGeneratedText\(candidate\.observation\)/, "CareCapture generated observations must use caregiver language");
 assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(data\.reply\.trim\(\)\)/, "read-only Care Record orientation replies must pass the generated-language boundary before display");
 assert.doesNotMatch(cognitiveWorkspace, /setLcrOrientationReply\(data\.reply\.trim\(\)\)/, "raw generated orientation replies must never reach the caregiver UI");
 assert.match(earlyAccessConsent, /caregiverSafeErrorMessage/);
