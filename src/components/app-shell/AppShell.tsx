@@ -365,6 +365,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                   href={href}
                   prefetch={false}
                   title={label}
+                  aria-label={label}
                   className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                   aria-current={active(href) ? "page" : undefined}
                   onMouseEnter={() => router.prefetch(href)}
@@ -389,6 +390,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                   href={href}
                   prefetch={false}
                   title={label}
+                  aria-label={label}
                   className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                   aria-current={active(href) ? "page" : undefined}
                   onMouseEnter={() => router.prefetch(href)}
@@ -413,6 +415,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                 href={href}
                 prefetch={false}
                 title={label}
+                  aria-label={label}
                   className={`solenos-chat-nav-item${active(href) ? " is-active" : ""}`}
                 aria-current={active(href) ? "page" : undefined}
                 onMouseEnter={() => router.prefetch(href)}
