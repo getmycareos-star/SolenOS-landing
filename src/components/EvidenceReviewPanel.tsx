@@ -1082,7 +1082,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {historyUnavailable ? <p role="status" style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>Past reviews could not be loaded. Try again; a failed load does not mean there are no reviews.</p> : reviews.length === 0 ? <p style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>No earlier reviews were found.</p> : reviews.map(review => <article key={review.id} style={{ borderTop: '1px solid var(--border)', padding: '9px 0', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>
         <strong>{labels[review.review_type] || 'Saved review'}: {reviewStatusLabel(review.outcome)}</strong>
         <div>{new Date(review.created_at).toLocaleString()}</div>
-        <p>{review.rationale}</p>
+        <p>{caregiverSafeGeneratedText(review.rationale) || 'No further explanation is available.'}</p>
         <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {caregiverSafeGeneratedText(criterion.rationale) || 'No further explanation is available.'}</li>)}</ul>
 
       </article>)}
