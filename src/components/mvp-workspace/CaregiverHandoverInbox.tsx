@@ -40,12 +40,14 @@ export function CaregiverHandoverInbox() {
         getJSON("/caregiver-access/responsibility-transfers") as Promise<ResponsibilityTransfer[]>,
         getJSON("/caregiver-access/primary-transfers") as Promise<PrimaryTransfer[]>,
       ]);
-      setResponsibilityTransfers(responsibilities.status === "fulfilled"
-        ? (responsibilities.value ?? []).filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId)
-        : []);
-      setPrimaryTransfers(primary.status === "fulfilled"
-        ? (primary.value ?? []).filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId)
-        : []);
+      // A failed request must not clear requests already loaded from the other
+      // source or from an earlier successful refresh.
+      if (responsibilities.status === "fulfilled") {
+        setResponsibilityTransfers((responsibilities.value ?? []).filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId));
+      }
+      if (primary.status === "fulfilled") {
+        setPrimaryTransfers((primary.value ?? []).filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId));
+      }
       if (responsibilities.status === "rejected" || primary.status === "rejected") {
         setError("We couldn't check all pending care handovers. Please try again.");
       }
