@@ -54,6 +54,8 @@ assert.match(page, /!loop && \(item\.source === "events" \|\| item\.source === "
 assert.match(page, /item\.evidence_status/, "follow-up cards must expose evidence status separately from care significance");
 assert.match(page, /item\.history_completeness/, "follow-up cards must disclose incomplete history");
 assert.match(page, /Who is following up:[\s\S]*?loop\?\.owner_label/, "follow-up cards must show who is responsible or say no one is assigned");
+assert.match(page, /item\.source === "open_loop_records" \? caregiverSafeAssistantText\(item\.title\) : caregiverSafeGeneratedText\(item\.title\)/, "generated follow-up titles must not expose internal system terms while caregiver-written titles remain intact");
+assert.match(page, /title: caregiverSafeGeneratedText\(item\.title\)/, "new follow-ups must not persist an internal generated title");
 assert.match(page, /Last updated:[\s\S]*?loop\?\.updated_at/, "follow-up cards must show the last saved update when available");
 
 assert.match(page, /const unclassifiedFollowUpItems: AttentionDecision\[\] = unclassifiedLoops\.map\([\s\S]*?category: "needs_clarification"[\s\S]*?We do not yet have enough information to tell whether this needs action or can wait/, "unclassified saved follow-ups must remain explicitly unassessed rather than being represented as safe to wait");
