@@ -362,7 +362,7 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
 export function caregiverSafeGeneratedText(value: unknown): string | null {
   const text = caregiverSafeAssistantText(value);
   if (!text) return null;
-  return /\\b(?:evidence|assessment|confidence)\\b/i.test(text) ? null : text;
+  return /\b(?:evidence|assessment|confidence)\b/i.test(text) ? null : text;
 }
 
 /**
