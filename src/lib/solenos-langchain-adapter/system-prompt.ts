@@ -188,10 +188,6 @@ export const SOLENOS_SCHEMA_FIELD_NAMES = [
 ] as const;
 
 export const SYSTEM_PROMPT_SPEC_MARKERS = [
-  "Cognitive Compression Engine",
-  "deterministic cognitive compression engine",
-  "irreversible, high-uncertainty responsibility contexts",
-  "ONLY reduces cognitive and emotional load",
   "COMPRESS UNCERTAINTY",
   "INTERRUPT GUILT REPLAY LOOPS",
   "SURFACE ONLY ACTION-RELEVANT CHANGE",
