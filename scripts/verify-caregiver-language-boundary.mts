@@ -493,6 +493,16 @@ assert.match(careCapture, /caregiverSafeGeneratedText\(candidate\.subject\)/, "C
 assert.match(careCapture, /caregiverSafeGeneratedText\(candidate\.observation\)/, "CareCapture generated observations must use caregiver language");
 assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(data\.reply\.trim\(\)\)/, "read-only Care Record orientation replies must pass the generated-language boundary before display");
 assert.doesNotMatch(cognitiveWorkspace, /setLcrOrientationReply\(data\.reply\.trim\(\)\)/, "raw generated orientation replies must never reach the caregiver UI");
+assert.match(clarificationReview, /caregiverSafeGeneratedText\(selectedQuestion\.question\)/, "generated clarification questions must use caregiver language");
+assert.match(clarificationReview, /caregiverSafeGeneratedText\(guidance\.why\)/, "generated clarification explanations must use caregiver language");
+assert.match(careDelta, /caregiverSafeGeneratedText\(claim\.text\)/, "generated care-change summaries must use caregiver language");
+assert.match(careDelta, /caregiverSafeGeneratedText\(String\(row\.next_question/, "generated care-change questions must use caregiver language");
+assert.match(careDelta, /caregiverSafeGeneratedText\(String\(row\.promotion_warning\)/, "generated promotion warnings must use caregiver language");
+assert.match(careDelta, /caregiverSafeGeneratedText\(String\(item\.interpretation_uncertainty_justification\)/, "generated change uncertainty explanations must use caregiver language");
+assert.match(changeIntelligence, /caregiverSafeGeneratedText\(item\)/, "generated repeated-change explanations must use caregiver language");
+assert.match(changeIntelligence, /caregiverSafeChangeText\(change\.explanation\)/, "generated change explanations must use the change-language boundary");
+assert.match(careContinuityIntegrityPanel, /caregiverSafeGeneratedText\(fresh\.explanation\)/, "generated freshness explanations must use caregiver language");
+assert.match(persistedOrientation, /caregiverSafeGeneratedText\(projection\.notice\)/, "generated saved-record notices must use caregiver language");
 assert.match(earlyAccessConsent, /caregiverSafeErrorMessage/);
 assert.doesNotMatch(earlyAccessConsent, /cause\.message/);
 assert.match(community, /caregiverSafeAssistantText\(result\.summary\)/);
