@@ -36,7 +36,7 @@ export type VoiceModeResult =
 
 /**
  * Build a short, non-conversational confirmation / briefing reply in the user's language preference.
- * STUB: does not call Gemini when key missing — returns English template wrapped for language awareness.
+ * Legacy template-only stub. It does not call a model; it returns a fixed template.
  */
 export function buildVoiceModeReply(params: {
   surface: VoiceModeSurface;
@@ -64,7 +64,7 @@ export function buildVoiceModeReply(params: {
 }
 
 /**
- * Voice Mode stub pipeline. Uses Whisper + TTS facade. Optional Gemini left for FUTURE.
+ * Retired voice-mode stub. It accepts a browser-supplied transcript; hosted speech recognition and model calls are disabled.
  */
 export async function runVoiceModeStub(params: {
   surface: VoiceModeSurface;
