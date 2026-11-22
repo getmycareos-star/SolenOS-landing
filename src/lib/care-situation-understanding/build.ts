@@ -343,9 +343,7 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
 }
 
 /**
- * Obtain the best available extraction — LLM structured understanding first,
- * falling back to deterministic/regex extraction when LLM is unavailable, fails,
- * or returns invalid output.
+ * Obtain a source-grounded extraction from the authenticated backend Qwen service.
  */
 async function getBestExtraction(params: {
   rawText: string;
@@ -360,8 +358,8 @@ async function getBestExtraction(params: {
 }
 
 /**
- * Build structured understanding for one capture (async — uses LLM when available).
- * Falls back to deterministic/regex extraction when LLM fails.
+ * Build structured understanding for one capture through authenticated backend Qwen inference.
+ * Qwen failures are surfaced; this path does not silently substitute deterministic extraction.
  * For synchronous usage (composer), use buildCareSituationUnderstandingFromExtraction.
  */
 export async function buildCareSituationUnderstanding(params: {
@@ -543,12 +541,7 @@ export async function buildCareSituationUnderstanding(params: {
   };
 
   if (isUnderstandingEmpty(understanding)) {
-    return createFallbackUnderstanding({
-      rawText: raw,
-      careKey,
-      personDisplayName: params.personDisplayName,
-      situation,
-    });
+    throw new Error("Qwen did not return enough source-grounded care information to build an understanding.");
   }
 
   return understanding;
