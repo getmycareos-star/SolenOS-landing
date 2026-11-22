@@ -717,6 +717,10 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
   await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
   await page.locator(".followups-page h1").getByText("Follow-ups", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
+  for (const heading of ["Needs attention", "Being monitored", "Needs clarification"]) {
+    await page.getByRole("heading", { name: heading, exact: true })
+      .waitFor({ state: "visible", timeout: 10_000 });
+  }
   await verifyMobile(page);
   const navigationToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navigationToggle.click();
