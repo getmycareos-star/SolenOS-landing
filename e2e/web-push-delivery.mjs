@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 
 const frontend = process.env.FRONTEND_URL;
@@ -28,8 +27,8 @@ const { response: sessionResponse, payload: session } = await jsonRequest(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      name: "Synthetic browser push recipient",
-      caregiver_name: "Synthetic browser push caregiver",
+      name: "Synthetic in-app notification recipient",
+      caregiver_name: "Synthetic in-app notification caregiver",
     }),
   },
 );
@@ -39,177 +38,47 @@ const authHeaders = {
   authorization: `Bearer ${session.access_token}`,
   "content-type": "application/json",
 };
+
 const { response: capabilityResponse, payload: capability } = await jsonRequest(
   new URL("/api/v1/notifications/push/public-key", backend),
   { headers: authHeaders },
 );
 assert.equal(capabilityResponse.status, 200, JSON.stringify(capability));
-assert.equal(capability.available, true, "CI VAPID configuration must enable browser push");
-assert.ok(capability.public_key, "The server must return its configured VAPID public key");
+assert.deepEqual(capability, { available: false, public_key: null, reason: "in_app_only" });
 
-// Web Push subscriptions are prohibited in private/incognito browser profiles.
- // launchPersistentContext creates a regular browser profile; browser.newContext()
- // creates an isolated private context and makes PushManager.subscribe() fail
- // with Chromium's misleading "Registration failed - permission denied".
-const profileDir = fs.mkdtempSync(path.join("/tmp", "solenos-web-push-profile-"));
-const context = await chromium.launchPersistentContext(profileDir, {
-  headless: false,
-  channel: "chrome",
-  ignoreDefaultArgs: ["--disable-background-networking"],
-  permissions: ["notifications"],
-});
-let appOrigin = new URL(frontend).origin;
+const { response: registrationResponse } = await jsonRequest(
+  new URL("/api/v1/notifications/push/subscriptions", backend),
+  {
+    method: "POST",
+    headers: authHeaders,
+    body: JSON.stringify({
+      endpoint: "https://push.invalid/legacy-test-subscription",
+      keys: { p256dh: "legacy-public-key", auth: "legacy-auth-key" },
+    }),
+  },
+);
+assert.equal(registrationResponse.status, 410, "browser push registration must remain disabled");
+
+const browser = await chromium.launch({ headless: true });
 try {
-  const page = await context.newPage();
-  await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 20_000 });
-  appOrigin = new URL(page.url()).origin;
-  await context.grantPermissions(["notifications"], { origin: appOrigin });
-  await page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
-  // A persistent headed Chrome profile is required: Playwright isolated contexts
-  // behave like private browsing and Chrome refuses real Push API subscriptions.
-  // The permission and actual service-worker delivery are checked separately.
-  const permissionState = await page.evaluate(async () => ({
-    notification: Notification.permission,
-    permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
-    origin: location.origin,
-    secureContext: window.isSecureContext,
+  const page = await browser.newPage();
+  await page.goto(frontend, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  const browserState = await page.evaluate(async () => ({
+    notificationPermission: typeof Notification === "undefined" ? "unsupported" : Notification.permission,
+    serviceWorkerRegistration: Boolean(await navigator.serviceWorker?.getRegistration?.("/")),
   }));
-  assert.equal(
-    permissionState.permissionsApi,
-    "granted",
-    `Chrome notifications permission was not granted for ${appOrigin}: ${JSON.stringify(permissionState)}`,
-  );
-  assert.equal(permissionState.secureContext, true, "Web Push requires a secure browser context");
+  assert.notEqual(browserState.notificationPermission, "granted", "the app must not request browser notification permission");
+  assert.equal(browserState.serviceWorkerRegistration, false, "the app must not register a browser-push service worker");
 
-  // Exercise the browser's permission prompt from a genuine user activation.
-  // This distinguishes a missing user gesture from a broken CI permission grant.
-  await page.evaluate(() => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.id = "solenos-request-notification-permission";
-    button.textContent = "Enable notifications";
-    button.addEventListener("click", async () => {
-      button.dataset.permissionResult = await Notification.requestPermission();
-    });
-    document.body.append(button);
-  });
-  await page.locator("#solenos-request-notification-permission").click();
-  await page.waitForFunction(() => Boolean(document.querySelector("#solenos-request-notification-permission")?.dataset.permissionResult), { timeout: 5_000 });
-  const activatedPermissionState = await page.evaluate(async () => ({
-    notification: Notification.permission,
-    requestResult: document.querySelector("#solenos-request-notification-permission")?.dataset.permissionResult,
-    permissionsApi: await navigator.permissions.query({ name: "notifications" }).then((result) => result.state),
-    origin: location.origin,
-  }));
-  console.log("WEB_PUSH_PERMISSION_DIAGNOSTIC", JSON.stringify({ beforeUserActivation: permissionState, afterUserActivation: activatedPermissionState }));
-  assert.equal(activatedPermissionState.notification, "granted", "Notification.permission must be granted after an actual user activation");
-  assert.equal(activatedPermissionState.permissionsApi, "granted", "Permissions API must report granted after user activation");
+  const workerResponse = await page.request.get(new URL("/sw.js", frontend).toString());
+  assert.equal(workerResponse.status(), 200, "the retirement worker must remain available to update old registrations");
+  const workerSource = await workerResponse.text();
+  assert.match(workerSource, /registration\.unregister\(\)/);
+  assert.doesNotMatch(workerSource, /addEventListener\(["']push["']/);
+  assert.doesNotMatch(workerSource, /showNotification|pushManager/);
 
-  const serviceWorker = await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-    await navigator.serviceWorker.ready;
-    return { scope: registration.scope, activeScript: registration.active?.scriptURL ?? null };
-  });
-  assert.ok(serviceWorker.activeScript?.endsWith("/sw.js"), JSON.stringify(serviceWorker));
-
-  // Do not call PushManager.permissionState() as a preflight: Chromium can
-  // reject that query with "Error retrieving push subscription" even when
-  // the browser can create a subscription. The real subscribe() call below
-  // is the authoritative capability check and its error is captured.
-
-  // Prepare service-worker state before the gesture. subscribe() itself runs
-  // synchronously in a genuine browser click handler.
-  await page.evaluate(async (encodedPublicKey) => {
-    const padding = "=".repeat((4 - encodedPublicKey.length % 4) % 4);
-    const base64 = (encodedPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const raw = atob(base64);
-    const applicationServerKey = new Uint8Array(raw.length);
-    for (let index = 0; index < raw.length; index += 1) applicationServerKey[index] = raw.charCodeAt(index);
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
-    if (existing) await existing.unsubscribe();
-    const button = document.createElement("button");
-    button.id = "solenos-enable-push-e2e";
-    button.type = "button";
-    button.textContent = "Enable test notifications";
-    window.__solenosPushSubscriptionDiagnostics = {
-      registrationScope: registration.scope,
-      activeWorker: registration.active?.scriptURL ?? null,
-      permission: Notification.permission,
-      secureContext: window.isSecureContext,
-      startedAt: null,
-      settledAt: null,
-      outcome: "not_started",
-    };
-    window.addEventListener("unhandledrejection", (event) => {
-      window.__solenosPushSubscriptionDiagnostics.unhandledRejection =
-        event.reason instanceof Error ? `${event.reason.name}: ${event.reason.message}` : String(event.reason);
-    });
-    button.addEventListener("click", () => {
-      window.__solenosPushSubscriptionDiagnostics.startedAt = Date.now();
-      window.__solenosPushSubscriptionDiagnostics.outcome = "pending";
-      // Keep subscribe() directly inside the trusted click handler. Do not
-      // move it to an effect or a timer: browsers require transient activation.
-      registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey }).then((created) => {
-        window.__solenosPushSubscriptionDiagnostics.settledAt = Date.now();
-        window.__solenosPushSubscriptionDiagnostics.outcome = "fulfilled";
-        window.__solenosPushSubscriptionResult = { ok: true, subscription: created.toJSON() };
-      }).catch((error) => {
-        window.__solenosPushSubscriptionDiagnostics.settledAt = Date.now();
-        window.__solenosPushSubscriptionDiagnostics.outcome = "rejected";
-        window.__solenosPushSubscriptionResult = {
-          ok: false,
-          error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-        };
-      });
-    });
-    document.body.append(button);
-  }, capability.public_key);
-  page.on("pageerror", (error) => console.log("WEB_PUSH_PAGE_ERROR", error.message));
-  page.on("console", (message) => {
-    if (message.type() === "error") console.log("WEB_PUSH_CONSOLE_ERROR", message.text());
-  });
-  await page.locator("#solenos-enable-push-e2e").click();
-  try {
-    await page.waitForFunction(() => window.__solenosPushSubscriptionResult !== undefined, undefined, { timeout: 60_000 });
-  } catch (error) {
-    const diagnostics = await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.getRegistration("/");
-      const existing = registration ? await registration.pushManager.getSubscription().catch((failure) => ({
-        lookupError: failure instanceof Error ? `${failure.name}: ${failure.message}` : String(failure),
-      })) : null;
-      return {
-        ...window.__solenosPushSubscriptionDiagnostics,
-        notificationPermission: Notification.permission,
-        serviceWorkerController: navigator.serviceWorker.controller?.scriptURL ?? null,
-        registrationState: registration?.active?.state ?? null,
-        existingSubscription: existing && "endpoint" in existing
-          ? { endpointOrigin: new URL(existing.endpoint).origin, hasP256dh: Boolean(existing.toJSON().keys?.p256dh), hasAuth: Boolean(existing.toJSON().keys?.auth) }
-          : existing,
-        online: navigator.onLine,
-      };
-    });
-    console.error("WEB_PUSH_SUBSCRIPTION_TIMEOUT_DIAGNOSTIC", JSON.stringify(diagnostics));
-    throw new Error(`Real Chrome PushManager.subscribe() did not settle within 60 seconds: ${JSON.stringify(diagnostics)}; ${error.message}`);
-  }
-  const subscriptionResult = await page.evaluate(() => window.__solenosPushSubscriptionResult);
-  assert.equal(subscriptionResult.ok, true, `Real Chrome push subscription failed: ${subscriptionResult.error}`);
-  const subscription = subscriptionResult.subscription;
-
-  assert.ok(subscription?.endpoint, "Chrome did not create a real push-service endpoint");
-  assert.ok(subscription?.keys?.p256dh && subscription?.keys?.auth, "Browser subscription keys are missing");
-
-  const { response: registeredResponse, payload: registered } = await jsonRequest(
-    new URL("/api/v1/notifications/push/subscriptions", backend),
-    {
-      method: "POST",
-      headers: authHeaders,
-      body: JSON.stringify(subscription),
-    },
-  );
-  assert.equal(registeredResponse.status, 201, JSON.stringify(registered));
-  assert.equal(registered.registered, true);
-
+  const reminderTitle = `Synthetic due reminder ${Date.now()}`;
+  const reminderNote = "Private reminder details are available inside the SolenOS inbox.";
   const reminderDueAt = new Date(Date.now() - 5_000).toISOString();
   const { response: reminderResponse, payload: reminder } = await jsonRequest(
     new URL("/api/v1/reminders", backend),
@@ -218,8 +87,8 @@ try {
       headers: authHeaders,
       body: JSON.stringify({
         person_id: session.person.id,
-        title: "Synthetic due reminder",
-        note: "Private reminder details stay inside SolenOS.",
+        title: reminderTitle,
+        note: reminderNote,
         due_at: reminderDueAt,
       }),
     },
@@ -240,65 +109,11 @@ try {
     if (dueNotification) break;
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  assert.ok(dueNotification, "The running reminder worker did not create a notification for the due saved reminder");
-
-  const helper = path.join(
-    backendService,
-    "scripts",
-    "create_and_deliver_web_push_test_notification.py",
-  );
-  const privateKey = Buffer.from(process.env.VAPID_PRIVATE_KEY_B64 ?? "", "base64").toString("utf8");
-  assert.ok(privateKey.includes("-----BEGIN PRIVATE KEY-----"), "Masked CI VAPID private key is missing");
-  const helperEnv = { ...process.env, VAPID_PRIVATE_KEY: privateKey };
-  const delivered = spawnSync(
-    "python",
-    [helper, session.person.id, session.caregiver.id, reminder.id],
-    {
-      cwd: backendService,
-      env: helperEnv,
-      encoding: "utf8",
-      timeout: 90_000,
-    },
-  );
-  if (delivered.error) throw delivered.error;
-  assert.equal(
-    delivered.status,
-    0,
-    `Due-reminder Web Push delivery helper failed. stdout=${delivered.stdout} stderr=${delivered.stderr}`,
-  );
-  const delivery = JSON.parse(delivered.stdout.trim().split("\n").at(-1));
-  assert.equal(delivery.delivery_status, "accepted");
-  assert.equal(delivery.provider_accepted, true);
-  assert.equal(delivery.source_reminder_id, reminder.id);
-
-  let received = [];
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    received = await page.evaluate(async (notificationId) => {
-      const registration = await navigator.serviceWorker.getRegistration("/");
-      if (!registration) return [];
-      const notifications = await registration.getNotifications({
-        tag: `solenos-${notificationId}`,
-      });
-      return notifications.map((notification) => ({
-        title: notification.title,
-        body: notification.body,
-        tag: notification.tag,
-      }));
-    }, delivery.notification_id);
-    if (received.length) break;
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-
-  assert.equal(
-    received.length,
-    1,
-    "Push provider accepted the message, but the real Chromium service worker did not display it",
-  );
-  assert.equal(received[0].title, "SolenOS");
-  assert.equal(received[0].body, "You have a care update. Open SolenOS to review it.");
-  assert.equal(received[0].tag, `solenos-${delivery.notification_id}`);
-  assert.ok(!received[0].body.includes("Private reminder details"));
-  assert.ok(!received[0].body.includes("Synthetic due reminder"));
+  assert.ok(dueNotification, "the reminder worker did not create an in-app notification");
+  assert.equal(dueNotification.title, reminderTitle);
+  assert.equal(dueNotification.body, reminderNote);
+  assert.equal(dueNotification.category, "reminder_due");
+  assert.equal(dueNotification.source_event_id, reminder.id);
 
   const { response: snoozeResponse, payload: snoozed } = await jsonRequest(
     new URL(`/api/v1/reminders/${encodeURIComponent(reminder.id)}/snooze`, backend),
@@ -336,15 +151,14 @@ try {
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  assert.ok(stopped, "The backend did not stop before restart");
+  assert.ok(stopped, "the backend did not stop before restart");
 
-  const privateKeyForRestart = Buffer.from(process.env.VAPID_PRIVATE_KEY_B64 ?? "", "base64").toString("utf8");
   const restarted = spawn(
     "uvicorn",
     ["app.main:app", "--host", "127.0.0.1", "--port", "8000"],
     {
       cwd: backendService,
-      env: { ...process.env, VAPID_PRIVATE_KEY: privateKeyForRestart },
+      env: { ...process.env },
       detached: true,
       stdio: "ignore",
     },
@@ -364,18 +178,28 @@ try {
     }
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  assert.ok(restartedHealthy, "The backend did not become healthy after restart");
+  assert.ok(restartedHealthy, "the backend did not become healthy after restart");
 
   const { response: reloadResponse, payload: reloaded } = await jsonRequest(
-    new URL(`/api/v1/reminders/${encodeURIComponent(session.person.id)}`, backend),
+    new URL("/api/v1/notifications?limit=100&offset=0", backend),
     { headers: authHeaders },
   );
   assert.equal(reloadResponse.status, 200, JSON.stringify(reloaded));
-  const persisted = reloaded.find((item) => item.id === reminder.id);
-  assert.equal(persisted?.status, "completed", "Completed reminder did not persist after reloading from the API");
-  assert.equal(persisted?.snooze_count, 1, "Snooze history did not persist after reloading from the API");
-  console.log("PASS: saved reminder became due; PostgreSQL notification was created; real Chromium Web Push displayed the generic alert; snooze and completion persisted across a backend process restart.");
+  const persistedNotification = (reloaded.items ?? []).find((item) => item.id === dueNotification.id);
+  assert.ok(persistedNotification, "in-app notification did not persist across backend restart");
+  assert.equal(persistedNotification.title, reminderTitle);
+  assert.equal(persistedNotification.body, reminderNote);
+
+  const { response: remindersResponse, payload: reminders } = await jsonRequest(
+    new URL(`/api/v1/reminders/${encodeURIComponent(session.person.id)}`, backend),
+    { headers: authHeaders },
+  );
+  assert.equal(remindersResponse.status, 200, JSON.stringify(reminders));
+  const persistedReminder = reminders.find((item) => item.id === reminder.id);
+  assert.equal(persistedReminder?.status, "completed", "completed reminder did not persist after restart");
+  assert.equal(persistedReminder?.snooze_count, 1, "snooze history did not persist after restart");
+
+  console.log("PASS: in-app reminder notification persisted; browser push stayed disabled; snooze and completion survived a backend process restart.");
 } finally {
-  await context.close();
-  fs.rmSync(profileDir, { recursive: true, force: true });
+  await browser.close();
 }
