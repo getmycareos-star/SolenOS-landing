@@ -679,6 +679,7 @@ export default function DailyCarePage() {
                         note: "Note",
                       } as const)[captureMode]}</strong>
                       <Button variant="secondary" onClick={() => setCaptureMode(null)}>More ways to share</Button>
+                      <Link href="/workspace/documents" className="daily-care-document-link">Add a document</Link>
                     </div>
                     {captureMode === "checkin" ? (
                       <QuickDailyCheckIn />
