@@ -575,3 +575,12 @@ assert.doesNotMatch(caregiverHandoverInbox, /Care handover|primary caregiver|res
   "caregiver responsibility requests must not expose internal handover or raw responsibility labels");
 assert.match(caregiverHandoverInbox, /Care responsibilities waiting for you/);
 assert.match(caregiverHandoverInbox, /take over a care responsibility/);
+
+const correctionLabels = read("../src/components/trust/CorrectThis.tsx");
+const privacyIndicator = read("../src/components/trust/PrivacyIndicator.tsx");
+assert.doesNotMatch(correctionLabels, /Extracted information|AI interpretation|Source association/,
+  "correction choices must use words caregivers understand");
+assert.match(correctionLabels, /Details read from a document/);
+assert.match(correctionLabels, /Suggested by SolenOS/);
+assert.match(privacyIndicator, /We couldn't check who can see this/);
+assert.doesNotMatch(privacyIndicator, /Access information unavailable/);
