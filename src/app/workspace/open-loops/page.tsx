@@ -497,7 +497,7 @@ export default function FollowUpsPage() {
   return <div className="mobile-screen followups-page">
     <header className="followups-header">
       <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
-      <p className="followups-kicker">CARE FOLLOW-UPS</p>
+      <p className="followups-kicker">YOUR FOLLOW-UPS</p>
       <div className="followups-title-row">
         <div><h1>Follow-ups</h1><p>SolenOS checks the care information you have saved and keeps follow-ups easy to find. You only need to step in when we need your knowledge or action.</p></div>
         <button type="button" className="followups-refresh" onClick={() => { setLoading(loops.length === 0 && !assessment); void refresh().catch(() => setError("Follow-ups could not be refreshed. Your previously saved information remains visible.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
