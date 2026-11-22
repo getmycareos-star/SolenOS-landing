@@ -62,7 +62,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
         (row) => typeof row.observation_category === "string" && row.observation_category.startsWith("dementia."),
       ));
     } catch {
-      setError("We couldn’t load the observation history. Check your connection and try again.");
+      setError("We couldn’t load your saved notes. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
       window.dispatchEvent(new Event("careRecordUpdated"));
       await load();
     } catch {
-      setError("We couldn’t confirm that this observation was saved. Refresh the history before trying again.");
+      setError("We couldn’t confirm that your note was saved. Refresh your saved notes before trying again.");
     } finally {
       setSaving(false);
     }
@@ -183,13 +183,13 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
             Refresh
           </button>
         </div>
-        {loading ? <p role="status" className="text-sm text-[var(--muted)]">Loading observations…</p> : null}
+        {loading ? <p role="status" className="text-sm text-[var(--muted)]">Loading saved notes…</p> : null}
         {!loading && observations.length === 0 ? <p className="text-sm text-[var(--muted)]">No notes about memory or daily life have been saved yet.</p> : null}
         <ul className="space-y-3">
           {observations.map((item) => (
             <li key={item.id} className="rounded-lg border border-[var(--border)] p-3">
               <p className="text-xs font-medium text-[var(--muted)]">
-                {CATEGORIES.find(([value]) => "dementia." + value === item.observation_category)?.[1] ?? "Dementia observation"}
+                {CATEGORIES.find(([value]) => "dementia." + value === item.observation_category)?.[1] ?? "Memory or daily-life note"}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--text)]">{item.description}</p>
               <p className="mt-2 text-xs text-[var(--muted)]">
