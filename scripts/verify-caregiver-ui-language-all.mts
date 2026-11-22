@@ -103,6 +103,11 @@ for (const file of files) {
         if (ts.isPropertyAssignment(property)) collectDisplayExpression(sourceFile, property.initializer);
       }
     }
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer &&
+      (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) &&
+      /(?:Label|Message|Status|Title|Description|Text)$/.test(node.name.text)) {
+      collectFunctionReturns(node.initializer.body);
+    }
     if ((ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) &&
       node.name && ts.isIdentifier(node.name) &&
       /(?:Label|Message|Status|Title|Description|Text)$/.test(node.name.text) && node.body) {
