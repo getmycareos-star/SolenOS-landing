@@ -23,7 +23,7 @@ assert.ok(
   "a review-suggestion failure after a confirmed write must preserve the saved state and offer a retry",
 );
 const proposalStart = source.indexOf("const prepareOutcomeReview = async () =>");
-const proposalEnd = source.indexOf("\\n  const reviewOutcomeProposal", proposalStart);
+const proposalEnd = source.indexOf("\n  const reviewOutcomeProposal", proposalStart);
 assert.ok(proposalStart >= 0 && proposalEnd > proposalStart, "appointment proposal preparation handler must exist");
 const proposalPreparation = source.slice(proposalStart, proposalEnd);
 assert.ok(proposalPreparation.includes("result.written_to_lcr !== false"), "proposal preparation must fail closed unless the server explicitly confirms no Care Record write");
