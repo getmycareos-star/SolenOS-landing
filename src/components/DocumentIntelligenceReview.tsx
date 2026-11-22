@@ -320,6 +320,14 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             const candidateIndex = typeof candidate.candidate_index === "number" ? candidate.candidate_index : index;
             const key = analysis.analysis_id + ":" + candidateIndex;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
+            const safeSubject = caregiverSafeGeneratedText(candidate.subject);
+            const safeObservation = caregiverSafeGeneratedText(candidate.observation);
+            const candidateNeedsRewrite = !safeSubject || !safeObservation;
+            const displaySubject = safeSubject || caregiverFieldLabel(candidate.field_type) || "Care detail";
+            const correction = corrections[key] || {
+              subject: safeSubject || "",
+              observation: safeObservation || "",
+            };
             const statusPresentation = pending
               ? { label: candidate.review_status === "corrected_pending_approval" ? "Correction saved — waiting for approval" : "Waiting for your review", border: "#8c8067", background: "#f3f0e7", color: "#4d4437" }
               : candidate.review_status === "accepted_by_caregiver" && candidate.professional_confirmation_question_id
@@ -331,10 +339,12 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                   : candidate.review_status === "rejected_by_caregiver"
                   ? { label: "Not added", border: "#999999", background: "#eeeeee", color: "#444444" }
                   : { label: "Status unavailable", border: "var(--border)", background: "var(--surface)", color: "var(--text)" };
-            const correction = corrections[key] || { subject: candidate.subject, observation: candidate.observation };
             return <div key={key} data-testid={`document-candidate-${candidateIndex}`} style={{ display: "grid", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{candidate.subject}</strong><span aria-label={statusPresentation.label} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", fontWeight: 800, letterSpacing: "0.02em", padding: "4px 8px", borderRadius: 999, border: "1px solid " + statusPresentation.border, background: statusPresentation.background, color: statusPresentation.color }}>{statusPresentation.label}</span></div>
-              <p style={{ margin: 0, fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{candidate.observation}</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{displaySubject}</strong><span aria-label={statusPresentation.label} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", fontWeight: 800, letterSpacing: "0.02em", padding: "4px 8px", borderRadius: 999, border: "1px solid " + statusPresentation.border, background: statusPresentation.background, color: statusPresentation.color }}>{statusPresentation.label}</span></div>
+              {safeObservation
+                ? <p style={{ margin: 0, fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>{safeObservation}</p>
+                : <p role="status" style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>We could not show this suggested detail clearly. Check the original document and write the detail in your own words before adding it to your Care Record.</p>}
+              {candidateNeedsRewrite && !pending && <p role="status" style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>This saved detail needs clearer wording. Check the original document before relying on it.</p>}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                 <span>About: {caregiverFieldLabel(candidate.field_type) || caregiverInformationAreaLabel(candidate.field_type) || "Care details"}</span>
                 <span>Page in document: {candidate.page_number ? candidate.page_number : "Not identified"}</span>
@@ -364,10 +374,10 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               <div style={{ padding: 10, borderRadius: 8, background: "var(--bg)", border: "1px solid var(--border)" }}><span style={{ display: "block", marginBottom: 4, fontSize: "calc(11px * var(--solenos-text-scale, 1))", fontWeight: 700, color: "var(--text-secondary)" }}>From the original document</span><p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{caregiverSafeAssistantText(candidate.source_quote) || "The original wording is available in the document."}</p></div>
               {pending && <>
                 <label style={{ display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>What is this about?<input value={correction.subject} maxLength={120} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, subject: event.target.value } }))} style={{ minHeight: 38, padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }} /></label>
-                <label style={{ display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>What should it say?<textarea value={correction.observation} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
+                <label style={{ display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>What should it say?<textarea value={correction.observation} placeholder={candidateNeedsRewrite ? "Check the original document and write the detail in your own words." : undefined} maxLength={500} rows={2} onChange={(event) => setCorrections((old) => ({ ...old, [key]: { ...correction, observation: event.target.value } }))} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }} data-testid={`accept-document-candidate-${candidateIndex}`}>Add to Care Record</button>
-                  <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }} data-testid={`correct-document-candidate-${candidateIndex}`}>Suggest a correction</button>
+                  <button type="button" disabled={busy !== null || candidateNeedsRewrite} onClick={() => void decide(analysis, candidate, candidateIndex, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }} data-testid={`accept-document-candidate-${candidateIndex}`}>Add to Care Record</button>
+                  <button type="button" disabled={busy !== null || (candidateNeedsRewrite && (!correction.subject.trim() || !correction.observation.trim()))} onClick={() => void decide(analysis, candidate, candidateIndex, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }} data-testid={`correct-document-candidate-${candidateIndex}`}>Suggest a correction</button>
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }} data-testid={`reject-document-candidate-${candidateIndex}`}>Do not add</button>
                 </div>
               </>}
