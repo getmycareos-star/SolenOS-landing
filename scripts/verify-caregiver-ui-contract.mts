@@ -205,6 +205,9 @@ assert.ok(v2Styles.includes(".care-record-overview__section") && v2Styles.includ
 assert.doesNotMatch(experienceStyles, /\.solenos-chat-app \.care-record-overview/, "legacy overview selectors must not override the shared theme classes");
 assert.doesNotMatch(themeOverrides, /:root\[data-solenos-theme="dark"\] \.care-record-overview/, "dark mode must not force light-card text colors on the Care Record overview");
 assert.ok(timelinePage.includes("timeline-event-toggle") && timelinePage.includes("timeline-event-details"));
+assert.ok(timelinePage.includes("capture_processing?.review_required"), "care history must surface pending Daily Care extraction reviews on the original saved update");
+assert.ok(timelinePage.includes("<CaptureAnalysisReview"), "care history must reopen the saved caregiver review without requiring a new capture");
+assert.ok(timelinePage.includes("capture_processing: row.capture_processing"), "care history mapping must preserve the review link returned by the backend");
 assert.ok(v2Styles.includes(".timeline-event-toggle") && v2Styles.includes(".timeline-event-details"), "care history must use the shared, theme-aware timeline styles");
 assert.ok(dailyCareQwen.includes("var(--theme-field-bg)"));
 assert.ok(assistPanel.includes('className="qwen-assist-panel"'));
