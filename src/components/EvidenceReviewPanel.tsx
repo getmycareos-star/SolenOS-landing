@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
-import { caregiverReadableCaptureText, caregiverSafeAssistantText } from '@/lib/caregiver-language'
+import { caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language'
 
 type EvidenceItem = {
   id: string
@@ -854,7 +854,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
       {freshnessAssessments.map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '7px 0', fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>
         <strong>{reviewStatusLabel(item.freshness_status)}</strong>
         <div>Reviewed {new Date(item.assessed_at).toLocaleString()} · Date on the original note or document {item.source_time ? new Date(item.source_time).toLocaleString() + ' (' + (reviewStatusLabel(item.source_time_kind || 'not_recorded')) + ')' : 'unknown'} · Days since it was added {item.age_days == null ? 'unknown' : item.age_days + ' days'}</div>
-        <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
+        <p>{caregiverSafeGeneratedText(item.rationale) || 'No further explanation is available.'}</p>
       </article>)}
     </details>
     {!evidenceLoading && !evidenceError && evidenceItems.length === 0 ? <p style={{ fontSize: "calc(16px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>No saved notes or documents were found for this Care Record.</p> : evidenceItems.length > 0 ? <>
