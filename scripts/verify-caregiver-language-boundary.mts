@@ -7,6 +7,7 @@ import {
   caregiverInformationAreaLabel,
   caregiverInformationLabel,
   caregiverSafeAssistantText,
+  caregiverSafeGeneratedText,
   caregiverSafeChangeText,
   caregiverSafeErrorMessage,
   caregiverStatusLabel,
@@ -86,6 +87,10 @@ assert.equal(caregiverSafeAssistantText("123"), "123");
 assert.equal(caregiverSafeAssistantText("true"), null);
 assert.equal(caregiverSafeAssistantText("LCR Delta Engine completed"), null);
 assert.equal(caregiverSafeAssistantText("Qwen inference is unavailable"), null);
+assert.equal(caregiverSafeGeneratedText("The evidence is incomplete and confidence is low."), null);
+assert.equal(caregiverSafeGeneratedText("Your care update was saved. We do not know what caused the change yet."), "Your care update was saved. We do not know what caused the change yet.");
+assert.equal(caregiverSafeAssistantText("Your note mentions evidence and confidence."), "Your note mentions evidence and confidence.");
+
 assert.equal(isTechnicalDiagnosticText("Database schema unavailable"), true);
 assert.equal(isTechnicalDiagnosticText("The LCR Delta Engine completed"), true);
 assert.equal(isTechnicalDiagnosticText("Qwen inference is unavailable"), true);
