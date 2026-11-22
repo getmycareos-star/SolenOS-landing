@@ -26,9 +26,22 @@ assert(
 assert(
   source.includes("candidateNeedsRewrite") &&
   source.includes("disabled={busy !== null || candidateNeedsRewrite}") &&
-  source.includes("disabled={busy !== null || !correction.subject.trim() || !correction.observation.trim()}") &&
-  source.includes("Check the original document and write the detail in your own words"),
-  "an internal or unreadable generated suggestion must be corrected against the original before it can be accepted",
+  source.includes("disabled={busy !== null || !correctionSubjectMatchesSource}") &&
+  source.includes("Check the original document. Use a short label that appears in it; the original wording will stay unchanged."),
+  "an unreadable generated suggestion must be corrected using the preserved original wording before it can be accepted",
+);
+assert(
+  source.includes("corrected_observation: sourceQuote") &&
+  source.includes("Exact wording from the original document") &&
+  source.includes("readOnly") &&
+  source.includes("sourceQuote.toLowerCase().includes(correctedSubject.trim().toLowerCase())"),
+  "document corrections must preserve the exact source quotation and use a label found in that quotation",
+);
+assert(
+  source.includes('candidate.review_status === "corrected_pending_approval"') &&
+  source.includes("{candidate.source_quote ||") &&
+  !source.includes("caregiverSafeAssistantText(candidate.source_quote)"),
+  "saved corrections and original source wording must remain visible after reload",
 );
 assert(source.includes("No care-related details were found in this document. Nothing was added to your Care Record."), "empty interpretation must not imply a care fact");
 assert(
