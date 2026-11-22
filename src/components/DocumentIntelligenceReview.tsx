@@ -265,7 +265,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       {error && <p role="alert" style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{error}</p>}
       {items.some((item) => item.open_questions?.length) && <div role="note" style={{ padding: 10, border: "1px solid var(--border)", borderRadius: 8, display: "grid", gap: 5 }}>
         <strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Notes about the text we read</strong>
-        {items.flatMap((item) => item.open_questions || []).map((question, index) => <p key={index} style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{question}</p>)}
+        {items.flatMap((item) => item.open_questions || []).map((question, index) => <p key={index} style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverSafeGeneratedText(question) || "More information may be needed."}</p>)}
       </div>}
       {documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).length > 0 && <div style={{ display: "grid", gap: 8 }}><strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Saved documents</strong>{documents.filter((document) => !items.some((item) => item.source_evidence_id === document.id)).map((document) => {
         const job = processingJobs.find((item) => item.evidence_id === document.id);
