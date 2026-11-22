@@ -83,7 +83,7 @@ assert(!assist.includes("reply.model"), "Provider/model names must not be shown 
 requireText("src/app/workspace/page.tsx", [
   'import Link from "next/link";',
   'href="/workspace/companion"',
-  "Ask SolenOS",
+  "Ask Care Assistant",
   "Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.",
 ]);
 assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
