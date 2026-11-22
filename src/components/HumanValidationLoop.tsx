@@ -20,6 +20,10 @@ async function submitFeedback(payload: {
   reduced_confusion_yes_no: boolean;
   care_key?: string;
 }): Promise<void> {
+  const detail = JSON.stringify(payload);
+  if (detail.length > 10_000) {
+    throw new Error("Feedback is too long. Please shorten it and try again.");
+  }
   const session = await ensureAnonymousSession();
   const response = await fetch(apiUrl("/api/v1/feedback"), {
     method: "POST",
@@ -31,7 +35,7 @@ async function submitFeedback(payload: {
       person_id: session.person.id,
       caregiver_id: session.caregiver.id,
       category: "human_validation",
-      detail: JSON.stringify(payload),
+      detail,
     }),
   });
   if (!response.ok) {
