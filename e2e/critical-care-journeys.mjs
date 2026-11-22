@@ -51,7 +51,12 @@ function auth(session) {
   };
 }
 
-async function createBrowserPage(session, path, viewport = { width: 390, height: 844 }) {
+async function createBrowserPage(
+  session,
+  path,
+  viewport = { width: 390, height: 844 },
+  options = {},
+) {
   const context = await browser.newContext({ viewport });
   await context.addInitScript((identity) => {
     // window.name survives same-tab navigation but is not browser storage.
@@ -89,11 +94,21 @@ async function createBrowserPage(session, path, viewport = { width: 390, height:
     localStorage.setItem("solenos_backend_person_id", identity.personId);
     localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
     localStorage.setItem("solenos_anonymous_session_expires_at", identity.expiresAt);
+    if (identity.failCompanionPointerWrites) {
+      const originalSetItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (String(key).startsWith("solenos_companion_session:")) {
+          throw new DOMException("Simulated browser storage quota failure", "QuotaExceededError");
+        }
+        return originalSetItem.call(this, key, value);
+      };
+    }
   }, {
     token: session.access_token,
     personId: session.person.id,
     caregiverId: session.caregiver.id,
     expiresAt: session.expires_at,
+    failCompanionPointerWrites: options.failCompanionPointerWrites === true,
   });
   const page = await context.newPage();
   const observed = [];
@@ -3380,7 +3395,14 @@ await record("browser renders caregiver surfaces and submits Companion through t
     }
   });
 
-  const companion = await createBrowserPage(session, "/workspace/companion");
+  // A conversation must remain usable when the optional browser history pointer cannot be saved.
+  // The server-side conversation list is the durable recovery path.
+  const companion = await createBrowserPage(
+    session,
+    "/workspace/companion",
+    undefined,
+    { failCompanionPointerWrites: true },
+  );
   const companionInput = companion.page.locator("#companion-message-input");
   if (await companionInput.isDisabled()) {
     assert.notEqual(
