@@ -159,7 +159,7 @@ assert.match(caregiverAccessSource, /if \(enabled\) void load\(\)/);
 assert.match(caregiverAccessSource, /getJSON\(\s*"\/caregiver-responsibilities\/history\//, "caregiver responsibility history must be retrieved from the authenticated backend");
 assert.match(caregiverAccessSource, /getJSON\("\/caregiver-activities\//, "caregiver activity history must be retrieved from the authenticated backend");
 assert.match(caregiverAccessSource, /postJSON\("\/caregiver-activities"/, "caregiver activity records must persist through the backend");
-assert.match(caregiverAccessSource, /does not change the Living Care Record/, "caregiver activity history must remain separate from canonical care facts");
+assert.match(caregiverAccessSource, /does not change the person’s Care Record/, "caregiver activity history must remain separate from the person’s Care Record");
 assert.match(caregiverAccessSource, /We couldn't confirm that this activity was saved/, "ambiguous activity writes must not be reported as success");
 assert.ok(workspaceLayout.includes('import "./experience-design-system-v2.css";'));
 assert.ok(v2Styles.includes(".solenos-chat-app.is-sidebar-collapsed"));
