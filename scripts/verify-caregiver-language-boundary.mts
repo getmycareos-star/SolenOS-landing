@@ -590,3 +590,8 @@ assert.doesNotMatch(lcr, /Checking linked evidence|View supporting information|W
 assert.match(lcr, /Checking related notes and documents/);
 assert.match(lcr, /See related notes and documents/);
 assert.match(lcr, /This view includes the care information saved here so far/);
+
+assert.doesNotMatch(lcr, /care record session|Open Loop record|action could not be registered|suggestion could not be deferred/i,
+  "Care Record errors and follow-up actions must not expose internal workflow names");
+assert.match(lcr, /We couldn't confirm your access to the Care Record/);
+assert.match(lcr, /We couldn't save this as an agreed next step/);
