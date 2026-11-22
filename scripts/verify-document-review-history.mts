@@ -17,7 +17,7 @@ assert(source.includes("decision_version"), "each displayed decision must retain
 assert(source.includes("historyErrors") && source.includes("A missing history does not mean no earlier decision was made"), "failed history retrieval must not be presented as an empty history");
 assert(source.includes("Review history") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
 assert(source.includes("corrected_pending_approval"), "corrections must remain pending until explicitly accepted");
-assert(source.includes("ORIGINAL WORDS IN THE DOCUMENT"), "each candidate must show its exact source quotation");
+assert(source.includes("WORDS FROM THE DOCUMENT") && source.includes("candidate.source_quote"), "each candidate must show its exact source quotation in plain language");
 assert(source.includes("No care-related details were found in this document. Nothing was added to your Care Record."), "empty interpretation must not imply a care fact");
 assert(
   source.includes("You can check the original document and the text SolenOS read"),
