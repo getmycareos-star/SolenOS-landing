@@ -145,7 +145,8 @@ export function computeCareContextDiffSections(
       directional_change.push("The information shared may point to improvement.");
     }
     for (const pattern of input.multi_caregiver?.conflict_log.slice(-2) ?? []) {
-      directional_change.push(pattern.shared_abstract_message);
+      const safeMessage = caregiverSafeGeneratedText(pattern.shared_abstract_message);
+      if (safeMessage) directional_change.push(safeMessage);
     }
     if (DETERIORATION_SIGNALS.test(recentText) && directional_change.length === 0) {
       directional_change.push("Recent care updates may point to a change that needs attention.");
