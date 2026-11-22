@@ -71,7 +71,7 @@ export function LivingCareRecordPanel({
     .map((item) => caregiverSafeGeneratedText(item))
     .filter((item): item is string => Boolean(item));
   const careStoryUpdate = caregiverSafeGeneratedText(view.care_story_update);
-  const eventLabel = caregiverFieldLabel(event.event) || caregiverInformationLabel(event.event) || caregiverSafeAssistantText(event.event);
+  const eventLabel = caregiverFieldLabel(event.event) || caregiverInformationLabel(event.event) || "Care update";
   const showMatters =
     plan.show_what_matters_now &&
     Boolean(mattersNow || canWait || mayBecomeSerious || trajectory);
