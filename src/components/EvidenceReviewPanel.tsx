@@ -901,7 +901,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
               <p>These items came from the same original. They should not be counted as separate reports.</p>
             )}
             {item.origin_group_key && <p>These entries came from the same original.</p>}
-            <p>{caregiverSafeAssistantText(item.rationale) || 'No further explanation is available.'}</p>
+            <p>{caregiverSafeGeneratedText(item.rationale) || 'No further explanation is available.'}</p>
             <small style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Checked by {item.reviewed_by_caregiver_id ? 'a caregiver' : 'an unavailable person'} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
         </details>
@@ -1017,10 +1017,10 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Check for similar wording:</strong> {sourceIntegrity.near_duplicate_comparison_status === 'complete' ? 'Finished' : sourceIntegrity.near_duplicate_comparison_status === 'not_run' ? 'Not checked' : 'Could not be completed'}</p>
             {sourceIntegrity.near_duplicate_candidate_groups.map((group, index) => (
               <p key={group.evidence_ids.join(':') + index}>
-                Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {caregiverSafeAssistantText(group.interpretation) || 'We do not yet know how these notes or documents are related.'}
+                Similar wording appears in {group.evidence_ids.filter(id => id !== selectedId).length} other saved record(s). {caregiverSafeGeneratedText(group.interpretation) || 'We do not yet know how these notes or documents are related.'}
               </p>
             ))}
-            <p>{sourceIntegrity.near_duplicate_interpretation_limit}</p>
+            <p>{caregiverSafeGeneratedText(sourceIntegrity.near_duplicate_interpretation_limit) || 'We cannot yet explain how similar records are related.'}</p>
             <p><strong>How recent it is:</strong> {reviewStatusLabel(sourceIntegrity.freshness_status)} · <strong>How much information is included:</strong> {reviewStatusLabel(sourceIntegrity.completeness_status)}</p>
             <p><strong>Original document or link:</strong> {sourceIntegrity.external_source_reference ? 'An original reference is saved' : 'Not provided'} · {sourceIntegrity.external_source_reference_access_status === 'not_checked' ? 'Not checked' : 'Not available'}</p>
             <p>A matching file check only shows that the saved copy has not changed. It does not prove who created it.</p>
@@ -1083,7 +1083,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
         <strong>{labels[review.review_type] || 'Saved review'}: {reviewStatusLabel(review.outcome)}</strong>
         <div>{new Date(review.created_at).toLocaleString()}</div>
         <p>{review.rationale}</p>
-        <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {caregiverSafeAssistantText(criterion.rationale) || 'No further explanation is available.'}</li>)}</ul>
+        <ul>{review.criteria.map((criterion, index) => <li key={index}>{reviewCriterionLabel(criterion.criterion)}: {reviewStatusLabel(criterion.result)} — {caregiverSafeGeneratedText(criterion.rationale) || 'No further explanation is available.'}</li>)}</ul>
 
       </article>)}
       </details>
