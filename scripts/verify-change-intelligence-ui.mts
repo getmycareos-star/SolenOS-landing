@@ -26,7 +26,7 @@ for (const contract of [
   ["panel lists persisted patterns within its person scope", /listPersistedPatterns\(undefined, 100, 0, personId\)/],
   ["panel loads persisted care situations within its person scope", /listPersistedSituations\(personId\)/],
   ["caregiver trajectory decisions are explicit and evidence-linked", /transitionSituationState\(situation\.id, targetState, reason, evidenceIds, personId\)/],
-  ["caregiver-facing status controls and history are present", /Status shared by caregiver[\s\S]*Previous status updates/],
+  ["caregiver-facing status controls and history are present", /Status shared by caregiver[\s\S]*Earlier updates/],
   ["care situation source details can be loaded", /getPersistedSituationDetail\(situationId, personId\)/],
   ["care situation linked records are reviewable", /Review related notes and documents[\s\S]*source_records\.map/],
   ["caregiver status history is visible", /state_history/],
