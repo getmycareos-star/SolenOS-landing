@@ -1039,7 +1039,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         setPendingLocal(true);
         setPendingMessage(
           status === 401 || status === 403
-            ? "This update is encrypted on this device, but your care session must be verified before it can reach the care record."
+            ? "Your update is safely saved on this device. Reopen Daily Care to reconnect before adding it to your Care Record."
             : status === 400 || status === 409 || status === 422
               ? "This update is encrypted on this device, but the server needs it reviewed before it can be saved."
               : "This update is encrypted and saved on this device. It has not reached the care record yet; it will sync when your connection returns.",
