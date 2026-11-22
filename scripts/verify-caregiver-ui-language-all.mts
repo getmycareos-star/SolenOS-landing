@@ -4,6 +4,7 @@ import path from "node:path";
 import * as ts from "typescript";
 
 const roots = ["src/app", "src/components"];
+const sharedLanguageHelpers = ["src/lib/caregiver-language.ts"];
 const excludedPathParts = [
   "/api/",
   "/ops/",
@@ -36,6 +37,7 @@ function collect(directory: string): void {
 }
 
 for (const root of roots) collect(root);
+files.push(...sharedLanguageHelpers);
 
 const forbidden = /\b(?:epistemic|provenance|reconciliation|assertion|schema|database|backend|frontend|endpoint|payload|telemetry|inference|retrieval|extraction|lineage|pipeline|migration|idempotent|persistence|postgres(?:ql)?|sqlite|qwen|lcr|delta engine|open loops|diagnostic|metadata|audit trail|api|json|ocr|checksum|fingerprint|uuid|http|source attribution|candidate|projection|longitudinal|corroborat(?:e|ion|ed|ing)|triangulat(?:e|ion)|baseline|technical|integrity|claim|observation window|source id|ai interpretation|ai-generated|ai-assisted|confidence score|confidence level|high confidence|medium confidence|low confidence|anonymous session|care session|session token)\b/i;
 
@@ -83,9 +85,29 @@ function collectDisplayExpression(sourceFile: ts.SourceFile, node: ts.Expression
 
 for (const file of files) {
   const source = readFileSync(file, "utf8");
-  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith(".tsx") || file.endsWith(".jsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+
+  function collectFunctionReturns(node: ts.Node): void {
+    if (ts.isReturnStatement(node) && node.expression) {
+      collectDisplayExpression(sourceFile, node.expression);
+      return;
+    }
+    ts.forEachChild(node, collectFunctionReturns);
+  }
 
   function visit(node: ts.Node): void {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer &&
+      ts.isObjectLiteralExpression(node.initializer) &&
+      /(?:LABELS|MESSAGES|COPY|TITLES|DESCRIPTIONS)$/.test(node.name.text)) {
+      for (const property of node.initializer.properties) {
+        if (ts.isPropertyAssignment(property)) collectDisplayExpression(sourceFile, property.initializer);
+      }
+    }
+    if ((ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) &&
+      node.name && ts.isIdentifier(node.name) &&
+      /(?:Label|Message|Status|Title|Description|Text)$/.test(node.name.text) && node.body) {
+      collectFunctionReturns(node.body);
+    }
     if (ts.isJsxText(node)) {
       addText(sourceFile, node, node.getText(sourceFile));
       return;
