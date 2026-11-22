@@ -2169,7 +2169,7 @@ export function LCRCurrentUnderstanding() {
                       {pattern.alternative_interpretations?.length ? (
                         <div>
                           <strong>Other possible explanations</strong>
-                          {pattern.alternative_interpretations.map((alternative, index) => <p key={index}>{typeof alternative === "string" ? alternative : "Another possible explanation was saved."}</p>)}
+                          {pattern.alternative_interpretations.map((alternative, index) => <p key={index}>{caregiverSafeGeneratedText(alternative) || "Another possible explanation was saved."}</p>)}
                         </div>
                       ) : <p>Other possible explanations were not provided. No cause is assumed.</p>}
                       <small>Saved care updates: {pattern.event_ids.length}</small>
@@ -2209,7 +2209,7 @@ export function LCRCurrentUnderstanding() {
                 {pattern.direction && <p className="lcr-entry-status">Change noted: {caregiverLabel(pattern.direction)}</p>}
                 {pattern.confidence == null && <p className="lcr-entry-status">There is not enough information to know how reliable this repeated change is.</p>}
                 {pattern.alternative_interpretations?.map((item, index) => {
-                  const safeInterpretation = caregiverSafeAssistantText(item);
+                  const safeInterpretation = caregiverSafeGeneratedText(item);
                   return safeInterpretation
                     ? <p className="lcr-entry-status" key={index}>{safeInterpretation}</p>
                     : null;
