@@ -198,7 +198,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
         </label>
       </div>
       <label style={{ fontSize: 12 }}>New care update or note
-        <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Add the new care update or paste the original words from a note. Do not present AI suggestions as if someone reported them." maxLength={100000} required />
+        <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Add the new care update or paste the original words from a note. Do not present a suggestion as something someone actually said." maxLength={100000} required />
       </label>
       <div><button type="submit" disabled={busy || !personId || !content.trim()} style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: busy ? 'var(--bg)' : 'var(--accent)', color: busy ? 'var(--text-secondary)' : 'white', fontSize: 12 }}>
         {busy ? 'Comparing with saved care information…' : 'Compare with saved care information'}
