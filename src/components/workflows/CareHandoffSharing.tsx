@@ -814,7 +814,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       )}
 
       {draft && (
-        <section role="status" aria-label="Care Record coverage and missing information" style={{ ...panel, marginTop: 0, background: "#fbf8ef", borderColor: "#d8c9a5" }}>
+        <section role="status" aria-label="Care information included and missing" style={{ ...panel, marginTop: 0, background: "#fbf8ef", borderColor: "#d8c9a5" }}>
           {draft.selected_appointment && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}><b>Appointment:</b> {draft.selected_appointment.title} · {formatDate(draft.selected_appointment.scheduled_at)}{draft.selected_appointment.provider ? " · " + draft.selected_appointment.provider : ""}</p>}
           <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Check what information is missing</strong>
           {draft.retrieval_complete === false && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>This briefing does not include all available Care Record information. Review the listed gaps before relying on or sharing it.</p>}
@@ -846,7 +846,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
                 {claimSourceFor(draft, item, index)?.reporter_label && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</p>}
                 {claimSourceFor(draft, item, index)?.source_state_label && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#765b2b", margin: "4px 0" }}>{claimSourceFor(draft, item, index)?.source_state_label}</p>}
-                {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Related notes and documents: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => source.type || source.source_type || "Saved evidence").join(", ")}</p>}
+                {(claimSourceFor(draft, item, index)?.related_evidence?.length ?? 0) > 0 && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "4px 0" }}>Related notes and documents: {claimSourceFor(draft, item, index)?.related_evidence?.map(source => source.type || source.source_type || "Saved note or document").join(", ")}</p>}
               </article>
             ))}
             {draft.generation?.status === "source_only_fallback" && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>The writing assistant is unavailable. This draft uses saved source wording only; it has not been summarized or interpreted. Check each detail and its dates before using it.</p>}
