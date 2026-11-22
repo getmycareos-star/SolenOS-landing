@@ -1,67 +1,30 @@
-# Gemini 1.5 Pro Execution Contract
+# Retired: Gemini execution contract
 
-## Role
+This document is retained only as historical context. Gemini is not an approved SolenOS inference provider.
 
-Gemini is a **constrained text transformer** — not the product, not a chatbot, not a medical authority.
+## Current production boundary
 
-Intelligence lives in **constraints**, not the model.
+- Caregiver-facing model inference runs through authenticated FastAPI routes.
+- The backend calls the existing private Railway Ollama deployment through `app.services.qwen_gateway`.
+- The configured model is Qwen, controlled by `OLLAMA_MODEL`.
+- The browser must never connect directly to Ollama or receive model credentials.
+- Model output is an untrusted proposal. Backend validation, evidence ownership checks, and caregiver review remain mandatory before any Living Care Record change.
+- If Qwen is unavailable or returns invalid output, the workflow must report failure. It must not silently switch to Gemini, OpenAI-hosted inference, or deterministic text substitution.
 
-## Security (absolute)
+## Retired components
 
-| Rule | Requirement |
-|------|-------------|
-| Key location | `.env.local` only |
-| Key access | `src/app/api/analyze/route.ts` **only** |
-| Never in | frontend, prompts, logs, commits, client bundles |
+The former `POST /api/analyze` Gemini pipeline is closed and is not a caregiver entry point. Do not restore its provider key, model selector, or retry path.
 
-Copy `.env.local.example` → `.env.local` and set `GEMINI_API_KEY`.
+Legacy Gemini adapter and server-side speech-to-text modules are being removed only after their callers and tests have been verified. The supported MVP speech input remains browser Web Speech recognition.
 
-**If a key is exposed in chat or commits → rotate immediately in Google AI Studio.**
+## Current configuration
 
-## Pipeline
+Backend deployment settings:
+- `OLLAMA_BASE_URL`
+- `OLLAMA_MODEL`
+- `OLLAMA_TIMEOUT_SECONDS`
+- `OLLAMA_NUM_CTX`
+- `OLLAMA_NUM_THREADS`
+- `OLLAMA_NUM_PREDICT`
 
-```
-Input normalization
-→ Gemini execution envelope (LangChain)
-→ Gemini 1.5 Pro (server-side, apiKey from route)
-→ Raw capture (exact string)
-→ JSON.parse (strict, no repair)
-→ Zod validation
-→ return | retry | fail
-```
-
-## Execution envelope (required)
-
-Each attempt rebuilds from scratch:
-
-```
-SYSTEM: SolenOS System Prompt
-RULE: Return ONLY valid JSON...
-SCHEMA: { what_is_happening: string, ... }
-INPUT: {{normalized_user_input}}
-```
-
-On retry: RULE switches to retry text only — **no prior JSON included**.
-
-## Model
-
-Default: `gemini-1.5-pro` (`SOLENOS_GEMINI_MODEL` override)
-
-## Retries
-
-Max **2 retries** (3 total LLM calls) on `JSON.parse` or Zod failure.
-
-Final failure:
-
-```json
-{ "error": "unable_to_process", "reason": "invalid_model_output" }
-```
-
-## Verify
-
-```bash
-npm run verify:gemini
-npm run verify:analyze
-```
-
-Modules: `src/lib/gemini-contract/`, `src/lib/solenos-langchain-adapter/gemini.ts`
+No `GEMINI_API_KEY` or OpenAI-hosted inference key is required for the active caregiver inference path.
