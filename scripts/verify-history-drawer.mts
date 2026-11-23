@@ -80,7 +80,7 @@ assert.doesNotMatch(structuredCapture, /capture_idempotency_key|capture_request_
 assert.match(drawer, /caregiverFieldLabel/, "history details use shared caregiver-readable field labels");
 assert.match(drawer, /caregiverSafeAssistantText/, "history details sanitize caregiver-provided source text before display");
 assert.match(evidenceReview, /caregiverReadableCaptureText\(selected\.source_text\)/, "evidence review must not print serialized capture JSON to caregivers");
-assert.match(evidenceReview, /caregiverReadableCaptureText\(item\.source_passage\)/, "individual source passages must be shown in caregiver-readable language");
+assert.match(evidenceReview, /caregiverSourceText\(item\.source_passage\)/, "original source passages must retain their exact wording rather than be rewritten as generated text");
 assert.match(evidenceReview, /item\.observation_method !== 'Daily Care form'/, "structured source values are not redundantly repeated below their readable source passage");
 assert.match(evidenceReview, /<summary>Details recorded from this information \(\{observations\.length\}\)<\/summary>/, "source details use caregiver-facing language and remain grouped under a clear disclosure");
 assert.match(evidenceReview, /caregiver_form: 'Entered in Daily Care'/, "caregiver form metadata is translated into natural language");
