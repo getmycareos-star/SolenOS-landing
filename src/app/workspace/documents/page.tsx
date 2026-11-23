@@ -256,7 +256,12 @@ export default function DocumentsPage() {
     }
   }, []);
 
-  useEffect(() => { void loadDocuments(); }, [loadDocuments]);
+  useEffect(() => {
+    const refreshForSessionChange = () => void loadDocuments();
+    window.addEventListener("personIdChanged", refreshForSessionChange);
+    void loadDocuments();
+    return () => window.removeEventListener("personIdChanged", refreshForSessionChange);
+  }, [loadDocuments]);
 
   useEffect(() => {
     let active = true;
