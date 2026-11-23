@@ -522,7 +522,7 @@ assert.doesNotMatch(historyDrawer, /JSON\.stringify\(snapshot/);
 assert.doesNotMatch(historyDrawer, /JSON\.stringify\(item\.context/);
 assert.match(historyDrawer, /Malformed serialized data is not shown as caregiver text/);
 assert.match(historyDrawer, /Earlier care details are saved/);
-assert.match(documentsPage, /caregiverSafeAssistantText\(selected\.extractedText\)/);
+assert.match(documentsPage, /caregiverSourceText\(selected\.extractedText\)/, "original OCR text must remain visible without generated-copy filtering");
 assert.match(documentReview, /caregiverSourceText\(analysis\.extractedText\)/);
 assert.match(lcr, /displayDescription\(source\.description\)/);
 assert.match(lcr, /displayCurrentCareDescription\(item\)/);
