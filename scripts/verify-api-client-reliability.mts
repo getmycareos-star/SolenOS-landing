@@ -43,6 +43,11 @@ globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unkn
 
 async function main() {
   setPersonId("person-server-1");
+  assert.deepEqual(
+    identityEvents,
+    ["personIdChanged"],
+    "a genuine care-recipient identity change must notify identity subscribers once",
+  );
   identityEvents.length = 0;
   await ensureAnonymousSession();
   await ensureAnonymousSession();
