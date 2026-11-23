@@ -162,10 +162,10 @@ if (backgroundOnly.valid) {
 console.log("✓ requires action-relevant change in what_matters_now");
 
 if (
-  VERBOSITY_TOTAL_WORD_LIMITS.low !== 80 ||
-  VERBOSITY_TOTAL_WORD_LIMITS.medium !== 80 ||
-  VERBOSITY_TOTAL_WORD_LIMITS.high !== 120 ||
-  VERBOSITY_TOTAL_WORD_LIMITS.critical !== 60
+  VERBOSITY_TOTAL_WORD_LIMITS.low !== 180 ||
+  VERBOSITY_TOTAL_WORD_LIMITS.medium !== 180 ||
+  VERBOSITY_TOTAL_WORD_LIMITS.high !== 250 ||
+  Number.isFinite(VERBOSITY_TOTAL_WORD_LIMITS.critical)
 ) {
   throw new Error("verbosity total word limits drift");
 }
