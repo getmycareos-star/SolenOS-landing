@@ -1,10 +1,12 @@
-# SolenOS System Prompt — MVP v1
+# Retired legacy system prompt — historical reference only
 
-Canonical source: `src/lib/solenos-langchain-adapter/system-prompt.ts` (`SOLENOS_SYSTEM_PROMPT`)
+**Status:** Not used by the active caregiver product. Do not treat this file or `src/lib/solenos-langchain-adapter/system-prompt.ts` as the production inference contract.
 
-## Role
+The former `/api/analyze` pipeline and its Gemini invocation were retired. Current caregiver inference runs through authenticated FastAPI workflows and the private Qwen/Ollama runtime. The backend owns model configuration, validates model output, and requires caregiver approval before permitted Living Care Record changes. See `docs/GEMINI_EXECUTION_CONTRACT.md` for the current provider boundary.
 
-Static prompt injected by LangChain into Gemini at `/api/analyze`. The model receives instructions only — **compliance is enforced externally** by `response-validator` (Zod hard gate).
+## Historical role
+
+This prompt was written for the retired Gemini `/api/analyze` pipeline. Its rules below are historical and do not define current application behaviour.
 
 ## Core identity
 
@@ -35,17 +37,17 @@ Six-field JSON only — see `SolenOSSchema` in `src/lib/response-validator/`.
 | `medium` | Needs attention soon |
 | `low` | Routine / informational |
 
-## Pipeline position
+## Historical pipeline position
 
 ```
 SOLENOS_SYSTEM_PROMPT (static)
   + normalized user input
-  → Gemini
+  → retired Gemini pipeline
   → Zod validation
   → UI
 ```
 
-Internal evaluation logic is **never exposed** in the response.
+This diagram is historical. It is not a map of the active caregiver request path.
 
 ## Verify
 
