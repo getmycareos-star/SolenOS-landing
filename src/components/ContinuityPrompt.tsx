@@ -8,6 +8,7 @@ import { TELEMETRY_RESPONSE_HEADERS } from "@/lib/telemetry-persistence/schema";
 import type { UiStrings } from "@/lib/i18n";
 
 import { SolenosWordmark } from "@/components/brand";
+import { caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 interface ContinuityPromptProps {
   continuityLayer: ContinuityLayerPayload;
@@ -30,6 +31,8 @@ export function ContinuityPrompt({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const safePromptMessage = caregiverSafeGeneratedText(prompt.message);
+  const safeCareSummary = caregiverSafeGeneratedText(prompt.care_graph_summary?.what_matters_now);
 
   if (prompt.action === "none" || dismissed) {
     return null;
@@ -92,9 +95,9 @@ export function ContinuityPrompt({
       <div className="continuity-prompt-brand">
         <SolenosWordmark size="md" />
       </div>
-      <p className="continuity-prompt-message">{prompt.message}</p>
+      <p className="continuity-prompt-message">{safePromptMessage || "Sign in or create an account to keep your care information available."}</p>
       {prompt.care_graph_summary && (
-        <p className="continuity-prompt-context">{prompt.care_graph_summary.what_matters_now}</p>
+        <p className="continuity-prompt-context">{safeCareSummary || "Your saved care information remains available in this session."}</p>
       )}
       <form className="continuity-prompt-form" onSubmit={(e) => void handleSubmit(e)}>
         <label>
