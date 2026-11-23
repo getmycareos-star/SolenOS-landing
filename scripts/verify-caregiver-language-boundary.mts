@@ -105,6 +105,7 @@ for (const diagnostic of [
 }
 assert.equal(caregiverSafeAssistantText("[{\"status\":\"unknown\"}]"), null);
 assert.equal(caregiverSafeAssistantText('"Caregiver note"'), "Caregiver note");
+assert.equal(caregiverSafeAssistantText('"Qwen inference is unavailable"'), null, "JSON-encoded technical diagnostics must not bypass the caregiver-language boundary");
 assert.equal(caregiverSafeAssistantText("123"), "123");
 assert.equal(caregiverSafeAssistantText("true"), null);
 assert.equal(caregiverSafeAssistantText("LCR Delta Engine completed"), null);
