@@ -263,7 +263,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [canManageMembers, setCanManageMembers] = useState(false);
   const [currentSessionCaregiverId, setCurrentSessionCaregiverId] = useState("");
   const [loadWarnings, setLoadWarnings] = useState<string[]>([]);
-  const loadedPersonIdRef = useRef<string | null>(null);
+  const loadedScopeRef = useRef<{ personId: string; caregiverId: string } | null>(null);
 
   const clearPersonScopedState = useCallback(() => {
     setMembers([]);
@@ -291,13 +291,39 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setAllowed(false);
     setCanManageMembers(false);
     setCurrentSessionCaregiverId("");
+    setSelectedResponsibility("");
+    setSelectedRecipient("");
+    setSelectedOpenLoop("");
+    setTransferReason("");
+    setSelectedPrimaryRecipient("");
+    setPrimaryReason("");
+    setInvitation(null);
+    setEmail("");
+    setNewResponsibilityType("");
+    setNewResponsibilityScope("");
+    setContextProximity("");
+    setContextWindowStart("");
+    setContextWindowEnd("");
+    setContextAvailabilityNotes("");
+    setContextShareConfirmed(false);
+    setCommunicationSubject("");
+    setCommunicationBody("");
+    setObservationDraft("");
+    setPerspectiveDraft("");
+    setPerspectiveType("interpretation");
+    setSelectedCareRole("appointment_coordinator");
+    setCustomCareRole("");
+    setCareRoleScope("");
+    setActivityDescription("");
+    setNotice("");
+    setError("");
     setLoadWarnings([]);
   }, []);
 
   const load = useCallback(async () => {
     if (!getAnonymousAccessToken()) {
       clearPersonScopedState();
-      loadedPersonIdRef.current = null;
+      loadedScopeRef.current = null;
       setLoading(false);
       return;
     }
@@ -308,10 +334,10 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       const session = await ensureAnonymousSession();
       const personId = session.person.id;
       const caregiverId = session.caregiver.id;
-      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== personId) {
+      if (loadedScopeRef.current && (loadedScopeRef.current.personId !== personId || loadedScopeRef.current.caregiverId !== caregiverId)) {
         clearPersonScopedState();
       }
-      loadedPersonIdRef.current = personId;
+      loadedScopeRef.current = { personId, caregiverId };
       setCurrentPersonId(personId);
       setCurrentSessionCaregiverId(caregiverId);
 
@@ -416,7 +442,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setLoadWarnings(warnings);
 
       if (profileResult.status === "rejected") {
-        setError("We couldn't confirm your caregiver profile. Your personal care details are hidden until it can be checked.");
+        setError("We couldn't refresh your caregiver profile. Some caregiver details may be out of date; check before making changes.");
       }
     } catch {
       setError("We couldn't load caregiver access. Please try again.");
