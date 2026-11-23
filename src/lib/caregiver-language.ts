@@ -419,6 +419,7 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     if (typeof item === "number" && Number.isFinite(item)) return String(item);
     return "";
   };
+  const sourceText = (item: unknown): string => caregiverSourceText(item) || "";
   const readableLabel = (item: unknown): string => {
     const raw = safeText(item);
     if (!raw) return "";
@@ -431,7 +432,7 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
       "",
     );
     const parsed: unknown = JSON.parse(capturePayload);
-    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || fallback;
+    if (typeof parsed === "string") return sourceText(parsed) || fallback;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
     const root = parsed as Record<string, unknown>;
     const capture = root.original_capture && typeof root.original_capture === "object" && !Array.isArray(root.original_capture)
@@ -449,22 +450,22 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     if (typeof capture.axis === "string" && capture.score !== undefined) {
       const label = readableLabel(capture.axis) || "Rating";
       const score = safeText(capture.score);
-      const note = safeText(capture.note);
+      const note = sourceText(capture.note);
       if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
     }
     if (typeof capture.vital_type === "string" && capture.value !== undefined) {
       const kind = safeText(capture.vital_type);
       const label = vitalLabels[kind] || readableLabel(kind) || "Measurement";
       const measurement = [safeText(capture.value), safeText(capture.unit)].filter(Boolean).join(" ");
-      const note = safeText(capture.note);
+      const note = sourceText(capture.note);
       if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
     }
     if (typeof capture.medication_name === "string" || typeof capture.name === "string") {
-      const name = safeText(capture.medication_name) || safeText(capture.name);
+      const name = sourceText(capture.medication_name) || sourceText(capture.name);
       const details = [
-        safeText(capture.dose) ? "Dose recorded: " + safeText(capture.dose) : "",
+        sourceText(capture.dose) ? "Dose recorded: " + sourceText(capture.dose) : "",
         safeText(capture.status) ? "Status: " + readableLabel(capture.status) : "",
-        safeText(capture.note),
+        sourceText(capture.note),
       ].filter(Boolean);
       if (name) lines.push(details.length ? name + " — " + details.join("; ") : name);
     }
@@ -486,7 +487,7 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
       if (areas.length) lines.push("Areas mentioned: " + areas.join(", "));
     }
     for (const key of ["notes", "original_notes", "text", "description", "observation", "summary"]) {
-      const safe = safeText(capture[key]);
+      const safe = sourceText(capture[key]);
       if (safe && !lines.includes(safe)) lines.push(safe);
     }
     if (Array.isArray(capture.scales)) {
@@ -495,7 +496,7 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
         const scale = raw as Record<string, unknown>;
         const label = readableLabel(scale.axis) || "Rating";
         const score = safeText(scale.score);
-        const note = safeText(scale.note);
+        const note = sourceText(scale.note);
         if (score || note) lines.push([label + (score ? ": " + score : ""), note].filter(Boolean).join(" — "));
       }
     }
@@ -505,8 +506,8 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
         const vital = raw as Record<string, unknown>;
         const kind = safeText(vital.vital_type);
         const label = vitalLabels[kind] || readableLabel(kind) || "Measurement";
-        const measurement = [safeText(vital.value), safeText(vital.unit)].filter(Boolean).join(" ");
-        const note = safeText(vital.note);
+        const measurement = [sourceText(vital.value), sourceText(vital.unit)].filter(Boolean).join(" ");
+        const note = sourceText(vital.note);
         if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
       }
     }
@@ -514,11 +515,11 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
       for (const raw of capture.medications) {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
         const medicine = raw as Record<string, unknown>;
-        const name = safeText(medicine.medication_name) || "Medicine";
+        const name = sourceText(medicine.medication_name) || "Medicine";
         const details = [
-          safeText(medicine.dose) ? "Dose recorded: " + safeText(medicine.dose) : "",
+          sourceText(medicine.dose) ? "Dose recorded: " + sourceText(medicine.dose) : "",
           safeText(medicine.status) ? "Status: " + readableLabel(medicine.status) : "",
-          safeText(medicine.note),
+          sourceText(medicine.note),
         ].filter(Boolean);
         lines.push(details.length ? name + " — " + details.join("; ") : name);
       }
@@ -532,7 +533,7 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     const trimmed = value.trimStart();
     return trimmed.startsWith("{") || trimmed.startsWith("[")
       ? fallback
-      : caregiverSafeAssistantText(value) || fallback;
+      : caregiverSourceText(value) || fallback;
   }
 }
 
