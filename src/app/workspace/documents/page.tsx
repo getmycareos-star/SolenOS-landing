@@ -164,6 +164,7 @@ export default function DocumentsPage() {
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const documentLoadSequenceRef = useRef(0);
+  const loadedDocumentPersonIdRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -185,11 +186,24 @@ export default function DocumentsPage() {
   const loadDocuments = useCallback(async (quiet = false) => {
     const requestSequence = ++documentLoadSequenceRef.current;
     const isCurrentRequest = () => documentLoadSequenceRef.current === requestSequence;
+    let requestPersonId: string | null = null;
     if (quiet) setRefreshing(true);
     else setLoading(true);
     setListError(null);
     try {
-      const personId = getPersonId() || (await ensureAnonymousSession()).person.id;
+      const session = await ensureAnonymousSession();
+      const personId = session.person.id;
+      requestPersonId = personId;
+      if (loadedDocumentPersonIdRef.current && loadedDocumentPersonIdRef.current !== personId) {
+        setDocuments([]);
+        setSelectedId(null);
+        setPreviewUrl(null);
+        setPreviewError(null);
+        setVersionComparison(null);
+        setVersionPredecessorId("");
+        setQuery("");
+      }
+      loadedDocumentPersonIdRef.current = personId;
       const result = await getJSON("/evidence/" + encodeURIComponent(personId));
       if (!Array.isArray(result)) throw new Error("The document list returned an unexpected response.");
       const next = (result as EvidenceRecord[])
@@ -199,6 +213,15 @@ export default function DocumentsPage() {
       if (isCurrentRequest()) setDocuments(next);
     } catch {
       if (isCurrentRequest()) {
+        if (!requestPersonId) {
+          setDocuments([]);
+          setSelectedId(null);
+          setPreviewUrl(null);
+          setPreviewError(null);
+          setVersionComparison(null);
+          setVersionPredecessorId("");
+          loadedDocumentPersonIdRef.current = null;
+        }
         setListError("SolenOS could not load saved documents. Your saved files have not been deleted. Check the connection and try again.");
       }
     } finally {
