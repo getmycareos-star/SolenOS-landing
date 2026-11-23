@@ -1725,7 +1725,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <option value="">Choose from care history</option>
                   {previouslyRecordedMedications.map((item) => (
                     <option key={item.name.toLocaleLowerCase()} value={item.name}>
-                      {item.name}{item.dose ? ` · ${item.dose}` : ""}
+                      {caregiverSafeAssistantText(item.name) || "Saved medication"}{item.dose ? ` · ${caregiverSafeAssistantText(item.dose) || "Dose not recorded"}` : ""}
                     </option>
                   ))}
                 </select>
