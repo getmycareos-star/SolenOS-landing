@@ -270,7 +270,7 @@ export default function QwenAssistPanel({
       {error && <p role="alert" style={{ color: "var(--theme-warning-fg)", background: "var(--theme-warning-bg)", border: "1px solid var(--theme-warning-border)", borderRadius: "8px", padding: "10px 12px", fontSize: "14px", lineHeight: 1.5, marginTop: "10px" }}>{error}</p>}
       {reply && (
         <div style={{ marginTop: "12px", border: "1px solid var(--border)", borderRadius: "9px", padding: "12px", background: "var(--bg)" }}>
-          <p style={{ fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{reply.reply}</p>
+          <p style={{ fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{caregiverSafeGeneratedText(reply.reply) || "This suggestion could not be shown in plain language."}</p>
           <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {reply.workflow === "two_week_review" && reply.review_required && (
               <>
@@ -479,19 +479,22 @@ export default function QwenAssistPanel({
         <section aria-label="Past two-week reviews" style={{ marginTop: "14px", borderTop: "1px solid var(--theme-panel-border)", paddingTop: "12px" }}>
           <h3 style={{ fontSize: "13px", fontWeight: 650, margin: "0 0 8px" }}>Past two-week reviews</h3>
           <div style={{ display: "grid", gap: "8px" }}>
-            {pastTwoWeekReviews.map((item) => (
-              <button
-                key={item.job_id}
-                type="button"
-                onClick={() => { setReply(item); setProposal(null); setReviewMessage(null); }}
-                style={{ textAlign: "left", border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 10px", background: "var(--theme-panel-bg)", color: "var(--text-primary)", cursor: "pointer" }}
-              >
-                <span style={{ display: "block", fontSize: "11px", color: "var(--text-secondary)" }}>
-                  {item.created_at ? new Date(item.created_at).toLocaleString() : "Saved review"} · {item.review_required ? "Needs review" : item.output_review_status === "needs_follow_up" ? "Flagged for follow-up" : "Reviewed"}
-                </span>
-                <span style={{ display: "block", fontSize: "12px", lineHeight: 1.5, marginTop: "4px" }}>{(item.reply || "").slice(0, 180)}{(item.reply || "").length > 180 ? "…" : ""}</span>
-              </button>
-            ))}
+            {pastTwoWeekReviews.map((item) => {
+              const safeReply = caregiverSafeGeneratedText(item.reply) || "Earlier suggestion not available.";
+              return (
+                <button
+                  key={item.job_id}
+                  type="button"
+                  onClick={() => { setReply(item); setProposal(null); setReviewMessage(null); }}
+                  style={{ textAlign: "left", border: "1px solid var(--theme-panel-border)", borderRadius: "8px", padding: "9px 10px", background: "var(--theme-panel-bg)", color: "var(--text-primary)", cursor: "pointer" }}
+                >
+                  <span style={{ display: "block", fontSize: "11px", color: "var(--text-secondary)" }}>
+                    {item.created_at ? new Date(item.created_at).toLocaleString() : "Saved review"} · {item.review_required ? "Needs review" : item.output_review_status === "needs_follow_up" ? "Flagged for follow-up" : "Reviewed"}
+                  </span>
+                  <span style={{ display: "block", fontSize: "12px", lineHeight: 1.5, marginTop: "4px" }}>{safeReply.slice(0, 180)}{safeReply.length > 180 ? "…" : ""}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
