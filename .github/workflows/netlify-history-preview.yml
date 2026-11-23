@@ -5,13 +5,16 @@ name: Netlify History preview
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_preview:
+        description: "Explicitly approve publishing a non-production History preview"
+        required: true
+        type: boolean
+        default: false
+  # Pushes only run verification when this safety gate changes; they never publish.
   push:
     branches: [main]
     paths:
-      - "src/components/app-shell/HistoryDrawer.tsx"
-      - "package.json"
-      - "package-lock.json"
-      - "netlify.toml"
       - ".github/workflows/netlify-history-preview.yml"
 
 permissions:
@@ -43,7 +46,7 @@ jobs:
   deploy-preview:
     name: Publish non-production History preview
     needs: verify
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_preview == true && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
