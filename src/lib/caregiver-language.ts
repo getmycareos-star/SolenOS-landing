@@ -351,7 +351,11 @@ export function caregiverSafeAssistantText(value: unknown): string | null {
   try {
     const parsed: unknown = JSON.parse(text);
     if (parsed && typeof parsed === "object") return null;
-    if (typeof parsed === "string") return parsed.trim() || null;
+    if (typeof parsed === "string") {
+      const parsedText = parsed.trim();
+      if (!parsedText || isTechnicalDiagnosticText(parsedText)) return null;
+      return parsedText;
+    }
     // Booleans and null are serialized values, not caregiver-facing prose.
     // Keep numeric-only notes readable because they may be real care measurements.
     if (typeof parsed === "boolean" || parsed === null) return null;
