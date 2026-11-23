@@ -164,7 +164,7 @@ export default function DocumentsPage() {
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const documentLoadSequenceRef = useRef(0);
-  const loadedDocumentPersonIdRef = useRef<string | null>(null);
+  const loadedDocumentScopeRef = useRef<{ personId: string; caregiverId: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -187,14 +187,20 @@ export default function DocumentsPage() {
     const requestSequence = ++documentLoadSequenceRef.current;
     const isCurrentRequest = () => documentLoadSequenceRef.current === requestSequence;
     let requestPersonId: string | null = null;
+    let requestCaregiverId: string | null = null;
     if (quiet) setRefreshing(true);
     else setLoading(true);
     setListError(null);
     try {
       const session = await ensureAnonymousSession();
       const personId = session.person.id;
+      const caregiverId = session.caregiver.id;
       requestPersonId = personId;
-      if (loadedDocumentPersonIdRef.current && loadedDocumentPersonIdRef.current !== personId) {
+      requestCaregiverId = caregiverId;
+      if (loadedDocumentScopeRef.current && (
+        loadedDocumentScopeRef.current.personId !== personId
+        || loadedDocumentScopeRef.current.caregiverId !== caregiverId
+      )) {
         setDocuments([]);
         setSelectedId(null);
         setPreviewUrl(null);
@@ -202,8 +208,17 @@ export default function DocumentsPage() {
         setVersionComparison(null);
         setVersionPredecessorId("");
         setQuery("");
+        setCapturedPages([]);
+        setReviewPages([]);
+        setIntakeMode(null);
+        setUploadMessage(null);
+        setPendingUploads(0);
+        setAttentionUploads(0);
+        setCameraOpen(false);
+        cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+        cameraStreamRef.current = null;
       }
-      loadedDocumentPersonIdRef.current = personId;
+      loadedDocumentScopeRef.current = { personId, caregiverId };
       const result = await getJSON("/evidence/" + encodeURIComponent(personId));
       if (!Array.isArray(result)) throw new Error("The document list returned an unexpected response.");
       const next = (result as EvidenceRecord[])
@@ -213,14 +228,23 @@ export default function DocumentsPage() {
       if (isCurrentRequest()) setDocuments(next);
     } catch {
       if (isCurrentRequest()) {
-        if (!requestPersonId) {
+        if (!requestPersonId || !requestCaregiverId) {
           setDocuments([]);
           setSelectedId(null);
           setPreviewUrl(null);
           setPreviewError(null);
           setVersionComparison(null);
           setVersionPredecessorId("");
-          loadedDocumentPersonIdRef.current = null;
+          setCapturedPages([]);
+          setReviewPages([]);
+          setIntakeMode(null);
+          setUploadMessage(null);
+          setPendingUploads(0);
+          setAttentionUploads(0);
+          setCameraOpen(false);
+          cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+          cameraStreamRef.current = null;
+          loadedDocumentScopeRef.current = null;
         }
         setListError("SolenOS could not load saved documents. Your saved files have not been deleted. Check the connection and try again.");
       }
