@@ -915,7 +915,7 @@ assert.equal(caregiverProductTermLabel("unapproved_internal_term"), null);
 
 assert.match(conflictReview, /When information differs/);
 assert.match(conflictReview, /If you have only checked part of the information/);
-assert.match(conflictReview, /Earlier checks[\s\S]*?No earlier reviews have been saved yet/,
+assert.match(conflictReview, /Earlier reviews[\s\S]*?No earlier reviews have been saved yet/,
   "the conflict history must remain visible with a plain-language empty state");
 assert.doesNotMatch(conflictReview, /partial review|supporting information and a reason; a partial review/i,
   "caregivers must not be asked to understand internal review categories");
