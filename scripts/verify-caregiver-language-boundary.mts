@@ -911,6 +911,10 @@ assert.match(lcr, /caregiverSafeAssistantText\(item\.title\) \|\| "Care follow-u
   "caregiver-created follow-up titles must preserve safe original wording");
 assert.match(lcr, /caregiverSafeAssistantText\(item\.owner\) \|\| "Not recorded"/,
   "caregiver responsibility names must not expose raw structured metadata");
+assert.match(changeIntelligence, /caregiverSafeGeneratedText\(record\.source_label\) \|\| "Saved note or document"/,
+  "change-history source labels must use caregiver-safe generated copy");
+assert.match(changeIntelligence, /caregiverSafeAssistantText\(record\.excerpt\) \|\| "The original wording could not be displayed\."/,
+  "saved source excerpts must not expose raw structured metadata");
 assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail to check"/,
   "generated missing-information titles must use caregiver-safe copy");
 assert.match(lcr, /caregiverSafeAssistantText\(assertion\.asserted_value\) \|\| "Saved care detail"/,
