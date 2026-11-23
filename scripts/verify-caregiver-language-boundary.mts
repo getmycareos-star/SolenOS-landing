@@ -191,6 +191,8 @@ const legalDocuments = read("../src/lib/trust-content/legal-documents.ts");
 const careCaptureLegacy = read("../src/components/CareCapture.tsx");
 const careContinuityIntegrityPanel = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const companion = read("../src/components/workflows/AICompanion.tsx");
+assert.match(companion, /caregiverSafeAssistantText\(observation\.value\)/,
+  "structured observation values must not be rendered as raw serialized data");
 assert.match(companion, /caregiverSafeAssistantText\(source\.reported_by\)/, "Companion source attribution must reject raw structured values");
 assert.match(companion, /caregiverSafeAssistantText\(observation\.reported_by\)/, "Companion observation attribution must reject raw structured values");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
