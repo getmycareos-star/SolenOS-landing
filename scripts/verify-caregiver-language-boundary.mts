@@ -850,6 +850,11 @@ assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(remainsUnclear\)/, "
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(couldClarify\)/, "generated next-step suggestions must use the caregiver language boundary");
 assert.match(whyAmISeeingThis, /safeWhyItMatters \|\| 'A plain-language explanation is not available right now\.'/,
   "filtered explanations must show an honest fallback instead of disappearing silently");
+assert.match(whyAmISeeingThis, /recordSays &&[\s\S]*?The original care information is not available in a readable form right now/,
+  "unreadable source text must have a visible explanation rather than disappearing");
+assert.match(whyAmISeeingThis, /aiInterpreted &&[\s\S]*?A plain-language explanation is not available right now/,
+  "filtered generated interpretations must have a visible explanation rather than disappearing");
+
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(source\.description\)/, "generated source descriptions must use the caregiver language boundary");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.value\)/,
   "saved observation wording must be readable while technical diagnostics remain hidden");
