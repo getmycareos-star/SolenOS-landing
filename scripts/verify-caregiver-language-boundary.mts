@@ -183,6 +183,17 @@ const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
+assert.match(companion, /caregiverSafeAssistantText\(source\.reported_by\)/,
+  "Companion source attribution must not expose raw structured values");
+assert.match(companion, /caregiverSafeAssistantText\(source\.entered_by\)/,
+  "Companion source entry attribution must use readable labels");
+assert.match(companion, /caregiverSafeAssistantText\(source\.correction_note\)/,
+  "Companion correction notes must not expose raw structured metadata");
+assert.match(companion, /caregiverSafeAssistantText\(source\.correction_rationale\)/,
+  "Companion correction explanations must use readable text");
+assert.match(companion, /caregiverSafeAssistantText\(observation\.value\)/,
+  "Companion saved observation values must not expose raw structured metadata");
+
 assert.match(documentReview, /analysis\.open_questions\?\.map\(\(question, i\) => <li key=\{i\}>\{caregiverSafeGeneratedText\(question\)/,
   "document review questions must use the caregiver-language boundary in every display location");
 assert.match(livingCareRecordPanel, /Boolean\(view\.what_seems_happening\) \|\| factCandidates\.length > 0/,
