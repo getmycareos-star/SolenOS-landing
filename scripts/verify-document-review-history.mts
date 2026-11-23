@@ -123,3 +123,5 @@ assert(
 assert.match(documentsPage, /listError && documents\.length > 0[\s\S]*?These are the last documents we could load\. The list may be out of date; refresh before relying on it\./, "previously loaded documents must be labelled as potentially stale when a refresh fails");
 
 assert.match(documentsPage, /loadedDocumentScopeRef\.current\.personId !== personId[\s\S]*?loadedDocumentScopeRef\.current\.caregiverId !== caregiverId[\s\S]*?setDocuments\(\[\]\)[\s\S]*?setCapturedPages\(\[\]\)[\s\S]*?setReviewPages\(\[\]\)/, "document history and upload drafts from a previous person or caregiver must be cleared before loading another scope");
+
+assert.match(documentsPage, /addEventListener\("personIdChanged", refreshForSessionChange\)/, "document history must refresh when the active care session changes");
