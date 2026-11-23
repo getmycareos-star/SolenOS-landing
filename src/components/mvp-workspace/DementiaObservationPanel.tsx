@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 import { caregiverSourceText } from "@/lib/caregiver-language";
 
 type ObservationType = "direct" | "second_hand";
@@ -48,6 +48,13 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [editingObservationId, setEditingObservationId] = useState<string | null>(null);
+  const [editCategory, setEditCategory] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editObservedAt, setEditObservedAt] = useState("");
+  const [editObservationType, setEditObservationType] = useState<ObservationType | "">("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const loadSequenceRef = useRef(0);
 
@@ -117,6 +124,49 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
       setError("We couldn’t confirm that your note was saved. Refresh your saved notes before trying again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function beginEditing(item: DementiaObservation) {
+    setEditingObservationId(item.id);
+    setEditCategory(item.observation_category.replace(/^dementia\\./i, ""));
+    setEditDescription(item.description);
+    setEditObservedAt(item.observed_at ? new Date(item.observed_at).toISOString().slice(0, 16) : "");
+    setEditObservationType(
+      item.observation_type?.toLowerCase() === "direct" ? "direct" : "second_hand",
+    );
+    setEditError("");
+  }
+
+  async function saveObservationEdit() {
+    const observationId = editingObservationId;
+    const text = editDescription.trim();
+    if (!observationId || !editCategory || !text || !editObservationType) {
+      setEditError("Choose a topic, describe what happened, and say who observed it.");
+      return;
+    }
+    setEditSaving(true);
+    setEditError("");
+    try {
+      const session = await ensureAnonymousSession();
+      if (session.person?.id !== personId || session.caregiver?.id !== caregiverId) {
+        throw new Error("The selected care record does not match the secure session.");
+      }
+      await patchJSON("/care-continuity/caregiver-observations/" + encodeURIComponent(observationId), {
+        observation_category: "dementia." + editCategory,
+        description: text,
+        observation_type: editObservationType,
+        epistemic_status: editObservationType === "direct" ? "observed" : "reported",
+        observed_at: editObservedAt ? new Date(editObservedAt).toISOString() : null,
+      });
+      setEditingObservationId(null);
+      setNotice("Your correction was saved. The earlier version remains in the record history.");
+      window.dispatchEvent(new Event("careRecordUpdated"));
+      await load();
+    } catch {
+      setEditError("We couldn’t save this correction. Your earlier note has not been replaced.");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -213,6 +263,38 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
                 {item.observation_type === "DIRECT" || item.observation_type === "direct" ? "Seen directly" : "Reported by someone else"}
                 {item.recorded_by_caregiver_id === caregiverId ? " · Recorded by you" : " · Recorded by another caregiver"}
               </p>
+              {editingObservationId === item.id ? (
+                <div className="mt-3 grid gap-2 border-t border-[var(--border)] pt-3">
+                  {editError ? <p role="alert" className="text-sm text-red-700">{editError}</p> : null}
+                  <label className="grid gap-1 text-sm font-medium text-[var(--text)]">
+                    Topic
+                    <select value={editCategory} disabled={editSaving} onChange={event => setEditCategory(event.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+                      {CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-sm font-medium text-[var(--text)]">
+                    What happened?
+                    <textarea value={editDescription} disabled={editSaving} onChange={event => setEditDescription(event.target.value)} rows={3} maxLength={8000} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2" />
+                  </label>
+                  <label className="grid gap-1 text-sm font-medium text-[var(--text)]">
+                    Who observed this?
+                    <select value={editObservationType} disabled={editSaving} onChange={event => setEditObservationType(event.target.value as ObservationType | "")} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+                      <option value="direct">I saw it myself</option>
+                      <option value="second_hand">Someone told me</option>
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-sm font-medium text-[var(--text)]">
+                    When did it happen?
+                    <input type="datetime-local" value={editObservedAt} disabled={editSaving} onChange={event => setEditObservedAt(event.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2" />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" disabled={editSaving} onClick={() => void saveObservationEdit()} className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium disabled:opacity-50">{editSaving ? "Saving…" : "Save correction"}</button>
+                    <button type="button" disabled={editSaving} onClick={() => { setEditingObservationId(null); setEditError(""); }} className="rounded-lg px-3 py-2 text-sm underline disabled:opacity-50">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" onClick={() => beginEditing(item)} className="mt-3 text-sm font-medium underline">Edit note</button>
+              )}
             </li>
           ))}
         </ul>
