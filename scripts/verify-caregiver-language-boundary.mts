@@ -1020,6 +1020,8 @@ assert.match(shareCareSummaryPanel, /caregiverSafeGeneratedText\(item\.summary \
   "generated briefing summaries must pass the generated-language boundary before export");
 assert.match(shareCareSummaryPanel, /caregiverReadableCaptureText\(item\.summary \|\| item\.text\)/,
   "source-only briefing summaries must render structured caregiver notes without metadata");
+assert.match(shareCareSummaryPanel, /caregiverSafeGeneratedText\(item\.section\) \|\| "this care detail"/,
+  "export review checklist section names must use caregiver-safe labels");
 assert.match(shareCareSummaryPanel, /caregiverSafeGeneratedText\(item\.section\)/,
   "generated briefing section headings must use caregiver-facing labels");
 assert.match(careHandoffSharing, /caregiverReadableCaptureText\(item\.supporting_quote\)/,
