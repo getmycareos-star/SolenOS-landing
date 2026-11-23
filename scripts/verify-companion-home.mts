@@ -185,8 +185,8 @@ assert.match(companion, /const requestScopeSequence = conversationScopeSequenceR
   "conversation restoration must stop when the active care scope changes while it is loading");
 assert.match(companion, /if \(!isCurrentScopeRequest\(\) \|\| activeCompanionConversationStorageKey\(\) !== activeScopeKey\) \{\s*setMessages\(previous => previous\.filter\(message => message !== userMsg\)\)\s*return/,
   "a response from a previous care scope must never be appended to the current caregiver conversation");
-assert.match(companion, /catch \(error\) \{\s*if \(!isCurrentScopeRequest\(\)\) \{\s*setMessages\(previous => previous\.filter\(message => message !== userMsg\)\)\s*return\s*\}[\s\S]*?finally \{\s*if \(isCurrentScopeRequest\(\)\) setLoading\(false\)/,
-assert.match(companion, /catch \\(error\\) \\{\\s*if \\(!isCurrentScopeRequest\\(\\)\\) \\{\\s*setMessages\\(previous => previous\\.filter\\(message => message !== userMsg\\)\\)\\s*return\\s*\\}[\\s\\S]*?finally \\{\\s*sendingRef\\.current = false\\s*if \\(isCurrentScopeRequest\\(\\)\\) setLoading\\(false\\)/,
+assert.match(companion, /catch \(error\) \{\s*if \(!isCurrentScopeRequest\(\)\) \{\s*setMessages\(previous => previous\.filter\(message => message !== userMsg\)\)\s*return\s*\}[\s\S]*?finally \{\s*sendingRef\.current = false\s*if \(isCurrentScopeRequest\(\)\) setLoading\(false\)/,
+  "late failures and completion handlers must clear the send lock without overwriting the active caregiver's conversation state");
 
 assert.ok(companion.includes("const lastObservedScopeKeyRef = useRef<string | null>(activeCompanionConversationStorageKey())"), "Companion must remember the last care scope even before a conversation is restored");
 assert.ok(companion.includes("const previousScopeKey = lastObservedScopeKeyRef.current") && companion.includes("lastObservedScopeKeyRef.current = activeScopeKey") && companion.includes("conversationScopeSequenceRef.current += 1"), "any real care-scope change must invalidate in-flight conversation work");
