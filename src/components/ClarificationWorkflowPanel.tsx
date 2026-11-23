@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Claim = {
   id: string;
@@ -766,8 +766,8 @@ SolenOS only asks when a missing detail could change what happens next. You can 
             {!historyError && history.length === 0 && <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>No earlier answers have been saved.</p>}
             <ol style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
-                <p>{caregiverSafeAssistantText(item.answer) || "The saved answer is available for review."}</p>
-                <p>Who shared this: {caregiverSafeAssistantText(item.answer_provenance) || "Not recorded"}</p>
+                <p>{caregiverSourceText(item.answer) || "The saved answer is available for review."}</p>
+                <p>Who shared this: {caregiverSourceText(item.answer_provenance) || "Not recorded"}</p>
                 <p>Saved {displayDate(item.created_at)}</p>
               </li>)}
             </ol>
