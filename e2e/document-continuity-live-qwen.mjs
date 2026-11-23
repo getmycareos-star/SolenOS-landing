@@ -275,7 +275,7 @@ try {
   const companionReply = companionPage.locator(".companion-message.is-assistant .companion-bubble p").last();
   await companionReply.waitFor({ state: "visible", timeout: timeoutMs });
   const companionReplyText = (await companionReply.textContent()) || "";
-  assert.match(companionReplyText, /20 metres/i,
+  assert.match(companionReplyText, /20\\s*(?:metres?|meters?)/i,
     "a fresh Companion question must retrieve the accepted document-backed mobility detail");
   assert.match(companionReplyText, /frame/i,
     "the Companion must preserve the support detail from the accepted source");
