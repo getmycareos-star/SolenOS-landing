@@ -802,6 +802,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         // Bind the caregiver decision to the exact suggestion shown in the review.
         expected_source_quote: candidate.source_quote ?? '',
         expected_subject: candidate.subject ?? '',
+        expected_observation: candidate.observation ?? '',
         corrected_subject: decision === 'correct' ? draft.subject.trim() || undefined : undefined,
         corrected_observation: decision === 'correct' ? draft.observation.trim() || undefined : undefined,
       }) as {
