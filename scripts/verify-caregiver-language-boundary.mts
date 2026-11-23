@@ -183,6 +183,10 @@ const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
+assert.match(clarificationWorkflow, /caregiverSafeAssistantText\(item\.answer\)/,
+  "saved clarification answers must not expose raw structured metadata");
+assert.match(clarificationWorkflow, /caregiverSafeAssistantText\(item\.answer_provenance\)/,
+  "saved clarification attribution must use readable caregiver text");
 assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\.title\)/,
   "saved care receipt titles must not expose raw structured metadata");
 assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\.description\)/,
@@ -947,6 +951,7 @@ assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.va
 
 
 
+const clarificationWorkflow = read("../src/components/ClarificationWorkflowPanel.tsx");
 const careRecipientNameGate = read("../src/components/mvp-workspace/CareRecipientNameGate.tsx");
 const correctionForm = read("../src/components/trust/CorrectThis.tsx");
 const feedbackForm = read("../src/components/mvp-workspace/HelpImproveSolenos.tsx");
