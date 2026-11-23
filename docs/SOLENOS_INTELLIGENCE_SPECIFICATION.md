@@ -583,7 +583,7 @@ Does the system respond within the latency budget? Does it degrade gracefully un
 
 | Prompt | File | Audience |
 |--------|------|----------|
-| `SOLENOS_SYSTEM_PROMPT` | `solenos-langchain-adapter/system-prompt.ts` | Analyze path (ops) |
+| `SOLENOS_SYSTEM_PROMPT` | `solenos-langchain-adapter/system-prompt.ts` | Retired legacy prompt; not used by active caregiver inference |
 | `CARE_UNDERSTANDING_LLM_SYSTEM_PROMPT` | `care-situation-understanding/llm-prompt.ts` | Understanding engine |
 | `buildContinuityAwareLlmPrompt` | `care-situation-understanding/llm-prompt.ts` | Continuity-injected variant |
 | `makeLanguageAwarePrompt` | `multilingual-execution/prompt.ts` | Output language wrapper |
