@@ -2,6 +2,7 @@
 
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { ensureAnonymousSession } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -105,7 +106,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
       onStatusChange?.("accepted");
       onConsentAccepted?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Consent submission failed");
+      setError(caregiverSafeErrorMessage());
     } finally {
       setSubmitting(false);
     }
