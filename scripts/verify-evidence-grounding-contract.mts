@@ -156,7 +156,7 @@ const conflictPanel = fs.readFileSync(path.join(process.cwd(), "src/components/C
 assert(conflictPanel.includes("/uncertainty/contradictions/"), "conflict resolution UI must read persisted conflicts and transition history");
 assert(conflictPanel.includes("resolution_scope"), "partial conflict resolution must capture and display exact scope");
 assert(conflictPanel.includes("Every review needs supporting information and a reason.") && conflictPanel.includes("Notes or documents you checked"), "conflict resolution must expose concrete supporting notes and documents in caregiver language");
-assert(conflictPanel.includes("A failed request is not an empty history"), "failed conflict-history reads must not look like an empty history");
+assert(conflictPanel.includes("We couldn’t load earlier reviews just now. This doesn’t mean none were saved.") && conflictPanel.includes("Try again"), "failed conflict-history reads must remain visible and recoverable in caregiver language");
 assert(conflictPanel.includes("not automatically resolve a conflict"), "conflict UI must reject timestamp/majority-only resolution");
 assert(lcr.includes('const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel")'), "LCR must code-split import the conflict resolution workflow");
 assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
