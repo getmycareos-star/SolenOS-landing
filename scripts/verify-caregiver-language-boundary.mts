@@ -256,6 +256,12 @@ assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.so
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\)/,
   "LCR aggregate time-window labels must use caregiver-safe text");
 
+assert.match(documentReview, /We couldn't confirm whether your review was saved\. Refresh the review history before trying again/,
+  "document review failures must not claim an uncertain review was not saved");
+assert.match(caregiverHandoverInbox, /We couldn't confirm whether your response was saved\. Refresh the handover list before trying again/,
+  "handover response failures must not claim an uncertain response was not saved");
+assert.match(humanValidation, /We couldn't confirm whether feedback was saved\. Check again before submitting it a second time/,
+  "feedback submission failures must avoid encouraging duplicate submissions");
 assert.match(documentReview, /analysis\.open_questions\?\.map\(\(question, i\) => <li key=\{i\}>\{caregiverSafeGeneratedText\(question\)/,
   "document review questions must use the caregiver-language boundary in every display location");
 assert.match(livingCareRecordPanel, /Boolean\(view\.what_seems_happening\) \|\| factCandidates\.length > 0/,
