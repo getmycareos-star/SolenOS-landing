@@ -175,3 +175,5 @@ assert.match(companion, /disabled=\{careUpdateLoadFailed \|\| Boolean\(reviewing
 assert.match(companion, /const requestSequence = \+\+careUpdateLoadSequenceRef\.current[\s\S]*?if \(isCurrentRequest\(\)\) setPendingCareUpdates\(response\.items\)[\s\S]*?if \(isCurrentRequest\(\)\) setCareUpdateLoading\(false\)/, "overlapping suggestion reads must not allow an older response to overwrite a newer list or loading state");
 
 assert.match(companion, /conversationScopeRef\.current !== activeScopeKey[\s\S]*?setMessages\(\[userMsg\]\)[\s\S]*?setPendingCareUpdates\(\[\]\)[\s\S]*?session_id: activeSessionId/, "Companion must clear prior caregiver messages and pending suggestions when the active person or caregiver changes");
+
+assert.match(companion, /addEventListener\('personIdChanged', clearPreviousCareScope\)[\s\S]*?setMessages\(\[\]\)[\s\S]*?setSessionId\(null\)[\s\S]*?setPendingCareUpdates\(\[\]\)/, "Companion must immediately clear another caregiver's conversation when the active care session changes");
