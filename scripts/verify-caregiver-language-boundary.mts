@@ -989,6 +989,8 @@ assert.match(correctionLabels, /Suggested by SolenOS/);
 assert.match(privacyIndicator, /We couldn't check who can see this/);
 assert.doesNotMatch(privacyIndicator, /Access information unavailable/);
 assert.match(privacyIndicator, /members\.filter\(\(member\) => member\.status === "active"\)/, "privacy visibility must count only active access grants");
+assert.match(privacyIndicator, /member\.access_scope !== "documents_only"/, "privacy visibility must distinguish full Care Record access from documents-only access");
+assert.match(privacyIndicator, /documentsOnlyCount/, "documents-only caregivers must not be counted as full-record viewers");
 assert.match(caregiverAccessPanel, /import PrivacyIndicator from "@\/components\/trust\/PrivacyIndicator"/);
 assert.match(caregiverAccessPanel, /<PrivacyIndicator canViewAccessList=\{canManageMembers\} members=\{members\} \/>/, "the caregiver settings screen must show whether the access list could actually be checked");
 
