@@ -115,3 +115,7 @@ console.log("✓ crop and straighten are applied to pixels before OCR");
 console.log("✓ caregiver can move crop area and adjust margins");
 console.log("✓ multi-page PDF assembly preserves individual originals");
 console.log("✓ original scan bytes and server-applied scan processing metadata are preserved");
+
+assert(source.includes('facingMode: { ideal: cameraFacingMode }'), "the scanner must request the selected front or back camera when the device supports it");
+assert(source.includes("Use front camera") && source.includes("Use back camera"), "caregivers must be able to switch cameras while scanning");
+assert(source.includes("}, [cameraOpen, cameraFacingMode]);"), "switching cameras must stop the previous stream and acquire the newly selected camera");
