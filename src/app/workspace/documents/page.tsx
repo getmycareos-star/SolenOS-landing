@@ -52,6 +52,8 @@ type EvidenceRecord = {
   parent_evidence_id?: string | null;
   uploaded_at?: string | null;
   created_at?: string | null;
+  occurred_at?: string | null;
+  time_provenance?: string | null;
   extra_metadata?: string | Record<string, unknown> | null;
 };
 
@@ -62,6 +64,8 @@ type DocumentItem = {
   sizeBytes: number | null;
   sha256: string | null;
   uploadedAt: string | null;
+  careDate: string | null;
+  careDateLabel: string;
   status: string;
   extractedText: string;
   possibleVersionOfEvidenceId?: string | null;
@@ -111,6 +115,8 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     sizeBytes: asNumber(meta.size_bytes),
     sha256: asString(meta.sha256) || null,
     uploadedAt: item.uploaded_at || item.created_at || null,
+    careDate: item.occurred_at || null,
+    careDateLabel: item.time_provenance === "document_date" ? "Date on document" : "Care date",
     status: item.evidence_status || "recorded",
     extractedText: item.source_text || "",
     possibleVersionOfEvidenceId: asString(meta.possible_version_of_evidence_id) || null,
@@ -889,7 +895,7 @@ export default function DocumentsPage() {
                 <span className="documents-list-icon">{isImage(doc.mimeType) ? <FileImage size={21} /> : <FileText size={21} />}</span>
                 <span className="documents-list-copy">
                   <span className="documents-list-title">{doc.title}</span>
-                  <span className="documents-list-meta">{formatBytes(doc.sizeBytes)} · {formatDate(doc.uploadedAt)}</span>
+                  <span className="documents-list-meta">{formatBytes(doc.sizeBytes)} · Added {formatDate(doc.uploadedAt)}{doc.careDate ? ` · ${doc.careDateLabel} ${formatDate(doc.careDate)}` : ""}</span>
                   <span className="documents-list-status">{doc.extractedText.trim() ? "Text available to review" : "Original saved · no readable text yet"}</span>
                 </span>
                 <span aria-hidden="true" className="documents-list-open">Open</span>
@@ -922,7 +928,7 @@ export default function DocumentsPage() {
           <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 14, borderBottom: "1px solid var(--border)" }}>
             <div style={{ minWidth: 0 }}>
               <h2 style={{ margin: 0, fontSize: "calc(16px * var(--solenos-text-scale, 1))", overflowWrap: "anywhere" }}>{selected.title}</h2>
-              <p style={{ margin: "4px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{formatBytes(selected.sizeBytes)} · {formatDate(selected.uploadedAt)}</p>
+              <p style={{ margin: "4px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{formatBytes(selected.sizeBytes)} · Added {formatDate(selected.uploadedAt)}{selected.careDate ? ` · ${selected.careDateLabel} ${formatDate(selected.careDate)}` : ""}</p>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button type="button" onClick={downloadOriginal} disabled={!previewUrl} aria-label="Download original document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><Download size={16} /> Download</button>
