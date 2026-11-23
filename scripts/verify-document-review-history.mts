@@ -6,6 +6,7 @@ const continuity = readFileSync("src/components/CareContinuityIntegrityPanel.tsx
 
 const source = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
 const capture = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
+const captureReview = readFileSync("src/components/workflows/CaptureAnalysisReview.tsx", "utf8");
 const documentsPage = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 
 assert(
@@ -29,6 +30,11 @@ assert(
   source.includes("expected_source_quote: sourceQuote") &&
   source.includes("expected_subject: candidate.subject"),
   "caregiver decisions must be bound to the exact source wording and subject shown in the review",
+);
+assert(
+  captureReview.includes("expected_source_quote: candidate.source_quote ?? \"\"") &&
+  captureReview.includes("expected_subject: candidate.subject ?? \"\""),
+  "capture-analysis decisions must send the required exact candidate snapshot to the backend",
 );
 
 assert(
