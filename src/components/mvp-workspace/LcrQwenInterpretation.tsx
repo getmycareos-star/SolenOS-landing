@@ -77,6 +77,7 @@ export function LcrQwenInterpretation({
       try {
         const result = (await postJSON("/assistant/assist", {
           workflow: "living_care_record",
+          source_event_id: sourceEventId,
           text:
             "Put this newly saved caregiver-reported update in context with the authorized Living Care Record. " +
             "Distinguish documented information from interpretation and uncertainty. Explain what may matter and " +
