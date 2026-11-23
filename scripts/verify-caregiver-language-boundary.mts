@@ -214,6 +214,22 @@ assert.match(companion, /caregiverSafeAssistantText\(item\.source_excerpt\)/,
   "related Companion source excerpts must not expose raw structured metadata");
 assert.match(companion, /caregiverSafeAssistantText\(observation\.source_excerpt\)/,
   "Companion observation source excerpts must not expose raw structured metadata");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.reported_by\)/,
+  "LCR interpretation source attribution must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.entered_by\)/,
+  "LCR interpretation entry attribution must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.source_excerpt\)/,
+  "LCR interpretation source excerpts must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.reported_by\)/,
+  "Related LCR evidence attribution must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.entered_by\)/,
+  "Related LCR evidence entry attribution must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.source_excerpt\)/,
+  "Related LCR evidence excerpts must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.reported_by\)/,
+  "LCR observation attribution must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.source_excerpt\)/,
+  "LCR observation source excerpts must use caregiver-safe text");
 
 assert.match(documentReview, /analysis\.open_questions\?\.map\(\(question, i\) => <li key=\{i\}>\{caregiverSafeGeneratedText\(question\)/,
   "document review questions must use the caregiver-language boundary in every display location");
