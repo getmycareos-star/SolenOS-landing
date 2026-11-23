@@ -837,7 +837,7 @@ export function LCRCurrentUnderstanding() {
       const session = await ensureAnonymousSession();
       const scopedPersonId = session.person?.id;
       if (!scopedPersonId) {
-        throw new Error("The active care record session could not be confirmed.");
+        throw new Error("The active record could not be confirmed.");
       }
       const current = await postJSON(
         "/care-continuity/situation-understanding/reassess",
@@ -1252,7 +1252,7 @@ export function LCRCurrentUnderstanding() {
         ? (cause as { status: number }).status
         : null;
       const message = status === 401 || status === 403
-        ? "Your care record session needs to be refreshed. Reopen your record and try again."
+        ? "Your access needs to be refreshed. Reopen your record and try again."
         : status === 404
           ? "This possible change is no longer available in this care record. Refresh your care history."
           : status === 409
