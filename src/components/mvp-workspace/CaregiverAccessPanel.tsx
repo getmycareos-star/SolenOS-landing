@@ -262,26 +262,56 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [allowed, setAllowed] = useState(false);
   const [canManageMembers, setCanManageMembers] = useState(false);
   const [currentSessionCaregiverId, setCurrentSessionCaregiverId] = useState("");
+  const [loadWarnings, setLoadWarnings] = useState<string[]>([]);
+  const loadedPersonIdRef = useRef<string | null>(null);
+
+  const clearPersonScopedState = useCallback(() => {
+    setMembers([]);
+    setResponsibilities([]);
+    setResponsibilityHistory([]);
+    setResponsibilityHistoryUnavailable(false);
+    setCurrentProfileId(null);
+    setCurrentPersonId(null);
+    setActivities([]);
+    setOpenLoops([]);
+    setNetworkSummary(null);
+    setNetworkState(null);
+    setCommunications([]);
+    setCareContexts([]);
+    setMyRoles([]);
+    setMyObservations([]);
+    setMyPerspectives([]);
+    setTransfers([]);
+    setPrimaryTransfers([]);
+    setGapReviewStatuses({});
+    setGapReviewNotes({});
+    setConflictReviewNotes({});
+    setDuplicateReviewStatuses({});
+    setDuplicateReviewNotes({});
+    setAllowed(false);
+    setCanManageMembers(false);
+    setCurrentSessionCaregiverId("");
+    setLoadWarnings([]);
+  }, []);
 
   const load = useCallback(async () => {
     if (!getAnonymousAccessToken()) {
-      setAllowed(false);
-      setCanManageMembers(false);
-      setCurrentProfileId(null);
-      setResponsibilityHistory([]);
-      setResponsibilityHistoryUnavailable(false);
-      setCurrentPersonId(null);
-      setActivities([]);
-      setCurrentSessionCaregiverId("");
+      clearPersonScopedState();
+      loadedPersonIdRef.current = null;
       setLoading(false);
       return;
     }
     setLoading(true);
     setError("");
+    setLoadWarnings([]);
     try {
       const session = await ensureAnonymousSession();
       const personId = session.person.id;
       const caregiverId = session.caregiver.id;
+      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== personId) {
+        clearPersonScopedState();
+      }
+      loadedPersonIdRef.current = personId;
       setCurrentPersonId(personId);
       setCurrentSessionCaregiverId(caregiverId);
 
@@ -317,19 +347,28 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         getJSON("/caregiver-activities/" + encodeURIComponent(personId) + "?limit=30") as Promise<CaregiverActivity[]>,
       ]);
 
-      if (transferResult.status === "fulfilled") setTransfers(transferResult.value ?? []);
-      else setTransfers([]);
-      if (primaryTransferResult.status === "fulfilled") setPrimaryTransfers(primaryTransferResult.value ?? []);
-      else setPrimaryTransfers([]);
+      const warnings: string[] = [];
+      if (transferResult.status === "fulfilled" && Array.isArray(transferResult.value)) setTransfers(transferResult.value);
+      else warnings.push("pending responsibility transfers");
+      if (primaryTransferResult.status === "fulfilled" && Array.isArray(primaryTransferResult.value)) setPrimaryTransfers(primaryTransferResult.value);
+      else warnings.push("main-caregiver transfer requests");
 
-      const members = memberResult.status === "fulfilled" ? memberResult.value ?? [] : [];
-      setCanManageMembers(memberResult.status === "fulfilled");
-      setMembers(members);
+      const members = memberResult.status === "fulfilled" && Array.isArray(memberResult.value)
+        ? memberResult.value
+        : null;
+      if (members) {
+        setCanManageMembers(true);
+        setMembers(members);
+      } else {
+        setCanManageMembers(false);
+        warnings.push("caregiver access list");
+      }
 
-      const ownProfileId = profileResult.status === "fulfilled"
+      const ownProfileId = profileResult.status === "fulfilled" && profileResult.value?.id
         ? profileResult.value.id
-        : members.find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id ?? null;
+        : members?.find((item) => item.caregiver_id === caregiverId)?.caregiver_profile_id ?? null;
       setCurrentProfileId(ownProfileId);
+      if (!ownProfileId) warnings.push("your caregiver profile");
       if (ownProfileId) {
         try {
           const history = await getJSON(
@@ -338,61 +377,55 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           setResponsibilityHistory(history ?? []);
           setResponsibilityHistoryUnavailable(false);
         } catch {
-          setResponsibilityHistory([]);
           setResponsibilityHistoryUnavailable(true);
+          warnings.push("responsibility history");
         }
       } else {
         setResponsibilityHistory([]);
         setResponsibilityHistoryUnavailable(false);
       }
 
-      if (responsibilityResult.status === "fulfilled") {
-        setResponsibilities((responsibilityResult.value ?? []).filter((item) => item.status !== "historical" && item.status !== "gap"));
-      } else setResponsibilities([]);
-      if (loopResult.status === "fulfilled") setOpenLoops(loopResult.value.items ?? []);
-      else setOpenLoops([]);
+      if (responsibilityResult.status === "fulfilled" && Array.isArray(responsibilityResult.value)) {
+        setResponsibilities(responsibilityResult.value.filter((item) => item.status !== "historical" && item.status !== "gap"));
+      } else warnings.push("assigned care responsibilities");
+      if (loopResult.status === "fulfilled" && Array.isArray(loopResult.value?.items)) setOpenLoops(loopResult.value.items);
+      else warnings.push("open care follow-ups");
 
-      if (networkResult.status === "fulfilled") {
+      if (networkResult.status === "fulfilled" && networkResult.value && typeof networkResult.value === "object") {
         setNetworkSummary(networkResult.value);
         setAllowed(true);
       } else {
-        setNetworkSummary(null);
         setAllowed(false);
+        warnings.push("care network summary");
       }
-      if (networkStateResult.status === "fulfilled") setNetworkState(networkStateResult.value);
-      else setNetworkState(null);
-      if (communicationResult.status === "fulfilled") setCommunications(communicationResult.value ?? []);
-      else setCommunications([]);
-      if (contextResult.status === "fulfilled") setCareContexts(contextResult.value ?? []);
-      else setCareContexts([]);
-      if (observationResult.status === "fulfilled") setMyObservations(observationResult.value ?? []);
-      else setMyObservations([]);
-      if (perspectiveResult.status === "fulfilled") setMyPerspectives(perspectiveResult.value ?? []);
-      else setMyPerspectives([]);
-      if (roleResult.status === "fulfilled" && ownProfileId) {
-        setMyRoles((roleResult.value ?? []).filter((item) => item.caregiver_id === ownProfileId && item.is_current));
-      } else setMyRoles([]);
-      if (activityResult.status === "fulfilled") setActivities(activityResult.value ?? []);
-      else setActivities([]);
+      if (networkStateResult.status === "fulfilled" && networkStateResult.value && typeof networkStateResult.value === "object") setNetworkState(networkStateResult.value);
+      else warnings.push("care network status");
+      if (communicationResult.status === "fulfilled" && Array.isArray(communicationResult.value)) setCommunications(communicationResult.value);
+      else warnings.push("caregiver messages");
+      if (contextResult.status === "fulfilled" && Array.isArray(contextResult.value)) setCareContexts(contextResult.value);
+      else warnings.push("caregiver context");
+      if (observationResult.status === "fulfilled" && Array.isArray(observationResult.value)) setMyObservations(observationResult.value);
+      else warnings.push("your private observations");
+      if (perspectiveResult.status === "fulfilled" && Array.isArray(perspectiveResult.value)) setMyPerspectives(perspectiveResult.value);
+      else warnings.push("your private perspectives");
+      if (roleResult.status === "fulfilled" && Array.isArray(roleResult.value) && ownProfileId) {
+        setMyRoles(roleResult.value.filter((item) => item.caregiver_id === ownProfileId && item.is_current));
+      } else if (ownProfileId) warnings.push("your caregiver roles");
+      if (activityResult.status === "fulfilled" && Array.isArray(activityResult.value)) setActivities(activityResult.value);
+      else warnings.push("caregiver activity history");
+      setLoadWarnings(warnings);
 
       if (profileResult.status === "rejected") {
         setError("We couldn't confirm your caregiver profile. Your personal care details are hidden until it can be checked.");
       }
     } catch {
       setError("We couldn't load caregiver access. Please try again.");
-      setAllowed(false);
-      setCanManageMembers(false);
-      setCurrentPersonId(null);
-      setCurrentProfileId(null);
-      setResponsibilityHistory([]);
-      setResponsibilityHistoryUnavailable(true);
-      setActivities([]);
-      setNetworkSummary(null);
-      setNetworkState(null);
+      clearPersonScopedState();
+      loadedPersonIdRef.current = null;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearPersonScopedState]);
 
   useEffect(() => { if (enabled) void load(); }, [enabled, load]);
 
