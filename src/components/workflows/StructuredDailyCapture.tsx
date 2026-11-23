@@ -1556,17 +1556,26 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             </p>
           )}
           {reviewFeedback && <p role="status" style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>{reviewFeedback}</p>}
-          {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.some((question: string) => caregiverSafeGeneratedText(question)) && (
+          {Array.isArray(qwenAnalysis.candidates?.open_questions) && qwenAnalysis.candidates.open_questions.length > 0 && (
             <div style={{ marginTop: '10px' }}>
               <strong style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))' }}>Questions to answer</strong>
-              <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
-                {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => {
-                  const safeQuestion = caregiverSafeGeneratedText(question);
-                  return safeQuestion
-                    ? <li key={index} style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', marginBottom: '4px' }}>{safeQuestion}</li>
-                    : null;
-                })}
-              </ul>
+              {qwenAnalysis.candidates.open_questions.some((question: string) => caregiverSafeGeneratedText(question)) ? (
+                <>
+                  <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
+                    {qwenAnalysis.candidates.open_questions.map((question: string, index: number) => {
+                      const safeQuestion = caregiverSafeGeneratedText(question);
+                      return safeQuestion
+                        ? <li key={index} style={{ fontSize: 'calc(12px * var(--solenos-text-scale, 1))', marginBottom: '4px' }}>{safeQuestion}</li>
+                        : null;
+                    })}
+                  </ul>
+                  {qwenAnalysis.candidates.open_questions.some((question: string) => !caregiverSafeGeneratedText(question)) && (
+                    <p className="panel-muted">Some other questions could not be shown clearly. Check the original care information before relying on them.</p>
+                  )}
+                </>
+              ) : (
+                <p className="panel-muted">Questions were saved, but their wording could not be shown clearly. Your original update remains saved.</p>
+              )}
             </div>
           )}
         </section>
