@@ -145,6 +145,15 @@ export function caregiverVisibleBriefingSections(draft: CareHandoffSharingProps[
   return sections.filter((item) => sourceTables.get(item.source_ref) !== "caregiver_profiles");
 }
 
+function caregiverVisibleRevisionSections(
+  sections: Array<{ source_ref: string }>,
+  audience: CareHandoffSharingProps["audience"],
+  purpose: CareHandoffSharingProps["purpose"],
+) {
+  if (audience !== "professional" || purpose !== "appointment") return sections;
+  return sections.filter((item) => !item.source_ref.startsWith("caregiver_profiles:"));
+}
+
 const panel: CSSProperties = { marginTop: 12, padding: 14, border: "1px solid #dce7dc", borderRadius: 12, background: "#fff" };
 const button: CSSProperties = { border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: "#dce9dc", color: "#172117", fontWeight: 650, cursor: "pointer" };
 const quietButton: CSSProperties = { ...button, background: "transparent", fontWeight: 550 };
@@ -954,7 +963,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           {revisionHistory.length > 0 && <details style={{ marginBottom: 10 }}><summary style={{ cursor: "pointer", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Previous saved versions</summary>{revisionHistory.map(item => (
               <details key={item.revision_number} style={{ margin: "6px 0" }}>
                 <summary style={{ cursor: "pointer", fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>Updated {formatDate(item.created_at)} · {readableStatus(item.change_type)}</summary>
-                {item.content?.generation?.sections?.map((section, index) => <p key={section.source_ref + index} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", margin: "5px 0" }}><strong>{readableSection(section.section)}:</strong> {caregiverSafeGeneratedText(section.text) ?? "Some details are not available in this version."} <small>(Related note or document {index + 1})</small></p>)}
+                {caregiverVisibleRevisionSections(item.content?.generation?.sections ?? [], draft?.audience, draft?.purpose).map((section, index) => <p key={section.source_ref + index} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", margin: "5px 0" }}><strong>{readableSection(section.section)}:</strong> {caregiverSafeGeneratedText(section.text) ?? "Some details are not available in this version."} <small>(Related note or document {index + 1})</small></p>)}
                 {item.content?.caregiver_notes?.map((note, index) => <p key={index} style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>Caregiver note: {caregiverSafeAssistantText(note.text) ?? "No further note was recorded."}</p>)}
                 <p style={{ fontSize: "calc(10px * var(--solenos-text-scale, 1))", color: "#667267" }}>Related notes and documents in this version: {item.source_snapshot?.source_records?.length ?? "Not recorded"}</p>
               </details>
