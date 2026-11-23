@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Claim = {
   id: string;
@@ -402,7 +402,7 @@ export default function ClaimAssessmentPanel() {
       </label>
       {selectedClaim && <div style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
         <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
-        <div><strong>Who reported it:</strong> {caregiverSafeAssistantText(selectedClaim.source_label) || "Not recorded"}</div>
+        <div><strong>Who reported it:</strong> {caregiverSafeGeneratedText(selectedClaim.source_label) || "Not recorded"}</div>
         <div><strong>What we know:</strong> {caregiverInformationLabel(selectedClaim.epistemic_state || "reported") || "Not yet confirmed"}</div>
         <div><strong>Review:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
         <div><strong>Related notes and documents:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
@@ -419,7 +419,7 @@ export default function ClaimAssessmentPanel() {
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "This detail depends on" : "This detail is needed by"}{" "}
             <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Care detail not in this list"}</strong>
-            {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSafeAssistantText(edge.rationale) || "No further explanation is available."}
+            {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSafeGeneratedText(edge.rationale) || "No further explanation is available."}
           </li>)}
         </ul>}
         <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Another care detail
@@ -499,8 +499,8 @@ export default function ClaimAssessmentPanel() {
           {assessmentImpact.unassessed_claim_evidence_ids.length > 0 && <p>Notes or documents not included in the latest review: {assessmentImpact.unassessed_claim_evidence_ids.length}</p>}
           {assessmentImpact.changed_observation_ids && assessmentImpact.changed_observation_ids.length > 0 && <p>Details added or corrected since this review: {assessmentImpact.changed_observation_ids.length}</p>}
           {assessmentImpact.changed_prerequisite_claim_ids.length > 0 && <p>Other care details that need another review: {assessmentImpact.changed_prerequisite_claim_ids.length}</p>}
-          {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {simpleReviewStatus(item.field)}</strong><div>{caregiverSafeAssistantText(item.description) || "The saved reports do not match."}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
-          <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{caregiverSafeAssistantText(assessmentImpact.interpretation_limit) || "This check may not include every relevant detail."}</p>
+          {assessmentImpact.unresolved_conflicts?.map((item) => <div key={item.conflict_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 5, marginTop: 5 }}><strong>Reports that do not match · {simpleReviewStatus(item.field)}</strong><div>{caregiverSafeGeneratedText(item.description) || "The saved reports do not match."}</div><small>{simpleReviewStatus(item.resolution_status)}</small></div>)}
+          <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{caregiverSafeGeneratedText(assessmentImpact.interpretation_limit) || "This check may not include every relevant detail."}</p>
         </>}
       </section>
       <h4 style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 5 }}>Past reviews</h4>
