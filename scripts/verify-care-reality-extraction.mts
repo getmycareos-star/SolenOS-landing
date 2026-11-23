@@ -124,6 +124,18 @@ assert.equal(
   true,
 );
 assert.equal(
+  looksLikeContributorLoadFragment(
+    "I just feel like I'm drowning. Everything is on me and I don't know how much longer I can do this.",
+  ),
+  true,
+  "caregiver overload must remain context, not become a care-recipient fact",
+);
+assert.equal(
+  classifyExtractionFragment("I just feel like I'm drowning."),
+  "contributor_load",
+  "caregiver distress must be separated from observations about the person receiving care",
+);
+assert.equal(
   classifyExtractionFragment("She has been sleeping a lot more."),
   "observation",
 );
