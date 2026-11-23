@@ -4,7 +4,6 @@ import type { SafetyOverrideState } from "../safety-override";
 import { countCaregiverTextWords } from "../cognitive-compression/verbosity";
 import { VERBOSITY_TOTAL_WORD_LIMITS } from "../cognitive-compression";
 import {
-  CRITICAL_TOTAL_MAX_WORDS,
   HIGH_TOTAL_MAX_WORDS,
 } from "../safety-override";
 import {
