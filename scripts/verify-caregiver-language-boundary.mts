@@ -1227,3 +1227,8 @@ assert.match(caregiverAccessPanel, /Some caregiver information could not be refr
   "partial caregiver-access reads must be disclosed instead of silently appearing complete");
 assert.match(caregiverAccessPanel, /disabled=\{busy \|\| loadWarnings\.includes\("pending responsibility transfers"\)\}/,
   "responses must be paused when the pending responsibility-transfer list is stale");
+
+assert.match(caregiverAccessPanel, /loadWarnings\.includes\("caregiver access list"\)[\s\S]*?Ask to change the main caregiver/,
+  "main-caregiver transfers must wait until the caregiver list has been refreshed");
+assert.match(caregiverAccessPanel, /loadWarnings\.includes\("assigned care responsibilities"\)[\s\S]*?Ask another caregiver to take over/,
+  "responsibility transfers must wait until the assigned-care list has been refreshed");
