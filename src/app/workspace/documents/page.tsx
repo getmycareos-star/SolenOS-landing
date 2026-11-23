@@ -157,6 +157,7 @@ export default function DocumentsPage() {
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraFacingMode, setCameraFacingMode] = useState<"environment" | "user">("environment");
   const [cameraStarting, setCameraStarting] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [capturedPages, setCapturedPages] = useState<File[]>([]);
@@ -332,7 +333,7 @@ export default function DocumentsPage() {
       setCameraStarting(false);
       return;
     }
-    void navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
+    void navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: cameraFacingMode } }, audio: false })
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop());
@@ -356,12 +357,13 @@ export default function DocumentsPage() {
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
       cameraStreamRef.current = null;
     };
-  }, [cameraOpen]);
+  }, [cameraOpen, cameraFacingMode]);
 
   const closeCameraScanner = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     cameraStreamRef.current = null;
     setCameraOpen(false);
+    setCameraFacingMode("environment");
     setCapturedPages([]);
     setCameraError(null);
   };
@@ -683,7 +685,7 @@ export default function DocumentsPage() {
         <input ref={snapInputRef} type="file" accept="image/*" capture="environment" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("capture"); void handleFiles(files); }} />
         <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Upload size={17} />Upload files</button>
         <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Camera size={17} />Snap a photo</button>
-        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
+        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
       </section>
 
       <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
@@ -827,6 +829,7 @@ export default function DocumentsPage() {
           {cameraError && <p role="alert" style={{ margin: 0, color: "var(--theme-error-fg)" }}>{cameraError}</p>}
           <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{capturedPages.length} page(s) captured</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => setCameraFacingMode((current) => current === "environment" ? "user" : "environment")} disabled={cameraStarting} aria-label={cameraFacingMode === "environment" ? "Switch to front camera" : "Switch to back camera"} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "9px 13px" }}>{cameraFacingMode === "environment" ? "Use front camera" : "Use back camera"}</button>
             <button type="button" onClick={captureCameraPage} disabled={cameraStarting} style={{ minHeight: 44, border: "1px solid var(--theme-action-border)", borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Take photo</button>
             <button type="button" onClick={finishCameraScan} disabled={!capturedPages.length || cameraStarting} style={{ minHeight: 44, border: "1px solid var(--theme-action-border)", borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Review {capturedPages.length || ""} page(s)</button>
             <button type="button" onClick={closeCameraScanner} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "9px 13px" }}>Cancel</button>
