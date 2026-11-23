@@ -17,7 +17,7 @@ import {
 
 import { Button } from "@/components/ui/Button";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
 const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
 const ChangeIntelligencePanel = dynamic(() => import("@/components/mvp-workspace/ChangeIntelligencePanel").then((module) => module.ChangeIntelligencePanel), { ssr: false, loading: () => <p role="status">Loading care changes…</p> });
@@ -207,7 +207,7 @@ function parseDescription(description?: string | null): string {
   if (!description?.trim()) return "";
   try {
     const parsed: unknown = JSON.parse(description);
-    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || "Saved care information";
+    if (typeof parsed === "string") return caregiverSourceText(parsed) || "Saved care information";
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const root = parsed as Record<string, unknown>;
       const capture = (root.original_capture && typeof root.original_capture === "object" && !Array.isArray(root.original_capture)
@@ -226,11 +226,11 @@ function parseDescription(description?: string | null): string {
         readable.push(labels[quick.kind] || "Quick check-in recorded");
       }
       const note = typeof quick?.note === "string" && quick.note.trim()
-        ? caregiverSafeAssistantText(quick.note.trim()) || ""
+        ? caregiverSourceText(quick.note.trim()) || ""
         : typeof capture.notes === "string" && capture.notes.trim()
-          ? caregiverSafeAssistantText(capture.notes.trim()) || ""
+          ? caregiverSourceText(capture.notes.trim()) || ""
           : typeof capture.original_notes === "string" && capture.original_notes.trim()
-            ? caregiverSafeAssistantText(capture.original_notes.trim()) || ""
+            ? caregiverSourceText(capture.original_notes.trim()) || ""
             : "";
       if (note) readable.push(note);
 
@@ -252,7 +252,7 @@ function parseDescription(description?: string | null): string {
             : typeof medicine.scheduled_for === "string"
               ? ` (scheduled for ${formatDateTime(medicine.scheduled_for)}; not proof it was given)`
               : "";
-          readable.push(`${caregiverSafeAssistantText(name) || "Medicine"}: ${labels[status] || caregiverStatusLabel(status) || "Status not recorded"}${time}`);
+          readable.push(`${caregiverSourceText(name) || "Medicine"}: ${labels[status] || caregiverStatusLabel(status) || "Status not recorded"}${time}`);
         }
       }
       if (Array.isArray(capture.vitals)) {
@@ -263,7 +263,7 @@ function parseDescription(description?: string | null): string {
             ? reading.measurement_name
             : typeof reading.vital_type === "string" ? ({ blood_pressure: "Blood pressure", heart_rate: "Heart rate", temperature: "Temperature", oxygen_saturation: "Oxygen level", weight: "Weight", blood_glucose: "Blood sugar", respiratory_rate: "Breathing rate" } as Record<string, string>)[reading.vital_type] || "Measurement" : "Measurement";
           if (typeof reading.value === "number" || typeof reading.value === "string") {
-            readable.push(`${caregiverSafeAssistantText(label) || "Measurement"}: ${reading.value}${typeof reading.unit === "string" && reading.unit ? ` ${reading.unit}` : ""}`);
+            readable.push(`${caregiverSourceText(label) || "Measurement"}: ${reading.value}${typeof reading.unit === "string" && reading.unit ? ` ${reading.unit}` : ""}`);
           }
         }
       }

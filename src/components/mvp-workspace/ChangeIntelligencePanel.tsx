@@ -516,8 +516,8 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     ) : null}
                     {details[change.id].evidence.map((source) => (
                       <article key={source.id}>
-                        <strong>{caregiverSafeAssistantText(source.title) ?? "Saved care update"}</strong>
-                        <p>{caregiverSafeAssistantText(source.description) ?? "No further details are available."}</p>
+                        <strong>{caregiverSourceText(source.title) ?? "Saved care update"}</strong>
+                        <p>{caregiverSourceText(source.description) ?? "No further details are available."}</p>
                         <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
                       </article>
                     ))}
@@ -588,8 +588,8 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No matching care updates were found.</p> : null}
                     {patternDetails[pattern.id].events.map((source) => (
                       <article key={source.id}>
-                        <strong>{caregiverSafeAssistantText(source.title) ?? "Saved care update"}</strong>
-                        <p>{caregiverSafeAssistantText(source.description) ?? "No further details are available."}</p>
+                        <strong>{caregiverSourceText(source.title) ?? "Saved care update"}</strong>
+                        <p>{caregiverSourceText(source.description) ?? "No further details are available."}</p>
                         <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
                       </article>
                     ))}
@@ -666,7 +666,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                           situationDetail.source_records.map((record) => (
                             <article key={record.source_type + ":" + record.id} className="lcr-evidence-item">
                               <div className="lcr-entry-heading">
-                                <strong>{caregiverSafeAssistantText(record.title) ?? "Saved care record"}</strong>
+                                <strong>{caregiverSourceText(record.title) ?? "Saved care record"}</strong>
                                 <span>{caregiverStatusLabel(record.status) ?? "Recorded"}</span>
                               </div>
                               <p className="panel-muted">
@@ -676,7 +676,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                                   : ""}
                               </p>
                               {record.excerpt ? (
-                                <p>{caregiverSafeAssistantText(record.excerpt) || "The original wording could not be displayed."}</p>
+                                <p>{caregiverSourceText(record.excerpt) || "The original wording could not be displayed."}</p>
                               ) : null}
                               {record.epistemic_status ? (
                                 <p className="panel-muted">

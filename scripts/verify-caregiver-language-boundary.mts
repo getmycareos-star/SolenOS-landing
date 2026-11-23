@@ -177,8 +177,11 @@ const sourceIndicator = read("../src/components/trust/SourceIndicator.tsx");
 const trustIndicators = read("../src/lib/trust-provenance/trust-indicators.ts");
 const qwenAssist = read("../src/components/qwen/QwenAssistPanel.tsx");
 assert.match(qwenAssist, /caregiverSourceText\(source\.source_excerpt\)/, "Qwen source excerpts must remain verbatim");
+assert.match(qwenAssist, /caregiverSourceText\(observation\.reported_by\)/, "Qwen observation attribution must preserve the original reporter label");
+assert.match(qwenAssist, /caregiverSourceText\(observation\.source_excerpt\)/, "Qwen observation excerpts must remain verbatim");
 const lcrQwenInterpretation = read("../src/components/mvp-workspace/LcrQwenInterpretation.tsx");
 assert.match(lcrQwenInterpretation, /caregiverSourceText\(source\.reported_by\)/, "LCR interpretation must preserve source attribution");
+assert.match(lcrQwenInterpretation, /caregiverSourceText\(observation\.reported_by\)/, "LCR observation attribution must preserve the original reporter label");
 const shareSummary = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
 const legalDocuments = read("../src/lib/trust-content/legal-documents.ts");
 const careCaptureLegacy = read("../src/components/CareCapture.tsx");
@@ -196,6 +199,9 @@ const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const livingCareRecordPanel = read("../src/components/mvp-workspace/LivingCareRecordPanel.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 assert.match(changeIntelligence, /caregiverSourceText\(source\.source_text \?\? source\.source_label\)/, "change history must preserve original source wording");
+assert.match(changeIntelligence, /caregiverSourceText\(source\.title\)/, "saved evidence titles must remain exact source text");
+assert.match(changeIntelligence, /caregiverSourceText\(source\.description\)/, "saved evidence descriptions must remain exact source text");
+assert.match(read("../src/app/workspace/timeline/page.tsx"), /caregiverSourceText\(capture\.notes\.trim\(\)\)/, "timeline must preserve exact caregiver notes");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
 assert.match(dailyCareIntelligence, /caregiverSourceText\(source\.title\)/, "Daily Care retrieval must preserve original source titles");
 const naturalDailyUpdate = read("../src/components/workflows/NaturalLanguageDailyUpdate.tsx");
@@ -242,6 +248,7 @@ assert.match(structuredDailyCapture, /caregiverSourceText\(item\.dose\)/,
   "saved medication doses must not expose raw structured metadata");
 assert.match(structuredDailyCapture, /caregiverSourceText\(item\.source_text\)/,
   "saved medication source notes must use readable caregiver text");
+assert.match(clarificationWorkflow, /caregiverSourceText\(content\.slice\(0, 100\)\)/, "clarification source previews must preserve the original note");
 assert.match(clarificationWorkflow, /caregiverSourceText\(item\.answer\)/,
   "saved clarification answers must not expose raw structured metadata");
 assert.match(clarificationWorkflow, /caregiverSourceText\(item\.answer_provenance\)/,
@@ -388,11 +395,11 @@ assert.match(qwenAssist, /caregiverSafeGeneratedText\(claim\.text\)/,
   "legacy Qwen claims must use the caregiver language boundary");
 assert.match(qwenAssist, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\)/,
   "legacy Qwen aggregate time-window labels must use caregiver-safe text");
-assert.match(qwenAssist, /caregiverSafeAssistantText\(source\.reported_by\)/,
+assert.match(qwenAssist, /caregiverSourceText\(source\.reported_by\)/,
   "legacy Qwen source attribution must not expose raw structured values");
 assert.match(qwenAssist, /caregiverSafeGeneratedText\(source\.source_state_label\)/,
   "legacy Qwen source statuses must use caregiver-safe labels");
-assert.match(qwenAssist, /caregiverSafeAssistantText\(source\.source_excerpt\)/,
+assert.match(qwenAssist, /caregiverSourceText\(source\.source_excerpt\)/,
   "legacy Qwen source excerpts must not expose raw diagnostics");
 assert.match(qwenAssist, /caregiverSafeAssistantText\(observation\.value \|\| observation\.attribute\)/,
   "legacy Qwen observation values must use readable caregiver text");
@@ -1075,7 +1082,7 @@ assert.match(lcr, /caregiverSafeAssistantText\(item\.owner\) \|\| "Not recorded"
   "caregiver responsibility names must not expose raw structured metadata");
 assert.match(changeIntelligence, /caregiverSafeGeneratedText\(record\.source_label\) \|\| "Saved note or document"/,
   "change-history source labels must use caregiver-safe generated copy");
-assert.match(changeIntelligence, /caregiverSafeAssistantText\(record\.excerpt\) \|\| "The original wording could not be displayed\."/,
+assert.match(changeIntelligence, /caregiverSourceText\(record\.excerpt\) \|\| "The original wording could not be displayed\."/,
   "saved source excerpts must not expose raw structured metadata");
 assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail to check"/,
   "generated missing-information titles must use caregiver-safe copy");

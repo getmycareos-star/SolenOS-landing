@@ -112,7 +112,7 @@ function evidenceSummary(item: Evidence): string {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const content = parsed.original_capture ?? parsed.original_notes ?? parsed.notes ?? parsed.description ?? parsed.text;
-    if (typeof content === "string") return caregiverSafeAssistantText(content.slice(0, 100)) || "Saved care information";
+    if (typeof content === "string") return caregiverSourceText(content.slice(0, 100)) || "Saved care information";
     if (content && typeof content === "object" && !Array.isArray(content)) {
       return "Saved care information";
     }
