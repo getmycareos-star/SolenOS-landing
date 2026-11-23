@@ -12,6 +12,7 @@ import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-context";
 import { useEffect, useState, type ReactNode } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BrandLoading } from "@/components/brand";
+import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 function formatUpdatedDate(iso: string | null): string {
   if (!iso) return "";
@@ -42,9 +43,9 @@ function CareContextBar() {
         <div className="care-context-info">
           {active ? (
             <>
-              <span className="care-context-name">{active.title}</span>
+              <span className="care-context-name">{caregiverSafeAssistantText(active.title) || "Care information"}</span>
               <span className={`care-context-status care-context-status--${active.status}`}>
-                {active.status}
+                {caregiverStatusLabel(active.status) || "Status not available"}
               </span>
               {updatedLabel && (
                 <span className="care-context-meta">Updated {updatedLabel}</span>
@@ -54,7 +55,7 @@ function CareContextBar() {
             <>
               <span className="care-context-name">{runtime.situations.length} care areas</span>
               <span className="care-context-status care-context-status--paused">
-                No active
+                No active care area
               </span>
             </>
           ) : (
