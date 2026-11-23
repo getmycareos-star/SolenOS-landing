@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { getJSON } from "@/api/client";
 import { X } from "lucide-react";
-import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import {
   CareHandoffSharing,
   type CareHandoffSharingProps,
@@ -49,7 +49,7 @@ function downloadBriefing(draft: BriefingDraft) {
       ...(draft.selected_appointment.provider ? ["Provider: " + draft.selected_appointment.provider] : []),
     ] : []),
     "Review: " + (caregiverStatusLabel(draft.review_status) || "Needs review"),
-    ...(draft.template_sections ?? []).filter(item => /medication/i.test(item.title)).map(item => item.coverage_note),
+    ...(draft.template_sections ?? []).filter(item => /medication/i.test(item.title)).map(item => caregiverSafeGeneratedText(item.coverage_note) || "Some medication information could not be checked."),
     ...(draft.generation?.sources_available && draft.generation.sources_considered !== undefined && draft.generation.sources_available > draft.generation.sources_considered ? ["This summary includes " + draft.generation.sources_considered + " of " + draft.generation.sources_available + " saved care notes and updates. It is not the full Care Record."] : []),
     ...(draft.retrieval_complete === false ? [
       "This summary does not include everything saved in your Care Record.",
@@ -64,9 +64,13 @@ function downloadBriefing(draft: BriefingDraft) {
       : "This summary was prepared with help from SolenOS. It is a draft, not a confirmed medical record. Each item includes words from a saved note or document. Check each item and date before sharing it.",
     ...sections.flatMap((item, index) => [
       "",
-      item.section,
-      item.summary || item.text,
-      item.supporting_quote ? "Words from your saved note or document: " + item.supporting_quote : "Words from the original note or document are not available.",
+      caregiverSafeGeneratedText(item.section) || "Care information",
+      draft.generation?.status === "source_only_fallback"
+        ? caregiverReadableCaptureText(item.summary || item.text) || "Saved care information"
+        : caregiverSafeGeneratedText(item.summary || item.text) || "Some details could not be shown in plain language.",
+      item.supporting_quote
+        ? "Words from your saved note or document: " + (caregiverReadableCaptureText(item.supporting_quote) || "Original wording is not available in a readable form.")
+        : "Words from the original note or document are not available.",
       "Related care detail: " + (index + 1),
       "What is known: " + (caregiverInformationLabel(item.epistemic_status) || "Not recorded"),
       "Review status: " + (caregiverStatusLabel(item.record_status) || "Not recorded"),
