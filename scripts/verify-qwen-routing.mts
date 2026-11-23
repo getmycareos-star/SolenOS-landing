@@ -301,3 +301,7 @@ assert.match(apiClient, /requestOptions: \{ signal\?: AbortSignal \} = \{\}/,
   "POST requests must accept an optional cancellation signal");
 assert.match(apiClient, /signal: requestOptions\.signal/,
   "POST requests must forward cancellation to fetch");
+
+requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
+  "source_event_id: sourceEventId",
+]);
