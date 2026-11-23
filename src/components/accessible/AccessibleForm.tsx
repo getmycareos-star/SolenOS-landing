@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { caregiverSafeErrorMessage } from '@/lib/caregiver-language';
 import { useScreenReaderAnnouncer } from '../lib/accessibility';
 import { AccessibleInput } from './AccessibleInput';
 import { AccessibleButton } from './AccessibleButton';
@@ -137,7 +138,7 @@ export function AccessibleForm({
       }
     } catch (err) {
       setSubmitStatus('error');
-      announce(`Form submission failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      announce(caregiverSafeErrorMessage());
     } finally {
       setIsSubmitting(false);
     }
