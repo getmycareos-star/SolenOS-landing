@@ -19,7 +19,7 @@ import {
   type WorkspaceSituationResponse,
 } from "@/lib/situation-entry/backend-response";
 import { sanitizeCaregiverErrorMessage } from "@/lib/mvp-input-architecture";
-import { caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import {
   CARE_RECIPIENT_ID_STORAGE,
   DURABLE_CARE_KEY_STORAGE,
@@ -1184,9 +1184,9 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
                   <p>{savedEventReceipt.readbackVerified
                     ? "Your update is saved. It has not been treated as a separate ongoing care situation."
                     : "Your update was saved, but we couldn’t refresh your Care Record. Refresh it before trying again."}</p>
-                  <p><strong>Care update:</strong> {caregiverSafeAssistantText(savedEventReceipt.title) || "Care update"}</p>
+                  <p><strong>Care update:</strong> {caregiverSourceText(savedEventReceipt.title) || "Care update"}</p>
                   <p>Your update is saved in your Care Record.</p>
-                  {savedEventReceipt.description && <p>{caregiverSafeAssistantText(savedEventReceipt.description) || "No further details were recorded."}</p>}
+                  {savedEventReceipt.description && <p>{caregiverSourceText(savedEventReceipt.description) || "No further details were recorded."}</p>}
                 </section>
               ) : (
                 <section className="panel panel-response" role="status" aria-live="polite">
