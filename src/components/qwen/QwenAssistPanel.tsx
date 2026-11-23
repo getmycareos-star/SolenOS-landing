@@ -402,7 +402,7 @@ export default function QwenAssistPanel({
                   {claim.support_status === "matched_validated_aggregate" && (
                     <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0 }}>
                       Counted from {claim.aggregate?.count ?? claim.source_references.length} distinct saved care updates
-                      {claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.
+                      {claim.aggregate?.window_label ? " during " + (caregiverSafeAssistantText(claim.aggregate.window_label) || "the selected time period") : ""}.
                     </p>
                   )}
                   {claim.support_status === "aggregate_count_mismatch" && (
