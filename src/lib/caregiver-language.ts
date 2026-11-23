@@ -139,8 +139,6 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   no_longer_relevant: "No longer relevant",
   not_started: "Not started",
   blocked: "Waiting for another step",
-
-  blocked: "Not available",
   review_abandoned: "Needs another look",
   within_review_window: "Recently reviewed",
   needs_confirmation: "Needs a fresh check",
