@@ -37,6 +37,7 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [cameraFacingMode, setCameraFacingMode] = useState<"environment" | "user">("environment");
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -57,7 +58,7 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw new TypeError("Camera API unavailable");
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          video: { facingMode: { ideal: cameraFacingMode } },
           audio: false,
         });
         if (cancelled) {
@@ -82,7 +83,7 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
       cancelled = true;
       stop();
     };
-  }, [open, stop]);
+  }, [open, stop, cameraFacingMode]);
 
   function captureFrame() {
     const video = videoRef.current;
@@ -139,6 +140,13 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
         <div className="entry-capture-actions">
           <button
             type="button"
+          <button
+            type="button"
+            className="workspace-secondary"
+            onClick={() => setCameraFacingMode((mode) => mode === "environment" ? "user" : "environment")}
+          >
+            Switch to {cameraFacingMode === "environment" ? "front" : "back"} camera
+          </button>
             className="workspace-primary"
             disabled={!ready || !!error}
             onClick={captureFrame}
