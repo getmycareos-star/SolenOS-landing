@@ -148,7 +148,7 @@ export function caregiverVisibleBriefingSections(draft: CareHandoffSharingProps[
 function caregiverVisibleRevisionSections(
   sections: Array<{ section: string; text: string; source_ref: string }>,
   audience: CareHandoffSharingProps["audience"] | undefined,
-  purpose: CareHandoffSharingProps["purpose"] | undefined,
+  purpose: string | null | undefined,
 ) {
   if (audience !== "professional" || purpose !== "appointment") return sections;
   return sections.filter((item) => !item.source_ref.startsWith("caregiver_profiles:"));
