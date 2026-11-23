@@ -112,3 +112,8 @@ assert.match(page, /function lifecycleNextStepLabel/, "every follow-up state mus
 assert.match(page, /Next step: \{lifecycleNextStepLabel\(loop\)\}/, "follow-up cards must display the next step beside the current status");
 assert.match(page, /No action is needed unless new information changes this/, "resolved follow-ups must not create unnecessary work");
 assert.match(page, /Ask the person who may know, or add the information when it becomes available/, "missing-information follow-ups must explain a practical next step");
+
+assert.match(page, /loop\?\.priority_reasons/, "saved follow-up reasons must be included in the caregiver explanation");
+assert.match(page, /What information is missing/, "follow-ups that need clarification must show the missing information section");
+assert.match(page, /caregiverSafeGeneratedText\(detail\)/, "missing-information details must pass through the caregiver language boundary");
+assert.match(page, /The specific information needed has not been recorded yet/, "missing-information states must not invent details");
