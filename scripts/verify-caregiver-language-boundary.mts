@@ -1035,6 +1035,7 @@ const cameraPermission = read("../src/lib/permissions/useCameraPermission.ts");
 const locationPermission = read("../src/lib/permissions/useLocationPermission.ts");
 
 const globalErrorPage = read("../src/app/global-error.tsx");
+const firstInput = read("../src/lib/mvp-input-architecture/first-input.ts");
 const settingsPage = read("../src/app/workspace/settings/page.tsx");
 assert.match(followUpsPage, /const reasonCandidates = \[\.\.\.\(item\.priority_basis \|\| \[\]\), \.\.\.\(item\.reason \? \[item\.reason\] : \[\]\)\]/,
   "Follow-ups must retain the count of explanations before filtering");
