@@ -3,6 +3,10 @@ name: Critical care journeys — real backend and browser (main validation)
 on:
   workflow_call:
     inputs:
+      frontend_ref:
+        description: "Exact frontend main revision to test; defaults to the triggering commit"
+        required: false
+        type: string
       require_live_qwen:
         description: "Run the browser journeys against a real Qwen/Ollama runtime"
         required: false
@@ -49,6 +53,11 @@ on:
       - ".github/workflows/critical-care-journeys-e2e.yml"
   workflow_dispatch:
     inputs:
+      frontend_ref:
+        description: "Frontend revision to test; defaults to main"
+        required: false
+        type: string
+        default: main
       require_live_qwen:
         description: "Run the browser journeys against a real Qwen/Ollama runtime"
         required: false
@@ -94,14 +103,14 @@ jobs:
       OLLAMA_MODEL: qwen3.5:4b
       OLLAMA_TIMEOUT_SECONDS: ${{ inputs.require_live_qwen && '180' || '5' }}
       OLLAMA_NUM_CTX: "4096"
-      OLLAMA_NUM_PREDICT: "160"
+      OLLAMA_NUM_PREDICT: "96"
       OLLAMA_NUM_THREADS: "2"
       OLLAMA_SIDECAR_ENABLED: "false"
     steps:
       - name: Check out triggering frontend commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.frontend_ref || github.sha }}
 
       - name: Record frontend revision under test
         run: |

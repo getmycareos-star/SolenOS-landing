@@ -1756,16 +1756,17 @@ await record("Daily Care saves and retrieves original reports without relying on
     .waitFor({ state: "visible", timeout: 15_000 });
   const dailyCaptureJobs = [];
   for (const [index, report] of scenarioReports.entries()) {
-    dailyCaptureJobs.push(await saveFreeTextUpdate(report, index === 2 ? async () => {
+    const saved = await saveFreeTextUpdate(report, index === 2 ? async () => {
       await daily.page.getByText(/The existing reviewed medication record lists: Metformin — 500 mg/i).waitFor({ timeout: 15_000 });
-    } : undefined));
+    } : undefined);
+    dailyCaptureJobs.push({ ...saved, sourceReport: report });
   }
 
   if (requireLiveQwen) {
     // In the live-Qwen browser run, wait for every saved update to complete its
     // real extraction and reconciliation path. The model output remains a
     // reviewable candidate; it must not become an accepted care assertion.
-    for (const { jobId } of dailyCaptureJobs) {
+    for (const { jobId, sourceReport } of dailyCaptureJobs) {
       const deadline = Date.now() + 12 * 60 * 1000;
       let completed = null;
       while (Date.now() < deadline) {
@@ -1796,7 +1797,7 @@ await record("Daily Care saves and retrieves original reports without relying on
       assert.ok(candidates.length > 0, JSON.stringify(analysis.payload));
       assert.ok(candidates.some(candidate =>
         typeof candidate.source_quote === "string" &&
-        scenarioReports.some(report => report.includes(candidate.source_quote))
+        sourceReport.includes(candidate.source_quote)
       ), "Live Qwen Daily Care candidates must retain exact wording from a saved caregiver report");
     }
   } else {

@@ -15,7 +15,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  resolve-current-main:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_ref: ${{ steps.revision.outputs.sha }}
+    steps:
+      - name: Check out the latest frontend main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Record exact frontend main SHA
+        id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   live-qwen-browser:
+    needs: resolve-current-main
     uses: ./.github/workflows/critical-care-journeys-e2e.yml
     with:
       require_live_qwen: true
+      frontend_ref: ${{ needs.resolve-current-main.outputs.frontend_ref }}
