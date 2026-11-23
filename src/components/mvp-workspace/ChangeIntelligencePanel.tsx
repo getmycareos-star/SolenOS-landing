@@ -584,7 +584,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                 {expandedPatternId === pattern.id && patternDetailErrors[pattern.id] ? <p role="alert" className="panel-muted">{patternDetailErrors[pattern.id]}</p> : null}
                 {expandedPatternId === pattern.id && patternDetails[pattern.id] ? (
                   <div>
-                    <strong>Care updates included</strong>
+                    <strong>Related care updates</strong>
                     {patternDetails[pattern.id].events.length === 0 ? <p className="panel-muted">No matching care updates were found.</p> : null}
                     {patternDetails[pattern.id].events.map((source) => (
                       <article key={source.id}>
