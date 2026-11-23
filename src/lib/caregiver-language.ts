@@ -367,8 +367,7 @@ export function isTechnicalDiagnosticText(value: string): boolean {
  */
 export function caregiverSourceText(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const text = value.trim();
-  return text || null;
+  return value.trim() ? value : null;
 }
 
 export function caregiverSafeAssistantText(value: unknown): string | null {
