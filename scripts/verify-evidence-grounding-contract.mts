@@ -208,7 +208,7 @@ assert(evidenceReviewPanel.includes("/care-continuity/record-versions"), "caregi
 assert(evidenceReviewPanel.includes("Save a copy now"), "the saved-copy action must be visible in the care history screen");
 assert(evidenceReviewPanel.includes("living-records?limit=2"), "the saved-copy action must resolve the existing care record through the authenticated API");
 assert(evidenceReviewPanel.includes("saved_snapshot_only"), "historical snapshot UI must identify the exact saved-copy coverage limit");
-assert(evidenceReviewPanel.includes("No verified saved copy of the full care record is available"), "missing snapshots must not be presented as an empty care record");
+assert(evidenceReviewPanel.includes("No saved copy of your full Care Record is available for that date. This does not mean the record was empty."), "missing snapshots must not be presented as an empty care record");
 assert(evidenceReviewPanel.includes("/care-continuity/state-revisions/evidence/"), "evidence UI must retain the separate source-specific revision lookup");
 
 
