@@ -183,6 +183,14 @@ const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
+assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\.title\)/,
+  "saved care receipt titles must not expose raw structured metadata");
+assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\.description\)/,
+  "saved care receipt descriptions must use readable caregiver text");
+assert.match(dementiaObservation, /caregiverSafeAssistantText\(item\.description\)/,
+  "saved dementia observations must not expose raw structured metadata");
+assert.match(identityRecovery, /caregiverSafeAssistantText\(device\.label\)/,
+  "device labels must not expose raw structured values");
 assert.match(companion, /caregiverSafeAssistantText\(source\.reported_by\)/,
   "Companion source attribution must not expose raw structured values");
 assert.match(companion, /caregiverSafeAssistantText\(source\.entered_by\)/,
