@@ -1049,7 +1049,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                     <p className="mobile-settings-hint" style={{ margin: 0 }}>We couldn't load the care tasks you've taken on. Refresh this section to try again.</p>
                   ) : responsibilityHistory.length > 0 ? responsibilityHistory.slice(0, 12).map((item) => (
                     <div key={item.id} style={{ borderTop: "1px solid var(--border, #d8ded8)", paddingTop: "0.5rem" }}>
-                      <strong style={{ fontSize: "0.88rem" }}>{caregiverFieldLabel(item.responsibility_type) || "Care task"} · {caregiverStatusLabel(item.status) || "Status not available"}</strong>
+                      <strong style={{ fontSize: "0.88rem" }}>{caregiverFieldLabel(item.responsibility_type) || "Care task"} · {caregiverStatusLabel(item.status) || "Not recorded"}</strong>
                       <p className="mobile-settings-hint" style={{ margin: "0.2rem 0 0" }}>
                         {caregiverFieldLabel(item.scope) || caregiverSafeAssistantText(item.scope) || "No task details were recorded"} · Started {item.effective_start ? new Date(item.effective_start).toLocaleDateString() : "date not recorded"} · {item.effective_end ? "Ended " + new Date(item.effective_end).toLocaleDateString() : "Current"}
                       </p>
@@ -1067,7 +1067,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                   {networkSummary.responsibility_gaps?.map((item) => (
                     <div key={item.id} style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px solid var(--border, #d8ded8)", borderRadius: "9px" }}>
                       <strong style={{ fontSize: "0.9rem" }}>Care task: {caregiverFieldLabel(item.type)}</strong>
-                      <span className="mobile-settings-hint">{caregiverFieldLabel(item.scope) || caregiverSafeAssistantText(item.scope) || "No details about this task were recorded"} · {caregiverStatusLabel(item.status) || "Status not available"}</span>
+                      <span className="mobile-settings-hint">{caregiverFieldLabel(item.scope) || caregiverSafeAssistantText(item.scope) || "No details about this task were recorded"} · {caregiverStatusLabel(item.status) || "Not recorded"}</span>
                       <label className="mobile-settings-hint" htmlFor={"gap-review-status-" + item.id}>What happened?</label>
                       <select
                         id={"gap-review-status-" + item.id}
@@ -1196,7 +1196,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <section key={caregiver.caregiver_id} style={{ display: "grid", gap: "0.35rem", paddingTop: "0.65rem", borderTop: "1px solid var(--border, #d8ded8)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
                     <strong>{caregiver.name}</strong>
-                    <span className="mobile-settings-hint">{caregiverFieldLabel(caregiver.relationship) || caregiverSafeAssistantText(caregiver.relationship) || "Relationship not recorded"} · {caregiverStatusLabel(caregiver.involvement_status) || "Status not available"}</span>
+                    <span className="mobile-settings-hint">{caregiverFieldLabel(caregiver.relationship) || caregiverSafeAssistantText(caregiver.relationship) || "Relationship not recorded"} · {caregiverStatusLabel(caregiver.involvement_status) || "Not recorded"}</span>
                   </div>
                   {(caregiver.roles?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>How they help: {caregiver.roles?.map((role) => role.custom_role_name || caregiverFieldLabel(role.role_type) || caregiverStatusLabel(role.role_type) || "Care role").join(", ")}</p>}
                   {(caregiver.responsibilities?.length ?? 0) > 0 && <p className="mobile-settings-hint" style={{ margin: 0 }}>Care tasks: {caregiver.responsibilities?.map((item) => caregiverFieldLabel(item.type) || caregiverStatusLabel(item.type) || "Care task").join(", ")}</p>}
