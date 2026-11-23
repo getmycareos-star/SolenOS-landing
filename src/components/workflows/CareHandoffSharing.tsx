@@ -133,6 +133,18 @@ export type CareHandoffSharingProps = {
   onResumeDraft?: (draft: DraftPayload) => void;
 };
 
+export function caregiverVisibleBriefingSections(draft: CareHandoffSharingProps["draft"]) {
+  const sections = draft?.generation?.sections ?? [];
+  if (draft?.audience !== "professional" || draft?.purpose !== "professional_appointment") return sections;
+  const sourceTables = new Map(
+    draft.source_references.map((source) => [
+      source.source_table + ":" + source.source_id,
+      source.source_table,
+    ]),
+  );
+  return sections.filter((item) => sourceTables.get(item.source_ref) !== "caregiver_profiles");
+}
+
 const panel: CSSProperties = { marginTop: 12, padding: 14, border: "1px solid #dce7dc", borderRadius: 12, background: "#fff" };
 const button: CSSProperties = { border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: "#dce9dc", color: "#172117", fontWeight: 650, cursor: "pointer" };
 const quietButton: CSSProperties = { ...button, background: "transparent", fontWeight: 550 };
@@ -202,7 +214,7 @@ function scopeForSourceType(sourceType: string): string {
   return "lcr_summary";
 }
 
-function requiredHandoffScopes(draft: DraftPayload, generationSections = draft.generation?.sections ?? []): string[] {
+function requiredHandoffScopes(draft: DraftPayload, generationSections = caregiverVisibleBriefingSections(draft)): string[] {
   const sourceTypes = new Map<string, string>();
   for (const section of draft.sections) {
     for (const item of section.items) sourceTypes.set(item.source_table + ":" + item.source_id, item.source_type);
@@ -217,7 +229,7 @@ function sourceKeysForScope(scope: string): Set<string> {
   return new Set(["care_facts", "care_assertions", "care_events", "care_decisions", "decision_outcomes", "care_transitions", "care_timeline_entries", "daily_care"]);
 }
 
-function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "", generationSections = draft.generation?.sections ?? []) {
+function buildShareText(draft: DraftPayload, audience: "family" | "professional", purpose: string, scopes: string[] = requiredHandoffScopes(draft), caregiverNote = "", generationSections = caregiverVisibleBriefingSections(draft)) {
   const lines = [
     audience === "family" ? "SolenOS Family Care Summary — Care Record" : "SolenOS Care Summary for Healthcare Professionals — Care Record",
     "Purpose: " + handoffPurposeLabel(purpose),
@@ -848,7 +860,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </div>
           <section style={{ ...panel, marginTop: 0 }} aria-label="Professional briefing review">
             <h4 style={{ marginTop: 0 }}>Professional briefing</h4>
-            {(draft.generation?.sections ?? []).map((item, index) => (
+            {(caregiverVisibleBriefingSections(draft)).map((item, index) => (
               <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{readableSection(item.section)}</strong>
                 <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>{(draft.generation?.status === "source_only_fallback" ? caregiverReadableCaptureText(item.summary || item.text) ?? caregiverSafeAssistantText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details could not be shown."}</p>
