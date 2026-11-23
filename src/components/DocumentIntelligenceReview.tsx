@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type Candidate = {
@@ -270,8 +270,13 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       if (decision === "accept" && reviewResult.longitudinal_retrieval_status !== "verified") {
         setError("Your choice was saved, but SolenOS could not confirm that it appears in your Care Record. Refresh your Care Record before relying on it.");
       }
-    } catch {
-      setError("We couldn't confirm whether your review was saved. Refresh the review history before trying again. The original document is unchanged.");
+    } catch (error) {
+      if (error instanceof ApiResponseError && error.status === 409) {
+        await load();
+        setError("This document suggestion changed after it was displayed. The latest review is loaded; check the updated wording before deciding.");
+      } else {
+        setError("We couldn't confirm whether your review was saved. Refresh the review history before trying again. The original document is unchanged.");
+      }
     } finally {
       setBusy(null);
     }
