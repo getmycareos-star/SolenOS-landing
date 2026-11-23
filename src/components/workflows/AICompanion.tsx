@@ -764,14 +764,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
                                   {source.entered_by && <p>{caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
                                   {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || 'Status not available'}</p>}
-                                  {source.correction_note && <p>{caregiverSafeAssistantText(source.correction_note) || "A correction was recorded."}</p>}
-                                  {source.correction_rationale && <p>Why it was corrected: {caregiverSafeAssistantText(source.correction_rationale) || "No reason was recorded."}</p>}
-                                  {source.previous_source_excerpt && <blockquote>Earlier wording: {caregiverSafeAssistantText(source.previous_source_excerpt) || "The earlier wording could not be displayed."}</blockquote>}
+                                  {source.correction_note && <p>{source.correction_note}</p>}
+                                  {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
+                                  {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
                                   {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved note or document. It is not a separate report.</p>}
                                   {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                   {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
                                   {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
-                                  {source.source_excerpt && <blockquote>{caregiverSafeAssistantText(source.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
+                                  {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
                                     <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                     <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
@@ -793,7 +793,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {item.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
-                                      {item.source_excerpt && <blockquote>{caregiverSafeAssistantText(item.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
+                                      {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
                                       {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
                                         <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                         <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
@@ -804,10 +804,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.evidence_reviews_status === "empty" && <p>No review of this note or document has been recorded.</p>}
                                       {item.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                       {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
-                                        <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {caregiverSafeAssistantText(observation.value) || "Details not supplied"}</p>
+                                        <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {observation.value}</p>
                                         {observation.reported_by && <p>Reported by: {caregiverSafeAssistantText(observation.reported_by) || "Not recorded"}</p>}
                                         {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
-                                        {observation.source_excerpt && <blockquote>{caregiverSafeAssistantText(observation.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
+                                        {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
                                       </div>)}
                                     </div>)}
                                   </div>}
@@ -852,7 +852,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {reviewedCareUpdatesLoading && <small>Loading previous decisions…</small>}
           {!reviewedCareUpdatesLoading && reviewedCareUpdates.length === 0 && <small>No reviewed care reports were found.</small>}
           {reviewedCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
-            <div><strong>{caregiverStatusLabel(item.status) || 'Reviewed'}</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || caregiverSafeAssistantText(item.proposed_change?.source_quote) || "The original wording could not be displayed."}</p></div>
+            <div><strong>{caregiverStatusLabel(item.status) || 'Reviewed'}</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || item.proposed_change?.source_quote || "The original wording could not be displayed."}</p></div>
             <div className="companion-care-update-actions">
               <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
             </div>
@@ -860,15 +860,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
                 <strong>{caregiverStatusLabel(entry.decision) || 'Reviewed'}</strong>
                 {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || 'No further explanation was recorded.'}</p>}
-                {entry.correction_context && <small>Correction context: {caregiverSafeAssistantText(entry.correction_context) || "Additional context was recorded."}</small>}
+                {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
                 {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
               </div>)}
             </div>}
           </article>)}
         </section>}
         {pendingCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
-          <div><strong>Possible care update</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || caregiverSafeAssistantText(item.proposed_change?.source_quote) || "The original wording could not be displayed."}</p>
-            {item.proposed_change?.event_time_text && <small>When you said it happened: {caregiverSafeAssistantText(item.proposed_change.event_time_text) || "The time was not recorded in readable form."}</small>}
+          <div><strong>Possible care update</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || item.proposed_change?.source_quote || "The original wording could not be displayed."}</p>
+            {item.proposed_change?.event_time_text && <small>When you said it happened: {item.proposed_change.event_time_text}</small>}
             <small>This is your report, not a medical conclusion. Adding it records that you checked the wording; it does not mean a healthcare professional has confirmed it.</small>
           </div>
           {correctingCareUpdateId === item.id && <div className="companion-care-update-correction">
