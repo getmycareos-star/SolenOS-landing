@@ -88,7 +88,7 @@ export async function buildGreetingOrientation(
 
 export function isCasualGreetingInput(text: string): boolean {
   const t = text.trim().toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
-  if (/^(hi|hello|hey|yo|hiya|howdy|sup)(?: there)?(?: solenos)?$/.test(t)) return true;
+  if (/^(hi|hello|hey|yo|hiya|howdy|sup)(?: there)?(?: solenos)?(?: again)?$/.test(t)) return true;
   if (/^good (morning|afternoon|evening|day)(?: there)?(?: solenos)?$/.test(t)) return true;
   if (/^(what'?s up|how'?s it going)(?: there)?(?: solenos)?$/.test(t)) return true;
   if (/^solenos$/.test(t)) return true;
