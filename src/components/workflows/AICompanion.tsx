@@ -370,6 +370,26 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     return () => { cancelled = true }
   }, [])
 
+  useEffect(() => {
+    const clearPreviousCareScope = () => {
+      const activeScopeKey = activeCompanionConversationStorageKey()
+      if (!conversationScopeRef.current || activeScopeKey === conversationScopeRef.current) return
+      conversationScopeRef.current = null
+      setMessages([])
+      setSessionId(null)
+      setPendingCareUpdates([])
+      setCareUpdateLoadFailed(false)
+      careUpdateLoadSequenceRef.current += 1
+      setEmergency(false)
+      setRequestError(null)
+      setConversationRestoreError('Your active care record changed. Reload this page to restore the conversation for the current caregiver.')
+      pendingTurnId.current = null
+      pendingTurnText.current = null
+    }
+    window.addEventListener('personIdChanged', clearPreviousCareScope)
+    return () => window.removeEventListener('personIdChanged', clearPreviousCareScope)
+  }, [])
+
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText || loading) return
