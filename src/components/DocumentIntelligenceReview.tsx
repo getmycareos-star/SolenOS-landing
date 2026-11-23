@@ -266,6 +266,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         decision,
         expected_source_quote: sourceQuote,
         expected_subject: candidate.subject,
+        expected_candidate_id: candidate.canonical_candidate?.candidate_id,
         ...(decision === "correct" ? {
           corrected_subject: correctedSubject,
           corrected_observation: sourceQuote,
