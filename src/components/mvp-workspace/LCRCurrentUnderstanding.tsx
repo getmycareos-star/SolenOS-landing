@@ -2419,7 +2419,7 @@ export function LCRCurrentUnderstanding() {
         </div>
       ) : projection ? (
         <>
-          {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0) && (
+          {(projection.schema_status !== "complete" || projection.missing_required_sources.length > 0 || projection.missing_optional_sources.length > 0 || (projection.failed_sources?.length ?? 0) > 0) && (
             <div role="status" className="lcr-empty-state">
               <AlertCircle size={20} aria-hidden="true" />
               <h3>Some care information is unavailable</h3>
@@ -2434,10 +2434,18 @@ export function LCRCurrentUnderstanding() {
           )}
 
           {projection.items.length === 0 ? (
-            <div className="lcr-empty-state">
-              <h3>Your Care Record does not have any care information yet.</h3>
-              <p>Add what you know in Daily Care or upload a care document. You can also ask the Care Assistant to help you understand saved information.</p>
-            </div>
+            projection.missing_required_sources.length > 0 || projection.missing_optional_sources.length > 0 || (projection.failed_sources?.length ?? 0) > 0 ? (
+              <div className="lcr-empty-state" role="status">
+                <h3>We couldn’t check all of your care information.</h3>
+                <p>No matching care details were returned from the sources we could check. This does not mean the unavailable sources have no relevant information.</p>
+                {sourceRecoveryPanel}
+              </div>
+            ) : (
+              <div className="lcr-empty-state">
+                <h3>Your Care Record does not have any care information yet.</h3>
+                <p>Add what you know in Daily Care or upload a care document. You can also ask the Care Assistant to help you understand saved information.</p>
+              </div>
+            )
           ) : (
             <div className="lcr-current-facts">
               <ul>
