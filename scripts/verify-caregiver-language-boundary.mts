@@ -100,6 +100,14 @@ const readableOriginalCapture = caregiverReadableCaptureText(JSON.stringify({ ob
 assert.equal(readableOriginalCapture, originalCaptureWithIdentifier,
   "structured capture rendering must preserve exact original caregiver text, including diagnostic-looking identifiers");
 
+const numericVitalCapture = caregiverReadableCaptureText(JSON.stringify({
+  vital_type: "heart_rate",
+  value: 72,
+  unit: "bpm",
+}));
+assert.match(numericVitalCapture ?? "", /72 bpm/,
+  "numeric caregiver measurements must remain visible after source-text preservation changes");
+
 
 assert.equal(caregiverFieldLabel("reconciliation"), "Updating your care information");
 assert.equal(caregiverFieldLabel("delta_engine"), "Changes since your last visit");
