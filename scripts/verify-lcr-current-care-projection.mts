@@ -58,4 +58,4 @@ assert.match(component, /projection\.items\.length === 0 \?[\s\S]*?No matching c
 assert.match(component, /caregiverIdRef\.current !== session\.caregiver\.id[\s\S]*?setEvidenceIntegrityByFact\(\{\}\)/, "private LCR review state must be cleared when the active caregiver changes, even for the same person");
 assert.match(component, /addEventListener\("personIdChanged", refreshAfterSessionChange\)/, "the Living Care Record must reload when the active person or caregiver session changes");
 
-assert.match(component, /const isCurrentRequest = \(\) => timingId === workspaceLoadSequence[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?if \(isCurrentRequest\(\)\) setLoading\(false\)/, "overlapping LCR reads must not let an older caregiver session overwrite the current Care Record");
+assert.match(component, /const isCurrentRequest = \(\) => timingId === workspaceLoadSequence[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?if \(isCurrentRequest\(\)\) \{\s*setLoading\(false\);/, "overlapping LCR reads must not let an older caregiver session overwrite the current Care Record");
