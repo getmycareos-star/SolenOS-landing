@@ -159,14 +159,14 @@ try {
   assert.ok(await afterReload.isVisible(), "the unresolved follow-up must remain visible after a fresh page load");
 
   // An action report is distinct from a response and still cannot verify the outcome.
-  await afterReload.getByRole("button", { name: "Record action taken" }).click();
+  await afterReload.getByRole("button", { name: "Save what you did" }).click();
   const actionText = "CI-only caregiver action: I called the clinic to request the updated appointment date.";
   await afterReload.getByLabel(/What did you do/).fill(actionText);
-  await afterReload.getByRole("button", { name: "Record action" }).click();
+  await afterReload.getByRole("button", { name: "Save next step" }).click();
   await page.getByRole("alert").filter({
     hasText: "The action could not be confirmed. Keep the report available and try again.",
   }).waitFor({ timeout: 15_000 });
-  await afterReload.getByRole("button", { name: "Record action" }).click();
+  await afterReload.getByRole("button", { name: "Save next step" }).click();
   await page.getByRole("status").filter({
     hasText: "Your action was saved. The concern has not been marked as resolved.",
   }).waitFor({ timeout: 15_000 });
