@@ -196,6 +196,10 @@ const companionRoute = read("../src/app/workspace/companion/page.tsx");
 const historyDrawer = read("../src/components/app-shell/HistoryDrawer.tsx");
 const careDelta = read("../src/components/CareDeltaPanel.tsx");
 const careChangeHistory = read("../src/components/mvp-workspace/CareChangeHistoryPanel.tsx");
+assert.match(careChangeHistory, /caregiverSourceText\(source\.source_excerpt\)/,
+  "care history must preserve original source excerpts exactly");
+assert.match(careChangeHistory, /caregiverSourceText\(source\.reported_by\)/,
+  "care history must preserve source attribution labels");
 const humanValidation = read("../src/components/HumanValidationLoop.tsx");
 const careCapture = read("../src/components/CareCapture.tsx");
 const feedbackPrompt = read("../src/components/mvp-workspace/UnderstandingFeedbackPrompt.tsx");
