@@ -222,6 +222,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const pendingTurnText = useRef<string | null>(null)
   const userInteractedRef = useRef(false)
   const conversationScopeRef = useRef<string | null>(null)
+  const conversationScopeSequenceRef = useRef(0)
 
   const checkAvailability = useCallback(async () => {
     setAvailability('checking')
@@ -261,10 +262,22 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   useEffect(() => {
     let cancelled = false
     let storageKey: string | null = null
+    const initialScopeKey = activeCompanionConversationStorageKey()
+    const requestScopeSequence = conversationScopeSequenceRef.current
+    const isCurrentRestore = () =>
+      !cancelled
+      && requestScopeSequence === conversationScopeSequenceRef.current
+      && (!storageKey || activeCompanionConversationStorageKey() === storageKey)
     const restoreConversation = async () => {
       try {
         const session = await ensureAnonymousSession()
-        storageKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+        const nextStorageKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+        if (
+          !isCurrentRestore()
+          || (initialScopeKey !== null && initialScopeKey !== nextStorageKey)
+          || activeCompanionConversationStorageKey() !== nextStorageKey
+        ) return
+        storageKey = nextStorageKey
         conversationScopeRef.current = storageKey
         let savedSessionId: string | null = null
         try {
@@ -280,6 +293,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             person_id?: string
             items?: Array<{ session_id?: string; person_id?: string }>
           }
+          if (!isCurrentRestore()) return
           if (listing.person_id !== session.person.id) {
             throw new Error('The conversation list did not match the active care record.')
           }
@@ -321,7 +335,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             response_mode?: string
           }>
         }
-        if (cancelled || userInteractedRef.current) return
+        if (!isCurrentRestore() || userInteractedRef.current) return
         if (
           response.session_id !== savedSessionId
           || response.person_id !== session.person.id
@@ -355,13 +369,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           timestamp: message.created_at ? new Date(message.created_at) : new Date(),
         })))
       } catch (error) {
-        if (error instanceof ApiResponseError && error.status === 404 && storageKey) {
+        if (error instanceof ApiResponseError && error.status === 404 && storageKey && isCurrentRestore()) {
           try {
             window.localStorage.removeItem(storageKey)
           } catch {
             // A missing local pointer must not prevent server-backed recovery.
           }
-        } else if (!cancelled && !userInteractedRef.current) {
+        } else if (isCurrentRestore() && !userInteractedRef.current) {
           setConversationRestoreError('We could not restore the earlier conversation. Your saved Care Record has not changed. Reload this page to try again, or start a new conversation.')
         }
       }
@@ -374,6 +388,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     const clearPreviousCareScope = () => {
       const activeScopeKey = activeCompanionConversationStorageKey()
       if (!conversationScopeRef.current || activeScopeKey === conversationScopeRef.current) return
+      conversationScopeSequenceRef.current += 1
       conversationScopeRef.current = null
       setMessages([])
       setSessionId(null)
@@ -382,6 +397,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       careUpdateLoadSequenceRef.current += 1
       setEmergency(false)
       setRequestError(null)
+      setInput('')
+      setLoading(false)
+      setAvailability('unknown')
       setConversationRestoreError('Your active care record changed. Reload this page to restore the conversation for the current caregiver.')
       pendingTurnId.current = null
       pendingTurnText.current = null
@@ -393,6 +411,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
     if (!submittedText || loading) return
+    const requestScopeSequence = conversationScopeSequenceRef.current
+    const initialScopeKey = activeCompanionConversationStorageKey()
+    const isCurrentScopeRequest = () => requestScopeSequence === conversationScopeSequenceRef.current
     userInteractedRef.current = true
     setRequestError(null)
     setConversationRestoreError(null)
@@ -409,6 +430,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     try {
       const session = await ensureAnonymousSession()
       const activeScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+      if (
+        !isCurrentScopeRequest()
+        || (initialScopeKey !== null && initialScopeKey !== activeScopeKey)
+        || activeCompanionConversationStorageKey() !== activeScopeKey
+      ) return
       const scopeChanged = conversationScopeRef.current !== null && conversationScopeRef.current !== activeScopeKey
       if (scopeChanged) {
         setMessages([userMsg])
@@ -428,6 +454,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             session_id: activeSessionId,
             client_turn_id: clientTurnId,
           }) as any
+      if (!isCurrentScopeRequest() || activeCompanionConversationStorageKey() !== activeScopeKey) return
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       const caregiverReply = caregiverSafeGeneratedText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
@@ -483,6 +510,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
 
     } catch (error) {
+      if (!isCurrentScopeRequest()) return
       setMessages(prev => prev.filter(message => message !== userMsg))
       setInput(submittedText)
       const inferenceUnavailable =
@@ -494,7 +522,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           : 'The Care Assistant could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.'
       )
     } finally {
-      setLoading(false)
+      if (isCurrentScopeRequest()) setLoading(false)
     }
   }
 
