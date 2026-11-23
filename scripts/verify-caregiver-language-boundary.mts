@@ -201,6 +201,10 @@ const followUpsPage = read("../src/app/workspace/open-loops/page.tsx");
 const reminders = read("../src/app/workspace/reminders/page.tsx");
 const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
+assert.match(lcr, /caregiverSourceText\(item\.title\)/,
+  "the current care record must preserve original care and follow-up titles");
+assert.match(lcr, /displayDescription\(item\.description \|\| source\?\.description\)/,
+  "follow-up descriptions must remain readable without hiding source wording");
 const livingCareRecordPanel = read("../src/components/mvp-workspace/LivingCareRecordPanel.tsx");
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 assert.match(changeIntelligence, /caregiverSourceText\(source\.source_text \?\? source\.source_label\)/, "change history must preserve original source wording");
