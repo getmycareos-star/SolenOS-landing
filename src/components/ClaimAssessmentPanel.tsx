@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverInformationLabel, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSourceText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Claim = {
   id: string;
@@ -401,8 +401,8 @@ export default function ClaimAssessmentPanel() {
         </select>
       </label>
       {selectedClaim && <div style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
-        <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
-        <div><strong>Who reported it:</strong> {caregiverSafeGeneratedText(selectedClaim.source_label) || "Not recorded"}</div>
+        <div><strong>What was reported:</strong> {caregiverSourceText(selectedClaim.asserted_value) || "Saved care detail"}</div>
+        <div><strong>Who reported it:</strong> {caregiverSourceText(selectedClaim.source_label) || "Not recorded"}</div>
         <div><strong>What we know:</strong> {caregiverInformationLabel(selectedClaim.epistemic_state || "reported") || "Not yet confirmed"}</div>
         <div><strong>Review:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
         <div><strong>Related notes and documents:</strong> {selectedClaim.evidence_ids?.length ?? 0}</div>
@@ -419,7 +419,7 @@ export default function ClaimAssessmentPanel() {
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "This detail depends on" : "This detail is needed by"}{" "}
             <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Care detail not in this list"}</strong>
-            {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSafeGeneratedText(edge.rationale) || "No further explanation is available."}
+            {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSourceText(edge.rationale) || "No further explanation is available."}
           </li>)}
         </ul>}
         <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Another care detail
@@ -464,6 +464,26 @@ export default function ClaimAssessmentPanel() {
               {evidence.map((item) => <option key={item.id} value={item.id}>{simpleReviewStatus(item.type)}</option>)}
             </select>
           </label>
+          {link.evidence_id && (() => {
+            const selectedEvidence = evidence.find((item) => item.id === link.evidence_id);
+            if (!selectedEvidence) return <p role="status">This note or document is no longer available. Your review has not changed.</p>;
+            return (
+              <details style={{ margin: "0 0 10px", border: "1px solid var(--border)", borderRadius: 7, padding: 9 }}>
+                <summary style={{ cursor: "pointer", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
+                  Read the original wording from this {simpleReviewStatus(selectedEvidence.type)}
+                </summary>
+                {selectedEvidence.source_text.trim() ? (
+                  <blockquote style={{ margin: "8px 0 0", maxHeight: 240, overflowY: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>
+                    {caregiverSourceText(selectedEvidence.source_text)}
+                  </blockquote>
+                ) : (
+                  <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
+                    No readable text was extracted from this file. The original file remains saved.
+                  </p>
+                )}
+              </details>
+            );
+          })()}
           <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>How this note or document relates to this care detail
             <select style={field} value={link.relationship} onChange={(event) => updateLink(index, { relationship: event.target.value as DraftLink["relationship"] })}>
               {relationships.map((value) => <option key={value} value={value}>{simpleReviewStatus(value)}</option>)}
@@ -510,7 +530,7 @@ export default function ClaimAssessmentPanel() {
       {history.map((item) => <article key={item.id} style={{ borderTop: "1px solid var(--border)", padding: "9px 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
         <strong>Earlier review: {simpleReviewStatus(item.status)}</strong>
         <div>{new Date(item.created_at).toLocaleString()} · Reviewed by a caregiver</div>
-        <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
+        <p>{caregiverSourceText(item.rationale) || "No further explanation is available."}</p>
         <ul>{item.evidence_links.map((link, i) => <li key={i}>
           {simpleReviewStatus(link.relationship)} · note or document
           {link.source_passage ? <blockquote style={{ margin: "5px 0", paddingLeft: 8, borderLeft: "2px solid var(--border)" }}>{link.source_passage}</blockquote> : null}
