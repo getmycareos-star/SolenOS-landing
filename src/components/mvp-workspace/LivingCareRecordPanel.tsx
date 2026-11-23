@@ -56,13 +56,11 @@ export function LivingCareRecordPanel({
   const remembered = rememberedCandidates
     .map((item) => caregiverSafeGeneratedText(item))
     .filter((item): item is string => Boolean(item));
-  const supportingEvidence =
-    view.evidence_maturity >= 2 && (view.expandable.evidence?.length ?? 0) > 0
-      ? (view.expandable.evidence ?? [])
-          .map((item) => caregiverSafeAssistantText(item))
-          .filter((item): item is string => Boolean(item))
-          .slice(0, 4)
-      : [];
+  const supportingEvidenceCandidates =
+    view.evidence_maturity >= 2 ? (view.expandable.evidence ?? []).slice(0, 4) : [];
+  const supportingEvidence = supportingEvidenceCandidates
+    .map((item) => caregiverSafeAssistantText(item))
+    .filter((item): item is string => Boolean(item));
   const followUpCandidates = view.follow_up_items.slice(0, 2);
   const followUpItems = followUpCandidates
     .map((item) => caregiverSafeGeneratedText(item))
@@ -221,6 +219,9 @@ export function LivingCareRecordPanel({
           ) : (
             <p className="panel-muted">We could not show the explanation clearly. Check the original notes before drawing a conclusion.</p>
           )}
+          {contradictions.length > 0 && view.contradictions.length > contradictions.length && (
+            <p className="panel-muted">Some other reports that do not match could not be shown clearly. Check the original notes before drawing a conclusion.</p>
+          )}
         </section>
       )}
 
@@ -274,14 +275,21 @@ export function LivingCareRecordPanel({
         </section>
       )}
 
-      {supportingEvidence.length > 0 && (
+      {supportingEvidenceCandidates.length > 0 && (
         <details className="lcr-expandable">
           <summary className="panel-muted">Notes and documents behind this summary</summary>
-          <ul aria-label="Notes and documents behind this information">
-            {supportingEvidence.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          {supportingEvidence.length > 0 ? (
+            <ul aria-label="Notes and documents behind this information">
+              {supportingEvidence.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-muted">The saved notes and documents are available, but their wording could not be shown clearly here.</p>
+          )}
+          {supportingEvidence.length > 0 && supportingEvidenceCandidates.length > supportingEvidence.length && (
+            <p className="panel-muted">Some other notes or documents could not be shown clearly.</p>
+          )}
         </details>
       )}
 
