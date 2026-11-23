@@ -13,7 +13,7 @@ import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDa
 import DailyCareOfflineQueueNotice from "@/components/workflows/DailyCareOfflineQueueNotice";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 const StructuredDailyCapture = dynamic(
@@ -641,7 +641,7 @@ export default function DailyCarePage() {
               <ul className="daily-care-record-list">
                 {careItems.filter((item) => !isOpenMatter(item)).slice(0, 2).map((item, index) => (
                   <li key={item.id || `care-item-${index}`}>
-                    <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
+                    <strong>{caregiverSourceText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p className="daily-care-summary-detail">{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
 
@@ -784,9 +784,9 @@ export default function DailyCarePage() {
               <ul aria-label="Saved follow-ups" className="daily-care-follow-up-list">
                 {followUps.slice(0, 4).map((item) => (
                   <li key={item.id} className="daily-care-follow-up-item">
-                    <strong>{caregiverSafeAssistantText(item.title) || "Follow-up"}</strong>
+                    <strong>{caregiverSourceText(item.title) || "Follow-up"}</strong>
                     {item.description && (
-                      <p>{caregiverSafeAssistantText(item.description)}</p>
+                      <p>{caregiverSourceText(item.description)}</p>
                     )}
                     <div className="daily-care-follow-up-meta">
                       <span>{caregiverStatusLabel(item.status)}</span>
@@ -862,7 +862,7 @@ export default function DailyCarePage() {
               <ul className="daily-care-record-list">
                 {captureStatusHistoryItems.map((item, index) => (
                   <li key={item.capture_processing?.analysis_id || historyRecordId(item) || ("capture-status-" + index)}>
-                    <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
+                    <strong>{caregiverSourceText(item.title) || "Care update"}</strong>
                     {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                     <span>{displayHistoryTime(item)}</span>
                     {item.capture_processing?.review_required && item.capture_processing.analysis_id ? (
@@ -909,7 +909,7 @@ export default function DailyCarePage() {
                     <ul className="daily-care-record-list">
                       {items.map((item, index) => (
                         <li key={historyRecordId(item) || `today-${period.key}-${index}`}>
-                          <strong>{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
+                          <strong>{caregiverSourceText(item.title) || "Care update"}</strong>
                           {displayHistoryText(item) && <p>{displayHistoryText(item)}</p>}
                           <span>{displayHistoryTime(item)}</span>
 
