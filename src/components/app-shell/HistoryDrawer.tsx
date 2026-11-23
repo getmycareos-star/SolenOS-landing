@@ -1639,7 +1639,7 @@ export function HistoryDrawer() {
                   {sourceWarnings.length > 0 && !loading && records.length === 0 && (
                     <div className="history-source-warning" role="status">
                       <strong>What could not be loaded</strong>
-                      <ul aria-label="Care history sections with incomplete retrieval">
+                      <ul aria-label="Care history sections that could not be fully loaded">
                         {sourceWarnings.map((warning, index) => <li key={index}>{warning}</li>)}
                       </ul>
                     </div>
