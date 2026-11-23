@@ -56,7 +56,7 @@ export function CareRecipientNameGate({
       };
       if (!res.ok) throw new Error(data.error ?? "Could not save");
       onSaved(data.care_recipient_display_name ?? trimmed);
-    } catch (err) {
+    } catch {
       setError(caregiverSafeErrorMessage());
     } finally {
       setSaving(false);
