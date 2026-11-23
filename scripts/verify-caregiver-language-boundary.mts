@@ -568,6 +568,7 @@ assert.doesNotMatch(documentsPage, /upload session|encrypted on this device|sync
 assert.doesNotMatch(situationResponse, /Saved record reference|situation-reasoning state|This view is reconstructed/i);
 assert.doesNotMatch(sourceIndicator, /Source ID:|Source type:|Source Information|Viewing source evidence|sourceId &&/);
 assert.doesNotMatch(careCaptureLegacy, /Qwen capture analysis|No verified Qwen candidates|pending_review/);
+assert.match(historyDrawer, /aria-label="Care history sections that could not be fully loaded"/, "care history accessibility labels must use caregiver language");
 assert.doesNotMatch(historyDrawer, /incomplete retrieval|description=\{error\}/i);
 assert.doesNotMatch(statusCareDelta, /Clinician-oriented summary/);
 assert.match(statusCareDelta, /Check the summary against saved information/);
