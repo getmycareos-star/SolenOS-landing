@@ -472,7 +472,7 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       companion_history_unchanged?: boolean;
     };
     if (!response.ok || typeof data.reply !== "string" || !data.reply.trim()) {
-      throw new Error(data.detail || "We couldn’t prepare a reply from your saved care information. Your message was not saved.");
+      throw new Error(data.detail || "We couldn’t confirm whether your message was saved. Check the conversation before trying again.");
     }
     const safeReply = caregiverSafeGeneratedText(data.reply.trim());
     if (!safeReply) {
