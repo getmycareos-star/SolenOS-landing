@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowRightLeft, Check } from "lucide-react";
 import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
-import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverSourceText } from "@/lib/caregiver-language";
 
 type ResponsibilityTransfer = {
   id: string;
@@ -88,8 +88,8 @@ export function CaregiverHandoverInbox() {
       {(responsibilityTransfers.length > 0 || primaryTransfers.length > 0) && <p className="mobile-settings-hint">Please review these requests. Your care responsibilities will not change unless you accept.</p>}
       {primaryTransfers.map(item => (
         <div key={item.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 10 }}>
-          <strong>{caregiverSafeAssistantText(item.from_caregiver_name) || "A caregiver"} has asked you to become the main caregiver.</strong>
-          {item.reason && <p className="mobile-settings-hint">{caregiverSafeAssistantText(item.reason) || "No reason was recorded."}</p>}
+          <strong>{caregiverSourceText(item.from_caregiver_name) || "A caregiver"} has asked you to become the main caregiver.</strong>
+          {item.reason && <p className="mobile-settings-hint">{caregiverSourceText(item.reason) || "No reason was recorded."}</p>}
           <div className="mobile-settings-buttons">
             <Button type="button" variant="primary" disabled={busy} onClick={() => void respond("primary", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
             <Button type="button" variant="secondary" disabled={busy} onClick={() => void respond("primary", item.id, "reject")}>Decline</Button>
@@ -98,8 +98,8 @@ export function CaregiverHandoverInbox() {
       ))}
       {responsibilityTransfers.map(item => (
         <div key={item.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 10 }}>
-          <strong>{caregiverSafeAssistantText(item.from_caregiver_name) || "A caregiver"} has asked you to take over a care responsibility.</strong>
-          {item.reason && <p className="mobile-settings-hint">{caregiverSafeAssistantText(item.reason) || "No reason was recorded."}</p>}
+          <strong>{caregiverSourceText(item.from_caregiver_name) || "A caregiver"} has asked you to take over a care responsibility.</strong>
+          {item.reason && <p className="mobile-settings-hint">{caregiverSourceText(item.reason) || "No reason was recorded."}</p>}
           <div className="mobile-settings-buttons">
             <Button type="button" variant="primary" disabled={busy} onClick={() => void respond("responsibility", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
             <Button type="button" variant="secondary" disabled={busy} onClick={() => void respond("responsibility", item.id, "reject")}>Decline</Button>
