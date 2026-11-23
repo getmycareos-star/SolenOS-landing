@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON, setPersonId } from "../src/api/client";
+import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON, setCareIdentity, setPersonId } from "../src/api/client";
 
 const values = new Map<string, string>([
   ["solenos_anonymous_access_token", "server-issued-token"],
@@ -48,6 +48,15 @@ async function main() {
     ["personIdChanged"],
     "a genuine care-recipient identity change must notify identity subscribers once",
   );
+  identityEvents.length = 0;
+  setCareIdentity("person-server-1", "caregiver-server-2");
+  assert.deepEqual(identityEvents, ["personIdChanged"],
+    "a caregiver-only identity change must notify every care-scoped subscriber once");
+  identityEvents.length = 0;
+  setCareIdentity("person-server-1", "caregiver-server-2");
+  assert.deepEqual(identityEvents, [],
+    "reusing the same person and caregiver identity must not trigger another scope reset");
+  setCareIdentity("person-server-1", "caregiver-server-1");
   identityEvents.length = 0;
   await ensureAnonymousSession();
   await ensureAnonymousSession();
