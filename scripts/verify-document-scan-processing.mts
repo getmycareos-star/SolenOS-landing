@@ -27,7 +27,7 @@ assert.match(source, /scan_rotation_degrees: String\(page\.rotation\)/, "per-pag
 assert.match(source, /scan_crop_json: JSON\.stringify\(page\.crop\)/, "per-page crop metadata must accompany the immutable original for server-side processing");
 assert.match(source, /scan_text_prepared: "false"/, "the upload must not claim that browser OCR prepared the source");
 assert.match(source, /stored\.processing_status === "completed"[\s\S]*?backgroundProcessingCompleted \+= 1/, "completed document processing must be tracked separately from queued work");
-assert.match(source, /backgroundProcessingCompleted > 0[\s\S]*?has finished reading[\s\S]*?ready for you to review/, "the caregiver must not be told completed reading is still running");
+assert.match(source, /backgroundProcessingCompleted > 0[\s\S]*?has finished processing[\s\S]*?Open each file to see what was extracted/, "completed processing must not imply that every file has reviewable suggestions");
 
 assert.match(source, /Move crop area/, "crop rectangle must be movable by pointer and keyboard");
 
