@@ -237,7 +237,11 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
   const [actionText, setActionText] = useState("");
   const loop = loops.find((candidate) => candidate.id === item.record_id || (candidate.source_type === item.source && candidate.source_id === item.record_id));
   const evidenceIds = uniqueEvidenceIds(item);
-  const reasonCandidates = [...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])];
+  const reasonCandidates = [...new Set([...(loop?.priority_reasons || []), ...(item.priority_basis || []), ...(item.reason ? [item.reason] : [])])];
+  const missingInformationCandidates = loop?.missing_information || [];
+  const missingInformation = missingInformationCandidates
+    .map((detail) => caregiverSafeGeneratedText(detail))
+    .filter((detail): detail is string => Boolean(detail));
   const reasonLines = reasonCandidates
     .map((line) => caregiverSafeGeneratedText(line))
     .filter((line): line is string => Boolean(line));
@@ -272,6 +276,18 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
     </div>
     {expanded && <div className="followup-detail">
       <p><strong>{item.category === "can_wait_with_documented_basis" ? "Why this is being monitored" : item.category === "needs_clarification" ? "What still needs checking" : "Why this needs attention"}</strong><br />{reasonLines.length ? reasonLines.join("; ") : reasonCandidates.length ? "Some explanation could not be shown clearly. Check the saved care information before relying on it." : "The reason is not clear from the saved information yet."}</p>
+      {(item.category === "needs_clarification" || missingInformationCandidates.length > 0) && (
+        <section>
+          <strong>What information is missing</strong>
+          {missingInformation.length > 0 ? (
+            <ul>{missingInformation.map((detail, index) => <li key={index}>{detail}</li>)}</ul>
+          ) : (
+            <p>{missingInformationCandidates.length > 0
+              ? "Some missing details could not be shown clearly. Check the original care information."
+              : "The specific information needed has not been recorded yet."}</p>
+          )}
+        </section>
+      )}
       {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
       {loop?.appointment_id && <p><strong>Related appointment</strong><br />This follow-up is connected to a saved appointment and its history.</p>}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
