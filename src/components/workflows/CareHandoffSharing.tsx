@@ -362,7 +362,8 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [selectedScope, setSelectedScope] = useState<string[]>([]);
   const [editedSections, setEditedSections] = useState<NonNullable<DraftPayload["generation"]>["sections"]>([]);
   const [revisionHistory, setRevisionHistory] = useState<DraftRevision[]>([]);
-  const loadedPersonIdRef = useRef<string | null>(null);
+  const loadedScopeRef = useRef<{ personId: string; caregiverId: string } | null>(null);
+  const loadSequenceRef = useRef(0);
   const [sourceFreshness, setSourceFreshness] = useState<{ status: string; stale_source_count?: number; unknown_source_count?: number } | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [reviewedSourceRefs, setReviewedSourceRefs] = useState<string[]>([]);
@@ -376,16 +377,24 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const ineligibleRecipients = useMemo(() => directory.filter(item => !item.can_receive_handoff), [directory]);
 
   const load = useCallback(async () => {
+    const requestSequence = ++loadSequenceRef.current;
+    const isCurrentRequest = () => loadSequenceRef.current === requestSequence;
     setLoading(true);
     setDirectoryError(false);
     setHistoryError(false);
     setDraftsError(false);
     let requestPersonId: string | null = null;
+    let requestCaregiverId: string | null = null;
     try {
       const session = await ensureAnonymousSession();
+      if (!isCurrentRequest()) return;
       requestPersonId = session.person?.id ?? null;
-      if (!requestPersonId) throw new Error("A valid Care Record session is required.");
-      if (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId) {
+      requestCaregiverId = session.caregiver?.id ?? null;
+      if (!requestPersonId || !requestCaregiverId) throw new Error("A valid Care Record session is required.");
+      if (loadedScopeRef.current && (
+        loadedScopeRef.current.personId !== requestPersonId
+        || loadedScopeRef.current.caregiverId !== requestCaregiverId
+      )) {
         setDirectory([]);
         setInbox([]);
         setOutbox([]);
@@ -394,12 +403,31 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         setPrepareAppointmentId("");
         setSelectedRecipients([]);
         setSelectedScope([]);
+        setConsentRequired(true);
+        setSummaryText("");
+        setCaregiverNote("");
+        setEditedSections([]);
+        setRevisionHistory([]);
+        setSourceFreshness(null);
+        setReviewConfirmed(false);
+        setReviewedSourceRefs([]);
+        setActiveInbox(null);
+        setActiveSnapshot(null);
+        setIncomingReviewConfirmed(false);
+        setError("");
+        setNotice("");
+        setPrepareError("");
+        setPrepareNotice("");
+        prepareRequestId.current = null;
+        shareRequestId.current = null;
+        shareExpiry.current = null;
       }
-      loadedPersonIdRef.current = requestPersonId;
+      loadedScopeRef.current = { personId: requestPersonId, caregiverId: requestCaregiverId };
       // Handoff inbox and recipient discovery require the caregiver's persisted
       // privacy/multi-caregiver acknowledgements. Read that state first so a
       // normal first-use session does not generate avoidable 403 responses.
       const consent = await getJSON("/consent") as { verified?: boolean; required?: boolean };
+      if (!isCurrentRequest()) return;
       const canUseHandoffs = consent.verified === true && consent.required === false;
       setConsentRequired(!canUseHandoffs);
       const [directoryResult, inboxResult, outboxResult, draftsResult, appointmentsResult] = await Promise.allSettled([
@@ -415,6 +443,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         getJSON("/handoff-drafts?limit=10") as Promise<{ items?: Array<DraftPayload & { updated_at?: string }> }>,
         getJSON("/handoff-drafts/appointments") as Promise<{ items?: AppointmentOption[] }>,
       ]);
+      if (!isCurrentRequest()) return;
       if (directoryResult.status === "fulfilled" && Array.isArray(directoryResult.value.items)) setDirectory(directoryResult.value.items);
       else setDirectoryError(true);
       if (inboxResult.status === "fulfilled" && Array.isArray(inboxResult.value.items)) setInbox(inboxResult.value.items);
@@ -431,24 +460,35 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
       const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
-      if (!requestPersonId || accessDenied || (loadedPersonIdRef.current && loadedPersonIdRef.current !== requestPersonId)) {
-        setDirectory([]);
-        setInbox([]);
-        setOutbox([]);
-        setSavedDrafts([]);
-        setSelectedRecipients([]);
-        setSelectedScope([]);
-        loadedPersonIdRef.current = null;
+      if (isCurrentRequest()) {
+        if (!requestPersonId || !requestCaregiverId || accessDenied) {
+          setDirectory([]);
+          setInbox([]);
+          setOutbox([]);
+          setSavedDrafts([]);
+          setAppointmentOptions([]);
+          setSelectedRecipients([]);
+          setSelectedScope([]);
+          setConsentRequired(true);
+          setActiveInbox(null);
+          setActiveSnapshot(null);
+          loadedScopeRef.current = null;
+        }
+        setDirectoryError(true);
+        setHistoryError(true);
+        setDraftsError(true);
       }
-      setDirectoryError(true);
-      setHistoryError(true);
-      setDraftsError(true);
     } finally {
-      setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const refreshForSessionChange = () => void load();
+    window.addEventListener("personIdChanged", refreshForSessionChange);
+    void load();
+    return () => window.removeEventListener("personIdChanged", refreshForSessionChange);
+  }, [load]);
 
   useEffect(() => {
     setSelectedScope([]);
