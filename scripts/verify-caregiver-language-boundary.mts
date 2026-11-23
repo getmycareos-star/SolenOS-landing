@@ -856,3 +856,7 @@ assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.title\)/, "notific
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.body\)/, "notification bodies must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverStatusLabel\(item\.priority\)/, "notification priority codes must be translated before display");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(erasureRequest\.message\)/, "privacy request messages from the server must use caregiver-safe generated copy");
+
+const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
+assert.match(evidenceReview, /item\.reviewed_by_caregiver_id \? "Checked by a caregiver" : "Reviewer not recorded"/,
+  "missing reviewer identity must be described as unrecorded, not as an unavailable person");
