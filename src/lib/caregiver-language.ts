@@ -339,7 +339,7 @@ export function caregiverProductTermLabel(value?: string | null): string | null 
 const TECHNICAL_DIAGNOSTIC_PATTERNS = [
   /\b(?:LCR|Delta Engine|AI Companion|Qwen)\b/i,
   /database schema/i,
-  /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint)\b/i,
+  /\b(?:provenance|reconciliation|assertion|assertions|schema|database|api|json|ocr|freshness|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint)\b/i,
   /\b(?:model inference|inference pipeline|extraction pipeline|source lineage)\b/i,
   /\b(?:epistemic|serialization|normalization|embedding|vector index)\b/i,
   /schema (?:is )?unavailable/i,
