@@ -63,6 +63,18 @@ const ANONYMOUS_PERSON_KEY = "solenos_backend_person_id";
 const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
 const ANONYMOUS_SESSION_REVOKED_KEY = "solenos_anonymous_session_revoked";
+if (typeof window !== "undefined") {
+  // Other tabs must invalidate person- and caregiver-scoped views when this
+  // tab switches or revokes the active backend identity.
+  window.addEventListener("storage", (event: StorageEvent) => {
+    if (
+      (event.key === ANONYMOUS_PERSON_KEY || event.key === ANONYMOUS_CAREGIVER_KEY)
+      && event.oldValue !== event.newValue
+    ) {
+      window.dispatchEvent(new Event("personIdChanged"));
+    }
+  });
+}
 
 /** Persist both backend identities and notify scoped views on either change. */
 export function setCareIdentity(personId: string, caregiverId: string): void {
