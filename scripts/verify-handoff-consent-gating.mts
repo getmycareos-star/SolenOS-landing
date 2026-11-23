@@ -29,3 +29,12 @@ assert.match(source, /readableEvidenceType\(source\.type \|\| source\.source_typ
   "internal evidence type codes must not be shown in shared summaries");
 assert.match(source, /Please check that this summary means the same thing as the saved note/,
   "summary review instructions must explain the check in everyday language");
+
+assert.match(inbox, /setFailedTransferSources\(failed\)/,
+  "failed handover sources must be tracked independently so stale requests can be distinguished");
+assert.match(inbox, /Some requests shown here could not be refreshed and may be out of date/,
+  "previously loaded handovers must be labelled stale when a source refresh fails");
+assert.match(inbox, /disabled=\{busy \|\| failedTransferSources\.includes\("primary"\)\}/,
+  "primary-caregiver decisions must be disabled when that request list could not be refreshed");
+assert.match(inbox, /disabled=\{busy \|\| failedTransferSources\.includes\("responsibility"\)\}/,
+  "responsibility decisions must be disabled when that request list could not be refreshed");
