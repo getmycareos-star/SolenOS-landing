@@ -748,16 +748,14 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
   try {
     await followupsSummary.waitFor({ state: "visible", timeout: 20_000 });
   } catch {
-    const diagnostic = await page.evaluate(() => ({
+    const browserState = await page.evaluate(() => ({
       url: location.pathname,
       body: document.body.innerText.slice(0, 1800),
       requests: (window.__solenosE2EFetchTrace || []).slice(-20).map(({ method, path, status, error }) => ({ method, path, status, error })),
       localStorageKeys: Object.keys(localStorage),
       scripts: Array.from(document.scripts).map((script) => script.src).filter(Boolean).slice(-12),
-      pageErrors,
-      consoleErrors,
-      failedRequests,
     }));
+    const diagnostic = { ...browserState, pageErrors, consoleErrors, failedRequests };
     throw new Error(`Daily Care did not render its Follow-ups section: ${JSON.stringify(diagnostic)}`);
   }
   await followupsSummary.click();
