@@ -1189,5 +1189,7 @@ assert.match(dementiaObservation, /!loading && !loadFailed && observations\.leng
 assert.match(historyDrawer, /if \(typeof value === "string"\) return value\.trim\(\)/, "caregiver-entered history text must not be filtered as generated assistant text");
 assert.match(historyDrawer, /const title = asText\(item\.title\) \|\| "Care follow-up"/, "saved follow-up titles must be preserved exactly in care history");
 assert.match(historyDrawer, /const description = asText\(item\.description\)/, "saved follow-up descriptions must be preserved exactly in care history");
+assert.match(historyDrawer, /value: asText\(item\.owner_label\)/, "caregiver names assigned to follow-ups must be preserved exactly");
+
 assert.match(historyDrawer, /<h2 className="history-detail-title">\{selectedRecord\.title \|\| "Care update"\}<\/h2>/, "original care record titles must remain unchanged");
 assert.match(historyDrawer, /const rawValue = field\.value\.trim\(\)/, "caregiver-entered detail values must remain unchanged while known statuses are translated");
