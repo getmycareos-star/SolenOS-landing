@@ -92,7 +92,7 @@ assert.match(clarificationPanel, /recommendationUnavailable/, "an unavailable re
 assert.match(clarificationPanel, /Promise\.allSettled/, "a failed history source must not erase successfully retrieved care questions");
 assert.match(clarificationPanel, /partialLoadWarning/, "partial question-history retrieval must be visible to the caregiver");
 assert.match(clarificationPanel, /questionResult\.status === "rejected"\) setRecommendationUnavailable\(true\)/, "an unavailable open-question source must never appear as a successful empty queue");
-assert.match(clarificationPanel, /Some saved care information could not be loaded/, "partial retrieval must be described as incomplete, not empty");
+assert.match(clarificationPanel, /We couldn’t load some of your saved care information\. What you see here may be incomplete\. Try again\./, "partial retrieval must be described as incomplete, not empty");
 const historyLoader = clarificationPanel.slice(
   clarificationPanel.indexOf("const loadHistory"),
   clarificationPanel.indexOf("useEffect(() => { void loadHistory(); }"),
