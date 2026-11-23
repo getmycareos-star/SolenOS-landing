@@ -213,11 +213,15 @@ if (!documentReviewSource.includes("{documentExtractionIsComplete(analysis) ? an
 console.log("✓ saved document review cannot display incomplete extraction as complete");
 
 const completeDocument = {
+  analysis_id: "analysis-test",
+  source_evidence_id: "evidence-test",
+  document_name: "Test document",
+  review_required: true,
+  observations: [],
   interpretation_blocked: false,
   extraction_status: "available",
   page_count: 3,
   extraction_processed_page_count: 3,
-  observations: [],
 };
 if (!documentExtractionIsComplete(completeDocument)) {
   throw new Error("fully read document must be eligible for review");
