@@ -700,14 +700,24 @@ function mapLcrRevision(item: CareStateRevision): HistoryRecord {
   const after = parseSnapshot(item.after_state);
   const changedFields = [...new Set([...Object.keys(before), ...Object.keys(after)])]
     .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
-  const changeKind = asText(item.change_kind) || "updated";
-  const targetType = asText(item.target_type).replaceAll("_", " ") || "care record";
+  const rawChangeKind = asText(item.change_kind).toLowerCase();
+  const changeKind = rawChangeKind === "deleted" ? "Removed"
+    : rawChangeKind === "created" ? "Added"
+      : rawChangeKind === "corrected" ? "Corrected"
+        : rawChangeKind === "withdrawn" ? "Withdrawn"
+          : "Updated";
+  const targetType = caregiverFieldLabel(asText(item.target_type))
+    || caregiverInformationAreaLabel(asText(item.target_type))
+    || "care information";
   const changedAt = item.changed_at || null;
-  const description = changeKind === "deleted"
-    ? "This Care Record item was deleted. Its earlier saved details remain in the care history."
-    : changedFields.length
-      ? "Care information was " + changeKind + ". Updated details: " + changedFields.join(", ") + "."
-      : "Care information was " + changeKind + " for " + targetType + ".";
+  const changedFieldLabels = changedFields
+    .map((field) => caregiverFieldLabel(field) || caregiverInformationAreaLabel(field))
+    .filter((field): field is string => Boolean(field));
+  const description = rawChangeKind === "deleted"
+    ? "This Care Record item was removed. Its earlier saved details remain in the care history."
+    : changedFieldLabels.length
+      ? "Care information was " + changeKind.toLowerCase() + ". Updated details: " + changedFieldLabels.join(", ") + "."
+      : "Care information was " + changeKind.toLowerCase() + ".";
   return {
     id: "lcr-revision:" + item.id,
     event_type: "lcr_revision",
@@ -720,7 +730,7 @@ function mapLcrRevision(item: CareStateRevision): HistoryRecord {
     description,
     evidence_ids: item.evidence_ids ?? [],
     time_provenance: "This date shows when the saved information was changed, not when the care event happened.",
-    tags: ["care record", "update", changeKind],
+    tags: ["care record", "update"],
     source_kind: "lcr-revision",
     source_details: detailFields([
       
@@ -751,7 +761,7 @@ function mapDecision(item: CareDecision): HistoryRecord {
   return {
     id: "decision:" + item.id,
     event_type: "decision",
-    status: item.decision_status || "not specified",
+    status: caregiverStatusLabel(item.decision_status) || "Not available",
     occurred_at: item.decided_at || null,
     recorded_at: createdAt,
     display_date: decidedAt,
@@ -798,8 +808,8 @@ function mapFollowUp(item: FollowUpHistoryItem): HistoryRecord {
     tags: ["follow-up"],
     source_kind: "follow-up",
     source_details: detailFields([
-      { label: "Status", value: caregiverStatusLabel(status) || status },
-      { label: "Priority", value: caregiverStatusLabel(asText(item.priority)) || asText(item.priority) },
+      { label: "Status", value: caregiverStatusLabel(status) || "Not available" },
+      { label: "Priority", value: caregiverStatusLabel(asText(item.priority)) || "Not available" },
       { label: "Assigned to", value: caregiverSafeAssistantText(asText(item.owner_label)) || "" },
       { label: "Due date", value: item.deadline_at ? formatDateTime(item.deadline_at) : "Not recorded" },
       { label: "Review date", value: item.review_at ? formatDateTime(item.review_at) : "Not recorded" },
@@ -811,7 +821,7 @@ function mapFollowUp(item: FollowUpHistoryItem): HistoryRecord {
 function mapOutcome(item: CareOutcome): HistoryRecord {
   const createdAt = item.created_at || null;
   const actionType = caregiverStatusLabel(asText(item.action_type)) || "Care update";
-  const status = item.outcome_status || "not specified";
+  const status = caregiverStatusLabel(item.outcome_status) || "Not available";
   const description = [asText(item.notes), asText(item.correction_text) ? "Correction recorded: " + asText(item.correction_text) : ""]
     .filter(Boolean).join("\n\n");
   return {
@@ -845,7 +855,7 @@ function mapIncomingHandoff(item: HandoffInboxItem): HistoryRecord {
   return {
     id: "handoff-in:" + item.id,
     event_type: "handoff",
-    status: item.status || "not specified",
+    status: caregiverStatusLabel(item.status) || "Not available",
     occurred_at: createdAt,
     recorded_at: createdAt,
     display_date: createdAt,
@@ -861,7 +871,7 @@ function mapIncomingHandoff(item: HandoffInboxItem): HistoryRecord {
       { label: "From", value: sender },
       { label: "Relationship", value: asText(item.from_caregiver_relationship) },
       { label: "Scope", value: item.scope?.join(", ") || "" },
-      { label: "Status", value: item.status || "Not specified" },
+      { label: "Status", value: caregiverStatusLabel(item.status) || "Not available" },
       { label: "Received", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
       { label: "Access expires", value: item.expires_at ? formatDateTime(item.expires_at) : "Not recorded" },
       { label: "Summary attached", value: item.has_summary ? "Yes" : "No" },
@@ -876,7 +886,7 @@ function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
   return {
     id: "handoff-out:" + item.id,
     event_type: "handoff",
-    status: item.status || "not specified",
+    status: caregiverStatusLabel(item.status) || "Not available",
     occurred_at: createdAt,
     recorded_at: createdAt,
     display_date: createdAt,
@@ -891,7 +901,7 @@ function mapOutgoingHandoff(item: HandoffOutboxItem): HistoryRecord {
       { label: "Direction", value: "Outgoing" },
       { label: "Recipients", value: recipients.join(", ") },
       { label: "Scope", value: item.scope?.join(", ") || "" },
-      { label: "Status", value: item.status || "Not specified" },
+      { label: "Status", value: caregiverStatusLabel(item.status) || "Not available" },
       { label: "Shared", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
       { label: "Access expires", value: item.expires_at ? formatDateTime(item.expires_at) : "Not recorded" },
       { label: "Summary attached", value: item.has_summary ? "Yes" : "No" },
