@@ -170,7 +170,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
   return <section style={panel} aria-label="Review reports that do not match">
     <h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))", marginTop: 0 }}>When information differs</h3>
     <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
-      A newer date or several similar reports do not automatically mean one version is right. Every review needs supporting information and a reason. If you can only check part of the information, say exactly which part.
+      A newer date or several similar reports do not automatically mean one version is right. Every review needs notes or documents to check, and a reason. If you can only check part of the information, say exactly which part.
     </p>
     {loading && <p role="status">Loading reports that differ…</p>}
     {error && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{error} <button type="button" style={button} onClick={() => void loadRecords()} disabled={loading}>Retry load</button></p>}
