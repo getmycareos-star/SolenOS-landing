@@ -755,7 +755,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                           {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
                               <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'We checked this count against separate care updates and their dates.' : 'This wording appears in your Care Record.'}</p>
-                              {claim.support_status === 'matched_validated_aggregate' && <p>This count includes {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? ' during ' + claim.aggregate.window_label : ''}. Repeated records were not counted twice.</p>}
+                              {claim.support_status === 'matched_validated_aggregate' && <p>This count includes {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? " during " + (caregiverSafeAssistantText(claim.aggregate?.window_label) || "the selected time period") : ""}. Repeated records were not counted twice.</p>}
                               {claim.source_references.map((source, sourceIndex) => (
                                 <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
                                   <strong>{caregiverSafeGeneratedText(source.label) || 'Saved care information'}</strong>
