@@ -1006,6 +1006,14 @@ const cameraPermission = read("../src/lib/permissions/useCameraPermission.ts");
 const locationPermission = read("../src/lib/permissions/useLocationPermission.ts");
 
 const settingsPage = read("../src/app/workspace/settings/page.tsx");
+assert.match(reminders, /caregiverSafeAssistantText\(reminder\.title\)/,
+  "saved reminder titles must use readable caregiver text");
+assert.match(reminders, /caregiverSafeAssistantText\(reminder\.note\)/,
+  "saved reminder notes must not expose raw structured metadata");
+assert.match(reminders, /caregiverSafeAssistantText\(reminder\.completion_note\)/,
+  "reminder completion notes must use readable caregiver text");
+assert.match(reminders, /caregiverSafeAssistantText\(member\.name\)/,
+  "caregiver assignment names must not expose raw structured values");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.title\)/, "notification titles must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.body\)/, "notification bodies must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverStatusLabel\(item\.priority\)/, "notification priority codes must be translated before display");
