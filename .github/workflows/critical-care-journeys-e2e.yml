@@ -22,6 +22,7 @@ on:
     branches: [main]
     paths:
       - "e2e/critical-care-journeys.mjs"
+      - "e2e/document-continuity-live-qwen.mjs"
       - "e2e/document-continuity-stubbed-inference.mjs"
       - "e2e/document-test-backend.py"
       - "e2e/anonymous-account-continuity.mjs"
@@ -225,6 +226,15 @@ jobs:
           BACKEND_URL: http://127.0.0.1:8000
           SOLENOS_REQUIRE_LIVE_QWEN: ${{ inputs.require_live_qwen && '1' || '0' }}
         run: node e2e/critical-care-journeys.mjs
+
+      - name: Verify document-to-LCR continuity with live Qwen
+        if: inputs.require_live_qwen
+        env:
+          FRONTEND_URL: http://127.0.0.1:3000
+          BACKEND_URL: http://127.0.0.1:8000
+          OLLAMA_MODEL: ${{ env.OLLAMA_MODEL }}
+          DOCUMENT_QWEN_TIMEOUT_MS: "360000"
+        run: node e2e/document-continuity-live-qwen.mjs
 
       - name: Verify anonymous account claiming and fresh-browser recovery against PostgreSQL
         env:
