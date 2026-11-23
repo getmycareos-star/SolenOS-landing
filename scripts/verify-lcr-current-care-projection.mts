@@ -54,3 +54,6 @@ console.log("✓ historical timeline remains independently implemented");
 assert.match(component, /"unsearchable"[\s\S]*?couldn’t be searched for this question; no conclusion can be drawn from this source/, "an unsearchable care source must be disclosed and remain distinct from an empty source");
 assert.match(component, /\["failed", "partial", "unsearchable", "unavailable_schema", "unavailable_scope"\]/, "retrying an unsearchable source must not clear the incomplete-retrieval warning");
 assert.match(component, /projection\.items\.length === 0 \?[\s\S]*?No matching care details were returned from the sources we could check\. This does not mean the unavailable sources have no relevant information\./, "an empty projection with incomplete sources must not be presented as an empty Care Record");
+
+assert.match(component, /caregiverIdRef\.current !== session\.caregiver\.id[\s\S]*?setEvidenceIntegrityByFact\(\{\}\)/, "private LCR review state must be cleared when the active caregiver changes, even for the same person");
+assert.match(component, /addEventListener\("personIdChanged", refreshAfterSessionChange\)/, "the Living Care Record must reload when the active person or caregiver session changes");
