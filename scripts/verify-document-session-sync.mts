@@ -22,6 +22,8 @@ assert.ok(loadStart >= 0 && loadEnd > loadStart, "document list loader must be p
 const loader = source.slice(loadStart, loadEnd);
 assert.match(loader, /const requestSequence = \+\+documentLoadSequenceRef\.current/, "each document list read must have a request identity");
 assert.match(loader, /documentLoadSequenceRef\.current === requestSequence/, "older document reads must not replace newer results");
+assert.match(loader, /requestPersonId === getPersonId\(\)/, "document results must still belong to the active care recipient");
+assert.match(loader, /requestCaregiverId === getCaregiverId\(\)/, "document results must still belong to the active caregiver");
 assert.match(loader, /if \(isCurrentRequest\(\)\) setDocuments\(next\)/, "only the newest successful document read may replace the list");
 assert.match(loader, /cause instanceof ApiResponseError[\s\S]*?cause\.status === 401[\s\S]*?cause\.status === 403/, "authentication and access denial must be distinguished from transient read failures");
 assert.match(loader, /if \(!requestPersonId \|\| !requestCaregiverId \|\| accessDenied\)[\s\S]*?setDocuments\(\[\]\)/, "denied document access must clear previously loaded private document data");
