@@ -147,6 +147,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     for (const analysisId of Object.keys(historyRequestSequence.current)) {
       historyRequestSequence.current[analysisId] += 1;
     }
+    setHistoryLoading({});
     setLoading(true);
     setError(null);
     try {
@@ -158,7 +159,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       setProcessingJobs(Array.isArray(result.processing_jobs) ? result.processing_jobs : []);
     } catch {
       if (sequence !== loadSequence.current) return;
-      setError("Saved document reviews could not be loaded. Retry without re-uploading the original.");
+      setError("We couldn't refresh saved document reviews. The list may be out of date. Retry without re-uploading the original.");
     } finally {
       if (sequence === loadSequence.current) setLoading(false);
     }

@@ -21,7 +21,8 @@ assert(
 );
 assert(
   source.includes("historyRequestSequence") &&
-  source.includes("historyRequestSequence.current[analysisId] !== requestSequence"),
+  source.includes("historyRequestSequence.current[analysisId] !== requestSequence") &&
+  source.includes("setHistoryLoading({})"),
   "stale review-history responses must not overwrite a refreshed analysis or clear a newer request",
 );
 assert(
