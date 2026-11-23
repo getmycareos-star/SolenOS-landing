@@ -87,8 +87,8 @@ if (!isSafetyOverrideValid(criticalOutput, safety.state)) {
 }
 console.log("✓ CRITICAL safety override validation");
 
-if (CRITICAL_TOTAL_MAX_WORDS !== 60 || HIGH_TOTAL_MAX_WORDS !== 120) {
-  throw new Error("word limits must be 60 CRITICAL / 120 HIGH");
+if (Number.isFinite(CRITICAL_TOTAL_MAX_WORDS) || HIGH_TOTAL_MAX_WORDS !== 250) {
+  throw new Error("critical output must have no universal word ceiling; high-risk maximum is 250");
 }
 console.log("✓ safety override word limits");
 
