@@ -419,7 +419,10 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     if (typeof item === "number" && Number.isFinite(item)) return String(item);
     return "";
   };
-  const sourceText = (item: unknown): string => caregiverSourceText(item) || "";
+  const sourceText = (item: unknown): string => {
+    if (typeof item === "number" && Number.isFinite(item)) return String(item);
+    return caregiverSourceText(item) || "";
+  };
   const readableLabel = (item: unknown): string => {
     const raw = safeText(item);
     if (!raw) return "";
