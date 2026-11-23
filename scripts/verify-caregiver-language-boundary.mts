@@ -1057,7 +1057,7 @@ assert.match(burdenMessages, /What you shared is saved in your Care Record/);
 assert.doesNotMatch(burdenMessages, /Living Care Record/);
 assert.match(continuityHomeCopy, /Added to your Care Record/);
 assert.doesNotMatch(continuityHomeCopy, /Living Care Record/);
-assert.match(activationCopy, /ACTIVATION_ACKNOWLEDGEMENT =\s*"Saved in your Care Record"/);
+assert.match(activationCopy, /ACTIVATION_ACKNOWLEDGEMENT =\s*"Saved in your Care Record\\.?"/);
 assert.match(activationCopy, /Anything new to add to your Care Record\?/);
 assert.doesNotMatch(searchRedirectCopy, /Living Care Record|general Q&A engine|memory system/);
 assert.match(careMemoryCopy, /"Added to your Care Record"/);
