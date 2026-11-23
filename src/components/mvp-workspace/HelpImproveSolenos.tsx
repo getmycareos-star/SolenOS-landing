@@ -76,7 +76,7 @@ export function HelpImproveSolenos({ compact }: Props) {
       }
       // Only claim the feedback was recorded once the request actually succeeds.
       setDone(true);
-    } catch (err) {
+    } catch {
       setSubmitError(
         caregiverSafeErrorMessage(),
       );
