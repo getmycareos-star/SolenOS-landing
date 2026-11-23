@@ -6,7 +6,7 @@ import { ArrowLeft, Check, Clock3, Plus, X } from "lucide-react";
 import { ensureAnonymousSession, getJSON, patchJSON, postJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { RecordState } from "@/components/ui/RecordState";
-import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverSourceText } from "@/lib/caregiver-language";
 
 type ReminderStatus = "open" | "completed" | "cancelled";
 
@@ -266,7 +266,7 @@ export default function CareRemindersPage() {
           <select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)} disabled={reminderAssignableMembers.length === 0}>
             {reminderAssignableMembers.length === 0 ? <option value="">No caregiver is currently eligible</option> : null}
             {reminderAssignableMembers.map((member) => (
-              <option key={member.caregiver_id} value={member.caregiver_id}>{caregiverSafeAssistantText(member.name) || "Caregiver"}</option>
+              <option key={member.caregiver_id} value={member.caregiver_id}>{caregiverSourceText(member.name) || "Caregiver"}</option>
             ))}
           </select>
         </label>
@@ -325,12 +325,12 @@ export default function CareRemindersPage() {
                     <span className={`care-reminder-status care-reminder-status-${label.toLowerCase()}`}>{label}</span>
                     <time dateTime={reminder.due_at}>{formatDateTime(reminder.due_at)}</time>
                   </div>
-                  <h3>{caregiverSafeAssistantText(reminder.title) || "Care reminder"}</h3>
-                  {reminder.note ? <p>{caregiverSafeAssistantText(reminder.note) || "No further note was recorded."}</p> : null}
+                  <h3>{caregiverSourceText(reminder.title) || "Care reminder"}</h3>
+                  {reminder.note ? <p>{caregiverSourceText(reminder.note) || "No further note was recorded."}</p> : null}
                   {reminder.status === "completed" && reminder.completed_at ? (
                     <p className="care-reminder-footnote">
                       Completed {formatDateTime(reminder.completed_at)}
-                      {reminder.completion_note ? ` · ${caregiverSafeAssistantText(reminder.completion_note) || "No completion note was recorded"}` : ""}
+                      {reminder.completion_note ? ` · ${caregiverSourceText(reminder.completion_note) || "No completion note was recorded"}` : ""}
                     </p>
                   ) : null}
                   {reminder.status === "cancelled" && reminder.cancelled_at ? (
@@ -352,7 +352,7 @@ export default function CareRemindersPage() {
                   <label className="care-reminder-footnote">
                     <span>Responsible caregiver</span>
                     <select
-                      aria-label={`Responsible caregiver for ${caregiverSafeAssistantText(reminder.title) || "Care reminder"}`}
+                      aria-label={`Responsible caregiver for ${caregiverSourceText(reminder.title) || "Care reminder"}`}
                       value={reminder.assigned_to_caregiver_id || reminder.created_by_caregiver_id}
                       disabled={reminder.status !== "open" || busyId === reminder.id || reminderAssignableMembers.length === 0}
                       onChange={(event) => void reassignReminder(reminder, event.target.value)}
