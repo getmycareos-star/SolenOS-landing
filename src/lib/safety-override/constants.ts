@@ -1,5 +1,6 @@
-export const CRITICAL_TOTAL_MAX_WORDS = 60;
-export const HIGH_TOTAL_MAX_WORDS = 120;
+// Critical safety output has no universal word ceiling; preserve all required action and context.
+export const CRITICAL_TOTAL_MAX_WORDS = Number.POSITIVE_INFINITY;
+export const HIGH_TOTAL_MAX_WORDS = 250;
 
 export const CRITICAL_HEADER = "🔴 CRITICAL";
 
