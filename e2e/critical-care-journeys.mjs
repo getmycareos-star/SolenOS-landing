@@ -1747,7 +1747,20 @@ await record("04 scanned document upload, original bytes, page tracking, idempot
     assert.ok(intelligence.payload.observations.length > 0, "A successful document review must contain source-grounded candidates");
     assert.equal(intelligence.payload.written_to_lcr, false);
     assert.ok(!beforeAcceptance.payload.items.some((item) => JSON.stringify(item).includes(documentId)), "unreviewed document candidate appeared in the LCR");
-    const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", { token: identity.token, method: "POST", body: { candidate_index: 0, decision: "accept" } });
+    const candidate = intelligence.payload.observations[0];
+    const accepted = await request("/api/v1/documents/intelligence/" + intelligence.payload.analysis_id + "/review", {
+      token: identity.token,
+      method: "POST",
+      body: {
+        candidate_index: typeof candidate.candidate_index === "number" ? candidate.candidate_index : 0,
+        decision: "accept",
+        expected_source_quote: candidate.source_quote ?? "",
+        expected_subject: candidate.subject ?? "",
+        expected_observation: candidate.observation ?? "",
+        expected_candidate_id: candidate.canonical_candidate?.candidate_id,
+        expected_review_status: candidate.review_status ?? "pending_review",
+      },
+    });
     assert.equal(accepted.status, 200, JSON.stringify(accepted.payload));
     assert.equal(accepted.payload.written_to_lcr, true);
   } else {
