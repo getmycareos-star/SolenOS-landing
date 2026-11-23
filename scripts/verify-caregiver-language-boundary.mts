@@ -1089,6 +1089,7 @@ assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.title\)/, "notific
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.body\)/, "notification bodies must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverStatusLabel\(item\.priority\)/, "notification priority codes must be translated before display");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(erasureRequest\.message\)/, "privacy request messages from the server must use caregiver-safe generated copy");
+assert.match(reminders, /error && reminders\.length === 0 \? null : visibleReminders\.length === 0/, "a failed reminder read must not be presented as an empty saved list");
 
 assert.match(careRecipientNameGate, /setError\(caregiverSafeErrorMessage\(\)\)/,
   "care-recipient naming must not show raw server errors");
