@@ -586,6 +586,9 @@ assert.doesNotMatch(caregiverAccessPanel, /Caregiver activity history|Your respo
   "caregiver access settings must describe care tasks and sharing in everyday language");
 assert.match(caregiverAccessPanel, /Suggest a correction to care information/);
 assert.match(caregiverAccessPanel, /Hand care tasks to another caregiver/);
+assert.match(caregiverAccessPanel, /caregiverStatusLabel\(item\.status\) \|\| "Not recorded"/, "unknown responsibility states must have a readable fallback");
+assert.match(caregiverAccessPanel, /caregiverSafeAssistantText\(caregiver\.relationship\) \|\| "Relationship not recorded"/, "unknown caregiver relationships must not render as blank labels");
+
 assert.match(appShellLanguage, /We couldn't confirm your access to SolenOS, so nothing was cleared/,
   "failed access revocation must clearly say that no local data was cleared");
 assert.doesNotMatch(restrictedRoleLanguage, /server-issued identity|permissions for this role|anonymous care session|unverified or demo dashboard/i,
