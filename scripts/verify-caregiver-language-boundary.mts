@@ -919,3 +919,8 @@ assert.match(careHandoffSharing, /caregiverReadableCaptureText\(item\.supporting
   "handoff source quotations must not expose structured capture metadata");
 assert.match(careHandoffSharing, /caregiverReadableCaptureText\(item\.summary \|\| item\.text\)/,
   "source-only handoff summaries must use readable saved care wording");
+assert.match(careHandoffSharing, /draft\\?\\.audience !== "professional" \\|\\| draft\\?\\.purpose !== "professional_appointment"[\\s\\S]*?source\\.source_table \\+ ":" \\+ source\\.source_id[\\s\\S]*?sourceTables\\.get\\(item\\.source_ref\\) !== "caregiver_profiles"/,
+  "professional appointment briefings must not treat caregiver profile records as care history");
+assert.match(shareCareSummaryPanel, /caregiverVisibleBriefingSections\\(draft\\)/,
+  "exported briefings must use the same care-relevant source filter as the review screen");
+
