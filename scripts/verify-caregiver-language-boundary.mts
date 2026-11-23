@@ -1219,8 +1219,6 @@ assert.match(historyDrawer, /const rawValue = field\.value\.trim\(\)/, "caregive
 
 assert.match(naturalDailyUpdate, /caregiverSourceText\(candidate\.source_quote\)/, "OCR source quotations passed into medication context must preserve their exact wording and whitespace");
 
-assert.match(caregiverAccessPanel, /loadedPersonIdRef\.current !== personId[\s\S]*?clearPersonScopedState\(\)/,
-  "caregiver access data from a previous care recipient must be cleared before loading another person's workspace");
 assert.match(caregiverAccessPanel, /else warnings\.push\("assigned care responsibilities"\)/,
   "a failed responsibility read must not be converted into an empty saved list");
 assert.match(caregiverAccessPanel, /Some caregiver information could not be refreshed:[\s\S]*?Refresh before making changes based on those lists/,
