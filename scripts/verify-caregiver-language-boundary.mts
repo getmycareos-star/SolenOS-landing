@@ -1165,6 +1165,9 @@ assert.match(shareCareSummaryPanel, /caregiverVisibleBriefingSections\(draft\)/,
 const continuityPrompt = read("../src/components/ContinuityPrompt.tsx");
 const situationProxy = read("../src/app/api/situation/route.ts");
 assert.match(continuityPrompt, /We couldn’t complete account setup\. Check your details and try again\./, "identity errors must use plain recovery guidance");
+assert.match(continuityPrompt, /caregiverSafeGeneratedText\(prompt\.message\)/, "continuity prompts from the service must use caregiver-safe generated text");
+assert.match(continuityPrompt, /caregiverSafeGeneratedText\(prompt\.care_graph_summary\?\.what_matters_now\)/, "care summary text in account prompts must use caregiver-safe generated text");
+
 assert.doesNotMatch(continuityPrompt, /e instanceof Error \? e\.message/, "identity service errors must not be rendered raw");
 assert.match(situationProxy, /The care service is not available right now\. No update was sent\. Try again later\./, "configuration failures must not expose internal service details and must state no update was sent");
 assert.doesNotMatch(situationProxy, /error instanceof Error \? error\.message/, "proxy configuration exceptions must not be returned to caregivers");
