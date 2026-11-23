@@ -197,6 +197,7 @@ const livingCareRecordPanel = read("../src/components/mvp-workspace/LivingCareRe
 const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
 assert.match(changeIntelligence, /caregiverSourceText\(source\.source_text \?\? source\.source_label\)/, "change history must preserve original source wording");
 const dailyCareIntelligence = read("../src/components/workflows/DailyCareQwen.tsx");
+assert.match(dailyCareIntelligence, /caregiverSourceText\(source\.title\)/, "Daily Care retrieval must preserve original source titles");
 const naturalDailyUpdate = read("../src/components/workflows/NaturalLanguageDailyUpdate.tsx");
 const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
 const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
