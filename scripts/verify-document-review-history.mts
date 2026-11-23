@@ -43,14 +43,18 @@ assert(
 assert(
   captureReview.includes("expected_source_quote: candidate.source_quote ?? \"\"") &&
   captureReview.includes("expected_subject: candidate.subject ?? \"\"") &&
-  captureReview.includes("expected_observation: candidate.observation ?? \"\""),
-  "capture-analysis decisions must send the required exact candidate snapshot to the backend",
+  captureReview.includes("expected_observation: candidate.observation ?? \"\"") &&
+  captureReview.includes("expected_corrected_subject: candidate.corrected_subject ?? \"\"") &&
+  captureReview.includes("expected_corrected_observation: candidate.corrected_observation ?? \"\""),
+  "capture-analysis decisions must send the original and caregiver-corrected candidate snapshot to the backend",
 );
 assert(
   structuredCapture.includes("expected_source_quote: candidate.source_quote ?? ''") &&
   structuredCapture.includes("expected_subject: candidate.subject ?? ''") &&
-  structuredCapture.includes("expected_observation: candidate.observation ?? ''"),
-  "Structured Daily Care decisions must send the exact candidate snapshot to the backend",
+  structuredCapture.includes("expected_observation: candidate.observation ?? ''") &&
+  structuredCapture.includes("expected_corrected_subject: candidate.corrected_subject ?? ''") &&
+  structuredCapture.includes("expected_corrected_observation: candidate.corrected_observation ?? ''"),
+  "Structured Daily Care decisions must send the original and caregiver-corrected candidate snapshot to the backend",
 );
 
 assert(
