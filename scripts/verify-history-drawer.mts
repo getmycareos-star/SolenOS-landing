@@ -32,7 +32,7 @@ assert.match(drawer, /sources\?\.events/,
   "fallback recovery reads the persisted events source from the LCR context");
 assert.match(drawer, /source_offsets_json=/,
   "fallback recovery follows per-source offsets instead of stopping at the first page");
-assert.match(drawer, /fallbackPagesFetched < 4/,
+assert.match(drawer, /fallbackPagesFetched < 100/,
   "fallback history pagination has an explicit bounded page limit");
 assert.match(drawer, /existingEventIds/,
   "the fallback does not duplicate event IDs already returned by the event-history endpoint");
