@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { ensureAnonymousSession, getJSON, getPersonId } from "@/api/client";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeGeneratedText, caregiverSituationStateLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSourceText, caregiverSafeChangeText, caregiverSafeGeneratedText, caregiverSituationStateLabel, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 type CareItem = {
@@ -166,10 +166,10 @@ export function CareRecordOverview() {
                 {items.map((item) => (
                   <article key={item.id} className="care-record-overview__item">
                     <div className="care-record-overview__item-heading">
-                      <strong className="care-record-overview__item-title">{caregiverSafeAssistantText(item.title) || "Care update"}</strong>
+                      <strong className="care-record-overview__item-title">{caregiverSourceText(item.title) || "Care update"}</strong>
                       <span className="care-record-overview__status">{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
-                    {caregiverSafeAssistantText(item.description) && <p className="care-record-overview__description">{caregiverSafeAssistantText(item.description)}</p>}
+                    {caregiverSourceText(item.description) && <p className="care-record-overview__description">{caregiverSourceText(item.description)}</p>}
                     <p className="care-record-overview__meta">Shared by: {caregiverSafeGeneratedText(item.source_label) || "Not recorded"} · Happened: {when(item.occurred_at)} · Saved: {when(item.recorded_at)}</p>
                   </article>
                 ))}
