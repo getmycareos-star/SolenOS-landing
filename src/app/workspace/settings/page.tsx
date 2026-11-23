@@ -612,7 +612,14 @@ function AccountCard() {
             {mode === "delete" ? "Enter your password to confirm" : "Password"}
             <input id="account-password" className="mobile-settings-input" type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={mode === "create" ? 12 : 1} maxLength={256} required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
-          {mode === "create" && <p className="mobile-settings-hint">Use at least 12 characters.</p>}
+          {mode === "create" && (
+            <>
+              <p className="mobile-settings-hint">Use at least 12 characters.</p>
+              <p className="mobile-settings-hint">
+                SolenOS does not verify email addresses or send password-reset emails. Your email is only your sign-in name. Save your recovery code; it is the only way to reset your password.
+              </p>
+            </>
+          )}
           {mode === "login" && <p className="mobile-settings-hint">Sign in with the email and password linked to your existing care record.</p>}
 
           {mode === "delete" && <p className="mobile-settings-hint">This deletes your account login. It does not delete your Care Record or care history.</p>}

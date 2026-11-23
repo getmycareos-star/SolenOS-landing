@@ -250,7 +250,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "delete": {
-        if (!window.confirm("Delete this workspace from this device? This clears local session and workspace data from this browser. It does not delete care information already saved in SolenOS. Continue?")) return;
+        if (!window.confirm("Clear this device? This removes local session and workspace data from this browser. It does not delete care information already saved in SolenOS. Continue?")) return;
         try {
           if (getAnonymousAccessToken()) await revokeAnonymousSession();
           else markAnonymousSessionRevokedLocally();

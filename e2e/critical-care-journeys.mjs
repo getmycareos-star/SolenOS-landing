@@ -1208,10 +1208,64 @@ await record("01c workspace links, browser back, More menu and account form vali
     "invalid account details must not pass browser form validation");
   await accountForm.getByRole("button", { name: "Create account", exact: true }).click();
   assert.equal(accountPosts.length, 0, "invalid account details must not be submitted to the backend");
-  await email.fill("browser-form-validation@example.test");
-  await password.fill("valid-test-passphrase-2026");
+  const accountEmail = `caregiver-${randomUUID()}@example.test`;
+  const accountPassword = "SolenOS-account-passphrase-2026!";
+  const recoveredPassword = "SolenOS-recovered-passphrase-2026!";
+  await email.fill(accountEmail);
+  await password.fill(accountPassword);
   assert.equal(await accountForm.evaluate((form) => form.checkValidity()), true,
     "a correctly formatted email and 12+ character password must pass browser validation");
+  await accountSection.getByText(/SolenOS does not verify email addresses or send password-reset emails/).waitFor();
+  await accountForm.getByRole("button", { name: "Create account", exact: true }).click();
+  await accountSection.getByText("Account created and linked to your Care Record.", { exact: true }).waitFor({ timeout: 20_000 });
+  const initialRecoveryCode = (await accountSection.locator("code").first().textContent())?.trim() || "";
+  assert.ok(initialRecoveryCode.length >= 32, "account creation must issue a one-time recovery code");
+  await accountSection.getByRole("button", { name: "I have saved the code", exact: true }).click();
+
+  await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
+  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 15_000 });
+  await accountSection.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
+  let authForm = accountSection.locator("form").filter({ has: accountSection.locator("#account-email") });
+  await authForm.locator("#account-email").fill(accountEmail);
+  await authForm.locator("#account-password").fill(accountPassword);
+  await authForm.getByRole("button", { name: "Sign in", exact: true }).click();
+  await accountSection.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
+
+  await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
+  await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 15_000 });
+  const securitySection = page.locator("#settings-security");
+  await securitySection.locator("summary").click();
+  await page.locator("#identity-recovery-email").fill(accountEmail);
+  await page.locator("#identity-recovery-code").fill(initialRecoveryCode);
+  await page.locator("#identity-recovery-password").fill(recoveredPassword);
+  await securitySection.getByRole("button", { name: "Restore account access", exact: true }).click();
+  await securitySection.getByText("Your account is ready. You are signed in on this device.", { exact: true }).waitFor({ timeout: 20_000 });
+  const replacementRecoveryCode = (await securitySection.locator("code").first().textContent())?.trim() || "";
+  assert.ok(replacementRecoveryCode.length >= 32, "fresh-browser recovery must issue a replacement one-time recovery code");
+  const recoveredIdentity = await page.evaluate(() => ({
+    token: localStorage.getItem("solenos_anonymous_access_token"),
+    personId: localStorage.getItem("solenos_backend_person_id"),
+    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
+  }));
+  assert.equal(recoveredIdentity.personId, shareSession.person.id,
+    "recovery must restore the original Care Record rather than create a new one");
+  assert.equal(recoveredIdentity.caregiverId, shareSession.caregiver.id,
+    "recovery must restore the original caregiver identity");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await accountSection.locator("summary").click();
+  await accountSection.getByRole("button", { name: "Delete account", exact: true }).waitFor({ timeout: 20_000 });
+  await accountSection.getByRole("button", { name: "Delete account", exact: true }).click();
+  const deleteAccountForm = accountSection.locator("form");
+  await deleteAccountForm.locator("#account-password").fill(recoveredPassword);
+  await deleteAccountForm.getByRole("button", { name: "Delete account", exact: true }).click();
+  await accountSection.getByText("Account deleted. Your Care Record and care history were not deleted.", { exact: true }).waitFor({ timeout: 20_000 });
+  const revokedAccountSession = await request(
+    `/api/v1/persons/${encodeURIComponent(shareSession.person.id)}`,
+    { token: recoveredIdentity.token },
+  );
+  assert.equal(revokedAccountSession.status, 401,
+    "deleting the account login must revoke its sessions without deleting the Care Record");
   await context.close();
 
   // Test local workspace deletion with a disposable identity, never the shared
@@ -1257,7 +1311,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   }).click().then(() => disposable.page.getByRole("menu", { name: "Care record actions", exact: true }));
   await deleteMenu.waitFor({ state: "visible", timeout: 5_000 });
   const deleteDialogPromise = disposable.page.waitForEvent("dialog");
-  const deleteClick = deleteMenu.getByRole("menuitem", { name: "Delete", exact: true }).click();
+  const deleteClick = deleteMenu.getByRole("menuitem", { name: "Clear this device", exact: true }).click();
   const deleteDialog = await deleteDialogPromise;
   assert.match(deleteDialog.message(), /does not delete care information already saved in SolenOS/i,
     "workspace deletion must distinguish local browser data from saved care information");

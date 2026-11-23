@@ -30,7 +30,7 @@ const MENU_ITEMS: {
   { id: "restore", label: "Restore", icon: Archive, condition: (props) => Boolean(props.isArchived) },
   { id: "pin", label: "Pin", icon: Pin, condition: (props) => !props.isPinned },
   { id: "unpin", label: "Unpin", icon: Pin, condition: (props) => Boolean(props.isPinned) },
-  { id: "delete", label: "Delete", icon: Trash2, destructive: true },
+  { id: "delete", label: "Clear this device", icon: Trash2, destructive: true },
 ];
 
 export function WorkspaceMoreMenu({ onAction, isPinned = false, isArchived = false }: WorkspaceMoreMenuProps) {

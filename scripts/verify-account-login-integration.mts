@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 const client = await readFile(new URL("../src/api/client.ts", import.meta.url), "utf8");
 const settings = await readFile(new URL("../src/app/workspace/settings/page.tsx", import.meta.url), "utf8");
 const authProvider = await readFile(new URL("../src/components/AuthProvider.tsx", import.meta.url), "utf8");
+const deviceRecovery = await readFile(new URL("../src/components/mvp-workspace/IdentityDeviceRecoveryPanel.tsx", import.meta.url), "utf8");
 
 assert.match(client, /export async function createAccount\(email: string, password: string\)/);
 assert.match(client, /await ensureAnonymousSession\(\);\s*return await postJSON\("\/accounts", \{ email, password \}\)/);
@@ -27,5 +28,13 @@ assert.match(settings, /mode === "login"/);
 assert.match(settings, /Sign in to an existing account/);
 assert.match(settings, /getAnonymousAccessToken\(\)/);
 assert.match(settings, /Do not create a new anonymous care record merely to inspect account status/);
+
+
+assert.match(settings, /SolenOS does not verify email addresses or send password-reset emails/);
+assert.match(settings, /Save your recovery code; it is the only way to reset your password/);
+assert.doesNotMatch(deviceRecovery, /ensureAnonymousSession/);
+assert.match(deviceRecovery, /getAnonymousAccessToken\(\)/);
+assert.match(deviceRecovery, /Sign in or restore your account to see the devices linked to it/);
+assert.match(deviceRecovery, /await signInToAccount\(email, newPassword\);\s*await loadDevices\(\);/);
 
 console.log("PASS: signup links the current anonymous care record; login restores the existing account care record.");

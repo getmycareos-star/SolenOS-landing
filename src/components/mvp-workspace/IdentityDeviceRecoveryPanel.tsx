@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { KeyRound, MonitorSmartphone, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { ensureAnonymousSession, getJSON, postJSON, deleteJSON, signInToAccount } from "@/api/client";
+import { getAnonymousAccessToken, getJSON, postJSON, deleteJSON, signInToAccount } from "@/api/client";
 import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 
 type Device = {
@@ -35,6 +35,7 @@ export function IdentityDeviceRecoveryPanel() {
   const { show, render } = useToast();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requiresSignIn, setRequiresSignIn] = useState(false);
   const [savingDevice, setSavingDevice] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
@@ -48,8 +49,14 @@ export function IdentityDeviceRecoveryPanel() {
   const loadDevices = useCallback(async () => {
     setLoading(true);
     setError("");
+    if (!getAnonymousAccessToken()) {
+      setDevices([]);
+      setRequiresSignIn(true);
+      setLoading(false);
+      return;
+    }
+    setRequiresSignIn(false);
     try {
-      await ensureAnonymousSession();
       const result = await getJSON("/identity/devices") as { devices: Device[] };
       setDevices(result.devices ?? []);
     } catch {
@@ -62,10 +69,13 @@ export function IdentityDeviceRecoveryPanel() {
   useEffect(() => { void loadDevices(); }, [loadDevices]);
 
   const registerThisDevice = async () => {
+    if (!getAnonymousAccessToken()) {
+      setError("Sign in or restore your account before adding this device.");
+      return;
+    }
     setSavingDevice(true);
     setError("");
     try {
-      await ensureAnonymousSession();
       const result = await postJSON("/identity/devices", {
         installation_key: getInstallationKey(),
         label: "This device",
@@ -120,6 +130,7 @@ export function IdentityDeviceRecoveryPanel() {
       // The recovery endpoint revokes every old session. Sign in immediately
       // with the new password to establish a fresh bearer on this device.
       await signInToAccount(email, newPassword);
+      await loadDevices();
       setRecoveryMessage("Your account is ready. You are signed in on this device.");
       setReplacementRecoveryCode(body.recovery_code || "");
       setRecoveryCode("");
@@ -142,7 +153,12 @@ export function IdentityDeviceRecoveryPanel() {
       </p>
       {loading && <p className="mobile-settings-hint" role="status">Loading devices…</p>}
       {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
-      {!loading && devices.length === 0 && <p className="mobile-settings-hint">No devices are linked to your account yet.</p>}
+      {!loading && requiresSignIn && (
+        <p className="mobile-settings-hint">
+          Sign in or restore your account to see the devices linked to it. You can restore access below.
+        </p>
+      )}
+      {!loading && !requiresSignIn && devices.length === 0 && <p className="mobile-settings-hint">No devices are linked to your account yet.</p>}
       {devices.map((device) => (
         <div key={device.id} className="mobile-settings-row" style={{ alignItems: "flex-start" }}>
           <span>
@@ -158,7 +174,7 @@ export function IdentityDeviceRecoveryPanel() {
         </div>
       ))}
       <div className="mobile-settings-actions">
-        <Button variant="primary" disabled={savingDevice || loading} loading={savingDevice} onClick={() => void registerThisDevice()}>
+        <Button variant="primary" disabled={savingDevice || loading || requiresSignIn} loading={savingDevice} onClick={() => void registerThisDevice()}>
           {savingDevice ? undefined : "Add this device"}
         </Button>
         <Button variant="secondary" disabled={loading} onClick={() => void loadDevices()}>Refresh</Button>
