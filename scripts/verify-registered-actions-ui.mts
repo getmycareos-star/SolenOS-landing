@@ -67,8 +67,9 @@ assert.ok(
   "The caregiver must record an outcome, refresh the canonical LCR and reconcile an uncertain completion response before retrying",
 );
 assert.ok(
-  lcr.includes('await patchJSON(`/open-loops/') && lcr.includes('status: "deferred"'),
-  "Suggestion deferral must reuse the persisted Open Loop workflow",
+  lcr.includes('await patchJSON(`/open-loops/') && lcr.includes('status: "deferred"')
+    && lcr.includes('expected_version: item.version'),
+  "Suggestion deferral must submit the exact saved version shown to the caregiver",
 );
 assert.ok(
   lcr.includes("onClick={openClarification}") &&
