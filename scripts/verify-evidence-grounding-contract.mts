@@ -177,7 +177,7 @@ assert(clarificationPanel.includes('window.addEventListener("careRecordUpdated"'
 assert(clarificationPanel.includes("answer_provenance"), "answers must carry explicit provenance");
 assert(clarificationPanel.includes("Save answer") && !clarificationPanel.includes("answerEvidenceIds"), "caregivers must be able to save an attributed answer without uploading a separate document");
 assert(clarificationPanel.includes("You can leave this unanswered if you do not know") && !clarificationPanel.includes('updateQuestion("unresolved")'), "skipping must leave the question open without requiring a status-changing caregiver action");
-assert(clarificationPanel.includes("Your answer will not be marked as confirmed until it has been checked"), "answer capture must not automatically confirm the care record");
+assert(clarificationPanel.includes("Your answer will not be treated as confirmed until it has been checked."), "answer capture must not automatically confirm the care record");
 assert(clarificationPanel.includes("intended_answerer_role"), "clarification must record who is best placed to answer when known");
 assert(clarificationPanel.includes("necessity_rationale"), "necessary/optional clarification requires a recorded rationale");
 assert(clarificationPanel.includes("Previous answers"), "earlier clarification answers must remain visible");
