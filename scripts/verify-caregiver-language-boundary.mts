@@ -872,8 +872,9 @@ assert.doesNotMatch(reminders, /CARE CONTINUITY|Living Care Record|in-app notifi
   "reminders must not expose internal continuity or delivery terminology");
 assert.match(reminders, /Reminders you add will appear here/,
   "reminders empty state must explain what the caregiver will see");
-assert.doesNotMatch(openLoopsPage, /\b(?:database|API|OCR|provenance|reconciliation|assertion|schema|JSON|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint|PostgreSQL|SQL|idempotency|retrieval)\b/i,
-  "Follow-ups must not expose internal record-processing terms");
+const openLoopsCaregiverCopy = openLoopsPage.replace(/^import .*;?$/gm, "");
+assert.doesNotMatch(openLoopsCaregiverCopy, /\b(?:database|API|OCR|provenance|reconciliation|assertion|schema|JSON|freshness|extraction|lineage|algorithm|metadata|pipeline|backend|frontend|checksum|fingerprint|PostgreSQL|SQL|idempotency|retrieval)\b/i,
+  "Follow-ups caregiver-facing content must not expose internal record-processing terms (imports are excluded)");
 assert.match(openLoopsPage, /Follow-ups/);
 
 
