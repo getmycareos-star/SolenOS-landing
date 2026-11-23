@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { caregiverStatusLabel, caregiverSafeAssistantText } from "@/lib/caregiver-language";
+import { caregiverStatusLabel, caregiverSourceText } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 type AppointmentBrief = {
@@ -77,17 +77,17 @@ export function UpcomingAppointmentSummary() {
         <RecordState kind="error" title="Appointment information is unavailable" description="Your saved care information has not been changed." onAction={() => void load()} />
       ) : appointment ? (
         <div className="solenos-upcoming-appointment__item">
-          <strong>{caregiverSafeAssistantText(appointment.title) || "Recorded appointment"}</strong>
+          <strong>{caregiverSourceText(appointment.title) || "Recorded appointment"}</strong>
           <p>{displayDate(appointment.scheduled_at)} · {caregiverStatusLabel(appointment.status) || "Status not recorded"}</p>
-          {appointment.provider && <p>{caregiverSafeAssistantText(appointment.provider)}</p>}
-          {appointment.location && <p>{caregiverSafeAssistantText(appointment.location)}</p>}
+          {appointment.provider && <p>{caregiverSourceText(appointment.provider)}</p>}
+          {appointment.location && <p>{caregiverSourceText(appointment.location)}</p>}
           <small>This is a Care Record entry. SolenOS has not booked or confirmed it with a provider.</small>
         </div>
       ) : (brief?.appointments?.length ?? 0) > 0 ? (
         <ul className="solenos-upcoming-appointment__list">
           {(brief?.appointments ?? []).slice(0, 2).map(item => (
             <li key={item.source_id}>
-              <strong>{caregiverSafeAssistantText(item.title) || "Recorded appointment"}</strong>
+              <strong>{caregiverSourceText(item.title) || "Recorded appointment"}</strong>
               <span>{displayDate(item.scheduled_at)} · {caregiverStatusLabel(item.status) || "Status not recorded"}</span>
             </li>
           ))}
