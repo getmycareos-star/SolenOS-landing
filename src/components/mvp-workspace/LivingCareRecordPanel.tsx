@@ -80,7 +80,6 @@ export function LivingCareRecordPanel({
     plan.show_current_understanding &&
     (Boolean(view.what_seems_happening) || factCandidates.length > 0);
   const renderEvidenceMeta = view.has_documents && Boolean(eventLabel);
-  const showMentalLoad = Boolean(mentalLoadSignal);
 
   return (
     <section className="living-care-record-panel" aria-label="Care Record update">
@@ -120,7 +119,7 @@ export function LivingCareRecordPanel({
           </h3>
           {plan.show_situation_summary && view.what_seems_happening && (
             <p className="panel-muted" aria-label="What you shared">
-              {situationSummary ? \`You shared: \${situationSummary}\` : "The summary could not be shown clearly. Your saved care information remains available in the Care Record."}
+              {situationSummary ? "You shared: " + situationSummary : "The summary could not be shown clearly. Your saved care information remains available in the Care Record."}
             </p>
           )}
           {facts.length > 0 && (
@@ -248,7 +247,7 @@ export function LivingCareRecordPanel({
           {stillUnclear.length > 0 && questionCandidates.length > stillUnclear.length && (
             <p className="panel-muted">Some other questions could not be shown clearly. You can review the original care information instead.</p>
           )}
-          {whyAsking && (
+          {view.why_asking && (
             <details className="lcr-expandable lcr-why-asking">
               <summary className="panel-muted">Why these questions?</summary>
               <p className="panel-muted">{whyAsking || "The reason for these questions could not be explained clearly. You can skip questions you do not know."}</p>
