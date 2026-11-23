@@ -264,6 +264,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   const [currentSessionCaregiverId, setCurrentSessionCaregiverId] = useState("");
   const [loadWarnings, setLoadWarnings] = useState<string[]>([]);
   const loadedScopeRef = useRef<{ personId: string; caregiverId: string } | null>(null);
+  const loadSequenceRef = useRef(0);
 
   const clearPersonScopedState = useCallback(() => {
     setMembers([]);
@@ -321,10 +322,14 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
   }, []);
 
   const load = useCallback(async () => {
+    const requestSequence = ++loadSequenceRef.current;
+    const isCurrentRequest = () => loadSequenceRef.current === requestSequence;
     if (!getAnonymousAccessToken()) {
-      clearPersonScopedState();
-      loadedScopeRef.current = null;
-      setLoading(false);
+      if (isCurrentRequest()) {
+        clearPersonScopedState();
+        loadedScopeRef.current = null;
+        setLoading(false);
+      }
       return;
     }
     setLoading(true);
@@ -332,6 +337,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setLoadWarnings([]);
     try {
       const session = await ensureAnonymousSession();
+      if (!isCurrentRequest()) return;
       const personId = session.person.id;
       const caregiverId = session.caregiver.id;
       if (loadedScopeRef.current && (loadedScopeRef.current.personId !== personId || loadedScopeRef.current.caregiverId !== caregiverId)) {
@@ -372,6 +378,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         getJSON("/caregiver-roles/" + encodeURIComponent(personId)) as Promise<CaregiverRole[]>,
         getJSON("/caregiver-activities/" + encodeURIComponent(personId) + "?limit=30") as Promise<CaregiverActivity[]>,
       ]);
+      if (!isCurrentRequest()) return;
 
       const warnings: string[] = [];
       if (transferResult.status === "fulfilled" && Array.isArray(transferResult.value)) setTransfers(transferResult.value);
@@ -400,6 +407,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
           const history = await getJSON(
             "/caregiver-responsibilities/history/" + encodeURIComponent(ownProfileId) + "?person_id=" + encodeURIComponent(personId),
           ) as Responsibility[];
+          if (!isCurrentRequest()) return;
           setResponsibilityHistory(history ?? []);
           setResponsibilityHistoryUnavailable(false);
         } catch {
@@ -445,15 +453,23 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         setError("We couldn't refresh your caregiver profile. Some caregiver details may be out of date; check before making changes.");
       }
     } catch {
-      clearPersonScopedState();
-      loadedScopeRef.current = null;
-      setError("We couldn't load caregiver access. Please try again.");
+      if (isCurrentRequest()) {
+        clearPersonScopedState();
+        loadedScopeRef.current = null;
+        setError("We couldn't load caregiver access. Please try again.");
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
     }
   }, [clearPersonScopedState]);
 
-  useEffect(() => { if (enabled) void load(); }, [enabled, load]);
+  useEffect(() => {
+    if (!enabled) return;
+    const refreshForSessionChange = () => void load();
+    window.addEventListener("personIdChanged", refreshForSessionChange);
+    void load();
+    return () => window.removeEventListener("personIdChanged", refreshForSessionChange);
+  }, [enabled, load]);
 
   const saveCaregiverActivity = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
