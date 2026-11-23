@@ -188,6 +188,7 @@ const careCaptureLegacy = read("../src/components/CareCapture.tsx");
 const careContinuityIntegrityPanel = read("../src/components/CareContinuityIntegrityPanel.tsx");
 const companion = read("../src/components/workflows/AICompanion.tsx");
 assert.match(companion, /caregiverSourceText\(source\.reported_by\)/, "Companion must preserve source attribution");
+assert.match(companion, /caregiverSourceText\(observation\.reported_by\)/, "Companion observation attribution must preserve the original reporter label");
 const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
 const documentsPage = read("../src/app/workspace/documents/page.tsx");
 const settings = read("../src/app/workspace/settings/page.tsx");
