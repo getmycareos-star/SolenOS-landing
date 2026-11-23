@@ -1149,6 +1149,7 @@ export function LCRCurrentUnderstanding() {
         setDementiaProfileOpen(false);
         setClarificationOpen(false);
         personIdRef.current = "";
+        caregiverIdRef.current = "";
         setError(accessMessage);
       } else {
         if (!manual) {
@@ -1161,6 +1162,7 @@ export function LCRCurrentUnderstanding() {
           setAssessment(null);
           setSourceFreshness(null);
           personIdRef.current = "";
+          caregiverIdRef.current = "";
         }
         setError("The care history could not be loaded. Your previously saved information is still shown when available. Please try again.");
       }
