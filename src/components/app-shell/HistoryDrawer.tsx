@@ -702,10 +702,12 @@ function mapLcrRevision(item: CareStateRevision): HistoryRecord {
     .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
   const rawChangeKind = asText(item.change_kind).toLowerCase();
   const changeKind = rawChangeKind === "deleted" ? "Removed"
-    : rawChangeKind === "created" ? "Added"
+    : rawChangeKind === "created" || rawChangeKind === "added" ? "Added"
       : rawChangeKind === "corrected" ? "Corrected"
         : rawChangeKind === "withdrawn" ? "Withdrawn"
-          : "Updated";
+          : rawChangeKind === "restored" ? "Restored"
+            : rawChangeKind === "updated" || rawChangeKind === "modified" ? "Updated"
+              : "Changed";
   const targetType = caregiverFieldLabel(asText(item.target_type))
     || caregiverInformationAreaLabel(asText(item.target_type))
     || "care information";
