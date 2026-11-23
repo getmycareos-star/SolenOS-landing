@@ -3,7 +3,6 @@ import { RISK_RANK } from "../implementation-enforcement/risk-levels";
 import type { SafetyOverrideState } from "./constants";
 import {
   CRITICAL_HEADER,
-  CRITICAL_TOTAL_MAX_WORDS,
   HIGH_TOTAL_MAX_WORDS,
   type SafetyOverrideValidationResult,
   type SafetyOverrideViolationCode,
