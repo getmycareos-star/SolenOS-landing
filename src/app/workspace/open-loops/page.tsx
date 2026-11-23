@@ -192,6 +192,22 @@ function lifecycleLabel(loop: OpenLoop | undefined): string {
   return "Status not recorded";
 }
 
+function lifecycleNextStepLabel(loop: OpenLoop | undefined): string {
+  if (!loop) return "Check the saved information before deciding what to do next.";
+  const status = lifecycleLabel(loop);
+  if (status === "Resolved") return "No action is needed unless new information changes this.";
+  if (status === "No longer relevant") return "No further action is needed unless the situation changes.";
+  if (status === "Waiting for check-in") return loop.review_at ? "Check again on the saved review date." : "Choose a date to check this again.";
+  if (status === "Waiting to confirm completion") return "Check the saved information before treating this as resolved.";
+  if (status === "Waiting for information") return "Ask the person who may know, or add the information when it becomes available.";
+  if (status === "Waiting for someone to act") return "Check who can take the next step and record what happens.";
+  if (status === "Waiting for another step") return "Record what is needed before this can move forward.";
+  if (status === "In progress") return "Add an update when something changes or another step is taken.";
+  if (status === "Needs review") return "Review the saved information before deciding what to do next.";
+  if (status === "Needs attention") return "Review this item and decide who should take the next step.";
+  return "Check the saved information before deciding what to do next.";
+}
+
 function decisionKey(item: AttentionDecision): string {
   return String(item.source || "unknown") + ":" + String(item.record_id || item.id || item.title);
 }
@@ -244,6 +260,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
       <span>Who is following up: {loop?.owner_label ? caregiverSafeAssistantText(loop.owner_label) || "Not recorded" : "No one is assigned yet"}</span>
       <span>Status: {lifecycleLabel(loop)}</span>
+      <span>Next step: {lifecycleNextStepLabel(loop)}</span>
       <span>Last updated: {loop?.updated_at ? dateLabel(loop.updated_at) : "Not available yet"}</span>
       {item.due_at && <span>Due: {dateLabel(item.due_at)}</span>}
       {item.evidence_status && <span>What we know so far: {caregiverStatusLabel(item.evidence_status) || "Not confirmed"}</span>}
