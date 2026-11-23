@@ -119,3 +119,11 @@ console.log("✓ original scan bytes and server-applied scan processing metadata
 assert(source.includes('facingMode: { ideal: cameraFacingMode }'), "the scanner must request the selected front or back camera when the device supports it");
 assert(source.includes("Use front camera") && source.includes("Use back camera"), "caregivers must be able to switch cameras while scanning");
 assert(source.includes("}, [cameraOpen, cameraFacingMode]);"), "switching cameras must stop the previous stream and acquire the newly selected camera");
+
+
+assert.match(intelligenceReviewSource, /extraction_processed_page_count\?: number \| null/,
+  "document review must consume the server's extraction page count independently of AI interpretation");
+assert.match(intelligenceReviewSource, /analysis\.processed_page_count \?\? analysis\.extraction_processed_page_count/,
+  "partial OCR status must show actual pages extracted before Qwen review completes");
+assert.match(intelligenceReviewSource, /extraction_unprocessed_page_numbers\?: number\[\]/,
+  "page-level extraction gaps must remain visible to caregivers");
