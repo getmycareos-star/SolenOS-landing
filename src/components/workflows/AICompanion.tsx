@@ -198,6 +198,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
   const [careUpdateLoading, setCareUpdateLoading] = useState(false)
   const [careUpdateLoadFailed, setCareUpdateLoadFailed] = useState(false)
+  const careUpdateLoadSequenceRef = useRef(0)
   const [reviewingCareUpdateId, setReviewingCareUpdateId] = useState<string | null>(null)
   const [confirmingCareReportId, setConfirmingCareReportId] = useState<string | null>(null)
   const [savingCareReportId, setSavingCareReportId] = useState<string | null>(null)
@@ -462,18 +463,22 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
 
   const loadPendingCareUpdates = async () => {
+    const requestSequence = ++careUpdateLoadSequenceRef.current
+    const isCurrentRequest = () => careUpdateLoadSequenceRef.current === requestSequence
     setCareUpdateLoading(true)
     setCareUpdateLoadFailed(false)
     setCareUpdateError(null)
     try {
       const response = await getJSON('/companion/care-updates') as { items?: PendingCareUpdate[] }
       if (!Array.isArray(response?.items)) throw new Error('The saved care suggestions response was incomplete.')
-      setPendingCareUpdates(response.items)
+      if (isCurrentRequest()) setPendingCareUpdates(response.items)
     } catch {
-      setCareUpdateLoadFailed(true)
-      setCareUpdateError('Care suggestions could not be refreshed. Your conversation is still saved. Try again before reviewing these suggestions.')
+      if (isCurrentRequest()) {
+        setCareUpdateLoadFailed(true)
+        setCareUpdateError('Care suggestions could not be refreshed. Your conversation is still saved. Try again before reviewing these suggestions.')
+      }
     } finally {
-      setCareUpdateLoading(false)
+      if (isCurrentRequest()) setCareUpdateLoading(false)
     }
   }
 
