@@ -711,16 +711,16 @@ await record("01a dementia profile review window and observation persistence are
   await page.getByLabel("Diagnosis, if a healthcare professional has shared one review interval").selectOption("90");
   await page.getByRole("button", { name: "Save" }).first().click();
   await page.getByText("Saved: Diagnosis, if a healthcare professional has shared one.", { exact: true }).waitFor({ timeout: 20_000 });
-  await page.getByRole("heading", { name: "Dementia observations" }).waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: "Notes about memory and daily life" }).waitFor({ timeout: 15_000 });
   await page.getByLabel("What was this about?").selectOption("wandering");
   const uiDescription = `UI dementia observation ${randomUUID()}`;
   await page.getByLabel("What happened?").fill(uiDescription);
-  await page.getByLabel("Who observed it?").selectOption("direct");
+  await page.getByLabel("Who saw or heard this?").selectOption("direct");
   const uiWrite = page.waitForResponse((response) =>
     response.url().includes("/care-continuity/caregiver-observations") &&
     response.request().method() === "POST" && response.status() === 201,
   { timeout: 20_000 });
-  await page.getByRole("button", { name: "Save observation" }).click();
+  await page.getByRole("button", { name: "Save note" }).click();
   await uiWrite;
   await page.getByText(uiDescription, { exact: true }).waitFor({ timeout: 15_000 });
   assert.deepEqual(pageErrors, [], `dementia observation UI must not throw: ${JSON.stringify(pageErrors)}`);
