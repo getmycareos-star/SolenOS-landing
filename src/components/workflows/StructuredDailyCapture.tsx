@@ -4,7 +4,7 @@ import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
-import { caregiverSafeErrorMessage, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import {
   discardBlockedDurableWrites,
   getDurableWriteSummary,
@@ -1646,7 +1646,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               <h4 style={{ margin: "0 0 8px", fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Reports waiting for your review</h4>
               {pendingMedicationRecords.map((item) => (
                 <div key={item.medication_id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 0", borderTop: "1px solid var(--border)" }}>
-                  <div style={{ minWidth: 0 }}><strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{item.name}</strong>{item.dose && <span style={{ color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}> · {item.dose}</span>}<p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>{item.review_overdue ? "Review overdue · caregiver report" : item.record_status === "needs_caregiver_review" ? "Previously reviewed · needs a fresh review" : "Caregiver report · not yet reviewed"}</p>{item.source_text && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.4 }}>Recorded details: {item.source_text}</p>}</div>
+                  <div style={{ minWidth: 0 }}><strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{caregiverSafeAssistantText(item.name) || "Saved medication"}</strong>{item.dose && <span style={{ color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}> · {caregiverSafeAssistantText(item.dose) || "Dose not recorded"}</span>}<p style={{ margin: "2px 0 0", color: "var(--text-secondary)", fontSize: "calc(11px * var(--solenos-text-scale, 1))" }}>{item.review_overdue ? "Review overdue · caregiver report" : item.record_status === "needs_caregiver_review" ? "Previously reviewed · needs a fresh review" : "Caregiver report · not yet reviewed"}</p>{item.source_text && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.4 }}>Recorded details: {caregiverSafeAssistantText(item.source_text) || "Original wording could not be displayed."}</p>}</div>
                   <button type="button" className="workspace-primary" disabled={medicationRecordReviewing !== null} onClick={() => void handleReviewMedicationRecord(item.medication_id)} style={{ minHeight: 40, padding: "8px 12px", borderRadius: 8 }}>{medicationRecordReviewing === item.medication_id ? "Saving…" : "Review and confirm current"}</button>
                 </div>
               ))}
@@ -1691,7 +1691,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <option value="">Choose current medication</option>
                   {currentMedicationRecords.map((item) => (
                     <option key={item.medication_id} value={item.medication_id}>
-                      {item.name}{item.dose ? ` · ${item.dose}` : ""}
+                      {caregiverSafeAssistantText(item.name) || "Saved medication"}{item.dose ? ` · ${caregiverSafeAssistantText(item.dose) || "Dose not recorded"}` : ""}
                     </option>
                   ))}
                 </select>
