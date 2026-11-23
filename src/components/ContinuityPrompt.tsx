@@ -81,7 +81,7 @@ export function ContinuityPrompt({
         onIdentityBound({ userId, careSessionId: sessionId });
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      setError("We couldn’t complete account setup. Check your details and try again.");
     } finally {
       setLoading(false);
     }
