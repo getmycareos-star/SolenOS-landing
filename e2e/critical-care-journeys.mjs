@@ -721,7 +721,7 @@ await record("01a dementia profile review window and observation persistence are
   await page.getByText("Saved: Diagnosis, if a healthcare professional has shared one.", { exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("heading", { name: "Notes about memory and daily life" }).waitFor({ timeout: 15_000 });
   await page.getByLabel("What was this about?").selectOption("wandering");
-  const uiDescription = `UI dementia observation ${randomUUID().slice(0, 8)}`;
+  const uiDescription = `UI dementia observation ${randomUUID()}`;
   await page.getByLabel("What happened?").fill(uiDescription);
   await page.getByLabel("Who saw or heard this?").selectOption("direct");
   const uiWrite = page.waitForResponse((response) =>
