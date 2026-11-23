@@ -2,6 +2,7 @@
 
 import { apiUrl } from "@/lib/api-url";
 import { ensureAnonymousSession } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { useCallback, useState } from "react";
 import {
   GLOBAL_FEEDBACK_LABEL,
@@ -77,7 +78,7 @@ export function HelpImproveSolenos({ compact }: Props) {
       setDone(true);
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : "We couldn't send your feedback. Check your connection and try again.",
+        caregiverSafeErrorMessage(),
       );
     } finally {
       setSaving(false);
