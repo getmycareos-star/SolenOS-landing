@@ -44,6 +44,22 @@ type AssistResult = {
   persistence?: string;
   source_event_ids?: string[];
   source_evidence_ids?: string[];
+  lcr_context_coverage?: {
+    schema_status?: string;
+    history_coverage?: string;
+    retrieval_scan_complete?: boolean;
+    retrieval_projection_complete?: boolean;
+    page_limit_reached?: boolean;
+    prompt_context_complete?: boolean;
+    missing_required_sources?: string[];
+    missing_optional_sources?: string[];
+    sources?: Record<string, {
+      status?: string;
+      candidate_scan_complete?: boolean;
+      has_more?: boolean;
+      selection_truncated?: boolean;
+    }>;
+  };
 };
 
 type State =
@@ -95,6 +111,9 @@ export function LcrQwenInterpretation({
           !result.source_event_ids.includes(sourceEventId) ||
           !result.claim_provenance ||
           !Array.isArray(result.claim_provenance.claims) ||
+          !result.lcr_context_coverage ||
+          typeof result.lcr_context_coverage.retrieval_scan_complete !== "boolean" ||
+          typeof result.lcr_context_coverage.retrieval_projection_complete !== "boolean" ||
           result.claim_provenance.claims.some((claim) =>
             typeof claim?.text !== "string" ||
             typeof claim?.support_status !== "string" ||
@@ -123,6 +142,23 @@ export function LcrQwenInterpretation({
 
   if (!sourceEventId || !rawInput.trim()) return null;
 
+  const coverage = state.status === "ready" ? state.result.lcr_context_coverage : undefined;
+  const coverageIsIncomplete = Boolean(coverage && (
+    coverage.schema_status !== "complete"
+    || coverage.retrieval_scan_complete !== true
+    || coverage.retrieval_projection_complete !== true
+    || coverage.prompt_context_complete !== true
+    || coverage.page_limit_reached === true
+    || (coverage.missing_required_sources?.length ?? 0) > 0
+    || (coverage.missing_optional_sources?.length ?? 0) > 0
+    || Object.values(coverage.sources ?? {}).some((source) =>
+      !["available", "empty"].includes(source.status ?? "")
+      || source.candidate_scan_complete !== true
+      || source.has_more === true
+      || source.selection_truncated === true
+    )
+  ));
+
   return (
     <section className="care-card-changed lcr-qwen-interpretation" aria-label="Possible explanation for this update">
       <h3 className="section-kicker">What this update may mean</h3>
@@ -136,6 +172,7 @@ export function LcrQwenInterpretation({
       )}
       {state.status === "ready" && (
         <>
+          {coverageIsIncomplete && <p className="panel-muted" role="status">We couldn’t check every saved care note and document. This explanation may miss important details; check your Care Record before relying on it.</p>}
           <p>{caregiverSafeGeneratedText(state.result.reply) || "This explanation could not be shown in plain language. Your Care Record has not changed."}</p>
           <p className="panel-muted">
             Suggested explanation for you to review. Your Care Record has not changed. This suggestion has not been added to it.
