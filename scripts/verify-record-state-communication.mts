@@ -154,6 +154,7 @@ console.log("PASS: care history cannot remain visible across account changes or 
 assert(overview.includes("const storedPersonId = getPersonId()"), "the Care Record must detect a cleared or changed browser identity before refreshing");
 assert(overview.includes("if (accessDenied)"), "the Care Record must not keep cached details visible after access is denied");
 
-assert(handoffs.includes("loadedPersonIdRef.current !== requestPersonId"), "handoff data must be cleared when the active Care Record changes");
+assert(handoffs.includes("loadedScopeRef.current.personId !== requestPersonId") && handoffs.includes("loadedScopeRef.current.caregiverId !== requestCaregiverId"), "handoff data must be cleared when the active Care Record or caregiver changes");
+assert(handoffs.includes("setSavedDrafts([])") && handoffs.includes("setInbox([])") && handoffs.includes("setOutbox([])"), "handoff drafts and sharing history must be cleared on identity changes");
 assert(handoffs.includes("if (!requestPersonId || accessDenied ||"), "handoff data must be cleared when the session cannot be confirmed or access is denied");
 console.log("PASS: handoff lists and drafts are isolated to the active Care Record identity.");
