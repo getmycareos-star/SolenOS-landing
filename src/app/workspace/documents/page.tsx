@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import {
+  ApiResponseError,
   deleteJSON,
   ensureAnonymousSession,
   getBlob,
@@ -229,15 +230,21 @@ export default function DocumentsPage() {
         .map(toDocument)
         .sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
       if (isCurrentRequest()) setDocuments(next);
-    } catch {
+    } catch (cause) {
       if (isCurrentRequest()) {
-        if (!requestPersonId || !requestCaregiverId) {
+        const accessDenied = cause instanceof ApiResponseError
+          && (cause.status === 401 || cause.status === 403);
+        if (!requestPersonId || !requestCaregiverId || accessDenied) {
+          // A confirmed session with denied access is not a transient network
+          // failure. Do not leave private document names, extracted text, or
+          // previews visible after the backend rejects this identity.
           setDocuments([]);
           setSelectedId(null);
           setPreviewUrl(null);
           setPreviewError(null);
           setVersionComparison(null);
           setVersionPredecessorId("");
+          setQuery("");
           setCapturedPages([]);
           setReviewPages([]);
           setIntakeMode(null);
