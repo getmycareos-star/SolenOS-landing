@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { getBlob, getJSON, postFormData, postJSON } from "../src/api/client";
+import { ensureAnonymousSession, getBlob, getJSON, postFormData, postJSON, setPersonId } from "../src/api/client";
 
 const values = new Map<string, string>([
   ["solenos_anonymous_access_token", "server-issued-token"],
@@ -13,10 +13,16 @@ const store = {
   setItem: (key: string, value: string) => values.set(key, String(value)),
   removeItem: (key: string) => values.delete(key),
 };
+const identityEvents: string[] = [];
 Object.defineProperty(globalThis, "localStorage", { configurable: true, value: store });
 Object.defineProperty(globalThis, "window", {
   configurable: true,
-  value: { localStorage: store, dispatchEvent: () => true, addEventListener: () => undefined, removeEventListener: () => undefined },
+  value: {
+    localStorage: store,
+    dispatchEvent: (event: Event) => { identityEvents.push(event.type); return true; },
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  },
 });
 function response(payload: unknown, status = 200): Response {
   return {
@@ -36,6 +42,16 @@ globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unkn
 }) as typeof setTimeout;
 
 async function main() {
+  setPersonId("person-server-1");
+  identityEvents.length = 0;
+  await ensureAnonymousSession();
+  await ensureAnonymousSession();
+  assert.deepEqual(
+    identityEvents,
+    [],
+    "reusing the same authenticated person must not recursively notify identity subscribers",
+  );
+
   const photoCaptureSource = readFileSync(
     new URL("../src/components/workflows/DailyCarePhotoCapture.tsx", import.meta.url),
     "utf8",
