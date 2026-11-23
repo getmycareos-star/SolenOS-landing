@@ -285,7 +285,7 @@ console.log("PASS: document candidate batches and retryable page states are pres
 
 console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");
 
-const lcrInterpretation = read("src/components/mvp-workspace/LcrQwenInterpretation.tsx");
+
 assert.match(lcrInterpretation, /setTimeout\(\(\) => controller\.abort\(\), 20_000\)/,
   "the optional care explanation must stop waiting and show an honest unavailable state");
 assert.match(lcrInterpretation, /postJSON\("\/assistant\/assist",[\s\S]*?signal: controller\.signal/,
