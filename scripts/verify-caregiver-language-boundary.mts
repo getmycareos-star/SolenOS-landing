@@ -247,6 +247,12 @@ const cognitiveWorkspace = read("../src/components/mvp-workspace/CognitiveWorksp
 const structuredDailyCapture = read("../src/components/workflows/StructuredDailyCapture.tsx");
 const captureAnalysisReview = read("../src/components/workflows/CaptureAnalysisReview.tsx");
 const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
+assert.match(evidenceReview, /caregiverReadableCaptureText\(item\.detail\)/,
+  "historical snapshots must preserve readable original source wording");
+assert.match(evidenceReview, /item\.detailTruncated/,
+  "historical source excerpts must disclose when their display is truncated");
+assert.match(evidenceReview, /Showing the first 500 characters of this saved detail/,
+  "caregivers must be told when a historical source excerpt is partial");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
 const caregiverHandoverInbox = read("../src/components/mvp-workspace/CaregiverHandoverInbox.tsx");
