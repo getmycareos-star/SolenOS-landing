@@ -339,10 +339,23 @@ export default function DailyCarePage() {
         const carePromise = getJSON("/care-continuity/current-care?limit_per_source=20")
           .then((value) => {
             if (!active) return false;
-            const payload = value as { items?: unknown };
+            const payload = value as {
+              items?: unknown;
+              schema_status?: string;
+              missing_required_sources?: string[];
+              missing_optional_sources?: string[];
+              failed_sources?: string[];
+            };
             if (Array.isArray(payload?.items)) {
               setCareItems(payload.items as CareItem[]);
               hasContextLoadedRef.current = true;
+              const incomplete = payload.schema_status !== "complete"
+                || (payload.missing_required_sources?.length ?? 0) > 0
+                || (payload.missing_optional_sources?.length ?? 0) > 0
+                || (payload.failed_sources?.length ?? 0) > 0;
+              setContextError(incomplete
+                ? "Some saved care information could not be fully checked. This view may be incomplete; refresh the record to try again."
+                : "");
               return true;
             }
             setContextError("Saved care information could not be read. Your existing information is still shown.");
