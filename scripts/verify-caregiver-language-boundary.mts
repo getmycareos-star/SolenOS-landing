@@ -1028,6 +1028,7 @@ const accessibleForm = read("../src/components/accessible/AccessibleForm.tsx");
 const cameraPermission = read("../src/lib/permissions/useCameraPermission.ts");
 const locationPermission = read("../src/lib/permissions/useLocationPermission.ts");
 
+const globalErrorPage = read("../src/app/global-error.tsx");
 const settingsPage = read("../src/app/workspace/settings/page.tsx");
 assert.match(followUpsPage, /const reasonCandidates = \[\.\.\.\(item\.priority_basis \|\| \[\]\), \.\.\.\(item\.reason \? \[item\.reason\] : \[\]\)\]/,
   "Follow-ups must retain the count of explanations before filtering");
@@ -1045,6 +1046,10 @@ assert.match(reminders, /caregiverSafeAssistantText\(reminder\.completion_note\)
   "reminder completion notes must use readable caregiver text");
 assert.match(reminders, /caregiverSafeAssistantText\(member\.name\)/,
   "caregiver assignment names must not expose raw structured values");
+assert.match(globalErrorPage, /If you were saving an update, check your Care Record before trying again so you do not add the same information twice/,
+  "global errors must not claim an unverified save succeeded or that data is safe");
+assert.doesNotMatch(globalErrorPage, /Your care information is safe|Error ID:/,
+  "global errors must avoid unsupported safety claims and technical labels");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.title\)/, "notification titles must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.body\)/, "notification bodies must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverStatusLabel\(item\.priority\)/, "notification priority codes must be translated before display");
