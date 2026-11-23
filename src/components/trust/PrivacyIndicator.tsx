@@ -26,13 +26,14 @@ export default function PrivacyIndicator({
   }
 
   const activeMembers = members.filter((member) => member.status === "active");
+  const fullRecordCount = activeMembers.filter((member) => member.access_scope !== "documents_only").length;
+  const documentsOnlyCount = activeMembers.length - fullRecordCount;
   return (
     <aside aria-label="Care Record privacy" style={{ border: "1px solid var(--border, #d8ded8)", borderRadius: "0.75rem", padding: "0.75rem", margin: "0.75rem 0" }}>
       <strong>Who can see this Care Record</strong>
       <p className="mobile-settings-hint" style={{ margin: "0.35rem 0 0" }}>
-        {activeMembers.length === 1
-          ? "One caregiver currently has access."
-          : activeMembers.length + " caregivers currently have access."}
+        {fullRecordCount} {fullRecordCount === 1 ? "caregiver can" : "caregivers can"} see the full Care Record.
+        {" "}{documentsOnlyCount} {documentsOnlyCount === 1 ? "caregiver can" : "caregivers can"} see documents and appointment paperwork only.
         {" "}You can review each person's access below.
       </p>
     </aside>
