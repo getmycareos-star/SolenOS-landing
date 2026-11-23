@@ -15,6 +15,7 @@ import {
 } from "../src/lib/safety-override";
 import { selectBehaviorProfile } from "../src/lib/input-classification";
 import { SOLENOS_RISK_LEVELS } from "../src/lib/implementation-enforcement/risk-levels";
+import { validateOutputCompression } from "../src/lib/implementation-enforcement";
 import { SolenOSResponseSchema } from "../src/lib/response-validator";
 import { SOLENOS_SYSTEM_PROMPT, SYSTEM_PROMPT_SPEC_MARKERS } from "../src/lib/solenos-langchain-adapter/system-prompt";
 import { GEMINI_OUTPUT_SCHEMA } from "../src/lib/gemini-contract";
@@ -86,6 +87,18 @@ if (!isSafetyOverrideValid(criticalOutput, safety.state)) {
   throw new Error("valid CRITICAL output must pass safety override");
 }
 console.log("✓ CRITICAL safety override validation");
+
+const criticalLongOutput = {
+  ...criticalOutput,
+  what_is_happening: Array.from({ length: 140 }, (_, i) => `necessary-context-${i}`).join(" "),
+};
+if (!isSafetyOverrideValid(criticalLongOutput, safety.state)) {
+  throw new Error("critical safety output must not be rejected by a universal word ceiling");
+}
+if (!validateOutputCompression(criticalLongOutput, profile, safety.state).valid) {
+  throw new Error("critical safety output must not be rejected by a universal compression ceiling");
+}
+console.log("✓ critical safety preserves necessary content beyond ordinary response limits");
 
 if (Number.isFinite(CRITICAL_TOTAL_MAX_WORDS) || HIGH_TOTAL_MAX_WORDS !== 250) {
   throw new Error("critical output must have no universal word ceiling; high-risk maximum is 250");
