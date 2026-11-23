@@ -203,6 +203,7 @@ const followUpsPage = read("../src/app/workspace/open-loops/page.tsx");
 const reminders = read("../src/app/workspace/reminders/page.tsx");
 const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
+const dementiaObservations = read("../src/components/mvp-workspace/DementiaObservationPanel.tsx");
 assert.match(lcr, /caregiverSourceText\(item\.title\)/,
   "the current care record must preserve original care and follow-up titles");
 assert.match(lcr, /displayDescription\(item\.description \|\| source\?\.description\)/,
@@ -506,6 +507,7 @@ assert.doesNotMatch(documentReview, /model: \{analysis\.model_provenance\.model_
 assert.doesNotMatch(documentsPage, /Original file SHA-256/);
 assert.doesNotMatch(settings, /setError\(detail \|\|/);
 assert.match(settings, /caregiverSafeErrorMessage/);
+assert.ok(dementiaObservations.includes('replace(/^dementia\\./i, "")'), "editing a saved observation must strip exactly one dementia category prefix before saving");
 assert.match(lcr, /caregiverSafeGeneratedText\(item\.interpretation_limit\)/, "generated interpretation limits must pass through the generated-text safety filter");
 assert.doesNotMatch(lcr, /Extraction method:|Hedge \/ uncertainty marker|Near-duplicate review|algorithm version|policy version/i);
 assert.doesNotMatch(changeIntelligence, /replaceAll\("_"|not calibrated|Observation coverage: baseline|evidence references:/i);
