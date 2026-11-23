@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getJSON, patchJSON, getCaregiverId } from '../api/client'
-import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language'
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSourceText, caregiverSafeGeneratedText } from '@/lib/caregiver-language'
 
 type Assertion = {
   id: string
@@ -196,7 +196,7 @@ export default function CareContinuityIntegrityPanel({
           const fresh = freshnessById.get(item.id)
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <strong>{caregiverFieldLabel(item.field) || caregiverInformationLabel(item.field) || 'Care detail'}: {caregiverSafeAssistantText(item.asserted_value) || 'Saved care information'}</strong>
+              <strong>{caregiverFieldLabel(item.field) || caregiverInformationLabel(item.field) || 'Care detail'}: {caregiverSourceText(item.asserted_value) || 'Saved care information'}</strong>
               <span style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{fresh ? simpleRecordLabel(fresh.status) : 'Not checked'}</span>
             </div>
             <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)', margin: '5px 0' }}>
@@ -231,7 +231,7 @@ export default function CareContinuityIntegrityPanel({
         {data.outcomes.length === 0 ? <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>No outcomes have been recorded yet.</p> : data.outcomes.slice(0, 20).map((item) =>
           <div key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
             <strong>{simpleRecordLabel(item.outcome_status)}</strong> · {new Date(item.created_at).toLocaleString()}
-            {item.notes && <p>{caregiverSafeAssistantText(item.notes) || 'No further details are available.'}</p>}{item.correction_text && <p><strong>Correction:</strong> {caregiverSafeAssistantText(item.correction_text) || 'A correction was recorded.'}</p>}
+            {item.notes && <p>{caregiverSourceText(item.notes) || 'No further details are available.'}</p>}{item.correction_text && <p><strong>Correction:</strong> {caregiverSourceText(item.correction_text) || 'A correction was recorded.'}</p>}
           </div>
         )}
       </div>
