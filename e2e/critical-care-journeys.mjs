@@ -14,6 +14,11 @@ assert.ok(
   openApi.components?.schemas?.QwenAssistRequest?.properties?.source_event_id,
   "Companion assist requests must accept a source-event anchor for LCR-grounded interpretation",
 );
+assert.equal(
+  openApi.components.schemas.QwenAssistRequest.properties.source_event_id.maxLength,
+  128,
+  "source-event anchors must use the same bounded identifier contract as persisted care events",
+);
 const browser = await chromium.launch({ headless: true });
 const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
