@@ -186,9 +186,12 @@ export default function DocumentsPage() {
 
   const loadDocuments = useCallback(async (quiet = false) => {
     const requestSequence = ++documentLoadSequenceRef.current;
-    const isCurrentRequest = () => documentLoadSequenceRef.current === requestSequence;
     let requestPersonId: string | null = null;
     let requestCaregiverId: string | null = null;
+    const isCurrentRequest = () =>
+      documentLoadSequenceRef.current === requestSequence
+      && (!requestPersonId || requestPersonId === getPersonId())
+      && (!requestCaregiverId || requestCaregiverId === getCaregiverId());
     if (quiet) setRefreshing(true);
     else setLoading(true);
     setListError(null);
