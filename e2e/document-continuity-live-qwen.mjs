@@ -180,6 +180,20 @@ try {
   );
   assert.ok(candidate, `Qwen must return a verbatim, attributable mobility observation. Candidates: ${JSON.stringify(analysis.observations).slice(0, 2400)}`);
 
+  const beforeReviewAssertions = await request(
+    `/api/v1/care-continuity/assertions/${encodeURIComponent(session.person.id)}`,
+    { token: session.access_token },
+  );
+  assert.equal(beforeReviewAssertions.status, 200, JSON.stringify(beforeReviewAssertions.payload));
+  assert.ok(
+    !beforeReviewAssertions.payload.some((item) =>
+      item.asserted_value === candidate.observation ||
+      item.source_quote === candidate.source_quote ||
+      JSON.stringify(item).includes(candidate.source_quote)
+    ),
+    "a Qwen-extracted document candidate must not become an LCR assertion before caregiver review",
+  );
+
   const extracted = await request(`/api/v1/documents/analyses/${encodeURIComponent(analysis.analysis_id)}`, {
     token: session.access_token,
   });
