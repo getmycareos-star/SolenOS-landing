@@ -139,6 +139,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
   const loadSequence = useRef(0);
   const historyRequestSequence = useRef<Record<string, number>>({});
+  const textRequestSequence = useRef<Record<string, number>>({});
 
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
@@ -147,7 +148,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     for (const analysisId of Object.keys(historyRequestSequence.current)) {
       historyRequestSequence.current[analysisId] += 1;
     }
+    for (const analysisId of Object.keys(textRequestSequence.current)) {
+      textRequestSequence.current[analysisId] += 1;
+    }
     setHistoryLoading({});
+    setTextLoading({});
     setLoading(true);
     setError(null);
     try {
@@ -170,6 +175,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
     loadSequence.current += 1;
     for (const analysisId of Object.keys(historyRequestSequence.current)) {
       historyRequestSequence.current[analysisId] += 1;
+    }
+    for (const analysisId of Object.keys(textRequestSequence.current)) {
+      textRequestSequence.current[analysisId] += 1;
     }
   }, []);
 
@@ -209,17 +217,23 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const loadExtractedText = useCallback(async (analysisId: string) => {
     const existing = items.find((item) => item.analysis_id === analysisId);
     if (existing?.extractedText !== undefined || textLoading[analysisId]) return;
+    const requestSequence = (textRequestSequence.current[analysisId] ?? 0) + 1;
+    textRequestSequence.current[analysisId] = requestSequence;
     setTextLoading((current) => ({ ...current, [analysisId]: true }));
     setTextErrors((current) => ({ ...current, [analysisId]: "" }));
     try {
       const detail = await getJSON("/documents/analyses/" + encodeURIComponent(analysisId)) as { extracted_text?: string; extraction_method?: string };
+      if (textRequestSequence.current[analysisId] !== requestSequence) return;
       setItems((current) => current.map((item) => item.analysis_id === analysisId
         ? { ...item, extractedText: typeof detail.extracted_text === "string" ? detail.extracted_text : "", extractionMethod: typeof detail.extraction_method === "string" ? detail.extraction_method : undefined }
         : item));
     } catch {
+      if (textRequestSequence.current[analysisId] !== requestSequence) return;
       setTextErrors((current) => ({ ...current, [analysisId]: "The saved text could not be loaded. Try again without uploading the original again." }));
     } finally {
-      setTextLoading((current) => ({ ...current, [analysisId]: false }));
+      if (textRequestSequence.current[analysisId] === requestSequence) {
+        setTextLoading((current) => ({ ...current, [analysisId]: false }));
+      }
     }
   }, [items, textLoading]);
 
