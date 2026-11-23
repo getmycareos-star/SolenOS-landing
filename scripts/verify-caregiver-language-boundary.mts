@@ -172,6 +172,10 @@ assert.match(caregiverSafeErrorMessage(), /check your connection/i);
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const caregiverUiLanguageScanner = read("./verify-caregiver-ui-language-all.mts");
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
+assert.match(dailyCare, /caregiverSourceText\(item\.title\)/,
+  "saved follow-up titles must preserve original caregiver wording");
+assert.match(dailyCare, /caregiverSourceText\(item\.description\)/,
+  "saved follow-up descriptions must preserve original caregiver wording");
 const situationResponse = read("../src/components/mvp-workspace/SituationResponsePanel.tsx");
 const sourceIndicator = read("../src/components/trust/SourceIndicator.tsx");
 const trustIndicators = read("../src/lib/trust-provenance/trust-indicators.ts");
