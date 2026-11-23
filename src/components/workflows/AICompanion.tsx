@@ -761,11 +761,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   <strong>{caregiverSafeGeneratedText(source.label) || 'Saved care information'}</strong>
                                   {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
                                   {source.recorded_at && <p>When it was added: {new Date(source.recorded_at).toLocaleString()}</p>}
-                                  {source.reported_by && <p>Reported by: {source.reported_by}</p>}
-                                  {source.entered_by && <p>{source.entered_by}</p>}
+                                  {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
+                                  {source.entered_by && <p>{caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
                                   {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || 'Status not available'}</p>}
-                                  {source.correction_note && <p>{source.correction_note}</p>}
-                                  {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
+                                  {source.correction_note && <p>{caregiverSafeAssistantText(source.correction_note) || "A correction was recorded."}</p>}
+                                  {source.correction_rationale && <p>Why it was corrected: {caregiverSafeAssistantText(source.correction_rationale) || "No reason was recorded."}</p>}
                                   {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
                                   {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved note or document. It is not a separate report.</p>}
                                   {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
@@ -785,8 +785,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                     <strong>Related note or document</strong>
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
                                       <p>{caregiverSafeGeneratedText(item.label) || 'Related care information'}</p>
-                                      {item.reported_by && <p>Reported by: {item.reported_by}</p>}
-                                      {item.entered_by && <p>Added by: {item.entered_by}</p>}
+                                      {item.reported_by && <p>Reported by: {caregiverSafeAssistantText(item.reported_by) || "Not recorded"}</p>}
+                                      {item.entered_by && <p>Added by: {caregiverSafeAssistantText(item.entered_by) || "Who added this was not recorded"}</p>}
                                       {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved note or document. It is not a separate report.</p>}
                                       {item.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                       {item.source_independence_status === 'not_assessed' && <p>We have not checked whether this note is separate from other reports.</p>}
@@ -804,8 +804,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.evidence_reviews_status === "empty" && <p>No review of this note or document has been recorded.</p>}
                                       {item.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                       {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
-                                        <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {observation.value || "Details not supplied"}</p>
-                                        {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
+                                        <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {caregiverSafeAssistantText(observation.value) || "Details not supplied"}</p>
+                                        {observation.reported_by && <p>Reported by: {caregiverSafeAssistantText(observation.reported_by) || "Not recorded"}</p>}
                                         {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
                                         {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
                                       </div>)}
