@@ -715,6 +715,16 @@ await record("01a dementia profile review window and observation persistence are
   assert.equal(foreignRead.status, 200, JSON.stringify(foreignRead.payload));
   assert.ok(!foreignRead.payload.some((row) => row.id === observationWrite.payload.id),
     "another care record must not retrieve this observation");
+  const foreignCorrection = await request(
+    `/api/v1/care-continuity/caregiver-observations/${encodeURIComponent(observationWrite.payload.id)}`,
+    {
+      token: foreign.token,
+      method: "PATCH",
+      body: { description: "Unauthorized cross-person correction attempt." },
+    },
+  );
+  assert.equal(foreignCorrection.status, 404,
+    "another care record must not update or discover this observation");
 
   const { context, page, observed, pageErrors } = await createBrowserPage(session, "/workspace/care-continuity");
   await page.getByRole("heading", { name: "Your Care Record" }).first().waitFor({ timeout: 20_000 });
