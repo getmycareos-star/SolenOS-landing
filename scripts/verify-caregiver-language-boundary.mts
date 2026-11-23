@@ -1063,6 +1063,10 @@ assert.doesNotMatch(locationPermission, /message = err\.message/,
   "location permission errors must not expose raw browser diagnostics");
 
 
+assert.match(evidenceReview, /caregiverSafeAssistantText\(item\.title\) \|\| "Saved care detail"/,
+  "historical Care Record snapshot titles must use readable caregiver text");
+assert.match(evidenceReview, /caregiverSafeAssistantText\(item\.detail\) \|\| "The saved details could not be displayed in a readable form\."/,
+  "historical Care Record snapshot details must not expose raw structured metadata");
 assert.match(evidenceReview, /item\.reviewed_by_caregiver_id \? "Checked by a caregiver" : "Reviewer not recorded"/,
   "missing reviewer identity must be described as unrecorded, not as an unavailable person");
 
