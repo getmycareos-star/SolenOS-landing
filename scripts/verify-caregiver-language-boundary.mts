@@ -207,6 +207,8 @@ assert.match(companion, /caregiverSafeAssistantText\(observation\.value\)/,
   "Companion saved observation values must not expose raw structured metadata");
 assert.match(companion, /caregiverSafeAssistantText\(source\.previous_source_excerpt\)/,
   "Companion correction history excerpts must use the caregiver-language boundary");
+assert.match(companion, /caregiverSafeAssistantText\(source\.source_excerpt\)/,
+  "Companion original source excerpts must not expose raw structured metadata");
 assert.match(companion, /caregiverSafeAssistantText\(observation\.source_excerpt\)/,
   "Companion observation source excerpts must not expose raw structured metadata");
 
