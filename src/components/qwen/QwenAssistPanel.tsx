@@ -1,6 +1,6 @@
 "use client";
 
-import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import { useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { LivingArchiveMark } from "@/components/brand";
@@ -429,21 +429,21 @@ export default function QwenAssistPanel({
                       <p style={{ fontSize: "11px", fontWeight: 600, margin: 0 }}>{caregiverSafeGeneratedText(source.label) || "Saved care information"}</p>
                       {source.occurred_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
                       {source.recorded_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>When it was recorded: {new Date(source.recorded_at).toLocaleString()}</p>}
-                      {source.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
-                      {source.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Recorded by: {caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
+                      {source.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Reported by: {caregiverSourceText(source.reported_by) || "Not recorded"}</p>}
+                      {source.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Recorded by: {caregiverSourceText(source.entered_by) || "Who added this was not recorded"}</p>}
                       {source.source_state_label && <p style={{ fontSize: "11px", color: "var(--theme-warning-fg)", margin: "3px 0 0" }}>{caregiverSafeGeneratedText(source.source_state_label) || "Status not available"}</p>}
-                      {source.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{caregiverSafeAssistantText(source.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
+                      {source.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{caregiverSourceText(source.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
                       {source.related_evidence?.map((evidence, evidenceIndex) => (
                         <div key={"linked-evidence-" + evidenceIndex} style={{ marginTop: "6px", padding: "7px", background: "var(--theme-panel-bg)", borderRadius: "6px" }}>
                           <p style={{ fontSize: "11px", fontWeight: 600, margin: 0 }}>Related {caregiverSafeGeneratedText(evidence.label) || "note or document"}</p>
-                          {evidence.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Reported by: {caregiverSafeAssistantText(evidence.reported_by) || "Not recorded"}</p>}
-                          {evidence.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Added by: {caregiverSafeAssistantText(evidence.entered_by) || "Who added this was not recorded"}</p>}
+                          {evidence.reported_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Reported by: {caregiverSourceText(evidence.reported_by) || "Not recorded"}</p>}
+                          {evidence.entered_by && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Added by: {caregiverSourceText(evidence.entered_by) || "Who added this was not recorded"}</p>}
                           {evidence.source_independence_status === "shared_origin" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>This note or document came from the same original as another saved item. It is not a separate report.</p>}
                           {evidence.source_independence_status === "independent" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>A caregiver marked this as a separate report.</p>}
                           {evidence.source_independence_status === "not_assessed" && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Whether this note is separate from other reports has not been checked.</p>}
                           {(evidence.exact_wording_duplicate_count ?? 0) > 0 && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>The same wording appears in {evidence.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                           {evidence.recorded_at && <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "3px 0 0" }}>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
-                          {evidence.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{caregiverSafeAssistantText(evidence.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
+                          {evidence.source_excerpt && <blockquote style={{ fontSize: "11px", lineHeight: 1.5, margin: "5px 0 0", paddingLeft: "8px", borderLeft: "2px solid var(--border)" }}>{caregiverSourceText(evidence.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
                           {evidence.observations?.map((observation, observationIndex) => (
                             <div key={"observation-" + observationIndex} style={{ marginTop: "5px" }}>
                               <p style={{ fontSize: "11px", margin: 0 }}>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {caregiverSafeAssistantText(observation.value || observation.attribute) || "Details not supplied"}</p>
