@@ -605,7 +605,7 @@ export default function DocumentsPage() {
           parts.push("SolenOS has started reading " + backgroundProcessingQueued + " " + (backgroundProcessingQueued === 1 ? "file" : "files") + ". You can leave this page while it finishes.");
         }
         if (backgroundProcessingCompleted > 0) {
-          parts.push("SolenOS has finished reading " + backgroundProcessingCompleted + " " + (backgroundProcessingCompleted === 1 ? "file" : "files") + ". Suggested details are ready for you to review.");
+          parts.push("SolenOS has finished processing " + backgroundProcessingCompleted + " " + (backgroundProcessingCompleted === 1 ? "file" : "files") + ". Open each file to see what was extracted and whether anything needs your review.");
         }
         if (backgroundQueueUnavailable > 0) {
           parts.push(backgroundQueueUnavailable + " " + (backgroundQueueUnavailable === 1 ? "file needs" : "files need") + " another look after upload.");
