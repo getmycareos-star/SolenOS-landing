@@ -787,7 +787,7 @@ export default function DocumentsPage() {
           </div>
         )}
         {listError && <RecordState kind="error" description={listError} onAction={() => void loadDocuments(documents.length > 0)} />}
-        {listError && documents.length > 0 && <p role="status" className="documents-muted">These are the last documents we could load. The list may be out of date; refresh before relying on it.</p>}
+        {listError && documents.length > 0 && <p role="status" className="documents-list-status">These are the last documents we could load. The list may be out of date; refresh before relying on it.</p>}
 
         <div className="documents-search">
           <Search size={17} aria-hidden="true" />
