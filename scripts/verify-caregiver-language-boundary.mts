@@ -42,6 +42,8 @@ assert.equal(caregiverFieldLabel("sleep"), "Sleep");
 assert.equal(caregiverFieldLabel("mobility"), "Movement");
 assert.equal(caregiverSafeGeneratedText("This has moderate confidence."), null);
 assert.equal(caregiverSafeGeneratedText("The evidence supports this conclusion."), "The evidence supports this conclusion.");
+assert.equal(caregiverSafeGeneratedText("The doctor ordered a diagnostic test."), "The doctor ordered a diagnostic test.");
+assert.equal(caregiverSafeGeneratedText("The diagnostic pipeline failed."), null);
 assert.equal(caregiverSafeGeneratedText("A few details may need checking."), "A few details may need checking.");
 assert.equal(caregiverSafeAssistantText("I am not confident about this detail."), "I am not confident about this detail.");
 
