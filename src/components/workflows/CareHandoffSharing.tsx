@@ -150,7 +150,13 @@ function caregiverVisibleRevisionSections(
   audience: CareHandoffSharingProps["audience"] | undefined,
   purpose: string | null | undefined,
 ) {
-  if (audience !== "professional" || purpose !== "appointment") return sections;
+  // The active draft contract uses "professional_appointment", while older
+  // persisted revisions may use the shorter "appointment" value. Treat both
+  // as the same audience/purpose so caregiver profile data never leaks into
+  // a professional appointment revision preview.
+  const isProfessionalAppointment =
+    purpose === "appointment" || purpose === "professional_appointment";
+  if (audience !== "professional" || !isProfessionalAppointment) return sections;
   return sections.filter((item) => !item.source_ref.startsWith("caregiver_profiles:"));
 }
 
