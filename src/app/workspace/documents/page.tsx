@@ -417,6 +417,7 @@ export default function DocumentsPage() {
     let saved = 0;
     let queuedLocally = 0;
     let backgroundProcessingQueued = 0;
+    let backgroundProcessingCompleted = 0;
     let backgroundQueueUnavailable = 0;
     let failed = 0;
     const completedKeys = new Set<string>();
@@ -498,7 +499,9 @@ export default function DocumentsPage() {
           }
           saved += 1;
           completedKeys.add(page.ingestionKey);
-          if (stored.document_processing_job_id && ["queued", "processing", "completed"].includes(stored.processing_status || "")) {
+          if (stored.document_processing_job_id && stored.processing_status === "completed") {
+            backgroundProcessingCompleted += 1;
+          } else if (stored.document_processing_job_id && ["queued", "processing"].includes(stored.processing_status || "")) {
             backgroundProcessingQueued += 1;
           } else {
             backgroundQueueUnavailable += 1;
@@ -531,6 +534,9 @@ export default function DocumentsPage() {
         }
         if (backgroundProcessingQueued > 0) {
           parts.push("SolenOS has started reading " + backgroundProcessingQueued + " " + (backgroundProcessingQueued === 1 ? "file" : "files") + ". You can leave this page while it finishes.");
+        }
+        if (backgroundProcessingCompleted > 0) {
+          parts.push("SolenOS has finished reading " + backgroundProcessingCompleted + " " + (backgroundProcessingCompleted === 1 ? "file" : "files") + ". Suggested details are ready for you to review.");
         }
         if (backgroundQueueUnavailable > 0) {
           parts.push(backgroundQueueUnavailable + " " + (backgroundQueueUnavailable === 1 ? "file needs" : "files need") + " another look after upload.");
