@@ -189,7 +189,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
         </div>
         {loading ? <p role="status" className="text-sm text-[var(--muted)]">Loading saved notes…</p> : null}
         {!loading && loadFailed && observations.length > 0 ? <p role="status" className="mb-3 text-sm text-[var(--muted)]">These are the last notes we could load. Refresh to check for newer updates.</p> : null}
-        {!loading && observations.length === 0 ? <p className="text-sm text-[var(--muted)]">No notes about memory or daily life have been saved yet.</p> : null}
+        {!loading && !loadFailed && observations.length === 0 ? <p className="text-sm text-[var(--muted)]">No notes about memory or daily life have been saved yet.</p> : null}
         <ul className="space-y-3">
           {observations.map((item) => (
             <li key={item.id} className="rounded-lg border border-[var(--border)] p-3">
