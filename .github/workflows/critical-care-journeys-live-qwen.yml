@@ -5,6 +5,15 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/critical-care-journeys-live-qwen.yml"
+      - ".github/workflows/critical-care-journeys-e2e.yml"
+      - "e2e/critical-care-journeys.mjs"
+      - "e2e/document-continuity-live-qwen.mjs"
+      - "src/components/workflows/AICompanion.tsx"
+      - "src/components/DocumentIntelligenceReview.tsx"
+      - "src/components/mvp-workspace/LcrQwenInterpretation.tsx"
+      - "src/components/mvp-workspace/LivingCareRecordPanel.tsx"
+      - "src/components/workflows/AppointmentWorkspace.tsx"
+      - "src/components/workflows/CareHandoffSharing.tsx"
   workflow_dispatch:
 
 permissions:
