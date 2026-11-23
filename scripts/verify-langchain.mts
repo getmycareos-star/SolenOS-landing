@@ -48,6 +48,10 @@ for (const token of forbiddenProviderTokens) {
   }
 }
 console.log("✓ adapter exposes no Gemini or OpenAI-hosted provider");
+if (!/toLowerCase\(\)\.startsWith\("qwen"\)/.test(modelSource)) {
+  throw new Error("the private Ollama adapter must reject non-Qwen model names");
+}
+console.log("✓ adapter rejects non-Qwen Ollama model names");
 
 const provider = resolveSolenOSLLMProvider();
 if (provider && provider !== "ollama") throw new Error("unexpected provider: " + provider);
