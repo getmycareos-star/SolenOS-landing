@@ -28,9 +28,9 @@ export default function WhyAmISeeingThis({
   const [expanded, setExpanded] = useState(showDetails || false);
   const safeRecordSays = caregiverSafeAssistantText(recordSays);
   const safeAiInterpreted = caregiverSafeGeneratedText(aiInterpreted);
-  const safeWhyItMatters = caregiverSafeAssistantText(whyItMatters);
-  const safeRemainsUnclear = caregiverSafeAssistantText(remainsUnclear);
-  const safeCouldClarify = caregiverSafeAssistantText(couldClarify);
+  const safeWhyItMatters = caregiverSafeGeneratedText(whyItMatters);
+  const safeRemainsUnclear = caregiverSafeGeneratedText(remainsUnclear);
+  const safeCouldClarify = caregiverSafeGeneratedText(couldClarify);
 
   return (
     <div style={{ 
@@ -120,7 +120,7 @@ export default function WhyAmISeeingThis({
             </div>
           )}
           
-          {safeWhyItMatters && (
+          {whyItMatters && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -137,12 +137,12 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {safeWhyItMatters}
+                {safeWhyItMatters || 'A plain-language explanation is not available right now.'}
               </p>
             </div>
           )}
           
-          {safeRemainsUnclear && (
+          {remainsUnclear && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -159,12 +159,12 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {safeRemainsUnclear}
+                {safeRemainsUnclear || 'We cannot explain what is still unclear in plain language right now.'}
               </p>
             </div>
           )}
           
-          {safeCouldClarify && (
+          {couldClarify && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -181,7 +181,7 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {safeCouldClarify}
+                {safeCouldClarify || 'A suggested next step is not available right now.'}
               </p>
             </div>
           )}
@@ -215,7 +215,7 @@ export default function WhyAmISeeingThis({
                       fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
                       color: 'var(--text)'
                     }}>
-                      {caregiverSafeAssistantText(source.description) || 'Related care information'}
+                      {caregiverSafeGeneratedText(source.description) || 'Related care information'}
                     </span>
                     {source.date && (
                       <span style={{ 
