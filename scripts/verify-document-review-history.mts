@@ -13,6 +13,13 @@ assert(
   "document review UI must retrieve the persisted append-only decision history",
 );
 assert(source.includes("reviewEvents"), "review history events must be retained in component state");
+assert(
+  source.includes("ApiResponseError") &&
+  source.includes("error.status === 409") &&
+  source.includes("await load();") &&
+  source.includes("This document suggestion changed after it was displayed."),
+  "a stale document-review decision must be rejected clearly and the latest candidate must be reloaded before another decision",
+);
 assert(source.includes("decision_version"), "each displayed decision must retain its per-candidate version");
 assert(source.includes("historyErrors") && source.includes("A missing history does not mean no earlier decision was made"), "failed history retrieval must not be presented as an empty history");
 assert(source.includes("Review history") && source.includes("loadReviewHistory"), "caregivers must be able to open the persisted review history");
