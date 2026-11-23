@@ -14,8 +14,12 @@ assert.ok(
   openApi.components?.schemas?.QwenAssistRequest?.properties?.source_event_id,
   "Companion assist requests must accept a source-event anchor for LCR-grounded interpretation",
 );
+const sourceEventIdSchema = openApi.components.schemas.QwenAssistRequest.properties.source_event_id;
+const sourceEventIdStringSchema = sourceEventIdSchema.maxLength !== undefined
+  ? sourceEventIdSchema
+  : sourceEventIdSchema.anyOf?.find((schema) => schema.type === "string");
 assert.equal(
-  openApi.components.schemas.QwenAssistRequest.properties.source_event_id.maxLength,
+  sourceEventIdStringSchema?.maxLength,
   128,
   "source-event anchors must use the same bounded identifier contract as persisted care events",
 );
