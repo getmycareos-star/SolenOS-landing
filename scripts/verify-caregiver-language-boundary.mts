@@ -903,6 +903,18 @@ assert.match(historyDrawer, /changedFieldLabels[\s\S]*?caregiverFieldLabel\(fiel
   "Care Record revision field names must not be displayed as raw database keys");
 
 
+assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail"/,
+  "baseline titles from generated assessments must use caregiver-safe copy");
+assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail to review"/,
+  "generated priority titles must use caregiver-safe copy");
+assert.match(lcr, /caregiverSafeAssistantText\(item\.title\) \|\| "Care follow-up"/,
+  "caregiver-created follow-up titles must preserve safe original wording");
+assert.match(lcr, /caregiverSafeAssistantText\(item\.owner\) \|\| "Not recorded"/,
+  "caregiver responsibility names must not expose raw structured metadata");
+assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail to check"/,
+  "generated missing-information titles must use caregiver-safe copy");
+assert.match(lcr, /caregiverSafeAssistantText\(assertion\.asserted_value\) \|\| "Saved care detail"/,
+  "saved report values must not render raw structured metadata");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.value\)/,
   "saved observation wording must be readable while technical diagnostics remain hidden");
 
