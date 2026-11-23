@@ -121,3 +121,5 @@ assert(
 );
 
 assert.match(documentsPage, /listError && documents\.length > 0[\s\S]*?These are the last documents we could load\. The list may be out of date; refresh before relying on it\./, "previously loaded documents must be labelled as potentially stale when a refresh fails");
+
+assert.match(documentsPage, /loadedDocumentPersonIdRef\.current !== personId[\s\S]*?setDocuments\(\[\]\)[\s\S]*?setSelectedId\(null\)/, "document history and selection from a previous care recipient must be cleared before loading another person's files");
