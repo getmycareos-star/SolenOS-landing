@@ -510,7 +510,11 @@ export default function DailyCarePage() {
   useEffect(() => {
     const refresh = () => setRefreshVersion((value) => value + 1);
     window.addEventListener("careRecordUpdated", refresh);
-    return () => window.removeEventListener("careRecordUpdated", refresh);
+    window.addEventListener("personIdChanged", refresh);
+    return () => {
+      window.removeEventListener("careRecordUpdated", refresh);
+      window.removeEventListener("personIdChanged", refresh);
+    };
   }, []);
 
   useEffect(() => {
