@@ -14,7 +14,7 @@ const required: Array<[string, RegExp]> = [
   ["refreshes a missing or stale assessment through the existing endpoint", /status === "not_assessed"[\s\S]*?reassessment_recommended === true[\s\S]*?postJSON\("\/care-continuity\/situation-understanding\/reassess"/],
   ["does not use an assessment belonging to another person", /nextAssessmentResponse\.assessment\.person_id === personId/],
   ["refreshes when a care record is changed or the caregiver returns", /careRecordUpdated[\s\S]*?window\.addEventListener\("focus"/],
-  ["ignores stale refresh responses after a newer refresh starts", /const requestSequence = \+\+refreshSequence\.current[\s\S]*?const isCurrentRequest = \(\) => requestSequence === refreshSequence\.current[\s\S]*?if \(!isCurrentRequest\(\)\) return/],
+  ["ignores stale refresh responses after a newer refresh starts", /const requestSequence = \+\+refreshSequence\.current[\s\S]*?const isCurrentRequest = \(\) =>[\s\S]*?requestSequence === refreshSequence\.current[\s\S]*?if \(!isCurrentRequest\(\)\) return/],
   ["invalidates in-flight refreshes when the follow-up page unmounts", /active = false;[\s\S]*?refreshSequence\.current \+= 1/],
   ["records the caregiver response against the existing loop type", /if \(\["awaiting_response", "follow_up"\]\.includes\(loop\.loop_type\)\)[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)[\s\S]*?else[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/outcomes`, updatePayload\)/],
   ["reuses the same idempotency key when a caregiver update response is uncertain", /pendingUpdateKeys\.current\[loop\.id\][\s\S]*?pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)/],
