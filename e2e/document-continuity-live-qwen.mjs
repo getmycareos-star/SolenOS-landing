@@ -282,7 +282,7 @@ try {
   await companionPage.getByRole("region", { name: "What this answer is based on" }).waitFor({ timeout: timeoutMs });
   await companionPage.getByText("Caregiver report", { exact: true }).first().waitFor({ timeout: timeoutMs });
   await closeContext(companionContext);
-  process.stdout.write("PASS real Qwen extraction, browser caregiver acceptance, PostgreSQL LCR persistence, and original-source retrieval\n");
+  process.stdout.write("PASS real Qwen extraction, browser caregiver acceptance, PostgreSQL LCR persistence, original-source retrieval, and fresh Companion answer with source attribution\n");
 } finally {
   for (const context of [...activeContexts]) await closeContext(context);
   await browser.close();
