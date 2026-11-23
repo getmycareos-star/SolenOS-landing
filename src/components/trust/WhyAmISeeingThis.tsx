@@ -76,7 +76,7 @@ export default function WhyAmISeeingThis({
             />
           </div>
           
-          {safeRecordSays && (
+          {recordSays && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -93,12 +93,12 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {safeRecordSays}
+                {safeRecordSays || 'The original care information is not available in a readable form right now.'}
               </p>
             </div>
           )}
           
-          {safeAiInterpreted && (
+          {aiInterpreted && (
             <div style={{ marginBottom: '12px' }}>
               <span style={{ 
                 fontSize: 'calc(11px * var(--solenos-text-scale, 1))', 
@@ -115,7 +115,7 @@ export default function WhyAmISeeingThis({
                 margin: '0',
                 lineHeight: '1.4'
               }}>
-                {safeAiInterpreted}
+                {safeAiInterpreted || 'A plain-language explanation is not available right now.'}
               </p>
             </div>
           )}
