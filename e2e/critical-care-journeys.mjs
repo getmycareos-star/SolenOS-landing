@@ -3793,7 +3793,57 @@ await record("browser renders caregiver surfaces and submits Companion through t
   await companion.context.close();
 });
 
-
+await record("Companion retry preserves one turn and recovers after a transient network failure", async () => {
+  const retryCompanion = await createBrowserPage(session, "/workspace/companion");
+  let messageAttempts = 0;
+  await retryCompanion.page.route("**/api/v1/conversation/message", async (route) => {
+    if (route.request().method() !== "POST") {
+      await route.continue();
+      return;
+    }
+    messageAttempts += 1;
+    if (messageAttempts === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Temporary test interruption." }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  const retryInput = retryCompanion.page.locator("#companion-message-input");
+  const retryText = "Thanks. Can we take this one question at a time?";
+  await retryInput.fill(retryText);
+  await retryInput.press("Enter");
+  await retryCompanion.page.getByText(
+    /Care Assistant is temporarily unavailable|Care Assistant could not respond/,
+  ).waitFor({ timeout: 15_000 });
+  assert.equal(
+    await retryInput.inputValue(),
+    retryText,
+    "a failed send must preserve the caregiver's exact message for retry",
+  );
+  await retryInput.press("Enter");
+  await retryCompanion.page.waitForFunction(() => {
+    const messages = Array.from(document.querySelectorAll(".companion-message.is-assistant"));
+    return messages.length > 0 && !messages[messages.length - 1].querySelector(".companion-typing");
+  }, undefined, { timeout: 210_000 });
+  assert.equal(messageAttempts, 2, "the first request must fail and the second must reach the real backend");
+  assert.equal(
+    await retryCompanion.page.locator(".companion-message.is-user").filter({ hasText: retryText }).count(),
+    1,
+    "retry must not render duplicate caregiver messages",
+  );
+  await retryCompanion.page.reload();
+  await retryCompanion.page.locator(".companion-message.is-user").filter({ hasText: retryText }).waitFor({ timeout: 20_000 });
+  assert.equal(
+    await retryCompanion.page.locator(".companion-message.is-user").filter({ hasText: retryText }).count(),
+    1,
+    "the server-restored conversation must contain one copy of the retried turn",
+  );
+  await retryCompanion.context.close();
+});
 
 await record("clarification questions are linked, answerable, skippable and durable", async () => {
   const sourceRows = await request("/api/v1/evidence/" + identity.personId, { token: identity.token });
