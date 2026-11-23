@@ -258,6 +258,14 @@ assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(claim\.aggregat
 
 assert.match(documentReview, /We couldn't confirm whether your review was saved\. Refresh the review history before trying again/,
   "document review failures must not claim an uncertain review was not saved");
+assert.match(careHandoffSharing, /caregiverSafeAssistantText\(recipient\.name\) \|\| "Caregiver"/,
+  "handoff recipient names must use readable caregiver text");
+assert.match(careHandoffSharing, /caregiverSafeAssistantText\(recipient\.relationship\) \|\| "Linked caregiver"/,
+  "handoff recipient relationships must use readable caregiver text");
+assert.match(caregiverHandoverInbox, /caregiverSafeAssistantText\(item\.from_caregiver_name\)/,
+  "incoming handover names must not expose raw structured metadata");
+assert.match(caregiverHandoverInbox, /caregiverSafeAssistantText\(item\.reason\)/,
+  "incoming handover reasons must use readable caregiver text");
 assert.match(caregiverHandoverInbox, /We couldn't confirm whether your response was saved\. Refresh the handover list before trying again/,
   "handover response failures must not claim an uncertain response was not saved");
 assert.match(humanValidation, /We couldn't confirm whether feedback was saved\. Check again before submitting it a second time/,
