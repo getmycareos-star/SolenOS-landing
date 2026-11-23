@@ -91,6 +91,8 @@ export function LcrQwenInterpretation({
           result.review_required !== true ||
           result.written_to_lcr !== false ||
           result.persistence !== "read_only_assistance" ||
+          !Array.isArray(result.source_event_ids) ||
+          !result.source_event_ids.includes(sourceEventId) ||
           !result.claim_provenance ||
           !Array.isArray(result.claim_provenance.claims) ||
           result.claim_provenance.claims.some((claim) =>
