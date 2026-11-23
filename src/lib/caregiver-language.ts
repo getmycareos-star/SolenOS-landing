@@ -360,6 +360,17 @@ export function isTechnicalDiagnosticText(value: string): boolean {
 }
 
 /** Return null for technical diagnostics so callers can show a safe fallback. */
+/**
+ * Preserve caregiver-authored notes and original source text exactly.
+ * Use only for user-provided or source-document content, never generated AI copy
+ * or backend diagnostics. React renders the returned string as escaped text.
+ */
+export function caregiverSourceText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  return text || null;
+}
+
 export function caregiverSafeAssistantText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim();
