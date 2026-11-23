@@ -44,7 +44,7 @@ export const useCameraPermission = () => {
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
         message = 'Camera is already in use';
       } else {
-        message = err.message;
+        message = "We could not use your camera. Check your browser permissions and try again."; 
       }
       setState({ status: 'error', message });
       return null;
