@@ -265,14 +265,25 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     let active = true;
+    let syncSequence = 0;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const sync = async () => {
+      const requestSequence = ++syncSequence;
       const personId = getPersonId();
       const caregiverId = getCaregiverId();
+      const isCurrent = () =>
+        active &&
+        requestSequence === syncSequence &&
+        personId === getPersonId() &&
+        caregiverId === getCaregiverId();
       if (!personId || !caregiverId) return;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
       try {
         const summary = await getDurableWriteSummary(personId, caregiverId, ["/upload"]);
-        if (!active) return;
+        if (!isCurrent()) return;
         setPendingUploads(summary.pending);
         setAttentionUploads(summary.blocked + summary.failed_recoverable);
         if (typeof navigator !== "undefined" && !navigator.onLine) return;
@@ -282,13 +293,15 @@ export default function DocumentsPage() {
           send: sendQueuedCareWrite,
           endpoints: ["/upload"],
         });
+        if (!isCurrent()) return;
         const afterSync = await getDurableWriteSummary(personId, caregiverId);
-        if (!active) return;
+        if (!isCurrent()) return;
         setPendingUploads(afterSync.pending);
         setAttentionUploads(afterSync.blocked + afterSync.failed_recoverable);
         if (afterSync.pending > 0 && typeof navigator !== "undefined" && navigator.onLine) {
-          if (retryTimer) clearTimeout(retryTimer);
-          retryTimer = setTimeout(sync, 5_000);
+          retryTimer = setTimeout(() => {
+            if (isCurrent()) void sync();
+          }, 5_000);
         }
         if (result.synced > 0) {
           setUploadMessage({
@@ -296,6 +309,7 @@ export default function DocumentsPage() {
             text: result.synced + " pending update" + (result.synced === 1 ? " has" : "s have") + " synced to the care record.",
           });
           await loadDocuments(true);
+          if (!isCurrent()) return;
           setDocumentIntelligenceRefresh((value) => value + 1);
           window.dispatchEvent(new Event("careRecordUpdated"));
         }
@@ -309,6 +323,7 @@ export default function DocumentsPage() {
     window.addEventListener("solenos:offline-queue-updated", sync);
     return () => {
       active = false;
+      syncSequence += 1;
       if (retryTimer) clearTimeout(retryTimer);
       window.removeEventListener("online", sync);
       window.removeEventListener("personIdChanged", sync);
