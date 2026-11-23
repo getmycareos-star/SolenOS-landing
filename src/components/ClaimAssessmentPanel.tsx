@@ -474,7 +474,7 @@ export default function ClaimAssessmentPanel() {
                 </summary>
                 {selectedEvidence.source_text.trim() ? (
                   <blockquote style={{ margin: "8px 0 0", maxHeight: 240, overflowY: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>
-                    {caregiverReadableCaptureText(selectedEvidence.source_text) ?? caregiverSourceText(selectedEvidence.source_text)}
+                    {caregiverReadableCaptureText(selectedEvidence.source_text) ?? "The saved information is available, but its wording could not be shown clearly."}
                   </blockquote>
                 ) : (
                   <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
