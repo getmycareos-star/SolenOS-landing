@@ -107,3 +107,8 @@ assert.match(page, /The API paginates by immutable creation order[\s\S]*?display
 
 assert.match(page, /response\.count !== expectedCount[\s\S]*?changed while it was being loaded/,
   "follow-up pagination must fail visibly if the collection changes between pages");
+
+assert.match(page, /function lifecycleNextStepLabel/, "every follow-up state must map to a plain next step");
+assert.match(page, /Next step: \{lifecycleNextStepLabel\(loop\)\}/, "follow-up cards must display the next step beside the current status");
+assert.match(page, /No action is needed unless new information changes this/, "resolved follow-ups must not create unnecessary work");
+assert.match(page, /Ask the person who may know, or add the information when it becomes available/, "missing-information follow-ups must explain a practical next step");
