@@ -43,7 +43,7 @@ assert.equal(caregiverSituationStateLabel("resolved"), "Resolved");
 assert.equal(caregiverSituationStateLabel("unknown"), "Needs more information");
 assert.equal(caregiverInformationLabel("reported"), "Caregiver report");
 assert.equal(caregiverInformationAreaLabel("open_questions"), "Questions to answer");
-assert.equal(caregiverInformationAreaLabel("evidence_freshness_assessments"), "Information dates");
+assert.equal(caregiverInformationAreaLabel("evidence_freshness_assessments"), "How recent the information is");
 assert.equal(caregiverInformationAreaLabel("unknown_internal_area"), null);
 assert.equal(caregiverInformationLabel("epistemic_unknown"), null);
 assert.equal(caregiverFieldLabel("medication_name"), "Medication name as reported");
