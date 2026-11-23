@@ -93,6 +93,11 @@ const prefixedReadableCapture = caregiverReadableCaptureText("Structured daily c
 assert.match(prefixedReadableCapture ?? "", /Mum slept poorly last night/,
   "prefixed structured care notes must preserve the original caregiver observation");
 assert.doesNotMatch(prefixedReadableCapture ?? "", /capture_idempotency_key|capture_request_fingerprint|structured_daily_capture|test-fingerprint/,
+
+const originalCaptureWithIdentifier = "Caregiver note: medication bottle label shows reference 36becbf8-0028-4c29-81b9-c9dc42cd9728.";
+const readableOriginalCapture = caregiverReadableCaptureText(JSON.stringify({ observation: originalCaptureWithIdentifier }));
+assert.equal(readableOriginalCapture, originalCaptureWithIdentifier,
+  "structured capture rendering must preserve exact original caregiver text, including diagnostic-looking identifiers");
   "structured capture metadata must never appear in caregiver-facing wording");
 
 
