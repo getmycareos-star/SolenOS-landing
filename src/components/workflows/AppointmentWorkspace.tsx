@@ -301,6 +301,7 @@ export default function AppointmentWorkspace() {
     void (async () => {
       try {
         await ensureAnonymousSession()
+        if (cancelled) return
         const [briefResult, workspaceResult] = await Promise.allSettled([
           getJSON('/appointment-workspaces/preparation-brief?window_days=90') as Promise<PreparationBrief>,
           getJSON('/appointment-workspaces') as Promise<{ items?: WorkspaceRecord[] }>,
@@ -335,6 +336,7 @@ export default function AppointmentWorkspace() {
           ) {
             try {
               const generated = await postJSON('/appointment-workspaces/ensure-upcoming', {}) as { workspace?: WorkspaceRecord | null }
+              if (cancelled) return
               // Never attach a workspace for a different appointment just
               // because it happens to be the next one returned by the server.
               latest = generated.workspace?.appointment_id === selectedAppointmentId
