@@ -159,6 +159,7 @@ assert(lcr.includes("changed_over_time") && lcr.includes("Describes a change fro
 assert(
   documentsPage.includes("documentLoadSequenceRef") &&
   documentsPage.includes("const requestSequence = ++documentLoadSequenceRef.current") &&
+  documentsPage.includes("const session = await ensureAnonymousSession();\n      // A session lookup can resolve after a newer refresh or person switch.\n      // Stop before mutating the loaded scope or clearing the newer view.\n      if (!isCurrentRequest()) return;") &&
   documentsPage.includes("if (isCurrentRequest()) setDocuments(next)") &&
   documentsPage.includes("if (isCurrentRequest()) {\n        setLoading(false);\n        setRefreshing(false);\n      }"),
   "overlapping document-history reads must not let an older response overwrite a newer refresh or its loading state",
