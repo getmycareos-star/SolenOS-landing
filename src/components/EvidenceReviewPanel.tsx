@@ -902,7 +902,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             )}
             {item.origin_group_key && <p>These entries came from the same original.</p>}
             <p>{caregiverSafeGeneratedText(item.rationale) || 'No further explanation is available.'}</p>
-            <small style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>Checked by {item.reviewed_by_caregiver_id ? 'a caregiver' : 'a reviewer not recorded'} · {new Date(item.created_at).toLocaleString()}</small>
+            <small style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{item.reviewed_by_caregiver_id ? "Checked by a caregiver" : "Reviewer not recorded"} · {new Date(item.created_at).toLocaleString()}</small>
           </article>)}
         </details>
         <details style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))", marginBottom: 12 }}>
