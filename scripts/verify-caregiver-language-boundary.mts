@@ -320,6 +320,7 @@ assert.doesNotMatch(sourceIndicator, /Extracted from document|AI-generated/);
 assert.doesNotMatch(trustIndicators, /Extracted from document|Low confidence|Missing supporting evidence|Awaiting confirmation/);
 assert.match(trustIndicators, /Needs checking/);
 assert.match(trustIndicators, /Some details are still missing/);
+assert.ok(qwenAssist.startsWith('"use client";'), "legacy Qwen panel must retain its Next.js client-component directive");
 assert.doesNotMatch(qwenAssist, /Living Care Record|AI-assisted interpretation|Suggestions are not saved to the Living Care Record/);
 assert.match(qwenAssist, /caregiverSafeGeneratedText\(claim\.text\)/,
   "legacy Qwen claims must use the caregiver language boundary");
