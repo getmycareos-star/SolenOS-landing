@@ -23,6 +23,18 @@ assert.equal(caregiverStatusLabel("verified"), "Checked against another note or 
 assert.equal(caregiverStatusLabel("uncertain"), "Not sure yet");
 assert.equal(caregiverStatusLabel("unresolved"), "Still needs attention");
 
+assert.equal(caregiverStatusLabel("in_progress"), "In progress");
+assert.equal(caregiverStatusLabel("waiting_for_information"), "Waiting for information");
+assert.equal(caregiverStatusLabel("waiting_for_action"), "Waiting for someone to act");
+assert.equal(caregiverStatusLabel("awaiting_response"), "Waiting for a response");
+assert.equal(caregiverStatusLabel("professional_input"), "Waiting for input from a healthcare professional");
+assert.equal(caregiverStatusLabel("unconfirmed_outcome"), "Waiting to confirm the result");
+assert.equal(caregiverStatusLabel("pending_closure_verification"), "Waiting to confirm completion");
+assert.equal(caregiverStatusLabel("needs_attention_now"), "Needs attention now");
+assert.equal(caregiverStatusLabel("being_monitored"), "Being monitored");
+assert.equal(caregiverStatusLabel("no_longer_relevant"), "No longer relevant");
+
+
 assert.equal(caregiverStatusLabel("worsened"), "May be getting worse");
 assert.equal(caregiverStatusLabel("improved"), "May be improving");
 assert.equal(caregiverStatusLabel("new"), "New");
