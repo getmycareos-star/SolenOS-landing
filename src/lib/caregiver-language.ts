@@ -456,7 +456,7 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     if (typeof capture.vital_type === "string" && capture.value !== undefined) {
       const kind = safeText(capture.vital_type);
       const label = vitalLabels[kind] || readableLabel(kind) || "Measurement";
-      const measurement = [safeText(capture.value), safeText(capture.unit)].filter(Boolean).join(" ");
+      const measurement = [sourceText(capture.value), sourceText(capture.unit)].filter(Boolean).join(" ");
       const note = sourceText(capture.note);
       if (measurement || note) lines.push([label + (measurement ? ": " + measurement : ""), note].filter(Boolean).join(" — "));
     }
