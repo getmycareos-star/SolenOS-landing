@@ -218,6 +218,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingTurnId = useRef<string | null>(null)
+  const sendingRef = useRef(false)
   const pendingTurnText = useRef<string | null>(null)
   const userInteractedRef = useRef(false)
   const conversationScopeRef = useRef<string | null>(null)
@@ -432,7 +433,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
   const sendMessage = async (textOverride?: string) => {
     const submittedText = (textOverride ?? input).trim()
-    if (!submittedText || loading) return
+    // React state updates are asynchronous. A ref closes the same-tick
+    // double-submit window before the loading state reaches the next render.
+    if (!submittedText || loading || sendingRef.current) return
+    sendingRef.current = true
     const requestScopeSequence = conversationScopeSequenceRef.current
     const initialScopeKey = activeCompanionConversationStorageKey()
     const isCurrentScopeRequest = () => requestScopeSequence === conversationScopeSequenceRef.current
@@ -553,6 +557,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           : 'The Care Assistant could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.'
       )
     } finally {
+      sendingRef.current = false
       if (isCurrentScopeRequest()) setLoading(false)
     }
   }
