@@ -292,6 +292,9 @@ export function looksLikeCaregiverExperienceOnly(line: string): boolean {
   if (/don'?t even know where to start/.test(t)) return true;
   if (/tired of (trying to )?remember/.test(t)) return true;
   if (/^(i'?m |i am )?(overwhelmed|exhausted|so tired)\b/.test(t)) return true;
+  if (/\b(?:i'?m|i am) (?:just )?drowning\b/.test(t)) return true;
+  if (/\beverything is on me\b/.test(t)) return true;
+  if (/don'?t know how much longer i can do this/.test(t)) return true;
   if (/nobody else (sees|notices) this/.test(t)) return true;
   if (/^i don'?t know (what|where|how) (to|i)/.test(t) && t.length < 80) return true;
   if (/i don'?t know what matters most/.test(t)) return true;
