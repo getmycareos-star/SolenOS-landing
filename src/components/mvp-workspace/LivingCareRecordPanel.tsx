@@ -133,6 +133,9 @@ export function LivingCareRecordPanel({
               ))}
             </ul>
           )}
+          {view.what_understood.length > facts.length && (
+            <p className="panel-muted">Some details could not be shown clearly. The saved information remains in your Care Record.</p>
+          )}
           {renderEvidenceMeta && (
             <p className="panel-muted">
               {eventLabel || "Care update"}
@@ -206,31 +209,39 @@ export function LivingCareRecordPanel({
         </section>
       )}
 
-      {contradictions.length > 0 && (
+      {view.contradictions.length > 0 && (
         <section className="care-card-contradictions" aria-labelledby="lcr-conflict-heading">
           <h3 id="lcr-conflict-heading" className="section-kicker">
             Information that does not match
           </h3>
           <p className="panel-muted">We’ve kept both versions because they do not match yet.</p>
-          <ul>
-            {contradictions.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          {contradictions.length > 0 ? (
+            <ul>
+              {contradictions.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-muted">We could not show the explanation clearly. Check the original notes before drawing a conclusion.</p>
+          )}
         </section>
       )}
 
-      {stillUnclear.length > 0 && (
+      {plan.show_questions && view.what_needs_context.length > 0 && (
         <section className="care-card-unknowns" aria-labelledby="lcr-unclear-heading">
           <h3 id="lcr-unclear-heading" className="section-kicker">
             Questions that may help
           </h3>
           <p className="panel-muted">Some details are missing. You can skip these questions if you do not know.</p>
-          <ul>
-            {stillUnclear.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          {stillUnclear.length > 0 ? (
+            <ul>
+              {stillUnclear.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-muted">Some questions are saved, but their wording could not be shown clearly. You can review the original care information instead.</p>
+          )}
           {whyAsking && (
             <details className="lcr-expandable lcr-why-asking">
               <summary className="panel-muted">Why these questions?</summary>
@@ -240,7 +251,7 @@ export function LivingCareRecordPanel({
         </section>
       )}
 
-      {remembered.length > 0 && (
+      {plan.show_remembered && view.what_will_be_remembered.length > 0 && (
         <section
           className="care-card-remembered"
           aria-labelledby="lcr-remembered-heading"
@@ -248,11 +259,15 @@ export function LivingCareRecordPanel({
           <h3 id="lcr-remembered-heading" className="section-kicker">
             What will be kept in your Care Record
           </h3>
-          <ul>
-            {remembered.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          {remembered.length > 0 ? (
+            <ul>
+              {remembered.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-muted">Some details could not be shown clearly. Nothing has been removed from your Care Record.</p>
+          )}
         </section>
       )}
 
@@ -267,17 +282,21 @@ export function LivingCareRecordPanel({
         </details>
       )}
 
-      {followUpItems.length > 0 && (
+      {view.follow_up_items.length > 0 && (
         <section className="care-card-actions" aria-labelledby="lcr-actions-heading">
           <h3 id="lcr-actions-heading" className="section-kicker">
             What you can do next
           </h3>
           <p className="panel-muted">These are suggestions. Choose what works for you.</p>
-          <ul>
-            {followUpItems.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          {followUpItems.length > 0 ? (
+            <ul>
+              {followUpItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-muted">Suggested next steps could not be shown clearly. Your saved care information has not changed.</p>
+          )}
         </section>
       )}
 
