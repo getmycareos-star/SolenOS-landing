@@ -57,8 +57,6 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
   useEffect(() => {
     if (!open) {
       stop();
-    // Page state is reset only when the capture sheet opens or closes.
-    // Keep captured pages when switching cameras.
       return;
     }
 
