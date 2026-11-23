@@ -123,7 +123,7 @@ assert(source.includes("}, [cameraOpen, cameraFacingMode]);"), "switching camera
 
 assert.match(intelligenceReviewSource, /extraction_processed_page_count\?: number \| null/,
   "document review must consume the server's extraction page count independently of AI interpretation");
-assert.match(intelligenceReviewSource, /analysis\.processed_page_count \?\? analysis\.extraction_processed_page_count/,
+assert.match(intelligenceReviewSource, /analysis\.extraction_processed_page_count \?\? analysis\.processed_page_count/,
   "partial OCR status must show actual pages extracted before Qwen review completes");
 assert.match(intelligenceReviewSource, /extraction_unprocessed_page_numbers\?: number\[\]/,
   "page-level extraction gaps must remain visible to caregivers");
