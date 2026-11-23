@@ -39,7 +39,7 @@ async function submitFeedback(payload: {
     }),
   });
   if (!response.ok) {
-    throw new Error("Feedback was not saved. Please try again.");
+    throw new Error("We couldn't confirm whether feedback was saved. Check again before submitting it a second time.");
   }
 }
 
