@@ -156,5 +156,5 @@ assert(overview.includes("if (accessDenied)"), "the Care Record must not keep ca
 
 assert(handoffs.includes("loadedScopeRef.current.personId !== requestPersonId") && handoffs.includes("loadedScopeRef.current.caregiverId !== requestCaregiverId"), "handoff data must be cleared when the active Care Record or caregiver changes");
 assert(handoffs.includes("setSavedDrafts([])") && handoffs.includes("setInbox([])") && handoffs.includes("setOutbox([])"), "handoff drafts and sharing history must be cleared on identity changes");
-assert(handoffs.includes("if (!requestPersonId || accessDenied ||"), "handoff data must be cleared when the session cannot be confirmed or access is denied");
+assert(handoffs.includes("if (!requestPersonId || !requestCaregiverId || accessDenied)"), "handoff data must be cleared when the session cannot be confirmed or access is denied");
 console.log("PASS: handoff lists and drafts are isolated to the active Care Record identity.");
