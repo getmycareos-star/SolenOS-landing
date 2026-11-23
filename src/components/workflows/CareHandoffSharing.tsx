@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
+import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
 import { caregiverReadableCaptureText, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
@@ -463,7 +463,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
-      const accessDenied = /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
+      const accessDenied = cause instanceof ApiResponseError
+        ? cause.status === 401 || cause.status === 403
+        : /401|403|unauthori[sz]ed|forbidden|access denied|not authenticated|not authorized|session.*required|authentication/i.test(message);
       if (isCurrentRequest()) {
         if (!requestPersonId || !requestCaregiverId || accessDenied) {
           setDirectory([]);
