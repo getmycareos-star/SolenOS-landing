@@ -2,6 +2,7 @@
 
 import { apiUrl, safeJson } from "@/lib/api-url";
 import { ensureAnonymousSession } from "@/api/client";
+import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { useState } from "react";
 
 type Props = {
@@ -56,7 +57,7 @@ export function CareRecipientNameGate({
       if (!res.ok) throw new Error(data.error ?? "Could not save");
       onSaved(data.care_recipient_display_name ?? trimmed);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save");
+      setError(caregiverSafeErrorMessage());
     } finally {
       setSaving(false);
     }
