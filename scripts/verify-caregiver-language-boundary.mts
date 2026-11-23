@@ -1262,6 +1262,15 @@ assert.match(dementiaObservation, /setLoadFailed\(true\)/, "a failed observation
 assert.match(dementiaObservation, /loadFailed && observations\.length > 0[\s\S]*?These are the last notes we could load\. Refresh to check for newer updates\./, "previously loaded notes must be identified as stale when refresh fails");
 
 assert.match(dementiaObservation, /!loading && !loadFailed && observations\.length === 0/, "an unavailable observation history must not be shown as an empty saved list");
+assert.match(dementiaObservation, /const loadSequenceRef = useRef\(0\)[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?return \(\) => \{ loadSequenceRef\.current \+= 1; \};/,
+  "late observation reads must not overwrite the active care record after a scope change");
+assert.match(dementiaProfile, /const loadSequenceRef = useRef\(0\)[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?return \(\) => \{ loadSequenceRef\.current \+= 1; \};/,
+  "late profile reads must not overwrite the active care record after a scope change");
+const currentUnderstanding = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
+assert.match(currentUnderstanding, /DementiaCareProfilePanel key=\{personId\}/,
+  "the dementia profile must remount when the active person changes");
+assert.match(currentUnderstanding, /DementiaObservationPanel key=\{personId\}/,
+  "the dementia observation panel must remount when the active person changes");
 
 assert.match(historyDrawer, /if \(typeof value === "string"\) return value\.trim\(\)/, "caregiver-entered history text must not be filtered as generated assistant text");
 assert.match(historyDrawer, /const title = asText\(item\.title\) \|\| "Care follow-up"/, "saved follow-up titles must be preserved exactly in care history");
