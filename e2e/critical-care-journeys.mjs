@@ -972,6 +972,11 @@ await record("01c workspace links, browser back, More menu and account form vali
     "the appointment briefing must retrieve only the selected appointment, not unrelated visits");
   assert.ok(["generated", "source_only_fallback"].includes(appointmentDraft.generation_status),
     "appointment briefing must use Qwen or a clearly labelled exact-source fallback");
+  if (requireLiveQwen) {
+    assert.equal(appointmentDraft.generation_status, "generated", JSON.stringify(appointmentDraft));
+    assert.equal(appointmentDraft.generation?.provider, "ollama", JSON.stringify(appointmentDraft.generation));
+    assert.match(String(appointmentDraft.generation?.model || ""), /qwen/i, JSON.stringify(appointmentDraft.generation));
+  }
   if (appointmentDraft.generation_status === "source_only_fallback") {
     assert.ok(appointmentDraft.generation.sections.every(item => item.summary === item.supporting_quote),
       "source-only fallback must not paraphrase or invent care facts");
@@ -1030,6 +1035,11 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(professionalDraft.purpose, "period_summary");
   assert.equal(professionalDraft.source_of_truth, "living_care_record");
   assert.ok(["generated", "source_only_fallback"].includes(professionalDraft.generation_status));
+  if (requireLiveQwen) {
+    assert.equal(professionalDraft.generation_status, "generated", JSON.stringify(professionalDraft));
+    assert.equal(professionalDraft.generation?.provider, "ollama", JSON.stringify(professionalDraft.generation));
+    assert.match(String(professionalDraft.generation?.model || ""), /qwen/i, JSON.stringify(professionalDraft.generation));
+  }
   assert.equal(professionalDraft.appointment_id, null,
     "a general professional briefing must not be silently bound to an appointment");
   await professionalDialog.getByRole("heading", { name: "Professional briefing", exact: true }).waitFor({ timeout: 10_000 });
@@ -1054,6 +1064,11 @@ await record("01c workspace links, browser back, More menu and account form vali
     "a family briefing must return an explicit source-freshness result; uncertain or changed sources must not be treated as current");
   assert.ok(["generated", "source_only_fallback"].includes(familyDraft.generation_status),
     "family briefing must use Qwen or a clearly labelled exact-source fallback");
+  if (requireLiveQwen) {
+    assert.equal(familyDraft.generation_status, "generated", JSON.stringify(familyDraft));
+    assert.equal(familyDraft.generation?.provider, "ollama", JSON.stringify(familyDraft.generation));
+    assert.match(String(familyDraft.generation?.model || ""), /qwen/i, JSON.stringify(familyDraft.generation));
+  }
   if (familyDraft.generation_status === "source_only_fallback") {
     assert.ok(familyDraft.generation.sections.every(item => item.summary === item.supporting_quote),
       "source-only family fallback must preserve saved wording without paraphrase");
@@ -1746,17 +1761,56 @@ await record("Daily Care saves and retrieves original reports without relying on
     } : undefined));
   }
 
-  // The browser acceptance environment intentionally has no live AI runtime.
-  // Verify the save receipts without pretending model extraction has completed.
-  for (const { jobId } of dailyCaptureJobs) {
-    const status = await request(`/api/v1/assistant/jobs/${jobId}`, { token: identity.token });
-    assert.equal(status.status, 200, JSON.stringify(status.payload));
-    assert.ok(["queued", "processing", "failed"].includes(status.payload.status),
-      `AI extraction must not be reported as complete without a live model: ${JSON.stringify(status.payload)}`);
-    assert.equal(status.payload.output_id, null,
-      "the no-model test must not invent a generated answer");
-    assert.equal(status.payload.written_to_lcr, false,
-      "AI output must never be written into the Care Record");
+  if (requireLiveQwen) {
+    // In the live-Qwen browser run, wait for every saved update to complete its
+    // real extraction and reconciliation path. The model output remains a
+    // reviewable candidate; it must not become an accepted care assertion.
+    for (const { jobId } of dailyCaptureJobs) {
+      const deadline = Date.now() + 12 * 60 * 1000;
+      let completed = null;
+      while (Date.now() < deadline) {
+        const status = await request(`/api/v1/assistant/jobs/${jobId}`, { token: identity.token });
+        assert.equal(status.status, 200, JSON.stringify(status.payload));
+        assert.ok(!["failed", "cancelled"].includes(status.payload.status),
+          `Live Qwen Daily Care extraction failed: ${JSON.stringify(status.payload)}`);
+        if (status.payload.status === "completed") {
+          completed = status.payload;
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 2_000));
+      }
+      assert.ok(completed, `Live Qwen Daily Care job did not complete: ${jobId}`);
+      assert.equal(completed.review_required, true, JSON.stringify(completed));
+      assert.equal(completed.written_to_lcr, false, JSON.stringify(completed));
+      assert.equal(completed.output_id, null, "Daily Care extraction must remain a reviewable analysis, not an auto-approved Qwen output");
+      const capture = completed.daily_capture || {};
+      assert.equal(capture.projection_status, "verified", JSON.stringify(completed));
+      assert.equal(capture.reconciliation_status, "completed", JSON.stringify(completed));
+      assert.ok(Number(capture.source_grounded_observations_projected || 0) >= 1, JSON.stringify(completed));
+      assert.ok(capture.analysis_id, JSON.stringify(completed));
+      const analysis = await request(`/api/v1/capture/analyses/${capture.analysis_id}`, { token: identity.token });
+      assert.equal(analysis.status, 200, JSON.stringify(analysis.payload));
+      assert.equal(analysis.payload.review_required, true, JSON.stringify(analysis.payload));
+      assert.equal(analysis.payload.written_to_lcr, false, JSON.stringify(analysis.payload));
+      const candidates = analysis.payload.candidates?.observations || [];
+      assert.ok(candidates.length > 0, JSON.stringify(analysis.payload));
+      assert.ok(candidates.some(candidate =>
+        typeof candidate.source_quote === "string" &&
+        scenarioReports.some(report => report.includes(candidate.source_quote))
+      ), "Live Qwen Daily Care candidates must retain exact wording from a saved caregiver report");
+    }
+  } else {
+    // The no-model browser run must not pretend background inference completed.
+    for (const { jobId } of dailyCaptureJobs) {
+      const status = await request(`/api/v1/assistant/jobs/${jobId}`, { token: identity.token });
+      assert.equal(status.status, 200, JSON.stringify(status.payload));
+      assert.ok(["queued", "processing", "failed"].includes(status.payload.status),
+        `AI extraction must not be reported as complete without a live model: ${JSON.stringify(status.payload)}`);
+      assert.equal(status.payload.output_id, null,
+        "the no-model test must not invent a generated answer");
+      assert.equal(status.payload.written_to_lcr, false,
+        "AI output must never be written into the Care Record");
+    }
   }
 
   const dailyHistory = await request(`/api/v1/events/${identity.personId}`, { token: identity.token });
@@ -2139,10 +2193,9 @@ await record("06 Companion context and Qwen output", async () => {
   assert.equal(answer.status, 200, JSON.stringify(answer.payload));
   assert.equal(answer.payload.written_to_lcr, false);
   if (requireLiveQwen) {
-    assert.ok(
-      answer.payload.ai_generated === true || answer.payload.ai_generated === false,
-      "Companion must identify whether the final answer was model-generated or source-extracted",
-    );
+    assert.equal(answer.payload.ai_generated, true,
+      "the live-Qwen browser journey must receive an actual model-generated Companion answer");
+    assert.equal(answer.payload.provider_status, "available", JSON.stringify(answer.payload));
     if (answer.payload.ai_generated === false) {
       assert.match(
         answer.payload.safety_note || "",
@@ -2372,6 +2425,10 @@ await record("06 Companion context and Qwen output", async () => {
   });
   assert.equal(documentAnswer.status, 200, JSON.stringify(documentAnswer.payload));
   assert.equal(documentAnswer.payload.written_to_lcr, false);
+  if (requireLiveQwen) {
+    assert.equal(documentAnswer.payload.ai_generated, true,
+      "a saved document question must use real Qwen in the live browser acceptance run");
+  }
   assert.ok(
     documentAnswer.payload.ai_generated === true || documentAnswer.payload.ai_generated === false,
     "Companion must identify whether a document answer came from Qwen or the verified source excerpt",

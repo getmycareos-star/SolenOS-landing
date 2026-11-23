@@ -1,0 +1,21 @@
+name: Critical care journeys — live Qwen browser acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/critical-care-journeys-live-qwen.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: critical-care-live-qwen-browser-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  live-qwen-browser:
+    uses: ./.github/workflows/critical-care-journeys-e2e.yml
+    with:
+      require_live_qwen: true

@@ -2,6 +2,12 @@ name: Critical care journeys — real backend and browser (main validation)
 
 on:
   workflow_call:
+    inputs:
+      require_live_qwen:
+        description: "Run the browser journeys against a real Qwen/Ollama runtime"
+        required: false
+        type: boolean
+        default: false
   pull_request:
     branches: [main]
     paths:
@@ -42,6 +48,12 @@ on:
       - "src/components/ClarificationWorkflowPanel.tsx"
       - ".github/workflows/critical-care-journeys-e2e.yml"
   workflow_dispatch:
+    inputs:
+      require_live_qwen:
+        description: "Run the browser journeys against a real Qwen/Ollama runtime"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -49,13 +61,13 @@ permissions:
 concurrency:
   # Keep each commit's real-backend acceptance run queued independently. A later
   # main push must not replace a pending release-validation run before it starts.
-  group: critical-care-journeys-${{ github.ref }}-${{ github.sha }}-no-model
+  group: critical-care-journeys-${{ github.ref }}-${{ github.sha }}-${{ inputs.require_live_qwen && 'live-qwen' || 'no-model' }}
   cancel-in-progress: false
 
 jobs:
   critical-care-journeys:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: ${{ inputs.require_live_qwen && 90 || 50 }}
     services:
       postgres:
         image: postgres:18
@@ -74,8 +86,17 @@ jobs:
       APP_ENV: test
       SECRET_KEY: ci-only-secret-key-long-enough-for-test-runtime
       DATABASE_URL: postgresql+psycopg2://solenos_ci:solenos_ci@localhost:5432/solenos_critical_journeys
-      SOLENOS_REQUIRE_LIVE_QWEN: "0"
-      SOLENOS_TEST_DISABLE_QWEN: "1"
+      SOLENOS_REQUIRE_LIVE_QWEN: ${{ inputs.require_live_qwen && '1' || '0' }}
+      SOLENOS_TEST_DISABLE_QWEN: ${{ inputs.require_live_qwen && '0' || '1' }}
+      SOLENOS_QWEN_WORKER_ENABLED: ${{ inputs.require_live_qwen && 'true' || 'false' }}
+      OLLAMA_BASE_URL: ${{ inputs.require_live_qwen && 'http://127.0.0.1:11434' || 'http://127.0.0.1:9' }}
+      OLLAMA_HOST: ${{ inputs.require_live_qwen && '127.0.0.1:11434' || '127.0.0.1:9' }}
+      OLLAMA_MODEL: qwen3.5:4b
+      OLLAMA_TIMEOUT_SECONDS: ${{ inputs.require_live_qwen && '180' || '5' }}
+      OLLAMA_NUM_CTX: "4096"
+      OLLAMA_NUM_PREDICT: "160"
+      OLLAMA_NUM_THREADS: "2"
+      OLLAMA_SIDECAR_ENABLED: "false"
     steps:
       - name: Check out triggering frontend commit
         uses: actions/checkout@v4
@@ -120,6 +141,24 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ./backend-service/backend
 
+      - name: Install OCR runtime for real document extraction
+        if: inputs.require_live_qwen
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+
+      - name: Start isolated Ollama and download Qwen
+        if: inputs.require_live_qwen
+        run: |
+          docker run -d --name solenos-live-ollama -p 11434:11434 ollama/ollama:latest
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:11434/api/tags >/dev/null
+          docker exec solenos-live-ollama ollama pull "$OLLAMA_MODEL"
+          docker exec solenos-live-ollama ollama list
+
       - name: Configure ephemeral independent privacy reviewers for deletion acceptance
         run: |
           python - <<'PY'
@@ -147,7 +186,11 @@ jobs:
       - name: Start FastAPI on the isolated PostgreSQL database
         working-directory: backend-service/backend
         run: |
-          nohup env APP_ENV=test SOLENOS_TEST_DISABLE_QWEN="$SOLENOS_TEST_DISABLE_QWEN" SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 BACKEND_SERVICE_DIR="$GITHUB_WORKSPACE/backend-service/backend" python "$GITHUB_WORKSPACE/e2e/document-test-backend.py" >/tmp/solenos-critical-backend.log 2>&1 &
+          if [ "$SOLENOS_REQUIRE_LIVE_QWEN" = "1" ]; then
+            nohup env APP_ENV=test SOLENOS_TEST_DISABLE_QWEN=0 SOLENOS_QWEN_WORKER_ENABLED=true SOLENOS_REQUIRE_LIVE_QWEN=1 OLLAMA_BASE_URL="$OLLAMA_BASE_URL" OLLAMA_MODEL="$OLLAMA_MODEL" OLLAMA_TIMEOUT_SECONDS="$OLLAMA_TIMEOUT_SECONDS" OLLAMA_NUM_CTX="$OLLAMA_NUM_CTX" OLLAMA_NUM_PREDICT="$OLLAMA_NUM_PREDICT" OLLAMA_NUM_THREADS="$OLLAMA_NUM_THREADS" OLLAMA_SIDECAR_ENABLED=false SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 BACKEND_SERVICE_DIR="$GITHUB_WORKSPACE/backend-service/backend" python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/solenos-critical-backend.log 2>&1 &
+          else
+            nohup env APP_ENV=test SOLENOS_TEST_DISABLE_QWEN=1 SOLENOS_QWEN_WORKER_ENABLED=false SECRET_KEY="$SECRET_KEY" DATABASE_URL="$DATABASE_URL" SOLENOS_PRIVACY_REVIEWER_TOKEN="$SOLENOS_PRIVACY_REVIEWER_TOKEN" SOLENOS_PRIVACY_REVIEWER_ID="$SOLENOS_PRIVACY_REVIEWER_ID" SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN="$SOLENOS_PRIVACY_DELETION_REVIEWER_TOKEN" SOLENOS_PRIVACY_DELETION_REVIEWER_ID="$SOLENOS_PRIVACY_DELETION_REVIEWER_ID" CORS_ORIGINS=http://127.0.0.1:3000 BACKEND_SERVICE_DIR="$GITHUB_WORKSPACE/backend-service/backend" python "$GITHUB_WORKSPACE/e2e/document-test-backend.py" >/tmp/solenos-critical-backend.log 2>&1 &
+          fi
           echo $! >/tmp/solenos-critical-backend.pid
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
@@ -171,7 +214,7 @@ jobs:
         env:
           FRONTEND_URL: http://127.0.0.1:3000
           BACKEND_URL: http://127.0.0.1:8000
-          SOLENOS_REQUIRE_LIVE_QWEN: "0"
+          SOLENOS_REQUIRE_LIVE_QWEN: ${{ inputs.require_live_qwen && '1' || '0' }}
         run: node e2e/critical-care-journeys.mjs
 
       - name: Verify anonymous account claiming and fresh-browser recovery against PostgreSQL
@@ -181,6 +224,7 @@ jobs:
         run: node e2e/anonymous-account-continuity.mjs
 
       - name: Verify document upload, deterministic extraction, caregiver review and LCR persistence
+        if: ${{ !inputs.require_live_qwen }}
         env:
           FRONTEND_URL: http://127.0.0.1:3000
           BACKEND_URL: http://127.0.0.1:8000
@@ -214,3 +258,8 @@ jobs:
         run: |
           cat /tmp/solenos-critical-backend.log || true
           cat /tmp/solenos-critical-frontend.log || true
+          docker logs solenos-live-ollama || true
+
+      - name: Stop isolated Ollama runtime
+        if: always() && inputs.require_live_qwen
+        run: docker rm -f solenos-live-ollama || true
