@@ -213,11 +213,11 @@ const caregiverHandoverInbox = read("../src/components/mvp-workspace/CaregiverHa
 const clarificationWorkflow = read("../src/components/ClarificationWorkflowPanel.tsx");
 const careHandoffSharing = read("../src/components/workflows/CareHandoffSharing.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
-assert.match(structuredDailyCapture, /caregiverSafeAssistantText\(item\.name\)/,
+assert.match(structuredDailyCapture, /caregiverSourceText\(item\.name\)/,
   "saved medication names must use readable caregiver text");
-assert.match(structuredDailyCapture, /caregiverSafeAssistantText\(item\.dose\)/,
+assert.match(structuredDailyCapture, /caregiverSourceText\(item\.dose\)/,
   "saved medication doses must not expose raw structured metadata");
-assert.match(structuredDailyCapture, /caregiverSafeAssistantText\(item\.source_text\)/,
+assert.match(structuredDailyCapture, /caregiverSourceText\(item\.source_text\)/,
   "saved medication source notes must use readable caregiver text");
 assert.match(clarificationWorkflow, /caregiverSafeAssistantText\(item\.answer\)/,
   "saved clarification answers must not expose raw structured metadata");
@@ -477,7 +477,7 @@ assert.match(naturalDailyUpdate, /reason\.includes\("could not securely keep an 
 assert.match(claimReview, /caregiverStatusLabel/);
 assert.equal(claimReview.includes("review version ${assessmentImpact.assessment_version}"), false);
 assert.match(handoff, /function readableStatus\(value: string\): string \{\s+return caregiverStatusLabel\(value\) \?\? "Not available";/);
-assert.match(appointment, /caregiverSafeAssistantText\(item\.title\)/);
+assert.match(appointment, /caregiverSourceText\(item\.title\)/, "original appointment titles must remain readable even when they contain diagnostic-looking identifiers");
 assert.match(detailedAppointment, /caregiverSafeAssistantText\(source\.original_author\)/);
 assert.doesNotMatch(detailedAppointment, /Evidence IDs:|Assessment \{item\.assessment_id/);
 assert.doesNotMatch(dailyCapture, /Care-record reconciliation:|change and pattern assessments|Accept and add to LCR|LCR fact|No LCR assertion|Living Care Record/);
