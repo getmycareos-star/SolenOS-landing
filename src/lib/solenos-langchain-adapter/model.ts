@@ -54,8 +54,13 @@ export function createOllamaChatModel(): BaseChatModel {
     throw new Error("SolenOS accepts only a private Railway Ollama service URL.");
   }
 
+  const model = process.env.OLLAMA_MODEL?.trim() || DEFAULT_QWEN_MODEL;
+  if (!model.toLowerCase().startsWith("qwen")) {
+    throw new Error("SolenOS requires a Qwen model; other Ollama models are not supported.");
+  }
+
   return new ChatOpenAI({
-    model: process.env.OLLAMA_MODEL?.trim() || DEFAULT_QWEN_MODEL,
+    model,
     apiKey: process.env.OLLAMA_API_KEY ?? "ollama",
     temperature: 0,
     maxRetries: 0,
