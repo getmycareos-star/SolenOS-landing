@@ -11,6 +11,8 @@ on:
       - "src/components/workflows/AICompanion.tsx"
       - "src/components/DocumentIntelligenceReview.tsx"
       - "src/components/mvp-workspace/LcrQwenInterpretation.tsx"
+      - "src/components/mvp-workspace/DementiaObservationPanel.tsx"
+      - "src/app/workspace/care-continuity/page.tsx"
       - "src/components/mvp-workspace/LivingCareRecordPanel.tsx"
       - "src/components/workflows/AppointmentWorkspace.tsx"
       - "src/components/workflows/CareHandoffSharing.tsx"
