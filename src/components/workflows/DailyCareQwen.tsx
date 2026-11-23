@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getPersonId, postJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type SourceRecord = {
   source_type: string;
@@ -201,7 +201,7 @@ export default function DailyCareQwen() {
               <ul>
                 {result.source_records.map((source) => (
                   <li key={`${source.source_type}:${source.source_id}`}>
-                    <strong>{caregiverSafeAssistantText(source.title) || "Saved care information"}</strong>
+                    <strong>{caregiverSourceText(source.title) || "Saved care information"}</strong>
                     <span>{readableDate(source.date)}</span>
                     
                   </li>
