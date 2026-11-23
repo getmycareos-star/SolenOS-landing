@@ -286,6 +286,7 @@ type SituationAssessment = {
     items: Array<{
       id: string;
       source: string;
+      version?: number | null;
       title: string;
       status: string;
       loop_type: string;
@@ -1428,6 +1429,7 @@ export function LCRCurrentUnderstanding() {
           explicit_approval: true,
           idempotency_key: idempotencyKey,
           suggestion_id: suggestionId.slice(0, 160),
+          ...(item.source === "open_loop_records" ? { suggestion_version: item.version } : {}),
           title: item.request_text.trim(),
           action_type: "follow_up",
           rationale: (item.priority_reasons ?? []).join("; ") || item.description || "A follow-up request is saved in the care record.",
