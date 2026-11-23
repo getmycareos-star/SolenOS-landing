@@ -958,12 +958,12 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
             <p><strong>Saved information:</strong></p>
             {historicalSnapshotDetails(recordHistory).map(section => (
               <details key={section.label} style={{ margin: '8px 0' }}>
-                <summary>{section.label} ({section.total})</summary>
+                <summary>{caregiverSafeAssistantText(section.label) || "Saved care information"} ({section.total})</summary>
                 <ul style={{ margin: '6px 0', paddingLeft: 20 }}>
                   {section.items.map(item => (
                     <li key={item.key} style={{ marginBottom: 8 }}>
-                      <strong>{item.title}</strong>
-                      <p>{item.detail}</p>
+                      <strong>{caregiverSafeAssistantText(item.title) || "Saved care detail"}</strong>
+                      <p>{caregiverSafeAssistantText(item.detail) || "The saved details could not be displayed in a readable form."}</p>
                       <small style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{item.date}{item.status ? ` · ${reviewStatusLabel(item.status)}` : ''}{item.source ? ` · From: ${reviewStatusLabel(item.source)}` : ''}</small>
                     </li>
                   ))}
