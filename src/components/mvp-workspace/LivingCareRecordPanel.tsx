@@ -1,7 +1,7 @@
 "use client";
 
 import type { LivingCareRecordResponseView } from "@/lib/living-care-record-ux";
-import { caregiverFieldLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverInformationLabel, caregiverSourceText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import { UnderstandingFeedbackPrompt } from "./UnderstandingFeedbackPrompt";
 
 type Props = {
@@ -59,7 +59,7 @@ export function LivingCareRecordPanel({
   const supportingEvidenceCandidates =
     view.evidence_maturity >= 2 ? (view.expandable.evidence ?? []).slice(0, 4) : [];
   const supportingEvidence = supportingEvidenceCandidates
-    .map((item) => caregiverSafeAssistantText(item))
+    .map((item) => caregiverSourceText(item))
     .filter((item): item is string => Boolean(item));
   const followUpCandidates = view.follow_up_items.slice(0, 2);
   const followUpItems = followUpCandidates
