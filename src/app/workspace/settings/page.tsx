@@ -17,7 +17,7 @@ import {
 
 import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
