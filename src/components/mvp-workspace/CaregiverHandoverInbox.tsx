@@ -69,7 +69,7 @@ export function CaregiverHandoverInbox() {
       // primary-caregiver permissions are reflected immediately.
       window.location.reload();
     } catch {
-      setError("We couldn't record your response. The existing caregiver assignment has not been changed.");
+      setError("We couldn't confirm whether your response was saved. Refresh the handover list before trying again.");
     } finally {
       setBusy(false);
     }
