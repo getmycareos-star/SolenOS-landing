@@ -105,7 +105,7 @@ export function ConsentGatePanel({ caregiverId, onConsentAccepted, onStatusChang
       setError(null);
       onStatusChange?.("accepted");
       onConsentAccepted?.();
-    } catch (err) {
+    } catch {
       setError(caregiverSafeErrorMessage());
     } finally {
       setSubmitting(false);
