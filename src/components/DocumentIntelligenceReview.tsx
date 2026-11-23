@@ -419,7 +419,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                       })}
                     </ol>}
           </details>
-          {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Questions that still need answers</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{analysis.open_questions?.map((question, i) => <li key={i}>{question}</li>)}</ul></div>}
+          {(analysis.open_questions || []).length > 0 && <div><strong style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Questions that still need answers</strong><ul style={{ margin: "5px 0 0", paddingLeft: 20, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{analysis.open_questions?.map((question, i) => <li key={i}>{caregiverSafeGeneratedText(question) || "More information may be needed."}</li>)}</ul></div>}
         </article>
       ))}
     </section>
