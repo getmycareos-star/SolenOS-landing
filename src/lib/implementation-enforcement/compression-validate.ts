@@ -48,11 +48,11 @@ function resolveLimits(
 
   if (safetyOverride?.floor_risk_level === "critical") {
     return {
-      what_is_happening_max_words: CRITICAL_TOTAL_MAX_WORDS,
+      what_is_happening_max_words: Number.POSITIVE_INFINITY,
       what_matters_now_max_bullets: 3,
       what_to_ask_next_max_questions: 2,
       what_can_wait_max_bullets: 1,
-      total_max_words: CRITICAL_TOTAL_MAX_WORDS,
+      total_max_words: Number.POSITIVE_INFINITY,
     };
   }
 
@@ -100,7 +100,7 @@ export function validateOutputCompression(
     violations.push("can_wait_over_bullet_limit");
   }
 
-  if (countTotalWords(output) > limits.total_max_words) {
+  if (Number.isFinite(limits.total_max_words) && countTotalWords(output) > limits.total_max_words) {
     violations.push("total_over_word_limit");
   }
 
