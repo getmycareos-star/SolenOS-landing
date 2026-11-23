@@ -1538,7 +1538,7 @@ export function HistoryDrawer() {
                     )}
                   </dl>
                   {selectedRecord.significance_verdict && (
-                    <p className="history-detail-significance"><strong>Why this may matter:</strong> {caregiverStatusLabel(selectedRecord.significance_verdict) || caregiverSafeAssistantText(selectedRecord.significance_verdict) || "No further explanation is available."}</p>
+                    <p className="history-detail-significance"><strong>Why this may matter:</strong> {caregiverStatusLabel(selectedRecord.significance_verdict) || "No further explanation is available."}</p>
                   )}
                 </section>
 
