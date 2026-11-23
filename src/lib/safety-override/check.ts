@@ -15,7 +15,7 @@ export function buildSafetyOverrideState(
     return {
       active: true,
       floor_risk_level: "critical",
-      total_max_words: CRITICAL_TOTAL_MAX_WORDS,
+      total_max_words: null,
       require_critical_header: true,
     };
   }
@@ -53,7 +53,7 @@ export function applySafetyOverrideCheck(
       state,
       constraint_line: [
         `SAFETY_OVERRIDE: CRITICAL`,
-        `MAX_TOTAL_WORDS: ${CRITICAL_TOTAL_MAX_WORDS}`,
+        `NO_UNIVERSAL_WORD_CEILING: preserve all necessary safety information`,
         `REQUIRED_HEADER: ${CRITICAL_HEADER}`,
         `FORMAT: immediate action + minimal context only`,
       ].join(" | "),
