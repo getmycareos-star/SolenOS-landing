@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { postJSON } from "@/api/client";
-import { caregiverFieldLabel, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type AssistResult = {
   reply?: string;
@@ -168,7 +168,7 @@ export function LcrQwenInterpretation({
                           {evidence.source_excerpt && <blockquote>{evidence.source_excerpt}</blockquote>}
                           {evidence.observations?.map((observation, observationIndex) => (
                             <div key={"observation-" + observationIndex}>
-                              <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {observation.value || "Details not supplied"}</p>
+                              <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {caregiverSafeAssistantText(observation.value) || "Details not supplied"}</p>
                               {observation.reported_by && <p>Reported by: {observation.reported_by}</p>}
                               {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
                               {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
