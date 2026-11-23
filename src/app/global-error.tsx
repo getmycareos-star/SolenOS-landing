@@ -48,8 +48,7 @@ export default function GlobalError({ error, reset }: ErrorBoundaryProps) {
               marginBottom: "24px",
               lineHeight: 1.6,
             }}>
-              SolenOS encountered an unexpected error. Your care information is safe.
-              Please try again or refresh the page.
+              SolenOS could not finish showing this page. If you were saving an update, check your Care Record before trying again so you do not add the same information twice.
             </p>
             <div style={{
               display: "flex",
@@ -98,7 +97,7 @@ export default function GlobalError({ error, reset }: ErrorBoundaryProps) {
                 marginTop: "16px",
                 fontFamily: "monospace",
               }}>
-                Error ID: {error.digest}
+                Reference: {error.digest}
               </p>
             )}
           </div>
