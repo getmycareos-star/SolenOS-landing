@@ -214,6 +214,12 @@ const handoff = read("../src/components/workflows/CareHandoffSharing.tsx");
 const claimReview = read("../src/components/ClaimAssessmentPanel.tsx");
 const appointment = read("../src/components/workflows/AppointmentWorkspace.tsx");
 const detailedAppointment = read("../src/components/workflows/DetailedAppointmentWorkspace.tsx");
+assert.match(detailedAppointment, /caregiverSourceText\(item\.value\)/,
+  "appointment preparation must preserve accepted care detail wording");
+assert.match(detailedAppointment, /caregiverSourceText\(item\.title\)/,
+  "appointment preparation must preserve saved care and appointment titles");
+assert.match(detailedAppointment, /caregiverSourceText\(item\.description\)/,
+  "appointment preparation must preserve saved follow-up descriptions");
 assert.match(detailedAppointment, /caregiverSourceText\(item\.extracted_text\.slice\(0, 500\)\)/, "appointment document text must remain verbatim");
 const dailyCapture = read("../src/components/workflows/StructuredDailyCapture.tsx");
 const policySettings = read("../src/components/mvp-workspace/PolicySettingsPanel.tsx");
