@@ -322,6 +322,8 @@ assert.match(trustIndicators, /Some details are still missing/);
 assert.doesNotMatch(qwenAssist, /Living Care Record|AI-assisted interpretation|Suggestions are not saved to the Living Care Record/);
 assert.match(qwenAssist, /caregiverSafeGeneratedText\(claim\.text\)/,
   "legacy Qwen claims must use the caregiver language boundary");
+assert.match(qwenAssist, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\)/,
+  "legacy Qwen aggregate time-window labels must use caregiver-safe text");
 assert.match(qwenAssist, /caregiverSafeAssistantText\(source\.reported_by\)/,
   "legacy Qwen source attribution must not expose raw structured values");
 assert.match(qwenAssist, /caregiverSafeGeneratedText\(source\.source_state_label\)/,
