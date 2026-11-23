@@ -85,6 +85,8 @@ type Analysis = {
   total_page_count?: number | null;
   processed_page_numbers?: number[];
   unprocessed_page_numbers?: number[];
+  extraction_processed_page_count?: number | null;
+  extraction_processed_page_numbers?: number[];
   extraction_unprocessed_page_numbers?: number[];
   retryable_page_numbers?: number[];
   retry_exhausted_page_numbers?: number[];
@@ -293,7 +295,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {analysis.intelligence_status === "partial"
                 ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
                   ? `More details are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
-                  : `Some pages could not be read · ${analysis.processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
+                  : `Some pages could not be read · ${analysis.processed_page_count ?? analysis.extraction_processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
                 : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "SolenOS has not finished reading this document"}
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read yet: pages ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · still being read: pages ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · ready to try again: pages ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · could not be read because the file is too large: pages ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · could not be read: pages ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
