@@ -19,8 +19,8 @@ assert.equal(client.includes('export async function checkAuthState(): Promise<{ 
 
 assert.match(client, /\/api\/v1\/accounts\/login/);
 assert.match(client, /ANONYMOUS_TOKEN_KEY, result\.access_token/);
-assert.match(client, /ANONYMOUS_PERSON_KEY, result\.person_id/);
-assert.match(client, /ANONYMOUS_CAREGIVER_KEY, result\.caregiver_id/);
+assert.match(client, /setCareIdentity\(result\.person_id, result\.caregiver_id\)/);
+assert.match(client, /export function setCareIdentity\(personId: string, caregiverId: string\)/);
 assert.match(settings, /signInToAccount\(email, password\)/);
 assert.match(authProvider, /finally \{\s*if \(mounted\) setLoading\(false\)/);
 assert.match(authProvider, /catch \{\s*if \(mounted\) \{\s*setAuthenticated\(false\)/);
