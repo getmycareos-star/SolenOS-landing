@@ -1178,3 +1178,5 @@ assert.match(workspaceLayout, /caregiverStatusLabel\(active\.status\)/, "the sha
 
 assert.match(dementiaObservation, /setLoadFailed\(true\)/, "a failed observation refresh must be tracked separately from save errors");
 assert.match(dementiaObservation, /loadFailed && observations\.length > 0[\s\S]*?These are the last notes we could load\. Refresh to check for newer updates\./, "previously loaded notes must be identified as stale when refresh fails");
+
+assert.match(dementiaObservation, /!loading && !loadFailed && observations\.length === 0/, "an unavailable observation history must not be shown as an empty saved list");
