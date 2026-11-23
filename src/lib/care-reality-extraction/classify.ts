@@ -108,7 +108,7 @@ function looksLikeRecipientStateFragment(text: string): boolean {
   if (!t) return false;
   if (
     /\b(?:she|he|they|mom|dad|mother|father|grandma|grandpa)\b/i.test(t) &&
-    /\b(?:more|less|been|was|is|seemed|asked|tried|refus|eat|sleep|confused|upset|walk|left|leave)\b/i.test(
+    /\b(?:more|less|been|was|is|seemed|asked|tried|refus|eat|ate|eaten|drink|drank|had|sleep|confused|upset|walk|left|leave)\b/i.test(
       t,
     )
   ) {
