@@ -736,7 +736,16 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
     "/workspace/daily-care",
     { width: 390, height: 844 },
   );
-  await page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" }).click();
+  const followupsSummary = page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" });
+  if (await followupsSummary.count() === 0) {
+    const diagnostic = await page.evaluate(() => ({
+      url: location.pathname,
+      body: document.body.innerText.slice(0, 1800),
+      requests: (window.__solenosE2EFetchTrace || []).slice(-20).map(({ method, path, status, error }) => ({ method, path, status, error })),
+    }));
+    throw new Error(`Daily Care did not render its Follow-ups section: ${JSON.stringify(diagnostic)}`);
+  }
+  await followupsSummary.click();
   const viewFollowups = page.getByRole("link", { name: "Open Follow-ups", exact: true });
   await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
   await viewFollowups.click();
