@@ -195,4 +195,20 @@ if (!nonDoc.skipped || nonDoc.nodes.length > 0) {
 }
 console.log("✓ non-document input skipped");
 
+
+const documentReviewSource = fs.readFileSync(
+  path.join(process.cwd(), "src/components/DocumentIntelligenceReview.tsx"),
+  "utf-8",
+);
+if (!documentReviewSource.includes("function documentExtractionIsComplete")) {
+  throw new Error("document review must derive completeness from persisted extraction state");
+}
+if (!documentReviewSource.includes("analysis.interpretation_blocked !== true")) {
+  throw new Error("document review must respect the backend interpretation block");
+}
+if (!documentReviewSource.includes("{documentExtractionIsComplete(analysis) ? analysis.observations.map")) {
+  throw new Error("document review must not expose candidates while extraction is incomplete");
+}
+console.log("✓ saved document review cannot display incomplete extraction as complete");
+
 console.log("\n✓ document intelligence layer enforced");
