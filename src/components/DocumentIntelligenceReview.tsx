@@ -105,11 +105,24 @@ type Analysis = {
 type ProcessingJob = { evidence_id: string; job_id: string; status: "queued" | "processing" | "failed"; attempt_count: number; error_code?: string | null };
 type ListResponse = { items?: Analysis[]; processing_jobs?: ProcessingJob[] };
 
-function documentExtractionIsComplete(analysis: Analysis): boolean {
+export function documentExtractionIsComplete(analysis: Analysis): boolean {
+  const unresolvedPageGroups = [
+    analysis.extraction_unprocessed_page_numbers,
+    analysis.unprocessed_page_numbers,
+    analysis.retryable_page_numbers,
+    analysis.retry_exhausted_page_numbers,
+    analysis.blocked_page_numbers,
+    analysis.unreadable_page_numbers,
+  ];
+  const processedPageCount = analysis.extraction_processed_page_count ?? analysis.processed_page_count;
+  const totalPageCount = analysis.total_page_count ?? analysis.page_count;
+  const pageCountIsComplete = totalPageCount === undefined
+    || (typeof processedPageCount === "number" && processedPageCount >= totalPageCount);
+
   return analysis.interpretation_blocked !== true
     && analysis.extraction_status === "available"
-    && (analysis.extraction_unprocessed_page_numbers?.length ?? 0) === 0
-    && (analysis.unreadable_page_numbers?.length ?? 0) === 0;
+    && pageCountIsComplete
+    && unresolvedPageGroups.every((pages) => (pages?.length ?? 0) === 0);
 }
 type LibraryDocument = { id: string; title: string };
 
