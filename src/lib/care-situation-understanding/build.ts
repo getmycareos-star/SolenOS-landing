@@ -187,6 +187,12 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
   for (const e of extraction.events) {
     facts.push({ kind: "event", text: e.description, source_fragment: e.raw_fragment });
   }
+  // Actions are time-bound care events in the understanding projection. Keep
+  // them visible instead of dropping a factual capture when extraction classifies
+  // an ordinary performed action (for example, eating a meal or calling a clinic).
+  for (const action of extraction.actions) {
+    facts.push({ kind: "event", text: action.description, source_fragment: action.raw_fragment });
+  }
   for (const o of extraction.observations) {
     const claim = classifyEpistemicClaim(o.raw_fragment || o.description);
     if (claim === "caregiver_interpretation" || looksLikeRecipientSelfReportUncertain(o.raw_fragment || o.description)) {
@@ -428,6 +434,12 @@ export async function buildCareSituationUnderstanding(params: {
 
   for (const e of extraction.events) {
     facts.push({ kind: "event", text: e.description, source_fragment: e.raw_fragment });
+  }
+  // Actions are time-bound care events in the understanding projection. Keep
+  // them visible instead of dropping a factual capture when extraction classifies
+  // an ordinary performed action (for example, eating a meal or calling a clinic).
+  for (const action of extraction.actions) {
+    facts.push({ kind: "event", text: action.description, source_fragment: action.raw_fragment });
   }
   for (const o of extraction.observations) {
     const claim = classifyEpistemicClaim(o.raw_fragment || o.description);
