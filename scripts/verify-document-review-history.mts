@@ -14,6 +14,23 @@ assert(
 );
 assert(source.includes("reviewEvents"), "review history events must be retained in component state");
 assert(
+  source.includes("const loadSequence = useRef(0)") &&
+  source.includes("sequence !== loadSequence.current") &&
+  source.includes("sequence === loadSequence.current"),
+  "older document-list responses must not overwrite a newer refresh or clear its loading state",
+);
+assert(
+  source.includes("historyRequestSequence") &&
+  source.includes("historyRequestSequence.current[analysisId] !== requestSequence"),
+  "stale review-history responses must not overwrite a refreshed analysis or clear a newer request",
+);
+assert(
+  source.includes("expected_source_quote: sourceQuote") &&
+  source.includes("expected_subject: candidate.subject"),
+  "caregiver decisions must be bound to the exact source wording and subject shown in the review",
+);
+
+assert(
   source.includes("ApiResponseError") &&
   source.includes("error.status === 409") &&
   source.includes("await load();") &&
