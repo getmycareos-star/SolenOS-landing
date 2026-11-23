@@ -217,6 +217,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const pendingTurnId = useRef<string | null>(null)
   const pendingTurnText = useRef<string | null>(null)
   const userInteractedRef = useRef(false)
+  const conversationScopeRef = useRef<string | null>(null)
 
   const checkAvailability = useCallback(async () => {
     setAvailability('checking')
@@ -260,6 +261,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       try {
         const session = await ensureAnonymousSession()
         storageKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+        conversationScopeRef.current = storageKey
         let savedSessionId: string | null = null
         try {
           savedSessionId = window.localStorage.getItem(storageKey)
@@ -382,13 +384,24 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
     try {
       const session = await ensureAnonymousSession()
+      const activeScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+      const scopeChanged = conversationScopeRef.current !== null && conversationScopeRef.current !== activeScopeKey
+      if (scopeChanged) {
+        setMessages([userMsg])
+        setSessionId(null)
+        setPendingCareUpdates([])
+        setCareUpdateLoadFailed(false)
+        careUpdateLoadSequenceRef.current += 1
+      }
+      conversationScopeRef.current = activeScopeKey
+      const activeSessionId = scopeChanged ? null : sessionId
       const isOrientationTurn = shouldUseLcrOrientationEndpoint(submittedText)
       const response = isOrientationTurn
         ? await postJSON('/api/lcr/orientation', { raw_input: submittedText }) as any
         : await postJSON('/conversation/message', {
             person_id: session.person.id,
             text: submittedText,
-            session_id: sessionId,
+            session_id: activeSessionId,
             client_turn_id: clientTurnId,
           }) as any
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
