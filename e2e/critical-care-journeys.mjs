@@ -1022,16 +1022,22 @@ await record("01c workspace links, browser back, More menu and account form vali
     "professional briefings remain private review/export and must not expose the family-sharing approval control");
   const appointmentClaimReview = exportDialog.getByRole("checkbox", { name: /I checked “.*” against its saved source wording, dates and what is still unclear/ });
   const appointmentClaimReviewCount = await appointmentClaimReview.count();
+  // Professional appointment exports intentionally exclude caregiver-profile
+  // claims. The UI's caregiver-visible projection is the review boundary; do not
+  // demand a checkbox for a source that must not be shown to the professional.
+  const appointmentExportSections = appointmentDraft.generation.sections.filter(
+    item => !String(item.source_ref || "").startsWith("caregiver_profiles:"),
+  );
   const expectedAppointmentClaimReviewCount = new Set(
-    appointmentDraft.generation.sections.map(item => item.source_ref),
+    appointmentExportSections.map(item => item.source_ref),
   ).size;
   assert.equal(
     appointmentClaimReviewCount,
     expectedAppointmentClaimReviewCount,
-    `professional appointment export must require a separate review for every source claim: ${JSON.stringify({
+    `professional appointment export must require a separate review for every caregiver-visible source claim: ${JSON.stringify({
       actualReviewControls: appointmentClaimReviewCount,
       expectedSourceClaims: expectedAppointmentClaimReviewCount,
-      sourceRefs: appointmentDraft.generation.sections.map(item => item.source_ref),
+      sourceRefs: appointmentExportSections.map(item => item.source_ref),
     })}`,
   );
   for (let index = 0; index < await appointmentClaimReview.count(); index += 1) {
