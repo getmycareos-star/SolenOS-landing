@@ -49,3 +49,7 @@ assert.match(source, /const requestSequence = \+\+loadSequenceRef\.current[\s\S]
 const handoffsPage = fs.readFileSync("src/app/workspace/handoffs/page.tsx", "utf8");
 assert.match(handoffsPage, /addEventListener\("personIdChanged", clearDraftForSessionChange\)[\s\S]*?setDraft\(null\)[\s\S]*?setAudience\(null\)[\s\S]*?setPurpose\(null\)/,
   "an open handoff draft must not carry over when the active care recipient or caregiver changes");
+
+assert.match(source, /appointmentOptionsError &&[\s\S]*?We couldn't check saved appointments\. Refresh before preparing an appointment briefing/, "an unavailable appointment list must not be shown as an empty appointment list");
+assert.match(source, /!loading && !appointmentOptionsError && appointmentOptions\.length === 0[\s\S]*?No saved appointments are available/, "the no-appointments message must appear only after a successful empty read");
+assert.match(source, /preparePurpose === "professional_appointment" && appointmentOptionsError[\s\S]*?return;/, "appointment briefings must not be prepared against an unverified appointment list");
