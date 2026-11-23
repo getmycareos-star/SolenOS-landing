@@ -7,6 +7,13 @@ import { execFileSync } from "node:child_process";
 const frontend = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backend = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 const requireLiveQwen = process.env.SOLENOS_REQUIRE_LIVE_QWEN === "1";
+const openApiResponse = await fetch(new URL("/openapi.json", backend));
+assert.equal(openApiResponse.status, 200, "the isolated backend must expose its active API contract");
+const openApi = await openApiResponse.json();
+assert.ok(
+  openApi.components?.schemas?.QwenAssistRequest?.properties?.source_event_id,
+  "Companion assist requests must accept a source-event anchor for LCR-grounded interpretation",
+);
 const browser = await chromium.launch({ headless: true });
 const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
