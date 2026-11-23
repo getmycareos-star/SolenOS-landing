@@ -907,11 +907,36 @@ assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.va
   "saved observation wording must be readable while technical diagnostics remain hidden");
 
 
+
+const careRecipientNameGate = read("../src/components/mvp-workspace/CareRecipientNameGate.tsx");
+const correctionForm = read("../src/components/trust/CorrectThis.tsx");
+const feedbackForm = read("../src/components/mvp-workspace/HelpImproveSolenos.tsx");
+const consentGate = read("../src/components/mvp-workspace/ConsentGatePanel.tsx");
+const accessibleForm = read("../src/components/accessible/AccessibleForm.tsx");
+const cameraPermission = read("../src/lib/permissions/useCameraPermission.ts");
+const locationPermission = read("../src/lib/permissions/useLocationPermission.ts");
+
 const settingsPage = read("../src/app/workspace/settings/page.tsx");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.title\)/, "notification titles must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.body\)/, "notification bodies must use caregiver-safe generated copy");
 assert.match(settingsPage, /caregiverStatusLabel\(item\.priority\)/, "notification priority codes must be translated before display");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(erasureRequest\.message\)/, "privacy request messages from the server must use caregiver-safe generated copy");
+
+assert.match(careRecipientNameGate, /setError\(caregiverSafeErrorMessage\(\)\)/,
+  "care-recipient naming must not show raw server errors");
+assert.match(correctionForm, /setSubmitError\(caregiverSafeErrorMessage\(\)\)/,
+  "correction forms must not show raw server errors");
+assert.match(feedbackForm, /caregiverSafeErrorMessage\(\)/,
+  "feedback forms must not show raw server errors");
+assert.match(consentGate, /setError\(caregiverSafeErrorMessage\(\)\)/,
+  "privacy consent must not show raw server errors");
+assert.match(accessibleForm, /announce\(caregiverSafeErrorMessage\(\)\)/,
+  "accessible form error announcements must not read raw server details aloud");
+assert.doesNotMatch(cameraPermission, /message = err\.message/,
+  "camera permission errors must not expose raw browser diagnostics");
+assert.doesNotMatch(locationPermission, /message = err\.message/,
+  "location permission errors must not expose raw browser diagnostics");
+
 
 assert.match(evidenceReview, /item\.reviewed_by_caregiver_id \? "Checked by a caregiver" : "Reviewer not recorded"/,
   "missing reviewer identity must be described as unrecorded, not as an unavailable person");
