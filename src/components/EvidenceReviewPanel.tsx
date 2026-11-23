@@ -210,6 +210,7 @@ type HistoricalSnapshotItem = {
   key: string;
   title: string;
   detail: string;
+  detailTruncated: boolean;
   date: string;
   status: string;
   source: string;
@@ -246,6 +247,14 @@ function historicalSnapshotDetails(value: Record<string, unknown> | null): Histo
     }
     return '';
   };
+  const pickSource = (row: Record<string, unknown>, keys: readonly string[]) => {
+    for (const key of keys) {
+      const raw = row[key];
+      if (typeof raw === 'string' && raw.trim()) return raw;
+      if (typeof raw === 'number') return String(raw);
+    }
+    return '';
+  };
   const output: HistoricalSnapshotDetail[] = [];
   for (const config of configs) {
     const rows = (tables as Record<string, unknown>)[config.table];
@@ -253,10 +262,12 @@ function historicalSnapshotDetails(value: Record<string, unknown> | null): Histo
     const items = rows.slice(0, 25).filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object').map((row, index) => {
       const rawDate = pick(row, config.date);
       const parsedDate = rawDate ? new Date(rawDate) : null;
+      const sourceDetail = pickSource(row, config.detail);
       return {
         key: String(row.id ?? index),
         title: reviewStatusLabel(pick(row, config.title) || config.label),
-        detail: (pick(row, config.detail) || 'No extra details were saved.').slice(0, 500),
+        detail: sourceDetail ? sourceDetail.slice(0, 500) : 'No extra details were saved.',
+        detailTruncated: sourceDetail.length > 500,
         date: parsedDate && Number.isFinite(parsedDate.getTime()) ? parsedDate.toLocaleString() : 'Date not recorded',
         status: pick(row, config.status),
         source: pick(row, config.source),
@@ -963,7 +974,8 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
                   {section.items.map(item => (
                     <li key={item.key} style={{ marginBottom: 8 }}>
                       <strong>{caregiverSafeAssistantText(item.title) || "Saved care detail"}</strong>
-                      <p>{caregiverSafeAssistantText(item.detail) || "The saved details could not be displayed in a readable form."}</p>
+                      <p>{caregiverReadableCaptureText(item.detail) || "The saved details could not be displayed in a readable form."}</p>
+                      {item.detailTruncated && <small>Showing the first 500 characters of this saved detail.</small>}
                       <small style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>{item.date}{item.status ? ` · ${reviewStatusLabel(item.status)}` : ''}{item.source ? ` · From: ${reviewStatusLabel(item.source)}` : ''}</small>
                     </li>
                   ))}
