@@ -766,8 +766,8 @@ SolenOS only asks when a missing detail could change what happens next. You can 
             {!historyError && history.length === 0 && <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>No earlier answers have been saved.</p>}
             <ol style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
               {history.map((item) => <li key={item.id}>
-                <p>{item.answer?.trim() || "The saved answer is available for review."}</p>
-                <p>Who shared this: {item.answer_provenance?.trim() || "Not recorded"}</p>
+                <p>{caregiverSafeAssistantText(item.answer) || "The saved answer is available for review."}</p>
+                <p>Who shared this: {caregiverSafeAssistantText(item.answer_provenance) || "Not recorded"}</p>
                 <p>Saved {displayDate(item.created_at)}</p>
               </li>)}
             </ol>
