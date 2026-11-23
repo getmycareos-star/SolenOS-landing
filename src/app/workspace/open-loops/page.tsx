@@ -238,7 +238,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       : <p className="followup-reason"><AlertCircle size={14} /> {reasonCandidates.length > 0
           ? "The explanation could not be shown clearly. Check the saved care information before relying on it."
           : "No reason was recorded for this follow-up yet."}</p>}
-    {reasonLines.length > 0 && reasonLines.length < reasonCandidates.length && <p className="followup-reason">Some explanation could not be shown clearly. Check the saved care information before relying on it.</p>
+    {reasonLines.length > 0 && reasonLines.length < reasonCandidates.length && <p className="followup-reason">Some explanation could not be shown clearly. Check the saved care information before relying on it.</p>}
     <div className="followup-meta">
       <span><Clock3 size={14} /> {dateLabel(item.occurred_at || item.recorded_at)}</span>
       <span><FileText size={14} /> {evidenceIds.length} related {evidenceIds.length === 1 ? "note or document" : "notes or documents"}</span>
