@@ -180,6 +180,7 @@ export default function QuickDailyCheckIn() {
       vitals: [],
       scales: [],
       notes: noteText,
+      occurred_at_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       quick_check_in: {
         schema_version: 1,
         kind,
