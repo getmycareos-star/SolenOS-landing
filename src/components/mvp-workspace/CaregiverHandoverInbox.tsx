@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRightLeft, Check } from "lucide-react";
 import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -30,19 +30,32 @@ export function CaregiverHandoverInbox() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [failedTransferSources, setFailedTransferSources] = useState<Array<"responsibility" | "primary">>([]);
+  const loadSequenceRef = useRef(0);
+  const loadedScopeRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
+    const requestSequence = ++loadSequenceRef.current;
+    const isCurrentRequest = () => loadSequenceRef.current === requestSequence;
     setLoading(true);
     setError("");
     setFailedTransferSources(["responsibility", "primary"]);
     try {
       const session = await ensureAnonymousSession();
+      if (!isCurrentRequest()) return;
       const caregiverId = session.caregiver.id || getCaregiverId();
-      if (!caregiverId) throw new Error("Caregiver account unavailable");
+      const personId = session.person?.id;
+      if (!caregiverId || !personId) throw new Error("Caregiver account unavailable");
+      const scopeKey = personId + ":" + caregiverId;
+      if (loadedScopeRef.current && loadedScopeRef.current !== scopeKey) {
+        setResponsibilityTransfers([]);
+        setPrimaryTransfers([]);
+      }
+      loadedScopeRef.current = scopeKey;
       const [responsibilities, primary] = await Promise.allSettled([
         getJSON("/caregiver-access/responsibility-transfers") as Promise<ResponsibilityTransfer[]>,
         getJSON("/caregiver-access/primary-transfers") as Promise<PrimaryTransfer[]>,
       ]);
+      if (!isCurrentRequest()) return;
       // A failed request must not clear requests already loaded from the other
       // source or from an earlier successful refresh.
       const failed: Array<"responsibility" | "primary"> = [];
@@ -61,14 +74,24 @@ export function CaregiverHandoverInbox() {
         setError("We couldn't check all pending care handovers. Please try again.");
       }
     } catch {
-      setFailedTransferSources(["responsibility", "primary"]);
-      setError("We couldn't check for pending care handovers. Please try again.");
+      if (isCurrentRequest()) {
+        setResponsibilityTransfers([]);
+        setPrimaryTransfers([]);
+        loadedScopeRef.current = null;
+        setFailedTransferSources(["responsibility", "primary"]);
+        setError("We couldn't check for pending care handovers. Please try again.");
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const refreshForSessionChange = () => void load();
+    window.addEventListener("personIdChanged", refreshForSessionChange);
+    void load();
+    return () => window.removeEventListener("personIdChanged", refreshForSessionChange);
+  }, [load]);
 
   const respond = async (kind: "responsibility" | "primary", id: string, decision: "accept" | "reject") => {
     setBusy(true);
