@@ -7,7 +7,6 @@ import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from '@/a
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
 import { caregiverFieldLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { RecordState } from '@/components/ui/RecordState'
-import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
 
 interface ClaimSourceReference {
   record_type: string
@@ -471,15 +470,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       }
       conversationScopeRef.current = activeScopeKey
       const activeSessionId = scopeChanged ? null : sessionId
-      const isOrientationTurn = shouldUseLcrOrientationEndpoint(submittedText)
-      const response = isOrientationTurn
-        ? await postJSON('/api/lcr/orientation', { raw_input: submittedText }) as any
-        : await postJSON('/conversation/message', {
-            person_id: session.person.id,
-            text: submittedText,
-            session_id: activeSessionId,
-            client_turn_id: clientTurnId,
-          }) as any
+      // Every Companion turn, including greetings and thanks, uses the same
+      // authenticated conversation pipeline so it can restore prior turns,
+      // persist the exchange, and retain one consistent response contract.
+      const response = await postJSON('/conversation/message', {
+        person_id: session.person.id,
+        text: submittedText,
+        session_id: activeSessionId,
+        client_turn_id: clientTurnId,
+      }) as any
       if (!isCurrentScopeRequest() || activeCompanionConversationStorageKey() !== activeScopeKey) {
         setMessages(previous => previous.filter(message => message !== userMsg))
         return
