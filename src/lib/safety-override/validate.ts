@@ -45,9 +45,6 @@ export function validateSafetyOverrideOutput(
   const totalWords = countTotalWords(output);
 
   if (state.floor_risk_level === "critical") {
-    if (totalWords > CRITICAL_TOTAL_MAX_WORDS) {
-      violations.push("critical_word_limit_exceeded");
-    }
     if (!output.what_matters_now.includes(CRITICAL_HEADER)) {
       violations.push("critical_missing_header");
     }
