@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { caregiverSourceText } from "@/lib/caregiver-language";
 
@@ -49,31 +49,40 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const loadSequenceRef = useRef(0);
+
   const load = useCallback(async () => {
+    const requestSequence = ++loadSequenceRef.current;
+    const isCurrentRequest = () => loadSequenceRef.current === requestSequence;
     setLoading(true);
     setLoadFailed(false);
     setError("");
     try {
       const session = await ensureAnonymousSession();
+      if (!isCurrentRequest()) return;
       if (session.person?.id !== personId) {
         throw new Error("The selected care record does not match the secure session.");
       }
       setCaregiverId(session.caregiver.id);
       const rows = await getJSON("/care-continuity/caregiver-observations?limit=100");
+      if (!isCurrentRequest()) return;
       if (!Array.isArray(rows)) throw new Error("The observation history could not be read.");
       setObservations((rows as DementiaObservation[]).filter(
         (row) => typeof row.observation_category === "string" && row.observation_category.trim().toLowerCase().startsWith("dementia."),
       ));
     } catch {
-      setLoadFailed(true);
-      setError("We couldn’t load your saved notes. Check your connection and try again.");
+      if (isCurrentRequest()) {
+        setLoadFailed(true);
+        setError("We couldn’t load your saved notes. Check your connection and try again.");
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
     }
   }, [personId]);
 
   useEffect(() => {
     void load();
+    return () => { loadSequenceRef.current += 1; };
   }, [load]);
 
   async function saveObservation() {
