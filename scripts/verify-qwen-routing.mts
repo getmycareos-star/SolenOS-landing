@@ -305,3 +305,7 @@ assert.match(apiClient, /signal: requestOptions\.signal/,
 requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
   "source_event_id: sourceEventId",
 ]);
+
+requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
+  "result.source_event_ids.includes(sourceEventId)",
+]);
