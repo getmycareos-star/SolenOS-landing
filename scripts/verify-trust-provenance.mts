@@ -161,10 +161,13 @@ console.log("✓ persisted evidence review is reachable from current-care unders
 
 const evidenceReviewPanel = path.join(root, "src/components/EvidenceReviewPanel.tsx");
 const evidenceReviewSource = fs.readFileSync(evidenceReviewPanel, "utf8");
-for (const fieldLabel of ["Source category", "Evidence kind", "Epistemic status", "Original author", "Reported by", "Collected by", "Event time", "Uploaded at", "Ingested at", "Stored source-text integrity hash"]) {
-  assert(evidenceReviewSource.includes(fieldLabel), `evidence review exposes ${fieldLabel}`);
+for (const fieldLabel of ["Type of note or document", "How it reached your Care Record", "What we know about this information", "Originally written by", "Shared by", "Entered by", "When it happened", "Added to your Care Record", "When it was entered", "When it was shared", "Saved on", "Saved wording", "Original file"]) {
+  assert(evidenceReviewSource.includes(fieldLabel), `evidence review exposes caregiver-facing detail: ${fieldLabel}`);
 }
-assert(evidenceReviewSource.includes("does not authenticate the original author"), "hash limitations are explicit");
+for (const technicalLabel of ["Source category", "Evidence kind", "Epistemic status", "Stored source-text integrity hash"]) {
+  assert(!evidenceReviewSource.includes(technicalLabel), `caregiver-facing evidence review must not expose ${technicalLabel}`);
+}
+assert(evidenceReviewSource.includes("does not prove who created the original"), "file matching limitations are explained in caregiver language");
 console.log("✓ source attribution and event/reporting/ingestion times are visible with hash limitations");
 
 const provenanceModel = path.join(root, "src/lib/trust-provenance/provenance-model.ts");
