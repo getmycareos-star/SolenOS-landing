@@ -262,6 +262,10 @@ assert.match(currentUnderstanding, /failed_sources\?: string\[\]/,
 
 assert.match(currentUnderstanding, /coverage\.status === "stale"[\s\S]*?previously saved details remain available/,
   "a failed category retry must preserve and label previously retrieved care information as stale");
+assert.match(currentUnderstanding, /suggestion_version: item\.version/,
+  "follow-up approval must carry the version actually shown to the caregiver");
+assert.match(currentUnderstanding, /cause instanceof ApiResponseError && cause\.status === 409[\s\S]*?void load\(true\)/,
+  "a stale follow-up approval must trigger a refresh instead of silently retrying old details");
 
 assert.match(dailyCare, /schema_status !== "complete"[\s\S]*?missing_required_sources[\s\S]*?missing_optional_sources[\s\S]*?failed_sources/, "Daily Care must disclose incomplete current-care retrieval instead of treating partial results as complete");
 assert.match(dailyCare, /Some saved care information could not be fully checked\. This view may be incomplete/, "a partial current-care projection must be explained in plain language");
