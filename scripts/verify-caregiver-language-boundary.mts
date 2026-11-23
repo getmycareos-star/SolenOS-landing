@@ -289,30 +289,30 @@ assert.match(companion, /caregiverSafeAssistantText\(source\.reported_by\)/,
   "Companion source attribution must not expose raw structured values");
 assert.match(companion, /caregiverSafeAssistantText\(source\.entered_by\)/,
   "Companion source entry attribution must use readable labels");
-assert.match(companion, /source\.correction_note && <p>\{source\.correction_note\}/, "caregiver correction notes must be preserved exactly");
-assert.match(companion, /source\.correction_rationale && <p>Why it was corrected: \{source\.correction_rationale\}/, "caregiver correction reasons must be preserved exactly");
-assert.match(companion, /source\.previous_source_excerpt && <blockquote>Earlier wording: \{source\.previous_source_excerpt\}/, "earlier source wording must be preserved exactly");
-assert.match(companion, /source\.source_excerpt && <blockquote>\{source\.source_excerpt\}/, "original source excerpts must be preserved exactly");
-assert.match(companion, /item\.source_excerpt && <blockquote>\{item\.source_excerpt\}/, "related source excerpts must be preserved exactly");
+assert.match(companion, /source\.correction_note && <p>\{caregiverSourceText\(source\.correction_note\)\}/, "caregiver correction notes must be preserved exactly");
+assert.match(companion, /source\.correction_rationale && <p>Why it was corrected: \{caregiverSourceText\(source\.correction_rationale\)\}/, "caregiver correction reasons must be preserved exactly");
+assert.match(companion, /source\.previous_source_excerpt && <blockquote>Earlier wording: \{caregiverSourceText\(source\.previous_source_excerpt\)\}/, "earlier source wording must be preserved exactly");
+assert.match(companion, /source\.source_excerpt && <blockquote>\{caregiverSourceText\(source\.source_excerpt\)\}/, "original source excerpts must be preserved exactly");
+assert.match(companion, /item\.source_excerpt && <blockquote>\{caregiverSourceText\(item\.source_excerpt\)\}/, "related source excerpts must be preserved exactly");
 assert.match(companion, /caregiverSafeGeneratedText\(observation\.label\).*?\{observation\.value\}/, "reported observation values must remain exact source text");
-assert.match(companion, /observation\.source_excerpt && <blockquote>\{observation\.source_excerpt\}/, "observation source excerpts must be preserved exactly");
+assert.match(companion, /observation\.source_excerpt && <blockquote>\{caregiverSourceText\(observation\.source_excerpt\)\}/, "observation source excerpts must be preserved exactly");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.reported_by\)/,
   "LCR interpretation source attribution must use caregiver-safe text");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.entered_by\)/,
   "LCR interpretation entry attribution must use caregiver-safe text");
-assert.match(lcrQwenInterpretation, /source\.source_excerpt && <blockquote>\{source\.source_excerpt\}/,
+assert.match(lcrQwenInterpretation, /source\.source_excerpt && <blockquote>\{caregiverSourceText\(source\.source_excerpt\)\}/,
   "LCR interpretation must preserve exact source excerpts");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.reported_by\)/,
   "Related LCR evidence attribution must use caregiver-safe text");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.entered_by\)/,
   "Related LCR evidence entry attribution must use caregiver-safe text");
-assert.match(lcrQwenInterpretation, /evidence\.source_excerpt && <blockquote>\{evidence\.source_excerpt\}/,
+assert.match(lcrQwenInterpretation, /evidence\.source_excerpt && <blockquote>\{caregiverSourceText\(evidence\.source_excerpt\)\}/,
   "related LCR evidence excerpts must be preserved exactly");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.reported_by\)/,
   "LCR observation attribution must use caregiver-safe text");
 assert.match(lcrQwenInterpretation, /caregiverSafeGeneratedText\(observation\.label\).*?\{observation\.value\}/,
   "LCR observation values must preserve the original reported wording");
-assert.match(lcrQwenInterpretation, /observation\.source_excerpt && <blockquote>\{observation\.source_excerpt\}/,
+assert.match(lcrQwenInterpretation, /observation\.source_excerpt && <blockquote>\{caregiverSourceText\(observation\.source_excerpt\)\}/,
   "LCR observation source excerpts must be preserved exactly");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\)/,
   "LCR aggregate time-window labels must use caregiver-safe text");
