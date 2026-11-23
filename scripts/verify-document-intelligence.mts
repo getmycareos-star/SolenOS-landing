@@ -27,6 +27,7 @@ import {
 } from "../src/lib/trust-disclaimer-footer";
 import { withMeta } from "../src/lib/response-validator";
 import { VERIFY_VALID_SOLENOS } from "./fixtures/solenos-valid";
+import { documentExtractionIsComplete } from "../src/components/DocumentIntelligenceReview";
 
 console.log("=== SolenOS — Document Intelligence Layer ===\n");
 
@@ -210,5 +211,38 @@ if (!documentReviewSource.includes("{documentExtractionIsComplete(analysis) ? an
   throw new Error("document review must not expose candidates while extraction is incomplete");
 }
 console.log("✓ saved document review cannot display incomplete extraction as complete");
+
+const completeDocument = {
+  interpretation_blocked: false,
+  extraction_status: "available",
+  page_count: 3,
+  extraction_processed_page_count: 3,
+  observations: [],
+};
+if (!documentExtractionIsComplete(completeDocument)) {
+  throw new Error("fully read document must be eligible for review");
+}
+for (const unresolvedField of [
+  "extraction_unprocessed_page_numbers",
+  "unprocessed_page_numbers",
+  "retryable_page_numbers",
+  "retry_exhausted_page_numbers",
+  "blocked_page_numbers",
+  "unreadable_page_numbers",
+] as const) {
+  if (documentExtractionIsComplete({ ...completeDocument, [unresolvedField]: [2] })) {
+    throw new Error(`document with unresolved ${unresolvedField} must remain incomplete`);
+  }
+}
+if (documentExtractionIsComplete({ ...completeDocument, extraction_processed_page_count: 2 })) {
+  throw new Error("document with fewer processed pages than its page count must remain incomplete");
+}
+if (documentExtractionIsComplete({ ...completeDocument, extraction_processed_page_count: undefined })) {
+  throw new Error("known page count without a processed-page count must remain incomplete");
+}
+if (documentExtractionIsComplete({ ...completeDocument, interpretation_blocked: true })) {
+  throw new Error("interpretation-blocked document must remain incomplete");
+}
+console.log("✓ document completeness rejects every unresolved-page state and page-count mismatch");
 
 console.log("\n✓ document intelligence layer enforced");
