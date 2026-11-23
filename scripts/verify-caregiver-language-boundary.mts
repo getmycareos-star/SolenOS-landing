@@ -995,6 +995,12 @@ assert.match(conflictResolution, /caregiverSafeGeneratedText\(selected\.descript
 assert.match(claimAssessment, /caregiverSafeGeneratedText\(selectedClaim\.source_label\)/, "generated claim source labels must use the caregiver language boundary");
 assert.match(claimAssessment, /caregiverSafeGeneratedText\(edge\.rationale\)/, "generated review dependency explanations must use the caregiver language boundary");
 assert.match(claimAssessment, /caregiverSafeGeneratedText\(assessmentImpact\.interpretation_limit\)/, "generated review limits must use the caregiver language boundary");
+assert.match(claimAssessment, /caregiverSafeAssistantText\(selectedClaim\.asserted_value\)/, "reported claim wording must use readable caregiver text");
+assert.match(claimAssessment, /caregiverSafeAssistantText\(link\.source_passage\) \|\| ""/, "filtered source quotations must not be replaced by invented text in editable fields");
+assert.match(claimAssessment, /link\.source_passage && !caregiverSafeAssistantText\(link\.source_passage\)/, "unreadable source quotations must prompt the caregiver to copy the original wording again");
+assert.match(claimAssessment, /caregiverSafeAssistantText\(link\.source_passage\) \|\| "The original wording could not be displayed\."/,
+  "historical source quotations must not expose raw structured metadata");
+
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(whyItMatters\)/, "generated reasons shown to caregivers must use the caregiver language boundary");
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(remainsUnclear\)/, "generated uncertainty explanations must use the caregiver language boundary");
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(couldClarify\)/, "generated next-step suggestions must use the caregiver language boundary");
