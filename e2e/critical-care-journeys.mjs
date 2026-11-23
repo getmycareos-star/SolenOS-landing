@@ -1020,7 +1020,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "missing allergy integration must be explicit and must not be interpreted as no allergies");
   assert.equal(await exportDialog.getByRole("checkbox", { name: /I checked each included detail against its saved source/ }).count(), 0,
     "professional briefings remain private review/export and must not expose the family-sharing approval control");
-  const appointmentClaimReview = exportDialog.getByRole("checkbox", { name: /I checked “.*” against its saved source wording, dates and uncertainty labels/ });
+  const appointmentClaimReview = exportDialog.getByRole("checkbox", { name: /I checked “.*” against its saved source wording, dates and what is still unclear/ });
   const appointmentClaimReviewCount = await appointmentClaimReview.count();
   const expectedAppointmentClaimReviewCount = new Set(
     appointmentDraft.generation.sections.map(item => item.source_ref),
