@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
@@ -137,23 +137,31 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const [textErrors, setTextErrors] = useState<Record<string, string>>({});
   const [historyLoading, setHistoryLoading] = useState<Record<string, boolean>>({});
   const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
+  const loadSequence = useRef(0);
 
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     setLoading(true);
     setError(null);
     try {
       await ensureAnonymousSession();
       const result = await getJSON("/documents/intelligence") as ListResponse;
+      if (sequence !== loadSequence.current) return;
       const summaries = Array.isArray(result.items) ? result.items : [];
       setItems(summaries);
       setProcessingJobs(Array.isArray(result.processing_jobs) ? result.processing_jobs : []);
     } catch {
+      if (sequence !== loadSequence.current) return;
       setError("Saved document reviews could not be loaded. Retry without re-uploading the original.");
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
   }, []);
 
+  useEffect(() => () => {
+    // Invalidate in-flight requests when this review panel unmounts.
+    loadSequence.current += 1;
+  }, []);
 
   const loadReviewHistory = useCallback(async (analysisId: string) => {
     const existing = items.find((item) => item.analysis_id === analysisId);
@@ -241,6 +249,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       const reviewResult = await postJSON("/documents/intelligence/" + encodeURIComponent(analysis.analysis_id) + "/review", {
         candidate_index: candidateIndex,
         decision,
+        expected_source_quote: sourceQuote,
+        expected_subject: candidate.subject,
         ...(decision === "correct" ? {
           corrected_subject: correctedSubject,
           corrected_observation: sourceQuote,
