@@ -53,3 +53,10 @@ assert.match(handoffsPage, /addEventListener\("personIdChanged", clearDraftForSe
 assert.match(source, /appointmentOptionsError &&[\s\S]*?We couldn't check saved appointments\. Refresh before preparing an appointment briefing/, "an unavailable appointment list must not be shown as an empty appointment list");
 assert.match(source, /!loading && !appointmentOptionsError && appointmentOptions\.length === 0[\s\S]*?No saved appointments are available/, "the no-appointments message must appear only after a successful empty read");
 assert.match(source, /preparePurpose === "professional_appointment" && appointmentOptionsError[\s\S]*?return;/, "appointment briefings must not be prepared against an unverified appointment list");
+
+assert.match(inbox, /const requestSequence = \+\+loadSequenceRef\.current[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?if \(isCurrentRequest\(\)\) setLoading\(false\)/,
+  "handover inbox reads must not let an older caregiver session overwrite the current requests");
+assert.match(inbox, /loadedScopeRef\.current !== scopeKey[\s\S]*?setResponsibilityTransfers\(\[\]\)[\s\S]*?setPrimaryTransfers\(\[\]\)/,
+  "handover requests from a previous person or caregiver must be cleared when the session changes");
+assert.match(inbox, /addEventListener\("personIdChanged", refreshForSessionChange\)/,
+  "handover inbox must reload when the active care session changes");
