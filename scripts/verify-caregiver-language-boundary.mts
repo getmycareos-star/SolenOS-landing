@@ -150,6 +150,7 @@ const documentReview = read("../src/components/DocumentIntelligenceReview.tsx");
 const documentsPage = read("../src/app/workspace/documents/page.tsx");
 const settings = read("../src/app/workspace/settings/page.tsx");
 const caregiverAccessPanel = read("../src/components/mvp-workspace/CaregiverAccessPanel.tsx");
+const followUpsPage = read("../src/app/workspace/open-loops/page.tsx");
 const reminders = read("../src/app/workspace/reminders/page.tsx");
 const openLoopsPage = read("../src/app/workspace/open-loops/page.tsx");
 const lcr = read("../src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
@@ -1008,6 +1009,14 @@ const cameraPermission = read("../src/lib/permissions/useCameraPermission.ts");
 const locationPermission = read("../src/lib/permissions/useLocationPermission.ts");
 
 const settingsPage = read("../src/app/workspace/settings/page.tsx");
+assert.match(followUpsPage, /const reasonCandidates = \[\.\.\.\(item\.priority_basis \|\| \[\]\), \.\.\.\(item\.reason \? \[item\.reason\] : \[\]\)\]/,
+  "Follow-ups must retain the count of explanations before filtering");
+assert.match(followUpsPage, /reasonLines\.length < reasonCandidates\.length/,
+  "partly filtered Follow-ups explanations must be disclosed");
+assert.match(followUpsPage, /Some explanation could not be shown clearly\. Check the saved care information before relying on it\./,
+  "fully filtered Follow-ups explanations must not be described as missing");
+assert.match(followUpsPage, /caregiverSafeAssistantText\(loop\.owner_label\) \|\| "Not recorded"/,
+  "filtered Follow-ups responsibility labels must not render blank");
 assert.match(reminders, /caregiverSafeAssistantText\(reminder\.title\)/,
   "saved reminder titles must use readable caregiver text");
 assert.match(reminders, /caregiverSafeAssistantText\(reminder\.note\)/,
