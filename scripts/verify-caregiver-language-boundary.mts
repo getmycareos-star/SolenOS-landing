@@ -653,7 +653,7 @@ assert.match(careOverviewPage, /Your Care Record/);
 assert.match(careOverviewPage, /Open Daily Care/);
 assert.doesNotMatch(careOverviewPage, /Your Living Care Record|AI Companion/);
 assert.match(changeIntelligence, /CHANGES IN CARE OVER TIME/);
-assert.match(changeIntelligence, /Review notes and documents/);
+assert.match(changeIntelligence, /See the notes and documents/);
 assert.doesNotMatch(changeIntelligence, /LONGITUDINAL UNDERSTANDING|Past assessment|Review source evidence/);
 assert.match(sourceReview, /Notes and documents behind care information/);
 assert.match(sourceReview, /Each detail keeps the exact words from the original note or document/);
