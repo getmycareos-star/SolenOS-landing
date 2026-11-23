@@ -123,3 +123,5 @@ assert.ok(component.includes("brief.next_appointment.scheduled_at ? 'Next appoin
 assert.ok(component.includes('It does not book appointments or confirm them with a provider.'), 'recorded appointments must not be represented as external bookings');
 
 console.log('PASS: automatic appointment continuity, explicit lifecycle states, optional text/document capture, provenance review and retry handling')
+
+assert.ok(component.includes('addEventListener("personIdChanged", reloadForSessionChange)'), "appointment workspace must reload and clear prior-person state when the active care session changes");
