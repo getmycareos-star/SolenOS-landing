@@ -43,8 +43,8 @@ assert.match(companion, /const startNewSession = \(\) => \{[\s\S]*?setRequestErr
 assert.match(companion, /onChange=\{event => handleInput\(event\.target\.value\)\}/);
 assert.match(workspaceComposer, /setRawInput\(value\);[\s\S]*?setLcrOrientationReply\(null\);[\s\S]*?setCaregiverError\(null\)/);
 assert.match(workspaceComposer, /setDocuments\(nextDocuments\);[\s\S]*?setLcrOrientationReply\(null\);[\s\S]*?setCaregiverError\(null\)/);
-assert.match(sanitizeCaregiverErrorMessage("Situation hydration failed (404)"), /We couldn’t complete that step/);
-assert.match(sanitizeCaregiverErrorMessage("Failed to fetch /api/situation"), /We couldn’t complete that step/);
+assert.equal(sanitizeCaregiverErrorMessage("Situation hydration failed (404)"), "We couldn’t confirm whether that update was saved. Check your Care Record before trying again.");
+assert.equal(sanitizeCaregiverErrorMessage("Failed to fetch /api/situation"), "We couldn’t confirm whether that update was saved. Check your Care Record before trying again.");
 
 // Internal evaluation metadata must never be rendered into the caregiver conversation.
 assert.doesNotMatch(companion, /Safety: \{msg\.safety_note\}/);
