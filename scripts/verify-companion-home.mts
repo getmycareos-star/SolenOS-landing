@@ -164,3 +164,8 @@ assert.match(lcrHome, /LCRCurrentUnderstanding/);
 assert.doesNotMatch(lcrHome, /companion-conversation/);
 
 console.log("Companion home contract passed: conversation-only Companion, source provenance, Documents-owned upload/photo/scan intake, plain-language care record, caregiver update route, device-session actions, export flow, and browseable history.");
+
+
+assert.match(companion, /if \(!Array\.isArray\(response\?\.items\)\) throw new Error\(/, "an invalid care-suggestion response must not be treated as an empty list");
+assert.match(companion, /setCareUpdateLoadFailed\(true\)/, "failed suggestion reads must be tracked independently from save and review errors");
+assert.match(companion, /careUpdateLoadFailed && pendingCareUpdates\.length > 0[\s\S]*?These are the last suggestions we could load\. They may be out of date; refresh before making a decision\./, "previously loaded care suggestions must be labelled stale when refresh fails");
