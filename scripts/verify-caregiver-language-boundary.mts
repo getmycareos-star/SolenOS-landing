@@ -1210,6 +1210,8 @@ assert.match(shareCareSummaryPanel, /caregiverSafeGeneratedText\(item\.section\)
   "generated briefing section headings must use caregiver-facing labels");
 assert.match(careHandoffSharing, /caregiverReadableCaptureText\(item\.supporting_quote\)/,
   "handoff source quotations must not expose structured capture metadata");
+assert.match(careHandoffSharing, /caregiverSourceText\(note\.text\)/,
+  "caregiver-added handoff notes must preserve their original wording");
 assert.match(careHandoffSharing, /caregiverReadableCaptureText\(item\.summary \|\| item\.text\)/,
   "source-only handoff summaries must use readable saved care wording");
 assert.match(careHandoffSharing, /draft\?\.audience !== "professional" \|\| draft\?\.purpose !== "professional_appointment"[\s\S]*?source\.source_table \+ ":" \+ source\.source_id[\s\S]*?sourceTables\.get\(item\.source_ref\) !== "caregiver_profiles"/,
