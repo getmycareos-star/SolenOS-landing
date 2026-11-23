@@ -757,6 +757,7 @@ assert.doesNotMatch(careOverviewPage, /currently understood about care/);
 console.log("Caregiver language boundary checks passed.");
 
 assert.match(careDelta, /caregiverStatusLabel/);
+assert.match(careDelta, /caregiverSourceText\(entry\.source\)/, "care-change history must preserve the caregiver's original source label");
 assert.match(careDelta, /caregiverSafeAssistantText/);
 assert.doesNotMatch(careDelta, /Provider:|Model:|source-attributed assertions|replace\(\/_\/g/);
 assert.match(humanValidation, /caregiverSafeErrorMessage/);

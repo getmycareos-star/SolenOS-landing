@@ -221,7 +221,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
       <h3 style={{ fontSize: 13, margin: '0 0 7px' }}>Earlier comparisons</h3>
       <div style={{ display: 'grid', gap: 6 }}>
         {history.slice(0, 10).map((entry) => <button key={entry.id} type="button" onClick={() => entry.delta && setResult(entry.delta)} style={{ textAlign: 'left', border: '1px solid var(--border)', borderRadius: 7, padding: 8, background: 'var(--bg)', color: 'var(--text)', cursor: entry.delta ? 'pointer' : 'default' }}>
-          <strong style={{ fontSize: 12 }}>{caregiverSafeAssistantText(entry.source) || 'Care update'}</strong>
+          <strong style={{ fontSize: 12 }}>{caregiverSourceText(entry.source) || 'Care update'}</strong>
           <span style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>{new Date(entry.event_date).toLocaleDateString()} · saved {new Date(entry.created_at).toLocaleString()}</span>
           <span style={{ display: 'block', fontSize: 11, marginTop: 3 }}>{caregiverSafeGeneratedText(entry.delta?.event_summary) || 'Saved care update'}</span>
         </button>)}
