@@ -852,7 +852,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {item.evidence_reviews_status === "empty" && <p>No review of this note or document has been recorded.</p>}
                                       {item.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                       {item.observations?.map((observation, observationIndex) => <div key={"source-observation-" + observationIndex}>
-                                        <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {caregiverSafeAssistantText(observation.value) || "Saved care detail"}</p>
+                                        <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {(typeof observation.value === "number" && Number.isFinite(observation.value) ? String(observation.value) : caregiverSafeAssistantText(observation.value)) || "Saved care detail"}</p>
                                         {observation.reported_by && <p>Reported by: {caregiverSafeAssistantText(observation.reported_by) || "Not recorded"}</p>}
                                         {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
                                         {observation.source_excerpt && <blockquote>{caregiverSourceText(observation.source_excerpt)}</blockquote>}
