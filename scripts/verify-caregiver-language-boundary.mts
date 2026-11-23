@@ -410,6 +410,11 @@ assert.match(companion, /caregiverSafeGeneratedText\(item\.label\)/, "related Co
 assert.match(companion, /caregiverFieldLabel\(observation\.attribute\)/, "internal care-field keys must be translated or omitted");
 assert.match(companion, /caregiverStatusLabel\(item\.status\)/, "saved Companion review statuses must use caregiver-facing labels");
 assert.match(companion, /caregiverStatusLabel\(entry\.decision\)/, "Companion review history decisions must use caregiver-facing labels");
+assert.match(companion, /caregiverSafeGeneratedText\(item\.proposed_change\?\.asserted_value\)/, "proposed care details must pass through the generated-text boundary");
+assert.match(companion, /caregiverSafeAssistantText\(item\.proposed_change\?\.source_quote\)/, "original caregiver wording must be checked before display");
+assert.match(companion, /caregiverSafeAssistantText\(entry\.correction_context\)/, "saved correction context must use readable caregiver text");
+assert.match(companion, /caregiverSafeAssistantText\(item\.proposed_change\.event_time_text\)/, "reported event times must not expose structured metadata");
+
 assert.match(companion, /caregiverSafeGeneratedText\(entry\.rationale\)/, "server-generated review explanations must use caregiver language in every review-history view");
 
 assert.match(companion, /caregiverSafeGeneratedText\(source\.source_state_label\)/, "generated source-status explanations must use caregiver language");
