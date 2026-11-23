@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON } from '../api/client'
-import { caregiverReadableCaptureText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language'
+import { caregiverReadableCaptureText, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from '@/lib/caregiver-language'
 
 type EvidenceItem = {
   id: string
@@ -914,7 +914,7 @@ export default function EvidenceReviewPanel(props?: { personId?: string; evidenc
           {observations.slice().sort((a, b) => a.source_span_start - b.source_span_start).map(item => <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
             <strong>{reviewStatusLabel(item.attribute)} · {reviewStatusLabel(item.epistemic_status)}</strong>
             <div>{reviewStatusLabel(item.observation_kind)} · {item.subject_label}</div>
-            <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverReadableCaptureText(item.source_passage) || 'Original wording is not available.'}</blockquote>
+            <blockquote style={{ margin: '6px 0', paddingLeft: 9, borderLeft: '2px solid var(--border)', overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>{caregiverSourceText(item.source_passage) || 'Original wording is not available.'}</blockquote>
             {item.normalized_value && <div>Care detail: {caregiverSafeAssistantText(item.normalized_value)}</div>}
             {item.observation_method !== 'Daily Care form' && (
               <div>What was recorded: {item.value_text ?? 'Not established'}{item.units ? ` ${item.units}` : ''}</div>
