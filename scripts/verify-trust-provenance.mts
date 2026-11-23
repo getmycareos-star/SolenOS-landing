@@ -42,10 +42,13 @@ assert(TRUST_PROVENANCE_IDENTITY.includes("reconstructs continuity"), "trust ide
 assert(INSUFFICIENT_EVIDENCE_MESSAGE.includes("enough information"), "insufficient message");
 console.log("✓ system contract");
 
-const migration = path.join(root, "db/migrations/032_trust_provenance.sql");
-assert(fs.existsSync(migration), "migration 032 exists");
-assert(fs.readFileSync(migration, "utf8").includes("care_provenance_records"), "provenance table");
-console.log("✓ migration 032");
+const migration = path.join(root, "db/migrations/046_trust_reliability.sql");
+assert(fs.existsSync(migration), "trust and reliability migration 046 exists");
+const migrationSource = fs.readFileSync(migration, "utf8");
+for (const table of ["raw_evidence", "claim_corrections", "caregiver_vocabulary"]) {
+  assert(migrationSource.includes(`CREATE TABLE IF NOT EXISTS ${table}`), `migration 046 defines ${table}`);
+}
+console.log("✓ migration 046 trust and reliability tables");
 
 const caregiverId = "cg_trust";
 
