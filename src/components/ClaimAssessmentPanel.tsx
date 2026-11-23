@@ -397,11 +397,11 @@ export default function ClaimAssessmentPanel() {
     {!loading && !error && claims.length > 0 && <>
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Care detail
         <select style={field} value={selectedClaimId} onChange={(event) => setSelectedClaimId(event.target.value)}>
-          {claims.map((claim) => <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {claim.asserted_value.slice(0, 120)}</option>)}
+          {claims.map((claim) => <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {(caregiverSafeAssistantText(claim.asserted_value) || "Saved care detail").slice(0, 120)}</option>)}
         </select>
       </label>
       {selectedClaim && <div style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", padding: 10, border: "1px solid var(--border)", borderRadius: 7, marginBottom: 10 }}>
-        <div><strong>What was reported:</strong> {selectedClaim.asserted_value}</div>
+        <div><strong>What was reported:</strong> {caregiverSafeAssistantText(selectedClaim.asserted_value) || "The original wording could not be displayed."}</div>
         <div><strong>Who reported it:</strong> {caregiverSafeGeneratedText(selectedClaim.source_label) || "Not recorded"}</div>
         <div><strong>What we know:</strong> {caregiverInformationLabel(selectedClaim.epistemic_state || "reported") || "Not yet confirmed"}</div>
         <div><strong>Review:</strong> {simpleReviewStatus(selectedClaim.assertion_status)}</div>
@@ -418,7 +418,7 @@ export default function ClaimAssessmentPanel() {
         {dependencies.length > 0 && <ul style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
           {dependencies.map((edge) => <li key={edge.id}>
             {edge.claim_id === selectedClaimId ? "This detail depends on" : "This detail is needed by"}{" "}
-            <strong>{claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value || "Care detail not in this list"}</strong>
+            <strong>{caregiverSafeAssistantText(claims.find((claim) => claim.id === (edge.claim_id === selectedClaimId ? edge.depends_on_claim_id : edge.claim_id))?.asserted_value) || "Care detail not in this list"}</strong>
             {" · "}{simpleReviewStatus(edge.dependency_type)} · {caregiverSafeGeneratedText(edge.rationale) || "No further explanation is available."}
           </li>)}
         </ul>}
@@ -426,7 +426,7 @@ export default function ClaimAssessmentPanel() {
           <select style={field} value={dependencyTargetId} onChange={(event) => setDependencyTargetId(event.target.value)}>
             <option value="">Select a different care detail</option>
             {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
-              <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {claim.asserted_value.slice(0, 100)}</option>)}
+              <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {(caregiverSafeAssistantText(claim.asserted_value) || "Saved care detail").slice(0, 100)}</option>)}
           </select>
         </label>
         <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>How they are related
@@ -451,7 +451,7 @@ export default function ClaimAssessmentPanel() {
         <select style={field} value={supersededByClaimId} onChange={(event) => setSupersededByClaimId(event.target.value)}>
           <option value="">Choose the care detail that replaces this one</option>
           {claims.filter((claim) => claim.id !== selectedClaimId).map((claim) =>
-            <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {claim.asserted_value.slice(0, 120)}</option>
+            <option key={claim.id} value={claim.id}>{simpleReviewStatus(claim.field)}: {(caregiverSafeAssistantText(claim.asserted_value) || "Saved care detail").slice(0, 120)}</option>
           )}
         </select>
       </label>}
@@ -470,8 +470,9 @@ export default function ClaimAssessmentPanel() {
             </select>
           </label>
           <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Exact words from the note or document
-            <textarea style={{ ...field, minHeight: 68 }} value={caregiverSafeAssistantText(link.source_passage) || "The original wording is saved."} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Copy the exact words from the selected note or document. Do not rewrite them." />
+            <textarea style={{ ...field, minHeight: 68 }} value={caregiverSafeAssistantText(link.source_passage) || ""} onChange={(event) => updateLink(index, { source_passage: event.target.value })} placeholder="Enter the exact words from the selected note or document. Do not rewrite them." />
           </label>
+          {link.source_passage && !caregiverSafeAssistantText(link.source_passage) && <small>The wording could not be shown. Copy the exact words again from the original note or document.</small>}
           <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>What this note or document does not tell us (optional)
             <input style={field} value={link.scope_note} onChange={(event) => updateLink(index, { scope_note: event.target.value })} placeholder="What this note or document does or does not tell us" />
           </label>
@@ -513,7 +514,7 @@ export default function ClaimAssessmentPanel() {
         <p>{caregiverSafeAssistantText(item.rationale) || "No further explanation is available."}</p>
         <ul>{item.evidence_links.map((link, i) => <li key={i}>
           {simpleReviewStatus(link.relationship)} · note or document
-          {link.source_passage ? <blockquote style={{ margin: "5px 0", paddingLeft: 8, borderLeft: "2px solid var(--border)" }}>{link.source_passage}</blockquote> : null}
+          {link.source_passage ? <blockquote style={{ margin: "5px 0", paddingLeft: 8, borderLeft: "2px solid var(--border)" }}>{caregiverSafeAssistantText(link.source_passage) || "The original wording could not be displayed."}</blockquote> : null}
           {link.scope_note ? <div>What this does and does not show: {caregiverSafeAssistantText(link.scope_note) || "No further details are available."}</div> : null}
         </li>)}</ul>
         {item.supersedes_assessment_id && <small>Replaces an earlier review</small>}
