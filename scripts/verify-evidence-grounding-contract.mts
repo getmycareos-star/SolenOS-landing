@@ -155,7 +155,7 @@ console.log("PASS: evidence, claim assessment, and care-integrity panels are mou
 const conflictPanel = fs.readFileSync(path.join(process.cwd(), "src/components/ConflictResolutionPanel.tsx"), "utf8");
 assert(conflictPanel.includes("/uncertainty/contradictions/"), "conflict resolution UI must read persisted conflicts and transition history");
 assert(conflictPanel.includes("resolution_scope"), "partial conflict resolution must capture and display exact scope");
-assert(conflictPanel.includes("Every review needs supporting information and a reason.") && conflictPanel.includes("Notes or documents you checked"), "conflict resolution must expose concrete supporting notes and documents in caregiver language");
+assert(conflictPanel.includes("Every review needs notes or documents to check, and a reason.") && conflictPanel.includes("Notes or documents you checked"), "conflict resolution must expose concrete supporting notes and documents in caregiver language");
 assert(conflictPanel.includes("We couldn’t load earlier reviews just now. This doesn’t mean none were saved.") && conflictPanel.includes("Try again"), "failed conflict-history reads must remain visible and recoverable in caregiver language");
 assert(conflictPanel.includes("A newer date or several similar reports do not automatically mean one version is right."), "conflict UI must reject timestamp/majority-only resolution in caregiver language");
 assert(lcr.includes('const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel")'), "LCR must code-split import the conflict resolution workflow");
