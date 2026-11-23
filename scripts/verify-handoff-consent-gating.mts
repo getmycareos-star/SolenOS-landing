@@ -38,3 +38,10 @@ assert.match(inbox, /disabled=\{busy \|\| failedTransferSources\.includes\("prim
   "primary-caregiver decisions must be disabled when that request list could not be refreshed");
 assert.match(inbox, /disabled=\{busy \|\| failedTransferSources\.includes\("responsibility"\)\}/,
   "responsibility decisions must be disabled when that request list could not be refreshed");
+
+assert.match(source, /loadedScopeRef\.current\.caregiverId !== requestCaregiverId[\s\S]*?setInbox\(\[\]\)[\s\S]*?setActiveInbox\(null\)/,
+  "handoff inbox and sharing drafts must be cleared when the active caregiver changes");
+assert.match(source, /addEventListener\("personIdChanged", refreshForSessionChange\)/,
+  "handoff sharing must reload consent and recipient access when the active session changes");
+assert.match(source, /const requestSequence = \+\+loadSequenceRef\.current[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?if \(isCurrentRequest\(\)\) setLoading\(false\)/,
+  "overlapping handoff refreshes must not overwrite the current caregiver's inbox or recipients");
