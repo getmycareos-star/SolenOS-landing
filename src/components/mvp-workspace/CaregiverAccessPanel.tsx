@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Shield, UserPlus, Users, X, Check, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
