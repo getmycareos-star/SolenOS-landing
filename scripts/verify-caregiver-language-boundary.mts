@@ -200,6 +200,9 @@ const captureAnalysisReview = read("../src/components/workflows/CaptureAnalysisR
 const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
+const caregiverHandoverInbox = read("../src/components/mvp-workspace/CaregiverHandoverInbox.tsx");
+const clarificationWorkflow = read("../src/components/ClarificationWorkflowPanel.tsx");
+const careHandoffSharing = read("../src/components/workflows/CareHandoffSharing.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
 assert.match(structuredDailyCapture, /caregiverSafeAssistantText\(item\.name\)/,
   "saved medication names must use readable caregiver text");
@@ -887,7 +890,6 @@ assert.doesNotMatch(caregiverInvite, /missing its secure code|access was authori
   "caregiver invitations must not expose internal link-security or authorization language");
 assert.match(caregiverInvite, /This invitation link is incomplete/);
 
-const caregiverHandoverInbox = read("../src/components/mvp-workspace/CaregiverHandoverInbox.tsx");
 assert.doesNotMatch(caregiverHandoverInbox, /Care handover|primary caregiver|responsibility_type\.replaceAll/,
   "caregiver responsibility requests must not expose internal handover or raw responsibility labels");
 assert.match(caregiverHandoverInbox, /Care responsibilities waiting for you/);
@@ -1033,7 +1035,6 @@ assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.va
 
 
 
-const clarificationWorkflow = read("../src/components/ClarificationWorkflowPanel.tsx");
 const careRecipientNameGate = read("../src/components/mvp-workspace/CareRecipientNameGate.tsx");
 const correctionForm = read("../src/components/trust/CorrectThis.tsx");
 const feedbackForm = read("../src/components/mvp-workspace/HelpImproveSolenos.tsx");
@@ -1123,7 +1124,6 @@ assert.match(livingCareRecordPanel, /view\.follow_up_items\.length > 0[\s\S]*?Su
   "filtered next-step suggestions must have an honest caregiver-facing fallback");
 
 const shareCareSummaryPanel = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
-const careHandoffSharing = read("../src/components/workflows/CareHandoffSharing.tsx");
 assert.match(shareCareSummaryPanel, /caregiverReadableCaptureText\(item\.supporting_quote\)/,
   "exported source wording must be converted to readable caregiver text");
 assert.match(shareCareSummaryPanel, /caregiverSafeGeneratedText\(item\.summary \|\| item\.text\)/,
