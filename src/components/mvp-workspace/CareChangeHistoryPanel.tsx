@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type SourceReference = {
   record_type?: string;
@@ -232,9 +232,9 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                             <details key={`${run.id}-source-${index}-${sourceIndex}`}>
                               <summary>Where this information came from</summary>
                               <p>{displayChangeText(source.label || readableSource(source.record_type))}</p>
-                              {source.source_excerpt && <blockquote>{display(source.source_excerpt)}</blockquote>}
+                              {source.source_excerpt && <blockquote>{caregiverSourceText(source.source_excerpt) || "Original wording not available"}</blockquote>}
                               <p>Happened: {formatDate(source.occurred_at)} · Recorded: {formatDate(source.recorded_at)}</p>
-                              {source.reported_by && <p>Reported by: {display(source.reported_by)}</p>}
+                              {source.reported_by && <p>Reported by: {caregiverSourceText(source.reported_by) || "Not recorded"}</p>}
                             </details>
                           ))}
                         </li>
@@ -257,9 +257,9 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                               {item.source_record_refs.map((source, sourceIndex) => (
                                 <div key={`${run.id}-review-source-${index}-${sourceIndex}`}>
                                   <p>{displayChangeText(source.label || readableSource(source.record_type))}</p>
-                                  {source.source_excerpt && <blockquote>{display(source.source_excerpt)}</blockquote>}
+                                  {source.source_excerpt && <blockquote>{caregiverSourceText(source.source_excerpt) || "Original wording not available"}</blockquote>}
                                   <p>Happened: {formatDate(source.occurred_at)} · Recorded: {formatDate(source.recorded_at)}</p>
-                                  {source.reported_by && <p>Reported by: {display(source.reported_by)}</p>}
+                                  {source.reported_by && <p>Reported by: {caregiverSourceText(source.reported_by) || "Not recorded"}</p>}
                                 </div>
                               ))}
                             </details>
