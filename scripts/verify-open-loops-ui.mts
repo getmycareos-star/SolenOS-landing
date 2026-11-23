@@ -61,7 +61,7 @@ assert.match(page, /!loop && \(item\.source === "events" \|\| item\.source === "
 assert.match(page, /item\.evidence_status/, "follow-up cards must expose evidence status separately from care significance");
 assert.match(page, /item\.history_completeness/, "follow-up cards must disclose incomplete history");
 assert.match(page, /Who is following up:[\s\S]*?loop\?\.owner_label/, "follow-up cards must show who is responsible or say no one is assigned");
-assert.match(page, /item\.source === "open_loop_records" \? caregiverSafeAssistantText\(item\.title\) : caregiverSafeGeneratedText\(item\.title\)/, "generated follow-up titles must not expose internal system terms while caregiver-written titles remain intact");
+assert.match(page, /item\.source === "open_loop_records" \? caregiverSourceText\(item\.title\) : caregiverSafeGeneratedText\(item\.title\)/, "caregiver-written follow-up titles retain their exact wording while generated titles are screened");
 assert.match(page, /title: caregiverSafeGeneratedText\(item\.title\)/, "new follow-ups must not persist an internal generated title");
 assert.match(page, /rawDescriptionLines[\s\S]*?safeDescriptionLines[\s\S]*?safeDescriptionLines\.length === rawDescriptionLines\.length[\s\S]*?The reason needs to be checked against the original care information/, "generated follow-up explanations must be caregiver-safe before persistence; rejected text must not be stored raw");
 assert.match(page, /reasonLines\.length > 0[\s\S]*?No reason was recorded for this follow-up yet\./,
