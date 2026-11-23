@@ -181,11 +181,11 @@ const sourceIndicator = read("../src/components/trust/SourceIndicator.tsx");
 const trustIndicators = read("../src/lib/trust-provenance/trust-indicators.ts");
 const qwenAssist = read("../src/components/qwen/QwenAssistPanel.tsx");
 assert.match(qwenAssist, /caregiverSourceText\(source\.source_excerpt\)/, "Qwen source excerpts must remain verbatim");
-assert.match(qwenAssist, /caregiverSourceText\(observation\.reported_by\)/, "Qwen observation attribution must preserve the original reporter label");
+assert.match(qwenAssist, /caregiverSafeAssistantText\(observation\.reported_by\)/, "Qwen observation attribution must reject raw structured values");
 assert.match(qwenAssist, /caregiverSourceText\(observation\.source_excerpt\)/, "Qwen observation excerpts must remain verbatim");
 const lcrQwenInterpretation = read("../src/components/mvp-workspace/LcrQwenInterpretation.tsx");
-assert.match(lcrQwenInterpretation, /caregiverSourceText\(source\.reported_by\)/, "LCR interpretation must preserve source attribution");
-assert.match(lcrQwenInterpretation, /caregiverSourceText\(observation\.reported_by\)/, "LCR observation attribution must preserve the original reporter label");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.reported_by\)/, "LCR interpretation source attribution must reject raw structured values");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.reported_by\)/, "LCR observation attribution must reject raw structured values");
 const shareSummary = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
 const legalDocuments = read("../src/lib/trust-content/legal-documents.ts");
 const careCaptureLegacy = read("../src/components/CareCapture.tsx");
@@ -240,8 +240,8 @@ const careDelta = read("../src/components/CareDeltaPanel.tsx");
 const careChangeHistory = read("../src/components/mvp-workspace/CareChangeHistoryPanel.tsx");
 assert.match(careChangeHistory, /caregiverSourceText\(source\.source_excerpt\)/,
   "care history must preserve original source excerpts exactly");
-assert.match(careChangeHistory, /caregiverSourceText\(source\.reported_by\)/,
-  "care history must preserve source attribution labels");
+assert.match(careChangeHistory, /caregiverSafeAssistantText\(source\.reported_by\)/,
+  "care history source attribution must reject raw structured values");
 const humanValidation = read("../src/components/HumanValidationLoop.tsx");
 const careCapture = read("../src/components/CareCapture.tsx");
 const feedbackPrompt = read("../src/components/mvp-workspace/UnderstandingFeedbackPrompt.tsx");
@@ -419,8 +419,8 @@ assert.match(qwenAssist, /caregiverSafeGeneratedText\(claim\.text\)/,
   "legacy Qwen claims must use the caregiver language boundary");
 assert.match(qwenAssist, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\)/,
   "legacy Qwen aggregate time-window labels must use caregiver-safe text");
-assert.match(qwenAssist, /caregiverSourceText\(source\.reported_by\)/,
-  "legacy Qwen source attribution must not expose raw structured values");
+assert.match(qwenAssist, /caregiverSafeAssistantText\(source\.reported_by\)/,
+  "legacy Qwen source attribution must reject raw structured values");
 assert.match(qwenAssist, /caregiverSafeGeneratedText\(source\.source_state_label\)/,
   "legacy Qwen source statuses must use caregiver-safe labels");
 assert.match(qwenAssist, /caregiverSourceText\(source\.source_excerpt\)/,
