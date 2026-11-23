@@ -1007,6 +1007,8 @@ await record("01c workspace links, browser back, More menu and account form vali
     "structured care notes must export as the original caregiver observation");
   assert.doesNotMatch(summaryText, /capture_idempotency_key|capture_request_fingerprint|critical_care_journey_share_seed|test-fingerprint/,
     "exported briefings must not expose capture identifiers or internal source metadata");
+  assert.doesNotMatch(summaryText, /Browser integration caregiver|FAMILY — ACTIVE — UNKNOWN/,
+    "professional appointment briefings must not present caregiver profile records as care history");
   assert.ok(summaryText.length > 100, "the downloaded professional briefing must contain reviewed care information");
   await exportDialog.getByRole("button", { name: "Close care briefing", exact: true }).click();
 
