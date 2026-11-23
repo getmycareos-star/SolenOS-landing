@@ -941,6 +941,7 @@ export function LCRCurrentUnderstanding() {
 
   const load = useCallback(async (manual = false) => {
     const timingId = ++workspaceLoadSequence;
+    const isCurrentRequest = () => timingId === workspaceLoadSequence;
     const timingStart = `solenos-workspace-start-${timingId}`;
     const timingReady = `solenos-workspace-ready-${timingId}`;
     if (typeof performance !== "undefined" && typeof performance.mark === "function") {
@@ -966,6 +967,7 @@ export function LCRCurrentUnderstanding() {
 
     try {
       const session = await ensureAnonymousSession();
+      if (!isCurrentRequest()) return;
       if (!session.access_token || !session.person?.id) {
         throw new Error("Your care information is not available right now. Refresh the page and try again.");
       }
@@ -998,6 +1000,7 @@ export function LCRCurrentUnderstanding() {
       // The caregiver's first useful screen depends only on this scoped,
       // read-only projection. No secondary query or write blocks its display.
       const currentCare = await getJSON("/care-continuity/current-care?limit_per_source=12");
+      if (!isCurrentRequest()) return;
       if (!currentCare || currentCare.read_only !== true || !Array.isArray(currentCare.items) ||
           typeof currentCare.schema_status !== "string" || typeof currentCare.projection_type !== "string" ||
           currentCare.person_id !== scopedPersonId) {
@@ -1030,11 +1033,13 @@ export function LCRCurrentUnderstanding() {
         (async () => {
           try {
             const members = await getJSON("/caregiver-access/assignable-members");
+            if (!isCurrentRequest()) return;
             if (!Array.isArray(members) || members.some((member) => !member?.caregiver_id || !member?.name)) {
               throw new Error("Assignable caregiver response was invalid.");
             }
             setAssignableCaregivers(members as AssignableCaregiver[]);
           } catch {
+            if (!isCurrentRequest()) return;
             setAssignableCaregivers([]);
             setResponsibleCaregiverId(session.caregiver.id);
           }
@@ -1042,12 +1047,14 @@ export function LCRCurrentUnderstanding() {
         (async () => {
           try {
             const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
+            if (!isCurrentRequest()) return;
             if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== scopedPersonId)) {
               throw new Error("Saved actions did not match this care record.");
             }
             setRegisteredActions(savedActions as RegisteredAction[]);
             setRegisteredActionsError(null);
           } catch {
+            if (!isCurrentRequest()) return;
             setRegisteredActionsError("Agreed actions could not be loaded. Please try again.");
           }
         })(),
@@ -1059,27 +1066,33 @@ export function LCRCurrentUnderstanding() {
             return value as PersistedChange[];
           };
           try {
-            setChanges(validateChanges(await getJSON(`/change/changes/${encodeURIComponent(scopedPersonId)}`)));
+            const savedChanges = await getJSON(`/change/changes/${encodeURIComponent(scopedPersonId)}`);
+            if (!isCurrentRequest()) return;
+            setChanges(validateChanges(savedChanges));
             setChangesError(null);
           } catch {
+            if (!isCurrentRequest()) return;
             setChangesError("Saved care changes could not be loaded. Please try again.");
           }
         })(),
         (async () => {
           try {
             const persistedPatterns = await getJSON(`/change/patterns/${encodeURIComponent(scopedPersonId)}`);
+            if (!isCurrentRequest()) return;
             if (!Array.isArray(persistedPatterns) || persistedPatterns.some((item) => item?.person_id !== scopedPersonId)) {
               throw new Error("The saved repeated-change information did not match the active care record.");
             }
             setPatterns(persistedPatterns as PersistedPattern[]);
             setPatternsError(null);
           } catch {
+            if (!isCurrentRequest()) return;
             setPatternsError("Repeated changes could not be loaded. Please try again.");
           }
         })(),
         (async () => {
           try {
             const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
+            if (!isCurrentRequest()) return;
             const savedNeedsReassessment = saved.source_freshness?.reassessment_recommended === true;
             const savedBelongsToPerson =
               saved.status === "available" && saved.assessment?.person_id === scopedPersonId;
@@ -1096,14 +1109,16 @@ export function LCRCurrentUnderstanding() {
               setAssessmentError("The care summary is not available yet. Some care information may be missing.");
             }
           } catch {
+            if (!isCurrentRequest()) return;
             setAssessmentError("The saved care summary could not be loaded. Please try again.");
           }
         })(),
       ];
-      const backgroundWork = Promise.allSettled(backgroundTasks).finally(() => setRefreshing(false));
+      const backgroundWork = Promise.allSettled(backgroundTasks).finally(() => { if (isCurrentRequest()) setRefreshing(false); });
       if (manual) await backgroundWork;
       else void backgroundWork;
     } catch {
+      if (!isCurrentRequest()) return;
       if (!sessionConfirmed) {
         const accessMessage = "We couldn't confirm your access to the Care Record. Refresh the page and try again.";
         setPersonId("");
@@ -1167,8 +1182,10 @@ export function LCRCurrentUnderstanding() {
         setError("The care history could not be loaded. Your previously saved information is still shown when available. Please try again.");
       }
     } finally {
-      setLoading(false);
-      if (!backgroundStarted) setRefreshing(false);
+      if (isCurrentRequest()) {
+        setLoading(false);
+        if (!backgroundStarted) setRefreshing(false);
+      }
     }
   }, []);
 
