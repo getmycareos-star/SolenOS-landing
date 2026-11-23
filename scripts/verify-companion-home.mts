@@ -177,3 +177,13 @@ assert.match(companion, /const requestSequence = \+\+careUpdateLoadSequenceRef\.
 assert.match(companion, /conversationScopeRef\.current !== activeScopeKey[\s\S]*?setMessages\(\[userMsg\]\)[\s\S]*?setPendingCareUpdates\(\[\]\)[\s\S]*?session_id: activeSessionId/, "Companion must clear prior caregiver messages and pending suggestions when the active person or caregiver changes");
 
 assert.match(companion, /const clearPreviousCareScope = \(\) => \{[\s\S]*?setMessages\(\[\]\)[\s\S]*?setSessionId\(null\)[\s\S]*?setPendingCareUpdates\(\[\]\)[\s\S]*?addEventListener\('personIdChanged', clearPreviousCareScope\)/, "Companion must register a care-scope change handler that immediately clears another caregiver's conversation and pending suggestions");
+
+
+assert.match(companion, /const conversationScopeSequenceRef = useRef\(0\)/,
+  "care-scope changes must invalidate in-flight conversation requests");
+assert.match(companion, /const requestScopeSequence = conversationScopeSequenceRef\.current[\s\S]*?requestScopeSequence === conversationScopeSequenceRef\.current/,
+  "conversation restoration must stop when the active care scope changes while it is loading");
+assert.match(companion, /if \(!isCurrentScopeRequest\(\) \|\| activeCompanionConversationStorageKey\(\) !== activeScopeKey\) return/,
+  "a response from a previous care scope must never be appended to the current caregiver conversation");
+assert.match(companion, /catch \(error\) \{\s*if \(!isCurrentScopeRequest\(\)\) return[\s\S]*?finally \{\s*if \(isCurrentScopeRequest\(\)\) setLoading\(false\)/,
+  "late failures and completion handlers must not overwrite the active caregiver's conversation state");
