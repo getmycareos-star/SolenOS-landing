@@ -144,7 +144,7 @@ export function LcrQwenInterpretation({
                 <article key={claim.claim_id}>
                   <p><strong>{caregiverSafeGeneratedText(claim.text) || "A possible care detail needs your review."}</strong></p>
                   {claim.support_status === "matched_validated_aggregate" && (
-                    <p>Based on {claim.aggregate?.count ?? claim.source_references.length} separate care updates saved{claim.aggregate?.window_label ? " during " + claim.aggregate.window_label : ""}.</p>
+                    <p>Based on {claim.aggregate?.count ?? claim.source_references.length} separate care updates saved{claim.aggregate?.window_label ? " during " + (caregiverSafeAssistantText(claim.aggregate.window_label) || "the selected time period") : ""}.</p>
                   )}
                   {claim.support_status === "aggregate_count_mismatch" && <p>We couldn’t confirm this total from the saved care updates. The check found {claim.aggregate_review?.count ?? "an unconfirmed number"} separate updates in this time period.</p>}
                   {claim.support_status === "aggregate_not_validated" && <p>{caregiverSafeGeneratedText(claim.aggregate_review?.interpretation_limit) || "We couldn’t confirm this total from the saved care updates. Check the reports before relying on a number."}</p>}
