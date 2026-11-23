@@ -20,7 +20,7 @@ async function proxySituation(request: Request): Promise<Response> {
     target = new URL(`/api/situation${incoming.search}`, getBackendOrigin());
   } catch (error) {
     return NextResponse.json(
-      { detail: error instanceof Error ? error.message : "The SolenOS backend is not configured." },
+      { detail: "The care service is not available right now. No update was sent. Try again later." },
       { status: 503 },
     );
   }
