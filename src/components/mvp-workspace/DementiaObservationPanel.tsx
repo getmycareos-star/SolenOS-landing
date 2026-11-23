@@ -36,6 +36,14 @@ function formatTime(value?: string | null): string {
   return Number.isNaN(date.getTime()) ? "Time not recorded" : date.toLocaleString();
 }
 
+function formatDateTimeLocal(value?: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 export default function DementiaObservationPanel({ personId }: { personId: string }) {
   const [observations, setObservations] = useState<DementiaObservation[]>([]);
   const [caregiverId, setCaregiverId] = useState("");
@@ -131,7 +139,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
     setEditingObservationId(item.id);
     setEditCategory(item.observation_category.replace(/^dementia\./i, ""));
     setEditDescription(item.description);
-    setEditObservedAt(item.observed_at ? new Date(item.observed_at).toISOString().slice(0, 16) : "");
+    setEditObservedAt(formatDateTimeLocal(item.observed_at));
     setEditObservationType(
       item.observation_type?.toLowerCase() === "direct" ? "direct" : "second_hand",
     );
