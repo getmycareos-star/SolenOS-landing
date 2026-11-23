@@ -208,7 +208,7 @@ export function LcrQwenInterpretation({
                           {evidence.source_excerpt && <blockquote>{evidence.source_excerpt}</blockquote>}
                           {evidence.observations?.map((observation, observationIndex) => (
                             <div key={"observation-" + observationIndex}>
-                              <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {observation.value}</p>
+                              <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {typeof observation.value === "number" && Number.isFinite(observation.value) ? String(observation.value) : caregiverSafeAssistantText(observation.value) || "Details not supplied"}</p>
                               {observation.reported_by && <p>Reported by: {caregiverSafeAssistantText(observation.reported_by) || "Not recorded"}</p>}
                               {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
                               {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
