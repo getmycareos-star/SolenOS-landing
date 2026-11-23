@@ -106,6 +106,10 @@ export default function CaptureAnalysisReview({
         const result = await postJSON(`/capture/analyses/${encodeURIComponent(analysisId)}/review`, {
           candidate_index: index,
           decision,
+          // Bind the caregiver decision to the exact source suggestion shown.
+          // The backend requires both values to reject stale review snapshots.
+          expected_source_quote: candidate.source_quote ?? "",
+          expected_subject: candidate.subject ?? "",
           corrected_subject: decision === "correct" ? draft.subject.trim() || undefined : undefined,
           corrected_observation: decision === "correct" ? draft.observation.trim() || undefined : undefined,
         }) as { message?: string };
