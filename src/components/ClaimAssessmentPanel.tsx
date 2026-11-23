@@ -514,7 +514,7 @@ export default function ClaimAssessmentPanel() {
         <ul>{item.evidence_links.map((link, i) => <li key={i}>
           {simpleReviewStatus(link.relationship)} · note or document
           {link.source_passage ? <blockquote style={{ margin: "5px 0", paddingLeft: 8, borderLeft: "2px solid var(--border)" }}>{link.source_passage}</blockquote> : null}
-          {link.scope_note ? <div>What this does and does not show: {caregiverSafeAssistantText(link.scope_note) || "No further details are available."}</div> : null}
+          {link.scope_note ? <div>What this does and does not show: {link.scope_note}</div> : null}
         </li>)}</ul>
         {item.supersedes_assessment_id && <small>Replaces an earlier review</small>}
         {item.superseded_by_claim_id && <small>Replaced by newer care information</small>}
