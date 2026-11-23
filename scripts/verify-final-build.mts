@@ -91,6 +91,24 @@ console.log("✓ CRITICAL safety override validation");
 const criticalLongOutput = {
   ...criticalOutput,
   what_is_happening: Array.from({ length: 140 }, (_, i) => `necessary-context-${i}`).join(" "),
+  what_matters_now: [
+    "🔴 CRITICAL — Call 911 immediately and seek emergency medical care.",
+    "- Keep the phone line open for emergency instructions.",
+    "- Follow the dispatcher’s directions.",
+    "- Tell responders when the symptoms began.",
+    "- Keep the care recipient safe while help is coming.",
+  ].join("\\n"),
+  what_to_ask_next: [
+    "Is emergency help on the way?",
+    "When did the symptoms begin?",
+    "What changed immediately before this?",
+    "Who is with the care recipient now?",
+  ].join(" "),
+  what_can_wait: [
+    "- Routine appointments.",
+    "- Non-urgent household tasks.",
+    "- Administrative paperwork.",
+  ].join("\\n"),
 };
 if (!isSafetyOverrideValid(criticalLongOutput, safety.state)) {
   throw new Error("critical safety output must not be rejected by a universal word ceiling");
