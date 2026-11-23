@@ -488,6 +488,11 @@ assert.match(cognitiveWorkspace, /caregiverSafeGeneratedText\(situationResponse\
 assert.match(structuredDailyCapture, /caregiverSafeGeneratedText\(candidate\.subject\)/, "Daily Care review subjects must use caregiver language");
 assert.match(structuredDailyCapture, /caregiverSafeGeneratedText\(candidate\.observation\)/, "Daily Care review observations must use caregiver language");
 assert.match(structuredDailyCapture, /caregiverSafeGeneratedText\(question\)/, "Daily Care review questions must use caregiver language");
+assert.match(structuredDailyCapture, /open_questions\.length > 0[\s\S]*?Questions were saved, but their wording could not be shown clearly/,
+  "filtered Daily Care questions must remain visible as unavailable rather than disappearing silently");
+assert.match(structuredDailyCapture, /Some other questions could not be shown clearly/,
+  "partially filtered Daily Care question lists must disclose omitted wording");
+
 assert.match(structuredDailyCapture, /decision === 'accept' && candidateNeedsRewrite/, "unsafe Daily Care suggestions must not be accepted into the Care Record");
 assert.match(structuredDailyCapture, /candidateNeedsRewrite\} onClick=\{\(\) => void reviewCaptureCandidate\(index, 'accept'\)/, "unsafe Daily Care suggestions must have acceptance disabled");
 assert.match(structuredDailyCapture, /Check the original note and correct this suggestion before adding it to your Care Record/, "unsafe Daily Care suggestions must direct caregivers to the original note");
