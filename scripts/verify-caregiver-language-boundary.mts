@@ -183,6 +183,23 @@ const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
+assert.match(documentReview, /analysis\.open_questions\?\.map\(\(question, i\) => <li key=\{i\}>\{caregiverSafeGeneratedText\(question\)/,
+  "document review questions must use the caregiver-language boundary in every display location");
+assert.match(livingCareRecordPanel, /Boolean\(view\.what_seems_happening\) \|\| factCandidates\.length > 0/,
+  "filtered care summaries must keep the What is happening section visible");
+assert.match(livingCareRecordPanel, /view\.what_changed_in_understanding[\s\S]*?The explanation of this change could not be shown clearly/,
+  "filtered change explanations must not silently disappear");
+assert.match(livingCareRecordPanel, /view\.connection_note[\s\S]*?The possible connection could not be explained clearly/,
+  "filtered possible connections must retain an uncertainty explanation");
+assert.match(livingCareRecordPanel, /mattersCandidateCount > mattersVisibleCount/,
+  "partly filtered What to watch details must be disclosed");
+assert.match(livingCareRecordPanel, /view\.baseline_summary[\s\S]*?The earlier care summary could not be shown clearly/,
+  "filtered baseline summaries must remain visible as unavailable");
+assert.match(livingCareRecordPanel, /view\.why_asking &&[\s\S]*?The reason for these questions could not be explained clearly/,
+  "filtered question context must retain an explanation");
+assert.match(livingCareRecordPanel, /view\.care_story_update[\s\S]*?The care history update could not be shown clearly/,
+  "filtered care story updates must not disappear silently");
+
 
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
