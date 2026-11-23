@@ -176,4 +176,4 @@ assert.match(companion, /const requestSequence = \+\+careUpdateLoadSequenceRef\.
 
 assert.match(companion, /conversationScopeRef\.current !== activeScopeKey[\s\S]*?setMessages\(\[userMsg\]\)[\s\S]*?setPendingCareUpdates\(\[\]\)[\s\S]*?session_id: activeSessionId/, "Companion must clear prior caregiver messages and pending suggestions when the active person or caregiver changes");
 
-assert.match(companion, /addEventListener\('personIdChanged', clearPreviousCareScope\)[\s\S]*?setMessages\(\[\]\)[\s\S]*?setSessionId\(null\)[\s\S]*?setPendingCareUpdates\(\[\]\)/, "Companion must immediately clear another caregiver's conversation when the active care session changes");
+assert.match(companion, /const clearPreviousCareScope = \(\) => \{[\s\S]*?setMessages\(\[\]\)[\s\S]*?setSessionId\(null\)[\s\S]*?setPendingCareUpdates\(\[\]\)[\s\S]*?addEventListener\('personIdChanged', clearPreviousCareScope\)/, "Companion must register a care-scope change handler that immediately clears another caregiver's conversation and pending suggestions");
