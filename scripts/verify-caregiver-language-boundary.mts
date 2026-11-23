@@ -858,6 +858,17 @@ assert.match(whyAmISeeingThis, /aiInterpreted &&[\s\S]*?A plain-language explana
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(source\.description\)/, "generated source descriptions must use the caregiver language boundary");
 assert.match(historyDrawer, /caregiverStatusLabel\(selectedRecord\.significance_verdict\) \|\| "No further explanation is available\."/,
   "unknown care-history status values must not fall back to displaying raw internal codes");
+assert.match(historyDrawer, /caregiverStatusLabel\\(status\\) \\|\\| "Not available"/,
+  "unknown follow-up statuses must not be shown as raw codes in care history");
+assert.match(historyDrawer, /caregiverStatusLabel\\(asText\\(item\\.priority\\)\\) \\|\\| "Not available"/,
+  "unknown follow-up priority values must not be shown as raw codes");
+assert.match(historyDrawer, /caregiverStatusLabel\\(item\\.status\\) \\|\\| "Not available"/,
+  "unknown handoff statuses must not be shown as raw codes");
+assert.match(historyDrawer, /caregiverFieldLabel\\(asText\\(item\\.target_type\\)\\)[\\s\\S]*?caregiverInformationAreaLabel\\(asText\\(item\\.target_type\\)\\)[\\s\\S]*?care information/,
+  "Care Record revision target types must use caregiver-facing labels");
+assert.match(historyDrawer, /changedFieldLabels[\\s\\S]*?caregiverFieldLabel\\(field\\) \\|\\| caregiverInformationAreaLabel\\(field\\)/,
+  "Care Record revision field names must not be displayed as raw database keys");
+
 
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.value\)/,
   "saved observation wording must be readable while technical diagnostics remain hidden");
