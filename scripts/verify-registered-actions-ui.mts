@@ -68,8 +68,10 @@ assert.ok(
 );
 assert.ok(
   lcr.includes('await patchJSON(`/open-loops/') && lcr.includes('status: "deferred"')
-    && lcr.includes('expected_version: item.version'),
-  "Suggestion deferral must submit the exact saved version shown to the caregiver",
+    && lcr.includes('expected_version: item.version')
+    && lcr.includes('cause.status === 409')
+    && lcr.includes('void load(true)'),
+  "Suggestion deferral must submit the displayed version and refresh after a stale-version conflict",
 );
 assert.ok(
   lcr.includes("onClick={openClarification}") &&
