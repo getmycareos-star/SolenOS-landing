@@ -754,12 +754,15 @@ await record("01a dementia profile review window and observation persistence are
   const uiDescription = `UI dementia observation ${randomUUID()}`;
   await page.getByLabel("What happened?").fill(uiDescription);
   await page.getByLabel("Who saw or heard this?").selectOption("direct");
+  await page.getByLabel("When did it happen? (optional)").fill("2026-11-23T10:15");
   const uiWrite = page.waitForResponse((response) =>
     response.url().includes("/care-continuity/caregiver-observations") &&
     response.request().method() === "POST" && response.status() === 201,
   { timeout: 20_000 });
   await page.getByRole("button", { name: "Save note" }).click();
-  await uiWrite;
+  const uiWriteResponse = await uiWrite;
+  const originalObservation = await uiWriteResponse.json();
+  assert.ok(originalObservation.observed_at, "the browser-created observation must preserve its event time");
   await page.getByText(uiDescription, { exact: true }).waitFor({ timeout: 15_000 });
   const observationCard = page.locator("li").filter({ hasText: uiDescription }).last();
   await observationCard.getByRole("button", { name: "Edit note", exact: true }).click();
@@ -777,10 +780,16 @@ await record("01a dementia profile review window and observation persistence are
   );
   await observationCard.getByRole("button", { name: "Save correction", exact: true }).click();
   const observationCorrectionResponse = await observationCorrection;
+  const correctionPayload = observationCorrectionResponse.request().postDataJSON();
   assert.equal(
-    observationCorrectionResponse.request().postDataJSON().observation_category,
+    correctionPayload.observation_category,
     "dementia.wandering",
     "editing must not duplicate the dementia category prefix",
+  );
+  assert.equal(
+    correctionPayload.observed_at,
+    originalObservation.observed_at,
+    "editing without changing the event time must preserve the exact original timestamp",
   );
   await page.getByText(correctedUiDescription, { exact: true }).waitFor({ timeout: 15_000 });
   assert.deepEqual(pageErrors, [], `dementia observation UI must not throw: ${JSON.stringify(pageErrors)}`);
