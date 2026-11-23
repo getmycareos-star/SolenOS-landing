@@ -269,9 +269,9 @@ assert.match(careHandoffSharing, /caregiverSafeAssistantText\(recipient\.name\) 
   "handoff recipient names must use readable caregiver text");
 assert.match(careHandoffSharing, /caregiverSafeAssistantText\(recipient\.relationship\) \|\| "Linked caregiver"/,
   "handoff recipient relationships must use readable caregiver text");
-assert.match(caregiverHandoverInbox, /caregiverSafeAssistantText\(item\.from_caregiver_name\)/,
+assert.match(caregiverHandoverInbox, /caregiverSourceText\(item\.from_caregiver_name\)/,
   "incoming handover names must not expose raw structured metadata");
-assert.match(caregiverHandoverInbox, /caregiverSafeAssistantText\(item\.reason\)/,
+assert.match(caregiverHandoverInbox, /caregiverSourceText\(item\.reason\)/,
   "incoming handover reasons must use readable caregiver text");
 assert.match(caregiverHandoverInbox, /We couldn't confirm whether your response was saved\. Refresh the handover list before trying again/,
   "handover response failures must not claim an uncertain response was not saved");
@@ -519,7 +519,7 @@ assert.doesNotMatch(historyDrawer, /JSON\.stringify\(item\.context/);
 assert.match(historyDrawer, /Malformed serialized data is not shown as caregiver text/);
 assert.match(historyDrawer, /Earlier care details are saved/);
 assert.match(documentsPage, /caregiverSafeAssistantText\(selected\.extractedText\)/);
-assert.match(documentReview, /caregiverSafeAssistantText\(analysis\.extractedText\)/);
+assert.match(documentReview, /caregiverSourceText\(analysis\.extractedText\)/);
 assert.match(lcr, /displayDescription\(source\.description\)/);
 assert.match(lcr, /displayCurrentCareDescription\(item\)/);
 assert.match(lcr, /<details className="lcr-entry-status">/);
@@ -693,7 +693,7 @@ assert.doesNotMatch(handoff, /Living Care Record|Qwen quotations|Evidence IDs:|O
 assert.match(workspaceNav, /label: "Share care information"/);
 assert.doesNotMatch(workspaceNav, /label: "Care Handoffs"/);
 assert.doesNotMatch(handoff, /Care Handoffs|Prepare a care handoff|handoff history|Incoming and outgoing handoffs|Recipient\(s\):|Information included:/);
-assert.match(careRecordOverview, /caregiverSafeAssistantText/);
+assert.match(careRecordOverview, /caregiverSourceText/);
 assert.doesNotMatch(careRecordOverview, /Confirmed by a source|item\.kind \|\|/);
 assert.doesNotMatch(followUps, /evidenceIds\.join|uniqueEvidenceIds\(item\)\.join/);
 assert.match(followUps, /related \$\{uniqueEvidenceIds\(item\)\.length === 1/);
@@ -1076,13 +1076,13 @@ assert.match(followUpsPage, /Some explanation could not be shown clearly\. Check
   "fully filtered Follow-ups explanations must not be described as missing");
 assert.match(followUpsPage, /caregiverSafeAssistantText\(loop\.owner_label\) \|\| "Not recorded"/,
   "filtered Follow-ups responsibility labels must not render blank");
-assert.match(reminders, /caregiverSafeAssistantText\(reminder\.title\)/,
+assert.match(reminders, /caregiverSourceText\(reminder\.title\)/,
   "saved reminder titles must use readable caregiver text");
-assert.match(reminders, /caregiverSafeAssistantText\(reminder\.note\)/,
+assert.match(reminders, /caregiverSourceText\(reminder\.note\)/,
   "saved reminder notes must not expose raw structured metadata");
-assert.match(reminders, /caregiverSafeAssistantText\(reminder\.completion_note\)/,
+assert.match(reminders, /caregiverSourceText\(reminder\.completion_note\)/,
   "reminder completion notes must use readable caregiver text");
-assert.match(reminders, /caregiverSafeAssistantText\(member\.name\)/,
+assert.match(reminders, /caregiverSourceText\(member\.name\)/,
   "caregiver assignment names must not expose raw structured values");
 assert.match(firstInput, /We couldn’t confirm whether that update was saved\. Check your Care Record before trying again\./,
   "first-input transport failures must not claim an uncertain update was not saved");
