@@ -367,8 +367,10 @@ await record("00 first-time caregiver capture and persisted return", async () =>
       || text.includes("Suggested explanation for you to review.");
   }, undefined, { timeout: 30_000 });
   const contextInterpretationText = await contextInterpretationRegion.innerText();
-  assert.match(contextInterpretationText, /Your Care Record has not changed\./,
+  assert.match(contextInterpretationText, /Your Care Record is unchanged\./,
     "the optional interpretation must never imply that it changed the Care Record");
+  assert.match(contextInterpretationText, /You do not need to add the update again\./,
+    "an unavailable interpretation must not encourage duplicate care-record submissions");
 
   assert.equal(
     await page.locator(".care-card-understanding").count(),
