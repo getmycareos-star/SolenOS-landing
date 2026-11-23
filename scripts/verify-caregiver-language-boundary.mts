@@ -1132,7 +1132,7 @@ assert.match(changeIntelligence, /caregiverSourceText\(record\.excerpt\) \|\| "T
   "saved source excerpts must not expose raw structured metadata");
 assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail to check"/,
   "generated missing-information titles must use caregiver-safe copy");
-assert.match(lcr, /caregiverSafeAssistantText\(assertion\.asserted_value\) \|\| "Saved care detail"/,
+assert.match(lcr, /caregiverSourceText\(item\.asserted_value\) \|\| "Information was reported"/,
   "saved report values must not render raw structured metadata");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.value\)/,
   "saved observation wording must be readable while technical diagnostics remain hidden");
