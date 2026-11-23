@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { caregiverSourceText } from "@/lib/caregiver-language";
 
 type ObservationType = "direct" | "second_hand";
 type DementiaObservation = {
@@ -195,7 +196,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
               <p className="text-xs font-medium text-[var(--muted)]">
                 {CATEGORIES.find(([value]) => ("dementia." + value).toLowerCase() === item.observation_category.trim().toLowerCase())?.[1] ?? "Memory or daily-life note"}
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--text)]">{item.description || "No note text was saved."}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--text)]">{caregiverSourceText(item.description) || "No note text was saved."}</p>
               <p className="mt-2 text-xs text-[var(--muted)]">
                 Happened: {formatTime(item.observed_at)} · Recorded: {formatTime(item.recorded_at)}
               </p>
