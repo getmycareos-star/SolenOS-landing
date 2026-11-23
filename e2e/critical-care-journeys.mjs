@@ -115,7 +115,15 @@ async function createBrowserPage(
   const page = await context.newPage();
   const observed = [];
   const pageErrors = [];
+  const consoleErrors = [];
+  const failedRequests = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
+  page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
+  page.on("requestfailed", (request) => failedRequests.push({
+    method: request.method(),
+    url: new URL(request.url()).pathname,
+    error: request.failure()?.errorText || "request failed",
+  }));
   page.on("response", (response) => { const url = new URL(response.url()); if (url.pathname.startsWith("/api/")) observed.push({ path: url.pathname, status: response.status() }); });
   await page.route("**/api/**", async (route) => {
     try {
@@ -178,7 +186,7 @@ async function createBrowserPage(
     }
   });
   await page.goto(new URL(path, frontend).toString(), { waitUntil: "domcontentloaded" });
-  return { context, page, observed, pageErrors };
+  return { context, page, observed, pageErrors, consoleErrors, failedRequests };
 }
 
 async function browserPageConsumes(page, pathname, observed) {
@@ -731,7 +739,7 @@ await record("01a dementia profile review window and observation persistence are
 });
 
 await record("01b visible Follow-ups link and mobile navigation", async () => {
-  const { context, page } = await createBrowserPage(
+  const { context, page, pageErrors, consoleErrors, failedRequests } = await createBrowserPage(
     session,
     "/workspace/daily-care",
     { width: 390, height: 844 },
@@ -744,6 +752,11 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
       url: location.pathname,
       body: document.body.innerText.slice(0, 1800),
       requests: (window.__solenosE2EFetchTrace || []).slice(-20).map(({ method, path, status, error }) => ({ method, path, status, error })),
+      localStorageKeys: Object.keys(localStorage),
+      scripts: Array.from(document.scripts).map((script) => script.src).filter(Boolean).slice(-12),
+      pageErrors,
+      consoleErrors,
+      failedRequests,
     }));
     throw new Error(`Daily Care did not render its Follow-ups section: ${JSON.stringify(diagnostic)}`);
   }
