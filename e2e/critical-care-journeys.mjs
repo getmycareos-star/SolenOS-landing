@@ -730,11 +730,25 @@ await record("01a dementia profile review window and observation persistence are
       .find((item) => item.textContent?.trim() === "Dementia care profile and observations");
     return summary?.parentElement instanceof HTMLDetailsElement && summary.parentElement.open;
   }, undefined, { timeout: 10_000 });
+  await page.evaluate(() => {
+    window.__personIdChangeEventsAfterStableLoad = 0;
+    window.addEventListener("personIdChanged", () => {
+      window.__personIdChangeEventsAfterStableLoad += 1;
+    });
+  });
   await page.getByText("Background and care", { exact: true }).click();
   await page.getByLabel("Diagnosis, if a healthcare professional has shared one status").selectOption("unknown");
   await page.getByLabel("Diagnosis, if a healthcare professional has shared one review interval").selectOption("90");
   await page.getByRole("button", { name: "Save" }).first().click();
   await page.getByText("Saved: Diagnosis, if a healthcare professional has shared one.", { exact: true }).waitFor({ timeout: 20_000 });
+  const identityEventsDuringSamePersonSave = await page.evaluate(
+    () => window.__personIdChangeEventsAfterStableLoad ?? 0,
+  );
+  assert.equal(
+    identityEventsDuringSamePersonSave,
+    0,
+    "reusing the active care-record session during a save must not emit a false person-change event",
+  );
   await page.getByRole("heading", { name: "Notes about memory and daily life" }).waitFor({ timeout: 15_000 });
   await page.getByLabel("What was this about?").selectOption("wandering");
   const uiDescription = `UI dementia observation ${randomUUID()}`;
