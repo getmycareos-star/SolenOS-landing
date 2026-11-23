@@ -19,12 +19,20 @@ export function getPersonId(): string {
 
 export function setPersonId(id: string): void {
   const normalized = id.trim()
-  if (isPlaceholderIdentifier(normalized)) {
+  const previous = localStorage.getItem('solenos_person_id')?.trim() || ''
+  const next = isPlaceholderIdentifier(normalized) ? '' : normalized
+  if (!next) {
     localStorage.removeItem('solenos_person_id')
   } else {
-    localStorage.setItem('solenos_person_id', normalized)
+    localStorage.setItem('solenos_person_id', next)
   }
-  window.dispatchEvent(new Event('personIdChanged'))
+  // Session restoration calls this for every authenticated API consumer.
+  // Notify identity subscribers only when the identity actually changes;
+  // otherwise a listener that restores the session can recursively trigger
+  // itself through another personIdChanged event.
+  if (previous !== next) {
+    window.dispatchEvent(new Event('personIdChanged'))
+  }
 }
 
 export function subscribeToPersonId(callback: (id: string) => void): () => void {
