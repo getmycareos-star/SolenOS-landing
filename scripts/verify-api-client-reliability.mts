@@ -51,6 +51,14 @@ assert.match(apiClientSource, /setItem\(ANONYMOUS_EXPIRY_KEY, refreshed\.expires
   "refreshed session credentials and expiry must be persisted before notifying care-scope subscribers");
 assert.match(apiClientSource, /setItem\(ANONYMOUS_EXPIRY_KEY, created\.expires_at\)[\s\S]*?completeExplicitSessionBootstrap\(revocationMarkerAtStart\)[\s\S]*?setCareIdentity\(created\.person\.id, created\.caregiver\.id\)/,
   "new session credentials and expiry must be persisted before notifying care-scope subscribers");
+const companionSource = readFileSync(
+  new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
+  "utf8",
+);
+assert.match(companionSource, /if \(!submittedText \|\| loading \|\| sendingRef\.current\) return[\s\S]*?sendingRef\.current = true/,
+  "Companion must synchronously reject a second submit before React state updates");
+assert.match(companionSource, /finally \{[\s\S]*?sendingRef\.current = false[\s\S]*?setLoading\(false\)/,
+  "Companion must release the in-flight guard after success, failure, or scope change");
 
 async function main() {
   setPersonId("person-server-1");
