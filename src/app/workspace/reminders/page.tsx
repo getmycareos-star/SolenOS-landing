@@ -308,7 +308,7 @@ export default function CareRemindersPage() {
 
         {loading && !hasLoadedRef.current ? (
           <RecordState kind="loading" title="Loading saved reminders" />
-        ) : error && !hasLoadedRef.current ? null : visibleReminders.length === 0 ? (
+        ) : error && reminders.length === 0 ? null : visibleReminders.length === 0 ? (
           <RecordState
             kind={reminders.length === 0 ? "first-empty" : "no-results"}
             title={reminders.length === 0 ? "No reminders scheduled" : `No ${filter} reminders`}
