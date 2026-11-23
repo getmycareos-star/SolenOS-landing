@@ -855,6 +855,10 @@ assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(couldClarify\)/, "ge
 assert.match(whyAmISeeingThis, /safeWhyItMatters \|\| 'A plain-language explanation is not available right now\.'/,
   "filtered explanations must show an honest fallback instead of disappearing silently");
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(source\.description\)/, "generated source descriptions must use the caregiver language boundary");
+const lcrQwenInterpretation = read("../src/components/mvp-workspace/LcrQwenInterpretation.tsx");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.value\)/,
+  "saved observation wording must be readable while technical diagnostics remain hidden");
+
 
 const settingsPage = read("../src/app/workspace/settings/page.tsx");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.title\)/, "notification titles must use caregiver-safe generated copy");
