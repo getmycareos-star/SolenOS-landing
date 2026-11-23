@@ -125,6 +125,6 @@ assert.ok(component.includes('It does not book appointments or confirm them with
 console.log('PASS: automatic appointment continuity, explicit lifecycle states, optional text/document capture, provenance review and retry handling')
 
 assert.ok(component.includes('addEventListener("personIdChanged", reloadForSessionChange)'), "appointment workspace must reload and clear prior-person state when the active care session changes");
-assert.ok(component.includes("await ensureAnonymousSession()\\n        if (cancelled) return\\n        const [briefResult, workspaceResult]"), "a cancelled appointment load must stop before requesting the next caregiver's appointment data");
-assert.ok(component.includes("const generated = await postJSON('/appointment-workspaces/ensure-upcoming', {}) as { workspace?: WorkspaceRecord | null }\\n              if (cancelled) return"), "a stale appointment load must not continue auto-creating or attaching a workspace after the care session changes");
+assert.ok(component.includes("await ensureAnonymousSession()\n        if (cancelled) return\n        const [briefResult, workspaceResult]"), "a cancelled appointment load must stop before requesting the next caregiver's appointment data");
+assert.ok(component.includes("const generated = await postJSON('/appointment-workspaces/ensure-upcoming', {}) as { workspace?: WorkspaceRecord | null }\n              if (cancelled) return"), "a stale appointment load must not continue auto-creating or attaching a workspace after the care session changes");
 
