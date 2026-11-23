@@ -91,7 +91,7 @@ assert.match(moreMenu, /label: "Download \/ Export"/);
 assert.match(moreMenu, /label: "Archive"/);
 assert.match(moreMenu, /label: "Pin"/);
 assert.match(moreMenu, /label: "Unpin"/);
-assert.match(moreMenu, /label: "Delete"/);
+assert.match(moreMenu, /label: "Clear this device"/, "the destructive action must say exactly what is cleared rather than implying that saved care information is deleted");
 assert.match(shell, /case "share_care_summary"/);
 assert.match(shell, /case "download_export"/);
 assert.match(shell, /case "add_to_home"/);
