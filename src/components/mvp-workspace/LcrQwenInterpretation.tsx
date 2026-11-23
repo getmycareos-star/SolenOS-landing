@@ -198,20 +198,20 @@ export function LcrQwenInterpretation({
                       {source.recorded_at && <p>When it was recorded: {new Date(source.recorded_at).toLocaleString()}</p>}
                       {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
                       {source.entered_by && <p>Recorded by: {caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
-                      {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                      {source.source_excerpt && <blockquote>{caregiverSourceText(source.source_excerpt)}</blockquote>}
                       {source.related_evidence?.map((evidence, evidenceIndex) => (
                         <div key={"related-" + evidenceIndex}>
                           <strong>{caregiverSafeGeneratedText(evidence.label) || "Related note or document"}</strong>
                           {evidence.reported_by && <p>Reported by: {caregiverSafeAssistantText(evidence.reported_by) || "Not recorded"}</p>}
                           {evidence.entered_by && <p>Added by: {caregiverSafeAssistantText(evidence.entered_by) || "Who added this was not recorded"}</p>}
                           {evidence.recorded_at && <p>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
-                          {evidence.source_excerpt && <blockquote>{evidence.source_excerpt}</blockquote>}
+                          {evidence.source_excerpt && <blockquote>{caregiverSourceText(evidence.source_excerpt)}</blockquote>}
                           {evidence.observations?.map((observation, observationIndex) => (
                             <div key={"observation-" + observationIndex}>
                               <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {typeof observation.value === "number" && Number.isFinite(observation.value) ? String(observation.value) : caregiverSafeAssistantText(observation.value) || "Details not supplied"}</p>
                               {observation.reported_by && <p>Reported by: {caregiverSafeAssistantText(observation.reported_by) || "Not recorded"}</p>}
                               {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
-                              {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
+                              {observation.source_excerpt && <blockquote>{caregiverSourceText(observation.source_excerpt)}</blockquote>}
                             </div>
                           ))}
                         </div>
