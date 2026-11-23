@@ -47,8 +47,8 @@ assert(!nonAccessDeniedBody.includes("setChanges([])"), "a transient refresh fai
 
 
 assert(currentUnderstanding.includes("personIdRef.current !== scopedPersonId"), "cached care information must be cleared when the authenticated person changes");
-assert.match(currentUnderstanding, /catch \{\s*setChangesError/);
-assert.match(currentUnderstanding, /catch \{\s*setPatternsError/);
+assert.match(currentUnderstanding, /catch \{\s*if \(!isCurrentRequest\(\)\) return;\s*setChangesError/);
+assert.match(currentUnderstanding, /catch \{\s*if \(!isCurrentRequest\(\)\) return;\s*setPatternsError/);
 assert.doesNotMatch(currentUnderstanding, /catch \{\s*setChanges\(\[\]\)/, "failed change-history refresh must preserve the last successful history");
 assert.doesNotMatch(currentUnderstanding, /catch \{\s*setPatterns\(\[\]\)/, "failed repeated-change refresh must preserve the last successful history");
 assert.match(currentUnderstanding, /changesError && <RecordState kind="error"/);
