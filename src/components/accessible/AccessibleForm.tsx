@@ -136,7 +136,7 @@ export function AccessibleForm({
           }
         }
       }
-    } catch (err) {
+    } catch {
       setSubmitStatus('error');
       announce(caregiverSafeErrorMessage());
     } finally {
