@@ -739,6 +739,7 @@ function historySourceLabel(source: string): string {
 export function LCRCurrentUnderstanding() {
   const [personId, setPersonId] = useState("");
   const personIdRef = useRef("");
+  const caregiverIdRef = useRef("");
   const [currentCaregiverId, setCurrentCaregiverId] = useState("");
   const [assignableCaregivers, setAssignableCaregivers] = useState<AssignableCaregiver[]>([]);
   const [responsibleCaregiverId, setResponsibleCaregiverId] = useState("");
@@ -970,7 +971,7 @@ export function LCRCurrentUnderstanding() {
       }
       sessionConfirmed = true;
       const scopedPersonId = session.person.id;
-      if (personIdRef.current && personIdRef.current !== scopedPersonId) {
+      if (personIdRef.current && (personIdRef.current !== scopedPersonId || caregiverIdRef.current !== session.caregiver.id)) {
         setProjection(null);
         setRegisteredActions([]);
         setChanges([]);
@@ -980,8 +981,16 @@ export function LCRCurrentUnderstanding() {
         setActionHistory({});
         setChangeEvidence({});
         setEvidenceIntegrityByFact({});
+        setEvidenceIntegrityErrors({});
+        setEvidenceIntegrityLoadingId(null);
+        setExpandedChangeId(null);
+        setEvidenceLoadingId(null);
+        setConfirmationReason({});
+        setConfirmationError({});
+        setConfirmationLoadingId(null);
       }
       personIdRef.current = scopedPersonId;
+      caregiverIdRef.current = session.caregiver.id;
       setPersonId(scopedPersonId);
       setCurrentCaregiverId(session.caregiver.id);
       setResponsibleCaregiverId(session.caregiver.id);
@@ -1319,8 +1328,13 @@ export function LCRCurrentUnderstanding() {
         await refreshWholeRecord();
       })();
     };
+    const refreshAfterSessionChange = () => { void load(); };
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
-    return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+    window.addEventListener("personIdChanged", refreshAfterSessionChange);
+    return () => {
+      window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+      window.removeEventListener("personIdChanged", refreshAfterSessionChange);
+    };
   }, [load, refreshWholeRecord]);
 
   const openLoopItems = assessment?.open_loops?.items ?? [];
