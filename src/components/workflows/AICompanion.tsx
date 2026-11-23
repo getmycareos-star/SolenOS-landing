@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
 import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from '@/api/client'
 import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
-import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
+import { caregiverFieldLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { RecordState } from '@/components/ui/RecordState'
 import { shouldUseLcrOrientationEndpoint } from '@/lib/greeting-orientation'
 
@@ -807,8 +807,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   <strong>{caregiverSafeGeneratedText(source.label) || 'Saved care information'}</strong>
                                   {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
                                   {source.recorded_at && <p>When it was added: {new Date(source.recorded_at).toLocaleString()}</p>}
-                                  {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
-                                  {source.entered_by && <p>{caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
+                                  {source.reported_by && <p>Reported by: {caregiverSourceText(source.reported_by) || "Not recorded"}</p>}
+                                  {source.entered_by && <p>{caregiverSourceText(source.entered_by) || "Who added this was not recorded"}</p>}
                                   {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || 'Status not available'}</p>}
                                   {source.correction_note && <p>{source.correction_note}</p>}
                                   {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
@@ -831,8 +831,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                     <strong>Related note or document</strong>
                                     {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
                                       <p>{caregiverSafeGeneratedText(item.label) || 'Related care information'}</p>
-                                      {item.reported_by && <p>Reported by: {caregiverSafeAssistantText(item.reported_by) || "Not recorded"}</p>}
-                                      {item.entered_by && <p>Added by: {caregiverSafeAssistantText(item.entered_by) || "Who added this was not recorded"}</p>}
+                                      {item.reported_by && <p>Reported by: {caregiverSourceText(item.reported_by) || "Not recorded"}</p>}
+                                      {item.entered_by && <p>Added by: {caregiverSourceText(item.entered_by) || "Who added this was not recorded"}</p>}
                                       {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved note or document. It is not a separate report.</p>}
                                       {item.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                       {item.source_independence_status === 'not_assessed' && <p>We have not checked whether this note is separate from other reports.</p>}
