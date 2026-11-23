@@ -832,3 +832,18 @@ const careContinuityIntegrity = read("../src/components/CareContinuityIntegrityP
 assert.match(careContinuityIntegrity, /caregiverFieldLabel\(item\.field\) \|\| caregiverInformationLabel\(item\.field\) \|\| 'Care detail'/);
 assert.doesNotMatch(careContinuityIntegrity, /caregiverSafeAssistantText\(item\.field\)/,
   "expanded Care Record details must not display raw field codes");
+
+const conflictResolution = read("../src/components/ConflictResolutionPanel.tsx");
+const claimAssessment = read("../src/components/ClaimAssessmentPanel.tsx");
+const whyAmISeeingThis = read("../src/components/trust/WhyAmISeeingThis.tsx");
+assert.match(conflictResolution, /caregiverSafeGeneratedText\(item\.description\)/, "generated conflict descriptions must use the caregiver language boundary");
+assert.match(conflictResolution, /caregiverSafeGeneratedText\(selected\.description\)/, "selected conflict descriptions must use the caregiver language boundary");
+assert.match(claimAssessment, /caregiverSafeGeneratedText\(selectedClaim\.source_label\)/, "generated claim source labels must use the caregiver language boundary");
+assert.match(claimAssessment, /caregiverSafeGeneratedText\(edge\.rationale\)/, "generated review dependency explanations must use the caregiver language boundary");
+assert.match(claimAssessment, /caregiverSafeGeneratedText\(assessmentImpact\.interpretation_limit\)/, "generated review limits must use the caregiver language boundary");
+assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(whyItMatters\)/, "generated reasons shown to caregivers must use the caregiver language boundary");
+assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(remainsUnclear\)/, "generated uncertainty explanations must use the caregiver language boundary");
+assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(couldClarify\)/, "generated next-step suggestions must use the caregiver language boundary");
+assert.match(whyAmISeeingThis, /safeWhyItMatters \|\| 'A plain-language explanation is not available right now\.'/,
+  "filtered explanations must show an honest fallback instead of disappearing silently");
+assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(source\.description\)/, "generated source descriptions must use the caregiver language boundary");
