@@ -53,7 +53,7 @@ assert.equal(caregiverSafeAssistantText(originalCaregiverNote), null,
   "the assistant-output filter continues to reject diagnostic identifiers");
 assert.equal(caregiverSourceText(originalCaregiverNote), originalCaregiverNote,
   "original caregiver notes must not be silently rewritten or hidden by generated-copy filters");
-assert.equal(caregiverSourceText("  Mum slept poorly last night.  "), "Mum slept poorly last night.");
+assert.equal(caregiverSourceText("  Mum slept poorly last night.  "), "  Mum slept poorly last night.  ", "original source whitespace must not be rewritten");
 assert.equal(caregiverSourceText("   "), null);
 
 assert.equal(caregiverInformationLabel("observed"), "Seen by a caregiver");
