@@ -83,7 +83,7 @@ assert.match(page, /const unclassifiedLoops = linkedLoops\.filter\(\(loop\) => !
 assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
 assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an unknown follow-up outcome must not be described as resolved");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
-assert.ok(page.includes("SolenOS checks the care information you have saved and keeps follow-ups easy to find"), "caregiver copy must explain that SolenOS manages unresolved matters");
+assert.ok(page.includes("Follow-ups are based on the care information saved here"), "caregiver copy must explain what follow-ups are based on");
 assert.match(careContinuity, /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/, "LCR important changes must show evidence status and incomplete history");
 assert.match(careContinuity, /item\.linked_follow_up_outcome_status[\s\S]*?caregiverStatusLabel/, "LCR important changes must show the linked follow-up outcome");
 
