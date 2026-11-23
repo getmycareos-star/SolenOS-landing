@@ -639,7 +639,7 @@ assert.match(claimReview, /caregiverSourceText\(selectedClaim\.asserted_value\)/
   "claim review must preserve the accepted care detail's exact wording");
 assert.match(claimReview, /caregiverSourceText\(selectedClaim\.source_label\)/,
   "claim review must preserve original source attribution");
-assert.match(claimReview, /caregiverReadableCaptureText\(selectedEvidence\.source_text\) \?\? "The saved information is available, but its wording could not be shown clearly\."/
+assert.match(claimReview, /caregiverReadableCaptureText\(selectedEvidence\.source_text\) \?\? "The saved information is available, but its wording could not be shown clearly\."/,
   "claim review must show original evidence wording without generated-copy filtering");
 assert.match(claimReview, /Read the saved wording and details from this/,
   "caregivers must be able to inspect the selected source before quoting it");
