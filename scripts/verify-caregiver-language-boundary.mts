@@ -894,8 +894,20 @@ assert.match(settingsPage, /caregiverSafeGeneratedText\(erasureRequest\.message\
 assert.match(evidenceReview, /item\.reviewed_by_caregiver_id \? "Checked by a caregiver" : "Reviewer not recorded"/,
   "missing reviewer identity must be described as unrecorded, not as an unavailable person");
 
-assert.match(livingCareRecordPanel, /view\.what_understood\.length > facts\.length[\s\S]*?saved information remains in your Care Record/,
+assert.match(livingCareRecordPanel, /factCandidates\.length > facts\.length[\s\S]*?saved information remains in your Care Record/,
   "filtered generated care facts must not disappear without explanation");
+assert.match(livingCareRecordPanel, /const factCandidates = view\.what_understood\.slice\(0, 2\)/,
+  "the fact filtering notice must account for the intentional two-fact display limit");
+assert.match(livingCareRecordPanel, /const questionCandidates[\s\S]*?questionCandidates\.length > stillUnclear\.length/,
+  "filtered questions must be disclosed even when other questions remain visible");
+assert.match(livingCareRecordPanel, /rememberedCandidates\.length > remembered\.length/,
+  "partly filtered memory summaries must be disclosed");
+assert.match(livingCareRecordPanel, /followUpCandidates\.length > followUpItems\.length/,
+  "partly filtered next-step suggestions must be disclosed");
+assert.match(livingCareRecordPanel, /supportingEvidenceCandidates[\s\S]*?saved notes and documents are available, but their wording could not be shown clearly/,
+  "source notes must remain visible as available when their text cannot be safely displayed");
+assert.match(livingCareRecordPanel, /view\.contradictions\.length > contradictions\.length/,
+  "partly filtered conflicting reports must not silently disappear");
 assert.match(livingCareRecordPanel, /view\.contradictions\.length > 0[\s\S]*?Check the original notes before drawing a conclusion/,
   "filtered conflicting-report explanations must preserve a visible caution");
 assert.match(livingCareRecordPanel, /view\.what_needs_context\.length > 0[\s\S]*?questions are saved, but their wording could not be shown clearly/,
