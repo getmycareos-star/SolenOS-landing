@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Conflict = {
   id: string;
@@ -207,7 +207,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       </label>
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Notes or documents you checked
         <select multiple style={{ ...field, minHeight: 100 }} value={evidenceIds} onChange={(event) => setEvidenceIds(Array.from(event.target.selectedOptions, (option) => option.value))}>
-          {evidence.map((item) => <option key={item.id} value={item.id}>Saved note or document · {caregiverSafeAssistantText(item.source_text.slice(0, 80)) || "Original wording is not available"}</option>)}
+          {evidence.map((item) => <option key={item.id} value={item.id}>Saved note or document · {caregiverSourceText(item.source_text.slice(0, 80)) || "Original wording is not available"}</option>)}
         </select>
       </label>
       <button type="button" style={button} onClick={() => void submitResolution()} disabled={saving || loading}>
