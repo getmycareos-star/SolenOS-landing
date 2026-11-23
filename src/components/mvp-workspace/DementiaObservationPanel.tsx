@@ -129,7 +129,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
 
   function beginEditing(item: DementiaObservation) {
     setEditingObservationId(item.id);
-    setEditCategory(item.observation_category.replace(/^dementia\\./i, ""));
+    setEditCategory(item.observation_category.replace(/^dementia\./i, ""));
     setEditDescription(item.description);
     setEditObservedAt(item.observed_at ? new Date(item.observed_at).toISOString().slice(0, 16) : "");
     setEditObservationType(
