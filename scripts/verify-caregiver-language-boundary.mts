@@ -185,6 +185,12 @@ const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 const earlyAccessConsent = read("../src/components/public/EarlyAccessConsentForm.tsx");
 const community = read("../src/components/workflows/Community.tsx");
 assert.match(companion, /message\.role === 'assistant'[\s\S]*?caregiverSafeGeneratedText\(message\.text\)/, "restored Companion answers must pass through the same caregiver-language boundary as new answers");
+assert.match(structuredDailyCapture, /caregiverSafeAssistantText\(item\.name\)/,
+  "saved medication names must use readable caregiver text");
+assert.match(structuredDailyCapture, /caregiverSafeAssistantText\(item\.dose\)/,
+  "saved medication doses must not expose raw structured metadata");
+assert.match(structuredDailyCapture, /caregiverSafeAssistantText\(item\.source_text\)/,
+  "saved medication source notes must use readable caregiver text");
 assert.match(clarificationWorkflow, /caregiverSafeAssistantText\(item\.answer\)/,
   "saved clarification answers must not expose raw structured metadata");
 assert.match(clarificationWorkflow, /caregiverSafeAssistantText\(item\.answer_provenance\)/,
