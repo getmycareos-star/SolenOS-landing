@@ -238,7 +238,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         setError("Your choice was saved, but SolenOS could not confirm that it appears in your Care Record. Refresh your Care Record before relying on it.");
       }
     } catch {
-      setError("The review decision was not saved. Check the connection and retry; the original document remains unchanged.");
+      setError("We couldn't confirm whether your review was saved. Refresh the review history before trying again. The original document is unchanged.");
     } finally {
       setBusy(null);
     }
