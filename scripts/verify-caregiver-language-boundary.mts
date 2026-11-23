@@ -1202,3 +1202,5 @@ assert.match(historyDrawer, /value: asText\(item\.owner_label\)/, "caregiver nam
 
 assert.match(historyDrawer, /<h2 className="history-detail-title">\{selectedRecord\.title \|\| "Care update"\}<\/h2>/, "original care record titles must remain unchanged");
 assert.match(historyDrawer, /const rawValue = field\.value\.trim\(\)/, "caregiver-entered detail values must remain unchanged while known statuses are translated");
+
+assert.match(naturalDailyUpdate, /caregiverSourceText\(candidate\.source_quote\)/, "OCR source quotations passed into medication context must preserve their exact wording and whitespace");
