@@ -231,6 +231,8 @@ assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.re
   "LCR observation attribution must use caregiver-safe text");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.source_excerpt\)/,
   "LCR observation source excerpts must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\)/,
+  "LCR aggregate time-window labels must use caregiver-safe text");
 
 assert.match(documentReview, /analysis\.open_questions\?\.map\(\(question, i\) => <li key=\{i\}>\{caregiverSafeGeneratedText\(question\)/,
   "document review questions must use the caregiver-language boundary in every display location");
