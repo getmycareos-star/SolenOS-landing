@@ -7,7 +7,7 @@ const caregiverLanguage = fs.readFileSync("src/lib/caregiver-language.ts", "utf8
 const allCareViews = page + "\n" + careContinuity;
 
 const required: Array<[string, RegExp]> = [
-  ["loads every persisted follow-up page before presenting the list", /async function loadAllOpenLoops\(\)[\s\S]*?limit=\$\{pageSize\}&offset=\$\{offset\}[\s\S]*?expectedCount[\s\S]*?records\.length >= expectedCount/],
+  ["loads every persisted follow-up page before presenting the list", /async function loadAllOpenLoops\(\)[\s\S]*?limit=\$\{pageSize\}&offset=\$\{offset\}[\s\S]*?expectedCount[\s\S]*?records\.length > expectedCount[\s\S]*?records\.length === expectedCount/],
   ["rejects incomplete, duplicate or invalid follow-up pages instead of presenting partial history as complete", /seenIds\.has\(row\.id\)[\s\S]*?could not be fully retrieved[\s\S]*?larger than the available page limit/],
   ["loads the canonical situation-understanding assessment", /getJSON\("\/care-continuity\/situation-understanding"\)/],
   ["keeps partial source failures visible", /Promise\.allSettled\([\s\S]*?if \(!nextLoops && !nextAssessment\)/],
@@ -117,3 +117,5 @@ assert.match(page, /loop\?\.priority_reasons/, "saved follow-up reasons must be 
 assert.match(page, /What information is missing/, "follow-ups that need clarification must show the missing information section");
 assert.match(page, /caregiverSafeGeneratedText\(detail\)/, "missing-information details must pass through the caregiver language boundary");
 assert.match(page, /The specific information needed has not been recorded yet/, "missing-information states must not invent details");
+
+assert.match(page, /records\.length > expectedCount[\s\S]*?count did not match the records returned/, "follow-up pagination must reject more rows than the API reports, including a zero-count response with rows");
