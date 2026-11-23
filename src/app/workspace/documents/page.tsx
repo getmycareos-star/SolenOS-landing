@@ -162,6 +162,7 @@ export default function DocumentsPage() {
   const [capturedPages, setCapturedPages] = useState<File[]>([]);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const documentLoadSequenceRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -181,6 +182,8 @@ export default function DocumentsPage() {
   const [documentIntelligenceRefresh, setDocumentIntelligenceRefresh] = useState(0);
 
   const loadDocuments = useCallback(async (quiet = false) => {
+    const requestSequence = ++documentLoadSequenceRef.current;
+    const isCurrentRequest = () => documentLoadSequenceRef.current === requestSequence;
     if (quiet) setRefreshing(true);
     else setLoading(true);
     setListError(null);
@@ -192,12 +195,16 @@ export default function DocumentsPage() {
         .filter((item) => item && item.type === "document" && item.id)
         .map(toDocument)
         .sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
-      setDocuments(next);
+      if (isCurrentRequest()) setDocuments(next);
     } catch {
-      setListError("SolenOS could not load saved documents. Your saved files have not been deleted. Check the connection and try again.");
+      if (isCurrentRequest()) {
+        setListError("SolenOS could not load saved documents. Your saved files have not been deleted. Check the connection and try again.");
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isCurrentRequest()) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
