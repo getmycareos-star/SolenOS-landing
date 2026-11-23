@@ -506,7 +506,7 @@ assert.doesNotMatch(documentReview, /model: \{analysis\.model_provenance\.model_
 assert.doesNotMatch(documentsPage, /Original file SHA-256/);
 assert.doesNotMatch(settings, /setError\(detail \|\|/);
 assert.match(settings, /caregiverSafeErrorMessage/);
-assert.match(lcr, /caregiverSafeAssistantText\(item\.interpretation_limit\)/);
+assert.match(lcr, /caregiverSafeGeneratedText\(item\.interpretation_limit\)/, "generated interpretation limits must pass through the generated-text safety filter");
 assert.doesNotMatch(lcr, /Extraction method:|Hedge \/ uncertainty marker|Near-duplicate review|algorithm version|policy version/i);
 assert.doesNotMatch(changeIntelligence, /replaceAll\("_"|not calibrated|Observation coverage: baseline|evidence references:/i);
 assert.match(changeIntelligence, /caregiverSituationStateLabel/);
