@@ -155,7 +155,7 @@ const settingsPageSource = fs.readFileSync(path.join(root, "src/app/workspace/se
 const caregiverAccessSource = fs.readFileSync(path.join(root, "src/components/mvp-workspace/CaregiverAccessPanel.tsx"), "utf8");
 assert.ok(settingsPageSource.includes("onToggle={(event) => setCaregiverAccessOpen(event.currentTarget.open)}"));
 assert.ok(settingsPageSource.includes("<CaregiverAccessPanel enabled={caregiverAccessOpen} />"));
-assert.match(caregiverAccessSource, /if \(enabled\) void load\(\)/);
+assert.match(caregiverAccessSource, /if \(!enabled\) return;[\s\S]*?window\.addEventListener\("personIdChanged", refreshForSessionChange\);[\s\S]*?void load\(\)/, "caregiver access reloads only while open and refreshes when the active person changes");
 assert.match(caregiverAccessSource, /getJSON\(\s*"\/caregiver-responsibilities\/history\//, "caregiver responsibility history must be retrieved from the authenticated backend");
 assert.match(caregiverAccessSource, /getJSON\("\/caregiver-activities\//, "caregiver activity history must be retrieved from the authenticated backend");
 assert.match(caregiverAccessSource, /postJSON\("\/caregiver-activities"/, "caregiver activity records must persist through the backend");
