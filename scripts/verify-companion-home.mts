@@ -170,9 +170,9 @@ assert.match(companion, /if \(!Array\.isArray\(response\?\.items\)\) throw new E
 assert.match(companion, /setCareUpdateLoadFailed\(true\)/, "failed suggestion reads must be tracked independently from save and review errors");
 assert.match(companion, /careUpdateLoadFailed && pendingCareUpdates\.length > 0[\s\S]*?These are the last suggestions we could load\. They may be out of date; refresh before making a decision\./, "previously loaded care suggestions must be labelled stale when refresh fails");
 
-assert.match(companion, /disabled=\{careUpdateLoadFailed \|\| Boolean\(reviewingCareUpdateId\)\}/, "caregiver decisions must be paused while the pending-suggestion list is stale");
+assert.match(companion, /disabled=\{careUpdateLoading \|\| careUpdateLoadFailed \|\| Boolean\(reviewingCareUpdateId\)\}/, "caregiver decisions must be paused while suggestions are loading or stale");
 
-assert.match(companion, /const requestSequence = \+\+careUpdateLoadSequenceRef\.current[\s\S]*?if \(isCurrentRequest\(\)\) setPendingCareUpdates\(response\.items\)[\s\S]*?if \(isCurrentRequest\(\)\) setCareUpdateLoading\(false\)/, "overlapping suggestion reads must not allow an older response to overwrite a newer list or loading state");
+assert.match(companion, /const requestSequence = \+\+careUpdateLoadSequenceRef\.current[\s\S]*?if \(isCurrentRequest\(\)\) \{\s*setPendingCareUpdates\(response\.items\)\s*setCareUpdateLoadFailed\(false\)\s*\}[\s\S]*?if \(isCurrentRequest\(\)\) setCareUpdateLoading\(false\)/, "only the current successful response may replace suggestions, clear the stale flag, or finish loading");
 
 assert.match(companion, /conversationScopeRef\.current !== activeScopeKey[\s\S]*?setMessages\(\[userMsg\]\)[\s\S]*?setPendingCareUpdates\(\[\]\)[\s\S]*?session_id: activeSessionId/, "Companion must clear prior caregiver messages and pending suggestions when the active person or caregiver changes");
 
