@@ -633,6 +633,10 @@ assert.match(sourceReview, /Notes and documents behind care information/);
 assert.match(sourceReview, /Each detail keeps the exact words from the original note or document/);
 assert.doesNotMatch(sourceReview, /Saved source reviews|Sources and supporting information/);
 assert.match(claimReview, /Choose a note or document/);
+assert.match(claimReview, /caregiverSourceText\(selectedClaim\.asserted_value\)/,
+  "claim review must preserve the accepted care detail's exact wording");
+assert.match(claimReview, /caregiverSourceText\(selectedClaim\.source_label\)/,
+  "claim review must preserve original source attribution");
 assert.match(claimReview, /caregiverSourceText\(selectedEvidence\.source_text\)/,
   "claim review must show original evidence wording without generated-copy filtering");
 assert.match(claimReview, /Read the original wording from this/,
