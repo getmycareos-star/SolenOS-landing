@@ -100,6 +100,8 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   reconciliations: 'Information checked against other reports',
   appointments: 'Appointment',
   appointment_workspace: 'Appointment notes',
+  appointment_workspace_stale: 'Appointment notes to review',
+  appointment_workspace_currentness_unknown: 'Appointment notes — currentness not checked',
   appointment_workspace_revision: 'Earlier appointment notes',
   caregiver_observations: 'What a caregiver noticed',
   caregiver_perspectives: 'Caregiver view',
