@@ -670,13 +670,13 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                                 <span>{caregiverStatusLabel(record.status) ?? "Recorded"}</span>
                               </div>
                               <p className="panel-muted">
-                                {record.source_label ?? "Saved note or document"}
+                                {caregiverSafeGeneratedText(record.source_label) || "Saved note or document"}
                                 {record.occurred_at || record.recorded_at
                                   ? " · " + new Date(record.occurred_at ?? record.recorded_at ?? "").toLocaleString()
                                   : ""}
                               </p>
                               {record.excerpt ? (
-                                <p>{record.excerpt}</p>
+                                <p>{caregiverSafeAssistantText(record.excerpt) || "The original wording could not be displayed."}</p>
                               ) : null}
                               {record.epistemic_status ? (
                                 <p className="panel-muted">
