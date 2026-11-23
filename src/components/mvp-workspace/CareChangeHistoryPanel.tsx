@@ -234,7 +234,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                               <p>{displayChangeText(source.label || readableSource(source.record_type))}</p>
                               {source.source_excerpt && <blockquote>{caregiverSourceText(source.source_excerpt) || "Original wording not available"}</blockquote>}
                               <p>Happened: {formatDate(source.occurred_at)} · Recorded: {formatDate(source.recorded_at)}</p>
-                              {source.reported_by && <p>Reported by: {caregiverSourceText(source.reported_by) || "Not recorded"}</p>}
+                              {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
                             </details>
                           ))}
                         </li>
@@ -259,7 +259,7 @@ export default function CareChangeHistoryPanel({ personId }: { personId: string 
                                   <p>{displayChangeText(source.label || readableSource(source.record_type))}</p>
                                   {source.source_excerpt && <blockquote>{caregiverSourceText(source.source_excerpt) || "Original wording not available"}</blockquote>}
                                   <p>Happened: {formatDate(source.occurred_at)} · Recorded: {formatDate(source.recorded_at)}</p>
-                                  {source.reported_by && <p>Reported by: {caregiverSourceText(source.reported_by) || "Not recorded"}</p>}
+                                  {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
                                 </div>
                               ))}
                             </details>
