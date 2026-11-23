@@ -1146,6 +1146,8 @@ assert.match(livingCareRecordPanel, /rememberedCandidates\.length > remembered\.
   "partly filtered memory summaries must be disclosed");
 assert.match(livingCareRecordPanel, /followUpCandidates\.length > followUpItems\.length/,
   "partly filtered next-step suggestions must be disclosed");
+assert.match(livingCareRecordPanel, /caregiverSourceText\(item\)/,
+  "original supporting evidence must not be removed by generated-copy filtering");
 assert.match(livingCareRecordPanel, /supportingEvidenceCandidates[\s\S]*?saved notes and documents are available, but their wording could not be shown clearly/,
   "source notes must remain visible as available when their text cannot be safely displayed");
 assert.match(livingCareRecordPanel, /view\.contradictions\.length > contradictions\.length/,
