@@ -61,6 +61,17 @@ const readableCapture = caregiverReadableCaptureText(JSON.stringify({
 assert.match(readableCapture ?? "", /Sleep/);
 assert.match(readableCapture ?? "", /Blood pressure/);
 assert.doesNotMatch(readableCapture ?? "", /epistemic|poor_sleep|blood_pressure/);
+const prefixedReadableCapture = caregiverReadableCaptureText("Structured daily capture — " + JSON.stringify({
+  capture_idempotency_key: "test-key-not-for-caregivers",
+  observation: "Caregiver reports that Mum slept poorly last night.",
+  source: "structured_daily_capture",
+  capture_request_fingerprint: "test-fingerprint-not-for-caregivers",
+}));
+assert.match(prefixedReadableCapture ?? "", /Mum slept poorly last night/,
+  "prefixed structured care notes must preserve the original caregiver observation");
+assert.doesNotMatch(prefixedReadableCapture ?? "", /capture_idempotency_key|capture_request_fingerprint|structured_daily_capture|test-fingerprint/,
+  "structured capture metadata must never appear in caregiver-facing wording");
+
 
 assert.equal(caregiverFieldLabel("reconciliation"), "Updating your care information");
 assert.equal(caregiverFieldLabel("delta_engine"), "Changes since your last visit");
