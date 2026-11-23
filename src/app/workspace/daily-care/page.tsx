@@ -842,7 +842,7 @@ export default function DailyCarePage() {
                       <p className="daily-care-muted">{caregiverSafeGeneratedText(item.capture_processing?.message) || (
                         ["queued", "processing"].includes(item.capture_processing?.job_status || "")
                           ? "This update is being checked. You can keep using SolenOS."
-                          : "Your note is saved, but its details could not be organized."
+                          : "Your saved note is still available. Its details could not be organized yet."
                       )}</p>
                     )}
                   </li>
