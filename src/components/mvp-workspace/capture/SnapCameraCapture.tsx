@@ -140,13 +140,13 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
         <div className="entry-capture-actions">
           <button
             type="button"
-          <button
-            type="button"
             className="workspace-secondary"
             onClick={() => setCameraFacingMode((mode) => mode === "environment" ? "user" : "environment")}
           >
             Switch to {cameraFacingMode === "environment" ? "front" : "back"} camera
           </button>
+          <button
+            type="button"
             className="workspace-primary"
             disabled={!ready || !!error}
             onClick={captureFrame}
