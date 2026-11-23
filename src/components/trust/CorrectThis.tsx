@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { caregiverSafeErrorMessage } from '@/lib/caregiver-language';
 import { AccessibleButton } from '../accessible/AccessibleButton';
 
 interface CorrectThisProps {
@@ -51,7 +52,7 @@ export default function CorrectThis({
         setSubmitError('Failed to save correction');
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Unknown error');
+      setSubmitError(caregiverSafeErrorMessage());
     } finally {
       setSubmitting(false);
     }
