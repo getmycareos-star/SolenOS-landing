@@ -1301,3 +1301,6 @@ assert.match(caregiverAccessPanel, /const requestSequence = \+\+loadSequenceRef\
   "overlapping caregiver-access reads must not let an old session overwrite the current caregiver's data");
 assert.match(caregiverAccessPanel, /addEventListener\("personIdChanged", refreshForSessionChange\)/,
   "caregiver-access data must reload when the active person or caregiver session changes");
+
+assert.match(lcr, /<details className="lcr-history-details">\\s*<summary onClick=\\{\\(\\) => setDementiaProfileOpen\\(\\(open\\) => !open\\)\\}>Dementia care profile and observations<\\/summary>/, "the dementia disclosure must use a single summary click state transition");
+assert.doesNotMatch(lcr, /<details className="lcr-history-details" onToggle=/, "nested profile disclosures must not share a bubbling toggle handler");
