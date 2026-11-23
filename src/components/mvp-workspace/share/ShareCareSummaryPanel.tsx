@@ -231,7 +231,7 @@ export function ShareCareSummaryPanel({
                     ? [...new Set([...current, item.source_ref])]
                     : current.filter(ref => ref !== item.source_ref))}
                 />
-                <span>I checked “{item.section}” against its saved source wording, dates and uncertainty labels.</span>
+                <span>I checked “{caregiverSafeGeneratedText(item.section) || "this care detail"}” against its saved source wording, dates and what is still unclear.</span>
               </label>
             ))}
             <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "10px 0" }}>
