@@ -1302,3 +1302,5 @@ assert.match(caregiverAccessPanel, /const requestSequence = \+\+loadSequenceRef\
 assert.match(caregiverAccessPanel, /addEventListener\("personIdChanged", refreshForSessionChange\)/,
   "caregiver-access data must reload when the active person or caregiver session changes");
 
+
+assert.match(companion, /typeof observation\\.value === "number" && Number\\.isFinite\\(observation\\.value\\) \\? String\\(observation\\.value\\) : caregiverSafeAssistantText\\(observation\\.value\\)/, "Companion must preserve zero-valued observations while rejecting raw structured values");
