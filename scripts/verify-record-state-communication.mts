@@ -89,7 +89,9 @@ console.log("PASS: partial follow-up refresh failures preserve the last successf
 
 const reminders = fs.readFileSync("src/app/workspace/reminders/page.tsx", "utf8");
 assert(reminders.includes("hasLoadedRef.current = true"), "reminders must remember a successful list read");
-assert(reminders.includes("error && !hasLoadedRef.current ? null"), "an initial reminder read failure must not render a false empty list");
+assert(reminders.includes("error && reminders.length === 0 ? null"), "a failed reminder read with no cached reminders must suppress the empty state");
+assert(reminders.includes("{error ? <RecordState kind=\"error\""), "reminder read failures must render a distinct recoverable error state");
+assert(reminders.includes("void refresh(personId || undefined)"), "reminder error recovery must retry the persisted list read");
 assert(reminders.includes("onAction={() => { setError(\"\")"), "reminder errors must expose a retry action");
 assert(reminders.includes("loading && !hasLoadedRef.current"), "only an initial reminder load should replace the list with a loading state");
 console.log("PASS: reminder loading, empty and failed states are separate, and retries preserve previously loaded reminders.");
