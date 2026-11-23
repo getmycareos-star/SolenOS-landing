@@ -27,6 +27,13 @@ assert(
   "stale review-history responses must not overwrite a refreshed analysis or clear a newer request",
 );
 assert(
+  source.includes("textRequestSequence") &&
+  source.includes("textRequestSequence.current[analysisId] !== requestSequence") &&
+  source.includes("textRequestSequence.current[analysisId] += 1"),
+  "stale extracted-text responses must not overwrite refreshed document state or clear a newer request",
+);
+
+assert(
   source.includes("expected_source_quote: sourceQuote") &&
   source.includes("expected_subject: candidate.subject"),
   "caregiver decisions must be bound to the exact source wording and subject shown in the review",
