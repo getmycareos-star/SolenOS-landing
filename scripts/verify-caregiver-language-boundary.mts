@@ -641,7 +641,7 @@ assert.match(claimReview, /caregiverSourceText\(selectedEvidence\.source_text\)/
   "claim review must show original evidence wording without generated-copy filtering");
 assert.match(claimReview, /Read the original wording from this/,
   "caregivers must be able to inspect the selected source before quoting it");
-assert.match(claimReview, /No readable text was extracted from this file\. You may need to open the original document to review it/,
+assert.match(claimReview, /No readable text is available for this item\. You may need to review the original note or document/,
   "unreadable document evidence must remain explicitly available for review");
 assert.match(claimReview, /This information needs another review/);
 assert.match(statusCareDelta, /Compare with saved care information/);
