@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type CurrentCareItem = {
   id: string;
@@ -140,8 +140,8 @@ export function PersistedCareOrientation() {
           <p>{projection.item_count} saved care detail{projection.item_count === 1 ? "" : "s"} shown.</p>
           {items.map((item) => (
             <article className="persisted-care-orientation-latest" key={item.source_collection + ":" + item.id}>
-              <strong>{caregiverSafeAssistantText(item.title) || "Saved care detail"}</strong>
-              {caregiverSafeAssistantText(item.description) && <p>{caregiverSafeAssistantText(item.description)}</p>}
+              <strong>{caregiverSourceText(item.title) || "Saved care detail"}</strong>
+              {caregiverSourceText(item.description) && <p>{caregiverSourceText(item.description)}</p>}
               <p>{readableStatus(item.epistemic_status)} · {readableStatus(item.status)}</p>
               <p>{caregiverSafeGeneratedText(item.source_label) || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
               {item.evidence_ids.length > 0 && (
