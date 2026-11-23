@@ -4280,5 +4280,81 @@ await record("17 saved Care History review actions preserve caregiver choice on 
   await context.close();
 });
 
+const responsiveViewports = [
+  { name: "small phone", width: 320, height: 568 },
+  { name: "compact phone", width: 360, height: 640 },
+  { name: "standard phone", width: 390, height: 844 },
+  { name: "large phone", width: 430, height: 932 },
+  { name: "tablet portrait", width: 768, height: 1024 },
+  { name: "small desktop", width: 1024, height: 768 },
+  { name: "desktop", width: 1440, height: 900 },
+  { name: "wide desktop", width: 1920, height: 1080 },
+];
+const responsiveRoutes = [
+  "/workspace",
+  "/workspace/daily-care",
+  "/workspace/appointments",
+  "/workspace/open-loops",
+  "/workspace/more",
+  "/workspace/timeline",
+  "/workspace/companion",
+  "/workspace/documents",
+  "/workspace/reminders",
+  "/workspace/handoffs",
+  "/workspace/notifications",
+  "/workspace/care-continuity",
+  "/workspace/settings",
+];
+let responsiveChecks = 0;
+for (const viewport of responsiveViewports) {
+  const responsive = await createBrowserPage(session, "/workspace", {
+    width: viewport.width,
+    height: viewport.height,
+  });
+  try {
+    for (const route of responsiveRoutes) {
+      await responsive.page.goto(new URL(route, frontend).toString(), { waitUntil: "domcontentloaded" });
+      await responsive.page.locator("main").first().waitFor({ state: "visible", timeout: 20_000 });
+      await responsive.page.waitForTimeout(200);
+      const metrics = await responsive.page.evaluate(() => {
+        const main = document.querySelector("main");
+        const rect = main?.getBoundingClientRect();
+        return {
+          viewportWidth: window.innerWidth,
+          documentWidth: document.documentElement.scrollWidth,
+          bodyWidth: document.body?.scrollWidth ?? 0,
+          mainPresent: Boolean(main),
+          mainLeft: rect?.left ?? null,
+          mainRight: rect?.right ?? null,
+          mainWidth: rect?.width ?? null,
+          title: document.title,
+        };
+      });
+      assert.ok(metrics.mainPresent, `Workspace route has no main content: ${route}`);
+      assert.ok(
+        metrics.documentWidth <= viewport.width + 1 && metrics.bodyWidth <= viewport.width + 1,
+        `Horizontal overflow at ${viewport.name} (${viewport.width}x${viewport.height}) on ${route}: ${JSON.stringify(metrics)}`,
+      );
+      assert.ok(
+        metrics.mainLeft !== null && metrics.mainLeft >= -1 &&
+        metrics.mainRight !== null && metrics.mainRight <= viewport.width + 1 &&
+        metrics.mainWidth !== null && metrics.mainWidth <= viewport.width + 1,
+        `Main content exceeds the viewport at ${viewport.name} on ${route}: ${JSON.stringify(metrics)}`,
+      );
+      responsiveChecks += 1;
+    }
+    assert.deepEqual(
+      responsive.pageErrors,
+      [],
+      `Responsive route rendering raised browser errors at ${viewport.name}: ${JSON.stringify(responsive.pageErrors)}`,
+    );
+  } finally {
+    await responsive.context.close();
+  }
+}
+process.stdout.write(
+  `✓ Responsive workspace audit: ${responsiveChecks} route/viewport combinations across ${responsiveViewports.length} viewport sizes (320×568 through 1920×1080).\n`,
+);
+
 process.stdout.write(`\nCompleted ${results.length} critical journey checks.\n`);
 await browser.close();
