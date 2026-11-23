@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
+import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON, patchJSON } from "@/api/client";
 import { selectDeferredItems, selectImmediatePriorities, selectWatchChanges } from "@/components/mvp-workspace/attention-now";
 import { caregiverFieldLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
@@ -1453,7 +1453,12 @@ export function LCRCurrentUnderstanding() {
       setCreateReminderForSuggestion(false);
       setReminderDueInput("");
     } catch (cause) {
-      setActionApprovalError("We couldn't save this as an agreed next step.");
+      if (cause instanceof ApiResponseError && cause.status === 409) {
+        setActionApprovalError("This follow-up changed after it was shown. The care record is refreshing; review the latest details before approving it.");
+        void load(true);
+      } else {
+        setActionApprovalError("We couldn't save this as an agreed next step.");
+      }
     } finally {
       setActionApprovalLoadingId(null);
     }
