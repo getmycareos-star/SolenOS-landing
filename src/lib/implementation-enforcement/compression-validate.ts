@@ -48,9 +48,9 @@ function resolveLimits(
   if (safetyOverride?.floor_risk_level === "critical") {
     return {
       what_is_happening_max_words: Number.POSITIVE_INFINITY,
-      what_matters_now_max_bullets: 3,
-      what_to_ask_next_max_questions: 2,
-      what_can_wait_max_bullets: 1,
+      what_matters_now_max_bullets: Number.POSITIVE_INFINITY,
+      what_to_ask_next_max_questions: Number.POSITIVE_INFINITY,
+      what_can_wait_max_bullets: Number.POSITIVE_INFINITY,
       total_max_words: Number.POSITIVE_INFINITY,
     };
   }
