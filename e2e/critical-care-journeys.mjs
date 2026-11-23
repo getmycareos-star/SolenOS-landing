@@ -792,6 +792,25 @@ await record("01a dementia profile review window and observation persistence are
     "editing without changing the event time must preserve the exact original timestamp",
   );
   await page.getByText(correctedUiDescription, { exact: true }).waitFor({ timeout: 15_000 });
+  const observationHistory = await request(
+    "/api/v1/care-continuity/observation-revisions?limit=100",
+    { token: identity.token },
+  );
+  assert.equal(observationHistory.status, 200, JSON.stringify(observationHistory.payload));
+  const savedCorrectionRevision = observationHistory.payload.find((item) =>
+    item.observation_id === originalObservation.id && item.revision_number === 2,
+  );
+  assert.ok(savedCorrectionRevision, "the correction must create a second persisted PostgreSQL observation revision");
+  assert.equal(
+    savedCorrectionRevision.previous_payload.description,
+    uiDescription,
+    "the original observation wording must remain in revision history",
+  );
+  assert.equal(
+    savedCorrectionRevision.current_payload.description,
+    correctedUiDescription,
+    "the corrected observation wording must be stored in the new revision",
+  );
   assert.deepEqual(pageErrors, [], `dementia observation UI must not throw: ${JSON.stringify(pageErrors)}`);
   assert.ok(observed.some((item) => item.path.includes("/care-continuity/caregiver-observations") && item.status === 201),
     "the browser must save the observation through the authenticated API proxy");
