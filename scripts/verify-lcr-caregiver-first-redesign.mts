@@ -215,7 +215,7 @@ assert.match(evidenceReview, /showInternalSourceChecks && \(/, "internal source 
 assert.match(evidenceReview, /<summary>Review or correct this information<\/summary>/, "the optional source review form is collapsed until requested");
 assert.match(evidenceReview, /Shared by<\/dt>/, "source review uses plain caregiver language");
 assert.doesNotMatch(evidenceReview, /How much to rely on this information/, "technical source confidence wording is not exposed");
-assert.match(integrityPanel, /More about your care information/, "care history details use caregiver-facing language");
+assert.match(integrityPanel, /More about the care information saved here/, "care history details use caregiver-facing language");
 assert.doesNotMatch(integrityPanel, /Care Record details|Care details shared with SolenOS/, "internal panel labels are not exposed");
 assert.doesNotMatch(currentUnderstanding, /bounded record view|deterministic state checks/i, "internal assessment terminology is not shown in the caregiver record");
 assert.doesNotMatch(currentUnderstanding, /Compared: Time not recorded.*Time not recorded/, "missing comparison dates are not displayed as a fake date range");
