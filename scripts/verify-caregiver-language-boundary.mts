@@ -345,6 +345,9 @@ assert.doesNotMatch(dementiaProfile, /Behaviour and emotional wellbeing|Mobility
 assert.match(dementiaProfile, /Memory and knowing where you are/);
 assert.doesNotMatch(dementiaObservation, /Dementia observations|Save observation|Recent observations/);
 assert.match(dementiaObservation, /Notes about memory and daily life/);
+assert.match(dementiaObservation, /row\.observation_category\.trim\(\)\.toLowerCase\(\)\.startsWith\("dementia\."\)/, "saved dementia observations must be recognized regardless of category casing or surrounding whitespace");
+assert.match(dementiaObservation, /item\.observation_category\.trim\(\)\.toLowerCase\(\)/, "dementia observation labels must map consistently from saved category values");
+
 assert.doesNotMatch(aiAttribution, /High confidence AI insight|Medium confidence AI insight|Low confidence AI insight|Confidence level:|AI Attribution/);
 assert.match(aiAttribution, /Suggested detail — please check/);
 assert.match(sourceIndicator, /Details found in document/);
