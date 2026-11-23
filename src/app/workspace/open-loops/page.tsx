@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, AlertCircle, Clock3, FileText, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverInformationAreaLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationAreaLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type OpenLoop = {
   id: string;
@@ -251,7 +251,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
 
   return <article className="followup-card">
     <div className="followup-card-heading">
-      <div><p className="followup-eyebrow">{categoryLabel}</p><h3>{(item.source === "open_loop_records" ? caregiverSafeAssistantText(item.title) : caregiverSafeGeneratedText(item.title)) || "Follow-up"}</h3></div>
+      <div><p className="followup-eyebrow">{categoryLabel}</p><h3>{(item.source === "open_loop_records" ? caregiverSourceText(item.title) : caregiverSafeGeneratedText(item.title)) || "Follow-up"}</h3></div>
     </div>
     {reasonLines.length > 0
       ? <p className="followup-reason"><AlertCircle size={14} /> {reasonLines.join(" · ")}</p>
@@ -288,7 +288,7 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
           )}
         </section>
       )}
-      {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSafeAssistantText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
+      {(item.records || []).map((record) => <p key={record.source + ":" + record.record_id}><strong>{caregiverSourceText(record.title) || "Related care record"}</strong><br />{caregiverInformationAreaLabel(record.source) || "Care information"} · Recorded {dateLabel(record.recorded_at || record.occurred_at)}</p>)}
       {loop?.appointment_id && <p><strong>Related appointment</strong><br />This follow-up is connected to a saved appointment and its history.</p>}
       <p><strong>Related notes and documents</strong><br />{uniqueEvidenceIds(item).length ? `${uniqueEvidenceIds(item).length} related ${uniqueEvidenceIds(item).length === 1 ? "note or document" : "notes or documents"}` : "No notes or documents are linked here."}</p>
       {item.review_at && <p><strong>{new Date(item.review_at).getTime() <= Date.now() ? "Check-in requested" : "Next check-in"}</strong><br />{dateLabel(item.review_at)}</p>}
@@ -602,14 +602,14 @@ export default function FollowUpsPage() {
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items marked as resolved.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
-        {loops.filter((loop) => loop.status === "closed").map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Closed · {statusLabel(loop.outcome_status)}</p><h3>{caregiverSafeAssistantText(loop.title) || "Follow-up"}</h3><p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p></article>)}
+        {loops.filter((loop) => loop.status === "closed").map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Closed · {statusLabel(loop.outcome_status)}</p><h3>{caregiverSourceText(loop.title) || "Follow-up"}</h3><p>{caregiverSourceText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p></article>)}
               <section className="followups-section">
         <div className="followups-section-heading"><div><h2>No longer relevant</h2><p>Stopped follow-ups. They are not marked as completed.</p></div><span>{loops.filter((loop) => loop.status === "cancelled").length}</span></div>
         {loops.filter((loop) => loop.status === "cancelled").map((loop) => <article key={loop.id} className="followup-card">
           <p className="followup-eyebrow">No longer relevant</p>
-          <h3>{caregiverSafeAssistantText(loop.title) || "Follow-up"}</h3>
-          <p>{caregiverSafeAssistantText(loop.description) || "No further details are available."}</p>
-          {loop.cancellation_reason && <p>Why it was stopped: {caregiverSafeAssistantText(loop.cancellation_reason) || "No reason was recorded."}</p>}
+          <h3>{caregiverSourceText(loop.title) || "Follow-up"}</h3>
+          <p>{caregiverSourceText(loop.description) || "No further details are available."}</p>
+          {loop.cancellation_reason && <p>Why it was stopped: {caregiverSourceText(loop.cancellation_reason) || "No reason was recorded."}</p>}
           <p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p>
         </article>)}
         {loops.filter((loop) => loop.status === "cancelled").length === 0 && <p className="followups-empty-inline">No follow-ups have been stopped.</p>}
