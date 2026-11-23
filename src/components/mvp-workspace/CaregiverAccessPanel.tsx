@@ -445,9 +445,9 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         setError("We couldn't refresh your caregiver profile. Some caregiver details may be out of date; check before making changes.");
       }
     } catch {
-      setError("We couldn't load caregiver access. Please try again.");
       clearPersonScopedState();
       loadedScopeRef.current = null;
+      setError("We couldn't load caregiver access. Please try again.");
     } finally {
       setLoading(false);
     }
