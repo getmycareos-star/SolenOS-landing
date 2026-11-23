@@ -128,6 +128,16 @@ assert.equal(
   "observation",
 );
 assert.equal(
+  classifyExtractionFragment("Mom ate breakfast this morning."),
+  "observation",
+  "ordinary food intake reports must not be discarded",
+);
+assert.equal(
+  classifyExtractionFragment("Dad drank water after lunch."),
+  "observation",
+  "ordinary drink intake reports must not be discarded",
+);
+assert.equal(
   classifyExtractionFragment(
     "We had a hospital visit after she almost fell in the bathroom a few days ago.",
   ),
