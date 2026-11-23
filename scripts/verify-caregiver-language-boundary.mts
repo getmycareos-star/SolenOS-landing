@@ -1049,8 +1049,12 @@ assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail"/
   "baseline titles from generated assessments must use caregiver-safe copy");
 assert.match(lcr, /caregiverSafeGeneratedText\(item\.title\) \|\| "Care detail to review"/,
   "generated priority titles must use caregiver-safe copy");
-assert.match(lcr, /caregiverSafeAssistantText\(item\.title\) \|\| "Care follow-up"/,
+assert.match(lcr, /caregiverSourceText\(item\.title\) \|\| "Care follow-up"/,
   "caregiver-created follow-up titles must preserve safe original wording");
+assert.match(lcr, /caregiverSourceText\(item\.asserted_value\)/,
+  "original caregiver claims must not be hidden by generated-copy filtering");
+assert.match(lcr, /caregiverSourceText\(transition\.reason\)/,
+  "caregiver correction reasons must remain exact source text");
 assert.match(lcr, /caregiverSafeAssistantText\(item\.owner\) \|\| "Not recorded"/,
   "caregiver responsibility names must not expose raw structured metadata");
 assert.match(changeIntelligence, /caregiverSafeGeneratedText\(record\.source_label\) \|\| "Saved note or document"/,
