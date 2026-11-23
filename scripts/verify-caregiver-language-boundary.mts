@@ -1081,7 +1081,7 @@ assert.match(conflictResolution, /caregiverSafeGeneratedText\(selected\.descript
 assert.match(claimAssessment, /(?:caregiverSafeGeneratedText|caregiverSourceText)\(selectedClaim\.source_label\)/, "claim source labels must use the appropriate generated-text or exact-source language boundary");
 assert.match(claimAssessment, /(?:caregiverSafeGeneratedText|caregiverSourceText)\(edge\.rationale\)/, "review dependency explanations must use the appropriate generated-text or exact-source language boundary");
 assert.match(claimAssessment, /caregiverSafeGeneratedText\(assessmentImpact\.interpretation_limit\)/, "generated review limits must use the caregiver language boundary");
-assert.match(claimAssessment, /What was reported:<\/strong> \{selectedClaim\.asserted_value\}/, "caregiver-reported claim wording must be preserved exactly");
+assert.match(claimAssessment, /What was reported:<\/strong> \{caregiverSourceText\(selectedClaim\.asserted_value\) \|\| "Saved care detail"\}/, "caregiver-reported claim wording must use the source-preserving language boundary");
 assert.match(claimAssessment, /value=\{link\.source_passage\}/, "exact source quotations must remain unchanged in editable review fields");
 assert.match(claimAssessment, /<blockquote[^>]*>\{link\.source_passage\}<\/blockquote>/, "saved source quotations must remain unchanged in review history");
 assert.match(claimAssessment, /What this does and does not show: \{link\.scope_note\}/, "caregiver-written scope notes must be preserved exactly");
