@@ -890,7 +890,7 @@ export function LCRCurrentUnderstanding() {
         };
         const sourceStatus = refreshedCoverage.status;
         const failed = new Set(current.failed_sources ?? []);
-        if (["failed", "partial", "unavailable_schema", "unavailable_scope"].includes(sourceStatus ?? "")) {
+        if (["failed", "partial", "unsearchable", "unavailable_schema", "unavailable_scope"].includes(sourceStatus ?? "")) {
           failed.add(sourceName);
         } else {
           failed.delete(sourceName);
@@ -1538,7 +1538,7 @@ export function LCRCurrentUnderstanding() {
   };
 
   const sourceRecoveryPanel = projection && Object.entries(projection.source_coverage ?? {})
-    .filter(([, coverage]) => ["failed", "partial", "stale", "unavailable_schema", "unavailable_scope"].includes(coverage.status ?? ""))
+    .filter(([, coverage]) => ["failed", "partial", "stale", "unsearchable", "unavailable_schema", "unavailable_scope"].includes(coverage.status ?? ""))
     .map(([sourceName, coverage]) => (
       <div key={sourceName} className="lcr-entry-status" role="status">
         <span>
@@ -1548,7 +1548,9 @@ export function LCRCurrentUnderstanding() {
               ? "only partly available"
               : coverage.status === "stale"
                 ? "couldn’t be refreshed; previously saved details remain available"
-                : "not available in this care-record setup"}
+                : coverage.status === "unsearchable"
+                  ? "couldn’t be searched for this question; no conclusion can be drawn from this source"
+                  : "not available in this care-record setup"}
           {coverage.returned_count ? ` — ${coverage.returned_count} saved details are still available.` : ""}
         </span>
         <button
@@ -1585,7 +1587,7 @@ export function LCRCurrentUnderstanding() {
           ) : projection?.items.length ? (
             <>
               <p>
-                {projection.schema_status !== "complete" || projection.missing_required_sources.length > 0
+                {projection.schema_status !== "complete" || projection.missing_required_sources.length > 0 || projection.missing_optional_sources.length > 0 || (projection.failed_sources?.length ?? 0) > 0
                   ? "This summary uses the care information saved here so far and may be incomplete."
                   : "These are the details currently saved. They do not replace advice from a healthcare professional."}
                 {projection.as_of ? ` Updated ${formatWhen(projection.as_of)}.` : ""}
