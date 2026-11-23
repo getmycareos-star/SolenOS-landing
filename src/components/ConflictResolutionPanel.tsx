@@ -215,7 +215,7 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
       </button>
       {notice && <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{notice}</p>}
       <div style={{ marginTop: 14 }}>
-        <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Earlier checks</strong>
+        <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Earlier reviews</strong>
         {historyError && <p role="alert" style={{ color: "var(--error)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{historyError} <button type="button" style={button} onClick={() => void loadHistoryFor(selectedId, scopedPersonId)} disabled={saving}>Try again</button></p>}
         {history.length === 0 && !historyError && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No earlier reviews have been saved yet.</p>}
         <ol style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", paddingLeft: 18 }}>
