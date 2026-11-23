@@ -447,7 +447,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     } catch {
       setError("We couldn't load caregiver access. Please try again.");
       clearPersonScopedState();
-      loadedPersonIdRef.current = null;
+      loadedScopeRef.current = null;
     } finally {
       setLoading(false);
     }
