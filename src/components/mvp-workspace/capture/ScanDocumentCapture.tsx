@@ -44,6 +44,7 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [cameraFacingMode, setCameraFacingMode] = useState<"environment" | "user">("environment");
   const [pages, setPages] = useState<ScanPage[]>([]);
   const [selectedPage, setSelectedPage] = useState(0);
 
@@ -56,21 +57,21 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
   useEffect(() => {
     if (!open) {
       stop();
-      setPages([]);
-      setSelectedPage(0);
+    // Page state is reset only when the capture sheet opens or closes.
+    // Keep captured pages when switching cameras.
       return;
     }
 
     let cancelled = false;
     setError(null);
-    setPages([]);
-    setSelectedPage(0);
+    // Page state is reset only when the capture sheet opens or closes.
+    // Keep captured pages when switching cameras.
 
     async function start() {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw new TypeError("Camera API unavailable");
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          video: { facingMode: { ideal: cameraFacingMode } },
           audio: false,
         });
         if (cancelled) {
@@ -95,7 +96,12 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
       cancelled = true;
       stop();
     };
-  }, [open, stop]);
+  }, [open, stop, cameraFacingMode]);
+
+  useEffect(() => {
+    setPages([]);
+    setSelectedPage(0);
+  }, [open]);
 
   function capturePage() {
     const video = videoRef.current;
@@ -193,6 +199,13 @@ export function ScanDocumentCapture({ open, onClose, onCapturePages }: Props) {
         )}
 
         <div className="entry-capture-actions">
+          <button
+            type="button"
+            className="workspace-secondary"
+            onClick={() => setCameraFacingMode((mode) => mode === "environment" ? "user" : "environment")}
+          >
+            Switch to {cameraFacingMode === "environment" ? "front" : "back"} camera
+          </button>
           <button
             type="button"
             className="workspace-primary"
