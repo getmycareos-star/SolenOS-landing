@@ -197,6 +197,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | 'unverified' | 'unknown'>('checking')
   const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
   const [careUpdateLoading, setCareUpdateLoading] = useState(false)
+  const [careUpdateLoadFailed, setCareUpdateLoadFailed] = useState(false)
   const [reviewingCareUpdateId, setReviewingCareUpdateId] = useState<string | null>(null)
   const [confirmingCareReportId, setConfirmingCareReportId] = useState<string | null>(null)
   const [savingCareReportId, setSavingCareReportId] = useState<string | null>(null)
@@ -462,12 +463,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
   const loadPendingCareUpdates = async () => {
     setCareUpdateLoading(true)
+    setCareUpdateLoadFailed(false)
     setCareUpdateError(null)
     try {
       const response = await getJSON('/companion/care-updates') as { items?: PendingCareUpdate[] }
-      setPendingCareUpdates(Array.isArray(response?.items) ? response.items : [])
+      if (!Array.isArray(response?.items)) throw new Error('The saved care suggestions response was incomplete.')
+      setPendingCareUpdates(response.items)
     } catch {
-      setCareUpdateError('Care suggestions could not be loaded. Your conversation is still saved. Try refreshing these suggestions.')
+      setCareUpdateLoadFailed(true)
+      setCareUpdateError('Care suggestions could not be refreshed. Your conversation is still saved. Try again before reviewing these suggestions.')
     } finally {
       setCareUpdateLoading(false)
     }
@@ -845,6 +849,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           </div>
         </div>
         {careUpdateError && <p className="companion-care-update-message is-error" role="alert">{careUpdateError}</p>}
+        {careUpdateLoadFailed && pendingCareUpdates.length > 0 && <p className="companion-care-update-message" role="status">These are the last suggestions we could load. They may be out of date; refresh before making a decision.</p>}
         {careUpdateNotice && <p className="companion-care-update-message" role="status">{careUpdateNotice}</p>}
         {showReviewedCareUpdates && <section className="companion-reviewed-care-updates" aria-label="Previous care update decisions">
           <h4>Previous decisions</h4>
