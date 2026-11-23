@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverReadableCaptureText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import {
   CareHandoffSharing,
+  caregiverVisibleBriefingSections,
   type CareHandoffSharingProps,
 } from "@/components/workflows/CareHandoffSharing";
 
@@ -35,7 +36,7 @@ interface ShareCareSummaryPanelProps {
 type BriefingDraft = NonNullable<CareHandoffSharingProps["draft"]>;
 
 function downloadBriefing(draft: BriefingDraft) {
-  const sections = draft.generation?.sections ?? [];
+  const sections = caregiverVisibleBriefingSections(draft);
   const content = [
     draft.audience === "family"
       ? "Care summary for family"
@@ -136,7 +137,7 @@ export function ShareCareSummaryPanel({
         latest.source_snapshot_sha256 === exportableDraft.source_snapshot_sha256;
       const sameRevision = latest.revision_number === exportableDraft.revision_number;
       const sameReviewedSections = JSON.stringify(latest.generation?.sections ?? []) ===
-        JSON.stringify(exportableDraft.generation?.sections ?? []);
+        JSON.stringifycaregiverVisibleBriefingSections(exportableDraft);
       if (latest.source_freshness?.status !== "current" || !sameSnapshot || !sameRevision || !sameReviewedSections) {
         setDraft(latest);
         setExportReviewed(false);
@@ -146,7 +147,7 @@ export function ShareCareSummaryPanel({
           : "The saved sources changed or could not be checked. Prepare a new briefing before exporting.");
         return;
       }
-      const requiredRefs = [...new Set((latest.generation?.sections ?? []).map(item => item.source_ref))];
+      const requiredRefs = [...new Set(caregiverVisibleBriefingSections(latest).map(item => item.source_ref))];
       if (!exportReviewed || requiredRefs.length === 0 || requiredRefs.some(ref => !exportReviewedSourceRefs.includes(ref))) {
         setExportError("Check every source item and the briefing notice before exporting.");
         return;
@@ -221,7 +222,7 @@ export function ShareCareSummaryPanel({
         {intent === "export" && exportableDraft && (
           <div style={{ borderTop: "1px solid #e2e9e1", marginTop: 12, paddingTop: 12 }}>
             <strong style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 8 }}>Check each briefing item before exporting</strong>
-            {(exportableDraft.generation?.sections ?? []).map((item, index) => (
+            {caregiverVisibleBriefingSections(exportableDraft).map((item, index) => (
               <label key={item.source_ref + index} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, marginBottom: 8 }}>
                 <input
                   type="checkbox"
@@ -239,9 +240,9 @@ export function ShareCareSummaryPanel({
             </label>
             <button
               type="button"
-              disabled={exportChecking || !exportReviewed || (exportableDraft.generation?.sections ?? []).length === 0 || [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].some(ref => !exportReviewedSourceRefs.includes(ref))}
+              disabled={exportChecking || !exportReviewed || caregiverVisibleBriefingSections(exportableDraft).length === 0 || [...new Set(caregiverVisibleBriefingSections(exportableDraft).map(item => item.source_ref))].some(ref => !exportReviewedSourceRefs.includes(ref))}
               onClick={() => void verifyAndDownloadBriefing()}
-              style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: exportReviewed && (exportableDraft.generation?.sections ?? []).length > 0 && [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "#dce9dc" : "#eef1ec", color: "#172117", fontWeight: 650, cursor: exportReviewed && (exportableDraft.generation?.sections ?? []).length > 0 && [...new Set((exportableDraft.generation?.sections ?? []).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "pointer" : "not-allowed" }}
+              style={{ border: "1px solid #cbd8cb", borderRadius: 9, padding: "9px 12px", background: exportReviewed && caregiverVisibleBriefingSections(exportableDraft).length > 0 && [...new Set(caregiverVisibleBriefingSections(exportableDraft).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "#dce9dc" : "#eef1ec", color: "#172117", fontWeight: 650, cursor: exportReviewed && caregiverVisibleBriefingSections(exportableDraft).length > 0 && [...new Set(caregiverVisibleBriefingSections(exportableDraft).map(item => item.source_ref))].every(ref => exportReviewedSourceRefs.includes(ref)) ? "pointer" : "not-allowed" }}
             >
               {exportChecking ? "Checking saved sources…" : "Download summary (.txt)"}
             </button>
