@@ -110,3 +110,12 @@ console.log("✓ accepted document qualifiers persist into and remain visible fr
 
 assert(lcr.includes("professional_documented") && lcr.includes("Documented by a care professional"), "professional documentation must not be represented as direct observation");
 assert(lcr.includes("changed_over_time") && lcr.includes("Describes a change from an earlier state"), "a changed state must not be mislabeled as purely historical");
+
+
+assert(
+  documentsPage.includes("documentLoadSequenceRef") &&
+  documentsPage.includes("const requestSequence = ++documentLoadSequenceRef.current") &&
+  documentsPage.includes("if (isCurrentRequest()) setDocuments(next)") &&
+  documentsPage.includes("if (isCurrentRequest()) {\n        setLoading(false);\n        setRefreshing(false);\n      }"),
+  "overlapping document-history reads must not let an older response overwrite a newer refresh or its loading state",
+);
