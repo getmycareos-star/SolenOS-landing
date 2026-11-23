@@ -136,8 +136,8 @@ export function ShareCareSummaryPanel({
         latest.source_snapshot_sha256.length === 64 &&
         latest.source_snapshot_sha256 === exportableDraft.source_snapshot_sha256;
       const sameRevision = latest.revision_number === exportableDraft.revision_number;
-      const sameReviewedSections = JSON.stringify(latest.generation?.sections ?? []) ===
-        JSON.stringifycaregiverVisibleBriefingSections(exportableDraft);
+      const sameReviewedSections = JSON.stringify(caregiverVisibleBriefingSections(latest)) ===
+        JSON.stringify(caregiverVisibleBriefingSections(exportableDraft));
       if (latest.source_freshness?.status !== "current" || !sameSnapshot || !sameRevision || !sameReviewedSections) {
         setDraft(latest);
         setExportReviewed(false);
