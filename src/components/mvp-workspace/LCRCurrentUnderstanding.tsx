@@ -1416,6 +1416,9 @@ export function LCRCurrentUnderstanding() {
       if (!session.person?.id || session.person.id !== personId) {
         throw new Error("The suggestion does not belong to the active care-record session.");
       }
+      if (item.source === "open_loop_records" && (!Number.isInteger(item.version) || (item.version ?? 0) < 1)) {
+        throw new Error("This follow-up is missing its saved version. Refresh the care record before approving it.");
+      }
       if (!item.request_text?.trim() || item.evidence_ids.length === 0) {
         throw new Error("This candidate cannot be registered safely: an explicit follow-up request and linked evidence are both required.");
       }
