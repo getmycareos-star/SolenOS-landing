@@ -1802,8 +1802,8 @@ export function LCRCurrentUnderstanding() {
         </div>
       </section>
 
-      <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
-        <summary>Dementia care profile and observations</summary>
+      <details className="lcr-history-details">
+        <summary onClick={() => setDementiaProfileOpen((open) => !open)}>Dementia care profile and observations</summary>
         {dementiaProfileOpen ? <DementiaCareProfilePanel key={personId} personId={personId} /> : null}
         {dementiaProfileOpen ? <DementiaObservationPanel key={personId} personId={personId} /> : null}
       </details>
