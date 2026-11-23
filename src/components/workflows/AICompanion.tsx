@@ -852,7 +852,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {reviewedCareUpdatesLoading && <small>Loading previous decisions…</small>}
           {!reviewedCareUpdatesLoading && reviewedCareUpdates.length === 0 && <small>No reviewed care reports were found.</small>}
           {reviewedCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
-            <div><strong>{caregiverStatusLabel(item.status) || 'Reviewed'}</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p></div>
+            <div><strong>{caregiverStatusLabel(item.status) || 'Reviewed'}</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || caregiverSafeAssistantText(item.proposed_change?.source_quote) || "The original wording could not be displayed."}</p></div>
             <div className="companion-care-update-actions">
               <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
             </div>
@@ -860,15 +860,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
                 <strong>{caregiverStatusLabel(entry.decision) || 'Reviewed'}</strong>
                 {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || 'No further explanation was recorded.'}</p>}
-                {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
+                {entry.correction_context && <small>Correction context: {caregiverSafeAssistantText(entry.correction_context) || "Additional context was recorded."}</small>}
                 {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
               </div>)}
             </div>}
           </article>)}
         </section>}
         {pendingCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
-          <div><strong>Possible care update</strong><p>{item.proposed_change?.asserted_value || item.proposed_change?.source_quote || 'The original wording is not available.'}</p>
-            {item.proposed_change?.event_time_text && <small>When you said it happened: {item.proposed_change.event_time_text}</small>}
+          <div><strong>Possible care update</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || caregiverSafeAssistantText(item.proposed_change?.source_quote) || "The original wording could not be displayed."}</p>
+            {item.proposed_change?.event_time_text && <small>When you said it happened: {caregiverSafeAssistantText(item.proposed_change.event_time_text) || "The time was not recorded in readable form."}</small>}
             <small>This is your report, not a medical conclusion. Adding it records that you checked the wording; it does not mean a healthcare professional has confirmed it.</small>
           </div>
           {correctingCareUpdateId === item.id && <div className="companion-care-update-correction">
