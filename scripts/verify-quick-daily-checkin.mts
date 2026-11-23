@@ -49,6 +49,8 @@ assert.match(checkIn, /selected_areas:\s*\[\]/,
   "an overall check-in does not force care-area selection");
 assert.match(checkIn, /scope:\s*"overall_impression_only"/,
   "the payload explicitly limits the meaning to an overall impression");
+assert.match(checkIn, /occurred_at_timezone: Intl\.DateTimeFormat\(\)\.resolvedOptions\(\)\.timeZone \|\| "UTC"/,
+  "quick check-ins preserve the caregiver's local timezone for the reported time");
 assert.match(checkIn, /Optional/,
   "the note is optional");
 assert.match(checkIn, /maxLength=\{2000\}/,
