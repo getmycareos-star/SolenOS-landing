@@ -919,10 +919,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 shareRequestId.current = null;
                 shareExpiry.current = null;
               }} />
-              <span><strong>{recipient.name}</strong><br /><small>{recipient.relationship || "Linked caregiver"} · can receive shared care information</small></span>
+              <span><strong>{caregiverSafeAssistantText(recipient.name) || "Caregiver"}</strong><br /><small>{caregiverSafeAssistantText(recipient.relationship) || "Linked caregiver"} · can receive shared care information</small></span>
             </label>
           ))}
-          {ineligibleRecipients.map(recipient => <p key={recipient.caregiver_id} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#6b746c" }}>{recipient.name} — cannot receive this summary until the required permission is saved.</p>)}
+          {ineligibleRecipients.map(recipient => <p key={recipient.caregiver_id} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#6b746c" }}>{caregiverSafeAssistantText(recipient.name) || "Caregiver"} — cannot receive this summary until the required permission is saved.</p>)}
           <label htmlFor="companion-handoff-expiry" style={{ display: "block", fontWeight: 650, margin: "12px 0 6px", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>How long the link works</label>
           <select id="companion-handoff-expiry" value={expiryDays} onChange={event => { setExpiryDays(event.target.value); setReviewConfirmed(false); shareRequestId.current = null; shareExpiry.current = null; }} style={{ ...field, maxWidth: 240 }}>
             <option value="1">24 hours</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option>
@@ -996,7 +996,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           <section aria-label="Check sharing details" style={{ border: "1px solid #cbd8cb", borderRadius: 10, padding: 12, margin: "14px 0", background: "#f7faf6" }}>
             <strong style={{ display: "block", fontSize: "calc(13px * var(--solenos-text-scale, 1))", marginBottom: 7 }}>Check what will be shared</strong>
             <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>Purpose:</b> {purpose === "today" ? "Taking over today" : purpose === "appointment" ? "Doctor’s appointment" : "Full care overview"}</p>
-            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>Who will receive it:</b> {eligibleRecipients.filter(item => selectedRecipients.includes(item.caregiver_id)).map(item => item.name).join(", ") || "No recipient selected"}</p>
+            <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>Who will receive it:</b> {eligibleRecipients.filter(item => selectedRecipients.includes(item.caregiver_id)).map(item => caregiverSafeAssistantText(item.name) || "Caregiver").join(", ") || "No recipient selected"}</p>
             <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>What will be shared:</b> {selectedScope.map(readableScope).join(", ") || "No information category selected"}</p>
             <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: "4px 0" }}><b>Link expires:</b> {expiryDays === "1" ? "In 24 hours" : "In " + expiryDays + " days"} after sharing</p>
             <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267", margin: "8px 0 0" }}>Only the people you choose can open this summary. Sharing does not change your Care Record. If you stop sharing later, they may still have information they already saw or saved.</p>
@@ -1029,7 +1029,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <h5 style={{ margin: "12px 0 6px" }}>Shared with you</h5>
             {inbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
-                <strong>{item.from_caregiver_name || "Linked caregiver"}</strong>
+                <strong>{caregiverSafeAssistantText(item.from_caregiver_name) || "Linked caregiver"}</strong>
                 <p style={{ margin: "4px 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Status: {readableStatus(item.status)} · Expires: {formatDate(item.expires_at)}</p>
                 <p style={{ margin: "4px 0 8px", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
                 <button type="button" style={button} disabled={busy || !item.has_summary} onClick={() => void reviewIncoming(item)}>Open shared summary</button>
@@ -1067,10 +1067,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             <h5 style={{ margin: "14px 0 6px" }}>Shared by you</h5>
             {outbox.map(item => (
               <article key={item.id} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
-                <strong>{item.recipients?.map(recipient => recipient.name || "Caregiver").join(", ") || "Care summary"}</strong>
+                <strong>{item.recipients?.map(recipient => caregiverSafeAssistantText(recipient.name) || "Caregiver").join(", ") || "Care summary"}</strong>
                 <p style={{ margin: "4px 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Status: {readableStatus(item.status)}{item.is_expired ? " · Expired" : ""} · Expires: {formatDate(item.expires_at)}</p>
                 <p style={{ margin: "4px 0 8px", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Information shared: {item.scope.map(readableScope).join(", ")} · {item.has_summary ? "Summary attached" : "No summary attached"}</p>
-                {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267" }}>{recipient.name || "Recipient"}: {recipient.status ? readableStatus(recipient.status) : "We couldn't confirm whether they received it."}</p>)}
+                {item.recipients?.map(recipient => <p key={recipient.caregiver_id} style={{ margin: "3px 0", fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "#667267" }}>{caregiverSafeAssistantText(recipient.name) || "Recipient"}: {recipient.status ? readableStatus(recipient.status) : "We couldn't confirm whether they received it."}</p>)}
                 {item.status !== "revoked" && !item.is_expired && <button type="button" style={quietButton} disabled={busy} onClick={() => void revoke(item)}>Remove access</button>}
               </article>
             ))}
