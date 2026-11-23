@@ -1404,9 +1404,24 @@ export function HistoryDrawer() {
     const refreshAfterCareRecordWrite = () => {
       void loadHistory(true);
     };
+    const resetAfterSessionChange = () => {
+      if (open) {
+        void loadHistory(true);
+        return;
+      }
+      recordsRef.current = [];
+      setRecords([]);
+      setSelectedId(null);
+      loadedPersonIdRef.current = null;
+      setHasLoaded(false);
+    };
     window.addEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
-    return () => window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
-  }, [loadHistory]);
+    window.addEventListener("personIdChanged", resetAfterSessionChange);
+    return () => {
+      window.removeEventListener("careRecordUpdated", refreshAfterCareRecordWrite);
+      window.removeEventListener("personIdChanged", resetAfterSessionChange);
+    };
+  }, [loadHistory, open]);
 
 
 
