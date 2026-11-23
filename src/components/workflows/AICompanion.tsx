@@ -885,12 +885,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           </div>}
           <div className="companion-care-update-actions">
             {correctingCareUpdateId === item.id ? <>
-              <button type="button" onClick={() => void correctCareUpdate(item.id)} disabled={Boolean(reviewingCareUpdateId) || !correctedCareUpdateText.trim()}>{reviewingCareUpdateId === item.id ? 'Saving correction…' : 'Save correction for review'}</button>
+              <button type="button" onClick={() => void correctCareUpdate(item.id)} disabled={careUpdateLoadFailed || Boolean(reviewingCareUpdateId) || !correctedCareUpdateText.trim()}>{reviewingCareUpdateId === item.id ? 'Saving correction…' : 'Save correction for review'}</button>
               <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(null); setCorrectedCareUpdateText(''); setCareUpdateCorrectionContext('') }} disabled={Boolean(reviewingCareUpdateId)}>Cancel</button>
             </> : <>
-              <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
-              <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={Boolean(reviewingCareUpdateId)}>Don’t add</button>
-              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || '') }} disabled={Boolean(reviewingCareUpdateId)}>Correct wording</button>
+              <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
+              <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Don’t add</button>
+              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || '') }} disabled={careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Correct wording</button>
             </>}
             <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
           </div>
