@@ -133,6 +133,7 @@ assert.equal(
 assert.match(caregiverSafeErrorMessage(), /check your connection/i);
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+const caregiverUiLanguageScanner = read("./verify-caregiver-ui-language-all.mts");
 const dailyCare = read("../src/app/workspace/daily-care/page.tsx");
 const situationResponse = read("../src/components/mvp-workspace/SituationResponsePanel.tsx");
 const sourceIndicator = read("../src/components/trust/SourceIndicator.tsx");
@@ -232,6 +233,10 @@ assert.match(livingCareRecordPanel, /view\.care_story_update[\s\S]*?The care his
   "filtered care story updates must not disappear silently");
 
 
+assert.match(caregiverUiLanguageScanner, /ts\.isCallExpression\(node\) \|\| ts\.isNewExpression\(node\)[\s\S]*?collectDisplayExpression\(sourceFile, argument\)/,
+  "the language scanner must inspect literal caregiver copy passed through helper calls");
+assert.match(caregiverUiLanguageScanner, /const roots = \["src\/app", "src\/components"\]/,
+  "the language scanner must cover all application routes and UI components");
 assert.doesNotMatch(dailyCare, /epistemic_status\.replace|item\.status\.replace/);
 assert.doesNotMatch(dailyCare, /item\.event_type \|\| item\.source_type/);
 assert.match(dailyCare, /item\.original_text\.trim\(\)/, "original caregiver reports must remain verbatim");
