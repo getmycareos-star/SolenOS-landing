@@ -810,14 +810,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
                                   {source.entered_by && <p>{caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
                                   {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || 'Status not available'}</p>}
-                                  {source.correction_note && <p>{source.correction_note}</p>}
-                                  {source.correction_rationale && <p>Why it was corrected: {source.correction_rationale}</p>}
-                                  {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
+                                  {source.correction_note && <p>{caregiverSourceText(source.correction_note)}</p>}
+                                  {source.correction_rationale && <p>Why it was corrected: {caregiverSourceText(source.correction_rationale)}</p>}
+                                  {source.previous_source_excerpt && <blockquote>Earlier wording: {caregiverSourceText(source.previous_source_excerpt)}</blockquote>}
                                   {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved note or document. It is not a separate report.</p>}
                                   {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                   {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
                                   {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
-                                  {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                                  {source.source_excerpt && <blockquote>{caregiverSourceText(source.source_excerpt)}</blockquote>}
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
                                     <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                     <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
@@ -839,7 +839,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {item.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
-                                      {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
+                                      {item.source_excerpt && <blockquote>{caregiverSourceText(item.source_excerpt)}</blockquote>}
                                       {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
                                         <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                         <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
@@ -853,7 +853,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                         <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {caregiverSafeAssistantText(observation.value) || "Saved care detail"}</p>
                                         {observation.reported_by && <p>Reported by: {caregiverSafeAssistantText(observation.reported_by) || "Not recorded"}</p>}
                                         {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
-                                        {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
+                                        {observation.source_excerpt && <blockquote>{caregiverSourceText(observation.source_excerpt)}</blockquote>}
                                       </div>)}
                                     </div>)}
                                   </div>}
