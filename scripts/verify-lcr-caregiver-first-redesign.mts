@@ -264,6 +264,8 @@ assert.match(currentUnderstanding, /coverage\.status === "stale"[\s\S]*?previous
   "a failed category retry must preserve and label previously retrieved care information as stale");
 assert.match(currentUnderstanding, /suggestion_version: item\.version/,
   "follow-up approval must carry the version actually shown to the caregiver");
+assert.match(currentUnderstanding, /if \(item\.source !== "open_loop_records"\)[\s\S]*?Only a saved follow-up with a current version can be approved/,
+  "only persisted versioned follow-ups may be approved as registered actions");
 assert.match(currentUnderstanding, /cause instanceof ApiResponseError && cause\.status === 409[\s\S]*?void load\(true\)/,
   "a stale follow-up approval must trigger a refresh instead of silently retrying old details");
 assert.match(currentUnderstanding, /const approveFollowUp[\s\S]*?personIdRef\.current !== personId[\s\S]*?if \(personIdRef\.current === personId\) setActionApprovalLoadingId\(null\)/,
