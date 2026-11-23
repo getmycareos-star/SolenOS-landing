@@ -733,7 +733,7 @@ await record("01a dementia profile review window and observation persistence are
 await record("01b visible Follow-ups link and mobile navigation", async () => {
   const { context, page } = await createBrowserPage(
     session,
-    "/workspace/timeline",
+    "/workspace/daily-care",
     { width: 390, height: 844 },
   );
   await page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" }).click();
