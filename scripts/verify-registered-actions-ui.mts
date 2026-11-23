@@ -83,7 +83,7 @@ assert.ok(
 );
 assert.ok(
   lcr.includes('setRegisteredActions([]);') &&
-    lcr.includes('Agreed actions are unavailable because your care record session could not be confirmed.'),
+    lcr.includes("We couldn't confirm your access to the Care Record. Refresh the page and try again."),
   "Action state must be cleared on session failure",
 );
 
