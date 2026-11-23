@@ -41,6 +41,13 @@ globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unkn
   return originalSetTimeout(handler, timeout, ...args);
 }) as typeof setTimeout;
 
+const apiClientSource = readFileSync(
+  new URL("../src/api/client.ts", import.meta.url),
+  "utf8",
+);
+assert.match(apiClientSource, /event\.key === ANONYMOUS_PERSON_KEY[\s\S]*?event\.key === ANONYMOUS_CAREGIVER_KEY[\s\S]*?dispatchEvent\(new Event\("personIdChanged"\)\)/,
+  "other tabs must clear caregiver-scoped views when the active backend identity changes");
+
 async function main() {
   setPersonId("person-server-1");
   assert.deepEqual(
