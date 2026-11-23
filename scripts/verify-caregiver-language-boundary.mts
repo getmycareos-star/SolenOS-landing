@@ -1177,3 +1177,9 @@ assert.match(dementiaObservation, /setLoadFailed\(true\)/, "a failed observation
 assert.match(dementiaObservation, /loadFailed && observations\.length > 0[\s\S]*?These are the last notes we could load\. Refresh to check for newer updates\./, "previously loaded notes must be identified as stale when refresh fails");
 
 assert.match(dementiaObservation, /!loading && !loadFailed && observations\.length === 0/, "an unavailable observation history must not be shown as an empty saved list");
+
+assert.match(historyDrawer, /if \(typeof value === "string"\) return value\.trim\(\)/, "caregiver-entered history text must not be filtered as generated assistant text");
+assert.match(historyDrawer, /const title = asText\(item\.title\) \|\| "Care follow-up"/, "saved follow-up titles must be preserved exactly in care history");
+assert.match(historyDrawer, /const description = asText\(item\.description\)/, "saved follow-up descriptions must be preserved exactly in care history");
+assert.match(historyDrawer, /<h2 className="history-detail-title">\{selectedRecord\.title \|\| "Care update"\}<\/h2>/, "original care record titles must remain unchanged");
+assert.match(historyDrawer, /const rawValue = field\.value\.trim\(\)/, "caregiver-entered detail values must remain unchanged while known statuses are translated");
