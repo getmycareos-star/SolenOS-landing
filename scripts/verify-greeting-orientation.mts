@@ -51,9 +51,10 @@ const companion = readFileSync(
   new URL("../src/components/workflows/AICompanion.tsx", import.meta.url),
   "utf8",
 );
-assert.ok(companion.includes("postJSON('/api/lcr/orientation'"), "Companion must route greetings through the LCR orientation endpoint");
-assert.ok(companion.includes("shouldUseLcrOrientationEndpoint(submittedText)"), "Only context-free social turns may use read-only orientation");
-assert.ok(companion.includes("postJSON('/conversation/message'"), "Companion must route care questions, corrections, and frustration through the conversation endpoint");
+assert.doesNotMatch(companion, /postJSON\('\/api\/lcr\/orientation'/, "Companion greetings must not bypass persisted conversation history");
+assert.doesNotMatch(companion, /shouldUseLcrOrientationEndpoint\(submittedText\)/, "all Companion turns must use one response and persistence path");
+assert.ok(companion.includes("postJSON('/conversation/message'"), "greetings, questions, corrections, gratitude and frustration must use the unified conversation endpoint");
+assert.match(companion, /client_turn_id: clientTurnId/, "every Companion turn must retain idempotent submission identity");
 assert.match(companion, /postJSON\('\/conversation\/message'/);
 const apiClient = readFileSync(
   new URL("../src/api/client.ts", import.meta.url),
