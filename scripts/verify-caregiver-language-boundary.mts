@@ -333,6 +333,10 @@ assert.match(qwenAssist, /caregiverSafeAssistantText\(source\.source_excerpt\)/,
   "legacy Qwen source excerpts must not expose raw diagnostics");
 assert.match(qwenAssist, /caregiverSafeAssistantText\(observation\.value \|\| observation\.attribute\)/,
   "legacy Qwen observation values must use readable caregiver text");
+assert.match(qwenAssist, /caregiverSafeGeneratedText\(reply\.reply\)/,
+  "legacy Qwen answers must use the caregiver-language boundary");
+assert.match(qwenAssist, /caregiverSafeGeneratedText\(item\.reply\)/,
+  "saved legacy Qwen answers must remain caregiver-safe when reopened");
 
 assert.match(qwenAssist, /Suggestions are not added to your Care Record unless you choose to save and approve them/);
 assert.match(lcrQwenInterpretation, /What this update may mean/);
