@@ -441,7 +441,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
   useEffect(() => {
     setCaregiverNote("");
-    setEditedSections(draft?.generation?.sections ?? []);
+    setEditedSections(caregiverVisibleBriefingSections(draft));
     setReviewedSourceRefs([]);
     setReviewConfirmed(false);
   }, [draft?.draft_id]);
