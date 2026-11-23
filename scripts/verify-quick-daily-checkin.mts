@@ -142,6 +142,8 @@ assert.match(detailedCapture, /When did this happen\?/,
   "free-text observations can preserve an optional event time");
 assert.match(detailedCapture, /occurred_at: new Date\(occurredAt\)\.toISOString\(\)/,
   "explicit caregiver event time is sent to the backend separately from recording time");
+assert.match(detailedCapture, /occurred_at_timezone: Intl\.DateTimeFormat\(\)\.resolvedOptions\(\)\.timeZone \|\| "UTC"/,
+  "Daily Care preserves the caregiver's local timezone alongside the UTC event timestamp");
 assert.match(detailedCapture, /capture_kind: captureKind/,
   "the selected capture interaction is preserved in the source event");
 assert.match(detailedCapture, /Related care details:[\s\S]*?\['committed', 'completed'\]\.includes\(careContinuityExecution\.stages\.reconciliation/,
