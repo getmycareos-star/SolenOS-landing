@@ -108,6 +108,10 @@ assert.match(sharingComponent, /Where the information came from/,
   "caregivers must receive a plain-language explanation of source relationships");
 assert.match(sharingComponent, /handoffPurposeLabel\(saved\.purpose\)/,
   "saved draft purposes must use caregiver-readable labels");
+assert.match(sharingComponent, /purpose === "appointment" \|\| purpose === "professional_appointment"/,
+  "professional appointment revision previews must exclude caregiver profile records for both legacy and persisted purpose values");
+assert.match(sharingComponent, /caregiverVisibleRevisionSections\([\s\S]*?isProfessionalAppointment[\s\S]*?caregiver_profiles:/,
+  "revision history must apply the same caregiver-profile privacy boundary as the current professional briefing");
 assert.doesNotMatch(sharingComponent, /Evidence IDs:/,
   "caregiver review must not expose internal evidence identifiers");
 assert.doesNotMatch(sharingComponent, /Origin groups:/,
