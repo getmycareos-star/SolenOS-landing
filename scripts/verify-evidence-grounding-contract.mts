@@ -157,7 +157,7 @@ assert(conflictPanel.includes("/uncertainty/contradictions/"), "conflict resolut
 assert(conflictPanel.includes("resolution_scope"), "partial conflict resolution must capture and display exact scope");
 assert(conflictPanel.includes("Every review needs supporting information and a reason.") && conflictPanel.includes("Notes or documents you checked"), "conflict resolution must expose concrete supporting notes and documents in caregiver language");
 assert(conflictPanel.includes("We couldn’t load earlier reviews just now. This doesn’t mean none were saved.") && conflictPanel.includes("Try again"), "failed conflict-history reads must remain visible and recoverable in caregiver language");
-assert(conflictPanel.includes("not automatically resolve a conflict"), "conflict UI must reject timestamp/majority-only resolution");
+assert(conflictPanel.includes("A newer date or several similar reports do not automatically mean one version is right."), "conflict UI must reject timestamp/majority-only resolution in caregiver language");
 assert(lcr.includes('const ConflictResolutionPanel = dynamic(() => import("@/components/ConflictResolutionPanel")'), "LCR must code-split import the conflict resolution workflow");
 assert(lcr.includes("<ConflictResolutionPanel personId={personId} />"), "conflict resolution workflow must be mounted in the actual LCR");
 console.log("PASS: scoped conflict comparison and partial-resolution history are connected to the LCR.");
