@@ -238,7 +238,7 @@ export default function LandingPage() {
             <p className="el-kicker">THE CARE ASSISTANT</p>
             <h2>Ask about what has been recorded.</h2>
             <p>
-              The Companion helps you find relevant details
+              The Care Assistant helps you find relevant details
               in the care record, including information you may not remember
               exactly.
             </p>
