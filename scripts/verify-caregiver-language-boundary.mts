@@ -309,7 +309,6 @@ assert.match(dailyCareIntelligence, /caregiverSafeGeneratedText\(result\.notice\
 assert.match(dailyCareIntelligence, /caregiverSafeErrorMessage/);
 assert.match(lcrQwenInterpretation, /caregiverSafeGeneratedText\(state\.result\.reply\)/);
 assert.match(lcrQwenInterpretation, /caregiverSafeGeneratedText\(claim\.text\)/);
-const aiAttribution = read("../src/components/trust/AIAttribution.tsx");
 const whyAmISeeingThis = read("../src/components/trust/WhyAmISeeingThis.tsx");
 assert.match(aiAttribution, /caregiverSafeGeneratedText\(explanation\)/);
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(aiInterpreted\)/);
@@ -790,8 +789,6 @@ assert.match(openLoopsPage, /Related appointment/);
 assert.match(openLoopsPage, /Save what you did/);
 assert.match(openLoopsPage, /There may still be something that needs attention, even if it is not shown here/);
 
-const changeIntelligence = read("../src/components/mvp-workspace/ChangeIntelligencePanel.tsx");
-const conflictReview = read("../src/components/ConflictResolutionPanel.tsx");
 assert.doesNotMatch(changeIntelligence, /Loading saved notes and documents|Review notes and documents|Care updates considered|Time period:|Information:.*Review:/,
   "care change history must avoid internal labels and stiff technical phrasing");
 assert.match(changeIntelligence, /See the notes and documents/);
@@ -843,7 +840,6 @@ assert.doesNotMatch(careContinuityIntegrity, /caregiverSafeAssistantText\(item\.
 
 const conflictResolution = read("../src/components/ConflictResolutionPanel.tsx");
 const claimAssessment = read("../src/components/ClaimAssessmentPanel.tsx");
-const whyAmISeeingThis = read("../src/components/trust/WhyAmISeeingThis.tsx");
 assert.match(conflictResolution, /caregiverSafeGeneratedText\(item\.description\)/, "generated conflict descriptions must use the caregiver language boundary");
 assert.match(conflictResolution, /caregiverSafeGeneratedText\(selected\.description\)/, "selected conflict descriptions must use the caregiver language boundary");
 assert.match(claimAssessment, /caregiverSafeGeneratedText\(selectedClaim\.source_label\)/, "generated claim source labels must use the caregiver language boundary");
@@ -855,7 +851,6 @@ assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(couldClarify\)/, "ge
 assert.match(whyAmISeeingThis, /safeWhyItMatters \|\| 'A plain-language explanation is not available right now\.'/,
   "filtered explanations must show an honest fallback instead of disappearing silently");
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(source\.description\)/, "generated source descriptions must use the caregiver language boundary");
-const lcrQwenInterpretation = read("../src/components/mvp-workspace/LcrQwenInterpretation.tsx");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.value\)/,
   "saved observation wording must be readable while technical diagnostics remain hidden");
 
@@ -866,11 +861,9 @@ assert.match(settingsPage, /caregiverSafeGeneratedText\(item\.body\)/, "notifica
 assert.match(settingsPage, /caregiverStatusLabel\(item\.priority\)/, "notification priority codes must be translated before display");
 assert.match(settingsPage, /caregiverSafeGeneratedText\(erasureRequest\.message\)/, "privacy request messages from the server must use caregiver-safe generated copy");
 
-const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 assert.match(evidenceReview, /item\.reviewed_by_caregiver_id \? "Checked by a caregiver" : "Reviewer not recorded"/,
   "missing reviewer identity must be described as unrecorded, not as an unavailable person");
 
-const livingCareRecordPanel = read("../src/components/mvp-workspace/LivingCareRecordPanel.tsx");
 assert.match(livingCareRecordPanel, /view\.what_understood\.length > facts\.length[\s\S]*?saved information remains in your Care Record/,
   "filtered generated care facts must not disappear without explanation");
 assert.match(livingCareRecordPanel, /view\.contradictions\.length > 0[\s\S]*?Check the original notes before drawing a conclusion/,
