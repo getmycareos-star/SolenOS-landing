@@ -51,7 +51,7 @@ export default function CorrectThis({
       } else {
         setSubmitError('Failed to save correction');
       }
-    } catch (err) {
+    } catch {
       setSubmitError(caregiverSafeErrorMessage());
     } finally {
       setSubmitting(false);
