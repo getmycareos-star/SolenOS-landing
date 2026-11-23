@@ -45,3 +45,7 @@ assert.match(source, /addEventListener\("personIdChanged", refreshForSessionChan
   "handoff sharing must reload consent and recipient access when the active session changes");
 assert.match(source, /const requestSequence = \+\+loadSequenceRef\.current[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?if \(isCurrentRequest\(\)\) setLoading\(false\)/,
   "overlapping handoff refreshes must not overwrite the current caregiver's inbox or recipients");
+
+const handoffsPage = fs.readFileSync("src/app/workspace/handoffs/page.tsx", "utf8");
+assert.match(handoffsPage, /addEventListener\("personIdChanged", clearDraftForSessionChange\)[\s\S]*?setDraft\(null\)[\s\S]*?setAudience\(null\)[\s\S]*?setPurpose\(null\)/,
+  "an open handoff draft must not carry over when the active care recipient or caregiver changes");
