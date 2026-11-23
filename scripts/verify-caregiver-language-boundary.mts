@@ -320,6 +320,17 @@ assert.doesNotMatch(trustIndicators, /Extracted from document|Low confidence|Mis
 assert.match(trustIndicators, /Needs checking/);
 assert.match(trustIndicators, /Some details are still missing/);
 assert.doesNotMatch(qwenAssist, /Living Care Record|AI-assisted interpretation|Suggestions are not saved to the Living Care Record/);
+assert.match(qwenAssist, /caregiverSafeGeneratedText\(claim\.text\)/,
+  "legacy Qwen claims must use the caregiver language boundary");
+assert.match(qwenAssist, /caregiverSafeAssistantText\(source\.reported_by\)/,
+  "legacy Qwen source attribution must not expose raw structured values");
+assert.match(qwenAssist, /caregiverSafeGeneratedText\(source\.source_state_label\)/,
+  "legacy Qwen source statuses must use caregiver-safe labels");
+assert.match(qwenAssist, /caregiverSafeAssistantText\(source\.source_excerpt\)/,
+  "legacy Qwen source excerpts must not expose raw diagnostics");
+assert.match(qwenAssist, /caregiverSafeAssistantText\(observation\.value \|\| observation\.attribute\)/,
+  "legacy Qwen observation values must use readable caregiver text");
+
 assert.match(qwenAssist, /Suggestions are not added to your Care Record unless you choose to save and approve them/);
 assert.match(lcrQwenInterpretation, /What this update may mean/);
 assert.match(lcrQwenInterpretation, /Looking at earlier care information/);
