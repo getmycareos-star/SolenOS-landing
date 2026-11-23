@@ -856,6 +856,9 @@ assert.match(whyAmISeeingThis, /aiInterpreted &&[\s\S]*?A plain-language explana
   "filtered generated interpretations must have a visible explanation rather than disappearing");
 
 assert.match(whyAmISeeingThis, /caregiverSafeGeneratedText\(source\.description\)/, "generated source descriptions must use the caregiver language boundary");
+assert.match(historyDrawer, /caregiverStatusLabel\(selectedRecord\.significance_verdict\) \|\| "No further explanation is available\."/,
+  "unknown care-history status values must not fall back to displaying raw internal codes");
+
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.value\)/,
   "saved observation wording must be readable while technical diagnostics remain hidden");
 
