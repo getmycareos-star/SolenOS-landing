@@ -25,16 +25,15 @@ export function LivingCareRecordPanel({
   rawInputExcerpt = null,
 }: Props) {
   const { care_event_added: event, disclosure_plan: plan } = view;
-  const facts = view.what_understood.slice(0, 2)
+  const factCandidates = view.what_understood.slice(0, 2);
+  const facts = factCandidates
     .map((item) => caregiverSafeGeneratedText(item))
     .filter((item): item is string => Boolean(item));
-  const stillUnclear =
-    plan.show_questions && view.what_needs_context.length > 0
-      ? view.what_needs_context
-          .map((item) => caregiverSafeGeneratedText(item))
-          .filter((item): item is string => Boolean(item))
-          .slice(0, plan.max_questions)
-      : [];
+  const questionCandidates =
+    plan.show_questions ? view.what_needs_context.slice(0, plan.max_questions) : [];
+  const stillUnclear = questionCandidates
+    .map((item) => caregiverSafeGeneratedText(item))
+    .filter((item): item is string => Boolean(item));
   const recognitionLine = caregiverSafeGeneratedText(view.recognition_line);
   const confirmation = caregiverSafeGeneratedText(event.confirmation);
   const evidenceLine = caregiverSafeGeneratedText(view.evidence_line);
@@ -52,13 +51,11 @@ export function LivingCareRecordPanel({
     .map((item) => caregiverSafeGeneratedText(item))
     .filter((item): item is string => Boolean(item));
   const whyAsking = caregiverSafeGeneratedText(view.why_asking);
-  const remembered =
-    plan.show_remembered && view.what_will_be_remembered.length > 0
-      ? view.what_will_be_remembered
-          .map((item) => caregiverSafeGeneratedText(item))
-          .filter((item): item is string => Boolean(item))
-          .slice(0, 3)
-      : [];
+  const rememberedCandidates =
+    plan.show_remembered ? view.what_will_be_remembered.slice(0, 3) : [];
+  const remembered = rememberedCandidates
+    .map((item) => caregiverSafeGeneratedText(item))
+    .filter((item): item is string => Boolean(item));
   const supportingEvidence =
     view.evidence_maturity >= 2 && (view.expandable.evidence?.length ?? 0) > 0
       ? (view.expandable.evidence ?? [])
@@ -66,8 +63,8 @@ export function LivingCareRecordPanel({
           .filter((item): item is string => Boolean(item))
           .slice(0, 4)
       : [];
-  const followUpItems = view.follow_up_items
-    .slice(0, 2)
+  const followUpCandidates = view.follow_up_items.slice(0, 2);
+  const followUpItems = followUpCandidates
     .map((item) => caregiverSafeGeneratedText(item))
     .filter((item): item is string => Boolean(item));
   const careStoryUpdate = caregiverSafeGeneratedText(view.care_story_update);
@@ -133,7 +130,7 @@ export function LivingCareRecordPanel({
               ))}
             </ul>
           )}
-          {view.what_understood.length > facts.length && (
+          {factCandidates.length > facts.length && (
             <p className="panel-muted">Some details could not be shown clearly. The saved information remains in your Care Record.</p>
           )}
           {renderEvidenceMeta && (
@@ -242,6 +239,9 @@ export function LivingCareRecordPanel({
           ) : (
             <p className="panel-muted">Some questions are saved, but their wording could not be shown clearly. You can review the original care information instead.</p>
           )}
+          {stillUnclear.length > 0 && questionCandidates.length > stillUnclear.length && (
+            <p className="panel-muted">Some other questions could not be shown clearly. You can review the original care information instead.</p>
+          )}
           {whyAsking && (
             <details className="lcr-expandable lcr-why-asking">
               <summary className="panel-muted">Why these questions?</summary>
@@ -267,6 +267,9 @@ export function LivingCareRecordPanel({
             </ul>
           ) : (
             <p className="panel-muted">Some details could not be shown clearly. Nothing has been removed from your Care Record.</p>
+          )}
+          {remembered.length > 0 && rememberedCandidates.length > remembered.length && (
+            <p className="panel-muted">Some other details could not be shown clearly. Nothing has been removed from your Care Record.</p>
           )}
         </section>
       )}
@@ -296,6 +299,9 @@ export function LivingCareRecordPanel({
             </ul>
           ) : (
             <p className="panel-muted">Suggested next steps could not be shown clearly. Your saved care information has not changed.</p>
+          )}
+          {followUpItems.length > 0 && followUpCandidates.length > followUpItems.length && (
+            <p className="panel-muted">Some other suggestions could not be shown clearly. Your saved care information has not changed.</p>
           )}
         </section>
       )}
