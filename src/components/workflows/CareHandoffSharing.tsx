@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { CheckCircle2, Clock3, Inbox, RefreshCw, Share2 } from "lucide-react";
 import { ensureAnonymousSession, getJSON, postJSON, putJSON } from "@/api/client";
 import Link from "next/link";
-import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverReadableCaptureText, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 
 type HandoffDraftPurpose = "family_transition" | "return_to_care" | "professional_appointment" | "hospital_discharge" | "period_summary";
@@ -280,7 +280,7 @@ function buildShareText(draft: DraftPayload, audience: "family" | "professional"
     if (lines.join("\n").length + sectionHeader.length > 16500) { truncated = true; break; }
     lines.push(sectionHeader);
     const itemText = [
-      "- " + ((draft.generation?.status === "source_only_fallback" ? caregiverSourceText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details are not available in this preview."),
+      "- " + ((draft.generation?.status === "source_only_fallback" ? caregiverReadableCaptureText(item.summary || item.text) ?? caregiverSafeAssistantText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details are not available in this preview."),
       ...(item.supporting_quote ? ["Source wording: " + (caregiverReadableCaptureText(item.supporting_quote) ?? "Source wording is unavailable in this preview.")] : []),
       "How it was reported: " + readableStatus(item.epistemic_status || "not_recorded"),
       "Review: " + readableStatus(item.record_status || "not_recorded"),
@@ -929,7 +929,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
             {(caregiverVisibleBriefingSections(draft)).map((item, index) => (
               <article key={item.source_ref + index} style={{ borderTop: "1px solid #e5ebe4", padding: "10px 0" }}>
                 <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{readableSection(item.section)}</strong>
-                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>{(draft.generation?.status === "source_only_fallback" ? caregiverSourceText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details could not be shown."}</p>
+                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0" }}>{(draft.generation?.status === "source_only_fallback" ? caregiverReadableCaptureText(item.summary || item.text) ?? caregiverSafeAssistantText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details could not be shown."}</p>
                 {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, color: "#667267", margin: "4px 0" }}>Original wording from the saved note or document: {caregiverReadableCaptureText(item.supporting_quote) ?? "Original wording is not available."}</p>}
                 <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "4px 0", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "This uses the exact words saved in your Care Record. They have not been rewritten." : "The original wording matches, but please check that the summary says the same thing before sharing."}</p>
                 <small style={{ color: "#667267" }}>{readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
@@ -988,7 +988,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 <small style={{ display: "block", color: "#667267", margin: "3px 0 6px" }}>Care detail {index + 1} · {readableStatus(item.epistemic_status ?? "not_recorded")} · {readableStatus(item.record_status ?? "not_recorded")} · happened {formatDate(item.event_at)} · saved {formatDate(item.recorded_at)}</small>
                 {claimSourceFor(draft, item, index)?.reporter_label && <small style={{ display: "block", color: "#667267", margin: "3px 0" }}>Reported by: {claimSourceFor(draft, item, index)?.reporter_label}</small>}
                 {claimSourceFor(draft, item, index)?.source_state_label && <small style={{ display: "block", color: "#765b2b", margin: "3px 0" }}>{caregiverSafeGeneratedText(claimSourceFor(draft, item, index)?.source_state_label) || "Status not available."}</small>}
-                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{(draft.generation?.status === "source_only_fallback" ? caregiverSourceText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details could not be shown in this preview."}</p>
+                <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, margin: "6px 0 10px", overflowWrap: "anywhere" }}>{(draft.generation?.status === "source_only_fallback" ? caregiverReadableCaptureText(item.summary || item.text) ?? caregiverSafeAssistantText(item.summary || item.text) : caregiverSafeGeneratedText(item.summary || item.text)) ?? "Some details could not be shown in this preview."}</p>
                 {item.supporting_quote && <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 6px", color: "#667267" }}>From the saved record: {caregiverReadableCaptureText(item.supporting_quote) ?? "Source wording is unavailable."}</p>}
                 <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 10px", color: "#765b2b" }}>{item.semantic_entailment_status === "source_text_only_no_paraphrase" ? "This uses the exact words from the saved note. They have not been rewritten." : "Needs your review: the source wording is matched, but the summary has not been independently checked for meaning."}</p>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: "calc(11px * var(--solenos-text-scale, 1))", lineHeight: 1.45, margin: "0 0 9px" }}>
