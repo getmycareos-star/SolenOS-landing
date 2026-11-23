@@ -340,7 +340,15 @@ export function buildCareSituationUnderstandingFromExtraction(params: {
   };
 
   if (isUnderstandingEmpty(understanding)) {
-    throw new Error("Qwen did not return enough source-grounded care information to build an understanding.");
+    // The synchronous path is deterministic-only. Empty or unclassifiable
+    // input must preserve the original note and uncertainty without claiming
+    // that a care situation has been understood.
+    return createFallbackUnderstanding({
+      rawText: raw,
+      careKey,
+      personDisplayName: params.personDisplayName,
+      situation,
+    });
   }
 
   return understanding;
