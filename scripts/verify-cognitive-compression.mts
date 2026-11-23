@@ -172,11 +172,11 @@ if (
 
 const overTotal = validateOutputCompression({
   ...valid,
-  what_is_happening: Array.from({ length: 50 }, (_, i) => `word${i}`).join(" "),
-  what_matters_now: Array.from({ length: 40 }, (_, i) => `matter${i}`).join(" "),
+  what_is_happening: Array.from({ length: 80 }, (_, i) => `word${i}`).join(" "),
+  what_matters_now: Array.from({ length: 101 }, (_, i) => `matter${i}`).join(" "),
 });
 if (overTotal.valid || !overTotal.violations.includes("total_over_word_limit")) {
-  throw new Error("medium output must enforce 80-word total limit");
+  throw new Error("medium output must enforce 180-word total limit");
 }
 console.log("✓ enforces total word limits by risk_level");
 
