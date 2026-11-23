@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, patchJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Conflict = {
   id: string;
@@ -178,12 +178,12 @@ export default function ConflictResolutionPanel({ personId }: { personId?: strin
     {!loading && !error && conflicts.length > 0 && <>
       <label style={{ display: "block", fontSize: "calc(12px * var(--solenos-text-scale, 1))", marginBottom: 9 }}>Reports that do not match
         <select style={field} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-          {conflicts.map((item) => <option key={item.id} value={item.id}>Care detail: {caregiverSafeAssistantText(item.description) || "Saved reports differ"} · {caregiverStatusLabel(item.resolution_status) || "Status not available"}</option>)}
+          {conflicts.map((item) => <option key={item.id} value={item.id}>Care detail: {caregiverSafeGeneratedText(item.description) || "Saved reports differ"} · {caregiverStatusLabel(item.resolution_status) || "Status not available"}</option>)}
         </select>
       </label>
       {selected && <div style={{ border: "1px solid var(--border)", borderRadius: 7, padding: 10, marginBottom: 10, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
-        <p><strong>Care detail:</strong> {caregiverSafeAssistantText(selected.description) || "Saved reports differ"}</p>
-        <p>{caregiverSafeAssistantText(selected.description) || "Saved reports differ."}</p>
+        <p><strong>Care detail:</strong> {caregiverSafeGeneratedText(selected.description) || "Saved reports differ"}</p>
+        <p>{caregiverSafeGeneratedText(selected.description) || "Saved reports differ."}</p>
          
         <p><strong>Dates this applies to:</strong> {selected.effective_from || "Start unknown"} — {selected.effective_to || "End unknown"}</p>
         <p><strong>What have you checked:</strong> {caregiverSafeAssistantText(selected.resolution_scope) || "Nothing has been marked as resolved."}</p>
