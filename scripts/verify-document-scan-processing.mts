@@ -2,8 +2,13 @@ import { readFileSync } from "node:fs";
 import { strict as assert } from "node:assert";
 
 const source = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
+const snapCamera = readFileSync("src/components/mvp-workspace/capture/SnapCameraCapture.tsx", "utf8");
+const scanCamera = readFileSync("src/components/mvp-workspace/capture/ScanDocumentCapture.tsx", "utf8");
 const dailyCare = readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
 const review = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
+assert.match(snapCamera, /cameraFacingMode[\s\S]*?facingMode: \{ ideal: cameraFacingMode \}[\s\S]*?Switch to \{cameraFacingMode === "environment" \? "front" : "back"\} camera/, "Snap must let caregivers switch front and rear cameras");
+assert.match(scanCamera, /cameraFacingMode[\s\S]*?facingMode: \{ ideal: cameraFacingMode \}[\s\S]*?Switch to \{cameraFacingMode === "environment" \? "front" : "back"\} camera/, "Scan must let caregivers switch front and rear cameras");
+assert.match(scanCamera, /setPages\(\[\]\);[\s\S]*?\}, \[open\]\);/, "switching cameras must not discard captured scan pages");
 assert.match(review, /This only tells us how clearly SolenOS could read the words\. It does not tell us whether the words or suggested care details are correct/);
 assert(!source.includes("extractText("), "the Documents screen must not upload a file for separate preflight extraction");
 assert(!source.includes("review and correct its extracted text first"), "caregivers must not be asked to manually review client-only OCR before saving");
