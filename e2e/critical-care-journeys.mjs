@@ -4453,6 +4453,11 @@ await record("17 saved Care History review actions preserve caregiver choice on 
     const body = route.request().postDataJSON();
     const candidate = candidates[body.candidate_index];
     assert.ok(candidate, "review action must address an existing candidate");
+    assert.equal(body.expected_source_quote, candidate.source_quote ?? "");
+    assert.equal(body.expected_subject, candidate.subject ?? "");
+    assert.equal(body.expected_observation, candidate.observation ?? "");
+    assert.equal(body.expected_corrected_subject, candidate.corrected_subject ?? "");
+    assert.equal(body.expected_corrected_observation, candidate.corrected_observation ?? "");
     decisions.push({ ...body });
     if (body.decision === "correct") {
       candidate.corrected_subject = body.corrected_subject;
