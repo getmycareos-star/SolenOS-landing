@@ -227,36 +227,31 @@ assert.match(companion, /caregiverSafeAssistantText\(source\.reported_by\)/,
   "Companion source attribution must not expose raw structured values");
 assert.match(companion, /caregiverSafeAssistantText\(source\.entered_by\)/,
   "Companion source entry attribution must use readable labels");
-assert.match(companion, /caregiverSafeAssistantText\(source\.correction_note\)/,
-  "Companion correction notes must not expose raw structured metadata");
-assert.match(companion, /caregiverSafeAssistantText\(source\.correction_rationale\)/,
-  "Companion correction explanations must use readable text");
-assert.match(companion, /caregiverSafeAssistantText\(observation\.value\)/,
-  "Companion saved observation values must not expose raw structured metadata");
-assert.match(companion, /caregiverSafeAssistantText\(source\.previous_source_excerpt\)/,
-  "Companion correction history excerpts must use the caregiver-language boundary");
-assert.match(companion, /caregiverSafeAssistantText\(source\.source_excerpt\)/,
-  "Companion original source excerpts must not expose raw structured metadata");
-assert.match(companion, /caregiverSafeAssistantText\(item\.source_excerpt\)/,
-  "related Companion source excerpts must not expose raw structured metadata");
-assert.match(companion, /caregiverSafeAssistantText\(observation\.source_excerpt\)/,
-  "Companion observation source excerpts must not expose raw structured metadata");
+assert.match(companion, /source\.correction_note && <p>\{source\.correction_note\}/, "caregiver correction notes must be preserved exactly");
+assert.match(companion, /source\.correction_rationale && <p>Why it was corrected: \{source\.correction_rationale\}/, "caregiver correction reasons must be preserved exactly");
+assert.match(companion, /source\.previous_source_excerpt && <blockquote>Earlier wording: \{source\.previous_source_excerpt\}/, "earlier source wording must be preserved exactly");
+assert.match(companion, /source\.source_excerpt && <blockquote>\{source\.source_excerpt\}/, "original source excerpts must be preserved exactly");
+assert.match(companion, /item\.source_excerpt && <blockquote>\{item\.source_excerpt\}/, "related source excerpts must be preserved exactly");
+assert.match(companion, /caregiverSafeGeneratedText\(observation\.label\).*?\{observation\.value\}/, "reported observation values must remain exact source text");
+assert.match(companion, /observation\.source_excerpt && <blockquote>\{observation\.source_excerpt\}/, "observation source excerpts must be preserved exactly");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.reported_by\)/,
   "LCR interpretation source attribution must use caregiver-safe text");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.entered_by\)/,
   "LCR interpretation entry attribution must use caregiver-safe text");
-assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(source\.source_excerpt\)/,
-  "LCR interpretation source excerpts must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /source\.source_excerpt && <blockquote>\{source\.source_excerpt\}/,
+  "LCR interpretation must preserve exact source excerpts");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.reported_by\)/,
   "Related LCR evidence attribution must use caregiver-safe text");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.entered_by\)/,
   "Related LCR evidence entry attribution must use caregiver-safe text");
-assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(evidence\.source_excerpt\)/,
-  "Related LCR evidence excerpts must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /evidence\.source_excerpt && <blockquote>\{evidence\.source_excerpt\}/,
+  "related LCR evidence excerpts must be preserved exactly");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.reported_by\)/,
   "LCR observation attribution must use caregiver-safe text");
-assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(observation\.source_excerpt\)/,
-  "LCR observation source excerpts must use caregiver-safe text");
+assert.match(lcrQwenInterpretation, /caregiverSafeGeneratedText\(observation\.label\).*?\{observation\.value\}/,
+  "LCR observation values must preserve the original reported wording");
+assert.match(lcrQwenInterpretation, /observation\.source_excerpt && <blockquote>\{observation\.source_excerpt\}/,
+  "LCR observation source excerpts must be preserved exactly");
 assert.match(lcrQwenInterpretation, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\)/,
   "LCR aggregate time-window labels must use caregiver-safe text");
 
@@ -415,9 +410,9 @@ assert.match(companion, /caregiverFieldLabel\(observation\.attribute\)/, "intern
 assert.match(companion, /caregiverStatusLabel\(item\.status\)/, "saved Companion review statuses must use caregiver-facing labels");
 assert.match(companion, /caregiverStatusLabel\(entry\.decision\)/, "Companion review history decisions must use caregiver-facing labels");
 assert.match(companion, /caregiverSafeGeneratedText\(item\.proposed_change\?\.asserted_value\)/, "proposed care details must pass through the generated-text boundary");
-assert.match(companion, /caregiverSafeAssistantText\(item\.proposed_change\?\.source_quote\)/, "original caregiver wording must be checked before display");
-assert.match(companion, /caregiverSafeAssistantText\(entry\.correction_context\)/, "saved correction context must use readable caregiver text");
-assert.match(companion, /caregiverSafeAssistantText\(item\.proposed_change\.event_time_text\)/, "reported event times must not expose structured metadata");
+assert.match(companion, /item\.proposed_change\?\.source_quote/, "original source quotations must be preserved when generated wording is unavailable");
+assert.match(companion, /entry\.correction_context && <small>Correction context: \{entry\.correction_context\}/, "saved caregiver correction context must be preserved exactly");
+assert.match(companion, /item\.proposed_change\?\.event_time_text && <small>When you said it happened: \{item\.proposed_change\.event_time_text\}/, "reported event-time wording must be preserved exactly");
 
 assert.match(companion, /caregiverSafeGeneratedText\(entry\.rationale\)/, "server-generated review explanations must use caregiver language in every review-history view");
 
