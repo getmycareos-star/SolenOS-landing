@@ -7,6 +7,7 @@ const continuity = readFileSync("src/components/CareContinuityIntegrityPanel.tsx
 const source = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
 const capture = readFileSync("src/components/mvp-workspace/capture/extract-attached.ts", "utf8");
 const captureReview = readFileSync("src/components/workflows/CaptureAnalysisReview.tsx", "utf8");
+const structuredCapture = readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
 const documentsPage = readFileSync("src/app/workspace/documents/page.tsx", "utf8");
 
 assert(
@@ -42,6 +43,11 @@ assert(
   captureReview.includes("expected_source_quote: candidate.source_quote ?? \"\"") &&
   captureReview.includes("expected_subject: candidate.subject ?? \"\""),
   "capture-analysis decisions must send the required exact candidate snapshot to the backend",
+);
+assert(
+  structuredCapture.includes("expected_source_quote: candidate.source_quote ?? ''") &&
+  structuredCapture.includes("expected_subject: candidate.subject ?? ''"),
+  "Structured Daily Care decisions must send the exact candidate snapshot to the backend",
 );
 
 assert(
