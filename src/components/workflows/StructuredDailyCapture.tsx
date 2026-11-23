@@ -890,6 +890,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         caregiver_id: caregiverId,
         capture_idempotency_key: captureIdempotencyKey,
         capture_kind: captureKind,
+        occurred_at_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         ...(occurredAt ? { occurred_at: new Date(occurredAt).toISOString() } : {}),
         medications: medications.map(med => ({
           ...med,
