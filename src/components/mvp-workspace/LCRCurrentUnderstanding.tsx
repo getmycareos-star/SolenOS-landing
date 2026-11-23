@@ -579,7 +579,7 @@ function displayCurrentCareTitle(item: CurrentCareItem): string {
   const title = item.title?.trim().toLowerCase() || "";
   return DOCUMENT_ASSERTION_LABELS[item.title || ""] ||
     CURRENT_CARE_TITLE_LABELS[title] ||
-    caregiverSafeAssistantText(item.title) ||
+    caregiverSourceText(item.title) ||
     caregiverLabel(item.kind) ||
     "Saved care detail";
 }
@@ -1960,10 +1960,10 @@ export function LCRCurrentUnderstanding() {
                     const source = sourceForLoop(item);
                     return (
                       <li key={item.source + ":" + item.id} className="lcr-current-fact">
-                        <strong>{caregiverSafeAssistantText(item.title) || "Care information"}</strong>
-                        <p>{caregiverSafeAssistantText(item.description || source?.description) || "No further description was recorded."}</p>
+                        <strong>{caregiverSourceText(item.title) || "Care information"}</strong>
+                        <p>{displayDescription(item.description || source?.description) || "No further description was recorded."}</p>
                         {item.request_text && <p>Follow-up: {caregiverSourceText(item.request_text) || "A follow-up was requested."}</p>}
-                        {item.owner && <small>Responsible person: {caregiverSafeAssistantText(item.owner) || "Not recorded"}</small>}
+                        {item.owner && <small>Responsible person: {caregiverSourceText(item.owner) || "Not recorded"}</small>}
                         {item.due_at && <small>Due date: {formatWhen(item.due_at)}</small>}
                         <details className="lcr-entry-status">
                           <summary>More about this item</summary>
@@ -2068,7 +2068,7 @@ export function LCRCurrentUnderstanding() {
                   <ul className="lcr-current-facts">
                     {careAttention.important_to_address.map((item) => (
                       <li key={item.id || item.source + ":" + item.record_id} className="lcr-current-fact">
-                        <strong>{caregiverSafeAssistantText(item.title) || "Care information to review"}</strong>
+                        <strong>{caregiverSourceText(item.title) || "Care information to review"}</strong>
                         <p>{caregiverSafeGeneratedText(item.reason || item.priority_basis?.join("; ")) || "The saved care information indicates this needs follow-up."}</p>
                         {item.evidence_status && <small>Information checked: {caregiverStatusLabel(item.evidence_status) || "Not established"}</small>}
                         {item.history_completeness && item.history_completeness !== "complete" && <small>Some earlier care information may be missing.</small>}
@@ -2114,7 +2114,7 @@ export function LCRCurrentUnderstanding() {
                   <ul className="lcr-current-facts">
                   {canWaitItems.map((item) => (
                     <li key={item.source + ":" + item.id} className="lcr-current-fact">
-                      <strong>{caregiverSafeAssistantText(item.title) || "Care information"}</strong>
+                      <strong>{caregiverSourceText(item.title) || "Care information"}</strong>
                       <p>{displayDescription(item.description)}</p>
                       <p className="lcr-entry-status">Reason for postponing: {caregiverSourceText(item.deferred_reason) || "No reason was recorded."}</p>
                       <p className="lcr-entry-status">Status: {caregiverLabel(item.recorded_status)} · Priority: {caregiverLabel(item.priority)} · What we know: {caregiverLabel(item.epistemic_status)}</p>
@@ -2382,7 +2382,7 @@ export function LCRCurrentUnderstanding() {
                     )}
                     {changeEvidence[change.id]?.evidence.map((item) => (
                       <article key={item.id} className="lcr-current-fact">
-                        <strong>{caregiverSafeAssistantText(item.title) || "Care information"}</strong>
+                        <strong>{caregiverSourceText(item.title) || "Care information"}</strong>
                         <p>{displayDescription(item.description)}</p>
                         <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : caregiverLabel(item.event_type)} · {item.status === "recorded" ? "Saved" : caregiverLabel(item.status)}</small>
                         <small>Happened: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
