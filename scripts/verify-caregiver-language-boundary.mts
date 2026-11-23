@@ -227,7 +227,7 @@ assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\
   "saved care receipt titles must not expose raw structured metadata");
 assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\.description\)/,
   "saved care receipt descriptions must use readable caregiver text");
-assert.match(dementiaObservation, /caregiverSafeAssistantText\(item\.description\)/,
+assert.match(dementiaObservation, /caregiverSourceText\(item\.description\)/,
   "saved dementia observations must not expose raw structured metadata");
 assert.match(identityRecovery, /caregiverSafeAssistantText\(device\.label\)/,
   "device labels must not expose raw structured values");
