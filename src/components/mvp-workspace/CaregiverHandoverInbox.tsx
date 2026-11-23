@@ -29,10 +29,12 @@ export function CaregiverHandoverInbox() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [failedTransferSources, setFailedTransferSources] = useState<Array<"responsibility" | "primary">>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
+    setFailedTransferSources(["responsibility", "primary"]);
     try {
       const session = await ensureAnonymousSession();
       const caregiverId = session.caregiver.id || getCaregiverId();
@@ -43,16 +45,23 @@ export function CaregiverHandoverInbox() {
       ]);
       // A failed request must not clear requests already loaded from the other
       // source or from an earlier successful refresh.
-      if (responsibilities.status === "fulfilled") {
-        setResponsibilityTransfers((responsibilities.value ?? []).filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId));
+      const failed: Array<"responsibility" | "primary"> = [];
+      if (responsibilities.status === "fulfilled" && Array.isArray(responsibilities.value)) {
+        setResponsibilityTransfers(responsibilities.value.filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId));
+      } else {
+        failed.push("responsibility");
       }
-      if (primary.status === "fulfilled") {
-        setPrimaryTransfers((primary.value ?? []).filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId));
+      if (primary.status === "fulfilled" && Array.isArray(primary.value)) {
+        setPrimaryTransfers(primary.value.filter(item => item.status === "pending" && item.to_caregiver_id === caregiverId));
+      } else {
+        failed.push("primary");
       }
-      if (responsibilities.status === "rejected" || primary.status === "rejected") {
+      setFailedTransferSources(failed);
+      if (failed.length > 0) {
         setError("We couldn't check all pending care handovers. Please try again.");
       }
     } catch {
+      setFailedTransferSources(["responsibility", "primary"]);
       setError("We couldn't check for pending care handovers. Please try again.");
     } finally {
       setLoading(false);
@@ -86,13 +95,14 @@ export function CaregiverHandoverInbox() {
       </div>
       {loading && <p className="mobile-settings-hint">Checking for care handovers…</p>}
       {(responsibilityTransfers.length > 0 || primaryTransfers.length > 0) && <p className="mobile-settings-hint">Please review these requests. Your care responsibilities will not change unless you accept.</p>}
+      {failedTransferSources.length > 0 && (responsibilityTransfers.length > 0 || primaryTransfers.length > 0) && <p className="mobile-settings-hint" role="status">Some requests shown here could not be refreshed and may be out of date. Refresh before responding to those requests.</p>}
       {primaryTransfers.map(item => (
         <div key={item.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 10 }}>
           <strong>{caregiverSourceText(item.from_caregiver_name) || "A caregiver"} has asked you to become the main caregiver.</strong>
           {item.reason && <p className="mobile-settings-hint">{caregiverSourceText(item.reason) || "No reason was recorded."}</p>}
           <div className="mobile-settings-buttons">
-            <Button type="button" variant="primary" disabled={busy} onClick={() => void respond("primary", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
-            <Button type="button" variant="secondary" disabled={busy} onClick={() => void respond("primary", item.id, "reject")}>Decline</Button>
+            <Button type="button" variant="primary" disabled={busy || failedTransferSources.includes("primary")} onClick={() => void respond("primary", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
+            <Button type="button" variant="secondary" disabled={busy || failedTransferSources.includes("primary")} onClick={() => void respond("primary", item.id, "reject")}>Decline</Button>
           </div>
         </div>
       ))}
@@ -101,8 +111,8 @@ export function CaregiverHandoverInbox() {
           <strong>{caregiverSourceText(item.from_caregiver_name) || "A caregiver"} has asked you to take over a care responsibility.</strong>
           {item.reason && <p className="mobile-settings-hint">{caregiverSourceText(item.reason) || "No reason was recorded."}</p>}
           <div className="mobile-settings-buttons">
-            <Button type="button" variant="primary" disabled={busy} onClick={() => void respond("responsibility", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
-            <Button type="button" variant="secondary" disabled={busy} onClick={() => void respond("responsibility", item.id, "reject")}>Decline</Button>
+            <Button type="button" variant="primary" disabled={busy || failedTransferSources.includes("responsibility")} onClick={() => void respond("responsibility", item.id, "accept")}><Check size={15} aria-hidden /> Accept</Button>
+            <Button type="button" variant="secondary" disabled={busy || failedTransferSources.includes("responsibility")} onClick={() => void respond("responsibility", item.id, "reject")}>Decline</Button>
           </div>
         </div>
       ))}
