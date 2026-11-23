@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { caregiverInformationLabel, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel, caregiverSituationStateLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeChangeText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel, caregiverSituationStateLabel } from "@/lib/caregiver-language";
 import {
   getPersistedChangeDetail,
   getPersistedPatternDetail,
@@ -524,24 +524,24 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                     {details[change.id].assertions.map((source) => (
                       <article key={source.id}>
                         <strong>{caregiverSafeAssistantText(source.field) ?? "Care detail"}: {caregiverSafeAssistantText(source.asserted_value) ?? "Saved care detail"}</strong>
-                        <p>{caregiverSafeAssistantText(source.source_text ?? source.source_label) ?? "The original report is saved."}</p>
+                        <p>{caregiverSourceText(source.source_text ?? source.source_label) ?? "The original report is saved."}</p>
                         <p className="panel-muted">What we know: {caregiverInformationLabel(source.epistemic_state) ?? "Caregiver report"} · Has this been checked? {caregiverStatusLabel(source.assertion_status) ?? "Not checked"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Time not recorded"}</p>
                       </article>
                     ))}
                     {details[change.id].observations.map((source) => (
                       <article key={source.id}>
                         <strong>{caregiverSafeAssistantText(source.subject_label) ?? "Care detail"} · {caregiverSafeAssistantText(source.attribute) ?? "Recorded detail"}: {caregiverSafeAssistantText(source.normalized_value ?? source.value_text) ?? "Value not recorded"}{source.units ? ` ${source.units}` : ""}</strong>
-                        <p>{caregiverSafeAssistantText(source.source_passage) ?? "The original wording is saved."}</p>
+                        <p>{caregiverSourceText(source.source_passage) ?? "The original wording is saved."}</p>
                         <p className="panel-muted">{caregiverInformationLabel(source.epistemic_status) ?? "Caregiver report"} · {source.observed_at ? new Date(source.observed_at).toLocaleString() : "Time not recorded"}</p>
                         {source.negated || source.hedge_marker || source.ambiguity_note ? (
-                          <p className="panel-muted">{source.negated ? "The original report says this did not happen. " : ""}{source.hedge_marker ? "The original report expressed uncertainty. " : ""}{caregiverSafeAssistantText(source.ambiguity_note) ?? ""}</p>
+                          <p className="panel-muted">{source.negated ? "The original report says this did not happen. " : ""}{source.hedge_marker ? "The original report expressed uncertainty. " : ""}{caregiverSourceText(source.ambiguity_note) ?? ""}</p>
                         ) : null}
                       </article>
                     ))}
                     {details[change.id].confirmation_history.length > 0 ? (
                       <div>
                         <strong>Review history</strong>
-                        <ul>{details[change.id].confirmation_history.map((entry) => <li key={entry.id}>{caregiverStatusLabel(entry.previous_status) ?? "Previous review"} → {caregiverStatusLabel(entry.new_status) ?? "Updated review"}: {caregiverSafeAssistantText(entry.reason) ?? "No explanation recorded"} ({new Date(entry.created_at).toLocaleString()})</li>)}</ul>
+                        <ul>{details[change.id].confirmation_history.map((entry) => <li key={entry.id}>{caregiverStatusLabel(entry.previous_status) ?? "Previous review"} → {caregiverStatusLabel(entry.new_status) ?? "Updated review"}: {caregiverSourceText(entry.reason) ?? "No explanation recorded"} ({new Date(entry.created_at).toLocaleString()})</li>)}</ul>
                       </div>
                     ) : null}
                   </div>
