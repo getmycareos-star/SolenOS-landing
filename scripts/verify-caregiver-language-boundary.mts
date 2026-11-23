@@ -28,8 +28,8 @@ assert.equal(caregiverStatusLabel("improved"), "May be improving");
 assert.equal(caregiverStatusLabel("new"), "New");
 assert.equal(caregiverFieldLabel("sleep"), "Sleep");
 assert.equal(caregiverFieldLabel("mobility"), "Movement");
-assert.equal(caregiverSafeGeneratedText("This has moderate confidence."), null);
-assert.equal(caregiverSafeGeneratedText("The evidence supports this conclusion."), null);
+assert.equal(caregiverSafeGeneratedText("This has moderate confidence."), "This has moderate confidence.");
+assert.equal(caregiverSafeGeneratedText("The evidence supports this conclusion."), "The evidence supports this conclusion.");
 assert.equal(caregiverSafeGeneratedText("A few details may need checking."), "A few details may need checking.");
 assert.equal(caregiverSafeAssistantText("I am not confident about this detail."), "I am not confident about this detail.");
 
@@ -117,6 +117,7 @@ assert.equal(caregiverSafeGeneratedText("The claim assessment is still running."
 assert.equal(caregiverSafeGeneratedText("The technical details are not available."), null);
 assert.equal(caregiverSafeGeneratedText("Your care assessment is scheduled for Tuesday, and the notes describe a change."), "Your care assessment is scheduled for Tuesday, and the notes describe a change.");
 assert.equal(caregiverSafeGeneratedText("I cannot be confident about the cause yet."), "I cannot be confident about the cause yet.");
+assert.equal(caregiverSafeGeneratedText("The notes provide some evidence, but we are not confident about the cause."), "The notes provide some evidence, but we are not confident about the cause.");
 assert.equal(caregiverSafeGeneratedText("Your care update was saved. We do not know what changed yet."), "Your care update was saved. We do not know what changed yet.");
 assert.equal(caregiverSafeGeneratedText("Your care update was saved. We do not know what caused the change yet."), "Your care update was saved. We do not know what caused the change yet.");
 assert.equal(caregiverSafeAssistantText("Your note mentions evidence and confidence."), "Your note mentions evidence and confidence.");
