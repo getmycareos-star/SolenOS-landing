@@ -116,7 +116,7 @@ assert.ok(component.includes('selectedAppointmentStatus'), 'workspace generation
 assert.ok(component.includes('generated.workspace?.appointment_id === selectedAppointmentId'), 'auto-prepared workspace must belong to the selected appointment');
 assert.ok(!component.includes('QwenAssistPanel'), 'appointment continuity must not depend on a separate chatbot panel');
 assert.ok(!component.includes('MediaRecorder') && !component.includes('getUserMedia'), 'voice capture remains deferred');
-assert.ok(component.includes("'Next appointment recorded' : 'Appointment information · date unknown'"), 'unknown dates must not be labelled as scheduled visits');
+assert.ok(component.includes("brief.next_appointment.scheduled_at ? 'Next appointment recorded' : 'Appointment · date not recorded'"), 'unknown dates must not be labelled as scheduled visits');
 assert.ok(component.includes('It does not book appointments or confirm them with a provider.'), 'recorded appointments must not be represented as external bookings');
 
 console.log('PASS: automatic appointment continuity, explicit lifecycle states, optional text/document capture, provenance review and retry handling')
