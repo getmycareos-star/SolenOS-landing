@@ -478,7 +478,7 @@ export default function ClaimAssessmentPanel() {
                   </blockquote>
                 ) : (
                   <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
-                    No readable text was extracted from this file. The original file remains saved.
+                    No readable text was extracted from this file. You may need to open the original document to review it.
                   </p>
                 )}
               </details>
