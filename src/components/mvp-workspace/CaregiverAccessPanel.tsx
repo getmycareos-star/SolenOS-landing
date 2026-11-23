@@ -1414,8 +1414,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
               {transfer.status === "pending" && transfer.to_caregiver_id === currentSessionCaregiverId && (
                 <div className="mobile-settings-buttons">
-                  <Button type="button" variant="primary" disabled={busy} onClick={() => void respondToPrimaryTransfer(transfer, "accept")}><Check size={15} aria-hidden /> Accept</Button>
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => void respondToPrimaryTransfer(transfer, "reject")}>Decline</Button>
+                  <Button type="button" variant="primary" disabled={busy || loadWarnings.includes("main-caregiver transfer requests")} onClick={() => void respondToPrimaryTransfer(transfer, "accept")}><Check size={15} aria-hidden /> Accept</Button>
+                  <Button type="button" variant="secondary" disabled={busy || loadWarnings.includes("main-caregiver transfer requests")} onClick={() => void respondToPrimaryTransfer(transfer, "reject")}>Decline</Button>
                 </div>
               )}
             </div>
@@ -1433,8 +1433,8 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               {transfer.reason && <p className="mobile-settings-hint">{transfer.reason}</p>}
               {transfer.status === "pending" && transfer.to_caregiver_profile_id === currentProfileId && (
                 <div className="mobile-settings-buttons">
-                  <Button type="button" variant="primary" disabled={busy} onClick={() => void respondToTransfer(transfer, "accept")}><Check size={15} aria-hidden /> Accept</Button>
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => void respondToTransfer(transfer, "reject")}>Decline</Button>
+                  <Button type="button" variant="primary" disabled={busy || loadWarnings.includes("pending responsibility transfers")} onClick={() => void respondToTransfer(transfer, "accept")}><Check size={15} aria-hidden /> Accept</Button>
+                  <Button type="button" variant="secondary" disabled={busy || loadWarnings.includes("pending responsibility transfers")} onClick={() => void respondToTransfer(transfer, "reject")}>Decline</Button>
                 </div>
               )}
             </div>
@@ -1442,6 +1442,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
         </div>
       )}
 
+      {loadWarnings.length > 0 && <p className="mobile-settings-hint" role="status">Some caregiver information could not be refreshed: {loadWarnings.join(", ")}. Some lists may be out of date. Refresh before making changes based on those lists.</p>}
       {error && <p className="mobile-settings-hint" role="alert">{error}</p>}
       {notice && <p className="mobile-settings-hint" role="status">{notice}</p>}
       <Button type="button" variant="secondary" onClick={() => void load()} disabled={busy}>Refresh</Button>
