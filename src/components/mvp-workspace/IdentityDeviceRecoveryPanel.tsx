@@ -6,6 +6,7 @@ import { KeyRound, MonitorSmartphone, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { ensureAnonymousSession, getJSON, postJSON, deleteJSON, signInToAccount } from "@/api/client";
+import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 
 type Device = {
   id: string;
@@ -145,7 +146,7 @@ export function IdentityDeviceRecoveryPanel() {
       {devices.map((device) => (
         <div key={device.id} className="mobile-settings-row" style={{ alignItems: "flex-start" }}>
           <span>
-            <span className="mobile-settings-label"><MonitorSmartphone size={14} aria-hidden /> {device.label}</span>
+            <span className="mobile-settings-label"><MonitorSmartphone size={14} aria-hidden /> {caregiverSafeAssistantText(device.label) || "This device"}</span>
             <span className="mobile-settings-hint">
               {device.trust_status === "verified" ? "Linked to your account" : device.trust_status === "unverified" ? "Not set up yet" : "Status not available"}
             </span>
