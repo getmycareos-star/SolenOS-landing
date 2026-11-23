@@ -737,7 +737,9 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
     { width: 390, height: 844 },
   );
   const followupsSummary = page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" });
-  if (await followupsSummary.count() === 0) {
+  try {
+    await followupsSummary.waitFor({ state: "visible", timeout: 20_000 });
+  } catch {
     const diagnostic = await page.evaluate(() => ({
       url: location.pathname,
       body: document.body.innerText.slice(0, 1800),
