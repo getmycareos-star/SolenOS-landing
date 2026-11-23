@@ -118,7 +118,7 @@ function evidenceSummary(item: Evidence): string {
     }
     return "Saved care information";
   } catch {
-    return caregiverSafeAssistantText(raw.slice(0, 100)) || "Saved care information";
+    return caregiverSourceText(raw.slice(0, 100)) || "Saved care information";
   }
 }
 

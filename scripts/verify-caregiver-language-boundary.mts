@@ -250,6 +250,7 @@ assert.match(structuredDailyCapture, /caregiverSourceText\(item\.dose\)/,
 assert.match(structuredDailyCapture, /caregiverSourceText\(item\.source_text\)/,
   "saved medication source notes must use readable caregiver text");
 assert.match(clarificationWorkflow, /caregiverSourceText\(content\.slice\(0, 100\)\)/, "clarification source previews must preserve the original note");
+assert.match(clarificationWorkflow, /caregiverSourceText\(raw\.slice\(0, 100\)\)/, "plain-text clarification sources must remain verbatim even when they resemble technical identifiers");
 assert.match(clarificationWorkflow, /caregiverSourceText\(item\.answer\)/,
   "saved clarification answers must not expose raw structured metadata");
 assert.match(clarificationWorkflow, /caregiverSourceText\(item\.answer_provenance\)/,
