@@ -107,7 +107,7 @@ export default function CaptureAnalysisReview({
           candidate_index: index,
           decision,
           // Bind the caregiver decision to the exact source suggestion shown.
-          // The backend requires both values to reject stale review snapshots.
+          // The backend compares all three values to reject stale review snapshots.
           expected_source_quote: candidate.source_quote ?? "",
           expected_subject: candidate.subject ?? "",
           expected_observation: candidate.observation ?? "",
