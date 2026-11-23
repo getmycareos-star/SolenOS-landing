@@ -1233,3 +1233,8 @@ assert.match(caregiverAccessPanel, /loadWarnings\.includes\("assigned care respo
 
 assert.match(caregiverAccessPanel, /loadedScopeRef\.current\.personId !== personId \|\| loadedScopeRef\.current\.caregiverId !== caregiverId[\s\S]*?clearPersonScopedState\(\)/,
   "caregiver access data must be cleared when either the care recipient or active caregiver changes");
+
+assert.match(caregiverAccessPanel, /const requestSequence = \+\+loadSequenceRef\.current[\s\S]*?if \(!isCurrentRequest\(\)\) return[\s\S]*?if \(isCurrentRequest\(\)\) setLoading\(false\)/,
+  "overlapping caregiver-access reads must not let an old session overwrite the current caregiver's data");
+assert.match(caregiverAccessPanel, /addEventListener\("personIdChanged", refreshForSessionChange\)/,
+  "caregiver-access data must reload when the active person or caregiver session changes");
