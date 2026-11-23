@@ -201,6 +201,10 @@ assert.match(companion, /caregiverSafeAssistantText\(source\.correction_rational
   "Companion correction explanations must use readable text");
 assert.match(companion, /caregiverSafeAssistantText\(observation\.value\)/,
   "Companion saved observation values must not expose raw structured metadata");
+assert.match(companion, /caregiverSafeAssistantText\(source\.previous_source_excerpt\)/,
+  "Companion correction history excerpts must use the caregiver-language boundary");
+assert.match(companion, /caregiverSafeAssistantText\(observation\.source_excerpt\)/,
+  "Companion observation source excerpts must not expose raw structured metadata");
 
 assert.match(documentReview, /analysis\.open_questions\?\.map\(\(question, i\) => <li key=\{i\}>\{caregiverSafeGeneratedText\(question\)/,
   "document review questions must use the caregiver-language boundary in every display location");
