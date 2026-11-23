@@ -117,7 +117,7 @@ async function createBrowserPage(
   const pageErrors = [];
   const consoleErrors = [];
   const failedRequests = [];
-  page.on("pageerror", (error) => pageErrors.push(error.message));
+  page.on("pageerror", (error) => pageErrors.push(error.stack || error.message));
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
   page.on("requestfailed", (request) => failedRequests.push({
     method: request.method(),
