@@ -16,4 +16,14 @@ assert.match(effect, /await syncDurableWrites\([\s\S]*?if \(!isCurrent\(\)\) ret
 assert.match(effect, /await loadDocuments\(true\);\s*if \(!isCurrent\(\)\) return;/, "stale sync completions must not dispatch care-record refresh events");
 assert.match(effect, /syncSequence \+= 1/, "unmount must invalidate in-flight sync attempts");
 
-console.log("✓ document offline-sync results are fenced by request identity and caregiver session");
+const loadStart = source.indexOf("const loadDocuments");
+const loadEnd = source.indexOf("}, []);", loadStart);
+assert.ok(loadStart >= 0 && loadEnd > loadStart, "document list loader must be present");
+const loader = source.slice(loadStart, loadEnd);
+assert.match(loader, /const requestSequence = \+\+documentLoadSequenceRef\.current/, "each document list read must have a request identity");
+assert.match(loader, /documentLoadSequenceRef\.current === requestSequence/, "older document reads must not replace newer results");
+assert.match(loader, /if \(isCurrentRequest\(\)\) setDocuments\(next\)/, "only the newest successful document read may replace the list");
+assert.match(loader, /cause instanceof ApiResponseError[\s\S]*?cause\.status === 401[\s\S]*?cause\.status === 403/, "authentication and access denial must be distinguished from transient read failures");
+assert.match(loader, /if \(!requestPersonId \|\| !requestCaregiverId \|\| accessDenied\)[\s\S]*?setDocuments\(\[\]\)/, "denied document access must clear previously loaded private document data");
+
+console.log("✓ document reads and offline-sync results are fenced by request identity and caregiver session");
