@@ -102,7 +102,7 @@ jobs:
       - name: Type-check and production build
         run: npm run typecheck && npm run build
       - name: Verify document intake, review and incomplete-page safeguards
-        run: npm run verify:document-scan-processing && npm run verify:document-review-history && npm run verify:companion-home
+        run: npm run verify:document-scan-processing && npm run verify:document-review-history && npm run verify:document-session-sync && npm run verify:companion-home
       - name: Validate critical caregiver E2E test syntax
         run: node --check e2e/critical-care-journeys.mjs && node --check e2e/document-continuity-live-qwen.mjs
       - name: Install pinned Playwright runner and Chromium
