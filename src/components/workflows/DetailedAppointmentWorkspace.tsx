@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
-import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
+import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 
 type Stage = 'prepare' | 'during' | 'after'
 type EvidenceSource = {
@@ -346,13 +346,13 @@ export default function DetailedAppointmentWorkspace() {
             {lcrBrief && <>
               <div className="appointment-brief-grid">
                 <div><strong>Saved care details ({lcrBrief.facts.length})</strong>
-                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{caregiverSafeAssistantText(item.value) || 'No value recorded'}</span><small>Care information · {caregiverInformationLabel(item.epistemic_status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved note or document'} · Added by: {caregiverSafeAssistantText(source.original_author) || 'Not recorded'} · Reported by: {caregiverSafeAssistantText(source.reported_by_label) || 'Not recorded'}</small>)}</li>)}</ul> : <p>No saved care details were found in this summary. This does not mean the information does not exist elsewhere.</p>}
+                  {lcrBrief.facts.length ? <ul>{lcrBrief.facts.slice(0, 10).map(item => <li key={item.source_id}><span>{caregiverSafeAssistantText(item.value) || 'No value recorded'}</span><small>Care information · {caregiverInformationLabel(item.epistemic_status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved note or document'} · Added by: {caregiverSourceText(source.original_author) || 'Not recorded'} · Reported by: {caregiverSourceText(source.reported_by_label) || 'Not recorded'}</small>)}</li>)}</ul> : <p>No saved care details were found in this summary. This does not mean the information does not exist elsewhere.</p>}
                 </div>
                 <div><strong>Recent care updates ({lcrBrief.events.length})</strong>
-                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{caregiverSafeAssistantText(item.title) || "Care update"}</span><small>{item.occurred_at || 'Time not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Saved note or document · {caregiverInformationLabel(source.epistemic_status) || 'Not yet confirmed'} · Added by: {caregiverSafeAssistantText(source.original_author) || 'Not recorded'} · Reported by: {caregiverSafeAssistantText(source.reported_by_label) || 'Not recorded'}</small>)}</li>)}</ul> : <p>No care updates are listed for this time period.</p>}
+                  {lcrBrief.events.length ? <ul>{lcrBrief.events.slice(0, 8).map(item => <li key={item.source_id}><span>{caregiverSafeAssistantText(item.title) || "Care update"}</span><small>{item.occurred_at || 'Time not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.description && <p>{caregiverSafeAssistantText(item.description) || 'No further details are available.'}</p>}{item.evidence_sources?.map(source => <small key={source.evidence_id}>Saved note or document · {caregiverInformationLabel(source.epistemic_status) || 'Not yet confirmed'} · Added by: {caregiverSourceText(source.original_author) || 'Not recorded'} · Reported by: {caregiverSourceText(source.reported_by_label) || 'Not recorded'}</small>)}</li>)}</ul> : <p>No care updates are listed for this time period.</p>}
                 </div>
                 <div><strong>Appointment history ({lcrBrief.appointments.length})</strong>
-                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{caregiverSafeAssistantText(item.title) || "Appointment"}</span><small>{item.scheduled_at || 'Date not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved note or document'} · Added by: {caregiverSafeAssistantText(source.original_author) || 'Not recorded'} · Reported by: {caregiverSafeAssistantText(source.reported_by_label) || 'Not recorded'}</small>)}</li>)}</ul> : <p>No appointments are listed here.</p>}
+                  {lcrBrief.appointments.length ? <ul>{lcrBrief.appointments.slice(0, 6).map(item => <li key={item.source_id}><span>{caregiverSafeAssistantText(item.title) || "Appointment"}</span><small>{item.scheduled_at || 'Date not recorded'} · {caregiverStatusLabel(item.status) || 'Status not available'}</small>{item.evidence_sources?.map(source => <small key={source.evidence_id}>{caregiverInformationLabel(source.epistemic_status) || 'Saved note or document'} · Added by: {caregiverSourceText(source.original_author) || 'Not recorded'} · Reported by: {caregiverSourceText(source.reported_by_label) || 'Not recorded'}</small>)}</li>)}</ul> : <p>No appointments are listed here.</p>}
                 </div>
               </div>
               {(Boolean(lcrBrief.open_loops?.length) || Boolean(lcrBrief.appointment_needs?.length) || Boolean(lcrBrief.documents?.length)) && <section className="appointment-source-coverage" aria-label="Follow-ups, appointment questions and relevant documents">
@@ -382,9 +382,9 @@ export default function DetailedAppointmentWorkspace() {
                   <div><strong>Relevant documents ({lcrBrief.documents?.length ?? 0})</strong>
                     {lcrBrief.documents?.length
                       ? <ul>{lcrBrief.documents.slice(0, 8).map(item => <li key={item.source_id}>
-                        <span>{caregiverSafeAssistantText(item.filename) || 'Saved document'}</span>
+                        <span>{caregiverSourceText(item.filename) || 'Saved document'}</span>
                         <small>{caregiverStatusLabel(item.extraction_status) || 'Reading status not available'} · Uploaded: {item.uploaded_at ? new Date(item.uploaded_at).toLocaleString() : 'Date not recorded'}</small>
-                        {item.extracted_text && <p>{caregiverSafeAssistantText(item.extracted_text.slice(0, 500))}</p>}
+                        {item.extracted_text && <p>{caregiverSourceText(item.extracted_text.slice(0, 500))}</p>}
                         <small>{caregiverSafeAssistantText(item.interpretation_limit) || 'Document text is source material, not an accepted care fact or clinical verification.'}</small>
                       </li>)}</ul>
                       : <p>No relevant extracted documents were returned by this source.</p>}
