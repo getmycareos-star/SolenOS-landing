@@ -223,6 +223,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const userInteractedRef = useRef(false)
   const conversationScopeRef = useRef<string | null>(null)
   const conversationScopeSequenceRef = useRef(0)
+  const lastObservedScopeKeyRef = useRef<string | null>(activeCompanionConversationStorageKey())
 
   const checkAvailability = useCallback(async () => {
     setAvailability('checking')
@@ -387,7 +388,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   useEffect(() => {
     const clearPreviousCareScope = () => {
       const activeScopeKey = activeCompanionConversationStorageKey()
-      if (!conversationScopeRef.current || activeScopeKey === conversationScopeRef.current) return
+      const previousScopeKey = lastObservedScopeKeyRef.current
+      lastObservedScopeKeyRef.current = activeScopeKey
+      if (previousScopeKey === null || activeScopeKey === previousScopeKey) return
       conversationScopeSequenceRef.current += 1
       conversationScopeRef.current = null
       setMessages([])
@@ -434,7 +437,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         !isCurrentScopeRequest()
         || (initialScopeKey !== null && initialScopeKey !== activeScopeKey)
         || activeCompanionConversationStorageKey() !== activeScopeKey
-      ) return
+      ) {
+        setMessages(previous => previous.filter(message => message !== userMsg))
+        setInput('')
+        return
+      }
       const scopeChanged = conversationScopeRef.current !== null && conversationScopeRef.current !== activeScopeKey
       if (scopeChanged) {
         setMessages([userMsg])
@@ -454,7 +461,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             session_id: activeSessionId,
             client_turn_id: clientTurnId,
           }) as any
-      if (!isCurrentScopeRequest() || activeCompanionConversationStorageKey() !== activeScopeKey) return
+      if (!isCurrentScopeRequest() || activeCompanionConversationStorageKey() !== activeScopeKey) {
+        setMessages(previous => previous.filter(message => message !== userMsg))
+        setInput('')
+        return
+      }
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
       const caregiverReply = caregiverSafeGeneratedText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
@@ -510,7 +521,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
 
     } catch (error) {
-      if (!isCurrentScopeRequest()) return
+      if (!isCurrentScopeRequest()) {
+        setMessages(previous => previous.filter(message => message !== userMsg))
+        setInput('')
+        return
+      }
       setMessages(prev => prev.filter(message => message !== userMsg))
       setInput(submittedText)
       const inferenceUnavailable =
