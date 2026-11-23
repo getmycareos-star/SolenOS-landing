@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
-import { caregiverInformationLabel, caregiverSourceText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import { caregiverInformationLabel, caregiverReadableCaptureText, caregiverSourceText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type Claim = {
   id: string;
@@ -470,11 +470,11 @@ export default function ClaimAssessmentPanel() {
             return (
               <details style={{ margin: "0 0 10px", border: "1px solid var(--border)", borderRadius: 7, padding: 9 }}>
                 <summary style={{ cursor: "pointer", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
-                  Read the original wording from this {simpleReviewStatus(selectedEvidence.type)}
+                  Read the saved wording and details from this {simpleReviewStatus(selectedEvidence.type)}
                 </summary>
                 {selectedEvidence.source_text.trim() ? (
                   <blockquote style={{ margin: "8px 0 0", maxHeight: 240, overflowY: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>
-                    {caregiverSourceText(selectedEvidence.source_text)}
+                    {caregiverReadableCaptureText(selectedEvidence.source_text) ?? caregiverSourceText(selectedEvidence.source_text)}
                   </blockquote>
                 ) : (
                   <p style={{ margin: "8px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
