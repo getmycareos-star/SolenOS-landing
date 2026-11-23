@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { postJSON } from "@/api/client";
-import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverFieldLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 
 type AssistResult = {
   reply?: string;
@@ -196,14 +196,14 @@ export function LcrQwenInterpretation({
                       <strong>{caregiverSafeGeneratedText(source.label) || "Saved care information"}</strong>
                       {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
                       {source.recorded_at && <p>When it was recorded: {new Date(source.recorded_at).toLocaleString()}</p>}
-                      {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
-                      {source.entered_by && <p>Recorded by: {caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
+                      {source.reported_by && <p>Reported by: {caregiverSourceText(source.reported_by) || "Not recorded"}</p>}
+                      {source.entered_by && <p>Recorded by: {caregiverSourceText(source.entered_by) || "Who added this was not recorded"}</p>}
                       {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
                       {source.related_evidence?.map((evidence, evidenceIndex) => (
                         <div key={"related-" + evidenceIndex}>
                           <strong>{caregiverSafeGeneratedText(evidence.label) || "Related note or document"}</strong>
-                          {evidence.reported_by && <p>Reported by: {caregiverSafeAssistantText(evidence.reported_by) || "Not recorded"}</p>}
-                          {evidence.entered_by && <p>Added by: {caregiverSafeAssistantText(evidence.entered_by) || "Who added this was not recorded"}</p>}
+                          {evidence.reported_by && <p>Reported by: {caregiverSourceText(evidence.reported_by) || "Not recorded"}</p>}
+                          {evidence.entered_by && <p>Added by: {caregiverSourceText(evidence.entered_by) || "Who added this was not recorded"}</p>}
                           {evidence.recorded_at && <p>Added on: {new Date(evidence.recorded_at).toLocaleString()}</p>}
                           {evidence.source_excerpt && <blockquote>{evidence.source_excerpt}</blockquote>}
                           {evidence.observations?.map((observation, observationIndex) => (
