@@ -269,6 +269,12 @@ export default function AppointmentWorkspace() {
   const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
+    const reloadForSessionChange = () => setReloadToken((value) => value + 1)
+    window.addEventListener("personIdChanged", reloadForSessionChange)
+    return () => window.removeEventListener("personIdChanged", reloadForSessionChange)
+  }, [])
+
+  useEffect(() => {
     if (!open) return
     let cancelled = false
     setLoading(true)
