@@ -771,7 +771,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                   {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
                                   {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
-                                  {source.source_excerpt && <blockquote>{source.source_excerpt}</blockquote>}
+                                  {source.source_excerpt && <blockquote>{caregiverSafeAssistantText(source.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
                                     <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                     <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
