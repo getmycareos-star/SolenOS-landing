@@ -1321,7 +1321,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               </select>
               <label className="mobile-settings-label" htmlFor="primary-transfer-reason">Reason (optional)</label>
               <input id="primary-transfer-reason" className="mobile-settings-input" maxLength={1000} value={primaryReason} onChange={(event) => setPrimaryReason(event.target.value)} />
-              <Button type="submit" variant="primary" disabled={busy || !selectedPrimaryRecipient} loading={busy}>Ask to change the main caregiver</Button>
+              <Button type="submit" variant="primary" disabled={busy || loadWarnings.includes("caregiver access list") || !selectedPrimaryRecipient} loading={busy}>Ask to change the main caregiver</Button>
             </form>
           </div>
 
@@ -1348,7 +1348,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
               </select>
               <label className="mobile-settings-label" htmlFor="transfer-reason">Reason (optional)</label>
               <input id="transfer-reason" className="mobile-settings-input" maxLength={1000} value={transferReason} onChange={(event) => setTransferReason(event.target.value)} />
-              <Button type="submit" variant="primary" disabled={busy || !selectedResponsibility || !selectedRecipient} loading={busy}>Ask another caregiver to take over</Button>
+              <Button type="submit" variant="primary" disabled={busy || loadWarnings.includes("caregiver access list") || loadWarnings.includes("assigned care responsibilities") || (Boolean(selectedOpenLoop) && loadWarnings.includes("open care follow-ups")) || !selectedResponsibility || !selectedRecipient} loading={busy}>Ask another caregiver to take over</Button>
             </form>
           </div>
           )}
@@ -1399,7 +1399,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
                 <input className="mobile-settings-input" aria-label="Custom care role" required maxLength={80} value={customCareRole} onChange={(event) => setCustomCareRole(event.target.value)} placeholder="Describe your care role" />
               )}
               <input className="mobile-settings-input" aria-label="Care role details (optional)" maxLength={300} value={careRoleScope} onChange={(event) => setCareRoleScope(event.target.value)} placeholder="Optional: what you help with" />
-              <Button type="submit" variant="secondary" disabled={savingCareRole || (selectedCareRole === "custom" && !customCareRole.trim())} loading={savingCareRole}>Save care role</Button>
+              <Button type="submit" variant="secondary" disabled={savingCareRole || loadWarnings.includes("your caregiver roles") || (selectedCareRole === "custom" && !customCareRole.trim())} loading={savingCareRole}>Save care role</Button>
             </form>
           </section>
         </>
