@@ -147,13 +147,9 @@ assert(records.every((r) => r.captured_at), "provenance timestamps preserved");
 assert(records.every((r) => r.confidence === null), "uncalibrated extraction confidence remains unknown");
 console.log("✓ provenance fields and uncalibrated confidence remains unknown");
 
-const apiRoute = path.join(root, "src/app/api/situation/trust/route.ts");
-assert(fs.existsSync(apiRoute), "trust API route exists");
-console.log("✓ trust API route");
-
-const uiPanel = path.join(root, "src/components/ops-devtools/TrustProvenancePanel.tsx");
-assert(fs.existsSync(uiPanel), "TrustProvenancePanel exists");
-console.log("✓ UI panel");
+// Trust/provenance is now exposed through the persisted Care Record evidence
+// review surface checked below, not the retired local situation API/devtools panel.
+console.log("✓ retired local trust API/panel are not required by the current Care Record flow");
 
 const lcrCurrentUnderstanding = path.join(root, "src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 assert(fs.existsSync(lcrCurrentUnderstanding), "current-care understanding component exists");
