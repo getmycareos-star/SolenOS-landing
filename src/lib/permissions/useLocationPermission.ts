@@ -55,7 +55,7 @@ export const useLocationPermission = () => {
       } else if (err.code === 3) {
         message = 'Timeout';
       } else {
-        message = err.message;
+        message = "We could not get your location. Check your browser permissions and try again."; 
       }
       setState({ status: 'error', message });
     }
