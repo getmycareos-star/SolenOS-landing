@@ -237,6 +237,51 @@ try {
   ), "the accepted decision must still be present after a fresh browser session");
 
   await closeContext(reopened.context);
+
+  // Follow the accepted document assertion through the actual Companion UI.
+  // Use a fresh browser context so the answer cannot reuse the review response.
+  const companionContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  activeContexts.add(companionContext);
+  await companionContext.addInitScript((identity) => {
+    localStorage.setItem("solenos_anonymous_access_token", identity.token);
+    localStorage.setItem("solenos_backend_person_id", identity.personId);
+    localStorage.setItem("solenos_backend_caregiver_id", identity.caregiverId);
+    localStorage.setItem("solenos_anonymous_session_expires_at", identity.expiresAt);
+  }, {
+    token: session.access_token,
+    personId: session.person.id,
+    caregiverId: session.caregiver.id,
+    expiresAt: session.expires_at,
+  });
+  const companionPage = await companionContext.newPage();
+  companionPage.setDefaultTimeout(timeoutMs);
+  await companionPage.route("**/api/**", async (route) => {
+    const source = new URL(route.request().url());
+    const target = new URL(source.pathname + source.search, backend);
+    const headers = { ...route.request().headers() };
+    delete headers.origin;
+    const response = await route.fetch({ url: target.toString(), headers, timeout: timeoutMs });
+    await route.fulfill({ response });
+  });
+  await companionPage.goto(new URL("/workspace/companion", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await companionPage.getByRole("heading", { name: "Care Assistant", exact: true }).waitFor();
+  const composer = companionPage.getByLabel("Your message");
+  await companionPage.waitForFunction(() => {
+    const input = document.querySelector("#companion-message-input");
+    return Boolean(input && !input.disabled);
+  }, null, { timeout: timeoutMs });
+  await composer.fill("How far did the person walk, and what support did the document mention?");
+  await companionPage.getByRole("button", { name: "Send", exact: true }).click();
+  const companionReply = companionPage.locator(".companion-message.is-assistant .companion-bubble p").last();
+  await companionReply.waitFor({ state: "visible", timeout: timeoutMs });
+  const companionReplyText = (await companionReply.textContent()) || "";
+  assert.match(companionReplyText, /20 metres/i,
+    "a fresh Companion question must retrieve the accepted document-backed mobility detail");
+  assert.match(companionReplyText, /frame/i,
+    "the Companion must preserve the support detail from the accepted source");
+  await companionPage.getByRole("region", { name: "What this answer is based on" }).waitFor({ timeout: timeoutMs });
+  await companionPage.getByText("Caregiver report", { exact: true }).first().waitFor({ timeout: timeoutMs });
+  await closeContext(companionContext);
   process.stdout.write("PASS real Qwen extraction, browser caregiver acceptance, PostgreSQL LCR persistence, and original-source retrieval\n");
 } finally {
   for (const context of [...activeContexts]) await closeContext(context);
