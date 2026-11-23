@@ -1804,8 +1804,8 @@ export function LCRCurrentUnderstanding() {
 
       <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
         <summary>Dementia care profile and observations</summary>
-        {dementiaProfileOpen ? <DementiaCareProfilePanel personId={personId} /> : null}
-        {dementiaProfileOpen ? <DementiaObservationPanel personId={personId} /> : null}
+        {dementiaProfileOpen ? <DementiaCareProfilePanel key={personId} personId={personId} /> : null}
+        {dementiaProfileOpen ? <DementiaObservationPanel key={personId} personId={personId} /> : null}
       </details>
 
             {(registeredActions.length > 0 || Boolean(registeredActionsError) || (assessment?.coverage.records_examined ?? 0) > 0) && (
