@@ -1,11 +1,11 @@
 // Critical safety output has no universal word ceiling; preserve all required action and context.
+/** @deprecated Critical safety responses intentionally have no universal word ceiling. */
 export const CRITICAL_TOTAL_MAX_WORDS = Number.POSITIVE_INFINITY;
 export const HIGH_TOTAL_MAX_WORDS = 250;
 
 export const CRITICAL_HEADER = "🔴 CRITICAL";
 
 export type SafetyOverrideViolationCode =
-  | "critical_word_limit_exceeded"
   | "high_word_limit_exceeded"
   | "critical_missing_header"
   | "critical_missing_action"
