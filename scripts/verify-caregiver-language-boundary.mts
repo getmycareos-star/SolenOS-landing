@@ -1046,6 +1046,12 @@ assert.match(reminders, /caregiverSafeAssistantText\(reminder\.completion_note\)
   "reminder completion notes must use readable caregiver text");
 assert.match(reminders, /caregiverSafeAssistantText\(member\.name\)/,
   "caregiver assignment names must not expose raw structured values");
+assert.match(firstInput, /We couldn’t confirm whether that update was saved\. Check your Care Record before trying again\./,
+  "first-input transport failures must not claim an uncertain update was not saved");
+assert.match(caregiverAccessPanel, /We couldn't confirm whether this responsibility was saved\. Check the list before trying again\./,
+  "responsibility save failures must not claim the write definitely failed");
+assert.match(cognitiveWorkspace, /We couldn’t confirm whether your message was saved\. Check the conversation before trying again\./,
+  "Companion response failures must not claim an uncertain message was not saved");
 assert.match(globalErrorPage, /If you were saving an update, check your Care Record before trying again so you do not add the same information twice/,
   "global errors must not claim an unverified save succeeded or that data is safe");
 assert.doesNotMatch(globalErrorPage, /Your care information is safe|Error ID:/,
