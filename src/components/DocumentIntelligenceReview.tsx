@@ -94,6 +94,7 @@ type Analysis = {
   unreadable_page_numbers?: number[];
   open_questions?: string[];
   review_required: boolean;
+  interpretation_blocked?: boolean;
   has_more_candidates?: boolean;
   remaining_candidate_count?: number;
   extractedText?: string;
@@ -103,6 +104,13 @@ type Analysis = {
 };
 type ProcessingJob = { evidence_id: string; job_id: string; status: "queued" | "processing" | "failed"; attempt_count: number; error_code?: string | null };
 type ListResponse = { items?: Analysis[]; processing_jobs?: ProcessingJob[] };
+
+function documentExtractionIsComplete(analysis: Analysis): boolean {
+  return analysis.interpretation_blocked !== true
+    && analysis.extraction_status === "available"
+    && (analysis.extraction_unprocessed_page_numbers?.length ?? 0) === 0
+    && (analysis.unreadable_page_numbers?.length ?? 0) === 0;
+}
 type LibraryDocument = { id: string; title: string };
 
 export default function DocumentIntelligenceReview({ refreshToken = 0, documents = [] }: { refreshToken?: number; documents?: LibraryDocument[] }) {
@@ -292,14 +300,16 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverInformationAreaLabel(analysis.document_type) || caregiverFieldLabel(analysis.document_type) || "Care document"} · {analysis.page_count ?? "?"} {analysis.page_count === 1 ? "page" : "pages"} · {analysis.observations.length} {analysis.observations.length === 1 ? "suggested detail" : "suggested details"}</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
-              {analysis.intelligence_status === "partial"
-                ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
-                  ? `More details are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
-                  : `Some pages could not be read · ${analysis.processed_page_count ?? analysis.extraction_processed_page_count ?? "?"} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
-                : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "SolenOS has not finished reading this document"}
+              {!documentExtractionIsComplete(analysis)
+                ? `Some pages have not been fully read · ${analysis.extraction_processed_page_count ?? analysis.processed_page_count ?? "?"} of ${analysis.page_count ?? analysis.total_page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
+                : analysis.intelligence_status === "partial"
+                  ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
+                    ? `More details are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
+                    : "SolenOS has read the document but has not finished reviewing all details."
+                  : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "SolenOS has not finished reading this document"}
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read yet: pages ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · still being read: pages ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · ready to try again: pages ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · could not be read because the file is too large: pages ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · could not be read: pages ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
-            {analysis.extraction_status === "partial" && <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
+            {!documentExtractionIsComplete(analysis) && <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
             {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
               Some words may be misread, especially handwriting. Check the original document before accepting suggested details. This only tells us how clearly SolenOS could read the words. It does not tell us whether the words or suggested care details are correct.
             </p>}
@@ -324,7 +334,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           {(analysis.blocked_page_numbers?.length ?? 0) > 0 && <p role="status" style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Page{analysis.blocked_page_numbers!.length === 1 ? "" : "s"} {analysis.blocked_page_numbers!.join(", ")} could not be read because the file is too large or there was a reading problem. The original document is still saved.</p>}
           {analysis.intelligence_status !== "available" && analysis.extraction_status === "available" && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>SolenOS has not finished reviewing this document. The original file and saved text are still available.</p>}
           {analysis.intelligence_status === "available" && analysis.observations.length === 0 && <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>No care-related details were found in this document. Nothing was added to your Care Record.</p>}
-          {analysis.extraction_status === "available" ? analysis.observations.map((candidate, index) => {
+          {documentExtractionIsComplete(analysis) ? analysis.observations.map((candidate, index) => {
             const candidateIndex = typeof candidate.candidate_index === "number" ? candidate.candidate_index : index;
             const key = analysis.analysis_id + ":" + candidateIndex;
             const pending = candidate.review_status === "pending_review" || candidate.review_status === "corrected_pending_approval";
@@ -398,7 +408,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {candidate.review_status === "accepted_by_caregiver" && !candidate.professional_confirmation_question_id && candidate.longitudinal_retrieval_status !== "verified" && <p role="status" style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Your choice was saved, but SolenOS could not confirm that this detail is visible in your Care Record yet. Refresh your Care Record before relying on it.</p>}
               {candidate.review_status === "rejected_by_caregiver" && <p style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>You chose not to add this detail to your Care Record.</p>}
             </div>;
-          }) : analysis.extraction_status === "partial" ? <p role="alert" style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>We couldn't read every page, so there are no details to review yet. Try those pages again or upload a clearer copy.</p> : null}
+          }) : !documentExtractionIsComplete(analysis) ? <p role="alert" style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>We couldn't read every page, so there are no details to review yet. Try those pages again or upload a clearer copy.</p> : null}
           {analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && analysis.observations.length > 0 && analysis.observations.every((candidate) => ["accepted_by_caregiver", "rejected_by_caregiver"].includes(candidate.review_status)) && <button type="button" disabled={busy !== null} onClick={() => void showNextCandidateGroup(analysis)} style={{ justifySelf: "start", minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Show the next {Math.min(60, analysis.remaining_candidate_count ?? 0)} details</button>}
           <details onToggle={(event) => { if (event.currentTarget.open) void loadReviewHistory(analysis.analysis_id); }} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
             <summary style={{ cursor: "pointer", fontSize: "calc(13px * var(--solenos-text-scale, 1))", fontWeight: 650 }}>Review history{analysis.reviewEvents ? " · " + analysis.reviewEvents.length + " updates" : ""}</summary>
