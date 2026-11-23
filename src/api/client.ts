@@ -64,13 +64,23 @@ const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
 const ANONYMOUS_SESSION_REVOKED_KEY = "solenos_anonymous_session_revoked";
 if (typeof window !== "undefined") {
-  // Other tabs must invalidate person- and caregiver-scoped views when this
-  // tab switches or revokes the active backend identity.
+  // Storage events fire once per changed key. Compare the combined scope so
+  // a person-and-caregiver switch produces one notification, not two reloads.
+  let lastObservedStorageCareIdentity = [
+    localStorage.getItem(ANONYMOUS_PERSON_KEY) || "",
+    localStorage.getItem(ANONYMOUS_CAREGIVER_KEY) || "",
+  ].join("|");
   window.addEventListener("storage", (event: StorageEvent) => {
     if (
       (event.key === ANONYMOUS_PERSON_KEY || event.key === ANONYMOUS_CAREGIVER_KEY)
       && event.oldValue !== event.newValue
     ) {
+      const nextIdentity = [
+        localStorage.getItem(ANONYMOUS_PERSON_KEY) || "",
+        localStorage.getItem(ANONYMOUS_CAREGIVER_KEY) || "",
+      ].join("|");
+      if (nextIdentity === lastObservedStorageCareIdentity) return;
+      lastObservedStorageCareIdentity = nextIdentity;
       window.dispatchEvent(new Event("personIdChanged"));
     }
   });
