@@ -60,7 +60,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
       const rows = await getJSON("/care-continuity/caregiver-observations?limit=100");
       if (!Array.isArray(rows)) throw new Error("The observation history could not be read.");
       setObservations((rows as DementiaObservation[]).filter(
-        (row) => typeof row.observation_category === "string" && row.observation_category.startsWith("dementia."),
+        (row) => typeof row.observation_category === "string" && row.observation_category.trim().toLowerCase().startsWith("dementia."),
       ));
     } catch {
       setError("We couldn’t load your saved notes. Check your connection and try again.");
@@ -190,7 +190,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
           {observations.map((item) => (
             <li key={item.id} className="rounded-lg border border-[var(--border)] p-3">
               <p className="text-xs font-medium text-[var(--muted)]">
-                {CATEGORIES.find(([value]) => "dementia." + value === item.observation_category)?.[1] ?? "Memory or daily-life note"}
+                {CATEGORIES.find(([value]) => ("dementia." + value).toLowerCase() === item.observation_category.trim().toLowerCase())?.[1] ?? "Memory or daily-life note"}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--text)]">{caregiverSafeAssistantText(item.description) || "The saved note could not be displayed in a readable form."}</p>
               <p className="mt-2 text-xs text-[var(--muted)]">
