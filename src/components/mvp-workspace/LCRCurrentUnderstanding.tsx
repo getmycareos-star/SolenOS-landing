@@ -1507,7 +1507,12 @@ export function LCRCurrentUnderstanding() {
       await load(true);
     } catch (cause) {
       if (personIdRef.current !== personId) return;
-      setActionApprovalError("We couldn't postpone this suggestion. Please try again.");
+      if (cause instanceof ApiResponseError && cause.status === 409) {
+        setActionApprovalError("This follow-up changed after it was shown. The care record is refreshing; review the latest details before postponing it.");
+        void load(true);
+      } else {
+        setActionApprovalError("We couldn't postpone this suggestion. Please try again.");
+      }
     } finally {
       if (personIdRef.current === personId) setActionApprovalLoadingId(null);
     }
