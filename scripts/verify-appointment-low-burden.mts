@@ -25,7 +25,7 @@ assert.ok(component.includes('You do not need to rewrite information already in 
 assert.ok(component.includes('brief.prior_decisions?.length'))
 assert.ok(component.includes('brief.decision_outcomes?.length'))
 assert.ok(component.includes('Changes since the previous recorded visit'), 'changes should be anchored to the previous visit when its date is known')
-assert.ok(component.includes('No dated completed appointment was available to anchor this comparison.'), 'the brief must disclose its bounded recent-history fallback')
+assert.ok(component.includes('There is no earlier appointment date to compare these updates with. We are showing the most recent saved care information instead.'), 'the brief must disclose its bounded recent-history fallback')
 assert.ok(component.includes('item.recorded_by_role === \'caregiver\' ? \'Caregiver-recorded\''), 'care-event summaries must retain reporter attribution')
 assert.ok(component.includes('item.evidence_ids?.length ? \'Source evidence linked\''), 'care-event summaries must show whether source evidence is linked')
 assert.ok(component.includes('brief.open_loops?.length'))
