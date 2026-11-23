@@ -278,9 +278,9 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     };
     assertSessionBootstrapNotRevoked(revocationMarkerAtStart);
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
-    setCareIdentity(refreshed.person_id, refreshed.caregiver_id);
     window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
     completeExplicitSessionBootstrap(revocationMarkerAtStart);
+    setCareIdentity(refreshed.person_id, refreshed.caregiver_id);
     return {
       session_id: refreshed.session_id,
       person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
@@ -309,9 +309,9 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
   const created = (await handleResponse(response)) as AnonymousSession;
   assertSessionBootstrapNotRevoked(revocationMarkerAtStart);
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, created.access_token);
-  setCareIdentity(created.person.id, created.caregiver.id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, created.expires_at);
   completeExplicitSessionBootstrap(revocationMarkerAtStart);
+  setCareIdentity(created.person.id, created.caregiver.id);
   return created;
 }
 
@@ -686,8 +686,8 @@ export async function acceptCaregiverInvitation(input: {
     input,
   ) as CaregiverInvitationAcceptResponse;
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
-  setCareIdentity(result.person_id, result.caregiver_id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
+  setCareIdentity(result.person_id, result.caregiver_id);
   return result;
 }
 
@@ -699,8 +699,8 @@ export async function signInToAccount(email: string, password: string): Promise<
   });
   const result = await handleResponse(res) as AccountLoginResponse;
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
-  setCareIdentity(result.person_id, result.caregiver_id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
+  setCareIdentity(result.person_id, result.caregiver_id);
   return result;
 }
 
