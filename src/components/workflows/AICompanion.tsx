@@ -224,6 +224,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const conversationScopeRef = useRef<string | null>(null)
   const conversationScopeSequenceRef = useRef(0)
   const lastObservedScopeKeyRef = useRef<string | null>(activeCompanionConversationStorageKey())
+  const captureCareScope = () => {
+    const sequence = conversationScopeSequenceRef.current
+    const scopeKey = activeCompanionConversationStorageKey()
+    return () => sequence === conversationScopeSequenceRef.current
+      && scopeKey === activeCompanionConversationStorageKey()
+  }
 
   const checkAvailability = useCallback(async () => {
     setAvailability('checking')
@@ -396,8 +402,22 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setMessages([])
       setSessionId(null)
       setPendingCareUpdates([])
+      setCareUpdateLoading(false)
       setCareUpdateLoadFailed(false)
       careUpdateLoadSequenceRef.current += 1
+      setReviewedCareUpdates([])
+      setReviewedCareUpdatesLoading(false)
+      setShowReviewedCareUpdates(false)
+      setCareUpdateHistory({})
+      setLoadingCareUpdateHistoryId(null)
+      setReviewingCareUpdateId(null)
+      setConfirmingCareReportId(null)
+      setSavingCareReportId(null)
+      setCorrectingCareUpdateId(null)
+      setCorrectedCareUpdateText('')
+      setCareUpdateCorrectionContext('')
+      setCareUpdateError(null)
+      setCareUpdateNotice(null)
       setEmergency(false)
       setRequestError(null)
       setInput('')
@@ -562,12 +582,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   const createCareReport = async (messageId: string) => {
+    const isCurrentCareScope = captureCareScope()
     if (savingCareReportId) return
     setSavingCareReportId(messageId)
     setCareUpdateError(null)
     setCareUpdateNotice(null)
     try {
       const response = await postJSON('/companion/care-updates/from-message/' + encodeURIComponent(messageId), { confirm_care_report: true }) as { proposal?: { status?: string } }
+      if (!isCurrentCareScope()) return
       setConfirmingCareReportId(null)
       setCareUpdateNotice(response?.proposal?.status === 'accepted'
         ? 'This report is already in your Care Record.'
@@ -576,13 +598,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           : 'Saved for review. It will not enter your Care Record unless you accept it below.')
       await loadPendingCareUpdates()
     } catch {
-      setCareUpdateError('This message could not be saved for review. It has not been added to your Care Record.')
+      if (isCurrentCareScope()) setCareUpdateError('This message could not be saved for review. It has not been added to your Care Record.')
     } finally {
-      setSavingCareReportId(null)
+      if (isCurrentCareScope()) setSavingCareReportId(null)
     }
   }
 
   const reviewCareUpdate = async (proposalId: string, decision: 'accept' | 'reject') => {
+    const isCurrentCareScope = captureCareScope()
     if (reviewingCareUpdateId) return
     setReviewingCareUpdateId(proposalId)
     setCareUpdateError(null)
@@ -594,6 +617,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         written_to_lcr?: boolean
         idempotent_replay?: boolean
       }
+      if (!isCurrentCareScope()) return
       const expectedStatus = decision === 'accept' ? 'accepted' : 'rejected'
       if (response?.status !== expectedStatus || response?.decision !== decision) {
         throw new Error('The server did not confirm the requested review decision.')
@@ -613,13 +637,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         : 'This suggestion was declined. Nothing was added to the Care Record.')
       if (showReviewedCareUpdates) await loadReviewedCareUpdates()
     } catch {
-      setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
+      if (isCurrentCareScope()) setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
     } finally {
-      setReviewingCareUpdateId(null)
+      if (isCurrentCareScope()) setReviewingCareUpdateId(null)
     }
   }
 
   const correctCareUpdate = async (proposalId: string) => {
+    const isCurrentCareScope = captureCareScope()
     const correctedText = correctedCareUpdateText.trim()
     if (!correctedText || reviewingCareUpdateId) return
     setReviewingCareUpdateId(proposalId)
@@ -635,6 +660,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         proposal?: { status?: string }
         corrected_proposal?: { id?: string; status?: string }
       }
+      if (!isCurrentCareScope()) return
       if (
         response?.decision !== 'correct'
         || response?.proposal?.status !== 'corrected'
@@ -650,13 +676,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       await loadPendingCareUpdates()
       if (showReviewedCareUpdates) await loadReviewedCareUpdates()
     } catch {
-      setCareUpdateError('The correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.')
+      if (isCurrentCareScope()) setCareUpdateError('The correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.')
     } finally {
-      setReviewingCareUpdateId(null)
+      if (isCurrentCareScope()) setReviewingCareUpdateId(null)
     }
   }
 
   const loadReviewedCareUpdates = async () => {
+    const isCurrentCareScope = captureCareScope()
     setReviewedCareUpdatesLoading(true)
     setCareUpdateError(null)
     try {
@@ -665,18 +692,20 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ordering?: string
         limit?: number
       }
+      if (!isCurrentCareScope()) return
       if (!Array.isArray(response?.items) || response.ordering !== 'newest_first') {
         throw new Error('The reviewed care update list was incomplete.')
       }
       setReviewedCareUpdates(response.items.filter(item => item.status !== 'pending_authorization'))
     } catch {
-      setCareUpdateError('Previous care update decisions could not be loaded. Your saved Care Record has not changed.')
+      if (isCurrentCareScope()) setCareUpdateError('Previous care update decisions could not be loaded. Your saved Care Record has not changed.')
     } finally {
-      setReviewedCareUpdatesLoading(false)
+      if (isCurrentCareScope()) setReviewedCareUpdatesLoading(false)
     }
   }
 
   const loadCareUpdateHistory = async (proposalId: string) => {
+    const isCurrentCareScope = captureCareScope()
     setLoadingCareUpdateHistoryId(proposalId)
     setCareUpdateError(null)
     try {
@@ -684,14 +713,15 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         items?: CareUpdateReviewHistoryItem[]
         append_only?: boolean
       }
+      if (!isCurrentCareScope()) return
       if (response?.append_only !== true || !Array.isArray(response.items)) {
         throw new Error('Review history response was incomplete.')
       }
       setCareUpdateHistory(current => ({ ...current, [proposalId]: response.items || [] }))
     } catch {
-      setCareUpdateError('Review history could not be loaded. The saved care suggestion has not been changed.')
+      if (isCurrentCareScope()) setCareUpdateError('Review history could not be loaded. The saved care suggestion has not been changed.')
     } finally {
-      setLoadingCareUpdateHistoryId(null)
+      if (isCurrentCareScope()) setLoadingCareUpdateHistoryId(null)
     }
   }
 
