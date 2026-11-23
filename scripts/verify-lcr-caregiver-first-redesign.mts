@@ -227,7 +227,8 @@ assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is 
 assert.match(navigation, /label: "Care Assistant"/, "workspace navigation uses the approved caregiver-facing name");
 assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
-assert.doesNotMatch(publicHome, /Care Assistant/, "the public home page uses AI Companion");
+assert.match(publicHome, /Care Assistant/, "the public home page uses the familiar Care Assistant name");
+assert.doesNotMatch(publicHome, /AI Companion/, "the public home page does not expose internal product terminology");
 
 console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
 
