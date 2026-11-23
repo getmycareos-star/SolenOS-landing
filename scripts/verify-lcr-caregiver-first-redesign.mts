@@ -265,3 +265,5 @@ assert.match(currentUnderstanding, /coverage\.status === "stale"[\s\S]*?previous
 
 assert.match(dailyCare, /schema_status !== "complete"[\s\S]*?missing_required_sources[\s\S]*?missing_optional_sources[\s\S]*?failed_sources/, "Daily Care must disclose incomplete current-care retrieval instead of treating partial results as complete");
 assert.match(dailyCare, /Some saved care information could not be fully checked\. This view may be incomplete/, "a partial current-care projection must be explained in plain language");
+
+assert.match(dailyCare, /addEventListener\("personIdChanged", refresh\)/, "Daily Care must reload person-scoped care context when the active session changes");
