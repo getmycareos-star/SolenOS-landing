@@ -1489,11 +1489,15 @@ export function LCRCurrentUnderstanding() {
       if (session.person?.id !== personId) {
         throw new Error("The selected follow-up does not belong to the active care-record session.");
       }
+      if (!Number.isInteger(item.version) || (item.version ?? 0) < 1) {
+        throw new Error("This follow-up is missing its saved version. Refresh the care record before postponing it.");
+      }
       const updatedLoop = await patchJSON(`/open-loops/${encodeURIComponent(item.id)}`, {
         status: "deferred",
+        expected_version: item.version,
         deferred_reason: reason,
         reason,
-        idempotency_key: `lcr-defer-${item.id}-${reason}`.slice(0, 160),
+        idempotency_key: `lcr-defer-${item.id}-v${item.version}-${reason}`.slice(0, 160),
       });
       if (personIdRef.current !== personId) return;
       if (!updatedLoop || updatedLoop.id !== item.id || updatedLoop.status !== "deferred") {
