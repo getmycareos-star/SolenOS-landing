@@ -2118,7 +2118,7 @@ export function LCRCurrentUnderstanding() {
                       <p className="lcr-entry-status">Where it came from: {historySourceLabel(item.source)} · Status: {caregiverLabel(item.status)} · What we know: {caregiverLabel(item.epistemic_status)}</p>
                       <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                       <small>{item.evidence_ids.length > 0 ? "Related to " + item.evidence_ids.length + " saved care details" : "No related note or document is available"}</small>
-                      {item.interpretation_limit && <small>{caregiverSafeGeneratedText(item.interpretation_limit) || "The available information may not tell the whole story."}</small>}
+                      {item.interpretation_limit && <small>{caregiverSafeAssistantText(item.interpretation_limit) || "The available information may not tell the whole story."}</small>}
                     </li>
                   ))}
                   {watchPriorityCandidates.map((item) => {
