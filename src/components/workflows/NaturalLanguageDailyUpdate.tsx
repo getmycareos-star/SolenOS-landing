@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId, getJSON } from "@/api/client";
-import { caregiverSafeAssistantText, caregiverSafeErrorMessage } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSourceText } from "@/lib/caregiver-language";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import {
   deliverDurableWrite,
@@ -317,7 +317,7 @@ export default function NaturalLanguageDailyUpdate() {
                   .filter(Boolean)
                   .join("; ");
                 const name = caregiverSafeAssistantText(document.document_name) || "Saved document";
-                const quote = caregiverSafeAssistantText(candidate.source_quote) || "The document text could not be read.";
+                const quote = caregiverSourceText(candidate.source_quote) || "The document text could not be read.";
                 const page = candidate.page_number ? `, page ${candidate.page_number}` : "";
                 contextParts.push(`${name}${page} contains this medication detail: “${quote.slice(0, 220)}”${detailText ? ` Details: ${detailText}.` : "."} These words do not confirm a new dose.`);
               }
