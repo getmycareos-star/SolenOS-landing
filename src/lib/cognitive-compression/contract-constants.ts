@@ -70,10 +70,10 @@ export const FORBIDDEN_SYSTEM_TYPES = [
  * canonical enum values are lowercase.
  */
 export const VERBOSITY_TOTAL_WORD_LIMITS = {
-  low: 80,
-  medium: 80,
-  high: 120,
-  critical: 60,
+  low: 180,
+  medium: 180,
+  high: 250,
+  critical: Number.POSITIVE_INFINITY,
 } as const;
 
 export const ANTI_REASSURANCE_FORBIDDEN = [
