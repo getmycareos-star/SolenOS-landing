@@ -1413,6 +1413,7 @@ export function LCRCurrentUnderstanding() {
     setActionApprovalError(null);
     try {
       const session = await ensureAnonymousSession();
+      if (personIdRef.current !== personId) return;
       if (!session.person?.id || session.person.id !== personId) {
         throw new Error("The suggestion does not belong to the active care-record session.");
       }
@@ -1443,6 +1444,7 @@ export function LCRCurrentUnderstanding() {
           ...(createReminderForSuggestion ? { reminder_due_at: new Date(reminderDueInput).toISOString() } : {}),
         },
       ) as RegisteredAction;
+      if (personIdRef.current !== personId) return;
       if (!saved?.id || saved.person_id !== session.person.id || saved.suggestion_id !== suggestionId.slice(0, 160)) {
         throw new Error("The backend response did not confirm the expected registered action. Refresh before retrying.");
       }
@@ -1453,6 +1455,7 @@ export function LCRCurrentUnderstanding() {
       setCreateReminderForSuggestion(false);
       setReminderDueInput("");
     } catch (cause) {
+      if (personIdRef.current !== personId) return;
       if (cause instanceof ApiResponseError && cause.status === 409) {
         setActionApprovalError("This follow-up changed after it was shown. The care record is refreshing; review the latest details before approving it.");
         void load(true);
@@ -1460,7 +1463,7 @@ export function LCRCurrentUnderstanding() {
         setActionApprovalError("We couldn't save this as an agreed next step.");
       }
     } finally {
-      setActionApprovalLoadingId(null);
+      if (personIdRef.current === personId) setActionApprovalLoadingId(null);
     }
   };
 
@@ -1478,6 +1481,7 @@ export function LCRCurrentUnderstanding() {
     setActionApprovalError(null);
     try {
       const session = await ensureAnonymousSession();
+      if (personIdRef.current !== personId) return;
       if (session.person?.id !== personId) {
         throw new Error("The selected follow-up does not belong to the active care-record session.");
       }
@@ -1487,15 +1491,17 @@ export function LCRCurrentUnderstanding() {
         reason,
         idempotency_key: `lcr-defer-${item.id}-${reason}`.slice(0, 160),
       });
+      if (personIdRef.current !== personId) return;
       if (!updatedLoop || updatedLoop.id !== item.id || updatedLoop.status !== "deferred") {
         throw new Error("The backend did not confirm the requested deferral. The suggestion remains unchanged.");
       }
       setReviewingSuggestionId(null);
       await load(true);
     } catch (cause) {
+      if (personIdRef.current !== personId) return;
       setActionApprovalError("We couldn't postpone this suggestion. Please try again.");
     } finally {
-      setActionApprovalLoadingId(null);
+      if (personIdRef.current === personId) setActionApprovalLoadingId(null);
     }
   };
 
