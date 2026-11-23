@@ -796,9 +796,13 @@ await record("01a dementia profile review window and observation persistence are
     "dementia.wandering",
     "editing must not duplicate the dementia category prefix",
   );
+  const correctedEventTime = Date.parse(correctionPayload.observed_at);
+  const originalEventTime = Date.parse(originalObservation.observed_at);
+  assert.ok(Number.isFinite(correctedEventTime) && Number.isFinite(originalEventTime),
+    "both saved event times must remain valid timestamps");
   assert.equal(
-    Date.parse(correctionPayload.observed_at),
-    Date.parse(originalObservation.observed_at),
+    correctedEventTime,
+    originalEventTime,
     "editing without changing the event time must preserve the exact instant even if UTC formatting is normalized",
   );
   await page.getByText(correctedUiDescription, { exact: true }).waitFor({ timeout: 15_000 });
