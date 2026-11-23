@@ -17,7 +17,7 @@ import {
 
 import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
+import { caregiverSafeAssistantText, caregiverSafeErrorMessage, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { useWorkspace } from "@/lib/workspace-context";
 import { SUPPORT_EMAIL } from "@/lib/early-access-trust";
 import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, patchJSON, postJSON, putJSON, revokeAnonymousSession, signInToAccount } from "@/api/client";
@@ -260,11 +260,11 @@ function NotificationsCard() {
         {inboxError && <p className="mobile-settings-hint" role="alert">{inboxError}</p>}
         {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No notifications yet. When a saved care reminder is due, it will appear here. Care updates that need your attention will appear here too.</p>}
         {notifications.map((item) => (
-          <article key={item.id} className="mobile-settings-row" aria-label={item.title}>
+          <article key={item.id} className="mobile-settings-row" aria-label={caregiverSafeGeneratedText(item.title) || "Care notification"}>
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span className="mobile-settings-label">{item.title}</span>
-              <span className="mobile-settings-hint">{item.body}</span>
-              <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {item.priority} · {notificationCategoryLabel(item.category)}</span>
+              <span className="mobile-settings-label">{caregiverSafeGeneratedText(item.title) || "Care update"}</span>
+              <span className="mobile-settings-hint">{caregiverSafeGeneratedText(item.body) || "Open your Care Record to review this update."}</span>
+              <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {caregiverStatusLabel(item.priority) || "Priority not available"} · {notificationCategoryLabel(item.category)}</span>
               {notificationReviewHref(item.category) && (
                 <Link href={notificationReviewHref(item.category)!} className="mobile-settings-hint">
                   {item.category === "open_loop_due" ? "Review follow-ups" : item.category === "reminder_due" ? "Review reminders" : "Review in Care Record"}
@@ -879,7 +879,7 @@ function PrivacyCard() {
           {erasureRequest && (
             <>
               <p role="status">We received your request. Reference: {erasureRequest.id}. {privacyRequestStatusLabel(erasureRequest.status)}.</p>
-              <p>{erasureRequest.message}</p>
+              <p>{caregiverSafeGeneratedText(erasureRequest.message) || "Your request is saved. We will show its status here when an update is available."}</p>
               <p>This is only a request. Your Care Record stays in place until we finish reviewing it and tell you what has been deleted.</p>
             </>
           )}
