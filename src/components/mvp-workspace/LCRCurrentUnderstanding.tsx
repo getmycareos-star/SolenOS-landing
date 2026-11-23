@@ -1408,6 +1408,10 @@ export function LCRCurrentUnderstanding() {
     registeredActions.find((action) => action.suggestion_id === suggestionReference(item));
 
   const approveFollowUp = async (item: (typeof openLoopItems)[number]) => {
+    if (item.source !== "open_loop_records") {
+      setActionApprovalError("Only a saved follow-up with a current version can be approved here. Refresh the Care Record and review the latest details.");
+      return;
+    }
     const suggestionId = suggestionReference(item);
     setActionApprovalLoadingId(suggestionId);
     setActionApprovalError(null);
