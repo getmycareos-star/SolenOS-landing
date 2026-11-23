@@ -344,8 +344,12 @@ assert.doesNotMatch(documentReview, /Document intelligence review|OCR reading co
 assert.match(documentReview, /Text read from your document/);
 assert.match(documentReview, /Page in document:/, "page references must be understandable without backend terminology");
 assert.match(documentReview, /This only tells us how clearly SolenOS could read the words/, "document reading limitations must use plain language");
-assert.match(documentReview, /What is this about\?/);
-assert.match(documentReview, /What should it say\?/);
+assert.match(documentReview, /Short label for this detail/,
+  "document review must let caregivers correct the subject without rewriting the preserved source quotation");
+assert.match(documentReview, /Text SolenOS read from the document/,
+  "the original extracted wording must remain visible and unchanged during correction");
+assert.match(documentReview, /corrected_observation: sourceQuote/,
+  "document corrections must preserve the exact quoted source rather than replacing original evidence");
 assert.match(documentReview, /Suggest a correction/);
 assert.doesNotMatch(documentReview, /OCR reading confidence|extraction pipeline|candidate review status|longitudinal retrieval|reconciliation status/i, "document review must not expose internal processing language");
 assert.doesNotMatch(documentReview, /event\.decision\}/);
