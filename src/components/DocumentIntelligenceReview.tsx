@@ -311,7 +311,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             {textLoading[analysis.analysis_id] ? <p role="status" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Loading the saved text…</p>
               : textErrors[analysis.analysis_id] ? <div><p role="alert" style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{textErrors[analysis.analysis_id]}</p><button type="button" onClick={() => void loadExtractedText(analysis.analysis_id)} style={{ minHeight: 34, padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)" }}>Try loading text again</button></div>
               : analysis.extractedText === undefined ? <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Open to see the saved text.</p>
-                : analysis.extractedText ? <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{caregiverSafeAssistantText(analysis.extractedText) || "The saved text cannot be displayed in a readable form here. You can still open the original document."}</p>
+                : analysis.extractedText ? <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, maxHeight: 260, overflow: "auto" }}>{caregiverSourceText(analysis.extractedText) || "The saved text cannot be displayed in a readable form here. You can still open the original document."}</p>
                   : <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>No readable text was saved from this document.</p>}
           </details>
           {analysis.extraction_status === "partial" && <p role="status" style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>SolenOS could not read every page. Do not treat the suggested details as a complete account of this document.</p>}
@@ -413,7 +413,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                           <strong>Detail {event.candidate_index + 1} · {event.decision === "accept" ? "Added to Care Record" : event.decision === "correct" ? "Correction saved" : "Not added"}</strong>
                           {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
                           {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
-                          {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {caregiverSafeAssistantText(event.rationale) || "No further note was recorded."}</p> : null}
+                          {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {caregiverSourceText(event.rationale) || "No further note was recorded."}</p> : null}
                           {event.resulting_assertion_id ? <p style={{ margin: "3px 0" }}>This choice added a report and kept a link to the original document.</p> : null}
                         </li>;
                       })}
