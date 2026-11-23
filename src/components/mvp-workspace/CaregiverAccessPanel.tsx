@@ -799,7 +799,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
       setNotice("Your care responsibility has been saved. You can hand it over when another caregiver accepts.");
       await load();
     } catch {
-      setError("We couldn't save this care responsibility. No one else's responsibilities were changed.");
+      setError("We couldn't confirm whether this responsibility was saved. Check the list before trying again.");
     } finally {
       setSavingResponsibility(false);
     }
