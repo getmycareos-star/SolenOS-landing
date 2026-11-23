@@ -139,7 +139,7 @@ assert(manual.confidence_assessment.level.length > 0, "confidence assessment");
 assert(manual.generation_boundaries.forbidden.includes("invent_events"), "forbidden actions");
 console.log("✓ confidence model + generation boundaries");
 
-assert(trustIndicatorLabel("verified_by_caregiver").includes("Verified"), "indicator labels");
+assert(trustIndicatorLabel("verified_by_caregiver").includes("Checked by caregiver"), "caregiver-facing indicator label");
 console.log("✓ trust indicator labels");
 
 const records = buildProvenanceRecords(result.events_created, null);
