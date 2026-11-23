@@ -1008,7 +1008,7 @@ assert.match(lcr, /caregiverSafeGeneratedText\(projection\.notice\)/, "generated
 assert.match(careRecordOverview, /caregiverSafeGeneratedText\(item\.source_label\)/, "Care Record source labels must use caregiver language");
 assert.match(careRecordOverview, /caregiverSafeChangeText\(change\.previous_state\)/, "Care Record change summaries must use the change-language boundary");
 assert.match(careRecordOverview, /caregiverSafeChangeText\(change\.current_state\)/, "Care Record current-state summaries must use the change-language boundary");
-assert.match(lcr, /caregiverSafeAssistantText\(transition\.reason\)/, "caregiver-written review reasons must remain readable without being treated as generated copy");
+assert.match(lcr, /(?:caregiverSafeAssistantText|caregiverSourceText)\(transition\.reason\)/, "caregiver-written review reasons must remain readable without being treated as generated copy; source-authored reasons may use the exact-text boundary");
 assert.match(lcr, /caregiverSafeGeneratedText\(alternative\)/, "generated care-pattern explanations must use caregiver language");
 assert.match(lcr, /const safeInterpretation = caregiverSafeGeneratedText\(item\)/, "repeated care-pattern explanations must use the generated-text boundary");
 assert.match(lcr, /See related notes and documents/);
