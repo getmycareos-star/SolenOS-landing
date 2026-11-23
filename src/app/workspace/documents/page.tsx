@@ -30,7 +30,7 @@ import {
 } from "@/api/client";
 import DocumentIntelligenceReview from "@/components/DocumentIntelligenceReview";
 import { LivingArchiveMark } from "@/components/brand";
-import { caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
+import { caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
 import { RecordState } from "@/components/ui/RecordState";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import {
@@ -102,7 +102,7 @@ function asNumber(value: unknown): number | null {
 
 function toDocument(item: EvidenceRecord): DocumentItem {
   const meta = metadataOf(item.extra_metadata);
-  const title = caregiverSafeAssistantText(asString(meta.filename)) || "Untitled document";
+  const title = caregiverSourceText(asString(meta.filename)) || "Untitled document";
   return {
     id: item.id,
     title,
@@ -860,7 +860,7 @@ export default function DocumentsPage() {
                 {[...(versionComparison.changed || []).map((item) => ({ kind: "Changed", subject: item.subject, details: (item.previous_statements || []).map((v) => v.statement).join("; ") + " → " + (item.replacement_statements || []).map((v) => v.statement).join("; ") })), ...(versionComparison.added || []).map((item) => ({ kind: "Added", subject: item.subject, details: item.statement || "" })), ...(versionComparison.removed || []).map((item) => ({ kind: "Removed", subject: item.subject, details: item.statement || "" }))].map((item, index) => <p key={item.kind + "-" + index} style={{ margin: "8px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}><strong>{item.kind + (caregiverSafeAssistantText(item.subject) ? " · " + caregiverSafeAssistantText(item.subject) : "")}:</strong> {caregiverSafeAssistantText(item.details) || "No further details are available."}</p>)}
               </>}
             </section>}
-            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Opening original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>The original file was opened successfully. Download it to open it in another app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>{caregiverSafeAssistantText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>This file cannot be previewed here yet. Try downloading it instead.</p>}
+            {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Opening original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "100%", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain" }} /> : previewUrl ? <div><p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>The original file was opened successfully. Download it to open it in another app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>{caregiverSourceText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>This file cannot be previewed here yet. Try downloading it instead.</p>}
           </div>
         </section>
       </div>}
