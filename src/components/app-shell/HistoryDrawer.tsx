@@ -1106,7 +1106,7 @@ export function HistoryDrawer() {
         let fallbackPagesFetched = 1;
         while (eventSource?.has_more === true &&
           typeof eventSource.next_offset === "number" &&
-          fallbackPagesFetched < 4) {
+          fallbackPagesFetched < 100) {
           const offsets = encodeURIComponent(JSON.stringify({ events: eventSource.next_offset }));
           try {
             const page = await getJSON(
