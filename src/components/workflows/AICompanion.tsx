@@ -766,7 +766,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || 'Status not available'}</p>}
                                   {source.correction_note && <p>{caregiverSafeAssistantText(source.correction_note) || "A correction was recorded."}</p>}
                                   {source.correction_rationale && <p>Why it was corrected: {caregiverSafeAssistantText(source.correction_rationale) || "No reason was recorded."}</p>}
-                                  {source.previous_source_excerpt && <blockquote>Earlier wording: {source.previous_source_excerpt}</blockquote>}
+                                  {source.previous_source_excerpt && <blockquote>Earlier wording: {caregiverSafeAssistantText(source.previous_source_excerpt) || "The earlier wording could not be displayed."}</blockquote>}
                                   {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved note or document. It is not a separate report.</p>}
                                   {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
                                   {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
@@ -807,7 +807,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                         <p>{caregiverSafeGeneratedText(observation.label) || caregiverFieldLabel(observation.attribute) || "Recorded detail"}: {caregiverSafeAssistantText(observation.value) || "Details not supplied"}</p>
                                         {observation.reported_by && <p>Reported by: {caregiverSafeAssistantText(observation.reported_by) || "Not recorded"}</p>}
                                         {observation.occurred_at && <p>When it happened: {new Date(observation.occurred_at).toLocaleString()}</p>}
-                                        {observation.source_excerpt && <blockquote>{observation.source_excerpt}</blockquote>}
+                                        {observation.source_excerpt && <blockquote>{caregiverSafeAssistantText(observation.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
                                       </div>)}
                                     </div>)}
                                   </div>}
