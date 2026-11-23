@@ -988,6 +988,9 @@ assert.match(correctionLabels, /Details read from a document/);
 assert.match(correctionLabels, /Suggested by SolenOS/);
 assert.match(privacyIndicator, /We couldn't check who can see this/);
 assert.doesNotMatch(privacyIndicator, /Access information unavailable/);
+assert.match(privacyIndicator, /members\.filter\(\(member\) => member\.status === "active"\)/, "privacy visibility must count only active access grants");
+assert.match(caregiverAccessPanel, /import PrivacyIndicator from "@\/components\/trust\/PrivacyIndicator"/);
+assert.match(caregiverAccessPanel, /<PrivacyIndicator canViewAccessList=\{canManageMembers\} members=\{members\} \/>/, "the caregiver settings screen must show whether the access list could actually be checked");
 
 assert.doesNotMatch(lcr, /Checking linked evidence|View supporting information|What is known:/,
   "Care Record history must describe related notes and documents in everyday language");
