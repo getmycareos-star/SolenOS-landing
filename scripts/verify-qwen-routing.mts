@@ -309,3 +309,10 @@ requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
 requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
   "result.source_event_ids.includes(sourceEventId)",
 ]);
+
+requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
+  "lcr_context_coverage",
+  "coverage.retrieval_scan_complete !== true",
+  "coverage.retrieval_projection_complete !== true",
+  "We couldn’t check every saved care note and document. This explanation may miss important details",
+]);
