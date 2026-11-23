@@ -860,3 +860,15 @@ assert.match(settingsPage, /caregiverSafeGeneratedText\(erasureRequest\.message\
 const evidenceReview = read("../src/components/EvidenceReviewPanel.tsx");
 assert.match(evidenceReview, /item\.reviewed_by_caregiver_id \? "Checked by a caregiver" : "Reviewer not recorded"/,
   "missing reviewer identity must be described as unrecorded, not as an unavailable person");
+
+const livingCareRecordPanel = read("../src/components/mvp-workspace/LivingCareRecordPanel.tsx");
+assert.match(livingCareRecordPanel, /view\.what_understood\.length > facts\.length[\s\S]*?saved information remains in your Care Record/,
+  "filtered generated care facts must not disappear without explanation");
+assert.match(livingCareRecordPanel, /view\.contradictions\.length > 0[\s\S]*?Check the original notes before drawing a conclusion/,
+  "filtered conflicting-report explanations must preserve a visible caution");
+assert.match(livingCareRecordPanel, /view\.what_needs_context\.length > 0[\s\S]*?questions are saved, but their wording could not be shown clearly/,
+  "filtered questions must remain visible as unavailable rather than silently disappearing");
+assert.match(livingCareRecordPanel, /view\.what_will_be_remembered\.length > 0[\s\S]*?Nothing has been removed from your Care Record/,
+  "filtered memory summaries must explain that saved information remains intact");
+assert.match(livingCareRecordPanel, /view\.follow_up_items\.length > 0[\s\S]*?Suggested next steps could not be shown clearly/,
+  "filtered next-step suggestions must have an honest caregiver-facing fallback");
