@@ -382,7 +382,7 @@ export default function FollowUpsPage() {
     if (!nextLoops && !nextAssessment) throw new Error("We couldn't load your saved follow-ups or care information.");
     if (nextLoops !== null) {
       setLoopHistoryLoadFailed(false);
-      // The API paginates by immutable creation order so edits cannot move
+      // Pages use immutable creation order so edits cannot move
       // records across page boundaries. Restore the caregiver-facing priority
       // order only after the complete list has been retrieved.
       const displayOrdered = [...nextLoops].sort((left, right) => {
