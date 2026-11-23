@@ -7,6 +7,7 @@ import {
   caregiverInformationAreaLabel,
   caregiverInformationLabel,
   caregiverSafeAssistantText,
+  caregiverSourceText,
   caregiverSafeGeneratedText,
   caregiverSafeChangeText,
   caregiverSafeErrorMessage,
@@ -47,6 +48,13 @@ assert.equal(caregiverSafeAssistantText("A tooth extraction is planned next week
 assert.equal(caregiverSafeGeneratedText("The diagnostic pipeline failed."), null);
 assert.equal(caregiverSafeGeneratedText("A few details may need checking."), "A few details may need checking.");
 assert.equal(caregiverSafeAssistantText("I am not confident about this detail."), "I am not confident about this detail.");
+const originalCaregiverNote = "UI dementia observation 36becbf8-0028-4c29-81b9-c9dc42cd9728";
+assert.equal(caregiverSafeAssistantText(originalCaregiverNote), null,
+  "the assistant-output filter continues to reject diagnostic identifiers");
+assert.equal(caregiverSourceText(originalCaregiverNote), originalCaregiverNote,
+  "original caregiver notes must not be silently rewritten or hidden by generated-copy filters");
+assert.equal(caregiverSourceText("  Mum slept poorly last night.  "), "Mum slept poorly last night.");
+assert.equal(caregiverSourceText("   "), null);
 
 assert.equal(caregiverInformationLabel("observed"), "Seen by a caregiver");
 assert.equal(caregiverInformationLabel("inferred"), "Possible explanation");
