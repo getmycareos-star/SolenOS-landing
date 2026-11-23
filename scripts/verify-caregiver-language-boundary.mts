@@ -223,9 +223,9 @@ assert.match(clarificationWorkflow, /caregiverSafeAssistantText\(item\.answer\)/
   "saved clarification answers must not expose raw structured metadata");
 assert.match(clarificationWorkflow, /caregiverSafeAssistantText\(item\.answer_provenance\)/,
   "saved clarification attribution must use readable caregiver text");
-assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\.title\)/,
+assert.match(cognitiveWorkspace, /caregiverSourceText\(savedEventReceipt\.title\)/,
   "saved care receipt titles must not expose raw structured metadata");
-assert.match(cognitiveWorkspace, /caregiverSafeAssistantText\(savedEventReceipt\.description\)/,
+assert.match(cognitiveWorkspace, /caregiverSourceText\(savedEventReceipt\.description\)/,
   "saved care receipt descriptions must use readable caregiver text");
 assert.match(dementiaObservation, /caregiverSourceText\(item\.description\)/,
   "saved dementia observations must not expose raw structured metadata");
