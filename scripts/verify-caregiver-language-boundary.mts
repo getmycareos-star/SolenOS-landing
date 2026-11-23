@@ -1232,3 +1232,6 @@ assert.match(caregiverAccessPanel, /loadWarnings\.includes\("caregiver access li
   "main-caregiver transfers must wait until the caregiver list has been refreshed");
 assert.match(caregiverAccessPanel, /loadWarnings\.includes\("assigned care responsibilities"\)[\s\S]*?Ask another caregiver to take over/,
   "responsibility transfers must wait until the assigned-care list has been refreshed");
+
+assert.match(caregiverAccessPanel, /loadedScopeRef\.current\.personId !== personId \|\| loadedScopeRef\.current\.caregiverId !== caregiverId[\s\S]*?clearPersonScopedState\(\)/,
+  "caregiver access data must be cleared when either the care recipient or active caregiver changes");
