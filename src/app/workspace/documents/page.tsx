@@ -193,6 +193,9 @@ export default function DocumentsPage() {
     setListError(null);
     try {
       const session = await ensureAnonymousSession();
+      // A session lookup can resolve after a newer refresh or person switch.
+      // Stop before mutating the loaded scope or clearing the newer view.
+      if (!isCurrentRequest()) return;
       const personId = session.person.id;
       const caregiverId = session.caregiver.id;
       requestPersonId = personId;
