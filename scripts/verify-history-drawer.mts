@@ -202,4 +202,4 @@ assert.match(drawer, /async function loadAllFollowUpHistoryPages[\s\S]*?limit=\$
 assert.match(drawer, /response\.count !== expectedCount[\s\S]*?changed while it was loading/,
   "follow-up history must not be marked complete when the collection changes between pages");
 
-assert.match(source, /addEventListener\("personIdChanged", resetAfterSessionChange\)[\s\S]*?loadedPersonIdRef\.current = null[\s\S]*?setHasLoaded\(false\)/, "history must clear or reload when the active person or caregiver changes");
+assert.match(drawer, /addEventListener\("personIdChanged", resetAfterSessionChange\)[\s\S]*?loadedPersonIdRef\.current = null[\s\S]*?setHasLoaded\(false\)/, "history must clear or reload when the active person or caregiver changes");
