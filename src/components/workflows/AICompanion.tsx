@@ -793,7 +793,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                       {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {item.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
-                                      {item.source_excerpt && <blockquote>{item.source_excerpt}</blockquote>}
+                                      {item.source_excerpt && <blockquote>{caregiverSafeAssistantText(item.source_excerpt) || "The original wording could not be displayed."}</blockquote>}
                                       {item.evidence_reviews?.map((review, reviewIndex) => <div key={"related-source-review-" + item.record_id + "-" + reviewIndex}>
                                         <p><strong>Review of this note or document: {caregiverStatusLabel(review.outcome) || "Needs checking"}</strong></p>
                                         <p>{caregiverSafeGeneratedText(review.rationale) || "No review explanation was recorded."}</p>
