@@ -5,6 +5,7 @@ import { Shield, UserPlus, Users, X, Check, ArrowRightLeft } from "lucide-react"
 import { Button } from "@/components/ui/Button";
 import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, postJSON, patchJSON, deleteJSON } from "@/api/client";
 import { caregiverFieldLabel, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
+import PrivacyIndicator from "@/components/trust/PrivacyIndicator";
 
 type Member = {
   caregiver_id: string;
@@ -990,6 +991,7 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
 
       {allowed ? (
         <>
+          <PrivacyIndicator canViewAccessList={canManageMembers} members={members} />
           {canManageMembers && (
             <>
           <p className="mobile-settings-hint">Invite someone to help with care or remove their access. Notes they added in the past will stay in your Care Record.</p>
