@@ -509,11 +509,31 @@ export default function DailyCarePage() {
 
   useEffect(() => {
     const refresh = () => setRefreshVersion((value) => value + 1);
+    const resetForSessionChange = () => {
+      setReady(false);
+      setContextLoading(true);
+      setCareItems([]);
+      setHistoryItems([]);
+      setFollowUps([]);
+      setDocuments([]);
+      setDeliveryIssues([]);
+      setSinceLastOpenItems(null);
+      setLastOpenedAt(null);
+      setHistoryMayBeTruncated(false);
+      setContextError("");
+      setHistoryError("");
+      setFollowUpsError("");
+      setDocumentsError("");
+      setDeliveryStatusError("");
+      hasContextLoadedRef.current = false;
+      visitBaselineRef.current = { initialized: false, previousVisit: null };
+      setRefreshVersion((value) => value + 1);
+    };
     window.addEventListener("careRecordUpdated", refresh);
-    window.addEventListener("personIdChanged", refresh);
+    window.addEventListener("personIdChanged", resetForSessionChange);
     return () => {
       window.removeEventListener("careRecordUpdated", refresh);
-      window.removeEventListener("personIdChanged", refresh);
+      window.removeEventListener("personIdChanged", resetForSessionChange);
     };
   }, []);
 
