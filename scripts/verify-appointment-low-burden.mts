@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const component = readFileSync('src/components/workflows/AppointmentWorkspace.tsx', 'utf8')
+const companion = readFileSync('src/components/workflows/AICompanion.tsx', 'utf8')
 
 // Preparation is generated from the existing care record; no appointment form is required.
 assert.ok(component.includes('Your visit summary'))
@@ -48,6 +49,8 @@ assert.ok(component.includes('setRecord(null)'))
 assert.ok(component.includes('appointment_id?: string | null'))
 assert.ok(component.includes('source_workspace_id?: string | null'))
 assert.ok(component.includes('brief.appointments.find(appointment => appointment.source_id === item.appointment_id)'))
+assert.ok(companion.includes("appointment_workspace: 'Appointment notes'"), 'Companion citations must identify caregiver-authored appointment workspaces');
+assert.ok(companion.includes("appointment_workspace_revision: 'Earlier appointment notes'"), 'Companion citations must distinguish earlier appointment-note versions');
 
 assert.ok(component.includes('It does not book appointments or confirm them with a provider.'))
 // Capture is optional. Voice capture is intentionally not part of this release.
