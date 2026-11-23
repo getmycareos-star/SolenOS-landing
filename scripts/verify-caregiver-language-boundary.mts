@@ -192,6 +192,7 @@ const humanValidation = read("../src/components/HumanValidationLoop.tsx");
 const careCapture = read("../src/components/CareCapture.tsx");
 const feedbackPrompt = read("../src/components/mvp-workspace/UnderstandingFeedbackPrompt.tsx");
 const appShell = read("../src/components/app-shell/AppShell.tsx");
+const workspaceLayout = read("../src/app/workspace/layout.tsx");
 const photoCapture = read("../src/components/workflows/DailyCarePhotoCapture.tsx");
 const quickCheckIn = read("../src/components/workflows/QuickDailyCheckIn.tsx");
 const cognitiveWorkspace = read("../src/components/mvp-workspace/CognitiveWorkspace.tsx");
@@ -1164,3 +1165,7 @@ assert.match(continuityPrompt, /We couldn’t complete account setup\. Check you
 assert.doesNotMatch(continuityPrompt, /e instanceof Error \? e\.message/, "identity service errors must not be rendered raw");
 assert.match(situationProxy, /The care service is not available right now\. No update was sent\. Try again later\./, "configuration failures must not expose internal service details and must state no update was sent");
 assert.doesNotMatch(situationProxy, /error instanceof Error \? error\.message/, "proxy configuration exceptions must not be returned to caregivers");
+
+
+assert.match(workspaceLayout, /caregiverSafeAssistantText\(active\.title\)/, "the shared care-context title must not expose internal generated wording");
+assert.match(workspaceLayout, /caregiverStatusLabel\(active\.status\)/, "the shared care-context status must use caregiver-readable wording");
