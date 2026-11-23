@@ -152,11 +152,20 @@ export function PersistedCareOrientation() {
           {projection.has_more && <p>More saved care details are available in your full Care Record.</p>}
         </>
       ) : (
-        <div>
-          <p>Your Care Record does not have any care information yet.</p>
-          <p>When you share an update or document, it can be reviewed and added to this record.</p>
-          <Link href="/workspace">Add a care update</Link>
-        </div>
+        hasRequiredSourceGaps || hasOptionalSourceGaps || projection.schema_status !== "complete" || projection.item_count > 0 ? (
+          <div>
+            <p>We couldn’t show your saved care information in this view.</p>
+            <p>This does not mean your Care Record is empty. Some information may be unavailable right now.</p>
+            <button type="button" onClick={() => void load()}>Try again</button>
+            <Link href="/workspace/timeline">Open care history</Link>
+          </div>
+        ) : (
+          <div>
+            <p>Your Care Record does not have any care information yet.</p>
+            <p>When you share an update or document, it can be reviewed and added to this record.</p>
+            <Link href="/workspace">Add a care update</Link>
+          </div>
+        )
       )}
 
       {(hasRequiredSourceGaps || hasOptionalSourceGaps || projection.schema_status !== "complete") && (
