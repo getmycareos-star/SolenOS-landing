@@ -761,6 +761,28 @@ await record("01a dementia profile review window and observation persistence are
   await page.getByRole("button", { name: "Save note" }).click();
   await uiWrite;
   await page.getByText(uiDescription, { exact: true }).waitFor({ timeout: 15_000 });
+  const observationCard = page.locator("li").filter({ hasText: uiDescription }).last();
+  await observationCard.getByRole("button", { name: "Edit note", exact: true }).click();
+  assert.equal(
+    await observationCard.getByLabel("Topic").inputValue(),
+    "wandering",
+    "editing a saved observation must remove its stored dementia category prefix",
+  );
+  const correctedUiDescription = uiDescription + " — corrected after review";
+  await observationCard.getByLabel("What happened?").fill(correctedUiDescription);
+  const observationCorrection = page.waitForResponse((response) =>
+    response.url().includes("/care-continuity/caregiver-observations/") &&
+    response.request().method() === "PATCH" && response.status() === 200,
+    { timeout: 20_000 },
+  );
+  await observationCard.getByRole("button", { name: "Save correction", exact: true }).click();
+  const observationCorrectionResponse = await observationCorrection;
+  assert.equal(
+    observationCorrectionResponse.request().postDataJSON().observation_category,
+    "dementia.wandering",
+    "editing must not duplicate the dementia category prefix",
+  );
+  await page.getByText(correctedUiDescription, { exact: true }).waitFor({ timeout: 15_000 });
   assert.deepEqual(pageErrors, [], `dementia observation UI must not throw: ${JSON.stringify(pageErrors)}`);
   assert.ok(observed.some((item) => item.path.includes("/care-continuity/caregiver-observations") && item.status === 201),
     "the browser must save the observation through the authenticated API proxy");
