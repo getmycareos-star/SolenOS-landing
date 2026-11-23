@@ -353,6 +353,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
   const [consentRequired, setConsentRequired] = useState(false);
   const [historyError, setHistoryError] = useState(false);
   const [draftsError, setDraftsError] = useState(false);
+  const [appointmentOptionsError, setAppointmentOptionsError] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
@@ -383,6 +384,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
     setDirectoryError(false);
     setHistoryError(false);
     setDraftsError(false);
+    setAppointmentOptionsError(false);
     let requestPersonId: string | null = null;
     let requestCaregiverId: string | null = null;
     try {
@@ -400,6 +402,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         setOutbox([]);
         setSavedDrafts([]);
         setAppointmentOptions([]);
+        setAppointmentOptionsError(true);
         setPrepareAppointmentId("");
         setSelectedRecipients([]);
         setSelectedScope([]);
@@ -454,8 +457,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
       else setDraftsError(true);
       if (appointmentsResult.status === "fulfilled" && Array.isArray(appointmentsResult.value.items)) {
         setAppointmentOptions(appointmentsResult.value.items);
+        setAppointmentOptionsError(false);
       } else {
-        setAppointmentOptions([]);
+        setAppointmentOptionsError(true);
       }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "";
@@ -477,6 +481,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
         setDirectoryError(true);
         setHistoryError(true);
         setDraftsError(true);
+        setAppointmentOptionsError(true);
       }
     } finally {
       if (isCurrentRequest()) setLoading(false);
@@ -546,6 +551,10 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
 
   async function prepareHandoffDraft() {
     if (preparing) return;
+    if (preparePurpose === "professional_appointment" && appointmentOptionsError) {
+      setPrepareError("We couldn't check saved appointments. Refresh before preparing an appointment briefing.");
+      return;
+    }
     if (preparePurpose === "professional_appointment" && !prepareAppointmentId) {
       setPrepareError("Choose the saved appointment this briefing is for.");
       return;
@@ -814,7 +823,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                 setPrepareAppointmentId(event.target.value);
                 prepareRequestId.current = null;
                 setPrepareError("");
-              }} style={field} disabled={preparing || appointmentOptions.length === 0}>
+              }} style={field} disabled={preparing || loading || appointmentOptionsError || appointmentOptions.length === 0}>
                 <option value="">Choose an appointment</option>
                 {appointmentOptions.map(item => (
                   <option key={item.id} value={item.id}>
@@ -822,7 +831,9 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
                   </option>
                 ))}
               </select>
-              {appointmentOptions.length === 0 && <span style={{ color: "#667267" }}>No saved appointments are available. Add the appointment to this Care Record before preparing its briefing.</span>}
+              {appointmentOptionsError && <span role="alert" style={{ color: "#8a3d36" }}>We couldn't check saved appointments. Refresh before preparing an appointment briefing.</span>}
+              {loading && appointmentOptions.length === 0 && <span style={{ color: "#667267" }}>Checking saved appointments…</span>}
+              {!loading && !appointmentOptionsError && appointmentOptions.length === 0 && <span style={{ color: "#667267" }}>No saved appointments are available. Add the appointment to this Care Record before preparing its briefing.</span>}
             </label>
           )}
           <label style={{ display: "grid", gap: 5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
