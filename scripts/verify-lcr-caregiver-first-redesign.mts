@@ -183,7 +183,7 @@ assert.ok(currentUnderstanding.includes("Reported medication: "), "extracted med
 assert.match(currentUnderstanding, /These medication details come from saved reports\. They do not confirm the current prescription or whether a dose was given\./, "medication details carry a clear provenance and safety limitation");
 assert.ok(currentUnderstanding.includes("The original note could not be displayed."), "source display failures are stated honestly");
 assert.match(currentUnderstanding, /<details className="lcr-entry-status">\s*<summary>More about this item<\/summary>/, "priority provenance and diagnostics stay collapsed until requested");
-assert.ok(currentUnderstanding.includes("Follow-up: {caregiverSafeAssistantText(item.request_text)"), "the useful follow-up remains visible without opening record diagnostics");
+assert.ok(currentUnderstanding.includes("Follow-up: {caregiverSourceText(item.request_text)"), "the original follow-up wording remains visible without opening record diagnostics");
 assert.ok(!currentUnderstanding.includes("The original note is saved."), "the UI does not claim source visibility when the original note cannot be displayed");
 assert.ok(currentUnderstanding.includes('["no description was recorded.", "saved care information"].includes(normalizedDescription)'), "generic source placeholders are not presented as care facts");
 assert.ok(!currentUnderstanding.includes("Additional details are saved.") && !currentUnderstanding.includes("A recorded detail is available in the original note."), "empty observation and interpretation fields do not create caregiver-facing filler");
