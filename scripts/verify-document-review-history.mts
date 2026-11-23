@@ -178,3 +178,5 @@ assert.match(documentsPage, /listError && documents\.length > 0[\s\S]*?These are
 assert.match(documentsPage, /loadedDocumentScopeRef\.current\.personId !== personId[\s\S]*?loadedDocumentScopeRef\.current\.caregiverId !== caregiverId[\s\S]*?setDocuments\(\[\]\)[\s\S]*?setCapturedPages\(\[\]\)[\s\S]*?setReviewPages\(\[\]\)/, "document history and upload drafts from a previous person or caregiver must be cleared before loading another scope");
 
 assert.match(documentsPage, /addEventListener\("personIdChanged", refreshForSessionChange\)/, "document history must refresh when the active care session changes");
+assert(documentsPage.includes("occurred_at?: string | null") && documentsPage.includes("careDate: item.occurred_at || null"), "document retrieval must retain the source care date separately from the upload timestamp");
+assert(documentsPage.includes("Added {formatDate(doc.uploadedAt)}") && documentsPage.includes("doc.careDateLabel") && documentsPage.includes("formatDate(doc.careDate)"), "document lists must distinguish when the file was added from the care date or date printed on the document");
