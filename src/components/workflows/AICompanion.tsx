@@ -99,6 +99,8 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   conflicts: 'Reports that do not match',
   reconciliations: 'Information checked against other reports',
   appointments: 'Appointment',
+  appointment_workspace: 'Appointment notes',
+  appointment_workspace_revision: 'Earlier appointment notes',
   caregiver_observations: 'What a caregiver noticed',
   caregiver_perspectives: 'Caregiver view',
   conversation_messages: 'Earlier conversation message',
