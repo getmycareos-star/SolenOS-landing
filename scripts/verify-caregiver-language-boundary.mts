@@ -633,6 +633,12 @@ assert.match(sourceReview, /Notes and documents behind care information/);
 assert.match(sourceReview, /Each detail keeps the exact words from the original note or document/);
 assert.doesNotMatch(sourceReview, /Saved source reviews|Sources and supporting information/);
 assert.match(claimReview, /Choose a note or document/);
+assert.match(claimReview, /caregiverSourceText\(selectedEvidence\.source_text\)/,
+  "claim review must show original evidence wording without generated-copy filtering");
+assert.match(claimReview, /Read the original wording from this/,
+  "caregivers must be able to inspect the selected source before quoting it");
+assert.match(claimReview, /No readable text was extracted from this file\. The original file remains saved/,
+  "unreadable document evidence must remain explicitly available for review");
 assert.match(claimReview, /This information needs another review/);
 assert.match(statusCareDelta, /Compare with saved care information/);
 assert.match(careRecordOverview, /See what has been saved, who shared it/);
