@@ -28,7 +28,7 @@ assert.equal(caregiverStatusLabel("improved"), "May be improving");
 assert.equal(caregiverStatusLabel("new"), "New");
 assert.equal(caregiverFieldLabel("sleep"), "Sleep");
 assert.equal(caregiverFieldLabel("mobility"), "Movement");
-assert.equal(caregiverSafeGeneratedText("This has moderate confidence."), "This has moderate confidence.");
+assert.equal(caregiverSafeGeneratedText("This has moderate confidence."), null);
 assert.equal(caregiverSafeGeneratedText("The evidence supports this conclusion."), "The evidence supports this conclusion.");
 assert.equal(caregiverSafeGeneratedText("A few details may need checking."), "A few details may need checking.");
 assert.equal(caregiverSafeAssistantText("I am not confident about this detail."), "I am not confident about this detail.");
