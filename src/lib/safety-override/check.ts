@@ -2,7 +2,6 @@ import type { UrgencyDetectionResult } from "../urgency-detection";
 import type { BehaviorProfile } from "../input-classification";
 import {
   CRITICAL_HEADER,
-  CRITICAL_TOTAL_MAX_WORDS,
   HIGH_TOTAL_MAX_WORDS,
   type SafetyOverrideCheckResult,
   type SafetyOverrideState,
