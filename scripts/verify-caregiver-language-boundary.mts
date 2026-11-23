@@ -1175,3 +1175,6 @@ assert.doesNotMatch(situationProxy, /error instanceof Error \? error\.message/, 
 
 assert.match(workspaceLayout, /caregiverSafeAssistantText\(active\.title\)/, "the shared care-context title must not expose internal generated wording");
 assert.match(workspaceLayout, /caregiverStatusLabel\(active\.status\)/, "the shared care-context status must use caregiver-readable wording");
+
+assert.match(dementiaObservation, /setLoadFailed\(true\)/, "a failed observation refresh must be tracked separately from save errors");
+assert.match(dementiaObservation, /loadFailed && observations\.length > 0[\s\S]*?These are the last notes we could load\. Refresh to check for newer updates\./, "previously loaded notes must be identified as stale when refresh fails");
