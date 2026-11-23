@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
 
 type ProfileStatus = "known" | "unknown" | "not_applicable" | "uncertain" | "needs_clarification";
@@ -98,17 +98,23 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const loadSequenceRef = useRef(0);
+
   const load = useCallback(async () => {
+    const requestSequence = ++loadSequenceRef.current;
+    const isCurrentRequest = () => loadSequenceRef.current === requestSequence;
     setLoading(true);
     setError("");
     try {
       const session = await ensureAnonymousSession();
+      if (!isCurrentRequest()) return;
       if (!session.person?.id || session.person.id !== personId) {
         throw new Error("The selected care record does not match the secure session.");
       }
       const rows = await getJSON(
         `/care-continuity/assertions/${encodeURIComponent(personId)}?limit=100`,
       );
+      if (!isCurrentRequest()) return;
       if (!Array.isArray(rows)) throw new Error("The saved care profile could not be read.");
       const profileRows = (rows as Assertion[]).filter(
         (row) => typeof row.field === "string" && row.field.startsWith("dementia_profile."),
@@ -135,14 +141,17 @@ export default function DementiaCareProfilePanel({ personId }: { personId: strin
       setValues(nextValues);
       setReviewDays(nextReviewDays);
     } catch {
-      setError("We couldn’t load this care profile. Check your connection and try again.");
+      if (isCurrentRequest()) {
+        setError("We couldn’t load this care profile. Check your connection and try again.");
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
     }
   }, [personId]);
 
   useEffect(() => {
     void load();
+    return () => { loadSequenceRef.current += 1; };
   }, [load]);
 
   const historyCounts = useMemo(() => {
