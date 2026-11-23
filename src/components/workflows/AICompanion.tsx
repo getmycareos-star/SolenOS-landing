@@ -439,7 +439,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         || activeCompanionConversationStorageKey() !== activeScopeKey
       ) {
         setMessages(previous => previous.filter(message => message !== userMsg))
-        setInput('')
         return
       }
       const scopeChanged = conversationScopeRef.current !== null && conversationScopeRef.current !== activeScopeKey
@@ -463,7 +462,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           }) as any
       if (!isCurrentScopeRequest() || activeCompanionConversationStorageKey() !== activeScopeKey) {
         setMessages(previous => previous.filter(message => message !== userMsg))
-        setInput('')
         return
       }
       if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
@@ -523,7 +521,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     } catch (error) {
       if (!isCurrentScopeRequest()) {
         setMessages(previous => previous.filter(message => message !== userMsg))
-        setInput('')
         return
       }
       setMessages(prev => prev.filter(message => message !== userMsg))
