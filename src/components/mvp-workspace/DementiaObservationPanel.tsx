@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { caregiverSafeAssistantText } from "@/lib/caregiver-language";
 
 type ObservationType = "direct" | "second_hand";
 type DementiaObservation = {
@@ -191,7 +192,7 @@ export default function DementiaObservationPanel({ personId }: { personId: strin
               <p className="text-xs font-medium text-[var(--muted)]">
                 {CATEGORIES.find(([value]) => "dementia." + value === item.observation_category)?.[1] ?? "Memory or daily-life note"}
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--text)]">{item.description}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--text)]">{caregiverSafeAssistantText(item.description) || "The saved note could not be displayed in a readable form."}</p>
               <p className="mt-2 text-xs text-[var(--muted)]">
                 Happened: {formatTime(item.observed_at)} · Recorded: {formatTime(item.recorded_at)}
               </p>
