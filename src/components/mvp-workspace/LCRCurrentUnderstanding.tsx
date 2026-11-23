@@ -961,12 +961,14 @@ export function LCRCurrentUnderstanding() {
     setPatternsError(null);
     setAssessmentError(null);
     let backgroundStarted = false;
+    let sessionConfirmed = false;
 
     try {
       const session = await ensureAnonymousSession();
       if (!session.access_token || !session.person?.id) {
         throw new Error("Your care information is not available right now. Refresh the page and try again.");
       }
+      sessionConfirmed = true;
       const scopedPersonId = session.person.id;
       if (personIdRef.current && personIdRef.current !== scopedPersonId) {
         setProjection(null);
@@ -1093,19 +1095,66 @@ export function LCRCurrentUnderstanding() {
       if (manual) await backgroundWork;
       else void backgroundWork;
     } catch {
-      if (!manual) {
+      if (!sessionConfirmed) {
+        const accessMessage = "We couldn't confirm your access to the Care Record. Refresh the page and try again.";
         setPersonId("");
         setCurrentCaregiverId("");
-        setProjection(null);
+        setAssignableCaregivers([]);
+        setResponsibleCaregiverId("");
         setRegisteredActions([]);
-        setChanges([]);
-        setPatterns([]);
+        setRegisteredActionsError(accessMessage);
+        setReviewingSuggestionId(null);
+        setActionApprovalLoadingId(null);
+        setActionApprovalError(null);
+        setSuggestionDispositionReasons({});
+        setCreateReminderForSuggestion(false);
+        setReminderDueInput("");
+        setActionTransitionReasons({});
+        setActionDeferredUntil({});
+        setActionTransitionLoadingId(null);
+        setActionTransitionErrors({});
+        setActionHistory({});
+        setActionHistoryErrors({});
+        setProjection(null);
+        setSourceRetrying(null);
         setAssessment(null);
         setSourceFreshness(null);
+        setAssessmentError(null);
+        setChanges([]);
+        setChangesError(null);
+        setPatterns([]);
+        setPatternsError(null);
+        setExpandedChangeId(null);
+        setChangeEvidence({});
+        setEvidenceLoadingId(null);
+        setConfirmationReason({});
+        setConfirmationError({});
+        setConfirmationLoadingId(null);
+        setEvidenceIntegrityByFact({});
+        setEvidenceIntegrityLoadingId(null);
+        setEvidenceIntegrityErrors({});
+        setEvidenceReviewOpen(false);
+        setClaimAssessmentOpen(false);
+        setConflictReviewOpen(false);
+        setRecordHistoryOpen(false);
+        setDementiaProfileOpen(false);
+        setClarificationOpen(false);
         personIdRef.current = "";
-        setRegisteredActionsError("We couldn't confirm your access to the Care Record. Refresh the page and try again.");
+        setError(accessMessage);
+      } else {
+        if (!manual) {
+          setPersonId("");
+          setCurrentCaregiverId("");
+          setProjection(null);
+          setRegisteredActions([]);
+          setChanges([]);
+          setPatterns([]);
+          setAssessment(null);
+          setSourceFreshness(null);
+          personIdRef.current = "";
+        }
+        setError("The care history could not be loaded. Your previously saved information is still shown when available. Please try again.");
       }
-      setError("The care history could not be loaded. Your previously saved information is still shown when available. Please try again.");
     } finally {
       setLoading(false);
       if (!backgroundStarted) setRefreshing(false);

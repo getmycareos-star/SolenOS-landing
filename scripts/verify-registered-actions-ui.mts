@@ -82,9 +82,17 @@ assert.ok(
   "Frontend must verify the backend action response before showing success",
 );
 assert.ok(
-  lcr.includes('setRegisteredActions([]);') &&
-    lcr.includes("We couldn't confirm your access to the Care Record. Refresh the page and try again."),
-  "Action state must be cleared on session failure",
+  lcr.includes("let sessionConfirmed = false;") &&
+    lcr.includes("sessionConfirmed = true;") &&
+    lcr.includes("if (!sessionConfirmed)") &&
+    lcr.includes("setRegisteredActions([]);") &&
+    lcr.includes("setRegisteredActionsError(accessMessage);") &&
+    lcr.includes("setActionHistory({});") &&
+    lcr.includes("setChangeEvidence({});") &&
+    lcr.includes("setEvidenceIntegrityByFact({});") &&
+    lcr.includes("setError(accessMessage);") &&
+    lcr.includes("Your previously saved information is still shown when available."),
+  "Care-scoped actions and history must be cleared when access is lost, while confirmed-session fetch failures may retain the last saved view",
 );
 
 console.log("PASS: LCR suggestions remain separate; approval, lifecycle, reminder and clarification flows are backend-connected.");
