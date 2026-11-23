@@ -425,8 +425,10 @@ assert.match(qwenAssist, /caregiverSafeGeneratedText\(source\.source_state_label
   "legacy Qwen source statuses must use caregiver-safe labels");
 assert.match(qwenAssist, /caregiverSourceText\(source\.source_excerpt\)/,
   "legacy Qwen source excerpts must not expose raw diagnostics");
-assert.match(qwenAssist, /caregiverSafeAssistantText\(observation\.value \|\| observation\.attribute\)/,
-  "legacy Qwen observation values must use readable caregiver text");
+assert.match(qwenAssist, /typeof observation\.value === "number" && Number\.isFinite\(observation\.value\) \? String\(observation\.value\) : caregiverSafeAssistantText\(observation\.value\)/,
+  "legacy Qwen observations must preserve numeric zero and reject raw structured values");
+assert.match(lcrQwenInterpretation, /typeof observation\.value === "number" && Number\.isFinite\(observation\.value\) \? String\(observation\.value\) : caregiverSafeAssistantText\(observation\.value\)/,
+  "LCR interpretation observations must preserve numeric zero and reject raw structured values");
 assert.match(qwenAssist, /caregiverSafeGeneratedText\(reply\.reply\)/,
   "legacy Qwen answers must use the caregiver-language boundary");
 assert.match(qwenAssist, /caregiverSafeGeneratedText\(item\.reply\)/,
