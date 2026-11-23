@@ -122,7 +122,10 @@ async function loadAllOpenLoops(): Promise<OpenLoop[]> {
       seenIds.add(row.id);
       records.push(row);
     }
-    if (records.length >= expectedCount) return records;
+    if (records.length > expectedCount) {
+      throw new Error("The saved follow-up history count did not match the records returned. Refresh to try again.");
+    }
+    if (records.length === expectedCount) return records;
     if (rows.length === 0) {
       throw new Error("The saved follow-up history could not be fully retrieved.");
     }
