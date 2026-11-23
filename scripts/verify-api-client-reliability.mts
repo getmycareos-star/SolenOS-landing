@@ -47,6 +47,10 @@ const apiClientSource = readFileSync(
 );
 assert.match(apiClientSource, /event\.key === ANONYMOUS_PERSON_KEY[\s\S]*?event\.key === ANONYMOUS_CAREGIVER_KEY[\s\S]*?dispatchEvent\(new Event\("personIdChanged"\)\)/,
   "other tabs must clear caregiver-scoped views when the active backend identity changes");
+assert.match(apiClientSource, /setItem\(ANONYMOUS_EXPIRY_KEY, refreshed\.expires_at\)[\s\S]*?completeExplicitSessionBootstrap\(revocationMarkerAtStart\)[\s\S]*?setCareIdentity\(refreshed\.person_id, refreshed\.caregiver_id\)/,
+  "refreshed session credentials and expiry must be persisted before notifying care-scope subscribers");
+assert.match(apiClientSource, /setItem\(ANONYMOUS_EXPIRY_KEY, created\.expires_at\)[\s\S]*?completeExplicitSessionBootstrap\(revocationMarkerAtStart\)[\s\S]*?setCareIdentity\(created\.person\.id, created\.caregiver\.id\)/,
+  "new session credentials and expiry must be persisted before notifying care-scope subscribers");
 
 async function main() {
   setPersonId("person-server-1");
