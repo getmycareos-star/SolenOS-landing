@@ -97,7 +97,7 @@ const criticalLongOutput = {
     "- Follow the dispatcher’s directions.",
     "- Tell responders when the symptoms began.",
     "- Keep the care recipient safe while help is coming.",
-  ].join("\\n"),
+  ].join("\n"),
   what_to_ask_next: [
     "Is emergency help on the way?",
     "When did the symptoms begin?",
@@ -108,7 +108,7 @@ const criticalLongOutput = {
     "- Routine appointments.",
     "- Non-urgent household tasks.",
     "- Administrative paperwork.",
-  ].join("\\n"),
+  ].join("\n"),
 };
 if (!isSafetyOverrideValid(criticalLongOutput, safety.state)) {
   throw new Error("critical safety output must not be rejected by a universal word ceiling");
