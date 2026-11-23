@@ -301,7 +301,7 @@ assert.match(lcrCurrent, /if \(current\.assessment\?\.person_id === scopedPerson
 assert.match(lcrCurrent, /postJSON\([\s\S]*?care-continuity\/situation-understanding\/reassess/);
 assert.match(lcrCurrent, /The latest care summary could not be refreshed\. The last saved view is shown and may be out of date\./);
 assert.ok(dailyCarePage.includes('getJSON("/notifications?limit=100&offset=0")'), "Daily Care must check the existing notification feed for delivery failures");
-assert.ok(dailyCarePage.includes("Notification delivery needs attention"), "failed notification delivery must remain visible in Daily Care");
+assert.ok(dailyCarePage.includes("A notification could not be sent"), "failed push delivery must remain visible in plain language in Daily Care");
 assert.ok(dailyCarePage.includes('["failed", "expired"]'), "failed or expired push delivery must never be presented as successful delivery");
 assert.ok(dailyCarePage.includes("historyError ?"), "failed history retrieval must not be presented as an empty day");
 assert.ok(dailyCarePage.includes("daily summary is unavailable"), "history processing failures must be visible to the caregiver");
