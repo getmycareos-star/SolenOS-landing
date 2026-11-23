@@ -811,7 +811,7 @@ function mapFollowUp(item: FollowUpHistoryItem): HistoryRecord {
     source_details: detailFields([
       { label: "Status", value: caregiverStatusLabel(status) || "Not available" },
       { label: "Priority", value: caregiverStatusLabel(asText(item.priority)) || "Not available" },
-      { label: "Assigned to", value: caregiverSafeAssistantText(asText(item.owner_label)) || "" },
+      { label: "Assigned to", value: asText(item.owner_label) },
       { label: "Due date", value: item.deadline_at ? formatDateTime(item.deadline_at) : "Not recorded" },
       { label: "Review date", value: item.review_at ? formatDateTime(item.review_at) : "Not recorded" },
       { label: "When it was saved", value: createdAt ? formatDateTime(createdAt) : "Not recorded" },
