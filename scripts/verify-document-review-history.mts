@@ -37,7 +37,8 @@ assert(
 assert(
   source.includes("expected_source_quote: sourceQuote") &&
   source.includes("expected_subject: candidate.subject") &&
-  source.includes("expected_observation: candidate.observation"),
+  source.includes("expected_observation: candidate.observation") &&
+  source.includes("expected_review_status: candidate.review_status"),
   "caregiver decisions must be bound to the exact source wording and subject shown in the review",
 );
 assert(
