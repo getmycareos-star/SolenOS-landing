@@ -67,42 +67,44 @@ export function LivingCareRecordPanel({
     .filter((item): item is string => Boolean(item));
   const careStoryUpdate = caregiverSafeGeneratedText(view.care_story_update);
   const eventLabel = caregiverFieldLabel(event.event) || caregiverInformationLabel(event.event) || "Care update";
-  const showMatters =
-    plan.show_what_matters_now &&
-    Boolean(mattersNow || canWait || mayBecomeSerious || trajectory);
+  const mattersCandidateCount = [
+    view.what_matters_now, view.what_can_wait, view.what_may_become_serious, view.trajectory,
+  ].filter(Boolean).length;
+  const mattersVisibleCount = [mattersNow, canWait, mayBecomeSerious, trajectory].filter(Boolean).length;
+  const showMatters = plan.show_what_matters_now && mattersCandidateCount > 0;
   const showChanged =
     plan.show_what_changed &&
-    Boolean(changedSummary) &&
+    Boolean(view.what_changed_in_understanding) &&
     view.observation_count > 1;
   const showKnow =
     plan.show_current_understanding &&
-    (Boolean(situationSummary) || facts.length > 0);
+    (Boolean(view.what_seems_happening) || factCandidates.length > 0);
   const renderEvidenceMeta = view.has_documents && Boolean(eventLabel);
   const showMentalLoad = Boolean(mentalLoadSignal);
 
   return (
     <section className="living-care-record-panel" aria-label="Care Record update">
       <h2 className="workspace-headline">Care Record</h2>
-      {recognitionLine && (
-        <p className="workspace-lede lcr-recognition">{recognitionLine}</p>
+      {view.recognition_line && (
+        <p className="workspace-lede lcr-recognition">{recognitionLine || "Some wording in this update could not be shown clearly. Your saved information has not changed."}</p>
       )}
       {plan.show_confirmation && (
         <p className={recognitionLine ? "panel-muted" : "workspace-lede"}>
           {confirmation || "Your update was saved."}
         </p>
       )}
-      {evidenceLine && view.evidence_maturity >= 1 && (
-        <p className="panel-muted lcr-evidence-line">{evidenceLine}</p>
+      {view.evidence_line && view.evidence_maturity >= 1 && (
+        <p className="panel-muted lcr-evidence-line">{evidenceLine || "The saved notes and documents are available, but their wording could not be shown clearly here."}</p>
       )}
-      {view.disclosure_plan.show_attention_level && attentionLabel && (
+      {view.disclosure_plan.show_attention_level && view.attention_label && (
         <p className="panel-muted lcr-attention" aria-label="Attention level">
-          {attentionLabel}
+          {attentionLabel || "The level of attention could not be explained clearly here."}
         </p>
       )}
 
-      {showMentalLoad && (
+      {view.mental_load_signal && (
         <p className="panel-muted lcr-mental-load" aria-label="A note about how much you are managing">
-          {mentalLoadSignal}
+          {mentalLoadSignal || "A note about how much you are managing could not be shown clearly."}
         </p>
       )}
 
@@ -116,9 +118,9 @@ export function LivingCareRecordPanel({
               ? "What is happening"
               : "What we know so far"}
           </h3>
-          {plan.show_situation_summary && situationSummary && (
+          {plan.show_situation_summary && view.what_seems_happening && (
             <p className="panel-muted" aria-label="What you shared">
-              You shared: {situationSummary}
+              {situationSummary ? \`You shared: \${situationSummary}\` : "The summary could not be shown clearly. Your saved care information remains available in the Care Record."}
             </p>
           )}
           {facts.length > 0 && (
@@ -146,17 +148,17 @@ export function LivingCareRecordPanel({
             What changed
           </h3>
           <p className="panel-muted">This is what SolenOS thinks may be happening. Please check if it matches what you know.</p>
-          <p>{changedSummary}</p>
+          <p>{changedSummary || "The explanation of this change could not be shown clearly. Check the saved care updates before drawing a conclusion."}</p>
         </section>
       )}
 
-      {plan.show_connection && connectionNote && (
+      {plan.show_connection && view.connection_note && (
         <section className="care-card-changed" aria-labelledby="lcr-connect-heading">
           <h3 id="lcr-connect-heading" className="section-kicker">
             What may matter
           </h3>
           <p className="panel-muted">This may be connected. It still needs checking.</p>
-          <p>{connectionNote}</p>
+          <p>{connectionNote || "The possible connection could not be explained clearly. It still needs checking."}</p>
         </section>
       )}
 
@@ -191,16 +193,19 @@ export function LivingCareRecordPanel({
               </div>
             )}
           </dl>
+          {mattersCandidateCount > mattersVisibleCount && (
+            <p className="panel-muted">Some suggested details could not be explained clearly. Check the saved care updates before relying on them.</p>
+          )}
         </section>
       )}
 
-      {baselineSummary && (
+      {view.baseline_summary && (
         <section className="care-card-baseline" aria-labelledby="lcr-baseline-heading">
           <h3 id="lcr-baseline-heading" className="section-kicker">
             What is usual
           </h3>
           <p className="panel-muted">Based on earlier care updates.</p>
-          <p>{baselineSummary}</p>
+          <p>{baselineSummary || "The earlier care summary could not be shown clearly. The saved care updates remain available."}</p>
         </section>
       )}
 
@@ -246,7 +251,7 @@ export function LivingCareRecordPanel({
           {whyAsking && (
             <details className="lcr-expandable lcr-why-asking">
               <summary className="panel-muted">Why these questions?</summary>
-              <p className="panel-muted">{whyAsking}</p>
+              <p className="panel-muted">{whyAsking || "The reason for these questions could not be explained clearly. You can skip questions you do not know."}</p>
             </details>
           )}
         </section>
@@ -314,8 +319,8 @@ export function LivingCareRecordPanel({
         </section>
       )}
 
-      {careStoryUpdate && (
-        <p className="panel-muted lcr-care-story">{careStoryUpdate}</p>
+      {view.care_story_update && (
+        <p className="panel-muted lcr-care-story">{careStoryUpdate || "The care history update could not be shown clearly. Your saved information has not changed."}</p>
       )}
 
       {careKey?.trim() && (
