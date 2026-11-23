@@ -421,6 +421,7 @@ assert.doesNotMatch(companion, /entry\.decision\.replace\(/, "raw review decisio
 assert.doesNotMatch(companion, /item\.status\.replace\(|entry\.decision\.replace\(/, "raw backend status codes must never be shown to caregivers");
 assert.match(companion, /caregiverSafeGeneratedText\(claim\.text\)/);
 assert.match(companion, /caregiverSafeGeneratedText\(claim\.aggregate_review\?\.interpretation_limit\)/);
+assert.match(companion, /caregiverSafeAssistantText\(claim\.aggregate\?\.window_label\) \|\| "the selected time period"/, "Companion aggregate time windows must use caregiver-safe text and an honest fallback");
 
 assert.match(appointment, /caregiverFieldLabel\(item\.field\)/, "appointment details must translate internal field names");
 assert.match(appointment, /caregiverSafeGeneratedText\(item\.necessity_rationale\)/, "generated appointment explanations must use caregiver language");
