@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, AlertCircle, Clock3, FileText, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
-import { ensureAnonymousSession, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
 import { caregiverInformationAreaLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type OpenLoop = {
@@ -338,11 +338,18 @@ export default function FollowUpsPage() {
 
   const refresh = useCallback(async () => {
     const requestSequence = ++refreshSequence.current;
-    const isCurrentRequest = () => requestSequence === refreshSequence.current;
+    let personId: string | undefined;
+    let caregiverId: string | null = null;
+    const isCurrentRequest = () =>
+      requestSequence === refreshSequence.current &&
+      Boolean(personId) &&
+      personId === getPersonId() &&
+      caregiverId === getCaregiverId();
     const session = await ensureAnonymousSession();
+    personId = session.person?.id;
+    caregiverId = session.caregiver?.id || null;
     if (!isCurrentRequest()) return;
-    const personId = session.person?.id;
-    if (!personId) throw new Error("The active care record could not be confirmed.");
+    if (!personId || !caregiverId) throw new Error("The active care record could not be confirmed.");
     try {
       await postJSON("/open-loops/reassess", {});
     } catch {
@@ -400,14 +407,35 @@ export default function FollowUpsPage() {
     void refresh().catch(() => { if (active) setError("Follow-ups could not be loaded from the care record. Check your connection and try again."); })
       .finally(() => { if (active) setLoading(false); });
     const refreshAfterCareChange = () => { void refresh().catch(() => setAttentionWarning("SolenOS could not check the latest follow-ups. Your saved follow-ups remain visible.")); };
+    const refreshAfterSessionChange = () => {
+      // A new caregiver/recipient session must never inherit the previous
+      // person's follow-ups, assessment, action drafts or pending write keys.
+      refreshSequence.current += 1;
+      setLoops([]);
+      setAssessment(null);
+      setHistoryById({});
+      setOccurrencesById({});
+      setBusyId("");
+      setError("");
+      setNotice("");
+      setAttentionWarning("");
+      setLoopHistoryLoadFailed(false);
+      pendingUpdateKeys.current = {};
+      pendingCreateKeys.current = {};
+      pendingActionKeys.current = {};
+      setLoading(true);
+      refreshAfterCareChange();
+    };
     const refreshWhenVisible = () => { if (document.visibilityState === "visible") refreshAfterCareChange(); };
     window.addEventListener("careRecordUpdated", refreshAfterCareChange);
+    window.addEventListener("personIdChanged", refreshAfterSessionChange);
     window.addEventListener("focus", refreshAfterCareChange);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       active = false;
       refreshSequence.current += 1;
       window.removeEventListener("careRecordUpdated", refreshAfterCareChange);
+      window.removeEventListener("personIdChanged", refreshAfterSessionChange);
       window.removeEventListener("focus", refreshAfterCareChange);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
