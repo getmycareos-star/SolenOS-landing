@@ -138,9 +138,15 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   const [historyLoading, setHistoryLoading] = useState<Record<string, boolean>>({});
   const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
   const loadSequence = useRef(0);
+  const historyRequestSequence = useRef<Record<string, number>>({});
 
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
+    // A refreshed analysis list invalidates review-history requests based on
+    // the previous snapshot. They must not overwrite the refreshed list.
+    for (const analysisId of Object.keys(historyRequestSequence.current)) {
+      historyRequestSequence.current[analysisId] += 1;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -161,22 +167,31 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
   useEffect(() => () => {
     // Invalidate in-flight requests when this review panel unmounts.
     loadSequence.current += 1;
+    for (const analysisId of Object.keys(historyRequestSequence.current)) {
+      historyRequestSequence.current[analysisId] += 1;
+    }
   }, []);
 
   const loadReviewHistory = useCallback(async (analysisId: string) => {
     const existing = items.find((item) => item.analysis_id === analysisId);
     if (existing?.reviewEvents !== undefined || historyLoading[analysisId]) return;
+    const requestSequence = (historyRequestSequence.current[analysisId] ?? 0) + 1;
+    historyRequestSequence.current[analysisId] = requestSequence;
     setHistoryLoading((current) => ({ ...current, [analysisId]: true }));
     setHistoryErrors((current) => ({ ...current, [analysisId]: "" }));
     try {
       const history = await getJSON("/documents/intelligence/" + encodeURIComponent(analysisId) + "/review-history") as { items?: ReviewEvent[] };
+      if (historyRequestSequence.current[analysisId] !== requestSequence) return;
       setItems((current) => current.map((item) => item.analysis_id === analysisId
         ? { ...item, reviewEvents: Array.isArray(history.items) ? history.items : [], reviewHistoryUnavailable: false }
         : item));
     } catch {
+      if (historyRequestSequence.current[analysisId] !== requestSequence) return;
       setHistoryErrors((current) => ({ ...current, [analysisId]: "The saved review history could not be loaded. A missing history does not mean no earlier decision was made." }));
     } finally {
-      setHistoryLoading((current) => ({ ...current, [analysisId]: false }));
+      if (historyRequestSequence.current[analysisId] === requestSequence) {
+        setHistoryLoading((current) => ({ ...current, [analysisId]: false }));
+      }
     }
   }, [items, historyLoading]);
 
