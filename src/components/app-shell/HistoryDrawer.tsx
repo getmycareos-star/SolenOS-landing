@@ -419,18 +419,18 @@ function parseDescription(description?: string | null): string {
   if (!description?.trim()) return "";
   const fallback = "Saved care information";
   const safeText = (value: unknown): string => {
-    if (typeof value === "string") return caregiverSafeAssistantText(value.trim()) || "";
+    if (typeof value === "string") return value.trim();
     if (typeof value === "number" && Number.isFinite(value)) return String(value);
     return "";
   };
   const readableLabel = (value: unknown): string => {
     const raw = safeText(value);
     if (!raw) return "";
-    return caregiverFieldLabel(raw) || caregiverStatusLabel(raw) || raw.replace(/[_-]+/g, " ");
+    return caregiverFieldLabel(raw) || caregiverStatusLabel(raw) || caregiverInformationAreaLabel(raw) || caregiverSafeAssistantText(raw) || "";
   };
   try {
     const parsed: unknown = JSON.parse(description);
-    if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || fallback;
+    if (typeof parsed === "string") return parsed.trim() || fallback;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
 
     const record = parsed as Record<string, unknown>;
@@ -521,7 +521,7 @@ function parseDescription(description?: string | null): string {
     return fallback;
   } catch {
     // Malformed serialized data is not shown as caregiver text.
-    return /^[\\s]*[\\[{]/.test(description) ? fallback : caregiverSafeAssistantText(description) || fallback;
+    return /^[\\s]*[\\[{]/.test(description) ? fallback : description.trim();
   }
 }
 
@@ -752,12 +752,11 @@ function mapDecision(item: CareDecision): HistoryRecord {
   const decidedAt = item.decided_at || createdAt;
   const title = asText(item.title) || asText(item.decision_text).slice(0, 120) || "Care decision";
   const context = typeof item.context === "string"
-    ? caregiverSafeAssistantText(item.context) || ""
+    ? parseDescription(item.context)
     : item.context && typeof item.context === "object"
       ? ["summary", "notes", "reason", "details", "description"]
           .map((key) => asText((item.context as Record<string, unknown>)[key]))
-          .map((value) => caregiverSafeAssistantText(value))
-          .filter((value): value is string => Boolean(value))
+          .filter(Boolean)
           .join("\\n") || "Additional care context is saved."
       : "";
   return {
@@ -793,8 +792,8 @@ function mapFollowUp(item: FollowUpHistoryItem): HistoryRecord {
   ].map((entry) => asText(entry.evidence_id)).filter(Boolean))];
   const createdAt = item.created_at || null;
   const status = asText(item.status) || "unknown";
-  const title = caregiverSafeAssistantText(asText(item.title)) || "Care follow-up";
-  const description = caregiverSafeAssistantText(asText(item.description)) || "";
+  const title = asText(item.title) || "Care follow-up";
+  const description = asText(item.description);
   return {
     id: "follow-up:" + item.id,
     event_type: "follow_up",
@@ -1499,7 +1498,7 @@ export function HistoryDrawer() {
                   <span className="history-category-icon"><CategoryIcon category={categoryFor(selectedRecord)} /></span>
                   {categoryLabel(categoryFor(selectedRecord), selectedRecord.event_type)}
                 </div>
-                <h2 className="history-detail-title">{caregiverSafeAssistantText(selectedRecord.title) || "Care update"}</h2>
+                <h2 className="history-detail-title">{selectedRecord.title || "Care update"}</h2>
                 <p className="history-detail-date">
                   {selectedRecord.display_date_label ? selectedRecord.display_date_label + " · " : ""}
                   {formatRecordDate(selectedRecord)}
@@ -1666,7 +1665,7 @@ export function HistoryDrawer() {
                           <div className="history-event-list">
                             {group.records.map((record) => {
                               const category = categoryFor(record);
-                              const title = caregiverSafeAssistantText(record.title) || "Care update";
+                              const title = record.title || "Care update";
                               const description = parseDescription(record.description);
                               const distinctDescription = description?.trim() !== title.trim() ? description : null;
                               return (
@@ -1675,7 +1674,7 @@ export function HistoryDrawer() {
                                     type="button"
                                     className="history-event-open"
                                     onClick={() => setSelectedId(record.id)}
-                                    aria-label={"Open record: " + (caregiverSafeAssistantText(record.title) || "Care update")}
+                                    aria-label={"Open record: " + (record.title || "Care update")}
                                   >
                                     <span className="history-event-topline">
                                       <span className="history-category-icon"><CategoryIcon category={category} /></span>
@@ -1712,10 +1711,8 @@ export function HistoryDrawer() {
 
 function ReactDetailField({ field }: { field: DetailField }) {
   if (/\b(?:id|identifier|version|evidence|source type|scope|action type|file type)\b/i.test(field.label)) return null;
-  const rawValue = caregiverSafeAssistantText(field.value);
-  const value = rawValue && rawValue.includes("_")
-    ? caregiverStatusLabel(rawValue) ?? caregiverInformationAreaLabel(rawValue)
-    : rawValue ?? caregiverStatusLabel(field.value) ?? caregiverInformationAreaLabel(field.value);
+  const rawValue = field.value.trim();
+  const value = caregiverStatusLabel(rawValue) ?? caregiverInformationAreaLabel(rawValue) ?? rawValue;
   if (!value) return null;
   return <><dt>{field.label}</dt><dd>{value}</dd></>;
 }
