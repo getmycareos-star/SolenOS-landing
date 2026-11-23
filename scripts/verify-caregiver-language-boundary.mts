@@ -1078,7 +1078,7 @@ const conflictResolution = read("../src/components/ConflictResolutionPanel.tsx")
 const claimAssessment = read("../src/components/ClaimAssessmentPanel.tsx");
 assert.match(conflictResolution, /caregiverSafeGeneratedText\(item\.description\)/, "generated conflict descriptions must use the caregiver language boundary");
 assert.match(conflictResolution, /caregiverSafeGeneratedText\(selected\.description\)/, "selected conflict descriptions must use the caregiver language boundary");
-assert.match(claimAssessment, /caregiverSafeGeneratedText\(selectedClaim\.source_label\)/, "generated claim source labels must use the caregiver language boundary");
+assert.match(claimAssessment, /(?:caregiverSafeGeneratedText|caregiverSourceText)\(selectedClaim\.source_label\)/, "claim source labels must use the appropriate generated-text or exact-source language boundary");
 assert.match(claimAssessment, /caregiverSafeGeneratedText\(edge\.rationale\)/, "generated review dependency explanations must use the caregiver language boundary");
 assert.match(claimAssessment, /caregiverSafeGeneratedText\(assessmentImpact\.interpretation_limit\)/, "generated review limits must use the caregiver language boundary");
 assert.match(claimAssessment, /What was reported:<\/strong> \{selectedClaim\.asserted_value\}/, "caregiver-reported claim wording must be preserved exactly");
