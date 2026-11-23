@@ -395,7 +395,12 @@ export function caregiverReadableCaptureText(value: unknown): string | null {
     return caregiverFieldLabel(raw) || caregiverStatusLabel(raw) || caregiverInformationAreaLabel(raw) || (raw.includes("_") || isTechnicalDiagnosticText(raw) ? "" : raw);
   };
   try {
-    const parsed: unknown = JSON.parse(value);
+    const trimmedValue = value.trim();
+    const capturePayload = trimmedValue.replace(
+      /^(?:structured daily capture|daily care capture|daily care update|quick check-in)\s*[—:-]\s*/i,
+      "",
+    );
+    const parsed: unknown = JSON.parse(capturePayload);
     if (typeof parsed === "string") return caregiverSafeAssistantText(parsed) || fallback;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
     const root = parsed as Record<string, unknown>;
