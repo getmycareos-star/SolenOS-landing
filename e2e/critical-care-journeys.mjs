@@ -3813,6 +3813,16 @@ await record("Companion retry preserves one turn and recovers after a transient 
     await route.continue();
   });
   const retryInput = retryCompanion.page.locator("#companion-message-input");
+  if (await retryInput.isDisabled()) {
+    assert.notEqual(
+      process.env.SOLENOS_REQUIRE_LIVE_QWEN,
+      "1",
+      "Companion retry must be interactive when live Qwen is explicitly required",
+    );
+    await retryCompanion.page.getByText(/Responses are not available right now/).waitFor({ timeout: 10_000 });
+    await retryCompanion.context.close();
+    return;
+  }
   const retryText = "Thanks. Can we take this one question at a time?";
   await retryInput.fill(retryText);
   await retryInput.press("Enter");
