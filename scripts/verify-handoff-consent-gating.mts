@@ -12,10 +12,12 @@ assert.match(source, /disabled=\{busy \|\| loading \|\| consentRequired/, "shari
 console.log("PASS: handoff inbox and recipient discovery are consent-gated; outgoing history remains available.");
 
 const inbox = fs.readFileSync("src/components/mvp-workspace/CaregiverHandoverInbox.tsx", "utf8");
-assert.match(inbox, /if \(responsibilities\.status === "fulfilled"\) \{[\s\S]*?setResponsibilityTransfers/,
-  "a failed responsibility request must not clear previously loaded responsibility requests");
-assert.match(inbox, /if \(primary\.status === "fulfilled"\) \{[\s\S]*?setPrimaryTransfers/,
-  "a failed primary-caregiver request must not clear previously loaded requests");
+assert.match(inbox, /if \(responsibilities\.status === "fulfilled" && Array\.isArray\(responsibilities\.value\)\) \{[\s\S]*?setResponsibilityTransfers\([\s\S]*?\} else \{\s*failed\.push\("responsibility"\)/,
+  "only a successful responsibility response may replace the saved request list; failures must retain prior rows");
+assert.match(inbox, /if \(primary\.status === "fulfilled" && Array\.isArray\(primary\.value\)\) \{[\s\S]*?setPrimaryTransfers\([\s\S]*?\} else \{\s*failed\.push\("primary"\)/,
+  "only a successful primary-caregiver response may replace the saved request list; failures must retain prior rows");
+assert.match(inbox, /setFailedTransferSources\(failed\)[\s\S]*?if \(failed\.length > 0\)/,
+  "partial source failures must remain visible rather than appearing as an empty inbox");
 assert.doesNotMatch(inbox, /responsibilities\.status === "fulfilled"[\s\S]*?: \[\]\);/,
   "a failed request must not be converted into an empty list");
 
