@@ -64,6 +64,27 @@ const ANONYMOUS_CAREGIVER_KEY = "solenos_backend_caregiver_id";
 const ANONYMOUS_EXPIRY_KEY = "solenos_anonymous_session_expires_at";
 const ANONYMOUS_SESSION_REVOKED_KEY = "solenos_anonymous_session_revoked";
 
+/** Persist both backend identities and notify scoped views on either change. */
+export function setCareIdentity(personId: string, caregiverId: string): void {
+  const nextPerson = isPlaceholderIdentifier(personId.trim()) ? "" : personId.trim();
+  const nextCaregiver = isPlaceholderIdentifier(caregiverId.trim()) ? "" : caregiverId.trim();
+  const previousPerson = localStorage.getItem(ANONYMOUS_PERSON_KEY)?.trim() || "";
+  const previousCaregiver = localStorage.getItem(ANONYMOUS_CAREGIVER_KEY)?.trim() || "";
+  const previousDurablePerson = localStorage.getItem("solenos_person_id")?.trim() || "";
+  const backendIdentityChanged = previousPerson !== nextPerson || previousCaregiver !== nextCaregiver;
+
+  if (nextPerson) localStorage.setItem(ANONYMOUS_PERSON_KEY, nextPerson);
+  else localStorage.removeItem(ANONYMOUS_PERSON_KEY);
+  if (nextCaregiver) localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, nextCaregiver);
+  else localStorage.removeItem(ANONYMOUS_CAREGIVER_KEY);
+
+  // A person change is announced by setPersonId; this covers caregiver-only changes.
+  setPersonId(nextPerson);
+  if (backendIdentityChanged && previousDurablePerson === nextPerson) {
+    window.dispatchEvent(new Event("personIdChanged"));
+  }
+}
+
 /**
  * A local deletion revokes this browser's ability to silently create another
  * identity. Explicit /workspace?enter=1 is the only replacement path.
@@ -235,11 +256,9 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
     };
     assertSessionBootstrapNotRevoked(revocationMarkerAtStart);
     window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
-    window.localStorage.setItem(ANONYMOUS_PERSON_KEY, refreshed.person_id);
-    window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, refreshed.caregiver_id);
+    setCareIdentity(refreshed.person_id, refreshed.caregiver_id);
     window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
     completeExplicitSessionBootstrap(revocationMarkerAtStart);
-    setPersonId(refreshed.person_id);
     return {
       session_id: refreshed.session_id,
       person: { id: refreshed.person_id, name: "Care recipient", date_of_birth: null },
@@ -268,11 +287,9 @@ async function ensureAnonymousSessionInternal(): Promise<AnonymousSession> {
   const created = (await handleResponse(response)) as AnonymousSession;
   assertSessionBootstrapNotRevoked(revocationMarkerAtStart);
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, created.access_token);
-  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, created.person.id);
-  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, created.caregiver.id);
+  setCareIdentity(created.person.id, created.caregiver.id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, created.expires_at);
   completeExplicitSessionBootstrap(revocationMarkerAtStart);
-  setPersonId(created.person.id);
   return created;
 }
 
@@ -505,8 +522,7 @@ async function refreshSessionAfterUnauthorized(previousToken: string): Promise<s
       }
       window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, refreshed.access_token);
       window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, refreshed.expires_at);
-      setPersonId(refreshed.person_id);
-      return refreshed.access_token;
+        return refreshed.access_token;
     })().finally(() => { anonymousSessionRefreshPromise = null; });
   }
   try {
@@ -648,10 +664,8 @@ export async function acceptCaregiverInvitation(input: {
     input,
   ) as CaregiverInvitationAcceptResponse;
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
-  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, result.person_id);
-  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, result.caregiver_id);
+  setCareIdentity(result.person_id, result.caregiver_id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
-  setPersonId(result.person_id);
   return result;
 }
 
@@ -663,10 +677,8 @@ export async function signInToAccount(email: string, password: string): Promise<
   });
   const result = await handleResponse(res) as AccountLoginResponse;
   window.localStorage.setItem(ANONYMOUS_TOKEN_KEY, result.access_token);
-  window.localStorage.setItem(ANONYMOUS_PERSON_KEY, result.person_id);
-  window.localStorage.setItem(ANONYMOUS_CAREGIVER_KEY, result.caregiver_id);
+  setCareIdentity(result.person_id, result.caregiver_id);
   window.localStorage.setItem(ANONYMOUS_EXPIRY_KEY, result.expires_at);
-  setPersonId(result.person_id);
   return result;
 }
 
