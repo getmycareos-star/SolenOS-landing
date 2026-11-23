@@ -266,4 +266,11 @@ assert.match(currentUnderstanding, /coverage\.status === "stale"[\s\S]*?previous
 assert.match(dailyCare, /schema_status !== "complete"[\s\S]*?missing_required_sources[\s\S]*?missing_optional_sources[\s\S]*?failed_sources/, "Daily Care must disclose incomplete current-care retrieval instead of treating partial results as complete");
 assert.match(dailyCare, /Some saved care information could not be fully checked\. This view may be incomplete/, "a partial current-care projection must be explained in plain language");
 
-assert.match(dailyCare, /addEventListener\("personIdChanged", resetForSessionChange\)[\s\S]*?setCareItems\(\[\]\)[\s\S]*?setHistoryItems\(\[\]\)[\s\S]*?setReady\(false\)/, "Daily Care must clear prior caregiver data before reloading after a session change");
+const dailyCareResetStart = dailyCare.indexOf("const resetForSessionChange = () => {");
+const dailyCareResetEnd = dailyCare.indexOf("\n    };", dailyCareResetStart);
+const dailyCareReset = dailyCare.slice(dailyCareResetStart, dailyCareResetEnd);
+assert.ok(dailyCareResetStart >= 0 && dailyCareResetEnd > dailyCareResetStart, "Daily Care has an explicit active-person reset handler");
+assert.match(dailyCareReset, /setCareItems\(\[\]\)/, "Daily Care clears prior care items when the active person changes");
+assert.match(dailyCareReset, /setHistoryItems\(\[\]\)/, "Daily Care clears prior history when the active person changes");
+assert.match(dailyCareReset, /setReady\(false\)/, "Daily Care blocks the previous person’s view while the new session loads");
+assert.match(dailyCare, /addEventListener\("personIdChanged", resetForSessionChange\)/, "Daily Care listens for active-person changes");
