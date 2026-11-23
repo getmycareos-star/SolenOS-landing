@@ -803,6 +803,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         expected_source_quote: candidate.source_quote ?? '',
         expected_subject: candidate.subject ?? '',
         expected_observation: candidate.observation ?? '',
+        expected_corrected_subject: candidate.corrected_subject ?? '',
+        expected_corrected_observation: candidate.corrected_observation ?? '',
         corrected_subject: decision === 'correct' ? draft.subject.trim() || undefined : undefined,
         corrected_observation: decision === 'correct' ? draft.observation.trim() || undefined : undefined,
       }) as {
