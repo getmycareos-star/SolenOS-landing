@@ -904,3 +904,18 @@ assert.match(livingCareRecordPanel, /view\.what_will_be_remembered\.length > 0[\
   "filtered memory summaries must explain that saved information remains intact");
 assert.match(livingCareRecordPanel, /view\.follow_up_items\.length > 0[\s\S]*?Suggested next steps could not be shown clearly/,
   "filtered next-step suggestions must have an honest caregiver-facing fallback");
+
+const shareCareSummaryPanel = read("../src/components/mvp-workspace/share/ShareCareSummaryPanel.tsx");
+const careHandoffSharing = read("../src/components/workflows/CareHandoffSharing.tsx");
+assert.match(shareCareSummaryPanel, /caregiverReadableCaptureText\\(item\\.supporting_quote\\)/,
+  "exported source wording must be converted to readable caregiver text");
+assert.match(shareCareSummaryPanel, /caregiverSafeGeneratedText\\(item\\.summary \\|\\| item\\.text\\)/,
+  "generated briefing summaries must pass the generated-language boundary before export");
+assert.match(shareCareSummaryPanel, /caregiverReadableCaptureText\\(item\\.summary \\|\\| item\\.text\\)/,
+  "source-only briefing summaries must render structured caregiver notes without metadata");
+assert.match(shareCareSummaryPanel, /caregiverSafeGeneratedText\\(item\\.section\\)/,
+  "generated briefing section headings must use caregiver-facing labels");
+assert.match(careHandoffSharing, /caregiverReadableCaptureText\\(item\\.supporting_quote\\)/,
+  "handoff source quotations must not expose structured capture metadata");
+assert.match(careHandoffSharing, /caregiverReadableCaptureText\\(item\\.summary \\|\\| item\\.text\\)/,
+  "source-only handoff summaries must use readable saved care wording");
