@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { CareHandoffSharing } from "@/components/workflows/CareHandoffSharing";
 
@@ -18,6 +18,16 @@ export default function HandoffsPage() {
   const [draft, setDraft] = useState<HandoffDraft | null>(null);
   const [audience, setAudience] = useState<HandoffAudience>(null);
   const [purpose, setPurpose] = useState<HandoffPurpose>(null);
+
+  useEffect(() => {
+    const clearDraftForSessionChange = () => {
+      setDraft(null);
+      setAudience(null);
+      setPurpose(null);
+    };
+    window.addEventListener("personIdChanged", clearDraftForSessionChange);
+    return () => window.removeEventListener("personIdChanged", clearDraftForSessionChange);
+  }, []);
 
   const resumeDraft = (savedDraft: HandoffDraft) => {
     setDraft(savedDraft);
