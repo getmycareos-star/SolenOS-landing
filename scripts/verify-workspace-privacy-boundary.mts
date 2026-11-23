@@ -68,9 +68,9 @@ assert.match(settings, /subscription\.unsubscribe\(\)/,
   "clearing a device must unsubscribe this browser from push delivery");
 assert.match(settings, /registration\?\.getNotifications\(\)/,
   "clearing a device must close visible SolenOS notifications");
-assert.match(settings, /Request care-record erasure/,
+assert.match(settings, /Ask us to delete care information/,
   "device clearing must remain distinct from care-record erasure");
-assert.match(settings, /does not erase information stored by SolenOS/,
+assert.match(settings, /does not delete care information held by SolenOS/,
   "device clearing must not imply server-side care-record erasure");
 
 console.log("✓ device cleanup revokes sessions, removes owned browser state and push subscriptions, and preserves server-record deletion as a separate request");
