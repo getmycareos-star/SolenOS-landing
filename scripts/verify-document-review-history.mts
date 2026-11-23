@@ -119,3 +119,5 @@ assert(
   documentsPage.includes("if (isCurrentRequest()) {\n        setLoading(false);\n        setRefreshing(false);\n      }"),
   "overlapping document-history reads must not let an older response overwrite a newer refresh or its loading state",
 );
+
+assert.match(documentsPage, /listError && documents\.length > 0[\s\S]*?These are the last documents we could load\. The list may be out of date; refresh before relying on it\./, "previously loaded documents must be labelled as potentially stale when a refresh fails");
