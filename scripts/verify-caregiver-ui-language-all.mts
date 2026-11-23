@@ -101,6 +101,10 @@ function collectDisplayExpression(sourceFile: ts.SourceFile, node: ts.Expression
     for (const element of node.elements) collectDisplayExpression(sourceFile, element);
     return;
   }
+  if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+    for (const argument of node.arguments ?? []) collectDisplayExpression(sourceFile, argument);
+    return;
+  }
   if (ts.isElementAccessExpression(node) || ts.isPropertyAccessExpression(node)) {
     collectDisplayExpression(sourceFile, node.expression);
     if (ts.isElementAccessExpression(node) && node.argumentExpression) {
