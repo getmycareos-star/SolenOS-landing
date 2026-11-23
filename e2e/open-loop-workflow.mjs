@@ -113,7 +113,7 @@ try {
   assert.equal(initialSection, "Needs clarification",
     "a saved follow-up without a current care classification must not be shown as safe to wait");
   await card.getByRole("button", { name: "Share what changed" }).click();
-  await card.getByLabel(/Tell SolenOS what has changed/).fill(
+  await card.getByLabel(/Tell us what has changed/).fill(
     "CI-only caregiver report: I contacted the clinic and was told the appointment date is still being checked."
   );
   await card.getByRole("button", { name: "Share update" }).click();
