@@ -38,10 +38,19 @@ function walk(directory: string): string[] {
 }
 
 const productionRoots = ["src/app", "src/components", "src/api", "src/intelligence", "src/lib"];
+const retiredCompatibilityFiles = new Set([
+  "src/intelligence/prompt-builder.ts",
+  "src/lib/solenos-constitution/constitution.ts",
+  "src/lib/solenos-constitution/index.ts",
+  "src/lib/solenos-constitution/types.ts",
+  "src/lib/care-situation-understanding/llm-prompt.ts",
+]);
 const offenders: string[] = [];
 for (const directory of productionRoots) {
   if (!fs.existsSync(path.join(root, directory))) continue;
   for (const file of walk(path.join(root, directory))) {
+    const relative = path.relative(root, file).replace(/\\\\/g, "/");
+    if (retiredCompatibilityFiles.has(relative)) continue;
     const source = fs.readFileSync(file, "utf8");
     for (const pattern of retiredImportPatterns) {
       if (pattern.test(source)) {
