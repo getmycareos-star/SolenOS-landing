@@ -79,6 +79,8 @@ function simpleRecordLabel(value?: string | null): string {
     missing: "Not recorded", 
     accepted: "Reviewed",
     rejected: "Not accepted",
+    withdrawn: "Withdrawn by caregiver",
+    retracted: "Withdrawn from the current care picture",
     superseded: "Replaced by newer information",
     created: "Added",
     updated: "Updated",
@@ -111,6 +113,7 @@ export default function CareContinuityIntegrityPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [withdrawalReasons, setWithdrawalReasons] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     if (!personId) {
@@ -171,6 +174,28 @@ export default function CareContinuityIntegrityPanel({
     }
   }
 
+  async function withdrawAssertion(assertion: Assertion) {
+    const reason = (withdrawalReasons[assertion.id] || '').trim()
+    if (reason.length < 8 || reason.length > 1000) {
+      setError('Add a reason between 8 and 1,000 characters before withdrawing this care detail.')
+      return
+    }
+    setError('')
+    setNotice('')
+    try {
+      await patchJSON(`/care-continuity/assertions/${encodeURIComponent(assertion.id)}/status`, {
+        assertion_status: 'withdrawn',
+        expected_assertion_status: assertion.assertion_status,
+        reason,
+      })
+      setNotice('This care detail was withdrawn. Its earlier wording remains in the care history.')
+      setWithdrawalReasons((current) => ({ ...current, [assertion.id]: '' }))
+      window.dispatchEvent(new Event('careRecordUpdated'))
+    } catch {
+      setError('We couldn’t withdraw this care detail. It has not been marked as withdrawn. Refresh the care history and try again.')
+    }
+  }
+
   if (!personId) return <section style={cardStyle}><h2>Care information</h2><p>Your care information is not available right now.</p></section>
 
   return (
@@ -204,10 +229,25 @@ export default function CareContinuityIntegrityPanel({
             </p>
             {fresh && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: '5px 0' }}>{caregiverSafeGeneratedText(fresh.explanation) || 'No further explanation is available.'}</p>}
             {item.source_text && <><small>Original wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverReadableCaptureText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
-            {item.assertion_status !== 'accepted' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && (
+            {item.assertion_status !== 'accepted' && item.assertion_status !== 'caregiver_reviewed' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && item.assertion_status !== 'retracted' && item.assertion_status !== 'withdrawn' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
                 ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as reviewed</button>
                 : <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>No date has been set for the next review.</p>
+            )}
+            {(item.assertion_status === 'accepted' || item.assertion_status === 'caregiver_reviewed') && (
+              <div style={{ marginTop: 10, display: 'grid', gap: 7 }}>
+                <label htmlFor={`withdraw-reason-${item.id}`} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>Why should this care detail no longer be treated as current?</label>
+                <textarea
+                  id={`withdraw-reason-${item.id}`}
+                  value={withdrawalReasons[item.id] || ''}
+                  onChange={(event) => setWithdrawalReasons((current) => ({ ...current, [item.id]: event.target.value }))}
+                  maxLength={1000}
+                  rows={2}
+                  placeholder="Explain what changed or why this report should be withdrawn."
+                  style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 7, padding: 9, background: 'var(--surface)', color: 'var(--text)' }}
+                />
+                <div><button type="button" style={buttonStyle} onClick={() => void withdrawAssertion(item)}>Withdraw this care detail</button></div>
+              </div>
             )}
           </article>
         })}
