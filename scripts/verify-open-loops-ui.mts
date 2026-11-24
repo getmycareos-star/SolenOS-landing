@@ -19,7 +19,7 @@ const required: Array<[string, RegExp]> = [
   ["invalidates in-flight refreshes when the follow-up page unmounts", /active = false;[\s\S]*?refreshSequence\.current \+= 1/],
   ["records the caregiver response against the existing loop type", /if \(\["awaiting_response", "follow_up"\]\.includes\(loop\.loop_type\)\)[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)[\s\S]*?else[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/outcomes`, updatePayload\)/],
   ["submits the exact displayed loop version with caregiver response and outcome updates", /const updatePayload = \{[\s\S]*?expected_version: loop\.version[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)/],
-  ["submits the exact displayed loop version with caregiver action notes", /function recordAction[\s\S]*?expected_version: loop\.version[\s\S]*?\/actions/],
+  ["submits the exact displayed loop version with caregiver action notes", /function recordAction[\s\S]*?\/actions[\s\S]*?expected_version: loop\.version/],
   ["checks the current saved follow-up version before reporting appointment completion", /if \(item\.status === 'Done'[\s\S]*?getJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)\)[\s\S]*?expected_version: expectedVersion[\s\S]*?\/outcomes/],
   ["reuses the same idempotency key when a caregiver update response is uncertain", /pendingUpdateKeys\.current\[loop\.id\][\s\S]*?pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)/],
   ["clears the pending update key only after the saved view refreshes", /await refresh\(\)[\s\S]*?delete pendingUpdateKeys\.current\[loop\.id\]/],
