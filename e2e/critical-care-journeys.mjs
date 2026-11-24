@@ -1284,7 +1284,36 @@ await record("01c workspace links, browser back, More menu and account form vali
     assert.ok(links.includes(route), `primary navigation is missing ${route}`);
   }
   assert.ok(!links.includes("/workspace/companion"), "Care Assistant must remain under More, not in primary navigation");
-  await navigation.getByRole("link", { name: /More/ }).click();
+  const moreNavigationLink = navigation.locator('a[href="/workspace/more"]');
+  const moreNavigationState = await moreNavigationLink.evaluate((element) => {
+    const chain = [];
+    let current = element;
+    while (current && chain.length < 8) {
+      const style = getComputedStyle(current);
+      const rect = current.getBoundingClientRect();
+      chain.push({
+        tag: current.tagName,
+        className: typeof current.className === "string" ? current.className : "",
+        ariaHidden: current.getAttribute("aria-hidden"),
+        hidden: current instanceof HTMLElement ? current.hidden : false,
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      });
+      current = current.parentElement;
+    }
+    return chain;
+  });
+  console.log("MORE_NAV_STATE", JSON.stringify(moreNavigationState));
+  assert.ok(
+    moreNavigationState[0]?.display !== "none" &&
+      moreNavigationState[0]?.visibility !== "hidden" &&
+      moreNavigationState[0]?.rect.width > 0 &&
+      moreNavigationState[0]?.rect.height > 0,
+    `More navigation link must be visibly rendered after opening navigation: ${JSON.stringify(moreNavigationState)}`,
+  );
+  await moreNavigationLink.click();
   await page.waitForURL("**/workspace/more", { timeout: 15_000 });
   const moreTools = page.getByRole("navigation", { name: "More care record tools", exact: true });
   await moreTools.waitFor({ state: "visible", timeout: 10_000 });
