@@ -8,6 +8,7 @@ import { caregiverInformationAreaLabel, caregiverSourceText, caregiverSafeAssist
 
 type OpenLoop = {
   id: string;
+  version: number;
   loop_type: string;
   title: string;
   description: string;
