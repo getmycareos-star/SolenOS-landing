@@ -138,6 +138,39 @@ async function main() {
   await postJSON("/conversation/message", { text: "synthetic question" });
   assert.ok(observedTimeouts.includes(210_000), "Companion must not be cancelled by the generic 15-second client deadline");
 
+  const callerController = new AbortController();
+  let composedSignal: AbortSignal | undefined;
+  let resolveSignalCaptured!: () => void;
+  const signalCaptured = new Promise<void>((resolve) => { resolveSignalCaptured = resolve; });
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    composedSignal = init?.signal as AbortSignal | undefined;
+    resolveSignalCaptured();
+    return await new Promise<Response>((_resolve, reject) => {
+      composedSignal?.addEventListener(
+        "abort",
+        () => reject(new DOMException("The operation was aborted.", "AbortError")),
+        { once: true },
+      );
+    });
+  }) as typeof fetch;
+  const pendingAssist = postJSON(
+    "/assistant/assist",
+    { workflow: "living_care_record", text: "read-only test" },
+    {},
+    { signal: callerController.signal },
+  );
+  await signalCaptured;
+  assert.ok(composedSignal instanceof AbortSignal);
+  assert.notEqual(composedSignal, callerController.signal,
+    "caller cancellation must be composed with, not replace, the API deadline signal");
+  assert.ok(observedTimeouts.includes(210_000),
+    "supplying a component cancellation signal must not disable the 210-second Companion deadline");
+  callerController.abort();
+  await assert.rejects(pendingAssist, /abort/i,
+    "component unmount cancellation must still abort the in-flight Companion request");
+  assert.equal(composedSignal.aborted, true,
+    "caller cancellation must propagate to the composed request signal");
+
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     assert.equal(init?.method, "POST");
     assert.ok(init?.body instanceof FormData);
