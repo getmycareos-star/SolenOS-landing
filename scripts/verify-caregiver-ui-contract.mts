@@ -30,6 +30,7 @@ const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 const deltaPanel = fs.readFileSync(path.join(root, "src/components/CareDeltaPanel.tsx"), "utf8");
 const dailyCapture = fs.readFileSync(path.join(root, "src/components/workflows/StructuredDailyCapture.tsx"), "utf8");
 const captureReview = fs.readFileSync(path.join(root, "src/components/workflows/CaptureAnalysisReview.tsx"), "utf8");
+const careContinuityIntegrity = fs.readFileSync(path.join(root, "src/components/CareContinuityIntegrityPanel.tsx"), "utf8");
 const landingStyles = fs.readFileSync(path.join(root, "src/app/landing.css"), "utf8");
 const notifications = fs.readFileSync(path.join(root, "src/app/workspace/notifications/page.tsx"), "utf8");
 const assistPanel = fs.readFileSync(path.join(root, "src/components/qwen/QwenAssistPanel.tsx"), "utf8");
@@ -224,6 +225,11 @@ assert.match(notifications, /router\.replace\("\/workspace\/settings#settings-no
   "notification access must remain consolidated inside Settings");
 assert.match(settingsPage, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
   "care updates must load from the authenticated notification feed");
+assert.match(careContinuityIntegrity, /Event date:[\s\S]*?Date on document:[\s\S]*?Saved to Care Record:/,
+  "care information must distinguish when the event happened, the date written on the source document and when it was saved");
+assert.match(careContinuityIntegrity, /source_context\?\.document_candidate\?\.recorded_date/,
+  "document recorded date must be taken from the reviewed source context, not the upload timestamp");
+
 assert.match(settingsPage, /patchJSON\("\/notifications\//,
   "caregiver acknowledgment must be persisted through the backend");
 assert.match(settingsPage, /No notifications yet\. When a saved care reminder is due, it will appear here\./,
