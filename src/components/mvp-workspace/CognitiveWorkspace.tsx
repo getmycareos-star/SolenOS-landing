@@ -725,7 +725,11 @@ export function CognitiveWorkspace({ onSituationComplete, onPauseActive, startIn
       situationData = ({
         ...situationData,
         ...hydrated,
-        // Preserve write receipts while using the durable projection for display.
+        // Preserve the acknowledged write receipt while using the durable
+        // projection for display. Read-after-write hydration can omit `ok`;
+        // dropping it would suppress the read-only Companion interpretation
+        // even after the exact event was verified.
+        ok: situationData.ok,
         care_event_id: situationData.care_event_id,
         evidence_id: situationData.evidence_id,
         qwen_extraction_status: situationData.qwen_extraction_status ?? hydrated.qwen_extraction_status,
