@@ -16,6 +16,13 @@ type Assertion = {
   review_after_days?: number | null
   recorded_at: string
   observed_at?: string | null
+  event_time_text?: string | null
+  source_context?: {
+    document_candidate?: {
+      recorded_date?: string | null
+      event_date?: string | null
+    } | null
+  } | null
   latest_revision?: {
     revision_number?: number | null
     revision_reason?: string | null
@@ -67,6 +74,17 @@ const INTERNAL_REVISION_TARGET_TYPES = new Set([
   "care_attention_assessments",
   "situation_assessments",
 ])
+function formatSourceDate(value?: string | null): string {
+  if (!value) return "Not recorded"
+  const dateOnly = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value)
+  if (dateOnly) {
+    const [, year, month, day] = dateOnly
+    return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString()
+  }
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? caregiverSourceText(value) || "Not recorded" : parsed.toLocaleString()
+}
+
 function simpleRecordLabel(value?: string | null): string {
   if (!value) return "Not recorded";
   return ({
@@ -226,6 +244,8 @@ export default function CareContinuityIntegrityPanel({
         <h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))", marginTop: 0 }}>Care information shared</h3>
         {data.assertions.length === 0 ? <p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>No care information has been added yet.</p> : data.assertions.map((item) => {
           const fresh = freshnessById.get(item.id)
+          const eventDate = item.observed_at || item.event_time_text
+          const documentDate = item.source_context?.document_candidate?.recorded_date
           return <article key={item.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
               <strong>{caregiverFieldLabel(item.field) || caregiverInformationLabel(item.field) || 'Care detail'}: {caregiverSourceText(item.asserted_value) || 'Saved care information'}</strong>
@@ -235,6 +255,9 @@ export default function CareContinuityIntegrityPanel({
               Shared by: {caregiverSafeGeneratedText(item.source_label) || 'Not recorded'} · {simpleRecordLabel(item.assertion_kind)} · {caregiverInformationLabel(item.epistemic_state || 'reported') || 'Not yet confirmed'} · Has this been checked? {simpleRecordLabel(item.assertion_status)}
             </p>
             {fresh && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: '5px 0' }}>{caregiverSafeGeneratedText(fresh.explanation) || 'No further explanation is available.'}</p>}
+            <p style={{ fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)', margin: '5px 0' }}>
+              Event date: {formatSourceDate(eventDate)} · Date on document: {formatSourceDate(documentDate)} · Saved to Care Record: {formatSourceDate(item.recorded_at)}
+            </p>
             {item.source_text && <><small>Original wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverReadableCaptureText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
             {item.latest_revision?.revision_reason && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)', margin: '6px 0' }}><strong>Why it changed:</strong> {caregiverSourceText(item.latest_revision.revision_reason) || 'A caregiver change was recorded.'}{item.latest_revision.changed_at ? ` · ${new Date(item.latest_revision.changed_at).toLocaleString()}` : ''}</p>}
             {item.revision_history_status === 'unavailable' || item.revision_history_status === 'unavailable_schema' ? <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>The reason for the latest change could not be loaded.</p> : null}
