@@ -845,11 +845,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       </div> : <button type="button" onClick={() => setConfirmingCareReportId(msg.source_message_id || null)} disabled={Boolean(savingCareReportId)}>Save as a care note</button>}
                     </div>}
                     {!isUser && msg.ai_generated === false && <section className="companion-provenance" role="status" aria-label="Response note">
-                      <p>{msg.response_mode === 'deterministic_low_capacity_support_fallback'
-                        ? caregiverSafeGeneratedText(msg.safety_note) || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
-                        : `This is a brief support message, not an answer based on your Care Record. ${caregiverSafeGeneratedText(msg.safety_note) || "It uses a safety check or information already saved. Nothing was changed in your Care Record."}`}</p>
+                      <p>{msg.response_mode === 'deterministic_product_identity'
+                        ? "This answer is about SolenOS, not the person's Care Record."
+                        : msg.response_mode === 'deterministic_low_capacity_support_fallback'
+                          ? caregiverSafeGeneratedText(msg.safety_note) || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
+                          : `This is a brief support message, not an answer based on your Care Record. ${caregiverSafeGeneratedText(msg.safety_note) || "It uses a safety check or information already saved. Nothing was changed in your Care Record."}`}</p>
                     </section>}
-                    {!isUser && coverage && <section className="companion-provenance" role="status" aria-label="What care information was checked">
+                    {!isUser && coverage && msg.response_mode !== 'deterministic_product_identity' && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
                       <p>{coverageIsPartial
                         ? 'We couldn’t check every saved note or document, so this answer may miss important details.'
