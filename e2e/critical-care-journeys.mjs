@@ -809,7 +809,7 @@ await record("01a dementia profile review window and observation persistence are
     originalEventTime,
     "editing without changing the event time must preserve the exact instant even if UTC formatting is normalized",
   );
-  await page.getByText(correctedUiDescription, { exact: true }).waitFor({ timeout: 15_000 });
+  await observationCard.getByText(correctedUiDescription, { exact: true }).waitFor({ timeout: 15_000 });
   const observationHistory = await request(
     "/api/v1/care-continuity/observation-revisions?limit=100",
     { token: identity.token },
