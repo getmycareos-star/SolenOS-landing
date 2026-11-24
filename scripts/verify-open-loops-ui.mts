@@ -113,7 +113,7 @@ assert.match(page, /response\.count !== expectedCount[\s\S]*?changed while it wa
   "follow-up pagination must fail visibly if the collection changes between pages");
 
 assert.match(appointmentWorkspace, /const latestLoop = await getJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)\)[\s\S]*?patchJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)[\s\S]*?expected_version: expectedVersion/, "appointment follow-up edits must use the latest persisted version");
-assert.match(appointmentWorkspace, /if \(item\.status === 'Done'[\s\S]*?const expectedVersion = loopVersion[\s\S]*?expected_version: expectedVersion[\s\S]*?\/outcomes/, "appointment completion must use the version returned by the preceding saved write");
+assert.match(appointmentWorkspace, /if \(item\.status === 'Done'[\s\S]*?const expectedVersion = loopVersion[\s\S]*?postJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\) \+ '\/outcomes', \{[\s\S]*?expected_version: expectedVersion/, "appointment completion must use the version returned by the preceding saved write");
 assert.match(appointmentWorkspace, /const staleFollowUp = error instanceof ApiResponseError[\s\S]*?changed after it was shown[\s\S]*?Refresh the care record/, "stale appointment follow-up conflicts must tell the caregiver to refresh and review");
 
 assert.match(page, /function lifecycleNextStepLabel/, "every follow-up state must map to a plain next step");
