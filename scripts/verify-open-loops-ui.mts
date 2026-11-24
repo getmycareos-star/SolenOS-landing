@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const page = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 const careContinuity = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const appointmentWorkspace = fs.readFileSync("src/components/workflows/DetailedAppointmentWorkspace.tsx", "utf8");
 const caregiverLanguage = fs.readFileSync("src/lib/caregiver-language.ts", "utf8");
 const allCareViews = page + "\n" + careContinuity;
 
@@ -19,6 +20,7 @@ const required: Array<[string, RegExp]> = [
   ["records the caregiver response against the existing loop type", /if \(\["awaiting_response", "follow_up"\]\.includes\(loop\.loop_type\)\)[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)[\s\S]*?else[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/outcomes`, updatePayload\)/],
   ["submits the exact displayed loop version with caregiver response and outcome updates", /const updatePayload = \{[\s\S]*?expected_version: loop\.version[\s\S]*?postJSON\(`\/open-loops\/\$\{encodeURIComponent\(loop\.id\)\}\/responses`, updatePayload\)/],
   ["submits the exact displayed loop version with caregiver action notes", /function recordAction[\s\S]*?expected_version: loop\.version[\s\S]*?\/actions/],
+  ["checks the current saved follow-up version before reporting appointment completion", /if \(item\.status === 'Done'[\s\S]*?getJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)\)[\s\S]*?expected_version: expectedVersion[\s\S]*?\/outcomes/],
   ["reuses the same idempotency key when a caregiver update response is uncertain", /pendingUpdateKeys\.current\[loop\.id\][\s\S]*?pending\?\.signature === signature \? pending\.key : crypto\.randomUUID\(\)/],
   ["clears the pending update key only after the saved view refreshes", /await refresh\(\)[\s\S]*?delete pendingUpdateKeys\.current\[loop\.id\]/],
   ["preserves the caregiver report draft after an uncertain save", /onUpdate\(loop, updateText\.trim\(\)\)[\s\S]*?\.catch\(\(\) => \{ \/\* Keep the exact report text available for a safe retry\. \*\//],
