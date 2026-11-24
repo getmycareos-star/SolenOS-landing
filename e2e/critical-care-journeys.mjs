@@ -1426,8 +1426,9 @@ await record("01c workspace links, browser back, More menu and account form vali
   await accountSection.getByRole("button", { name: "Sign out", exact: true }).click();
   await accountSection.getByText(/Signed out securely\. Your Care Record is still saved/).waitFor({ timeout: 15_000 });
   await accountSection.getByRole("button", { name: "Sign in to an existing account", exact: true }).click();
-  let authForm = accountSection.locator("form").filter({ has: accountSection.locator("#account-email") });
-  await authForm.locator("#account-email").fill(accountEmail);
+  const authEmail = accountSection.locator("#account-email");
+  const authForm = authEmail.locator("xpath=ancestor::form");
+  await authEmail.fill(accountEmail);
   await authForm.locator("#account-password").fill(accountPassword);
   await authForm.getByRole("button", { name: "Sign in", exact: true }).click();
   await accountSection.getByText("Signed in. Your existing Care Record is available.", { exact: true }).waitFor({ timeout: 20_000 });
