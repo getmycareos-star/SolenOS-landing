@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, AlertCircle, Clock3, FileText, MessageCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
-import { ensureAnonymousSession, getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
+import { ApiResponseError, ensureAnonymousSession, getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
 import { caregiverInformationAreaLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
 
 type OpenLoop = {
@@ -493,10 +493,19 @@ export default function FollowUpsPage() {
       await refresh();
       delete pendingUpdateKeys.current[loop.id];
       setNotice("Your update was saved. SolenOS has not marked this as resolved.");
-    } catch {
+    } catch (error) {
       // Retain the key and the caregiver's text while the result is uncertain.
       // A retry must converge on the original write rather than append a duplicate.
-      setError("The update could not be confirmed. Nothing has been marked resolved.");
+      const staleVersion = error instanceof ApiResponseError
+        && error.status === 409
+        && typeof error.detail === "string"
+        && /changed after it was shown|saved version is required/i.test(error.detail);
+      if (staleVersion) {
+        try { await refresh(); } catch { /* Keep the stale-decision warning visible. */ }
+      }
+      setError(staleVersion
+        ? "This follow-up changed after it was shown. The list has been refreshed; review the latest details before trying again."
+        : "The update could not be confirmed. Nothing has been marked resolved.");
       throw new Error("Caregiver update was not confirmed; preserve the draft for retry.");
     } finally {
       setBusyId("");
@@ -566,8 +575,17 @@ export default function FollowUpsPage() {
       await refresh();
       delete pendingActionKeys.current[loop.id];
       setNotice("Your action was saved. The concern has not been marked as resolved.");
-    } catch {
-      setError("The action could not be confirmed. Keep the report available and try again.");
+    } catch (error) {
+      const staleVersion = error instanceof ApiResponseError
+        && error.status === 409
+        && typeof error.detail === "string"
+        && /changed after it was shown|saved version is required/i.test(error.detail);
+      if (staleVersion) {
+        try { await refresh(); } catch { /* Keep the stale-decision warning visible. */ }
+      }
+      setError(staleVersion
+        ? "This follow-up changed after it was shown. The list has been refreshed; review the latest details before trying again."
+        : "The action could not be confirmed. Keep the report available and try again.");
       throw new Error("Caregiver action was not confirmed; preserve the draft for retry.");
     } finally {
       setBusyId("");
