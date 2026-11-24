@@ -169,6 +169,16 @@ for (const technicalLabel of ["Source category", "Evidence kind", "Epistemic sta
 assert(evidenceReviewSource.includes("does not prove who created the original"), "file matching limitations are explained in caregiver language");
 console.log("✓ source attribution and event/reporting/ingestion times are visible with hash limitations");
 
+const integrityPanelPath = path.join(root, "src/components/CareContinuityIntegrityPanel.tsx");
+assert(fs.existsSync(integrityPanelPath), "care-record integrity panel exists");
+const integrityPanelSource = fs.readFileSync(integrityPanelPath, "utf8");
+assert(integrityPanelSource.includes("async function withdrawAssertion"), "caregiver withdrawal action is available in the care-record history");
+assert(integrityPanelSource.includes("expected_assertion_status: assertion.assertion_status"), "withdrawal is bound to the exact displayed assertion status");
+assert(integrityPanelSource.includes("reason"), "withdrawal requires a caregiver-authored reason");
+assert(integrityPanelSource.includes("Its earlier wording remains in the care history"), "withdrawal communicates that historical wording is preserved");
+assert(integrityPanelSource.includes("item.assertion_status === 'accepted' || item.assertion_status === 'caregiver_reviewed'"), "withdrawal is only offered for accepted care details");
+console.log("✓ caregiver withdrawal is explicit, reasoned, version-bound and history-preserving");
+
 const provenanceModel = path.join(root, "src/lib/trust-provenance/provenance-model.ts");
 const provenanceSource = fs.readFileSync(provenanceModel, "utf8");
 assert(!provenanceSource.includes("c.confidence >= 0.85") && !provenanceSource.includes("c.confidence >= 0.65"), "uncalibrated numeric thresholds are not used for evidence confidence");
