@@ -16,6 +16,12 @@ type Assertion = {
   review_after_days?: number | null
   recorded_at: string
   observed_at?: string | null
+  latest_revision?: {
+    revision_number?: number | null
+    revision_reason?: string | null
+    changed_at?: string | null
+  } | null
+  revision_history_status?: string
 }
 type Freshness = {
   assertion_id: string
@@ -230,6 +236,8 @@ export default function CareContinuityIntegrityPanel({
             </p>
             {fresh && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", margin: '5px 0' }}>{caregiverSafeGeneratedText(fresh.explanation) || 'No further explanation is available.'}</p>}
             {item.source_text && <><small>Original wording</small><blockquote style={{ margin: '7px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)', fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverReadableCaptureText(item.source_text) || 'The original wording is saved.'}</blockquote></>}
+            {item.latest_revision?.revision_reason && <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)', margin: '6px 0' }}><strong>Why it changed:</strong> {caregiverSourceText(item.latest_revision.revision_reason) || 'A caregiver change was recorded.'}{item.latest_revision.changed_at ? ` · ${new Date(item.latest_revision.changed_at).toLocaleString()}` : ''}</p>}
+            {item.revision_history_status === 'unavailable' || item.revision_history_status === 'unavailable_schema' ? <p style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: 'var(--text-secondary)' }}>The reason for the latest change could not be loaded.</p> : null}
             {item.assertion_status !== 'accepted' && item.assertion_status !== 'caregiver_reviewed' && item.assertion_status !== 'rejected' && item.assertion_status !== 'superseded' && item.assertion_status !== 'retracted' && item.assertion_status !== 'withdrawn' && (
               item.assertion_kind !== 'current_state' || item.review_after_days != null
                 ? <button type="button" style={buttonStyle} onClick={() => void markReviewed(item)}>Mark as reviewed</button>
