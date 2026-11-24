@@ -548,7 +548,7 @@ function CaregiverPreferencesCard() {
       <label className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.35rem" }}>
         <span className="mobile-settings-label">Your time zone</span>
         <input className="mobile-settings-input" value={timezone} maxLength={64} disabled={loading || saving} onChange={(event) => setTimezone(event.target.value)} placeholder="America/New_York" autoComplete="off" />
-        <span className="mobile-settings-hint">Use an IANA time zone such as America/New_York, America/Los_Angeles or Africa/Lagos. This is used for greetings and date questions such as “yesterday.”</span>
+        <span className="mobile-settings-hint">Choose a time zone such as New York (America/New_York), Los Angeles (America/Los_Angeles) or Lagos (Africa/Lagos). SolenOS uses it for greetings and date questions such as “yesterday.”</span>
         {timezoneSuggestion && !timezone && <Button variant="secondary" disabled={loading || saving} onClick={() => setTimezone(timezoneSuggestion)}>Use this device's time zone ({timezoneSuggestion})</Button>}
         {!timezone && <span className="mobile-settings-hint">No time zone is saved yet. SolenOS will not guess your local time or silently use UTC for date-based questions.</span>}
       </label>
