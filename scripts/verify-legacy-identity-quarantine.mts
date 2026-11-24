@@ -17,7 +17,7 @@ assert.doesNotMatch(retiredAiConstitution, /supersedes any individual prompt/i);
 const aiSystems = read("docs/10-ai-systems/README.md");
 assert.match(aiSystems, /canonical, model-independent Companion identity/i);
 assert.match(aiSystems, /solenos-companion-identity-constitution\.md/);
-assert.match(aiSystems, /Frontend screens must not define a competing Companion identity/);
+assert.match(aiSystems, /Frontend screens must not define a competing\\s+Companion identity/);
 
 const activeArchitecture = read("src/lib/canonical-architecture/contract.ts");
 assert.match(activeArchitecture, /Living Care Record/i);
