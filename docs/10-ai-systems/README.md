@@ -33,3 +33,21 @@ The legacy `POST /api/analyze` endpoint is retired (HTTP 410). Its former Gemini
 ## Voice
 
 Voice remains outside the MVP server inference path. Keep browser transcription separate from any future server-side speech provider decision. Do not reintroduce Whisper or Gemini as hidden fallbacks.
+
+
+## Companion identity and behavioral authority
+
+The canonical, model-independent Companion identity is versioned in the backend
+specification:
+`SolenOS_backend/backend/docs/solenos-companion-identity-constitution.md`.
+Its runtime identity and Thoughtful Care Partner kernels are maintained in
+`backend/app/services/solenos_identity.py` and
+`backend/app/services/solenos_personality.py`, then injected by the backend
+Qwen system-contract adapter. Frontend screens must not define a competing
+Companion identity, founder story, safety boundary, or model-specific personality.
+
+The legacy LangChain adapter under `src/lib/solenos-langchain-adapter` has no
+active caregiver-workflow call sites. Do not wire it into application routes or
+use it as an alternate inference path. Any future approved model adapter must
+consume the same model-independent identity and personality kernels and pass
+the same identity, evidence, safety, privacy, and context-budget acceptance tests.
