@@ -263,7 +263,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
       const payload = await response.json().catch(() => null);
       console.log("FIRST_VISIT_ASSIST_RESPONSE", JSON.stringify({
         status: response.status(),
-        error: payload?.detail?.message ?? payload?.detail ?? payload?.error ?? null,
+        error: payload?.detail ?? payload?.error ?? null,
       }));
     }
     if (response.status() >= 400) {
