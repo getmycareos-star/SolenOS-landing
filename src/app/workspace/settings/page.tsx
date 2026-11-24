@@ -173,23 +173,18 @@ function NotificationsCard() {
     setError("");
     try {
       await ensureAnonymousSession();
-      const [prefs, caregiverPreferences] = await Promise.all([
-        getJSON("/notifications/preferences") as Promise<{
-          quiet_hours_enabled: boolean; reminders_enabled: boolean;
-          quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
-        }>,
-        getJSON("/caregiver/preferences") as Promise<{
-          timezone?: string | null; timezone_configured?: boolean;
-        }>,
-      ]);
+      const prefs = await getJSON("/notifications/preferences") as {
+        quiet_hours_enabled: boolean; reminders_enabled: boolean;
+        quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
+      };
       setQuietHours(prefs.quiet_hours_enabled);
       setScheduleSupported(typeof prefs.quiet_hours_start === "string" && typeof prefs.quiet_hours_end === "string" && typeof prefs.timezone_name === "string");
       setQuietStart(prefs.quiet_hours_start || "21:00");
       setQuietEnd(prefs.quiet_hours_end || "08:00");
+      // Quiet-hours delivery uses its own saved timezone, never the
+      // Companion's separate caregiver timezone preference.
       setTimezoneName(
-        caregiverPreferences.timezone_configured && caregiverPreferences.timezone
-          ? caregiverPreferences.timezone
-          : prefs.configured ? (prefs.timezone_name || "UTC") : (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"),
+        prefs.configured ? (prefs.timezone_name || "UTC") : (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"),
       );
       setReminders(prefs.reminders_enabled);
     } catch {
@@ -206,14 +201,8 @@ function NotificationsCard() {
     setError("");
     try {
       await ensureAnonymousSession();
-      const caregiverPreferences = key === "quiet_hours_enabled"
-        ? await getJSON("/caregiver/preferences") as { timezone?: string | null; timezone_configured?: boolean }
-        : null;
-      const effectiveTimezone = caregiverPreferences?.timezone_configured && caregiverPreferences.timezone
-        ? caregiverPreferences.timezone
-        : timezoneName;
       const payload = key === "quiet_hours_enabled"
-        ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: effectiveTimezone }
+        ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: timezoneName }
         : { reminders_enabled: value };
       const result = await putJSON("/notifications/preferences", payload) as {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
