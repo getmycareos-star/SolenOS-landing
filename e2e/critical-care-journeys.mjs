@@ -1365,6 +1365,31 @@ await record("01c workspace links, browser back, More menu and account form vali
     throw new Error(`Account controls did not reach the expected anonymous-session state: ${JSON.stringify(state)}; ${String(error)}`);
   }
   await accountSection.getByRole("button", { name: "Create account", exact: true }).click();
+  try {
+    await accountSection.locator("#account-email").waitFor({ state: "visible", timeout: 5_000 });
+  } catch (error) {
+    const diagnostic = await accountSection.evaluate((section) => ({
+      open: section instanceof HTMLDetailsElement ? section.open : null,
+      text: section.textContent?.trim().slice(0, 1600) ?? "",
+      forms: Array.from(section.querySelectorAll("form")).map((form) => ({
+        visible: Boolean(form.getClientRects().length),
+        text: form.textContent?.trim().slice(0, 500) ?? "",
+        emailCount: form.querySelectorAll("#account-email").length,
+      })),
+      emailInputs: Array.from(section.querySelectorAll("#account-email")).map((input) => ({
+        visible: Boolean(input.getClientRects().length),
+        disabled: input instanceof HTMLInputElement ? input.disabled : null,
+        parent: input.parentElement?.outerHTML.slice(0, 700) ?? null,
+      })),
+      buttons: Array.from(section.querySelectorAll("button")).map((button) => ({
+        text: button.textContent?.trim() ?? "",
+        disabled: button.disabled,
+        visible: Boolean(button.getClientRects().length),
+      })),
+    }));
+    console.error("ACCOUNT_CREATE_FORM_DIAGNOSTIC", JSON.stringify(diagnostic));
+    throw error;
+  }
   const email = page.locator("#account-email");
   const password = page.locator("#account-password");
   const accountForm = email.locator("xpath=ancestor::form");
