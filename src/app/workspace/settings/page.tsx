@@ -173,15 +173,24 @@ function NotificationsCard() {
     setError("");
     try {
       await ensureAnonymousSession();
-      const prefs = await getJSON("/notifications/preferences") as {
-        quiet_hours_enabled: boolean; reminders_enabled: boolean;
-        quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
-      };
+      const [prefs, caregiverPreferences] = await Promise.all([
+        getJSON("/notifications/preferences") as Promise<{
+          quiet_hours_enabled: boolean; reminders_enabled: boolean;
+          quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
+        }>,
+        getJSON("/caregiver/preferences") as Promise<{
+          timezone?: string | null; timezone_configured?: boolean;
+        }>,
+      ]);
       setQuietHours(prefs.quiet_hours_enabled);
       setScheduleSupported(typeof prefs.quiet_hours_start === "string" && typeof prefs.quiet_hours_end === "string" && typeof prefs.timezone_name === "string");
       setQuietStart(prefs.quiet_hours_start || "21:00");
       setQuietEnd(prefs.quiet_hours_end || "08:00");
-      setTimezoneName(prefs.configured ? (prefs.timezone_name || "UTC") : (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"));
+      setTimezoneName(
+        caregiverPreferences.timezone_configured && caregiverPreferences.timezone
+          ? caregiverPreferences.timezone
+          : prefs.configured ? (prefs.timezone_name || "UTC") : (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"),
+      );
       setReminders(prefs.reminders_enabled);
     } catch {
       setError("We couldn't load your notification settings. Check your connection and try again.");
