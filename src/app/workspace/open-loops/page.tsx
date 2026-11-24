@@ -478,6 +478,7 @@ export default function FollowUpsPage() {
         text: signature,
         evidence: [],
         response_outcome: "response_received",
+        expected_version: loop.version,
         idempotency_key: idempotencyKey,
       };
       if (["awaiting_response", "follow_up"].includes(loop.loop_type)) {
@@ -552,6 +553,7 @@ export default function FollowUpsPage() {
       await postJSON("/open-loops/" + encodeURIComponent(loop.id) + "/actions", {
         text: signature,
         evidence: [],
+        expected_version: loop.version,
         idempotency_key: idempotencyKey,
       });
       await refresh();
