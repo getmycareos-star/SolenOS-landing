@@ -95,10 +95,10 @@ export function LcrQwenInterpretation({
           workflow: "living_care_record",
           source_event_id: sourceEventId,
           text:
-            "Put this newly saved caregiver-reported update in context with the authorized Living Care Record. " +
-            "Distinguish documented information from interpretation and uncertainty. Explain what may matter and " +
-            "one proportionate next step only when supported. Do not diagnose, infer causation, or claim any record write. " +
-            "Newly saved caregiver report: " + rawInput.trim(),
+            "Interpret this newly saved caregiver-reported event using only its authorized Living Care Record context. " +
+            "Preserve the original report, source attribution, event and recorded dates, uncertainty, and any conflicting, " +
+            "corrected or withdrawn history. Explain what may matter and one proportionate next step only when supported. " +
+            "Do not diagnose, infer causation, or claim any record write.",
         }, {}, { signal: controller.signal })) as AssistResult;
 
         if (
