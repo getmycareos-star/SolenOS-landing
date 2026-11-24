@@ -181,6 +181,12 @@ assert(integrityPanelSource.includes("Its earlier wording remains in the care hi
 assert(integrityPanelSource.includes("item.assertion_status === 'accepted' || item.assertion_status === 'caregiver_reviewed'"), "withdrawal is only offered for accepted care details");
 console.log("✓ caregiver withdrawal is explicit, reasoned, version-bound and history-preserving");
 
+const familySharingPath = path.join(root, "src/components/workflows/CareHandoffSharing.tsx");
+assert(fs.existsSync(familySharingPath), "family sharing workflow exists");
+const familySharingSource = fs.readFileSync(familySharingPath, "utf8");
+assert(familySharingSource.includes("I understand that SolenOS does not independently verify every summary statement."), "family sharing requires explicit acknowledgement that generated summaries are not independently verified");
+console.log("✓ family sharing makes summary verification limits explicit");
+
 const provenanceModel = path.join(root, "src/lib/trust-provenance/provenance-model.ts");
 const provenanceSource = fs.readFileSync(provenanceModel, "utf8");
 assert(!provenanceSource.includes("c.confidence >= 0.85") && !provenanceSource.includes("c.confidence >= 0.65"), "uncalibrated numeric thresholds are not used for evidence confidence");
