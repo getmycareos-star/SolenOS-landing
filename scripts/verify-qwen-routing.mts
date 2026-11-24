@@ -290,10 +290,12 @@ console.log("PASS: document candidate batches and retryable page states are pres
 console.log("PASS: account creation, sign-in, and deletion controls call backend account endpoints and disclose unavailable protections.");
 
 
-assert.match(lcrInterpretation, /setTimeout\(\(\) => controller\.abort\(\), 20_000\)/,
-  "the optional care explanation must stop waiting and show an honest unavailable state");
+assert.doesNotMatch(lcrInterpretation, /setTimeout\(\(\) => controller\.abort\(\), 20_000\)/,
+  "the optional care explanation must not override the shared 210-second model-request deadline");
+assert.match(lcrInterpretation, /const controller = new AbortController\(\)/,
+  "the optional care explanation must retain cancellation on component unmount");
 assert.match(lcrInterpretation, /postJSON\("\/assistant\/assist",[\s\S]*?signal: controller\.signal/,
-  "the optional care explanation must cancel its request when its wait limit is reached");
+  "the optional care explanation must pass its unmount cancellation signal to the API client");
 assert.match(lcrInterpretation, /caregiverSafeGeneratedText\(source\.label\)/,
   "generated source labels must use caregiver language");
 assert.match(lcrInterpretation, /caregiverFieldLabel\(observation\.attribute\)/,
@@ -305,6 +307,14 @@ assert.match(apiClient, /requestOptions: \{ signal\?: AbortSignal \} = \{\}/,
   "POST requests must accept an optional cancellation signal");
 assert.match(apiClient, /signal: requestOptions\.signal/,
   "POST requests must forward cancellation to fetch");
+assert.match(apiClient, /const callerSignal = init\.signal \?\? undefined/,
+  "the API client must retain the caller cancellation signal separately from its deadline controller");
+assert.match(apiClient, /callerSignal\?\.addEventListener\("abort", abortFromCaller, \{ once: true \}\)/,
+  "caller cancellation must propagate to the composed request signal");
+assert.match(apiClient, /fetch\(input, \{ \.\.\.init, signal: controller\.signal \}\)/,
+  "the API deadline controller must remain active when a caller supplies cancellation");
+assert.match(apiClient, /pathname\.endsWith\("\/assistant\/assist"\) && method === "POST"\) return 210_000/,
+  "read-only Companion interpretation must keep its bounded 210-second deadline");
 
 requireText("src/components/mvp-workspace/LcrQwenInterpretation.tsx", [
   "source_event_id: sourceEventId",
