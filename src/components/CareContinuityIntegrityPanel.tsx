@@ -76,7 +76,7 @@ const INTERNAL_REVISION_TARGET_TYPES = new Set([
 ])
 function formatSourceDate(value?: string | null): string {
   if (!value) return "Not recorded"
-  const dateOnly = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value)
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
   if (dateOnly) {
     const [, year, month, day] = dateOnly
     return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString()
