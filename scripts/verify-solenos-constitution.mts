@@ -27,6 +27,9 @@ assert.ok(docContent.includes("Identity"), "Document must contain Identity secti
 assert.ok(docContent.includes("Knowledge Hierarchy"), "Document must contain Knowledge Hierarchy");
 assert.ok(docContent.includes("General Knowledge Policy"), "Document must contain General Knowledge Policy");
 assert.ok(docContent.includes("Conversation Drift Policy"), "Document must contain Conversation Drift Policy");
+assert.ok(docContent.includes("HISTORICAL / NOT AUTHORITATIVE"), "Legacy frontend constitution must not claim active authority");
+assert.ok(docContent.includes("SolenOS_backend/backend/docs/solenos-companion-identity-constitution.md"), "Verifier must point to the active backend-owned identity constitution");
+assert.ok(!docContent.includes("It supersedes any individual prompt"), "Legacy constitution must not override the active backend contract");
 console.log("  ✓ docs/SOLENOS_AI_CONSTITUTION.md exists and contains all required sections\n");
 
 // ─── Phase 2: Runtime Constitution Module ────────────────────────────────
