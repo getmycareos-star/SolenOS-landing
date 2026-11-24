@@ -175,6 +175,8 @@ const integrityPanelSource = fs.readFileSync(integrityPanelPath, "utf8");
 assert(integrityPanelSource.includes("async function withdrawAssertion"), "caregiver withdrawal action is available in the care-record history");
 assert(integrityPanelSource.includes("expected_assertion_status: assertion.assertion_status"), "withdrawal is bound to the exact displayed assertion status");
 assert(integrityPanelSource.includes("reason"), "withdrawal requires a caregiver-authored reason");
+assert(integrityPanelSource.includes("latest_revision?.revision_reason"), "care history displays the persisted reason for the latest assertion change");
+assert(integrityPanelSource.includes("The reason for the latest change could not be loaded."), "care history does not imply revision reasons are absent when history retrieval fails");
 assert(integrityPanelSource.includes("Its earlier wording remains in the care history"), "withdrawal communicates that historical wording is preserved");
 assert(integrityPanelSource.includes("item.assertion_status === 'accepted' || item.assertion_status === 'caregiver_reviewed'"), "withdrawal is only offered for accepted care details");
 console.log("✓ caregiver withdrawal is explicit, reasoned, version-bound and history-preserving");
