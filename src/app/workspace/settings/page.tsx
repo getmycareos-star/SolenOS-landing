@@ -206,8 +206,14 @@ function NotificationsCard() {
     setError("");
     try {
       await ensureAnonymousSession();
+      const caregiverPreferences = key === "quiet_hours_enabled"
+        ? await getJSON("/caregiver/preferences") as { timezone?: string | null; timezone_configured?: boolean }
+        : null;
+      const effectiveTimezone = caregiverPreferences?.timezone_configured && caregiverPreferences.timezone
+        ? caregiverPreferences.timezone
+        : timezoneName;
       const payload = key === "quiet_hours_enabled"
-        ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: timezoneName }
+        ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: effectiveTimezone }
         : { reminders_enabled: value };
       const result = await putJSON("/notifications/preferences", payload) as {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
@@ -584,7 +590,7 @@ function CaregiverPreferencesCard() {
           <option value="detailed">More explanation</option>
         </select>
       </label>
-      <Button onClick={() => void save()} disabled={loading || saving} loading={saving}>Save preferences</Button>
+      <Button onClick={() => void save()} disabled={loading || saving || Boolean(error)} loading={saving}>Save preferences</Button>
       {render()}
     </section>
   );
