@@ -1334,8 +1334,8 @@ await record("01c workspace links, browser back, More menu and account form vali
     "More stays selected while a secondary destination is open",
   );
   await page.goBack({ waitUntil: "domcontentloaded" });
-  await page.waitForURL("**/workspace", { timeout: 15_000 });
-  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15_000 });
+  await page.waitForURL("**/workspace/more", { timeout: 15_000 });
+  await moreTools.waitFor({ state: "visible", timeout: 10_000 });
   await verifyMobile(page);
 
   await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
