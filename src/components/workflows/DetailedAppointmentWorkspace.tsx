@@ -265,9 +265,17 @@ export default function DetailedAppointmentWorkspace() {
           }
           synced[index] = { ...item, open_loop_id: loopId }
           if (item.status === 'Done' && !item.reported_done_at) {
+            const latestLoop = await getJSON('/open-loops/' + encodeURIComponent(loopId)) as {
+              loop?: { version?: number }
+            }
+            const expectedVersion = latestLoop.loop?.version
+            if (!Number.isInteger(expectedVersion) || (expectedVersion ?? 0) < 1) {
+              throw new Error('The current follow-up version could not be confirmed.')
+            }
             await postJSON('/open-loops/' + encodeURIComponent(loopId) + '/outcomes', {
               text: 'A caregiver marked this follow-up as done. This does not mean a healthcare professional has confirmed it.',
               evidence: [],
+              expected_version: expectedVersion,
               idempotency_key: 'appointment-follow-up-done:' + savedRecordId + ':' + item.id,
             })
             synced[index] = { ...synced[index], reported_done_at: new Date().toISOString() }
