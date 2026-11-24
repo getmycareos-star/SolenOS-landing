@@ -1313,3 +1313,11 @@ assert.match(caregiverAccessPanel, /addEventListener\("personIdChanged", refresh
 
 
 assert.match(companion, /\(typeof observation\.value === "number" && Number\.isFinite\(observation\.value\) \? String\(observation\.value\) : caregiverSafeAssistantText\(observation\.value\)\)/, "Companion must preserve zero-valued observations while rejecting raw structured values");
+
+
+assert.match(companion, /deterministic_product_identity/,
+  "Companion must distinguish product-identity answers from care-record answers");
+assert.match(companion, /This answer is about SolenOS, not the person's Care Record\./,
+  "identity response notes must use plain caregiver language");
+assert.match(companion, /msg\.response_mode !== 'deterministic_product_identity'/,
+  "identity answers must not claim that care records were checked");
