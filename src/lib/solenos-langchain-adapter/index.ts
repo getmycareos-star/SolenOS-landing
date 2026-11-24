@@ -1,55 +1,31 @@
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { buildSolenOSPrompt } from "./prompt";
-import {
-  createSolenOSChatModel,
-  createMvpChatModel,
-  resolveSolenOSLLMProvider,
-  resolveMvpLLMProvider,
-} from "./model";
 import { SOLENOS_SYSTEM_PROMPT } from "./system-prompt";
-import { extractRawLLMText } from "./raw-text";
-import { DEFAULT_SOLENOS_LANGUAGE, makeLanguageAwarePrompt } from "../multilingual-execution";
+import { DEFAULT_SOLENOS_LANGUAGE } from "../multilingual-execution";
 import type { SolenOSLanguage } from "../multilingual-execution/types";
+
+const RETIRED_INFERENCE_MESSAGE =
+  "Direct frontend model inference is retired. Use authenticated SolenOS backend routes; they apply the shared Companion identity and safety contract.";
 
 export { extractRawLLMText } from "./raw-text";
 
-async function invokeSolenOSPrompt(
-  userPrompt: string,
-  userLanguage: SolenOSLanguage = DEFAULT_SOLENOS_LANGUAGE,
-): Promise<string> {
-  const model = createMvpChatModel();
-  const wrappedPrompt = makeLanguageAwarePrompt(userPrompt, userLanguage);
-  const response = await model.invoke([
-    new SystemMessage(SOLENOS_SYSTEM_PROMPT),
-    new HumanMessage(wrappedPrompt),
-  ]);
-  return extractRawLLMText(response.content);
-}
-
-/** Qwen-only single-pass invocation. */
+/**
+ * Retired compatibility entry point. Kept only so old imports fail explicitly
+ * rather than silently opening a second, ungrounded model path.
+ */
 export async function runSolenOSMvpLLM(
-  input: string,
-  extraUserContent?: string,
+  _input: string,
+  _extraUserContent?: string,
 ): Promise<string> {
-  let userPrompt = buildSolenOSPrompt(input);
-  if (extraUserContent) userPrompt += `\n\n${extraUserContent}`;
-  return invokeSolenOSPrompt(userPrompt);
+  throw new Error(RETIRED_INFERENCE_MESSAGE);
 }
 
-/** @deprecated Compatibility alias; still uses Qwen only. */
+/** @deprecated Direct frontend inference is retired; use authenticated backend routes. */
 export async function runSolenOSLLM(
-  input: string,
-  context?: any,
-  userLanguage: SolenOSLanguage = DEFAULT_SOLENOS_LANGUAGE,
+  _input: string,
+  _context?: unknown,
+  _userLanguage: SolenOSLanguage = DEFAULT_SOLENOS_LANGUAGE,
 ): Promise<string> {
-  const userPrompt = buildSolenOSPrompt(input, context);
-  const wrappedPrompt = makeLanguageAwarePrompt(userPrompt, userLanguage);
-  const model = createSolenOSChatModel();
-  const response = await model.invoke([
-    new SystemMessage(SOLENOS_SYSTEM_PROMPT),
-    new HumanMessage(wrappedPrompt),
-  ]);
-  return extractRawLLMText(response.content);
+  throw new Error(RETIRED_INFERENCE_MESSAGE);
 }
 
 export { buildSolenOSPrompt } from "./prompt";
@@ -59,10 +35,6 @@ export {
   SYSTEM_PROMPT_SPEC_MARKERS,
 } from "./system-prompt";
 export {
-  createSolenOSChatModel,
-  createOllamaChatModel,
-  createMvpChatModel,
   resolveSolenOSLLMProvider,
   resolveMvpLLMProvider,
 } from "./model";
-export type { SolenOSLLMProvider, MvpLLMProvider } from "./model";
