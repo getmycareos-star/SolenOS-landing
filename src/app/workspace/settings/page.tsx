@@ -445,6 +445,142 @@ function ProfileCard() {
   );
 }
 
+/** Authenticated caregiver preferences used by Companion and local-time retrieval. */
+function CaregiverPreferencesCard() {
+  const { show, render } = useToast();
+  const [preferredName, setPreferredName] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [timezoneSuggestion, setTimezoneSuggestion] = useState("");
+  const [locale, setLocale] = useState("en-US");
+  const [dateFormat, setDateFormat] = useState<"MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD">("MM/DD/YYYY");
+  const [measurementSystem, setMeasurementSystem] = useState<"us_customary" | "metric">("us_customary");
+  const [communicationStyle, setCommunicationStyle] = useState<"concise" | "balanced" | "detailed">("balanced");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await ensureAnonymousSession();
+      const suggested = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      setTimezoneSuggestion(suggested);
+      const saved = await getJSON("/caregiver/preferences") as {
+        preferred_name?: string | null;
+        timezone?: string | null;
+        timezone_configured?: boolean;
+        locale?: string | null;
+        date_format?: "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD" | null;
+        measurement_system?: "us_customary" | "metric" | null;
+        communication_style?: "concise" | "balanced" | "detailed" | null;
+      };
+      setPreferredName(saved.preferred_name ?? "");
+      setTimezone(saved.timezone_configured ? (saved.timezone ?? "") : "");
+      setLocale(saved.locale ?? "en-US");
+      setDateFormat(saved.date_format ?? "MM/DD/YYYY");
+      setMeasurementSystem(saved.measurement_system ?? "us_customary");
+      setCommunicationStyle(saved.communication_style ?? "balanced");
+    } catch {
+      setError("We couldn't load your preferences. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await ensureAnonymousSession();
+      const saved = await patchJSON("/caregiver/preferences", {
+        preferred_name: preferredName.trim() || null,
+        timezone: timezone.trim() || null,
+        locale,
+        date_format: dateFormat,
+        measurement_system: measurementSystem,
+        communication_style: communicationStyle,
+      }) as {
+        preferred_name?: string | null;
+        timezone?: string | null;
+        timezone_configured?: boolean;
+        locale?: string | null;
+        date_format?: "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD" | null;
+        measurement_system?: "us_customary" | "metric" | null;
+        communication_style?: "concise" | "balanced" | "detailed" | null;
+      };
+      setPreferredName(saved.preferred_name ?? "");
+      setTimezone(saved.timezone_configured ? (saved.timezone ?? "") : "");
+      setLocale(saved.locale ?? "en-US");
+      setDateFormat(saved.date_format ?? "MM/DD/YYYY");
+      setMeasurementSystem(saved.measurement_system ?? "us_customary");
+      setCommunicationStyle(saved.communication_style ?? "balanced");
+      show("Your preferences were saved.", "success");
+    } catch {
+      setError("Your preferences weren't saved. Check the time zone and try again.");
+      show("Your preferences weren't saved.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="mobile-settings-card">
+      <h2 className="mobile-settings-card-title"><User size={16} aria-hidden /> Your preferences</h2>
+      <p className="mobile-settings-hint">These choices help SolenOS address you correctly and interpret dates and measurements. They do not change the care recipient's medical record.</p>
+      {loading && <p className="mobile-settings-hint" role="status">Loading your preferences…</p>}
+      {error && <div className="mobile-settings-hint" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => void load()} disabled={loading || saving}>Try again</Button></div>}
+      <label className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.35rem" }}>
+        <span className="mobile-settings-label">What should SolenOS call you?</span>
+        <input className="mobile-settings-input" value={preferredName} maxLength={80} disabled={loading || saving} onChange={(event) => setPreferredName(event.target.value)} placeholder="Your preferred name (optional)" />
+      </label>
+      <label className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.35rem" }}>
+        <span className="mobile-settings-label">Your time zone</span>
+        <input className="mobile-settings-input" value={timezone} maxLength={64} disabled={loading || saving} onChange={(event) => setTimezone(event.target.value)} placeholder="America/New_York" autoComplete="off" />
+        <span className="mobile-settings-hint">Use an IANA time zone such as America/New_York, America/Los_Angeles or Africa/Lagos. This is used for greetings and date questions such as “yesterday.”</span>
+        {timezoneSuggestion && !timezone && <Button variant="secondary" disabled={loading || saving} onClick={() => setTimezone(timezoneSuggestion)}>Use this device's time zone ({timezoneSuggestion})</Button>}
+        {!timezone && <span className="mobile-settings-hint">No time zone is saved yet. SolenOS will not guess your local time or silently use UTC for date-based questions.</span>}
+      </label>
+      <label className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.35rem" }}>
+        <span className="mobile-settings-label">Regional format</span>
+        <select className="mobile-settings-input" value={locale} disabled={loading || saving} onChange={(event) => setLocale(event.target.value)}>
+          <option value="en-US">United States</option>
+          <option value="en-GB">United Kingdom</option>
+          <option value="es-ES">Spain</option>
+          <option value="fr-FR">France</option>
+        </select>
+      </label>
+      <label className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.35rem" }}>
+        <span className="mobile-settings-label">Date format</span>
+        <select className="mobile-settings-input" value={dateFormat} disabled={loading || saving} onChange={(event) => setDateFormat(event.target.value as typeof dateFormat)}>
+          <option value="MM/DD/YYYY">Month / day / year</option>
+          <option value="DD/MM/YYYY">Day / month / year</option>
+          <option value="YYYY-MM-DD">Year / month / day</option>
+        </select>
+      </label>
+      <label className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.35rem" }}>
+        <span className="mobile-settings-label">Measurement units</span>
+        <select className="mobile-settings-input" value={measurementSystem} disabled={loading || saving} onChange={(event) => setMeasurementSystem(event.target.value as typeof measurementSystem)}>
+          <option value="us_customary">U.S. customary</option>
+          <option value="metric">Metric</option>
+        </select>
+      </label>
+      <label className="mobile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.35rem" }}>
+        <span className="mobile-settings-label">Response style</span>
+        <select className="mobile-settings-input" value={communicationStyle} disabled={loading || saving} onChange={(event) => setCommunicationStyle(event.target.value as typeof communicationStyle)}>
+          <option value="concise">Brief and direct</option>
+          <option value="balanced">Balanced detail</option>
+          <option value="detailed">More explanation</option>
+        </select>
+      </label>
+      <Button onClick={() => void save()} disabled={loading || saving} loading={saving}>Save preferences</Button>
+      {render()}
+    </section>
+  );
+}
+
 /** Account controls use the backend and remain scoped to the current care record. */
 function AccountCard() {
   const { show, render } = useToast();
@@ -1073,28 +1209,32 @@ export default function WorkspaceSettingsPage() {
           <summary className="settings-section-summary"><span className="settings-section-number">01</span><span className="settings-section-summary-copy"><strong>Profile</strong><small>Personal details for your care space</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><ProfileCard /></div>
         </details>
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-caregiver-preferences">
+          <summary className="settings-section-summary"><span className="settings-section-number">02</span><span className="settings-section-summary-copy"><strong>Your preferences</strong><small>Name, time zone and display choices</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="settings-section-content"><CaregiverPreferencesCard /></div>
+        </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-notifications">
-          <summary className="settings-section-summary"><span className="settings-section-number">02</span><span className="settings-section-summary-copy"><strong>Notifications</strong><small>Care updates, reminders and alerts</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <summary className="settings-section-summary"><span className="settings-section-number">03</span><span className="settings-section-summary-copy"><strong>Notifications</strong><small>Care updates, reminders and alerts</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><NotificationsCard /></div>
         </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-account">
-          <summary className="settings-section-summary"><span className="settings-section-number">03</span><span className="settings-section-summary-copy"><strong>Account and sign-in</strong><small>Email, password and account access</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <summary className="settings-section-summary"><span className="settings-section-number">04</span><span className="settings-section-summary-copy"><strong>Account and sign-in</strong><small>Email, password and account access</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><AccountCard /></div>
         </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-caregivers" onToggle={(event) => setCaregiverAccessOpen(event.currentTarget.open)}>
-          <summary className="settings-section-summary"><span className="settings-section-number">04</span><span className="settings-section-summary-copy"><strong>Caregiver access</strong><small>People who can access this care record</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <summary className="settings-section-summary"><span className="settings-section-number">05</span><span className="settings-section-summary-copy"><strong>Caregiver access</strong><small>People who can access this care record</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><CaregiverAccessPanel enabled={caregiverAccessOpen} /></div>
         </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-security">
-          <summary className="settings-section-summary"><span className="settings-section-number">05</span><span className="settings-section-summary-copy"><strong>Devices and recovery</strong><small>Connected devices and help getting back in</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <summary className="settings-section-summary"><span className="settings-section-number">06</span><span className="settings-section-summary-copy"><strong>Devices and recovery</strong><small>Connected devices and help getting back in</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><IdentityDeviceRecoveryPanel /></div>
         </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-privacy">
-          <summary className="settings-section-summary"><span className="settings-section-number">06</span><span className="settings-section-summary-copy"><strong>Privacy and data</strong><small>Privacy choices and saved information</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <summary className="settings-section-summary"><span className="settings-section-number">07</span><span className="settings-section-summary-copy"><strong>Privacy and data</strong><small>Privacy choices and saved information</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><PrivacyCard /></div>
         </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-help">
-          <summary className="settings-section-summary"><span className="settings-section-number">07</span><span className="settings-section-summary-copy"><strong>Help and information</strong><small>Support, policies and product information</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
+          <summary className="settings-section-summary"><span className="settings-section-number">08</span><span className="settings-section-summary-copy"><strong>Help and information</strong><small>Support, policies and product information</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><LegalCard /><ProductCard /></div>
         </details>
       </div>
