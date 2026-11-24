@@ -1302,8 +1302,30 @@ await record("01c workspace links, browser back, More menu and account form vali
 
   await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
   const accountSection = page.locator("#settings-account");
-  await accountSection.locator("summary").click();
-  await accountSection.getByRole("button", { name: "Create account", exact: true }).waitFor({ timeout: 15_000 });
+  // Details disclosure state may be preserved by browser history or restored
+  // from the prior workspace route. Open it idempotently instead of toggling
+  // blindly and accidentally hiding the account controls.
+  await accountSection.evaluate((element) => {
+    if (element instanceof HTMLDetailsElement && !element.open) element.open = true;
+  });
+  try {
+    await accountSection.getByRole("button", { name: "Create account", exact: true }).waitFor({ timeout: 15_000 });
+  } catch (error) {
+    const state = await page.evaluate(() => {
+      const section = document.querySelector("#settings-account");
+      return {
+        accountSectionOpen: section instanceof HTMLDetailsElement ? section.open : null,
+        accountSectionText: section?.textContent?.trim().slice(0, 1200) ?? null,
+        accountControls: Array.from(section?.querySelectorAll("button") ?? []).map((button) => ({
+          text: button.textContent?.trim() ?? "",
+          disabled: button.disabled,
+          visible: Boolean(button.getClientRects().length),
+        })),
+        localStorageKeys: Object.keys(localStorage).filter((key) => /session|care|person|caregiver|token|expires|revoke/i.test(key)),
+      };
+    });
+    throw new Error(`Account controls did not reach the expected anonymous-session state: ${JSON.stringify(state)}; ${String(error)}`);
+  }
   await accountSection.getByRole("button", { name: "Create account", exact: true }).click();
   const email = page.locator("#account-email");
   const password = page.locator("#account-password");
