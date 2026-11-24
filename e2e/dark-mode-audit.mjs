@@ -138,10 +138,11 @@ try {
         page.on("console", (message) => {
           if (message.type() === "error") consoleErrors.push(message.text());
         });
-        page.on("response", (response) => {
+        page.on("response", async (response) => {
           const url = new URL(response.url());
           if (url.pathname.startsWith("/api/") && response.status() >= 400) {
-            apiFailures.push({ path: url.pathname, status: response.status() });
+            const body = await response.text().catch(() => "");
+            apiFailures.push({ path: url.pathname, status: response.status(), body: body.slice(0, 500) });
           }
         });
         await page.route("**/api/**", async (route) => {
@@ -403,7 +404,7 @@ try {
             await page.screenshot({ path: screenshotPath, fullPage: true });
           }
           process.stdout.write(
-            `${failures.includes(result) ? "FAIL" : "PASS"} ${target.label} ${routePath} ${viewport.label}: ${routeLoaded ? "route loaded" : "route not loaded"}, ${themeApplied ? "dark theme applied" : "dark theme missing"}, ${rendered.issues.length} contrast, ${routeIssues.length} route/API issues\n`,
+            `${failures.includes(result) ? "FAIL" : "PASS"} ${target.label} ${routePath} ${viewport.label}: ${routeLoaded ? "route loaded" : "route not loaded"}, ${themeApplied ? "dark theme applied" : "dark theme missing"}, ${rendered.issues.length} contrast, ${routeIssues.length} route/API issues ${JSON.stringify(routeIssues)}\n`,
           );
         } catch (error) {
           const result = {
