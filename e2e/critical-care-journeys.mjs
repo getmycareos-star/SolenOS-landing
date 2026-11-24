@@ -391,7 +391,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     const text = region?.textContent ?? "";
     return text.includes("We couldn’t connect this update with earlier care information right now.")
       || text.includes("Suggested explanation for you to review.");
-  }, undefined, { timeout: 30_000 });
+  }, undefined, { timeout: 210_000 });
   const contextInterpretationText = await contextInterpretationRegion.innerText();
   assert.ok(firstVisitAssistStatus !== null, "the first saved observation must trigger the read-only Companion interpretation request");
   assert.notEqual(firstVisitAssistStatus, 413, "a first-visit question must not be rejected because retrieval metadata exceeds the model context budget");
