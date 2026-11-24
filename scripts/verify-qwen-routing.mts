@@ -300,7 +300,7 @@ assert.match(lcrInterpretation, /caregiverSafeGeneratedText\(source\.label\)/,
   "generated source labels must use caregiver language");
 assert.match(lcrInterpretation, /caregiverFieldLabel\(observation\.attribute\)/,
   "internal care field names must be translated before display");
-assert.match(lcrInterpretation, /We couldn’t connect this update with earlier care information right now/,
+assert.match(lcrInterpretation, /We couldn’t prepare an explanation from the saved care information right now/,
   "a failed or timed-out explanation must tell the caregiver what happened");
 const apiClient = read("src/api/client.ts");
 assert.match(apiClient, /requestOptions: \{ signal\?: AbortSignal \} = \{\}/,

@@ -438,7 +438,7 @@ assert.match(qwenAssist, /caregiverSafeGeneratedText\(item\.reply\)/,
 assert.match(qwenAssist, /Suggestions are not added to your Care Record unless you choose to save and approve them/);
 assert.match(lcrQwenInterpretation, /What this update may mean/);
 assert.match(lcrQwenInterpretation, /Looking at earlier care information/);
-assert.match(lcrQwenInterpretation, /We couldn’t connect this update with earlier care information right now/);
+assert.match(lcrQwenInterpretation, /We couldn’t prepare an explanation from the saved care information right now/);
 assert.match(lcrQwenInterpretation, /notes or documents/);
 assert.doesNotMatch(lcrQwenInterpretation, /Record context|Context interpretation is temporarily unavailable|Context supplied:|No saved source records were returned/,
   "care-update interpretation must use plain language for context and missing information");

@@ -163,7 +163,7 @@ export function LcrQwenInterpretation({
       )}
       {state.status === "unavailable" && (
         <p className="panel-muted" role="status">
-          We couldn’t connect this update with earlier care information right now. Your Care Record is unchanged. You do not need to add the update again.
+          We couldn’t prepare an explanation from the saved care information right now. Your Care Record is unchanged. You do not need to add the update again.
         </p>
       )}
       {state.status === "ready" && (

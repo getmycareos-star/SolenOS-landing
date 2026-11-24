@@ -389,7 +389,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.waitForFunction(() => {
     const region = document.querySelector('[aria-label="Possible explanation for this update"]');
     const text = region?.textContent ?? "";
-    return text.includes("We couldn’t connect this update with earlier care information right now.")
+    return text.includes("We couldn’t prepare an explanation from the saved care information right now.")
       || text.includes("Suggested explanation for you to review.");
   }, undefined, { timeout: 210_000 });
   const contextInterpretationText = await contextInterpretationRegion.innerText();
