@@ -1,4 +1,8 @@
-# SolenOS — Canonical System Identity Contract (Final)
+# Retired historical reference — Solenos system identity contract
+
+**Status: HISTORICAL / NOT AUTHORITATIVE.** This document describes a superseded, domain-agnostic concept and must not define SolenOS product identity, model behavior, caregiver workflows, or acceptance criteria. The active product is the caregiver-focused Living Care Record described by the backend's model-independent Companion identity constitution and the frontend's canonical architecture contract. Keep this file only as historical context; do not use it to guide implementation.
+
+---
 
 **Domain-agnostic** cognitive transformation engine. Caregiving is a deployment context, not the system domain.
 
