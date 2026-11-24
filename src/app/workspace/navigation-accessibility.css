@@ -87,6 +87,12 @@
   .solenos-chat-sidebar-host { transition: none !important; }
 }
 
+/* Keep the drawer's open state authoritative after the workspace design-system layers. */
+@media (max-width: 900px) {
+  .solenos-chat-app .solenos-chat-sidebar-host { transform: translateX(-102%); }
+  .solenos-chat-app .solenos-chat-sidebar-host.is-sidebar-open { transform: translateX(0); }
+}
+
 .solenos-workspace-page-heading {
   width: min(100% - 32px, 1120px);
   margin: 10px auto 12px;
