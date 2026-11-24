@@ -112,7 +112,7 @@ assert.match(page, /Pages use immutable creation order[\s\S]*?displayOrdered[\s\
 assert.match(page, /response\.count !== expectedCount[\s\S]*?changed while it was being loaded/,
   "follow-up pagination must fail visibly if the collection changes between pages");
 
-assert.match(appointmentWorkspace, /const latestLoop = await getJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)\)[\s\S]*?expected_version: expectedVersion[\s\S]*?patchJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)/, "appointment follow-up edits must use the latest persisted version");
+assert.match(appointmentWorkspace, /const latestLoop = await getJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)\)[\s\S]*?const expectedVersion = latestLoop\.loop\?\.version[\s\S]*?const updatedLoop = await patchJSON\('\/open-loops\/' \+ encodeURIComponent\(loopId\)[\s\S]*?expected_version: expectedVersion/, "appointment follow-up edits must use the latest persisted version");
 assert.match(appointmentWorkspace, /if \(item\.status === 'Done'[\s\S]*?const expectedVersion = loopVersion[\s\S]*?expected_version: expectedVersion[\s\S]*?\/outcomes/, "appointment completion must use the version returned by the preceding saved write");
 
 assert.match(page, /function lifecycleNextStepLabel/, "every follow-up state must map to a plain next step");
