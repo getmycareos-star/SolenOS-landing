@@ -475,6 +475,9 @@ export default function FollowUpsPage() {
     const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
     pendingUpdateKeys.current[loop.id] = { signature, key: idempotencyKey };
     try {
+      if (!Number.isInteger(loop.version) || loop.version < 1) {
+        throw new Error("The current follow-up version could not be confirmed.");
+      }
       const updatePayload = {
         text: signature,
         evidence: [],
@@ -551,6 +554,9 @@ export default function FollowUpsPage() {
     const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
     pendingActionKeys.current[loop.id] = { signature, key: idempotencyKey };
     try {
+      if (!Number.isInteger(loop.version) || loop.version < 1) {
+        throw new Error("The current follow-up version could not be confirmed.");
+      }
       await postJSON("/open-loops/" + encodeURIComponent(loop.id) + "/actions", {
         text: signature,
         evidence: [],
