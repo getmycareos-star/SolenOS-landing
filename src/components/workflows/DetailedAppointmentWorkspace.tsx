@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
+import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
 import { CalendarDays, ClipboardList, FileCheck2, ListChecks, ShieldCheck } from 'lucide-react'
 import { caregiverInformationAreaLabel, caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
 
@@ -289,7 +289,13 @@ export default function DetailedAppointmentWorkspace() {
             synced[index] = { ...synced[index], reported_done_at: new Date().toISOString() }
           }
         } catch (error) {
-          followUpSyncError = 'A follow-up action could not be updated.'
+          const staleFollowUp = error instanceof ApiResponseError
+            && error.status === 409
+            && typeof error.detail === 'string'
+            && /changed after it was shown|saved version is required/i.test(error.detail)
+          followUpSyncError = staleFollowUp
+            ? 'A follow-up changed after it was shown. Refresh the care record and review the latest details before trying again.'
+            : 'A follow-up action could not be updated.'
           break
         }
       }
