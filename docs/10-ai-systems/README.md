@@ -46,8 +46,10 @@ Its runtime identity and Thoughtful Care Partner kernels are maintained in
 Qwen system-contract adapter. Frontend screens must not define a competing
 Companion identity, founder story, safety boundary, or model-specific personality.
 
-The legacy LangChain adapter under `src/lib/solenos-langchain-adapter` has no
-active caregiver-workflow call sites. Do not wire it into application routes or
-use it as an alternate inference path. Any future approved model adapter must
-consume the same model-independent identity and personality kernels and pass
-the same identity, evidence, safety, privacy, and context-budget acceptance tests.
+The legacy LangChain adapter under `src/lib/solenos-langchain-adapter` is
+fail-closed: its inference entry points throw, its provider resolver returns no
+provider, and application-source checks reject new call sites. Its old prompt
+template remains only for compatibility tests; it is not a caregiver inference
+path. Any future approved model adapter must consume the same model-independent
+identity and personality kernels and pass the same identity, evidence, safety,
+privacy, and context-budget acceptance tests.
