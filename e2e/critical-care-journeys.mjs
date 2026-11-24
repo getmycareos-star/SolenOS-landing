@@ -1313,7 +1313,7 @@ await record("01c workspace links, browser back, More menu and account form vali
       moreNavigationState[0]?.rect.width > 0 &&
       moreNavigationState[0]?.rect.height > 0 &&
       moreNavigationState[0]?.rect.x >= -1 &&
-      moreNavigationState[0]?.rect.x < window.innerWidth,
+      moreNavigationState[0]?.rect.x < (page.viewportSize()?.width ?? 0),
     `More navigation link must be visibly rendered after opening navigation: ${JSON.stringify(moreNavigationState)}`,
   );
   await moreNavigationLink.click();
