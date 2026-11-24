@@ -1065,7 +1065,7 @@ export function CareHandoffSharing({ draft, audience, purpose, onResumeDraft }: 
           </section>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "12px 0", lineHeight: 1.5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
             <input type="checkbox" checked={reviewConfirmed} disabled={busy} onChange={event => setReviewConfirmed(event.target.checked)} />
-            <span>I checked each detail against the saved note or document, including its date and what is still unclear.</span>
+            <span>I checked each detail against the saved note or document, including its date and what is still unclear. I understand that SolenOS does not independently verify every summary statement.</span>
           </label>
           <button type="button" style={button} disabled={busy || loading || consentRequired || directoryError || !["generated", "source_only_fallback"].includes(draft.generation_status ?? "") || draft.validation_status !== "exact_quote_reference_validation_passed" || sourceFreshness?.status !== "current" || !reviewConfirmed || editedSections.length === 0 || [...new Set(editedSections.map(item => item.source_ref))].some(ref => !reviewedSourceRefs.includes(ref)) || selectedRecipients.length === 0 || selectedScope.length === 0 || !summaryText.trim()} onClick={() => void shareReviewedFamilyHandoff()}>
             <Share2 size={15} style={{ verticalAlign: "middle", marginRight: 6 }} />{busy ? "Sharing…" : "Share with selected caregivers"}
