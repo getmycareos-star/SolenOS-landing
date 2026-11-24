@@ -777,8 +777,11 @@ await record("01a dementia profile review window and observation persistence are
   const uiWriteResponse = await uiWrite;
   const originalObservation = await uiWriteResponse.json();
   assert.ok(originalObservation.observed_at, "the browser-created observation must preserve its event time");
-  await page.getByText(uiDescription, { exact: true }).waitFor({ timeout: 15_000 });
   const observationCard = page.locator("li").filter({ hasText: uiDescription }).last();
+  await observationCard.getByRole("button", { name: "Edit note", exact: true }).waitFor({
+    state: "visible",
+    timeout: 15_000,
+  });
   await observationCard.getByRole("button", { name: "Edit note", exact: true }).click();
   assert.equal(
     await observationCard.getByLabel("Topic").inputValue(),
