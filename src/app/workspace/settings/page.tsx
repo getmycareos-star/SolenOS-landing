@@ -243,8 +243,11 @@ function NotificationsCard() {
               <input className="mobile-settings-input" type="time" value={quietEnd} disabled={loading || saving || !scheduleSupported} onChange={(event) => setQuietEnd(event.target.value)} />
             </label>
           </span>
-          <span className="mobile-settings-hint">Time zone: {timezoneName}</span>
-          <Button variant="secondary" disabled={loading || saving || !scheduleSupported || quietStart === quietEnd} onClick={() => void persist("quiet_hours_enabled", quietHours)}>Save quiet-hours times</Button>
+          <label className="mobile-settings-label" style={{ display: "block", marginTop: "0.5rem" }}>Quiet-hours time zone
+            <input className="mobile-settings-input" type="text" value={timezoneName} maxLength={64} disabled={loading || saving || !scheduleSupported} onChange={(event) => setTimezoneName(event.target.value)} placeholder="America/New_York" autoComplete="off" />
+          </label>
+          <span className="mobile-settings-hint">This time zone controls quiet hours only. Your Companion time zone is set separately under Caregiver preferences.</span>
+          <Button variant="secondary" disabled={loading || saving || !scheduleSupported || quietStart === quietEnd || !timezoneName.trim()} onClick={() => void persist("quiet_hours_enabled", quietHours)}>Save quiet-hours settings</Button>
         </span>
         <span className="mobile-toggle"><input type="checkbox" checked={quietHours} disabled={loading || saving || Boolean(error) || !scheduleSupported} onChange={(event) => void persist("quiet_hours_enabled", event.target.checked)} /><span className="mobile-toggle-track" /></span>
       </div>
