@@ -1326,8 +1326,10 @@ await record("01c workspace links, browser back, More menu and account form vali
   await moreTools.getByRole("link", { name: /Documents/ }).click();
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
+  const moreSidebarLink = navigation.locator('a[href="/workspace/more"]');
+  assert.equal(await moreSidebarLink.getAttribute("aria-label"), "More");
   assert.equal(
-    await navigation.getByRole("link", { name: /More/ }).getAttribute("aria-current"),
+    await moreSidebarLink.getAttribute("aria-current"),
     "page",
     "More stays selected while a secondary destination is open",
   );
