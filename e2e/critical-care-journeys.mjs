@@ -1204,7 +1204,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.ok((await familyDialog.locator("#companion-handoff-share-text").inputValue()).length > 100,
     "family briefing must contain actual LCR-derived content");
   assert.equal(await familyDialog.getByRole("checkbox", {
-    name: /I checked each included detail against its saved source and understand that SolenOS does not independently verify every summary statement/,
+    name: /I checked each detail against the saved note or document, including its date and what is still unclear/,
   }).count(), 1, "family sharing must require explicit review of the source-linked statements");
   const familyClaimReviewCount = await familyDialog.getByRole("checkbox", {
     name: /I checked this summary item against the saved wording, dates and what is known or still uncertain/,
