@@ -1264,12 +1264,12 @@ await record("01c workspace links, browser back, More menu and account form vali
 
   const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navToggle.click();
-  await page.waitForFunction(() =>
-    document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
-    document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true,
-    undefined,
-    { timeout: 5_000 },
-  );
+  await page.waitForFunction(() => {
+    const host = document.querySelector(".solenos-chat-sidebar-host");
+    const rect = host?.getBoundingClientRect();
+    return host?.classList.contains("is-sidebar-open") === true &&
+      Boolean(rect && rect.left >= -1 && rect.right > 0);
+  }, undefined, { timeout: 5_000 });
   const navigation = page.locator("#solenos-navigation");
   const links = await navigation.getByRole("link").evaluateAll((items) =>
     items.map((item) => item.getAttribute("href")).filter(Boolean),
@@ -1299,6 +1299,7 @@ await record("01c workspace links, browser back, More menu and account form vali
         display: style.display,
         visibility: style.visibility,
         opacity: style.opacity,
+        transform: style.transform,
         rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
       });
       current = current.parentElement;
@@ -1310,7 +1311,9 @@ await record("01c workspace links, browser back, More menu and account form vali
     moreNavigationState[0]?.display !== "none" &&
       moreNavigationState[0]?.visibility !== "hidden" &&
       moreNavigationState[0]?.rect.width > 0 &&
-      moreNavigationState[0]?.rect.height > 0,
+      moreNavigationState[0]?.rect.height > 0 &&
+      moreNavigationState[0]?.rect.x >= -1 &&
+      moreNavigationState[0]?.rect.x < window.innerWidth,
     `More navigation link must be visibly rendered after opening navigation: ${JSON.stringify(moreNavigationState)}`,
   );
   await moreNavigationLink.click();
