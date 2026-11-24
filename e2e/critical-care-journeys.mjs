@@ -1082,8 +1082,9 @@ await record("01c workspace links, browser back, More menu and account form vali
   await exportDialog.getByText(/No medication record does not mean none are being taken/).waitFor({ timeout: 10_000 });
   assert.equal(appointmentDraft.source_statuses.allergies.status, "unavailable",
     "missing allergy integration must be explicit and must not be interpreted as no allergies");
-    name: /I checked each detail against the saved note or document, including its date and what is still unclear\. I understand that SolenOS does not independently verify every summary statement/,
-    "professional briefings remain private review/export and must not expose the family-sharing approval control");
+  assert.equal(await exportDialog.getByRole("checkbox", {
+    name: /I checked each detail against the saved note or document, including its date and what is still unclear\\. I understand that SolenOS does not independently verify every summary statement/,
+  }).count(), 0, "professional briefings remain private review/export and must not expose the family-sharing approval control");
   const appointmentClaimReview = exportDialog.getByRole("checkbox", { name: /I checked “.*” against its saved source wording, dates and what is still unclear/ });
   const appointmentClaimReviewCount = await appointmentClaimReview.count();
   // Professional appointment exports intentionally exclude caregiver-profile
