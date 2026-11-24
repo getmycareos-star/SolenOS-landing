@@ -253,3 +253,9 @@ assert(appointmentWorkspace.includes("This does not mean it is current"), "Appoi
 assert(appointmentWorkspace.includes("We couldn’t check how recent this information is right now"), "Appointment preparation must explain when a date check is unavailable");
 assert(companionPanel.includes("We couldn’t check how recent these care details are"), "Companion must explain unavailable date checks without exposing storage details");
 
+
+
+assert(companionPanel.includes("deterministic_product_identity"), "Companion must distinguish deterministic product-identity answers from care-record answers");
+assert(companionPanel.includes("This answer is about SolenOS, not the person's Care Record."), "product identity answers must be explained without suggesting a care-record lookup");
+assert(companionPanel.includes("msg.response_mode !== 'deterministic_product_identity'"), "product identity answers must not display a claim that care records were checked");
+console.log("PASS: Companion identity responses are clearly separated from care-record evidence in the caregiver UI.");
