@@ -39,6 +39,7 @@ jobs:
       SECRET_KEY: ci-only-secret-key-not-for-production-2026
       OLLAMA_BASE_URL: http://127.0.0.1:9
       OLLAMA_HOST: 127.0.0.1:9
+      OLLAMA_TIMEOUT_SECONDS: "5"
       OLLAMA_SIDECAR_ENABLED: "false"
       SOLENOS_REQUIRE_LIVE_QWEN: "0"
     steps:
