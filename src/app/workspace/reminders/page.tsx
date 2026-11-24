@@ -149,7 +149,7 @@ export default function CareRemindersPage() {
       await refresh(personId);
       setTitle("");
       setNote("");
-      setNotice("Reminder saved. It will appear in this list, and an in-app notification will be added when it is due. Browser push is optional when enabled; SolenOS does not send email.");
+      setNotice("Reminder saved. It will appear in this list, and an in-app notification will be added when it is due.");
     } catch (reason) {
       setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
     } finally {
