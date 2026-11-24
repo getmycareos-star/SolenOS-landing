@@ -235,6 +235,7 @@ export default function DetailedAppointmentWorkspace() {
         if (!item.action.trim()) continue
         try {
           let loopId = item.open_loop_id
+          let loopVersion: number | undefined
           if (!loopId) {
             const created = await postJSON('/open-loops', {
               loop_type: 'follow_up',
@@ -248,10 +249,18 @@ export default function DetailedAppointmentWorkspace() {
               deadline_source: item.due ? 'explicit_user' : undefined,
               deadline_timezone: item.due ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined,
               idempotency_key: 'appointment-follow-up:' + savedRecordId + ':' + item.id,
-            }) as { id: string }
+            }) as { id: string; version?: number }
             loopId = created.id
+            loopVersion = created.version
           } else {
-            await patchJSON('/open-loops/' + encodeURIComponent(loopId), {
+            const latestLoop = await getJSON('/open-loops/' + encodeURIComponent(loopId)) as {
+              loop?: { version?: number }
+            }
+            const expectedVersion = latestLoop.loop?.version
+            if (!Number.isInteger(expectedVersion) || (expectedVersion ?? 0) < 1) {
+              throw new Error('The current follow-up version could not be confirmed.')
+            }
+            const updatedLoop = await patchJSON('/open-loops/' + encodeURIComponent(loopId), {
               title: item.action.trim().slice(0, 240),
               description: item.action.trim(),
               owner_role: 'caregiver',
@@ -260,15 +269,14 @@ export default function DetailedAppointmentWorkspace() {
               deadline_source: item.due ? 'explicit_user' : null,
               deadline_timezone: item.due ? Intl.DateTimeFormat().resolvedOptions().timeZone : null,
               reason: 'Updated from the caregiver appointment workspace',
+              expected_version: expectedVersion,
               idempotency_key: 'appointment-follow-up-update:' + savedRecordId + ':' + item.id + ':' + savedVersion,
-            })
+            }) as { version?: number }
+            loopVersion = updatedLoop.version
           }
           synced[index] = { ...item, open_loop_id: loopId }
           if (item.status === 'Done' && !item.reported_done_at) {
-            const latestLoop = await getJSON('/open-loops/' + encodeURIComponent(loopId)) as {
-              loop?: { version?: number }
-            }
-            const expectedVersion = latestLoop.loop?.version
+            const expectedVersion = loopVersion
             if (!Number.isInteger(expectedVersion) || (expectedVersion ?? 0) < 1) {
               throw new Error('The current follow-up version could not be confirmed.')
             }
