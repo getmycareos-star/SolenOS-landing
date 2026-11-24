@@ -1,8 +1,10 @@
-# SolenOS AI Constitution
+# Retired historical reference — SolenOS AI Constitution
 
-> **Version:** 1.0.0
-> **Status:** Canonical
-> **Authority:** This document defines how the AI should think, reason, prioritize, and behave. It supersedes any individual prompt, module, or implementation that contradicts it.
+> **Version:** 1.0.0 (legacy)
+> **Status:** HISTORICAL / NOT AUTHORITATIVE
+> **Authority:** None for active caregiver inference. This document and its frontend prompt-builder modules are legacy material, not the production identity or behavior contract. The active model-independent Companion identity and behavior authority is maintained in `SolenOS_backend/backend/docs/solenos-companion-identity-constitution.md`, `backend/app/services/solenos_identity.py`, and `backend/app/services/solenos_personality.py`; the backend Qwen gateway injects those shared contracts. Do not use this document to redefine product identity, model behavior, or care-record authority.
+
+---
 
 ---
 
