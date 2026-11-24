@@ -396,6 +396,10 @@ function apiRequestTimeoutMs(input: RequestInfo | URL, method: string): number {
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs?: number): Promise<Response> {
   const controller = new AbortController();
+  const callerSignal = init.signal ?? undefined;
+  const abortFromCaller = () => controller.abort(callerSignal?.reason);
+  if (callerSignal?.aborted) abortFromCaller();
+  else callerSignal?.addEventListener("abort", abortFromCaller, { once: true });
   const method = (init.method || (typeof Request !== "undefined" && input instanceof Request ? input.method : "GET")).toUpperCase();
   const effectiveTimeoutMs = timeoutMs ?? apiRequestTimeoutMs(input, method);
   const timeout = setTimeout(() => controller.abort(), effectiveTimeoutMs);
@@ -408,10 +412,14 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
     try { performance.mark(startMark); } catch { /* Performance API is optional. */ }
   }
   try {
-    const response = await fetch(input, { ...init, signal: init.signal ?? controller.signal });
+    const response = await fetch(input, { ...init, signal: controller.signal });
     outcome = String(response.status);
     return response;
   } catch (error) {
+    if (callerSignal?.aborted) {
+      outcome = "caller-abort";
+      throw error;
+    }
     if (controller.signal.aborted) {
       outcome = "timeout";
       throw new Error("The SolenOS API request timed out. Check your connection and try again.");
@@ -419,6 +427,7 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
     throw error;
   } finally {
     clearTimeout(timeout);
+    callerSignal?.removeEventListener("abort", abortFromCaller);
     if (timingEnabled && typeof performance.measure === "function") {
       try {
         performance.mark(endMark);
