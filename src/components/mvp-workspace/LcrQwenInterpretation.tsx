@@ -95,7 +95,7 @@ export function LcrQwenInterpretation({
           workflow: "living_care_record",
           source_event_id: sourceEventId,
           text:
-            "Interpret this newly saved caregiver-reported event using only its authorized Living Care Record context. " +
+            "Interpret this newly saved caregiver-reported event using only authorized care information. " +
             "Preserve the original report, source attribution, event and recorded dates, uncertainty, and any conflicting, " +
             "corrected or withdrawn history. Explain what may matter and one proportionate next step only when supported. " +
             "Do not diagnose, infer causation, or claim any record write.",
