@@ -78,6 +78,7 @@ function simpleRecordLabel(value?: string | null): string {
     conflicting: "Reports do not match", 
     missing: "Not recorded", 
     accepted: "Reviewed",
+    caregiver_reviewed: "Reviewed by caregiver",
     rejected: "Not accepted",
     withdrawn: "Withdrawn by caregiver",
     retracted: "Withdrawn from the current care picture",
