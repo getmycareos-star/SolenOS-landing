@@ -86,7 +86,6 @@ export function LcrQwenInterpretation({
 
     let cancelled = false;
     const controller = new AbortController();
-    const requestTimeout = setTimeout(() => controller.abort(), 20_000);
     setState({ status: "loading" });
 
     const request = async () => {
@@ -127,15 +126,12 @@ export function LcrQwenInterpretation({
         if (!cancelled) setState({ status: "ready", result });
       } catch {
         if (!cancelled) setState({ status: "unavailable" });
-      } finally {
-        clearTimeout(requestTimeout);
       }
     };
 
     void request();
     return () => {
       cancelled = true;
-      clearTimeout(requestTimeout);
       controller.abort();
     };
   }, [rawInput, sourceEventId]);
