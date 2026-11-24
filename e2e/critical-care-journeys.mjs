@@ -253,11 +253,13 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     "/workspace",
     { width: 390, height: 844 },
   );
+  let firstVisitAssistStatus = null;
   page.on("pageerror", (error) => console.log("FIRST_VISIT_PAGE_ERROR", error.message));
   page.on("console", (message) => { if (message.type() === "error") console.log("FIRST_VISIT_CONSOLE_ERROR", message.text()); });
   page.on("response", async (response) => {
     const responseUrl = new URL(response.url());
     if (responseUrl.pathname === "/api/v1/assistant/assist") {
+      firstVisitAssistStatus = response.status();
       const payload = await response.json().catch(() => null);
       console.log("FIRST_VISIT_ASSIST_RESPONSE", JSON.stringify({
         status: response.status(),
@@ -391,6 +393,8 @@ await record("00 first-time caregiver capture and persisted return", async () =>
       || text.includes("Suggested explanation for you to review.");
   }, undefined, { timeout: 30_000 });
   const contextInterpretationText = await contextInterpretationRegion.innerText();
+  assert.ok(firstVisitAssistStatus !== null, "the first saved observation must trigger the read-only Companion interpretation request");
+  assert.notEqual(firstVisitAssistStatus, 413, "a first-visit question must not be rejected because retrieval metadata exceeds the model context budget");
   assert.match(contextInterpretationText, /Your Care Record is unchanged\./,
     "the optional interpretation must never imply that it changed the Care Record");
   assert.match(contextInterpretationText, /You do not need to add the update again\./,
