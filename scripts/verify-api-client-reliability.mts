@@ -171,6 +171,38 @@ async function main() {
   assert.equal(composedSignal.aborted, true,
     "caller cancellation must propagate to the composed request signal");
 
+  const recordingSetTimeout = globalThis.setTimeout;
+  let deadlineSignal: AbortSignal | undefined;
+  globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+    if (Number(timeout) === 210_000) {
+      observedTimeouts.push(210_000);
+      queueMicrotask(() => {
+        if (typeof handler === "function") (handler as (...values: unknown[]) => void)(...args);
+      });
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    }
+    return recordingSetTimeout(handler, timeout, ...args);
+  }) as typeof setTimeout;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    deadlineSignal = init?.signal as AbortSignal | undefined;
+    return await new Promise<Response>((_resolve, reject) => {
+      deadlineSignal?.addEventListener(
+        "abort",
+        () => reject(new DOMException("The operation was aborted.", "AbortError")),
+        { once: true },
+      );
+    });
+  }) as typeof fetch;
+  const deadlineCaller = new AbortController();
+  await assert.rejects(
+    postJSON("/assistant/assist", { workflow: "living_care_record" }, {}, { signal: deadlineCaller.signal }),
+    /request timed out/i,
+    "the API deadline must still abort a request that also has a caller cancellation signal",
+  );
+  assert.equal(deadlineSignal?.aborted, true, "the internal deadline must abort the composed signal");
+  assert.equal(deadlineCaller.signal.aborted, false, "an API timeout must not masquerade as caller cancellation");
+  globalThis.setTimeout = recordingSetTimeout;
+
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     assert.equal(init?.method, "POST");
     assert.ok(init?.body instanceof FormData);
