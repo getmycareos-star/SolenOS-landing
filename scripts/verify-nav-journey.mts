@@ -108,7 +108,10 @@ const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICo
 const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
 assert.match(layout, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
-assert.match(workspaceHome, /\/\* Show the current care situation before inbox and detailed record content\. \*\/\}/, "Care Record page JSX comment must be closed");
+assert.match(workspaceHome, /<h1>Today<\\/h1>/, "the workspace entry page is titled Today");
+assert.match(workspaceHome, /<LCRCurrentUnderstanding showNextStep \\/>/, "Today uses the authoritative LCR projection and contextual next step");
+assert.match(workspaceHome, /View the complete Care Record/, "the complete record is discoverable from Today");
+assert.doesNotMatch(workspaceHome, /FirstVisitWorkspaceRouter/, "first-time and returning caregivers share the same Today route");
 assert.match(workspaceContext, /ensureAnonymousSession\(\)/, "caregiver workspace bootstraps a server-issued session before entry");
 assert.match(navigationA11y, /event\.key === "Escape"/, "Escape closes the mobile drawer");
 assert.match(navigationA11y, /event\.key !== "Tab"/, "Tab handling is explicitly trapped in the open drawer");
@@ -129,7 +132,7 @@ assert.match(workspaceStyles, /:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "Home"],
+  ["src/app/workspace/page.tsx", "Today"],
   ["src/app/workspace/daily-care/page.tsx", "Add an update"],
   ["src/app/workspace/care-continuity/page.tsx", "Care information"],
   ["src/app/workspace/notifications/page.tsx", "Notifications"],
