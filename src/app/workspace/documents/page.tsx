@@ -707,7 +707,7 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     const requestedEvidenceId = new URLSearchParams(window.location.search).get("evidenceId");
-    if (!requestedEvidenceId || loading || requestedEvidenceIdRef.current === requestedEvidenceId) return;
+    if (!requestedEvidenceId || loading || listError || requestedEvidenceIdRef.current === requestedEvidenceId) return;
     const matchingDocument = documents.find((doc) => doc.id === requestedEvidenceId || doc.evidence.id === requestedEvidenceId);
     requestedEvidenceIdRef.current = requestedEvidenceId;
     if (!matchingDocument) {
@@ -715,7 +715,7 @@ export default function DocumentsPage() {
       return;
     }
     void openOriginal(matchingDocument);
-  }, [documents, loading, openOriginal]);
+  }, [documents, loading, listError, openOriginal]);
 
   const closePreview = () => {
     setSelectedId(null);
