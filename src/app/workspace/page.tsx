@@ -20,10 +20,10 @@ function WorkspaceHomeInner() {
   return (
     <div className="mobile-screen feature-page solenos-lcr-home">
       <header className="solenos-workspace-page-heading">
-        <p className="solenos-home-eyebrow">HOME</p>
-        <h1>Home</h1>
-        <p>See what is happening, what has changed and what may need your attention. Your saved care information stays connected as things change.</p>
-        <p><Link href="/workspace/care-continuity">View care information</Link></p>
+        <p className="solenos-home-eyebrow">YOUR LIVING CARE RECORD</p>
+        <h1>Today</h1>
+        <p>A current view of the care information saved in your Living Care Record. See what matters, what has changed and what may still need checking.</p>
+        <p><Link href="/workspace/care-continuity">View the complete Care Record</Link></p>
       </header>
       {prompt && (
         <section className="today-companion-entry" aria-label="Your question for SolenOS">
