@@ -24,6 +24,13 @@ assert.match(understanding, /Your Care Record starts here/, "a confirmed empty r
 assert.match(understanding, /href="\/workspace\/daily-care" className="solenos-care-primary-action"/, "empty Home state must offer an initial care update");
 assert.match(understanding, /href="\/workspace\/documents" className="solenos-care-secondary-action"/, "empty Home state must offer document upload");
 assert.match(understanding, /watchMissingInformation.length > 0/, "relevant missing information must be surfaced");
+assert.match(understanding, /Reports that do not match:/, "unresolved disagreements must be named explicitly on Today");
+assert.match(understanding, /Sol enOS has not treated one report as the final answer|SolenOS has not treated one report as the final answer/, "Today must not silently select one conflicting report");
+assert.match(understanding, /href="\/workspace\/care-continuity#lcr-conflict-review"/, "Today must provide a path to review the conflicting reports");
+assert.match(understanding, /id="lcr-conflict-review"/, "the complete record must expose the conflict-review destination");
+assert.match(understanding, /id=\{\`lcr-care-item-/, "complete-record care details must expose stable evidence anchors");
+assert.match(understanding, /viewMode === "today" \? `\/workspace\/care-continuity#lcr-care-item-/, "Today evidence links must open the matching complete-record item");
+
 assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
 assert.match(understanding, /hasIncompleteProjection/, "incomplete retrieval must not be treated as an empty record");
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
