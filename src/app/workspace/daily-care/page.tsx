@@ -282,7 +282,7 @@ function careEventTimestamp(item: CareItem): string | null {
   return item.occurred_at || item.observed_at || item.recorded_at || item.uploaded_at || item.created_at || null;
 }
 
-function wasRecordedToday(item: CareItem, now = new Date()): boolean {
+function wasEventToday(item: CareItem, now = new Date()): boolean {
   const value = careEventTimestamp(item);
   if (!value) return false;
   const recorded = new Date(value);
@@ -585,7 +585,7 @@ export default function DailyCarePage() {
   }, [historyItems]);
 
   const todayItems = historyItems
-    .filter((item) => wasRecordedToday(item))
+    .filter((item) => wasEventToday(item))
     .sort((left, right) => {
       const leftTime = new Date(careEventTimestamp(left) || 0).getTime();
       const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
@@ -937,7 +937,7 @@ export default function DailyCarePage() {
           )}
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
             <h2 id="daily-care-today-title">Recent care updates</h2>
-            <p className="daily-care-muted">The latest updates recorded today. This is a short view, not your full care history.</p>
+            <p className="daily-care-muted">The latest care events with a time today. This is a short view, not your full care history.</p>
             {medicationConcern && (
               <div role="status" className="daily-care-medication-confirmation">
                 <strong>Needs confirmation</strong>
