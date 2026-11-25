@@ -159,15 +159,27 @@ if (backendInventoryPath) {
             && routeRegex(backendPath).test(normalizedPath);
         })
       : [];
-    entry.matched_backend_routes = matches.map(route => ({
+    // FastAPI resolves routes in registration order. A literal route registered
+    // before a one-segment catch-all is the actual runtime match, not an
+    // ambiguous contract. Keep true method ambiguity and route-order shadowing
+    // visible rather than silently preferring a later route.
+    const exactMatches = matches.filter(route =>
+      (route.path || route.endpoint) === normalizedPath
+    );
+    const exactFirstMatch =
+      entry.method !== 'GET_OR_DYNAMIC' &&
+      exactMatches.length === 1 &&
+      matches[0] === exactMatches[0];
+    const resolvedMatches = exactFirstMatch ? exactMatches : matches;
+    entry.matched_backend_routes = resolvedMatches.map(route => ({
       method: route.method,
       path: route.path || route.endpoint,
       router_module: route.router_module,
       handler: route.handler,
     }));
-    entry.backend_match_status = matches.length === 1
+    entry.backend_match_status = resolvedMatches.length === 1
       ? (entry.dynamic ? 'matched_dynamic' : 'matched_static')
-      : matches.length > 1 ? 'ambiguous_multiple_backend_routes' : 'no_backend_route_match';
+      : resolvedMatches.length > 1 ? 'ambiguous_multiple_backend_routes' : 'no_backend_route_match';
   }
 }
 const backendRouteMatrix = backendRoutes.map(route => {
