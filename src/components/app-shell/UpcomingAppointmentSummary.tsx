@@ -64,13 +64,15 @@ export function UpcomingAppointmentSummary() {
 
   const appointment = brief?.next_appointment ?? null;
   const appointmentStatus = String(appointment?.status ?? "").trim().toLowerCase();
-  const appointmentTime = appointment?.scheduled_at ? Date.parse(appointment.scheduled_at) : Number.NaN;
+  const appointmentHasTime = Boolean(appointment?.scheduled_at && /T\d{2}:\d{2}/.test(appointment.scheduled_at));
+  const appointmentTime = appointmentHasTime ? Date.parse(appointment?.scheduled_at ?? "") : Number.NaN;
   const appointmentIsTimeSensitive = Boolean(
     appointment &&
+    appointmentHasTime &&
     Number.isFinite(appointmentTime) &&
     appointmentTime > Date.now() &&
     appointmentTime - Date.now() <= 24 * 60 * 60 * 1000 &&
-    !["cancelled", "canceled", "completed", "no_show"].includes(appointmentStatus)
+    !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
   );
 
   return (
