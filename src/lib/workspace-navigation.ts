@@ -104,8 +104,8 @@ export const CARE_INFORMATION_NAVIGATION: WorkspaceNavigationItem[] = [
   {
     id: "care-sharing",
     href: "/workspace/handoffs",
-    label: "Share care information",
-    description: "Prepare and review information shared with others",
+    label: "Care handoffs",
+    description: "Prepare and review care summaries shared with others",
     icon: Handshake,
   },
 ];
