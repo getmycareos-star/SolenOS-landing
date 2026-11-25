@@ -5,6 +5,7 @@ const read = (path: string) => readFileSync(path, "utf8");
 const home = read("src/app/workspace/page.tsx");
 const understanding = read("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const appointments = read("src/components/app-shell/UpcomingAppointmentSummary.tsx");
+const styles = read("src/app/globals.css");
 
 assert.match(home, /<h1>Today<\/h1>/, "the primary caregiver landing page must be Today");
 assert.match(home, /View the complete Care Record/, "Today must explicitly link to the complete record");
@@ -12,6 +13,13 @@ assert.match(home, /<LCRCurrentUnderstanding showNextStep \/>/, "Today must rend
 assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Today must use the concise projection mode");
 assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR component must distinguish Today from the complete record");
 assert.match(understanding, /viewMode === "complete" && \(/, "detailed history and integrity panels must not render on Today");
+const firstCompletePanel = understanding.indexOf('      {viewMode === "complete" && (');
+const contextualNextStep = understanding.indexOf('      {showNextStep && !hasConfirmedEmptyRecord && (');
+const secondCompletePanel = understanding.lastIndexOf('      {viewMode === "complete" && (');
+assert.ok(firstCompletePanel >= 0 && contextualNextStep > firstCompletePanel && secondCompletePanel > contextualNextStep, "Today next steps must remain visible between complete-record-only panels");
+assert.match(understanding, /viewMode === "today" \? \([\s\S]*?href="\/workspace\/care-continuity#lcr-clarification-workflow"/, "Today clarification actions must navigate to a visible complete-record destination");
+assert.match(styles, /\.lcr-first-screen-summary > \.lcr-first-screen-card:nth-child\(2\) \{\s*order: 1;/, "care attention must appear before ordinary record details");
+
 assert.match(understanding, /Your Care Record starts here/, "a confirmed empty record must explain the purpose of the record");
 assert.match(understanding, /href="\/workspace\/daily-care" className="solenos-care-primary-action"/, "empty Today state must offer an initial care update");
 assert.match(understanding, /href="\/workspace\/documents" className="solenos-care-secondary-action"/, "empty Today state must offer document upload");
