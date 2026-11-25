@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 
 const read = (path: string) => readFileSync(path, "utf8");
 const home = read("src/app/workspace/page.tsx");
-const router = read("src/components/mvp-workspace/FirstVisitWorkspaceRouter.tsx");
 const understanding = read("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const appointments = read("src/components/app-shell/UpcomingAppointmentSummary.tsx");
 
@@ -16,10 +15,9 @@ assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/
 assert.doesNotMatch(home, /if\s*\(prompt\)\s*\{/, "a prompt query must not replace the Today shell");
 assert.doesNotMatch(home, /When you’re ready, here are two ways to continue/, "the fixed two-action panel must not return");
 
-assert.match(router, /setState\(hasSavedCare \? "returning" : "first_visit"\)/, "first-visit detection must remain based on the authenticated durable record");
-assert.match(router, /return <\>\{fallback\}<\/>;/, "first-time and returning caregivers must share the same page architecture");
-assert.doesNotMatch(router, /CognitiveWorkspace/, "first visits must not be forced through a separate capture-only route");
-assert.match(router, /state === "unavailable"/, "a failed record read must remain distinct from an empty record");
+assert.doesNotMatch(home, /FirstVisitWorkspaceRouter/, "Today must not depend on a second first-visit presentation router");
+assert.doesNotMatch(home, /CognitiveWorkspace/, "first visits must not be forced through a separate capture-only route");
+assert.match(understanding, /No care information recorded yet|first-empty/, "the shared LCR view must retain an explicit empty-record state");
 
 assert.match(understanding, /showNextStep\?: boolean/, "contextual next steps must be opt-in for the Today surface");
 assert.match(understanding, /immediateCareDecisions\.length > 0/, "saved immediate follow-ups must influence the next step");
