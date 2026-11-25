@@ -7,6 +7,8 @@ import { caregiverStatusLabel, caregiverSourceText } from "@/lib/caregiver-langu
 import { RecordState } from "@/components/ui/RecordState";
 
 type AppointmentBrief = {
+  person_scope_verified?: boolean;
+  read_only?: boolean;
   next_appointment?: {
     source_id: string;
     title: string;
@@ -48,8 +50,13 @@ export function UpcomingAppointmentSummary() {
     try {
       await ensureAnonymousSession();
       const result = await getJSON("/appointment-workspaces/preparation-brief?window_days=90") as AppointmentBrief;
-      if (!result || !Array.isArray(result.appointments)) {
-        throw new Error("Appointment information could not be verified.");
+      if (
+        !result ||
+        result.person_scope_verified !== true ||
+        result.read_only !== true ||
+        !Array.isArray(result.appointments)
+      ) {
+        throw new Error("Appointment information could not be verified for the active care record.");
       }
       setBrief(result);
     } catch {
