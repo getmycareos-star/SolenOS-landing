@@ -37,10 +37,15 @@ const VITAL_UNITS: Record<string, string> = {
   bp_diastolic: 'mmHg',
   heart_rate: 'bpm',
   oxygen_sat: '%',
-  temperature: '°C',
-  weight: 'kg',
+  temperature: '°F',
+  weight: 'lb',
   blood_glucose: 'mg/dL',
   other: '',
+};
+const VITAL_UNIT_OPTIONS: Record<string, string[]> = {
+  temperature: ['°F', '°C'],
+  weight: ['lb', 'kg'],
+  blood_glucose: ['mg/dL', 'mmol/L'],
 };
 function toLocalDateTimeInput(date = new Date()): string {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -697,6 +702,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         setVitalError('Enter both the top and bottom blood pressure numbers.');
         return;
       }
+      if (vitalForm.value <= diastolicValue) {
+        setVitalError('Check the blood pressure reading. The top number should be higher than the bottom number.');
+        return;
+      }
+      if (Number.isFinite(optionalPulseValue) && optionalPulseValue <= 0) {
+        setVitalError('Enter a pulse above zero, or leave the optional pulse field empty.');
+        return;
+      }
       additions = [
         { vital_type: 'bp_systolic', value: vitalForm.value, unit: 'mmHg', ...common },
         { vital_type: 'bp_diastolic', value: diastolicValue, unit: 'mmHg', ...common },
@@ -707,6 +720,14 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     } else {
       if (!Number.isFinite(vitalForm.value) || vitalForm.value <= 0) {
         setVitalError('Enter a value greater than zero.');
+        return;
+      }
+      if (vitalForm.vital_type === 'oxygen_sat' && vitalForm.value > 100) {
+        setVitalError('Oxygen level must be 100% or lower. Check the reading and unit.');
+        return;
+      }
+      if (vitalForm.vital_type === 'other' && !unit) {
+        setVitalError('Enter the unit for this measurement.');
         return;
       }
       if (vitalForm.vital_type === 'other' && !vitalForm.measurement_name?.trim()) {
@@ -2162,26 +2183,35 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               )}
               <div style={{ flex: 1 }}>
                 <label htmlFor="vital-unit" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Unit</label>
-                <input
-                  type="text"
-                  id="vital-unit"
-                  value={vitalForm.vital_type === 'blood_pressure' ? 'mmHg' : (vitalForm.unit ?? '')}
-                  disabled={vitalForm.vital_type === 'blood_pressure'}
-                  onChange={(e) => {
-                    setVitalError(null);
-                    setVitalFeedback(null);
-                    setVitalForm(prev => ({ ...prev, unit: e.target.value || null }));
-                  }}
-                  placeholder="Enter unit (e.g., mmHg, bpm)"
-                  style={{ 
-                    width: '100%', 
-                    padding: '10px 12px', 
-                    borderRadius: '6px', 
-                    border: '1px solid var(--border)', 
-                    background: 'var(--bg)', 
-                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
-                  }}
-                />
+                {VITAL_UNIT_OPTIONS[vitalForm.vital_type] ? (
+                  <select
+                    id="vital-unit"
+                    value={vitalForm.unit || VITAL_UNITS[vitalForm.vital_type]}
+                    onChange={(e) => {
+                      setVitalError(null);
+                      setVitalFeedback(null);
+                      setVitalForm(prev => ({ ...prev, unit: e.target.value }));
+                    }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 'calc(14px * var(--solenos-text-scale, 1))' }}
+                  >
+                    {VITAL_UNIT_OPTIONS[vitalForm.vital_type].map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    id="vital-unit"
+                    value={vitalForm.vital_type === 'blood_pressure' ? 'mmHg' : (vitalForm.unit ?? '')}
+                    disabled={vitalForm.vital_type !== 'other'}
+                    required={vitalForm.vital_type === 'other'}
+                    onChange={(e) => {
+                      setVitalError(null);
+                      setVitalFeedback(null);
+                      setVitalForm(prev => ({ ...prev, unit: e.target.value || null }));
+                    }}
+                    placeholder="Enter unit (required)"
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 'calc(14px * var(--solenos-text-scale, 1))' }}
+                  />
+                )}
               </div>
               
               <div>
