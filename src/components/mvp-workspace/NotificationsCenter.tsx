@@ -35,11 +35,11 @@ function notificationCategoryLabel(category: string): string {
     case "care_change":
       return "Care change";
     case "care_attention":
-      return "Needs your input";
+      return "Care review update";
     case "reminder_due":
       return "Reminder";
     case "open_loop_due":
-      return "Time-sensitive follow-up";
+      return "Follow-up update";
     default:
       return "Care update";
   }
@@ -246,7 +246,7 @@ export function NotificationsCenter() {
         <h3 className="mobile-settings-label">Recent notifications · {unreadCount} unread</h3>
         {inboxLoading && <p className="mobile-settings-hint" role="status">Loading notifications…</p>}
         {inboxError && <p className="mobile-settings-hint" role="alert">{inboxError}</p>}
-        {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No notifications yet. When a saved care reminder is due, it will appear here. Care updates that need your attention will appear here too.</p>}
+        {!inboxLoading && !inboxError && notifications.length === 0 && <p className="mobile-settings-hint">No notifications yet. When a care update or saved reminder is available, it will appear here.</p>}
         {notifications.map((item) => (
           <article key={item.id} className="mobile-settings-row" aria-label={caregiverSafeGeneratedText(item.title) || "Care notification"}>
             <span style={{ flex: 1, minWidth: 0 }}>
@@ -255,11 +255,11 @@ export function NotificationsCenter() {
               <span className="mobile-settings-hint">{item.created_at ? new Date(item.created_at).toLocaleString() : "Date unavailable"} · {caregiverStatusLabel(item.priority) || "Priority not available"} · {notificationCategoryLabel(item.category)}</span>
               {notificationReviewHref(item.category) && (
                 <Link href={notificationReviewHref(item.category)!} className="mobile-settings-hint">
-                  {item.category === "open_loop_due" ? "Review follow-ups" : item.category === "reminder_due" ? "Review reminders" : "Review in Care Record"}
+                  {item.category === "open_loop_due" ? "Review Needs attention" : item.category === "reminder_due" ? "Review reminders" : "View care information"}
                 </Link>
               )}
               {(item.status ?? "active") === "active"
-                ? <span className="mobile-settings-hint">Needs attention</span>
+                ? <span className="mobile-settings-hint">Current notification</span>
                 : <span className="mobile-settings-hint">{item.status === "superseded" ? "Replaced by newer information" : item.status === "resolved" ? "No longer needs attention" : "Cancelled"}</span>}
               {item.resolved_at && <span className="mobile-settings-hint">Updated {new Date(item.resolved_at).toLocaleString()}</span>}
               {item.status !== undefined && item.status !== "active" && <span className="mobile-settings-hint">{item.resolution_reason === "source_superseded" ? "A newer care record update replaced this message." : item.resolution_reason === "question_resolved" ? "The care question has since been resolved." : item.resolution_reason === "necessity_or_evidence_no_longer_valid" ? "The supporting information changed; no response is currently needed." : "The care record has changed since this message was created."}</span>}
