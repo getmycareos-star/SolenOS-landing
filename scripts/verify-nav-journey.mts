@@ -42,10 +42,10 @@ assert.match(appShell, /WORKSPACE_NAVIGATION\.settings\.map/);
 assert.doesNotMatch(appShell, /const NAVIGATION\s*=|NAVIGATION\.map/);
 assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
 assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct route to the Care Record");
-assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Today must not match every nested route");
+assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Home must not match every nested route");
 assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes keep More active");
 
-for (const label of ["Today", "Share an update", "Appointments", "Follow-ups", "Care Assistant", "More"]) {
+for (const label of ["Home", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
 assert.match(navigationRegistry, /care: \[[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups remains a primary care destination");
@@ -117,14 +117,14 @@ assert.match(workspaceStyles, /:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "Today"],
-  ["src/app/workspace/daily-care/page.tsx", "Share an update"],
-  ["src/app/workspace/open-loops/page.tsx", "Follow-ups"],
+  ["src/app/workspace/page.tsx", "Home"],
+  ["src/app/workspace/daily-care/page.tsx", "Add an update"],
+  ["src/app/workspace/open-loops/page.tsx", "Needs attention"],
   ["src/app/workspace/timeline/page.tsx", "Care history"],
   ["src/app/workspace/documents/page.tsx", "Documents"],
   ["src/app/workspace/appointments/page.tsx", "Appointments"],
   ["src/app/workspace/handoffs/page.tsx", "Share care information"],
-  ["src/components/workflows/AICompanion.tsx", "Care Assistant"],
+  ["src/components/workflows/AICompanion.tsx", "Ask SolenOS"],
   ["src/app/workspace/settings/page.tsx", "Settings"],
   ["src/app/workspace/more/page.tsx", "More"],
 ];
