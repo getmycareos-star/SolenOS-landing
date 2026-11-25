@@ -1745,7 +1745,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           ) : !assessment ? (
             <RecordState kind="incomplete" title="Care priorities haven’t been reviewed yet" description="Review the saved care information to see what may need attention." onAction={() => void refreshWholeRecord()} />
           ) : hasConfirmedEmptyRecord ? (
-            <RecordState kind="first-empty" title="Nothing needs review yet" description="There is not enough saved care information to identify a follow-up. Add information as it becomes available." />
+            <RecordState kind="first-empty" title="No care information to review yet" description="The record is empty, so SolenOS cannot identify what needs attention. Add information as it becomes available." />
           ) : assessment.coverage.records_examined === 0 ? (
             <RecordState kind="incomplete" title="Care priorities could not be checked" description="The available review did not examine enough saved information to say what needs attention. Check the available Care Record and try again." onAction={() => void refreshWholeRecord()} />
           ) : immediateCareDecisions.length > 0 ? (
