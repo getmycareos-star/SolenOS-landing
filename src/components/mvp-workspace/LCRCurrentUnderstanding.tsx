@@ -1418,13 +1418,22 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const suggestionReference = (item: (typeof openLoopItems)[number]) => `${item.source}:${item.id}`;
   const actionForSuggestion = (item: (typeof openLoopItems)[number]) =>
     registeredActions.find((action) => action.suggestion_id === suggestionReference(item));
+  const hasCompleteSourceCoverage = Boolean(
+    projection?.source_coverage &&
+    projection.requested_sources?.length &&
+    projection.requested_sources.every((sourceName) => {
+      const status = projection.source_coverage?.[sourceName]?.status;
+      return status === "available" || status === "empty";
+    })
+  );
   const hasConfirmedEmptyRecord = Boolean(
     projection &&
     projection.items.length === 0 &&
     projection.schema_status === "complete" &&
     projection.missing_required_sources.length === 0 &&
     projection.missing_optional_sources.length === 0 &&
-    (projection.failed_sources?.length ?? 0) === 0
+    (projection.failed_sources?.length ?? 0) === 0 &&
+    hasCompleteSourceCoverage
   );
 
   const hasIncompleteProjection = Boolean(
@@ -1432,6 +1441,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     !hasConfirmedEmptyRecord &&
     (
       projection.schema_status !== "complete" ||
+      !hasCompleteSourceCoverage ||
       projection.missing_required_sources.length > 0 ||
       projection.missing_optional_sources.length > 0 ||
       (projection.failed_sources?.length ?? 0) > 0
