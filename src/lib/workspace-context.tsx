@@ -20,7 +20,7 @@ import {
   markEnteredCareRecord,
 } from "@/lib/care-entry";
 import { hasCompletedOnboarding } from "@/lib/onboarding";
-import { ensureAnonymousSession, getAnonymousAccessToken } from "@/api/client";
+import { ensureAnonymousSession, getAnonymousAccessToken, getJSON } from "@/api/client";
 
 const TELEMETRY_USER_STORAGE_KEY = "solenos_telemetry_user_id";
 const CARE_SESSION_STORAGE_KEY = "solenos_care_session_id";
@@ -142,7 +142,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     }
 
     void ensureAnonymousSession()
-      .then((session) => {
+      .then(() => {
         // The session client has now persisted the server-issued identity and
         // cleared any deletion marker. It is safe to consume the explicit-entry URL.
         if (freshEnter) {
@@ -151,16 +151,11 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           const next = params.toString();
           window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
         }
-        return fetch(
-          `/api/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
-          {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-            cache: "no-store",
-          },
-        ).then((response) => {
-          if (!response.ok) throw new Error("care_record_read_failed");
-          return response.json();
-        });
+        // Use the shared authorized GET path so bootstrap reads inherit the
+        // standard timeout, safe GET retry, and expired-session refresh policy.
+        return getJSON(
+          `/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`,
+        );
       })
       .then((data) => {
         setRecordLoadError(null);
