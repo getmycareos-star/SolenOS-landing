@@ -73,6 +73,46 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
   const [recordDetailsOpen, setRecordDetailsOpen] = useState(false);
   const recordDetailsReturnFocusRef = useRef<HTMLElement | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let inFlight = false;
+    const refreshUnreadCount = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        await ensureAnonymousSession();
+        const result = await getJSON("/notifications/unread-count") as { unread_count?: unknown };
+        if (!active) return;
+        const count = Number(result?.unread_count);
+        setUnreadNotificationCount(Number.isFinite(count) ? Math.max(0, Math.floor(count)) : null);
+      } catch {
+        if (active) setUnreadNotificationCount(null);
+      } finally {
+        inFlight = false;
+      }
+    };
+    const refreshForPersonChange = () => {
+      setUnreadNotificationCount(null);
+      void refreshUnreadCount();
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refreshUnreadCount();
+    };
+    void refreshUnreadCount();
+    const interval = window.setInterval(refreshWhenVisible, 60_000);
+    window.addEventListener("personIdChanged", refreshForPersonChange);
+    window.addEventListener("solenos:notifications-updated", refreshUnreadCount);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("personIdChanged", refreshForPersonChange);
+      window.removeEventListener("solenos:notifications-updated", refreshUnreadCount);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     const isCareInformationRoute = pathname === "/workspace/care-continuity" || CARE_INFORMATION_NAVIGATION.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
@@ -484,7 +524,12 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             <span className="solenos-chat-brand-mark">S</span>
           </button>
           <div className="solenos-chat-topbar-context">{careContext}</div>
-          <Link href="/workspace/notifications" className={`solenos-notification-shortcut${active("/workspace/notifications") ? " is-active" : ""}`} aria-current={active("/workspace/notifications") ? "page" : undefined} aria-label="Notifications" title="Notifications"><Bell size={19} aria-hidden="true" /></Link>
+          <Link href="/workspace/notifications" className={`solenos-notification-shortcut${active("/workspace/notifications") ? " is-active" : ""}`} aria-current={active("/workspace/notifications") ? "page" : undefined} aria-label={unreadNotificationCount && unreadNotificationCount > 0 ? `Notifications, ${unreadNotificationCount} unread` : "Notifications"} title={unreadNotificationCount && unreadNotificationCount > 0 ? `${unreadNotificationCount} unread notifications` : "Notifications"}>
+            <Bell size={19} aria-hidden="true" />
+            {unreadNotificationCount !== null && unreadNotificationCount > 0 && (
+              <span className="solenos-notification-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>
+            )}
+          </Link>
           {pathname === "/workspace" && (
             <WorkspaceMoreMenu
               onAction={(action) => void handleWorkspaceAction(action)}
