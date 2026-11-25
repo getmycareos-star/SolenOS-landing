@@ -52,5 +52,9 @@ assert.match(navigation, /:focus-visible|:focus-within/,
   "navigation must retain visible keyboard focus treatment");
 assert.match(navigation, /prefers-reduced-motion/,
   "navigation must retain reduced-motion support");
+assert.match(v2, /\.solenos-chat-app \.solenos-chat-nav-item\s*\{\s*min-height: 48px;/,
+  "workspace navigation overrides must preserve 48px touch targets after the v2 cascade");
+assert.match(v2, /\.solenos-chat-app \.solenos-sidebar-icon-button\s*\{\s*min-width: 44px;\s*min-height: 44px;/,
+  "sidebar controls must retain at least 44px touch targets after the v2 cascade");
 
 console.log("PASS: workspace shell boundaries, care-context states, breadcrumb hierarchy, authoritative theme tokens, focus and reduced-motion contracts");
