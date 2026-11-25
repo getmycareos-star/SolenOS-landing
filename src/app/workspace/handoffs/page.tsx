@@ -45,9 +45,9 @@ export default function HandoffsPage() {
     <section className="mobile-screen workspace-handoffs-page" aria-labelledby="care-handoffs-title">
       <header className="workspace-handoffs-header">
         <div>
-          <p className="workspace-handoffs-eyebrow">SHARE CARE INFORMATION</p>
-          <h1 id="care-handoffs-title">Share care information</h1>
-          <p>Prepare a care summary, check what will be shared, and manage summaries shared with you or by you.</p>
+          <p className="workspace-handoffs-eyebrow">CARE HANDOFFS</p>
+          <h1 id="care-handoffs-title">Care handoffs</h1>
+          <p>Prepare a care summary, review what will be shared, and manage summaries shared with you or by you.</p>
         </div>
 
       </header>
