@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ensureAnonymousSession } from "@/api/client";
 import { apiUrl } from "@/lib/api-url";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity/durable-care-key";
-import { CognitiveWorkspace } from "./CognitiveWorkspace";
 
 type SituationSnapshot = {
   has_context_root?: boolean;
@@ -25,7 +24,6 @@ type LoadState = "loading" | "first_visit" | "returning" | "unavailable";
 export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode }) {
   const [state, setState] = useState<LoadState>("loading");
   const [attempt, setAttempt] = useState(0);
-  const [firstCaptureComplete, setFirstCaptureComplete] = useState(false);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -86,26 +84,7 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
     );
   }
 
-  if (state === "first_visit") {
-    return (
-      <div className="mobile-screen feature-page solenos-first-visit" aria-labelledby="first-visit-heading">
-        <section className="workspace-panel-inner">
-          <p className="public-eyebrow">Welcome to SolenOS</p>
-          <h1 id="first-visit-heading">{firstCaptureComplete ? "Here’s what we know so far." : "Your care journey starts here."}</h1>
-          {firstCaptureComplete ? (
-            <p className="workspace-lede">Your update is saved in your Care Record. You can add more whenever you’re ready.</p>
-          ) : (
-            <>
-              <p className="workspace-lede">Keep track of what is happening, remember important details, and understand how care changes over time.</p>
-              <p className="panel-muted">You don’t need to organise everything before you begin. Start with one thing.</p>
-            </>
-          )}
-        </section>
-        <CognitiveWorkspace onSituationComplete={() => setFirstCaptureComplete(true)} />
-        {!firstCaptureComplete && <p className="panel-muted">Your words stay yours. SolenOS keeps your original note and clearly shows when it has — or hasn’t — been saved.</p>}
-      </div>
-    );
-  }
-
+  // First-time and returning caregivers use the same Today page. The page's
+  // record-driven empty state offers a starting action without a separate onboarding route.
   return <>{fallback}</>;
 }
