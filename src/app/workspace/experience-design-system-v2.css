@@ -101,6 +101,58 @@
   letter-spacing: .15em;
 }
 .solenos-chat-app .solenos-chat-nav-group { gap: 3px; }
+.solenos-chat-app .solenos-chat-nav-parent-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.solenos-chat-app .solenos-chat-nav-parent-row > .solenos-chat-nav-item { flex: 1 1 auto; min-width: 0; }
+.solenos-chat-app .solenos-chat-nav-expand {
+  display: inline-grid;
+  width: 32px;
+  height: 36px;
+  flex: 0 0 32px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #69786d;
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+.solenos-chat-app .solenos-chat-nav-expand:hover,
+.solenos-chat-app .solenos-chat-nav-expand:focus-visible {
+  border-color: #dce6dc;
+  background: #f3f6f2;
+}
+.solenos-chat-app .solenos-chat-nav-subnav {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 7px 18px;
+  padding: 3px 0 3px 12px;
+  border-left: 1px solid #dfe7df;
+}
+.solenos-chat-app .solenos-chat-nav-subitem {
+  display: flex;
+  min-height: 35px;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  color: #657268;
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  line-height: 1.3;
+  text-decoration: none;
+}
+.solenos-chat-app .solenos-chat-nav-subitem:hover { background: #f3f6f2; color: #263f32; }
+.solenos-chat-app .solenos-chat-nav-subitem.is-active {
+  background: #edf3ec;
+  color: #263f32;
+  font-weight: 650;
+}
+.solenos-chat-app .solenos-chat-nav-subicon { display: inline-flex; color: #89958b; }
 .solenos-chat-app .solenos-chat-nav-item {
   min-height: 42px;
   gap: 10px;
