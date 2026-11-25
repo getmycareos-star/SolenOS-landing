@@ -2979,7 +2979,7 @@
 }
 .solenos-chat-app .solenos-upcoming-appointment__prepare {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 44px;
   align-items: center;
   color: var(--sn-forest);
   font-size: calc(13px * var(--solenos-text-scale, 1));
