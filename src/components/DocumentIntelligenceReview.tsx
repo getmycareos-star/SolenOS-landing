@@ -106,9 +106,11 @@ type ProcessingJob = { evidence_id: string; job_id: string; status: "queued" | "
 type ListResponse = { items?: Analysis[]; processing_jobs?: ProcessingJob[] };
 
 export function documentExtractionIsComplete(analysis: Analysis): boolean {
+  // Qwen's remaining page window is pending interpretation, not a failed OCR page.
+  // Keep it separate so the UI can offer a continue-reading action instead of
+  // falsely telling caregivers that readable source pages could not be read.
   const unresolvedPageGroups = [
     analysis.extraction_unprocessed_page_numbers,
-    analysis.unprocessed_page_numbers,
     analysis.retryable_page_numbers,
     analysis.retry_exhausted_page_numbers,
     analysis.blocked_page_numbers,
@@ -362,15 +364,18 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverInformationAreaLabel(analysis.document_type) || caregiverFieldLabel(analysis.document_type) || "Care document"} · {analysis.page_count ?? "?"} {analysis.page_count === 1 ? "page" : "pages"} · {analysis.observations.length} {analysis.observations.length === 1 ? "suggested detail" : "suggested details"}</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {!documentExtractionIsComplete(analysis)
-                ? `Some pages have not been fully read · ${analysis.extraction_processed_page_count ?? analysis.processed_page_count ?? "?"} of ${analysis.page_count ?? analysis.total_page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
-                : analysis.intelligence_status === "partial"
+                ? `Some pages have not been fully read · ${analysis.extraction_processed_page_count ?? "?"} of ${analysis.page_count ?? analysis.total_page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
+                : analysis.unprocessed_page_numbers?.length
+                  ? `SolenOS has read ${analysis.processed_page_count ?? 0} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages. The remaining pages are ready to read.`
+                  : analysis.intelligence_status === "partial"
                   ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
                     ? `More details are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
                     : "SolenOS has read the document but has not finished reviewing all details."
                   : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "SolenOS has not finished reading this document"}
-              {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read yet: pages ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · still being read: pages ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · ready to try again: pages ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · could not be read because the file is too large: pages ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · could not be read: pages ${analysis.unreadable_page_numbers.join(", ")}` : ""}
+              {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read yet: pages ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · waiting to be read: pages ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · ready to try again: pages ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · could not be read because the file is too large: pages ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · could not be read: pages ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {!documentExtractionIsComplete(analysis) && <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
+            {!!analysis.unprocessed_page_numbers?.length && documentExtractionIsComplete(analysis) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <button type="button" disabled={busy !== null} onClick={() => void showNextCandidateGroup(analysis)} style={{ justifySelf: "start", minHeight: 40, padding: "8px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Continue reading remaining pages</button>}
             {!!analysis.unreadable_page_numbers?.length && onAddClearerPages && <div role="group" aria-label="Recover unreadable pages" style={{ display: "grid", gap: 7, padding: 10, border: "1px solid var(--border)", borderRadius: 8 }}>
               <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Some pages need a clearer copy</strong>
               <p style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "var(--text-secondary)" }}>SolenOS could not read pages {analysis.unreadable_page_numbers.join(", ")}. Scan or photograph those pages again and save the clearer copies as a separate document. This original stays unchanged, and the Care Record will not change unless you review and accept new details.</p>
