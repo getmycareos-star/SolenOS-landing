@@ -2663,6 +2663,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           <p className="lcr-footer-note">{caregiverSafeGeneratedText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
+        </>
+      )}
       {showNextStep && !hasConfirmedEmptyRecord && (
               <section className="solenos-care-next-step" aria-labelledby="lcr-contextual-next-step-heading">
                 <div>
@@ -2713,6 +2715,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                 </div>
               </section>
             )}
+      {viewMode === "complete" && (
+        <>
       <div id="lcr-clarification-workflow">
         <details ref={clarificationDetailsRef} className="lcr-history-details" onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
           <summary>Questions to clarify care</summary>
