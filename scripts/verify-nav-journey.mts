@@ -14,6 +14,7 @@ const start = fs.readFileSync(path.join(root, "src/app/start/page.tsx"), "utf8")
 const earlyAccess = fs.readFileSync(path.join(root, "src/app/early-access/page.tsx"), "utf8");
 const shell = fs.readFileSync(path.join(root, "src/components/public/PublicShell.tsx"), "utf8");
 const layout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
+const workspaceShellContent = fs.readFileSync(path.join(root, "src/components/app-shell/WorkspaceShellContent.tsx"), "utf8");
 
 assert.equal(PUBLIC_TRUST_LAYER.enterCareRecord, "/workspace?enter=1");
 assert.match(WELCOME_HOME.primaryCtaHref, /^\/workspace\?enter=1$/);
@@ -74,6 +75,10 @@ for (const route of [
   "src/app/workspace/daily-care/page.tsx",
   "src/app/workspace/care-continuity/page.tsx",
   "src/app/workspace/notifications/page.tsx",
+  "src/app/workspace/reminders/page.tsx",
+  "src/app/workspace/more/page.tsx",
+  "src/app/workspace/care-continuity/page.tsx",
+  "src/app/workspace/notifications/page.tsx",
   "src/app/workspace/open-loops/page.tsx",
   "src/app/workspace/timeline/page.tsx",
   "src/app/workspace/documents/page.tsx",
@@ -113,10 +118,10 @@ const workspaceContext = fs.readFileSync(path.join(root, "src/lib/workspace-cont
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
 const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
-assert.match(layout, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
+assert.match(workspaceShellContent, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
 assert.ok(workspaceHome.includes("<h1>Home</h1>"), "the canonical workspace entry page is titled Home");
 assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Home uses the concise authoritative LCR projection and contextual next step");
-assert.match(workspaceHome, /View the complete Care Record/, "the complete record is discoverable from Home");
+assert.match(workspaceHome, /View care information/, "the complete care information is discoverable from Home");
 assert.doesNotMatch(workspaceHome, /FirstVisitWorkspaceRouter/, "first-time and returning caregivers share the same Home route");
 assert.match(workspaceContext, /ensureAnonymousSession\(\)/, "caregiver workspace bootstraps a server-issued session before entry");
 assert.match(navigationA11y, /event\.key === "Escape"/, "Escape closes the mobile drawer");
@@ -138,7 +143,7 @@ assert.match(workspaceStyles, /:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "Today"],
+  ["src/app/workspace/page.tsx", "Home"],
   ["src/app/workspace/daily-care/page.tsx", "Add an update"],
   ["src/app/workspace/care-continuity/page.tsx", "Care information"],
   ["src/app/workspace/notifications/page.tsx", "Notifications"],
