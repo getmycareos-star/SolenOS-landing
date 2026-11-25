@@ -24,12 +24,12 @@ export function WorkspaceRouteBreadcrumbs() {
     <nav className="solenos-workspace-breadcrumbs" aria-label="Breadcrumb">
       <ol>
         {isHome ? (
-          <li aria-current="page"><span>Home</span></li>
+          <li aria-current="page"><span className="solenos-workspace-breadcrumb-current">{label}</span></li>
         ) : (
           <>
             <li><Link href="/workspace">Care Record</Link></li>
             <li aria-hidden="true" className="solenos-workspace-breadcrumb-separator">/</li>
-            <li aria-current="page"><span>{label}</span></li>
+            <li aria-current="page"><span className="solenos-workspace-breadcrumb-current">{label}</span></li>
           </>
         )}
       </ol>
