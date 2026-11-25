@@ -126,7 +126,7 @@ export function documentExtractionIsComplete(analysis: Analysis): boolean {
 }
 type LibraryDocument = { id: string; title: string };
 
-export default function DocumentIntelligenceReview({ refreshToken = 0, documents = [] }: { refreshToken?: number; documents?: LibraryDocument[] }) {
+export default function DocumentIntelligenceReview({ refreshToken = 0, documents = [], onAddClearerPages }: { refreshToken?: number; documents?: LibraryDocument[]; onAddClearerPages?: (evidenceId: string, pages: number[]) => void }) {
   const [items, setItems] = useState<Analysis[]>([]);
   const [processingJobs, setProcessingJobs] = useState<ProcessingJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -371,6 +371,11 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read yet: pages ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · still being read: pages ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · ready to try again: pages ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · could not be read because the file is too large: pages ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · could not be read: pages ${analysis.unreadable_page_numbers.join(", ")}` : ""}
             </p>
             {!documentExtractionIsComplete(analysis) && <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
+            {!!analysis.unreadable_page_numbers?.length && onAddClearerPages && <div role="group" aria-label="Recover unreadable pages" style={{ display: "grid", gap: 7, padding: 10, border: "1px solid var(--border)", borderRadius: 8 }}>
+              <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Some pages need a clearer copy</strong>
+              <p style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "var(--text-secondary)" }}>SolenOS could not read pages {analysis.unreadable_page_numbers.join(", ")}. Scan or photograph those pages again and save the clearer copies as a separate document. This original stays unchanged, and the Care Record will not change unless you review and accept new details.</p>
+              <button type="button" onClick={() => onAddClearerPages(analysis.source_evidence_id, analysis.unreadable_page_numbers || [])} disabled={busy !== null} style={{ justifySelf: "start", minHeight: 40, padding: "8px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Scan clearer page copies</button>
+            </div>}
             {!!analysis.ocr_quality_by_page?.length && <p role="note" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
               Some words may be misread, especially handwriting. Check the original document before accepting suggested details. This only tells us how clearly SolenOS could read the words. It does not tell us whether the words or suggested care details are correct.
             </p>}
