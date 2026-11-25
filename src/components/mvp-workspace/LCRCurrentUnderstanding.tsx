@@ -1681,8 +1681,17 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
               <RecordState kind="incomplete" title="Some care history could not be loaded" description="Successful records remain available. Retry the affected source below." />
               {sourceRecoveryPanel}
             </>
+          ) : hasConfirmedEmptyRecord ? (
+            <div className="lcr-today-empty-state">
+              <RecordState kind="first-empty" title="Your Care Record starts here" description="Keep care notes and documents together so you can understand what is happening and what has changed." />
+              <p>Start with one thing you already know or something you have noticed. You can add more whenever you are ready.</p>
+              <div className="lcr-today-empty-state__actions">
+                <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
+                <Link href="/workspace/documents" className="solenos-care-secondary-action">Upload a care document</Link>
+              </div>
+            </div>
           ) : projection ? (
-            <RecordState kind="first-empty" title="No care updates recorded yet" description="Care information added to this record will appear here." />
+            <RecordState kind="incomplete" title="Some care information is not available yet" description="The record could not be checked completely, so SolenOS cannot confirm that it is empty." />
           ) : (
             <RecordState kind="unavailable" description="Your care information isn’t available right now. Please try again." onAction={() => void load(true)} />
           )}
