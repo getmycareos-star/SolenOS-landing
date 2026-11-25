@@ -23,7 +23,7 @@ assert.equal(
   128,
   "source-event anchors must use the same bounded identifier contract as persisted care events",
 );
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
 const password = "CI-critical-journey-passphrase-2026!";
 const results = [];
 let dailyScenarioEventIdsByReport = {};
@@ -73,7 +73,7 @@ async function createBrowserPage(
   viewport = { width: 390, height: 844 },
   options = {},
 ) {
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({ viewport, ...(Array.isArray(options.permissions) ? { permissions: options.permissions } : {}) });
   await context.addInitScript((identity) => {
     // window.name survives same-tab navigation but is not browser storage.
     // Do not use sessionStorage here: device cleanup intentionally clears it,
@@ -1768,6 +1768,53 @@ await record("03b source-backed caregiver question routing", async () => {
     recommended.payload.questions.some((item) => item.id === caregiverQuestionId),
     "the source-backed question with an explicit professional answerer must enter the caregiver question queue",
   );
+});
+
+// 3b. Mobile Documents UI: real file-picker upload and browser camera capture.
+await record("03b mobile document file picker, upload progress and camera scanner", async () => {
+  const mobileDocuments = await createBrowserPage(
+    session,
+    "/workspace/documents",
+    { width: 390, height: 844 },
+    { permissions: ["camera"] },
+  );
+  const mobilePage = mobileDocuments.page;
+  const mobileFilename = `synthetic-mobile-document-${randomUUID()}.txt`;
+  await mobilePage.locator('input[type="file"]').first().setInputFiles({
+    name: mobileFilename,
+    mimeType: "text/plain",
+    buffer: Buffer.from("Synthetic mobile upload. Original source must remain unchanged.", "utf8"),
+  });
+  await mobilePage.getByRole("heading", { name: "Save your files", exact: true }).waitFor();
+  await mobilePage.getByRole("button", { name: "Save files", exact: true }).click();
+  await mobilePage.getByText(/SolenOS saved 1 original file/).waitFor({ timeout: 30_000 });
+
+  let savedDocument = null;
+  const uploadDeadline = Date.now() + 30_000;
+  while (Date.now() < uploadDeadline) {
+    const listing = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, { token: identity.token });
+    assert.equal(listing.status, 200, JSON.stringify(listing.payload));
+    savedDocument = listing.payload.find((item) => {
+      let metadata = item.extra_metadata;
+      if (typeof metadata === "string") { try { metadata = JSON.parse(metadata); } catch { metadata = {}; } }
+      return metadata?.filename === mobileFilename;
+    });
+    if (savedDocument?.id) break;
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  assert.ok(savedDocument?.id, "the mobile file-picker upload must be persisted by the real backend");
+
+  await mobilePage.getByRole("button", { name: "Scan pages", exact: true }).click();
+  await mobilePage.waitForFunction(() => {
+    const video = document.querySelector('video[aria-label="Live document camera preview"]');
+    return video instanceof HTMLVideoElement && video.videoWidth > 0 && video.videoHeight > 0;
+  }, null, { timeout: 20_000 });
+  await mobilePage.getByRole("button", { name: "Take photo", exact: true }).click();
+  await mobilePage.getByText("1 page(s) captured", { exact: true }).waitFor({ timeout: 10_000 });
+  await mobilePage.getByRole("button", { name: "Review 1 page(s)", exact: true }).click();
+  await mobilePage.getByRole("heading", { name: "Save your files", exact: true }).waitFor();
+  await mobilePage.getByRole("button", { name: "Discard selected files", exact: true }).click();
+  await mobileDocuments.context.close();
 });
 
 // 4. Document upload: original bytes -> server extraction -> persisted extraction read.
