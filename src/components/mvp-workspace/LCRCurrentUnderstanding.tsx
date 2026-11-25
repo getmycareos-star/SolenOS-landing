@@ -737,7 +737,7 @@ function historySourceLabel(source: string): string {
   return HISTORY_SOURCE_LABELS[source] ?? "Care information";
 }
 
-export function LCRCurrentUnderstanding() {
+export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep?: boolean } = {}) {
   const [personId, setPersonId] = useState("");
   const personIdRef = useRef("");
   const caregiverIdRef = useRef("");
@@ -2088,6 +2088,49 @@ export function LCRCurrentUnderstanding() {
                 </ul>
               )}
             </div>
+
+            {showNextStep && (
+              <section className="solenos-care-next-step" aria-labelledby="lcr-contextual-next-step-heading">
+                <div>
+                  <h4 id="lcr-contextual-next-step-heading">What may help next</h4>
+                  {error ? (
+                    <p role="alert">Your care information could not be checked, so SolenOS cannot suggest a next step yet.</p>
+                  ) : assessmentLoading || !assessment ? (
+                    <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
+                  ) : immediateCareDecisions.length > 0 ? (
+                    <p>There are saved follow-ups marked for attention. Review their details before deciding what to do.</p>
+                  ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
+                    <p>Some saved information is missing, unclear or does not match. Reviewing it may help make the care picture clearer.</p>
+                  ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
+                    <p>The record contains changes or follow-ups that may be useful to review.</p>
+                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
+                    <p>Start with one care detail you already know or something you have noticed. You can add more whenever you are ready.</p>
+                  ) : (
+                    <p>You can explore the full care history or add an update whenever something changes.</p>
+                  )}
+                </div>
+                <div className="solenos-care-next-step__actions">
+                  {error ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
+                  ) : assessmentLoading || !assessment ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
+                  ) : immediateCareDecisions.length > 0 ? (
+                    <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review follow-ups</Link>
+                  ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => {
+                      openClarification();
+                      document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}>Review information to check</button>
+                  ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
+                    <Link href="/workspace/timeline" className="solenos-care-primary-action">Review care changes</Link>
+                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
+                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
+                  ) : (
+                    <Link href="/workspace/care-continuity" className="solenos-care-primary-action">Explore the complete Care Record</Link>
+                  )}
+                </div>
+              </section>
+            )}
 
             {careAttention && (careAttention.important_to_address.length > 0 || careAttention.needs_clarification.length > 0) && (
               <section className="lcr-current-fact" aria-labelledby="lcr-care-attention-review-heading">
