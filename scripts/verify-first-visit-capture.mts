@@ -17,7 +17,7 @@ assert.match(understanding, /href="\/workspace\/documents"/, "the empty state mu
 assert.match(understanding, /hasConfirmedEmptyRecord/, "the empty state must not appear when record retrieval is incomplete");
 assert.match(understanding, /response\.person_id !== scopedPersonId/, "the visible record must be checked against the active care recipient");
 assert.match(understanding, /We couldn’t load your care information/, "failed retrieval must remain distinct from an empty record");
-assert.match(companion, /const prompt = initialPrompt\?\.trim\(\)/, "Companion must treat a deep-link prompt as user-provided text");
+assert.match(companion, /const prompt = initialPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "Companion must bound deep-link prompt text at the component boundary");
 assert.match(companion, /params\.delete\('prompt'\)/, "Companion must clear the consumed prompt from the URL");
 
 console.log("PASS: first-time and returning caregivers share Home, with an honest empty state and a bounded Companion entry path.");
