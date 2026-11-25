@@ -337,12 +337,11 @@ export async function getDurableWriteSummary(
   endpoints?: string[],
 ): Promise<DurableWriteSummary> {
   const db = await openDatabase();
-  const now = Date.now();
   const rows = await getAllWrites(db);
   const matching = rows.filter((row) =>
     row.person_id === personId &&
     row.caregiver_id === caregiverId &&
-    (!endpoints || endpoints.includes(row.endpoint)) &&
+    (!endpoints || endpoints.includes(row.endpoint))
   );
   return {
     pending: matching.filter((row) => row.status === "pending" || row.status === "sending").length,
