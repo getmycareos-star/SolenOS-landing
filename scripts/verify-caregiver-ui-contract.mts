@@ -221,34 +221,35 @@ assert.ok(themeOverrides.includes(".continuity-prompt-form"));
 assert.ok(themeOverrides.includes("[data-solenos-error-surface]"));
 
 const settingsPage = fs.readFileSync(path.join(root, "src/app/workspace/settings/page.tsx"), "utf8");
-assert.match(notifications, /router\.replace\("\/workspace\/settings#settings-notifications"\)/,
-  "notification access must remain consolidated inside Settings");
-assert.match(settingsPage, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
+const notificationCenter = fs.readFileSync(path.join(root, "src/components/mvp-workspace/NotificationsCenter.tsx"), "utf8");
+assert.match(notifications, /<NotificationsCenter \/>/,
+  "Notifications must render its own caregiver-facing inbox");
+assert.match(notificationCenter, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
   "care updates must load from the authenticated notification feed");
 assert.match(careContinuityIntegrity, /Event date:[\s\S]*?Date on document:[\s\S]*?Saved to Care Record:/,
   "care information must distinguish when the event happened, the date written on the source document and when it was saved");
 assert.match(careContinuityIntegrity, /source_context\?\.document_candidate\?\.recorded_date/,
   "document recorded date must be taken from the reviewed source context, not the upload timestamp");
 
-assert.match(settingsPage, /patchJSON\("\/notifications\//,
+assert.match(notificationCenter, /patchJSON\("\/notifications\//,
   "caregiver acknowledgment must be persisted through the backend");
-assert.match(settingsPage, /No notifications yet\. When a saved care reminder is due, it will appear here\./,
+assert.match(notificationCenter, /No notifications yet\. When a care update or saved reminder is available, it will appear here\./,
   "the empty inbox must explain when saved reminders will appear");
-assert.match(settingsPage, /window\.setInterval\(refreshWhenVisible, 30_000\)/,
+assert.match(notificationCenter, /window\.setInterval\(refreshWhenVisible, 30_000\)/,
   "the notification inbox must refresh periodically while visible");
-assert.match(settingsPage, /document\.visibilityState === "visible"/,
+assert.match(notificationCenter, /document\.visibilityState === "visible"/,
   "background tabs must not poll for notifications");
-assert.match(settingsPage, /Quiet-hours times aren't available from the server right now/,
+assert.match(notificationCenter, /Quiet-hours times aren't available from the server right now/,
   "missing quiet-hours capability must not be described as a future deployment");
-assert.match(settingsPage, /No notifications yet/,
+assert.match(notificationCenter, /No notifications yet/,
   "the inbox must explain a genuine empty state");
-assert.match(settingsPage, /Replaced by newer information/,
+assert.match(notificationCenter, /Replaced by newer information/,
   "superseded notifications must be distinguished from active attention");
-assert.match(settingsPage, /No longer needs attention/,
+assert.match(notificationCenter, /No longer needs attention/,
   "resolved notifications must not continue to appear as active requests");
-assert.match(settingsPage, /item\.resolved_at/,
+assert.match(notificationCenter, /item\.resolved_at/,
   "the inbox must show when an update stopped requiring attention");
-assert.match(settingsPage, /\(item.status \?\? "active"\) === "active"/,
+assert.match(notificationCenter, /\(item.status \?\? "active"\) === "active"/,
   "the caregiver inbox must distinguish active notifications from resolved ones");
 
 assert.ok(dailyCarePage.includes("<NaturalLanguageDailyUpdate />"), "free-text updates must use the existing Daily Care capture path");
