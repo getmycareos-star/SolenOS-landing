@@ -409,7 +409,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                       </button>
                     </div>
                     {careInformationExpanded && (
-                      <nav id="solenos-care-information-subnav" className="solenos-chat-nav-subnav" aria-label="Care information sections">
+                      <div id="solenos-care-information-subnav" className="solenos-chat-nav-subnav" role="group" aria-label="Care information sections">
                         {CARE_INFORMATION_NAVIGATION.map((child) => {
                           const ChildIcon = child.icon;
                           const childActive = active(child.href);
@@ -429,7 +429,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                             </Link>
                           );
                         })}
-                      </nav>
+                      </div>
                     )}
                   </div>
                 );
