@@ -345,7 +345,7 @@ export default function TimelinePage() {
       setHistoryOffset(result.records.length);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
-      setError("The care timeline could not be loaded. Check your connection and try again.");
+      setError("The care Care history couldn't load. Check your connection and try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -558,11 +558,11 @@ export default function TimelinePage() {
     <div className="mobile-screen timeline-workspace">
       <header className="mobile-page-head timeline-page-head">
         <div>
-          <p className="timeline-eyebrow">Care Record</p>
+          <p className="timeline-eyebrow">CARE HISTORY</p>
           <h1 className="timeline-page-title">Care history</h1>
           <p className="timeline-page-description">A history of saved care updates. Older reports remain separate from the latest care summary.</p>
         </div>
-        <Button variant="icon" aria-label="Refresh timeline" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
+        <Button variant="icon" aria-label="Refresh care history" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
           <RefreshCw size={18} aria-hidden />
         </Button>
       </header>
@@ -583,12 +583,12 @@ export default function TimelinePage() {
             <p className="timeline-latest-description">{parseDescription(latestEvent.description) || "No event description was saved."}</p>
           </>
         ) : (
-          <p className="timeline-latest-description">No saved care updates are available for this record yet. Add a care note or observation to begin the history.</p>
+          <p className="timeline-latest-description">No saved care updates are available for this record yet. Add an update to begin the history.</p>
         )}
-        <p className="timeline-event-provenance-note">This is the latest saved update. For the current care summary, return to your Care Record.</p>
+        <p className="timeline-event-provenance-note">This is the latest saved update. For the current care summary, return to Care information.</p>
       </section>
 
-      <section className="timeline-controls" aria-label="Timeline controls">
+      <section className="timeline-controls" aria-label="Care history controls">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -610,7 +610,7 @@ export default function TimelinePage() {
             </p>
           )}
         </form>
-        <div className="timeline-filters" role="group" aria-label="Filter timeline events">
+        <div className="timeline-filters" role="group" aria-label="Filter care history">
           {FILTERS.map((item) => {
             const active = filter === item.id;
             return (
@@ -627,7 +627,7 @@ export default function TimelinePage() {
           <div className="timeline-error-layout">
             <AlertCircle size={20} aria-hidden />
             <div className="timeline-error-copy">
-              <h2 className="timeline-error-title">Timeline could not be loaded</h2>
+              <h2 className="timeline-error-title">Care history couldn't load</h2>
               <p className="timeline-error-message">{error}</p>
               <Button variant="primary" onClick={() => void loadEvents(true, appliedQuery)} disabled={refreshing}>Try again</Button>
             </div>
