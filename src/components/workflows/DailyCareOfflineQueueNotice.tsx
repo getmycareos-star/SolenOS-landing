@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCaregiverId, getPersonId } from "@/api/client";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
-import { getDurableWriteSummary, retryPendingDurableWrites, syncDurableWrites } from "@/lib/offline-sync/durable-write-queue";
+import { getDurableWriteSummary, retryBlockedDurableWrites, retryPendingDurableWrites, syncDurableWrites } from "@/lib/offline-sync/durable-write-queue";
 
 export default function DailyCareOfflineQueueNotice() {
   const [pending, setPending] = useState(0);
   const [attention, setAttention] = useState(0);
   const [synced, setSynced] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryNotice, setRetryNotice] = useState("");
 
   const refresh = useCallback(async () => {
     const personId = getPersonId();
@@ -39,6 +41,27 @@ export default function DailyCareOfflineQueueNotice() {
       // A failed status read must never hide or delete the encrypted local queue.
     }
   }, []);
+
+  const retryAttention = useCallback(async () => {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    if (!personId || !caregiverId) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setRetryNotice("Reconnect to the internet before retrying these updates.");
+      return;
+    }
+    setRetrying(true);
+    setRetryNotice("");
+    try {
+      await retryBlockedDurableWrites(personId, caregiverId);
+      setRetryNotice("Retry requested. SolenOS will confirm whether each update was received.");
+      await refresh();
+    } catch {
+      setRetryNotice("SolenOS could not retry these updates. They remain saved on this device.");
+    } finally {
+      setRetrying(false);
+    }
+  }, [refresh]);
 
   const retryOnReconnect = useCallback(async () => {
     const personId = getPersonId();
@@ -82,10 +105,14 @@ export default function DailyCareOfflineQueueNotice() {
         </p>
       )}
       {attention > 0 && (
-        <p role="alert" className="daily-care-muted">
-          {attention} update{attention === 1 ? "" : "s"} need attention and have not been saved to the care record.
-        </p>
+        <div role="alert" className="daily-care-muted" style={{ display: "grid", gap: 8 }}>
+          <p style={{ margin: 0 }}>{attention} queued item{attention === 1 ? "" : "s"} need attention. SolenOS has not confirmed that they were saved.</p>
+          <button type="button" className="workspace-secondary" onClick={() => void retryAttention()} disabled={retrying}>
+            {retrying ? "Checking updates…" : "Try sending again"}
+          </button>
+        </div>
       )}
+      {retryNotice && <p role="status" className="daily-care-muted">{retryNotice}</p>}
     </>
   );
 }
