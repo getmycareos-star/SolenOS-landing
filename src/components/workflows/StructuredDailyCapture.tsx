@@ -575,6 +575,10 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       setMedicationError('Choose what happened with this medicine before adding it.');
       return;
     }
+    if (medicationForm.status === "scheduled" && !medicationForm.scheduled_for) {
+      setMedicationError("Add the planned date and time for this scheduled dose.");
+      return;
+    }
     setMedicationUploading(true);
     
     try {
@@ -1849,6 +1853,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <label style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Scheduled for</label>
                   <input
                     type="datetime-local"
+                    required={medicationForm.status === "scheduled"}
                     value={medicationForm.scheduled_for || ''}
                     onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null })); }}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 'calc(14px * var(--solenos-text-scale, 1))' }}
