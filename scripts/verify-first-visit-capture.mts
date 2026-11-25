@@ -6,7 +6,7 @@ const understanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUn
 const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
 
 assert.match(page, /<h1>Today<\/h1>/, "first-time and returning caregivers must enter through Today");
-assert.match(page, /<LCRCurrentUnderstanding showNextStep \/>/, "the shared entry page must use the Living Care Record projection");
+assert.match(page, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "the shared entry page must use the concise Living Care Record projection");
 assert.match(page, /View the complete Care Record/, "the complete record must remain directly discoverable");
 assert.doesNotMatch(page, /FirstVisitWorkspaceRouter/, "Today must not branch into a separate first-visit presentation");
 assert.doesNotMatch(page, /CognitiveWorkspace/, "new caregivers must not be forced through a capture-only route");
