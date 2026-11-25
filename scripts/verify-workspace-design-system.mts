@@ -17,19 +17,27 @@ const navigationImport = layout.indexOf('import "./navigation-accessibility.css"
 assert.ok(baseImport >= 0 && baseImport < v2Import && v2Import < navigationImport,
   "workspace foundation, design-system refinements and navigation accessibility must load in explicit order");
 assert.match(rootLayout, /import "\.\/accessibility-overrides\.css";/,
-  "product-wide accessibility preferences are loaded once by the root layout");
+  "product-wide accessibility preferences are loaded by the root layout");
 assert.doesNotMatch(shell, /accessibility-overrides\.css/,
   "workspace must not import the product-wide accessibility stylesheet a second time");
+
 assert.doesNotMatch(layout, /^"use client";/,
-  "the route layout stays server-rendered and delegates client behavior to the workspace shell");
-assert.match(layout, /<WorkspaceProvider>[\s\S]*?<WorkspaceShellContent>/,
-  "workspace bootstrap provider and visual shell have separate ownership");
+  "the route layout stays server-rendered");
+assert.match(layout, /<ErrorBoundary[\s\S]*?<WorkspaceProvider>[\s\S]*?<WorkspaceShellContent>/,
+  "the error boundary encloses workspace bootstrap and visual shell");
+assert.match(recovery, /"use client"[\s\S]*?We cannot confirm whether your last action[\s\S]*?Reload workspace/,
+  "recovery is an interactive client component and avoids unsupported save claims");
+
 assert.match(shell, /function CareContextBar[\s\S]*?recordLoadError[\s\S]*?No care details yet[\s\S]*?Add an update/,
-  "care context distinguishes unavailable data from a genuinely empty record and provides a useful next step");
+  "care context distinguishes unavailable data from an empty record and provides a useful next step");
 assert.match(shell, /WorkspaceEntryGate[\s\S]*?Preparing your care workspace/,
   "workspace entry remains gated until bootstrap resolves");
-assert.match(layout, /We cannot confirm whether your last action[\s\S]*?Reload workspace/,
-  "global recovery does not make unsupported claims about whether an operation was saved");
+assert.match(shell, /<GlobalDisplayPreferences\s*\/>/,
+  "global display preferences remain mounted in the workspace");
+assert.match(breadcrumbs, /solenos-workspace-breadcrumb-current/);
+assert.match(navigation, /\.solenos-workspace-breadcrumb-current[\s\S]*?clip: rect\(0, 0, 0, 0\)/,
+  "current route title remains available to assistive technology without repeating the visible page heading");
+
 assert.match(navigation, /\.workspace-connection-alert/);
 assert.match(navigation, /\.workspace-error-recovery/);
 assert.match(navigation, /\.care-context-action/);
@@ -45,4 +53,4 @@ assert.match(navigation, /:focus-visible|:focus-within/,
 assert.match(navigation, /prefers-reduced-motion/,
   "navigation must retain reduced-motion support");
 
-console.log("PASS: workspace base styles, authoritative v2 theme tokens, navigation focus and reduced-motion rules are consolidated without deleting component styling");
+console.log("PASS: workspace shell boundaries, care-context states, breadcrumb hierarchy, authoritative theme tokens, focus and reduced-motion contracts");
