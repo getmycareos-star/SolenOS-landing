@@ -154,7 +154,7 @@ assert.ok(lcrHome.includes('href="/workspace/daily-care"'), "Daily Care is direc
 assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/, "More renders application-management destinations");
 assert.match(navigation, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Needs attention"/, "unresolved care matters are grouped under Care information");
 assert.match(navigation, /href: "\/workspace\/timeline"[\s\S]*?label: "Care history"/, "care history is grouped under Care information");
-assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents remains available under More");
+assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents remains available as a primary destination");
 assert.match(navigation, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"/, "Ask SolenOS is available from the main navigation");
 assert.match(handoverInbox, /ensureAnonymousSession\(\)/, "handover requests wait for a valid caregiver session");
 assert.match(handoverInbox, /Promise\.allSettled/, "one unavailable handover list does not hide the other");
