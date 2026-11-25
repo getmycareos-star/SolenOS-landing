@@ -229,10 +229,10 @@ export default function CareRemindersPage() {
     <div className="mobile-screen care-reminders-page">
       <div className="care-reminders-header">
         <Link href="/workspace" className="care-reminders-back">
-          <ArrowLeft size={18} aria-hidden /> Back to Care Record
+          <ArrowLeft size={18} aria-hidden /> Back to Care information
         </Link>
-        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> FOLLOW-UP</p>
-        <h1>Care reminders</h1>
+        <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> REMINDERS</p>
+        <h1>Reminders</h1>
         <p>Save a reminder here so you can come back to it when it is due.</p>
         <p className="care-reminders-delivery">
           SolenOS can show a notification here when a reminder is due. Email alerts are not sent.
