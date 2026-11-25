@@ -1926,7 +1926,7 @@ await record("Daily Care saves and retrieves original reports without relying on
       "the caregiver save must return before background Qwen extraction completes");
     assert.equal(savePayload.qwen_extraction_status, "queued");
     assert.ok(typeof savePayload.qwen_job_id === "string" && savePayload.qwen_job_id);
-    await daily.page.getByRole("status").filter({ hasText: "Your update was saved to the care record." }).waitFor({ timeout: 10_000 });
+    await daily.page.getByRole("status").filter({ hasText: "Your original update was saved to your Care Record." }).waitFor({ timeout: 10_000 });
     if (afterSaved) await afterSaved();
     await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
     await originalWords.waitFor({ state: "detached", timeout: 15_000 });
