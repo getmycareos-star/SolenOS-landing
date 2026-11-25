@@ -1756,13 +1756,28 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                 </li>
               ))}
             </ul>
-          ) : importantCareDecisions.length > 0 || clarificationCareDecisions.length > 0 ? (
-            <p>
-              Nothing in the information reviewed is marked for immediate attention.
-              {importantCareDecisions.length > 0 ? ` ${importantCareDecisions.length} important ${importantCareDecisions.length === 1 ? "change or follow-up is" : "changes or follow-ups are"} recorded for review.` : ""}
-              {clarificationCareDecisions.length > 0 ? ` ${clarificationCareDecisions.length} ${clarificationCareDecisions.length === 1 ? "detail needs" : "details need"} clarification.` : ""}
-
-            </p>
+          ) : importantCareDecisions.length > 0 ? (
+            <>
+              <p>Nothing in the information reviewed is marked for immediate attention. These saved changes and follow-ups are important to review.</p>
+              <ul className="lcr-first-screen-list">
+                {importantCareDecisions.slice(0, 2).map((decision) => (
+                  <li key={decision.id || decision.source + ":" + decision.record_id}>
+                    <strong>{caregiverSafeGeneratedText(decision.title) || "Care information to review"}</strong>
+                    <p>{caregiverSafeGeneratedText(decision.reason || decision.priority_basis?.join("; ")) || "The saved information indicates this may need review."}</p>
+                    {decision.due_at && <small>Due {formatWhen(decision.due_at)}</small>}
+                    {decision.records?.length ? (
+                      <small>Based on {decision.records.length} linked care record{decision.records.length === 1 ? "" : "s"}</small>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {importantCareDecisions.length > 2 && <p className="lcr-entry-status">{importantCareDecisions.length - 2} more items are recorded for review.</p>}
+              {clarificationCareDecisions.length > 0 && (
+                <p className="lcr-entry-status">{clarificationCareDecisions.length} {clarificationCareDecisions.length === 1 ? "detail still needs" : "details still need"} clarification.</p>
+              )}
+            </>
+          ) : clarificationCareDecisions.length > 0 ? (
+            <p>Nothing in the information reviewed is marked for immediate attention. {clarificationCareDecisions.length} {clarificationCareDecisions.length === 1 ? "detail still needs" : "details still need"} clarification before it can be relied on.</p>
           ) : (
             <RecordState kind="period-empty" title="No immediate follow-up is shown" description={assessment.coverage.is_complete ? "The information reviewed does not currently show an immediate follow-up." : "Some care information may not have been available for this review, so this is not a complete picture."} />
           )}
