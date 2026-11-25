@@ -1906,7 +1906,7 @@ await record("Daily Care saves and retrieves original reports without relying on
     const shareButton = daily.page.getByRole("button", { name: "Share something", exact: true });
     await shareButton.waitFor({ state: "visible", timeout: 15_000 });
     await shareButton.click();
-    const happenedButton = daily.page.getByRole("button", { name: /Something happened/ });
+    const happenedButton = daily.page.getByRole("button", { name: /Describe an update/ });
     await happenedButton.waitFor({ state: "visible", timeout: 15_000 });
     await happenedButton.click();
     const originalWords = daily.page.locator("#natural-daily-update-report");
@@ -2206,7 +2206,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
 
   const originalReport = `Daily Care capture survives secondary service failures ${randomUUID()}`;
   await resilient.page.getByRole("button", { name: "Share something", exact: true }).click();
-  await resilient.page.getByRole("button", { name: /Something happened/ }).click();
+  await resilient.page.getByRole("button", { name: /Describe an update/ }).click();
   const reportField = resilient.page.locator("#natural-daily-update-report");
   await reportField.waitFor({ state: "visible", timeout: 15_000 });
   await reportField.fill(originalReport);
@@ -2216,7 +2216,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
   await resilient.context.setOffline(true);
   await resilient.page.getByRole("button", { name: "Save update", exact: true }).click();
   await resilient.page.getByRole("alert")
-    .filter({ hasText: "encrypted and saved on this device" })
+    .filter({ hasText: "saved on this device" })
     .waitFor({ timeout: 10_000 });
   const encryptedQueueRows = await resilient.page.evaluate(async () => {
     return await new Promise((resolve, reject) => {
@@ -2280,7 +2280,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
   console.log("OFFLINE_QUEUE_AFTER_RELOAD", JSON.stringify(queueAfterReload));
   try {
     await resilient.page.getByRole("status")
-      .filter({ hasText: "update waiting to sync with the care record" })
+      .filter({ hasText: "waiting to reach SolenOS" })
       .waitFor({ timeout: 15_000 });
   } catch (error) {
     const state = await resilient.page.evaluate(async () => {
@@ -2330,7 +2330,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
   assert.ok(typeof savePayload.id === "string" && savePayload.id,
     "the sync receipt must contain the persisted event ID");
   await resilient.page.getByRole("status")
-    .filter({ hasText: "A pending update has synced to the care record." })
+    .filter({ hasText: "A queued item has reached SolenOS." })
     .waitFor({ timeout: 15_000 });
 
   const persisted = await request(`/api/v1/events/${resilientIdentity.personId}`, { token: resilientIdentity.token });
@@ -2356,16 +2356,16 @@ await record("Daily Care capture survives secondary read failures", async () => 
     "base64",
   );
   await resilient.page.getByRole("button", { name: /Share something/i }).click();
-  await resilient.page.getByRole("button", { name: /Photograph/ }).click();
+  await resilient.page.getByRole("button", { name: /Add a photo or document/ }).click();
   await resilient.context.setOffline(true);
-  await resilient.page.locator("#daily-care-photo-file").setInputFiles({
+  await resilient.page.locator("#daily-care-photo-library").setInputFiles({
     name: "offline-care-photo.png",
     mimeType: "image/png",
     buffer: tinyPng,
   });
   await resilient.page.getByRole("button", { name: "Save photograph", exact: true }).click();
   await resilient.page.getByRole("alert")
-    .filter({ hasText: "photo is saved securely on this device" })
+    .filter({ hasText: "photo is saved on this device" })
     .waitFor({ timeout: 10_000 });
   const photoQueueRows = await resilient.page.evaluate(async () => {
     return await new Promise((resolve, reject) => {
@@ -2395,7 +2395,7 @@ await record("Daily Care capture survives secondary read failures", async () => 
   assert.equal(photoSyncPayload.persisted, true, JSON.stringify(photoSyncPayload));
   assert.ok(typeof photoSyncPayload.evidence_id === "string" && photoSyncPayload.evidence_id);
   await resilient.page.getByRole("status")
-    .filter({ hasText: "Photograph saved with your care information." })
+    .filter({ hasText: "Photo uploaded and saved as evidence." })
     .waitFor({ timeout: 15_000 });
   const retrievedPhoto = await request(
     `/api/v1/upload/${photoSyncPayload.evidence_id}`,
