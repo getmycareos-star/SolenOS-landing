@@ -18,5 +18,9 @@ assert.match(client, /const API_REQUEST_TIMEOUT_MS = 15_000/);
 assert.match(client, /const RETRYABLE_GET_STATUSES = new Set\(\[502, 503, 504\]\)/);
 assert.match(workspace, /setRecordLoadError\([\s\S]*?setEntryReady\(true\)/,
   "a failed bootstrap read must leave the workspace in an explicit recoverable state");
+const bootstrapFailure = workspace.slice(workspace.lastIndexOf('.catch(() => {'));
+assert.match(bootstrapFailure, /setRecordLoadError\(/, "failed hydration must be shown as an explicit record-load failure");
+assert.match(bootstrapFailure, /setEntryReady\(true\)/, "failed hydration must allow the recoverable workspace shell to render");
+assert.doesNotMatch(bootstrapFailure, /router\.replace\("\/start"\)/, "a failed record read must never be redirected into the first-visit route");
 
 console.log("PASS: workspace bootstrap uses authenticated, bounded, safe-retry GET infrastructure");
