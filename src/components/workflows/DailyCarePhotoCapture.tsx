@@ -157,6 +157,7 @@ export default function DailyCarePhotoCapture() {
       capture_method: captureMethod,
     };
     let queueId: string | null = null;
+    let localQueueUnavailable = false;
     try {
       if (file.size <= MAX_OFFLINE_PHOTO_BYTES) {
         try {
@@ -175,6 +176,7 @@ export default function DailyCarePhotoCapture() {
           });
           pendingQueueId.current = queueId;
         } catch {
+          localQueueUnavailable = true;
           if (typeof navigator !== "undefined" && !navigator.onLine) {
             throw new Error("This photo could not be saved safely on this device. It was not saved.");
           }
@@ -215,7 +217,9 @@ export default function DailyCarePhotoCapture() {
         setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns.");
       } else {
         const reason = cause instanceof Error ? cause.message : "";
-        setError(reason || "SolenOS could not confirm that this photo was received. Keep the photo selected and retry; the same request key will be reused.");
+        setError(localQueueUnavailable
+          ? "This photo could not be saved on this device, and SolenOS could not confirm the upload. Keep this screen open and retry; the photo is not safely queued."
+          : reason || "SolenOS could not confirm that this photo was received. Keep the photo selected and retry; the same request key will be reused.");
       }
     } finally {
       setSaving(false);
