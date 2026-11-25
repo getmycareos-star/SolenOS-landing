@@ -366,7 +366,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {!documentExtractionIsComplete(analysis)
                 ? `Some pages have not been fully read · ${analysis.extraction_processed_page_count ?? "?"} of ${analysis.page_count ?? analysis.total_page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " · SolenOS is reading the remaining pages in the background" : ""}`
                 : analysis.unprocessed_page_numbers?.length
-                  ? `SolenOS has read ${analysis.processed_page_count ?? 0} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages. The remaining pages are ready to read.`
+                  ? `SolenOS has read ${analysis.processed_page_count ?? 0} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages.${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? " It is reading the remaining pages in the background." : " The remaining pages are ready to read."}`
                   : analysis.intelligence_status === "partial"
                   ? analysis.has_more_candidates && !(analysis.retryable_page_numbers?.length) && !(analysis.unprocessed_page_numbers?.length)
                     ? `More details are ready · ${analysis.remaining_candidate_count ?? "additional"} remaining. Finish this group before continuing.`
