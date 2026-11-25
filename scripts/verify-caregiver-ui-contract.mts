@@ -291,7 +291,7 @@ assert.ok(dailyCarePage.includes("dailyTimePeriod(item)"), "daily updates must b
 assert.ok(dailyCarePage.includes("Needs confirmation"), "unconfirmed medication changes must remain visible when the caregiver returns");
 assert.ok(dailyCarePage.includes("No daily entry is required"), "an empty day must not be framed as an overdue entry");
 assert.ok(dailyCarePage.includes('getJSON("/open-loops?limit=100&offset=0")'), "Daily Care must retrieve existing follow-ups from the existing Open Loops service");
-assert.ok(dailyCarePage.includes("Open Follow-ups"), "Daily Care must route unresolved matters to the dedicated Follow-ups screen");
+assert.ok(dailyCarePage.includes("Open Needs attention"), "Daily Care must route unresolved matters to the dedicated Follow-ups screen");
 assert.ok(!dailyCarePage.includes("followUps.slice(0, 6)"), "Daily Care must not duplicate the Follow-ups management list");
 assert.ok(dailyCarePage.includes("followUpsError"), "follow-up retrieval failures must remain visible rather than appearing as an empty list");
 assert.ok(naturalDailyUpdate.includes('getJSON("/care-continuity/medications")'), "uncertain medication reports must check the existing reviewed medication record");
