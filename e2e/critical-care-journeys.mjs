@@ -1578,7 +1578,7 @@ await record("01d secondary routes and reminder actions persist through reload",
   await verifyMobile(page);
 
   await page.goto(new URL("/workspace/reminders", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Care reminders", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: "Reminders", exact: true }).waitFor({ timeout: 15_000 });
   await verifyMobile(page);
 
   const form = page.locator("form.care-reminder-form");
@@ -1662,7 +1662,7 @@ await record("01d secondary routes and reminder actions persist through reload",
   assert.ok(cancelled.payload.some((item) => item.title === secondTitle && item.status === "cancelled"));
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Care reminders", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: "Reminders", exact: true }).waitFor({ timeout: 15_000 });
   await page.getByLabel("Show").selectOption("cancelled");
   await page.locator(".care-reminder-item").filter({ hasText: secondTitle }).waitFor({ timeout: 15_000 });
   await page.getByRole("link", { name: "Back to Care Record", exact: true }).click();
@@ -3209,7 +3209,7 @@ await record("12b invited caregiver sees the shared care record in a separate br
     expires_at: session.expires_at,
   }, "/workspace/reminders");
   const primaryReminderPage = primaryReminderBrowser.page;
-  await primaryReminderPage.getByRole("heading", { name: "Care reminders", exact: true }).waitFor({ timeout: 20_000 });
+  await primaryReminderPage.getByRole("heading", { name: "Reminders", exact: true }).waitFor({ timeout: 20_000 });
   const sharedReminderTitle = unique("Shared reminder — assigned caregiver");
   const reminderForm = primaryReminderPage.locator("form.care-reminder-form");
   await reminderForm.getByLabel("What needs following up?").fill(sharedReminderTitle);
