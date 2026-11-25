@@ -589,7 +589,7 @@ function CaregiverPreferencesCard() {
 }
 
 /** Account controls use the backend and remain scoped to the current care record. */
-function AccountCard() {
+function AccountCard({ onSignedOut }: { onSignedOut: () => void }) {
   const { show, render } = useToast();
   const [account, setAccount] = useState<{ id: string; email: string; created_at: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -701,6 +701,7 @@ function AccountCard() {
       setPassword("");
       setMessage("Signed out securely. Your Care Record is still saved. Sign in with the same account on this or another authorized device to access it.");
       show("Signed out securely.", "success");
+      onSignedOut();
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";
       setError("We couldn’t sign you out. You are still signed in. Check your connection and try again.");
@@ -1181,12 +1182,17 @@ function ProductCard() {
 export default function WorkspaceSettingsPage() {
   const { hydrated, entryReady } = useWorkspace();
   const [caregiverAccessOpen, setCaregiverAccessOpen] = useState(false);
+  const [accountSectionOpen, setAccountSectionOpen] = useState(false);
 
   useEffect(() => {
     const openLinkedSection = () => {
       const sectionId = window.location.hash.slice(1);
       const section = sectionId ? document.getElementById(sectionId) : null;
-      if (section instanceof HTMLDetailsElement) section.open = true;
+      if (section instanceof HTMLDetailsElement) {
+        if (section.id === "settings-account") setAccountSectionOpen(true);
+        else if (section.id === "settings-caregivers") setCaregiverAccessOpen(true);
+        else section.open = true;
+      }
     };
     openLinkedSection();
     window.addEventListener("hashchange", openLinkedSection);
@@ -1224,9 +1230,9 @@ export default function WorkspaceSettingsPage() {
           <summary className="settings-section-summary"><span className="settings-section-number">03</span><span className="settings-section-summary-copy"><strong>Notifications</strong><small>Care updates, reminders and alerts</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
           <div className="settings-section-content"><NotificationsCard /></div>
         </details>
-        <details className="settings-section-wrap settings-section-disclosure" id="settings-account">
+        <details className="settings-section-wrap settings-section-disclosure" id="settings-account" open={accountSectionOpen} onToggle={(event) => setAccountSectionOpen(event.currentTarget.open)}>
           <summary className="settings-section-summary"><span className="settings-section-number">04</span><span className="settings-section-summary-copy"><strong>Account and sign-in</strong><small>Email, password and account access</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="settings-section-content"><AccountCard /></div>
+          <div className="settings-section-content"><AccountCard onSignedOut={() => setAccountSectionOpen(true)} /></div>
         </details>
         <details className="settings-section-wrap settings-section-disclosure" id="settings-caregivers" onToggle={(event) => setCaregiverAccessOpen(event.currentTarget.open)}>
           <summary className="settings-section-summary"><span className="settings-section-number">05</span><span className="settings-section-summary-copy"><strong>Caregiver access</strong><small>People who can access this care record</small></span><span className="settings-section-chevron" aria-hidden="true">⌄</span></summary>
