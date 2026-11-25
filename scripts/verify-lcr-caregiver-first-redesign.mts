@@ -104,7 +104,7 @@ assert.match(currentUnderstanding, /There isn’t enough recorded care informati
 assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) => void load\(true\)\}/s, "failed current-care retrieval renders an actionable error state with a real retry");
 assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Home uses the concise current-care projection and record-aware next step");
 assert.ok(workspaceHome.includes("<UpcomingAppointmentSummary />"), "Home retains upcoming appointment context after the current-care picture");
-assert.doesNotMatch(workspaceHome, /<CaregiverHandoverInbox \/>/, "the Today page does not carry a secondary inbox");
+assert.doesNotMatch(workspaceHome, /<CaregiverHandoverInbox \/>/, "the Home page does not carry a secondary inbox");
 assert.match(workspaceMore, /<CaregiverHandoverInbox \/>/, "the handover inbox remains available under More");
 assert.doesNotMatch(workspaceMore, /HistoryDrawer/, "More does not contain care-history browsing");
 assert.match(careContinuity, /CARE_INFORMATION_NAVIGATION\.map/, "care-history and care-information destinations are discoverable together");
@@ -227,7 +227,7 @@ assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is 
 assert.match(navigation, /label: "Ask SolenOS"/, "workspace navigation uses the Ask SolenOS destination name");
 assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
-assert.match(publicHome, /Care Assistant/, "the public home page uses the familiar Care Assistant name");
+assert.match(publicHome, /Ask SolenOS/, "the public home page uses the canonical Ask SolenOS name");
 assert.doesNotMatch(publicHome, /AI Companion/, "the public home page does not expose internal product terminology");
 
 console.log("✓ Daily Care remains structured capture only, without an embedded AI agent");
