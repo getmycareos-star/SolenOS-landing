@@ -228,7 +228,6 @@ if (!documentExtractionIsComplete(completeDocument)) {
 }
 for (const unresolvedField of [
   "extraction_unprocessed_page_numbers",
-  "unprocessed_page_numbers",
   "retryable_page_numbers",
   "retry_exhausted_page_numbers",
   "blocked_page_numbers",
@@ -237,6 +236,25 @@ for (const unresolvedField of [
   if (documentExtractionIsComplete({ ...completeDocument, [unresolvedField]: [2] })) {
     throw new Error(`document with unresolved ${unresolvedField} must remain incomplete`);
   }
+}
+const pendingUnderstandingPages = {
+  ...completeDocument,
+  page_count: 4,
+  total_page_count: 4,
+  extraction_processed_page_count: 4,
+  processed_page_count: 3,
+  unprocessed_page_numbers: [4],
+};
+if (!documentExtractionIsComplete(pendingUnderstandingPages)) {
+  throw new Error("a fully extracted document with a remaining Qwen page window must be eligible to continue interpretation");
+}
+const incompleteSourceExtraction = {
+  ...completeDocument,
+  extraction_processed_page_count: 2,
+  extraction_unprocessed_page_numbers: [3],
+};
+if (documentExtractionIsComplete(incompleteSourceExtraction)) {
+  throw new Error("unextracted source pages must still block document review");
 }
 if (documentExtractionIsComplete({ ...completeDocument, extraction_processed_page_count: 2 })) {
   throw new Error("document with fewer processed pages than its page count must remain incomplete");
@@ -247,6 +265,6 @@ if (documentExtractionIsComplete({ ...completeDocument, extraction_processed_pag
 if (documentExtractionIsComplete({ ...completeDocument, interpretation_blocked: true })) {
   throw new Error("interpretation-blocked document must remain incomplete");
 }
-console.log("✓ document completeness rejects every unresolved-page state and page-count mismatch");
+console.log("✓ document extraction completeness distinguishes OCR failures from pending Qwen page windows");
 
 console.log("\n✓ document intelligence layer enforced");
