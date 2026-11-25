@@ -688,7 +688,7 @@ export default function DocumentsPage() {
     setAttentionUploads(summary.blocked + summary.failed_recoverable);
   };
 
-  const openOriginal = async (doc: DocumentItem) => {
+  const openOriginal = useCallback(async (doc: DocumentItem) => {
     setSelectedId(doc.id);
     setPreviewError(null);
     setPreviewLoading(true);
@@ -703,7 +703,7 @@ export default function DocumentsPage() {
     } finally {
       setPreviewLoading(false);
     }
-  };
+  }, [previewUrl]);
 
   useEffect(() => {
     const requestedEvidenceId = new URLSearchParams(window.location.search).get("evidenceId");
@@ -715,7 +715,7 @@ export default function DocumentsPage() {
       return;
     }
     void openOriginal(matchingDocument);
-  }, [documents, loading]);
+  }, [documents, loading, openOriginal]);
 
   const closePreview = () => {
     setSelectedId(null);
