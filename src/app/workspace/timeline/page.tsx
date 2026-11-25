@@ -593,7 +593,7 @@ export default function TimelinePage() {
         {loading ? (
           <p className="timeline-muted" aria-live="polite">Loading saved care updates…</p>
         ) : error ? (
-          <p className="timeline-muted">The latest update is unavailable until the timeline loads.</p>
+          <p className="timeline-muted">The latest update is unavailable until Care history loads.</p>
         ) : latestEvent ? (
           <>
             <h3 className="timeline-latest-event-title">{caregiverSafeAssistantText(latestEvent.title) || "Care update"}</h3>
@@ -662,7 +662,7 @@ export default function TimelinePage() {
           <h2 className="mobile-empty-title">{events.length ? "No matching updates" : "Your care history starts here"}</h2>
           <p className="mobile-empty-body">{events.length ? "Try another filter or search term. No records were removed." : "SolenOS will show care updates here after they have been saved. This screen never adds example care history."}</p>
           <div className="mobile-empty-actions timeline-empty-actions">
-            <Button variant="primary" onClick={() => router.push("/workspace?compose=1")}><Plus size={18} aria-hidden /> Add a care update</Button>
+            <Button variant="primary" onClick={() => router.push("/workspace/daily-care")}><Plus size={18} aria-hidden /> Add an update</Button>
             {(query || filter !== "all") && <Button variant="secondary" onClick={() => { setQuery(""); setAppliedQuery(""); setFilter("all"); updateHistoryUrl("all", ""); void loadEvents(true, ""); }}>Clear filters</Button>}
           </div>
         </section>
