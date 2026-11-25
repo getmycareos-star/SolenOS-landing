@@ -47,7 +47,7 @@ function WorkspacePageInner() {
 
   if (isArchived) {
     return (
-      <main className="mobile-screen lcr-screen">
+      <div className="mobile-screen lcr-screen">
         <section className="lcr-empty-state" aria-labelledby="archived-workspace-title">
           <h1 id="archived-workspace-title">Your Care Record is stored on this device</h1>
           <p>This only hides the workspace on this device. It does not delete care information stored by SolenOS.</p>
@@ -68,14 +68,14 @@ function WorkspacePageInner() {
             Restore my record
           </Button>
         </section>
-      </main>
+      </div>
     );
   }
 
   const latestUpdated = [...runtime.situations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.updatedAt ?? null;
 
   return (
-    <main className="mobile-screen lcr-screen">
+    <div className="mobile-screen lcr-screen">
       <div className="lcr-home">
         <header className="lcr-header">
           <div>
@@ -125,7 +125,7 @@ function WorkspacePageInner() {
 
 
       </div>
-    </main>
+    </div>
   );
 }
 
