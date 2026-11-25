@@ -1684,7 +1684,12 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                   <li key={item.source_collection + ":" + item.id}>
                     <strong>{displayCurrentCareTitle(item)}</strong>
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
-                    <small>{caregiverLabel(item.epistemic_status)} · Shared by {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "you" : "another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                    <small>
+                      {caregiverLabel(item.epistemic_status)} · Shared by {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "you" : "another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"}
+                      {item.occurred_at ? ` · Happened ${formatWhen(item.occurred_at)}` : ""}
+                      {item.reported_at ? ` · Reported ${formatWhen(item.reported_at)}` : ""}
+                      {item.recorded_at ? ` · Saved ${formatWhen(item.recorded_at)}` : ""}
+                    </small>
                     {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
                     <a className="lcr-text-action" href={viewMode === "today" ? `/workspace/care-continuity#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}` : `#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View this detail</a>
                   </li>
@@ -1715,6 +1720,9 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
 
         <div className="lcr-first-screen-card">
           <h3>What matters now</h3>
+          {assessment && !assessment.coverage.is_complete && (
+            <p className="lcr-entry-status" role="status">Some saved care information could not be reviewed. This picture may be incomplete.</p>
+          )}
           {sourceFreshness?.reassessment_recommended && (
             <div className="lcr-entry-status" role="status">
               <p>{sourceFreshness.status === "freshness_check_unavailable"
