@@ -18,6 +18,7 @@ on:
       - "src/components/workflows/CareHandoffSharing.tsx"
       - "src/components/mvp-workspace/CaregiverAccessPanel.tsx"
       - "src/components/mvp-workspace/CaregiverHandoverInbox.tsx"
+      - "src/app/workspace/settings/page.tsx"
   workflow_dispatch:
 
 permissions:
