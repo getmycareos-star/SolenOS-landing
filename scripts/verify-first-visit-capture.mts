@@ -11,8 +11,10 @@ assert.match(page, /View the complete Care Record/, "the complete record must re
 assert.doesNotMatch(page, /FirstVisitWorkspaceRouter/, "Today must not branch into a separate first-visit presentation");
 assert.doesNotMatch(page, /CognitiveWorkspace/, "new caregivers must not be forced through a capture-only route");
 assert.match(understanding, /first-empty/, "an empty record must have a clear empty state");
-assert.match(understanding, /Your Care Record does not have any care information yet\./, "the empty state must explain how to begin");
-assert.match(understanding, /Add what you know in Daily Care or upload a care document\./, "the empty state must provide useful starting actions");
+assert.match(understanding, /Your Care Record starts here/, "the empty state must explain what the Care Record is for");
+assert.match(understanding, /href="\/workspace\/daily-care"/, "the empty state must offer a first care update");
+assert.match(understanding, /href="\/workspace\/documents"/, "the empty state must offer document upload");
+assert.match(understanding, /hasConfirmedEmptyRecord/, "the empty state must not appear when record retrieval is incomplete");
 assert.match(understanding, /response\.person_id !== scopedPersonId/, "the visible record must be checked against the active care recipient");
 assert.match(understanding, /We couldn’t load your care information/, "failed retrieval must remain distinct from an empty record");
 assert.match(companion, /const prompt = initialPrompt\?\.trim\(\)/, "Companion must treat a deep-link prompt as user-provided text");
