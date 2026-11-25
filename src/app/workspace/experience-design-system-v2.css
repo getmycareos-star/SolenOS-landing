@@ -3179,3 +3179,23 @@
     outline-offset: 3px;
   }
 }
+
+
+.solenos-chat-app .solenos-notification-shortcut {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sn-line);
+  border-radius: 10px;
+  background: var(--sn-surface);
+  color: #58685d;
+  text-decoration: none;
+}
+.solenos-chat-app .solenos-notification-shortcut:hover {
+  border-color: #cbd9cb;
+  background: #f1f5f0;
+  color: #294333;
+}
