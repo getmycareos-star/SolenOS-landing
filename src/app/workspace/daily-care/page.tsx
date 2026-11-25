@@ -71,6 +71,7 @@ type CareItem = {
   text?: string | null;
   occurred_at?: string | null;
   observed_at?: string | null;
+  time_provenance?: string | null;
   recorded_at?: string | null;
   status?: string | null;
   kind?: string | null;
@@ -145,6 +146,15 @@ function displayHistorySource(item: CareItem): string {
 function displayHistoryTime(item: CareItem): string {
   const eventTime = item.occurred_at || item.observed_at;
   const recordedTime = item.recorded_at || item.uploaded_at;
+  // A server-assigned fallback timestamp is the time the entry was recorded,
+  // not evidence of when the care event happened.
+  if (item.time_provenance === "server_recorded_at") {
+    return recordedTime
+      ? `Recorded: ${displayCareTime(recordedTime)}`
+      : eventTime
+        ? `Recorded: ${displayCareTime(eventTime)}`
+        : "Time not recorded";
+  }
   if (eventTime && recordedTime) {
     const eventDate = new Date(eventTime);
     const recordedDate = new Date(recordedTime);
