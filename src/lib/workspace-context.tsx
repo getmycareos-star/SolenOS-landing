@@ -204,11 +204,10 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         setEntryReady(true);
       })
       .catch(() => {
+        // A failed session or record read is never evidence that this is a
+        // first visit. Keep the caregiver in the workspace with an explicit
+        // recoverable connection state instead of redirecting to /start.
         setRecordLoadError("Your care information isn't available right now. Check your connection and try again.");
-        if (!hasEnteredCareRecord() && !opsKey) {
-          router.replace("/start");
-          return;
-        }
         setEntryReady(true);
       });
   }, [router]);
