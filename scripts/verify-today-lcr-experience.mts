@@ -35,6 +35,7 @@ assert.match(understanding, /id=\{\`lcr-care-item-/, "complete-record care detai
 assert.match(understanding, /viewMode === "today" \? `\/workspace\/care-continuity#lcr-care-item-/, "Home evidence links must open the matching complete-record item");
 
 assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
+assert.match(understanding, /hasCompleteSourceCoverage/, "an empty record must require successful or empty results from every requested source");
 assert.match(understanding, /hasIncompleteProjection/, "incomplete retrieval must not be treated as an empty record");
 assert.match(understanding, /sourceFreshness\?\.reassessment_recommended/, "stale understanding warnings must remain visible on Home");
 assert.match(understanding, /assessment\.coverage\.is_complete/, "Home must disclose incomplete assessment coverage");
