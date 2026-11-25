@@ -27,6 +27,7 @@ const documents = read("src/app/workspace/documents/page.tsx");
 const history = read("src/app/workspace/timeline/page.tsx");
 const appointments = read("src/app/workspace/appointments/page.tsx");
 const reminders = read("src/app/workspace/reminders/page.tsx");
+const handoffs = read("src/app/workspace/handoffs/page.tsx");
 const needsAttention = read("src/app/workspace/open-loops/page.tsx");
 const companion = read("src/components/workflows/AICompanion.tsx");
 const notifications = read("src/app/workspace/notifications/page.tsx");
@@ -163,6 +164,7 @@ for (const [source, expected, label] of [
   [careInformation, "<h1>Care information</h1>", "Care information"],
   [appointments, "<h1>Appointments</h1>", "Appointments"],
   [reminders, "<h1>Reminders</h1>", "Reminders"],
+  [handoffs, '<h1 id="care-handoffs-title">Care handoffs</h1>', "Care handoffs"],
   [needsAttention, "<h1>Needs attention</h1>", "Needs attention"],
   [companion, '<h1 className="companion-page-title">Ask SolenOS</h1>', "Ask SolenOS"],
   [more, "<h1>More</h1>", "More"],
