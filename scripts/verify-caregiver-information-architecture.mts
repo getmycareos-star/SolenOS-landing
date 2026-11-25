@@ -16,6 +16,7 @@ const appointments = read("src/app/workspace/appointments/page.tsx");
 const needsAttention = read("src/app/workspace/open-loops/page.tsx");
 const companion = read("src/components/workflows/AICompanion.tsx");
 const notifications = read("src/app/workspace/notifications/page.tsx");
+const settings = read("src/app/workspace/settings/page.tsx");
 const more = read("src/app/workspace/more/page.tsx");
 const legacyRecord = read("src/app/workspace/record/page.tsx");
 const legacyContinuity = read("src/app/workspace/continuity/page.tsx");
@@ -84,6 +85,11 @@ assert.ok(careInformation.includes("CARE_INFORMATION_NAVIGATION.map"), "Care inf
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
 assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
 assert.ok(notifications.includes("settings#settings-notifications"), "the notification shortcut lands on the real notification inbox");
+assert.ok(settings.includes("/notifications?limit=100&offset=0") && settings.includes("/notifications/unread-count"), "the notification inbox reads its authenticated feed and unread count");
+assert.ok(settings.includes("/read"), "marking a notification read uses its own notification endpoint");
+assert.ok(needsAttention.includes("/open-loops?limit="), "Needs attention retrieves persisted follow-ups from their own service");
+assert.ok(navigation.includes("Notifications") && navigation.includes("Needs attention"), "notifications and unresolved matters have distinct caregiver labels");
+
 assert.ok(legacyRecord.includes("redirect") && legacyRecord.includes("/workspace"), "the legacy record route preserves a safe Home destination");
 assert.ok(legacyContinuity.includes("redirect") && legacyContinuity.includes("/workspace"), "the technical continuity route does not expose a separate caregiver page");
 assert.ok(featureFlags.includes("community: false") && featureFlags.includes("professionalCommunity: false"), "Community remains explicitly disabled");
