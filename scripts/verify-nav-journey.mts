@@ -59,18 +59,15 @@ assert.match(navigationRegistry, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/wo
 assert.match(navigationRegistry, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Ask SolenOS"/, "Ask SolenOS is a primary destination");
 assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/);
-for (const route of [
-  "/workspace/timeline",
-  "/workspace/companion",
-  "/workspace/documents",
-  "/workspace/reminders",
-  "/workspace/handoffs",
-  "/workspace/notifications",
-  "/workspace/care-continuity",
-  "/workspace/settings",
-]) {
-  assert.ok(navigationRegistry.includes(route), `More preserves the secondary destination ${route}`);
+const careInformationRoutes = ["/workspace/timeline", "/workspace/documents", "/workspace/appointments", "/workspace/open-loops", "/workspace/reminders", "/workspace/handoffs"];
+for (const route of careInformationRoutes) {
+  assert.ok(navigationRegistry.slice(navigationRegistry.indexOf("export const CARE_INFORMATION_NAVIGATION")).includes(route),
+    `Care information owns the care destination ${route}`);
 }
+assert.ok(navigationRegistry.includes("/workspace/companion"), "Ask SolenOS remains a primary destination");
+assert.ok(navigationRegistry.includes("/workspace/notifications"), "Notifications remains directly accessible");
+assert.ok(navigationRegistry.slice(navigationRegistry.indexOf("export const WORKSPACE_SECONDARY_NAVIGATION")).includes("/workspace/settings"),
+  "More contains application and account settings");
 for (const route of [
   "src/app/workspace/page.tsx",
   "src/app/workspace/daily-care/page.tsx",
