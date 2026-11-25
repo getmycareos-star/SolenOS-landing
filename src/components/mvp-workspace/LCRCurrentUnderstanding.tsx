@@ -1714,8 +1714,10 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             <RecordState kind="error" title="We couldn’t check what needs attention" description="We couldn’t check what may need attention. Please try again." onAction={() => void refreshWholeRecord()} />
           ) : !assessment ? (
             <RecordState kind="incomplete" title="Care priorities haven’t been reviewed yet" description="Review the saved care information to see what may need attention." onAction={() => void refreshWholeRecord()} />
-          ) : hasConfirmedEmptyRecord || assessment.coverage.records_examined === 0 ? (
+          ) : hasConfirmedEmptyRecord ? (
             <RecordState kind="first-empty" title="Nothing needs review yet" description="There is not enough saved care information to identify a follow-up. Add information as it becomes available." />
+          ) : assessment.coverage.records_examined === 0 ? (
+            <RecordState kind="incomplete" title="Care priorities could not be checked" description="The available review did not examine enough saved information to say what needs attention. Check the available Care Record and try again." onAction={() => void refreshWholeRecord()} />
           ) : immediateCareDecisions.length > 0 ? (
             <>
               <ul className="lcr-first-screen-list">
