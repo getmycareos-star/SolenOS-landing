@@ -127,3 +127,92 @@ html.solenos-first-visit-mode .solenos-first-visit {
 html.solenos-first-visit-mode .solenos-workspace-breadcrumbs {
   display: none !important;
 }
+
+
+/* The route heading is the visible page title; keep the current breadcrumb
+   available to assistive technology without repeating that title visually. */
+.solenos-workspace-breadcrumb-current,
+.solenos-workspace-breadcrumb-separator {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.solenos-chat-app .care-context-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--sn-line);
+  border-radius: 999px;
+  color: var(--sn-forest);
+  background: var(--sn-surface-soft);
+  font-size: calc(11px * var(--solenos-text-scale, 1));
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.solenos-chat-app .care-context-action:hover {
+  background: var(--sn-surface-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.workspace-connection-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px clamp(12px, 3vw, 44px) 0;
+  padding: 12px 16px;
+  border: 1px solid #d9c8a4;
+  border-radius: 12px;
+  background: #fff8e9;
+  color: #493b20;
+}
+
+.workspace-connection-alert p { margin: 0; flex: 1 1 320px; }
+.workspace-connection-alert button,
+.workspace-error-recovery button {
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workspace-error-recovery {
+  display: grid;
+  min-height: 60dvh;
+  place-items: center;
+  padding: clamp(20px, 5vw, 56px);
+  color: var(--text, #263329);
+}
+
+.workspace-error-recovery section {
+  width: min(100%, 620px);
+  padding: clamp(20px, 4vw, 32px);
+  border: 1px solid var(--border, #dce5e8);
+  border-radius: 18px;
+  background: var(--surface, #fff);
+}
+
+.workspace-error-recovery h1 { margin-top: 0; }
+.workspace-error-recovery p { line-height: 1.65; }
+.workspace-error-recovery button { background: var(--care-accent, #dce9dc); color: var(--care-button-ink, #18251b); }
+
+@media (max-width: 640px) {
+  .workspace-connection-alert { align-items: stretch; }
+  .workspace-connection-alert button { width: 100%; }
+}
