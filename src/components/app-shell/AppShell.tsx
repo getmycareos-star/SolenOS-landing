@@ -403,34 +403,32 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                         aria-label={careInformationExpanded ? "Collapse Care information sections" : "Expand Care information sections"}
                         aria-expanded={careInformationExpanded}
                         aria-controls="solenos-care-information-subnav"
-                        onClick={() => { if (sidebarCollapsed) setSidebarCollapsed(false); setCareInformationExpanded((expanded) => !expanded); }}
+                        onClick={() => { if (sidebarCollapsed) { setSidebarCollapsed(false); try { window.localStorage.setItem("solenos_sidebar_collapsed", "0"); } catch { /* Optional preference only. */ } } setCareInformationExpanded((expanded) => !expanded); }}
                       >
                         <span aria-hidden="true">{careInformationExpanded ? "−" : "+"}</span>
                       </button>
                     </div>
-                    {careInformationExpanded && (
-                      <div id="solenos-care-information-subnav" className="solenos-chat-nav-subnav" role="group" aria-label="Care information sections">
-                        {CARE_INFORMATION_NAVIGATION.map((child) => {
-                          const ChildIcon = child.icon;
-                          const childActive = active(child.href);
-                          return (
-                            <Link
-                              key={child.id}
-                              href={child.href}
-                              prefetch={false}
-                              className={`solenos-chat-nav-subitem${childActive ? " is-active" : ""}`}
-                              aria-current={childActive ? "page" : undefined}
-                              onMouseEnter={() => router.prefetch(child.href)}
-                              onFocus={() => router.prefetch(child.href)}
-                              onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
-                            >
-                              <span className="solenos-chat-nav-subicon"><ChildIcon size={16} strokeWidth={1.8} /></span>
-                              <span>{child.label}</span>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <div id="solenos-care-information-subnav" className="solenos-chat-nav-subnav" role="group" aria-label="Care information sections" hidden={!careInformationExpanded}>
+                      {CARE_INFORMATION_NAVIGATION.map((child) => {
+                        const ChildIcon = child.icon;
+                        const childActive = active(child.href);
+                        return (
+                          <Link
+                            key={child.id}
+                            href={child.href}
+                            prefetch={false}
+                            className={`solenos-chat-nav-subitem${childActive ? " is-active" : ""}`}
+                            aria-current={childActive ? "page" : undefined}
+                            onMouseEnter={() => router.prefetch(child.href)}
+                            onFocus={() => router.prefetch(child.href)}
+                            onClick={() => { try { performance.mark("solenos.workspace.navigation-click"); } catch { /* Optional instrumentation. */ } setSidebarOpen(false); }}
+                          >
+                            <span className="solenos-chat-nav-subicon"><ChildIcon size={16} strokeWidth={1.8} /></span>
+                            <span>{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
