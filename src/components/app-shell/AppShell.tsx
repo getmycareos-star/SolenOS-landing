@@ -486,7 +486,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             <span className="solenos-chat-brand-mark">S</span>
           </button>
           <div className="solenos-chat-topbar-context">{careContext}</div>
-          <Link href="/workspace/notifications" className="solenos-notification-shortcut" aria-label="Notifications" title="Notifications"><Bell size={19} aria-hidden="true" /></Link>
+          <Link href="/workspace/notifications" className={`solenos-notification-shortcut${active("/workspace/notifications") ? " is-active" : ""}`} aria-current={active("/workspace/notifications") ? "page" : undefined} aria-label="Notifications" title="Notifications"><Bell size={19} aria-hidden="true" /></Link>
           {pathname === "/workspace" && (
             <WorkspaceMoreMenu
               onAction={(action) => void handleWorkspaceAction(action)}
