@@ -24,7 +24,8 @@ const StructuredDailyCapture = dynamic(
   },
 );
 
-type CaptureMode = "something" | "medicine" | "measurement" | "photo" | "checkin" | "note";
+type StructuredCaptureMode = "medicine" | "measurement" | "note";
+type CaptureMode = "update" | "photo" | "checkin" | StructuredCaptureMode;
 
 type DailyCareDeliveryIssue = {
   id: string;
@@ -302,7 +303,8 @@ export default function DailyCarePage() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [captureOpen, setCaptureOpen] = useState(true);
-  const [captureMode, setCaptureMode] = useState<CaptureMode | null>("something");
+  const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
+  const [structuredCaptureMode, setStructuredCaptureMode] = useState<StructuredCaptureMode | null>(null);
   const [reviewAnalysisId, setReviewAnalysisId] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [careItems, setCareItems] = useState<CareItem[]>([]);
@@ -577,8 +579,9 @@ export default function DailyCarePage() {
     .sort((left, right) => {
       const leftTime = new Date(careEventTimestamp(left) || 0).getTime();
       const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
-      return leftTime - rightTime;
-    });
+      return rightTime - leftTime;
+    })
+    .slice(0, 6);
   const captureStatusHistoryItems = historyItems
     .filter((item) => {
       const processing = item.capture_processing;
@@ -592,7 +595,8 @@ export default function DailyCarePage() {
       const leftTime = new Date(careEventTimestamp(left) || 0).getTime();
       const rightTime = new Date(careEventTimestamp(right) || 0).getTime();
       return rightTime - leftTime;
-    });
+    })
+    .slice(0, 5);
   const medicationConcern = [...todayItems].reverse().find((item) =>
     isUnconfirmedMedicationChange(displayHistoryText(item))
   ) || null;
@@ -669,6 +673,7 @@ export default function DailyCarePage() {
                 if (captureOpen) {
                   setCaptureOpen(false);
                   setCaptureMode(null);
+                  setStructuredCaptureMode(null);
                 } else {
                   setCaptureOpen(true);
                 }
@@ -679,24 +684,20 @@ export default function DailyCarePage() {
             {captureOpen && (
               <div className="daily-care-capture-state">
                 {!captureMode ? (
-                  <div role="group" aria-label="Choose what you want to share" className="daily-care-capture-options">
-                    <Link href="/workspace/documents" className="daily-care-capture-option">
-                      <strong>Medical document</strong>
-                      <span>Upload a report, prescription or medical record.</span>
-                    </Link>
+                  <div role="group" aria-label="Choose how you want to add care information" className="daily-care-capture-options">
                     {([
-                      { value: "something", label: "Something happened", detail: "Share an observation in your own words." },
-                      { value: "medicine", label: "Medicine", detail: "Record what happened with a medicine." },
-                      { value: "measurement", label: "Measurement", detail: "Record a reading that was actually taken." },
-                      { value: "photo", label: "Photograph", detail: "Add a photo to your care information." },
-                      { value: "checkin", label: "Quick check-in", detail: "Share one overall impression of today." },
-                      { value: "note", label: "Note", detail: "Save a short note without categorizing it." },
+                      { value: "checkin", label: "Quick check-in", detail: "A few simple choices about how today is going." },
+                      { value: "update", label: "Describe an update", detail: "Write what happened or what you noticed in your own words." },
+                      { value: "photo", label: "Add a photo or document", detail: "Take a photo, choose an image or upload a medical document." },
                     ] as const).map((option) => (
                       <button
                         key={option.value}
                         type="button"
                         className="daily-care-capture-option"
-                        onClick={() => setCaptureMode(option.value)}
+                        onClick={() => {
+                          setCaptureMode(option.value);
+                          setStructuredCaptureMode(null);
+                        }}
                       >
                         <strong>{option.label}</strong>
                         <span>{option.detail}</span>
@@ -707,21 +708,54 @@ export default function DailyCarePage() {
                   <>
                     <div className="daily-care-capture-mode-heading">
                       <strong>{({
-                        something: "Something happened",
+                        update: "Describe an update",
                         medicine: "Medicine",
                         measurement: "Measurement",
-                        photo: "Photograph",
+                        photo: "Add a photo or document",
                         checkin: "Quick check-in",
-                        note: "Note",
+                        note: "Note or observation",
                       } as const)[captureMode]}</strong>
-                      <Button variant="secondary" onClick={() => setCaptureMode(null)}>More ways to share</Button>
+                      <Button variant="secondary" onClick={() => {
+                        setCaptureMode(null);
+                        setStructuredCaptureMode(null);
+                      }}>Back to capture choices</Button>
                     </div>
                     {captureMode === "checkin" ? (
                       <QuickDailyCheckIn />
                     ) : captureMode === "photo" ? (
-                      <DailyCarePhotoCapture />
-                    ) : captureMode === "something" ? (
-                      <NaturalLanguageDailyUpdate />
+                      <div style={{ display: "grid", gap: 12 }}>
+                        <DailyCarePhotoCapture />
+                        <p className="daily-care-muted" style={{ margin: 0 }}>
+                          Need to add a prescription, report or other medical document? <Link href="/workspace/documents">Open document upload</Link>.
+                        </p>
+                      </div>
+                    ) : captureMode === "update" ? (
+                      <div style={{ display: "grid", gap: 12 }}>
+                        <NaturalLanguageDailyUpdate />
+                        <details className="daily-care-context-panel" style={{ margin: 0 }}>
+                          <summary>Prefer a structured entry?</summary>
+                          <p className="daily-care-muted">Use a focused form when you have a specific medicine detail, measurement or note to record.</p>
+                          {!structuredCaptureMode ? (
+                            <div className="daily-care-capture-options" role="group" aria-label="Choose a structured entry">
+                              {([
+                                { value: "medicine", label: "Medicine", detail: "Record whether a medicine was taken, refused or missed." },
+                                { value: "measurement", label: "Measurement", detail: "Record a reading with its unit." },
+                                { value: "note", label: "Note or observation", detail: "Record something you noticed or want to remember." },
+                              ] as const).map((option) => (
+                                <button key={option.value} type="button" className="daily-care-capture-option" onClick={() => setStructuredCaptureMode(option.value)}>
+                                  <strong>{option.label}</strong>
+                                  <span>{option.detail}</span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ display: "grid", gap: 10 }}>
+                              <StructuredDailyCapture mode={structuredCaptureMode} />
+                              <Button variant="secondary" onClick={() => setStructuredCaptureMode(null)}>Choose a different entry type</Button>
+                            </div>
+                          )}
+                        </details>
+                      </div>
                     ) : (
                       <StructuredDailyCapture mode={captureMode} />
                     )}
@@ -851,7 +885,7 @@ export default function DailyCarePage() {
                       );
                     })}
                 </ul>
-                <p className="daily-care-muted">Select a count to jump to its saved entries in Recent care history below.</p>
+                <p className="daily-care-muted">Select a count to find those entries in your care history.</p>
               </>
             ) : historyError ? null : (
               <RecordState kind="period-empty" title="No new care updates recorded" description="Care updates added since your last visit will appear here." />
@@ -892,8 +926,8 @@ export default function DailyCarePage() {
             </section>
           )}
           <section aria-labelledby="daily-care-today-title" className="daily-care-context-panel">
-            <h2 id="daily-care-today-title">Care today</h2>
-            <p className="daily-care-muted">Updates saved today, in time order. No daily entry is required.</p>
+            <h2 id="daily-care-today-title">Recent care updates</h2>
+            <p className="daily-care-muted">The latest updates recorded today. This is a short view, not your full care history.</p>
             {medicationConcern && (
               <div role="status" className="daily-care-medication-confirmation">
                 <strong>Needs confirmation</strong>
@@ -926,6 +960,7 @@ export default function DailyCarePage() {
             ) : (
               <p>No updates have been saved today. That does not mean nothing happened, and you do not need to add an entry.</p>
             )}
+            <p className="daily-care-muted" style={{ marginTop: 12 }}><Link href="/workspace/timeline">View full care history</Link></p>
           </section>
 
           <details className="daily-care-context-panel">
