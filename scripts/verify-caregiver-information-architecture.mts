@@ -138,6 +138,9 @@ assert.ok(shell.includes("solenos-chat-nav-subnav") && shell.includes("aria-expa
 assert.ok(shell.includes("solenos-mobile-bottom-nav"), "mobile navigation exposes Home, Care, Ask and More");
 assert.ok(shell.includes("solenos-mobile-add-update"), "Add an update remains a prominent action outside the mobile destination bar");
 assert.ok(shell.includes("solenos-notification-shortcut"), "Notifications remains directly accessible from the workspace header");
+assert.ok(shell.includes('getJSON("/notifications/unread-count")') && shell.includes("unreadNotificationCount"), "the header notification indicator reads the authenticated unread count");
+assert.ok(shell.includes("solenos:notifications-updated") && notificationCenter.includes('new Event("solenos:notifications-updated")'), "marking a notification read refreshes the global unread indicator");
+
 
 assert.ok(breadcrumbs.includes("CARE_INFORMATION_NAVIGATION"), "breadcrumbs share the canonical care destination labels");
 
