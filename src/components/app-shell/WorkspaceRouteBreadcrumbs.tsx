@@ -51,7 +51,7 @@ export function WorkspaceRouteBreadcrumbs() {
           );
         })}
       </ol>
-      <span className="solenos-visually-hidden" aria-live="polite" aria-atomic="true">{trail.at(-1)?.label ?? "Home"} page</span>
+      <span className="solenos-visually-hidden" aria-live="polite" aria-atomic="true">{trail[trail.length - 1]?.label ?? "Home"} page</span>
     </nav>
   );
 }
