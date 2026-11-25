@@ -4,15 +4,16 @@ import { readFileSync } from "node:fs";
 const read = (path: string) => readFileSync(path, "utf8");
 const layout = read("src/app/workspace/layout.tsx");
 const shell = read("src/components/app-shell/WorkspaceShellContent.tsx");
+const recovery = read("src/components/app-shell/WorkspaceErrorFallback.tsx");
 const rootLayout = read("src/app/layout.tsx");
 const base = read("src/app/workspace/experience-design-system.css");
 const v2 = read("src/app/workspace/experience-design-system-v2.css");
 const navigation = read("src/app/workspace/navigation-accessibility.css");
 const accessibility = read("src/app/accessibility-overrides.css");
 
-const baseImport = shell.indexOf('import "@/app/workspace/experience-design-system.css";');
-const v2Import = shell.indexOf('import "@/app/workspace/experience-design-system-v2.css";');
-const navigationImport = shell.indexOf('import "@/app/workspace/navigation-accessibility.css";');
+const baseImport = layout.indexOf('import "@/app/workspace/experience-design-system.css";');
+const v2Import = layout.indexOf('import "@/app/workspace/experience-design-system-v2.css";');
+const navigationImport = layout.indexOf('import "@/app/workspace/navigation-accessibility.css";');
 assert.ok(baseImport >= 0 && baseImport < v2Import && v2Import < navigationImport,
   "workspace foundation, design-system refinements and navigation accessibility must load in explicit order");
 assert.match(rootLayout, /import "\.\/accessibility-overrides\.css";/,
