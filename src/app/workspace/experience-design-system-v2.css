@@ -3099,3 +3099,15 @@
   background: var(--sn-surface-soft);
   color: var(--sn-ink);
 }
+
+
+/* Final interaction-target contract. These rules intentionally follow the
+   legacy foundation so its smaller dimensions cannot win the cascade. */
+.solenos-chat-app .solenos-chat-nav-item {
+  min-height: 48px;
+}
+
+.solenos-chat-app .solenos-sidebar-icon-button {
+  min-width: 44px;
+  min-height: 44px;
+}
