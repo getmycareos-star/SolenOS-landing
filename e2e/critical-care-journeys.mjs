@@ -2555,6 +2555,9 @@ await record("Daily Care structured capture validates units and medication outco
   const medicationOptions = await medicationStatus.locator("option").allTextContents();
   assert.ok(medicationOptions.includes("Refused"));
   assert.ok(medicationOptions.includes("Missed"));
+  await medicationStatus.selectOption("scheduled");
+  assert.equal(await structured.page.locator("#medication-scheduled-for").getAttribute("required"), "",
+    "a scheduled medication entry must include its planned time");
   await structured.context.close();
 });
 
