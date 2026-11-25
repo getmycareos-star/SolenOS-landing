@@ -1819,8 +1819,6 @@ await record("03b mobile document file picker, upload progress and camera scanne
 
 // 4. Document upload: original bytes -> server extraction -> persisted extraction read.
 let documentId;
-let duplicateDocumentId;
-let possibleVersionDocumentId;
 await record("04 scanned document upload, original bytes, page tracking, idempotent retry and extraction", async () => {
   const documentLines = [
     "Caregiver observation: Mary ate half of her breakfast today.",
@@ -1932,7 +1930,6 @@ await record("04 scanned document upload, original bytes, page tracking, idempot
   assert.equal(duplicate.status, 201, JSON.stringify(duplicate.payload));
   assert.equal(duplicate.payload.duplicate_detected, true);
   assert.equal(duplicate.payload.duplicate_of_evidence_id, documentId);
-  duplicateDocumentId = duplicate.payload.evidence_id;
 
   const possibleVersionForm = new FormData();
   possibleVersionForm.append("person_id", identity.personId);
@@ -1943,7 +1940,6 @@ await record("04 scanned document upload, original bytes, page tracking, idempot
   assert.equal(possibleVersion.status, 201, JSON.stringify(possibleVersion.payload));
   assert.equal(possibleVersion.payload.duplicate_detected, false);
   assert.equal(possibleVersion.payload.possible_version_of_evidence_id, documentId);
-  possibleVersionDocumentId = possibleVersion.payload.evidence_id;
 
   const documentsLibrary = await createBrowserPage(session, "/workspace/documents", { width: 390, height: 844 });
   await documentsLibrary.page.getByText(/Exact copy of journey-discharge-note-scan\.png/).waitFor({ timeout: 20_000 });
