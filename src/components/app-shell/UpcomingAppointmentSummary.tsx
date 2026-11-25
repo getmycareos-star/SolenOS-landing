@@ -63,6 +63,15 @@ export function UpcomingAppointmentSummary() {
   useEffect(() => { void load(); }, [load]);
 
   const appointment = brief?.next_appointment ?? null;
+  const appointmentStatus = String(appointment?.status ?? "").trim().toLowerCase();
+  const appointmentTime = appointment?.scheduled_at ? Date.parse(appointment.scheduled_at) : Number.NaN;
+  const appointmentIsTimeSensitive = Boolean(
+    appointment &&
+    Number.isFinite(appointmentTime) &&
+    appointmentTime > Date.now() &&
+    appointmentTime - Date.now() <= 24 * 60 * 60 * 1000 &&
+    !["cancelled", "canceled", "completed", "no_show"].includes(appointmentStatus)
+  );
 
   return (
     <section className="solenos-upcoming-appointment" aria-labelledby="solenos-upcoming-appointment-title">
@@ -76,7 +85,8 @@ export function UpcomingAppointmentSummary() {
       {loading ? <RecordState kind="loading" title="Checking recorded appointments" /> : error ? (
         <RecordState kind="error" title="Appointment information is unavailable" description="Your saved care information has not been changed." onAction={() => void load()} />
       ) : appointment ? (
-        <div className="solenos-upcoming-appointment__item">
+        <div className={`solenos-upcoming-appointment__item${appointmentIsTimeSensitive ? " is-time-sensitive" : ""}`}>
+          {appointmentIsTimeSensitive && <p className="solenos-upcoming-appointment__timing">Coming up within 24 hours</p>}
           <strong>{caregiverSourceText(appointment.title) || "Recorded appointment"}</strong>
           <p>{displayDate(appointment.scheduled_at)} · {caregiverStatusLabel(appointment.status) || "Status not recorded"}</p>
           {appointment.provider && <p>{caregiverSourceText(appointment.provider)}</p>}
