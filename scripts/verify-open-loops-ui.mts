@@ -98,9 +98,9 @@ assert.match(careContinuity, /item\.linked_follow_up_outcome_status[\s\S]*?careg
 
 
 assert.match(careContinuity, /Only items that may need your attention appear here[\s\S]*?This is not a diagnosis/, "Care priorities must remain a short, non-diagnostic current summary");
-assert.match(careContinuity, /These are changes or things that are still unclear in the saved care history[\s\S]*?not automatically tasks[\s\S]*?Follow-ups screen/, "monitoring signals must remain distinct from the follow-up workflow");
-assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Care priorities must link to the dedicated Follow-ups screen");
-assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See follow-ups/, "Changes to keep an eye on must link to the dedicated Follow-ups screen");
+assert.match(careContinuity, /These are changes or things that are still unclear in the saved care history[\s\S]*?not automatically tasks[\s\S]*?Needs attention page/, "monitoring signals must remain distinct from the follow-up workflow");
+assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See needs attention/, "Care priorities must link to the dedicated Needs attention page");
+assert.match(careContinuity, /href="\/workspace\/open-loops"[\s\S]*?See needs attention/, "Changes to keep an eye on must link to the dedicated Needs attention page");
 
 console.log("FOLLOW_UPS_UI_CONTRACT=PASS");
 console.log(`Assertions=${required.length + 3}`);
