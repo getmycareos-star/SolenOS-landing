@@ -82,7 +82,7 @@ type VersionComparison = {
   reason?: string;
 };
 type CropInsets = { top: number; right: number; bottom: number; left: number };
-type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; previewUrl: string | null };
+type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; previewUrl: string | null; sourcePageNumber?: number };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
@@ -375,7 +375,7 @@ export default function DocumentsPage() {
     );
   }, [documents, query]);
 
-  const handleFiles = async (fileList: FileList | File[] | null) => {
+  const handleFiles = async (fileList: FileList | File[] | null, sourcePageNumbers: number[] = []) => {
     const files = Array.from(fileList || []);
     if (!files.length) return;
     setUploadMessage(null);
@@ -384,7 +384,7 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "error", text: invalid.size <= 0 ? `${invalid.name} is empty.` : `${invalid.name} is too large to upload. Choose a smaller file.` });
       return;
     }
-    const pages: ReviewPage[] = files.map((file) => {
+    const pages: ReviewPage[] = files.map((file, index) => {
       const isScannedImage = file.type.startsWith("image/");
       return {
         ingestionKey: crypto.randomUUID(),
@@ -394,6 +394,7 @@ export default function DocumentsPage() {
         rotation: 0,
         crop: { top: 0, right: 0, bottom: 0, left: 0 },
         previewUrl: isScannedImage ? URL.createObjectURL(file) : file.type === "application/pdf" ? URL.createObjectURL(file) : null,
+        ...(Number.isInteger(sourcePageNumbers[index]) && sourcePageNumbers[index] > 0 ? { sourcePageNumber: sourcePageNumbers[index] } : {}),
       };
     });
     setReviewPages((current) => [...current, ...pages]);
@@ -482,7 +483,8 @@ export default function DocumentsPage() {
         setCameraError("The photo could not be created. Please try again.");
         return;
       }
-      const page = new File([blob], `solenos-scan-${Date.now()}-${capturedPages.length + 1}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
+      const pageNumber = recoveryPageNumbers[capturedPages.length] || capturedPages.length + 1;
+      const page = new File([blob], `solenos-scan-page-${pageNumber}-${Date.now()}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
       setCapturedPages((current) => [...current, page]);
       setCameraError(null);
     }, "image/jpeg", 0.92);
@@ -499,7 +501,7 @@ export default function DocumentsPage() {
     setCameraOpen(false);
     setCapturedPages([]);
     setIntakeMode("scan");
-    void handleFiles(pages);
+    void handleFiles(pages, recoveryPageNumbers);
   };
 
 
@@ -548,7 +550,7 @@ export default function DocumentsPage() {
           scan_text_prepared: "false",
         };
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) {
-          fields.capture_page_number = String(scanPageNumber);
+          fields.capture_page_number = String(page.sourcePageNumber ?? scanPageNumber);
         }
 
         let queueId: string | null = null;
