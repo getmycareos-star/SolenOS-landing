@@ -2,11 +2,13 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 import { BrandLoading } from "@/components/brand";
 import { useWorkspace } from "@/lib/workspace-context";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
+import { CARE_INFORMATION_NAVIGATION } from "@/lib/workspace-navigation";
 
 function formatLastUpdated(iso: string | null): string {
   if (!iso) return "Not yet updated";
@@ -78,14 +80,35 @@ function WorkspacePageInner() {
         <header className="lcr-header">
           <div>
             <p className="lcr-eyebrow">YOUR CARE RECORD</p>
-            <h1>Your Care Record</h1>
-            <p className="lcr-intro">See what has been saved, what still needs checking, and where it came from.</p>
+            <h1>Care information</h1>
+            <p className="lcr-intro">Find the current care picture, earlier events, documents and the care matters that still need attention.</p>
           </div>
           <div className="lcr-record-meta">
             <span>Updated {formatLastUpdated(latestUpdated)}</span>
           </div>
         </header>
 
+        <section className="care-information-directory" aria-labelledby="care-information-directory-heading">
+          <div className="care-information-directory__intro">
+            <h2 id="care-information-directory-heading">Explore care information</h2>
+            <p>Each area has a different purpose. Your saved care information stays connected across these views.</p>
+          </div>
+          <nav className="care-information-directory__grid" aria-label="Care information sections">
+            {CARE_INFORMATION_NAVIGATION.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.id} href={item.href} className="care-information-directory__link">
+                  <span className="care-information-directory__icon" aria-hidden="true"><Icon size={19} /></span>
+                  <span className="care-information-directory__copy">
+                    <strong>{item.label}</strong>
+                    <span>{item.description}</span>
+                  </span>
+                  <span className="care-information-directory__arrow" aria-hidden="true">→</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </section>
         <section className="lcr-current-fact lcr-companion-entry" aria-labelledby="lcr-companion-entry-heading">
           <div>
             <h2 id="lcr-companion-entry-heading">Need to add something?</h2>
