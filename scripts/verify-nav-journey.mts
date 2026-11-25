@@ -48,8 +48,8 @@ assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes
 for (const label of ["Home", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
-assert.match(navigationRegistry, /care: \[[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Follow-ups"/, "Follow-ups remains a primary care destination");
-assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION:[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Care Assistant"/, "Care Assistant remains available under More");
+assert.match(navigationRegistry, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Needs attention"/, "Needs attention is grouped with Care information");
+assert.match(navigationRegistry, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Ask SolenOS"/, "Ask SolenOS is a primary destination");
 assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/);
 for (const route of [
