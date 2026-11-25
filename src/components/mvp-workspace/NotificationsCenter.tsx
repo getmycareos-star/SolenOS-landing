@@ -127,6 +127,7 @@ export function NotificationsCenter() {
       const updated = await patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {}) as CareNotification;
       setNotifications((current) => current.map((row) => row.id === updated.id ? updated : row));
       setUnreadCount((current) => Math.max(0, current - 1));
+      window.dispatchEvent(new Event("solenos:notifications-updated"));
     } catch {
       setInboxError("We couldn't update this notification. Please try again.");
     } finally {
