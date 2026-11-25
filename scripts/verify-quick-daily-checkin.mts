@@ -165,7 +165,7 @@ assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
   "capture opens within the Daily Care screen");
 assert.match(dailyCarePage, /<h2 id="daily-care-follow-ups-title">Follow-ups<\/h2>/,
   "Daily Care shows a compact route to the dedicated Follow-ups screen");
-assert.match(dailyCarePage, /Open Follow-ups/,
+assert.match(dailyCarePage, /Open Needs attention/,
   "unresolved matters are managed in the dedicated Follow-ups screen");
 assert.doesNotMatch(dailyCarePage, /followUps\.slice\(0, 6\)|careItems\.filter\(isOpenMatter\)\.slice/,
   "Daily Care must not duplicate the full Follow-ups list");
