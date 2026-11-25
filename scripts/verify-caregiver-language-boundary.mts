@@ -761,7 +761,7 @@ assert.match(historyDrawer, /Your saved care history, in date order/);
 assert.match(historyDrawer, /What was saved and where it came from/);
 assert.doesNotMatch(careRecordOverview, /Your Living Care Record|Living Care Record|AI Companion/);
 assert.doesNotMatch(handoff, /Living Care Record|Qwen quotations|Evidence IDs:|Origin groups:/);
-assert.match(workspaceNav, /label: "Share care information"/);
+assert.match(workspaceNav, /label: "Care handoffs"/);
 assert.doesNotMatch(workspaceNav, /label: "Care Handoffs"/);
 assert.doesNotMatch(handoff, /Care Handoffs|Prepare a care handoff|handoff history|Incoming and outgoing handoffs|Recipient\(s\):|Information included:/);
 assert.match(careRecordOverview, /caregiverSourceText/);
