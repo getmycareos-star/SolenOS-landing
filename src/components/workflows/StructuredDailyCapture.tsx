@@ -1809,7 +1809,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                 >
                   <option value="">Choose what happened</option>
                   <option value="given">Given</option>
-                  <option value="not_given">Not given</option>
+                  <option value="refused">Refused</option>
+                  <option value="missed">Missed</option>
+                  <option value="not_given">Not given (reason unknown)</option>
                   <option value="uncertain">Not sure</option>
                   <option value="scheduled">Scheduled (not confirmed as given)</option>
                   <option value="other">Something else</option>
@@ -1822,13 +1824,13 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
               </div>
               
               <div style={{ flex: 1 }}>
-                <label htmlFor="medication-dose" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Dose</label>
+                <label htmlFor="medication-dose" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Dose or strength (optional)</label>
                 <input
                   type="text"
                   id="medication-dose"
                   value={medicationForm.dose || ''}
                   onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, dose: e.target.value || null })); }}
-                  placeholder="Enter dose (e.g., 10mg)"
+                  placeholder="Only if known, e.g. 10 mg"
                   style={{ 
                     width: '100%', 
                     padding: '10px 12px', 
@@ -1842,22 +1844,17 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             </div>
             
             <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Scheduled For</label>
-                <input
-                  type="datetime-local"
-                  value={medicationForm.scheduled_for || ''}
-                  onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null })); }}
-                  style={{ 
-                    width: '100%', 
-                    padding: '10px 12px', 
-                    borderRadius: '6px', 
-                    border: '1px solid var(--border)', 
-                    background: 'var(--bg)', 
-                    fontSize: 'calc(14px * var(--solenos-text-scale, 1))' 
-                  }}
-                />
-              </div>
+              {medicationForm.status === "scheduled" && (
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Scheduled for</label>
+                  <input
+                    type="datetime-local"
+                    value={medicationForm.scheduled_for || ''}
+                    onChange={(e) => { setMedicationError(null); setMedicationFeedback(null); setMedicationForm(prev => ({ ...prev, scheduled_for: e.target.value || null })); }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 'calc(14px * var(--solenos-text-scale, 1))' }}
+                  />
+                </div>
+              )}
               
               {medicationForm.status === "given" && (
                 <div style={{ flex: 1 }}>
