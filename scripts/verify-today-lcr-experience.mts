@@ -25,7 +25,9 @@ assert.match(understanding, /href="\/workspace\/daily-care" className="solenos-c
 assert.match(understanding, /href="\/workspace\/documents" className="solenos-care-secondary-action"/, "empty Home state must offer document upload");
 assert.match(understanding, /watchMissingInformation.length > 0/, "relevant missing information must be surfaced");
 assert.match(understanding, /Reports that do not match:/, "unresolved disagreements must be named explicitly on Home");
-assert.match(understanding, /Sol enOS has not treated one report as the final answer|SolenOS has not treated one report as the final answer/, "Home must not silently select one conflicting report");
+
+assert.match(understanding, /const watchUncertainties = \(assessment\?\.uncertainties_and_conflicts \?\? \[\]\)\.filter\(isUnresolvedCareInformation\)/, "resolved disagreements must not remain in the current uncertainty summary");
+assert.match(understanding, /const watchMissingInformation = \(assessment\?\.missing_information \?\? \[\]\)\.filter\(isUnresolvedCareInformation\)/, "resolved or confirmed-absent details must not remain in the missing-information summary");assert.match(understanding, /Sol enOS has not treated one report as the final answer|SolenOS has not treated one report as the final answer/, "Home must not silently select one conflicting report");
 assert.match(understanding, /href="\/workspace\/care-continuity#lcr-conflict-review"/, "Home must provide a path to review the conflicting reports");
 assert.match(understanding, /id="lcr-conflict-review"/, "the complete record must expose the conflict-review destination");
 assert.match(understanding, /id=\{\`lcr-care-item-/, "complete-record care details must expose stable evidence anchors");
