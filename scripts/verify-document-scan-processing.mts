@@ -30,6 +30,9 @@ assert(!source.includes("createProcessedImage("), "the browser must not transfor
 assert(!source.includes("createMultiPagePdf(") && !source.includes("Combine scan pages into one PDF"), "multiple scan pages must remain separate original files rather than being recomposed in the browser");
 assert.match(source, /scan_rotation_degrees: String\(page\.rotation\)/, "per-page rotation must accompany the immutable original for server-side processing");
 assert.match(source, /kind: "No longer listed"/, "a missing detail in a newer document must not be labelled as a confirmed removal");
+assert.match(source, /duplicateOfEvidenceId: asString\(meta\.duplicate_of_evidence_id\)/, "exact duplicate identity must be read from persisted upload metadata");
+assert.match(source, /not independent evidence/, "exact duplicate uploads must be visibly distinguished from independent source evidence");
+assert.match(source, /Possible newer or corrected copy of/, "possible document versions must be surfaced before caregivers compare or link them");
 assert.match(source, /does not confirm that a medication or care instruction was stopped/, "document differences must not be interpreted as real-world discontinuation");
 assert.match(source, /page_number \? " \(page " \+ v\.page_number/, "document comparisons must retain source-page references");
 assert.match(source, /scan_crop_json: JSON\.stringify\(page\.crop\)/, "per-page crop metadata must accompany the immutable original for server-side processing");
