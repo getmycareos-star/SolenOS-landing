@@ -18,7 +18,7 @@ const companion = read("src/components/workflows/AICompanion.tsx");
 const notifications = read("src/app/workspace/notifications/page.tsx");
 const more = read("src/app/workspace/more/page.tsx");
 
-for (const [route, file] of [
+const routes = [
   ["/workspace", "src/app/workspace/page.tsx"],
   ["/workspace/daily-care", "src/app/workspace/daily-care/page.tsx"],
   ["/workspace/care-continuity", "src/app/workspace/care-continuity/page.tsx"],
@@ -32,7 +32,8 @@ for (const [route, file] of [
   ["/workspace/notifications", "src/app/workspace/notifications/page.tsx"],
   ["/workspace/more", "src/app/workspace/more/page.tsx"],
   ["/workspace/settings", "src/app/workspace/settings/page.tsx"],
-] as const) {
+] as const;
+for (const [route, file] of routes) {
   assert.ok(fs.existsSync(path.join(root, file)), `${route} resolves to an existing page`);
 }
 
@@ -46,30 +47,37 @@ for (const [route, label] of [
   ["/workspace/reminders", "Reminders"],
   ["/workspace/handoffs", "Share care information"],
 ] as const) {
-  assert.match(navigation, new RegExp('href: "' + route.replaceAll("/", "\\/") + '"[\\s\\S]*?label: "' + label + '"'),
-    `${route} belongs to Care information`);
+  const routeIndex = navigation.indexOf(`href: "${route}"`);
+  assert.ok(routeIndex >= 0, `${route} exists in the navigation registry`);
+  assert.ok(navigation.slice(routeIndex, routeIndex + 220).includes(`label: "${label}"`), `${route} has the expected caregiver label`);
 }
 
-assert.match(navigation, /WORKSPACE_SECONDARY_NAVIGATION[\\s\\S]*?href: "\\/workspace\\/settings"[\\s\\S]*?label: "Settings"/);
-assert.doesNotMatch(navigation, /WORKSPACE_SECONDARY_NAVIGATION[\\s\\S]*?href: "\\/workspace\\/(timeline|documents|appointments|open-loops|reminders|handoffs|companion)"/,
-  "More must not own core care destinations");
-assert.match(shell, /CARE_INFORMATION_NAVIGATION\\.some/, "the Care information parent remains active on its child routes");
-assert.match(breadcrumbs, /CARE_INFORMATION_NAVIGATION/, "breadcrumbs share the canonical care destination labels");
+const moreDestinations = navigation.slice(navigation.indexOf("export const WORKSPACE_SECONDARY_NAVIGATION"));
+assert.ok(moreDestinations.includes('href: "/workspace/settings"'));
+for (const route of ["/workspace/timeline", "/workspace/documents", "/workspace/appointments", "/workspace/open-loops", "/workspace/reminders", "/workspace/handoffs", "/workspace/companion"]) {
+  assert.ok(!moreDestinations.includes(`href: "${route}"`), `More does not own ${route}`);
+}
+assert.ok(shell.includes("CARE_INFORMATION_NAVIGATION.some"), "the Care information parent remains active on its child routes");
+assert.ok(breadcrumbs.includes("CARE_INFORMATION_NAVIGATION"), "breadcrumbs share the canonical care destination labels");
 
-assert.match(home, /<h1>Home<\\/h1>/);
-assert.match(addUpdate, /<h1>Add an update<\\/h1>/);
-assert.match(careInformation, /<h1>Care information<\\/h1>/);
-assert.match(careInformation, /CARE_INFORMATION_NAVIGATION\\.map/, "Care information exposes its child destinations");
-assert.match(documents, /Documents/, "Documents remains a directly reachable workspace page");
-assert.match(history, /Care history/, "the history route retains its distinct historical responsibility");
-assert.match(appointments, /<h1[^>]*>Appointments<\\/h1>/);
-assert.match(needsAttention, /<h1>Needs attention<\\/h1>/);
-assert.match(companion, /<h1 className="companion-page-title">Ask SolenOS<\\/h1>/);
-assert.match(notifications, /settings#settings-notifications/, "the notification shortcut lands on the real notification inbox");
-assert.match(more, /<h1>More<\\/h1>/);
-assert.match(more, /CaregiverHandoverInbox/, "family access handovers remain reachable under account management");
-assert.doesNotMatch(more, /HistoryDrawer|Recent care history/, "More does not duplicate core care browsing");
+for (const [source, expected, label] of [
+  [home, "<h1>Home</h1>", "Home"],
+  [addUpdate, "<h1>Add an update</h1>", "Add an update"],
+  [careInformation, "<h1>Care information</h1>", "Care information"],
+  [appointments, "<h1>Appointments</h1>", "Appointments"],
+  [needsAttention, "<h1>Needs attention</h1>", "Needs attention"],
+  [companion, '<h1 className="companion-page-title">Ask SolenOS</h1>', "Ask SolenOS"],
+  [more, "<h1>More</h1>", "More"],
+] as const) {
+  assert.ok(source.includes(expected), `${label} page title matches its navigation label`);
+}
+assert.ok(careInformation.includes("CARE_INFORMATION_NAVIGATION.map"), "Care information exposes its child destinations");
+assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
+assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
+assert.ok(notifications.includes("settings#settings-notifications"), "the notification shortcut lands on the real notification inbox");
+assert.ok(more.includes("CaregiverHandoverInbox"), "family access handovers remain reachable under account management");
+assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
-assert.doesNotMatch(navigation, /community/i, "the disabled Community feature remains absent from navigation");
+assert.ok(!navigation.toLowerCase().includes("community"), "the disabled Community feature remains absent from navigation");
 
 console.log("Caregiver information architecture contract checks passed.");
