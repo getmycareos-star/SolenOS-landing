@@ -10,6 +10,9 @@ assert.ok(component.includes('getJSON("/appointment-workspaces/preparation-brief
 assert.ok(component.includes("await ensureAnonymousSession()"), "appointment information must use the current authenticated/anonymous session");
 assert.ok(component.includes("No appointment information was returned from the available sources. This does not prove that no appointment exists."), "empty results must not be represented as proof that no appointment exists");
 assert.ok(component.includes("Appointment information is unavailable"), "retrieval failures must remain visible");
+assert.ok(component.includes("appointmentTime - Date.now() <= 24 * 60 * 60 * 1000"), "appointments due within 24 hours must be identified as time-sensitive");
+assert.ok(component.includes("is-time-sensitive"), "time-sensitive appointments must receive a distinct presentation");
+assert.ok(styles.includes(".solenos-upcoming-appointment__item.is-time-sensitive"), "time-sensitive appointment styling must be present");
 assert.ok(component.includes("onAction={() => void load()}"), "failed retrieval must be recoverable");
 assert.ok(component.includes("SolenOS has not booked or confirmed it with a provider."), "recorded appointments must not be represented as external bookings");
 assert.ok(component.includes('href="/workspace/appointments"'), "caregivers must be able to open the existing appointment workflow");
