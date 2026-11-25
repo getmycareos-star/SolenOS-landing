@@ -861,11 +861,11 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
     throw new Error(`Daily Care did not render its Follow-ups section: ${JSON.stringify(diagnostic)}`);
   }
   await followupsSummary.click();
-  const viewFollowups = page.getByRole("link", { name: "Open Follow-ups", exact: true });
+  const viewFollowups = page.getByRole("link", { name: "Open Needs attention", exact: true });
   await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
   await viewFollowups.click();
   await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
-  await page.locator(".followups-page h1").getByText("Follow-ups", { exact: true })
+  await page.locator(".followups-page h1").getByText("Needs attention", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   for (const heading of ["Needs attention", "Being monitored", "Needs clarification"]) {
     await page.getByRole("heading", { name: heading, exact: true })
@@ -879,7 +879,7 @@ await record("01b visible Follow-ups link and mobile navigation", async () => {
     document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
   , undefined, { timeout: 5_000 });
   const primaryNavigation = page.locator("#solenos-navigation");
-  const followUpsNavigationLink = primaryNavigation.getByRole("link", { name: /Follow-ups/ });
+  const followUpsNavigationLink = primaryNavigation.getByRole("link", { name: /Needs attention/ });
   await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
   assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
   const moreNavigationLink = primaryNavigation.getByRole("link", { name: /More/ });
@@ -2165,7 +2165,7 @@ await record("Daily Care saves and retrieves original reports without relying on
   // then wait for the destination page h1, not the persistent sidebar heading.
   await appointmentFollowUpsPanel.getByRole("link", { name: "Open Follow-ups", exact: true }).click();
   await daily.page.waitForURL("**/workspace/open-loops", { timeout: 15_000 });
-  await daily.page.locator(".followups-page h1").getByText("Follow-ups", { exact: true })
+  await daily.page.locator(".followups-page h1").getByText("Needs attention", { exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
   const openLoopsUiResponse = await openLoopsUiResponsePromise;
   const openLoopsUiPayload = await openLoopsUiResponse.json().catch(() => null);
