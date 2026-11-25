@@ -1380,9 +1380,9 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     !internalCaptureEventType.test(change.explanation || "")
   );
   const closedCareInformationStatuses = new Set([
-    "resolved", "closed", "reconciled", "withdrawn", "retracted",
-    "superseded", "cancelled", "dismissed", "confirmed_absent",
-    "not_applicable", "not_needed",
+    "resolved", "closed", "completed", "answered", "reconciled",
+    "withdrawn", "retracted", "superseded", "cancelled",
+    "dismissed", "not_applicable", "known",
   ]);
   const isUnresolvedCareInformation = (item: { status?: string | null }) =>
     !closedCareInformationStatuses.has(String(item.status ?? "").trim().toLowerCase());
