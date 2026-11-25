@@ -74,6 +74,8 @@ for (const route of [
 for (const route of [
   "src/app/workspace/page.tsx",
   "src/app/workspace/daily-care/page.tsx",
+  "src/app/workspace/care-continuity/page.tsx",
+  "src/app/workspace/notifications/page.tsx",
   "src/app/workspace/open-loops/page.tsx",
   "src/app/workspace/timeline/page.tsx",
   "src/app/workspace/documents/page.tsx",
@@ -127,6 +129,8 @@ assert.match(workspaceStyles, /overflow-y: auto/);
 const routeContracts = [
   ["src/app/workspace/page.tsx", "Home"],
   ["src/app/workspace/daily-care/page.tsx", "Add an update"],
+  ["src/app/workspace/care-continuity/page.tsx", "Care information"],
+  ["src/app/workspace/notifications/page.tsx", "Notifications"],
   ["src/app/workspace/open-loops/page.tsx", "Needs attention"],
   ["src/app/workspace/timeline/page.tsx", "Care history"],
   ["src/app/workspace/documents/page.tsx", "Documents"],
@@ -157,6 +161,8 @@ for (const route of [
   assert.doesNotMatch(source, /<main\b/, `${route} must not create a nested main landmark inside the app shell`);
 }
 assert.doesNotMatch(companion, /<main\b/, "AI Companion must not add a nested main landmark");
+const firstVisitRouter = fs.readFileSync(path.join(root, "src/components/mvp-workspace/FirstVisitWorkspaceRouter.tsx"), "utf8");
+assert.doesNotMatch(firstVisitRouter, /<main\\b/, "first-visit states must not add nested main landmarks inside the workspace shell");
 
 console.log("✓ route titles and breadcrumbs agree with navigation labels");
 console.log("✓ mobile drawer has focus containment, Escape handling, inert background, and focus restoration");
