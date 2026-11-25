@@ -18,6 +18,7 @@ import {
 
 import { Button } from "@/components/ui/Button";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
+import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 import { caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
 const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
@@ -294,6 +295,7 @@ export default function TimelinePage() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [allRecordsOpen, setAllRecordsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -580,10 +582,21 @@ export default function TimelinePage() {
           <h1 className="timeline-page-title">Care history</h1>
           <p className="timeline-page-description">A history of saved care updates. Older reports remain separate from the latest care summary.</p>
         </div>
-        <Button variant="icon" aria-label="Refresh care history" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
-          <RefreshCw size={18} aria-hidden />
-        </Button>
+        <div className="timeline-header-actions">
+          <Button variant="secondary" onClick={() => setAllRecordsOpen((open) => !open)}>
+            {allRecordsOpen ? "Hide all saved records" : "Browse all saved records"}
+          </Button>
+          <Button variant="icon" aria-label="Refresh care history" disabled={loading || refreshing} onClick={() => void loadEvents(true, appliedQuery)}>
+            <RefreshCw size={18} aria-hidden />
+          </Button>
+        </div>
       </header>
+
+      {allRecordsOpen && (
+        <section className="care-history-source-explorer" aria-label="All saved care records">
+          <HistoryDrawer />
+        </section>
+      )}
 
       <section className="timeline-latest" aria-label="Latest recorded update">
         <div className="timeline-latest-heading">
