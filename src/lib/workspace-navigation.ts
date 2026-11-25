@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Clock3, FileText, Handshake, History, Home, MessageCircle, MoreHorizontal, Settings, type LucideIcon } from "lucide-react";
+import { AlertCircle, Bell, CalendarDays, Clock3, FileText, Handshake, History, Home, MessageCircle, MoreHorizontal, Plus, Settings, type LucideIcon } from "lucide-react";
 
 export type WorkspaceNavigationItem = {
   id: string;
@@ -26,7 +26,7 @@ export const WORKSPACE_NAVIGATION = {
       href: "/workspace/daily-care",
       label: "Add an update",
       description: "Record something you noticed or something that happened",
-      icon: MessageCircle,
+      icon: Plus,
     },
     {
       id: "care-information",
