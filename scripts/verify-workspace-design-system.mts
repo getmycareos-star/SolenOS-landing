@@ -5,6 +5,7 @@ const read = (path: string) => readFileSync(path, "utf8");
 const layout = read("src/app/workspace/layout.tsx");
 const shell = read("src/components/app-shell/WorkspaceShellContent.tsx");
 const recovery = read("src/components/app-shell/WorkspaceErrorFallback.tsx");
+const breadcrumbs = read("src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx");
 const rootLayout = read("src/app/layout.tsx");
 const base = read("src/app/workspace/experience-design-system.css");
 const v2 = read("src/app/workspace/experience-design-system-v2.css");
