@@ -7,7 +7,6 @@ const DATABASE_VERSION = 1;
 const WRITE_STORE = "writes";
 const KEY_STORE = "keys";
 const MAX_ATTEMPTS = 8;
-const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const SENDING_LEASE_MS = 15 * 1000;
 const RETRY_DELAYS_MS = [1_000, 5_000, 30_000, 120_000, 600_000, 1_800_000];
 
@@ -344,7 +343,6 @@ export async function getDurableWriteSummary(
     row.person_id === personId &&
     row.caregiver_id === caregiverId &&
     (!endpoints || endpoints.includes(row.endpoint)) &&
-    now - row.created_at <= RETENTION_MS,
   );
   return {
     pending: matching.filter((row) => row.status === "pending" || row.status === "sending").length,
@@ -450,10 +448,6 @@ export async function syncDurableWrites(input: {
     let synced = 0;
 
     for (const row of rows) {
-      if (now - row.created_at > RETENTION_MS) {
-        await deleteWrite(db, row.id);
-        continue;
-      }
       if (row.person_id !== input.personId || row.caregiver_id !== input.caregiverId) continue;
       if (input.endpoints && !input.endpoints.includes(row.endpoint)) continue;
       if (!isEligible(row, now)) continue;
