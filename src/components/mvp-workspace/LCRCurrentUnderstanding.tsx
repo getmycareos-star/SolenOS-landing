@@ -1681,7 +1681,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
                     <small>{caregiverLabel(item.epistemic_status)} · Shared by {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "you" : "another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"} · Saved {formatWhen(item.recorded_at || item.occurred_at)}</small>
                     {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
-                    <a className="lcr-text-action" href={`#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View this detail</a>
+                    <a className="lcr-text-action" href={viewMode === "today" ? `/workspace/care-continuity#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}` : `#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View this detail</a>
                   </li>
                 ))}
               </ul>
@@ -2554,7 +2554,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             <div className="lcr-current-facts">
               <ul>
                 {projection.items.map((item) => (
-                  <li key={item.source_collection + ":" + item.id} className="lcr-current-fact">
+                  <li id={`lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`} key={item.source_collection + ":" + item.id} className="lcr-current-fact">
                     <div className="lcr-entry-heading">
                       <strong>{displayCurrentCareTitle(item)}</strong>
                       <span>{caregiverLabel(item.epistemic_status)}</span>
