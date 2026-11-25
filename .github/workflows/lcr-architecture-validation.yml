@@ -18,6 +18,11 @@ on:
       - "src/components/mvp-workspace/FirstVisitWorkspaceRouter.tsx"
       - "src/app/workspace/page.tsx"
       - "src/components/app-shell/UpcomingAppointmentSummary.tsx"
+      - "src/app/workspace/experience-design-system-v2.css"
+      - "src/components/workflows/AICompanion.tsx"
+      - "src/lib/workspace-context.tsx"
+      - "scripts/verify-home-appointment-summary.mts"
+      - "scripts/verify-workspace-bootstrap-reliability.mts"
       - "scripts/verify-today-lcr-experience.mts"
       - "scripts/verify-canonical-architecture.mts"
       - "scripts/verify-lcr-product-architecture.mts"
@@ -41,6 +46,11 @@ on:
       - "src/components/mvp-workspace/FirstVisitWorkspaceRouter.tsx"
       - "src/app/workspace/page.tsx"
       - "src/components/app-shell/UpcomingAppointmentSummary.tsx"
+      - "src/app/workspace/experience-design-system-v2.css"
+      - "src/components/workflows/AICompanion.tsx"
+      - "src/lib/workspace-context.tsx"
+      - "scripts/verify-home-appointment-summary.mts"
+      - "scripts/verify-workspace-bootstrap-reliability.mts"
       - "scripts/verify-today-lcr-experience.mts"
       - "scripts/verify-canonical-architecture.mts"
       - "scripts/verify-lcr-product-architecture.mts"
@@ -75,3 +85,7 @@ jobs:
         run: npm run verify:canonical-architecture
       - name: Verify Today and Living Care Record experience contract
         run: npm run verify:today-lcr-experience
+      - name: Verify first-visit and workspace bootstrap failure behavior
+        run: npm run verify:first-visit-capture && npm run verify:workspace-bootstrap-reliability
+      - name: Verify recorded appointment timing and failure states
+        run: npm run verify:home-appointment-summary
