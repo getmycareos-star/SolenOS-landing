@@ -346,7 +346,7 @@ export default function TimelinePage() {
       setHistoryOffset(result.records.length);
       setLoadedAt(new Date().toISOString());
     } catch (cause) {
-      setError("The care Care history couldn't load. Check your connection and try again.");
+      setError("Care history couldn't load. Check your connection and try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -396,8 +396,25 @@ export default function TimelinePage() {
     }
   }, [historyCoverage, historyOffset, loadingMore, appliedQuery]);
 
+  const updateHistoryUrl = useCallback((nextFilter: FilterKey, nextQuery: string) => {
+    const params = new URLSearchParams();
+    if (nextFilter !== "all") params.set("filter", nextFilter);
+    if (nextQuery.trim()) params.set("q", nextQuery.trim());
+    const suffix = params.toString();
+    router.replace(`/workspace/timeline${suffix ? "?" + suffix : ""}`, { scroll: false });
+  }, [router]);
+
   useEffect(() => {
-    void loadEvents();
+    const params = new URLSearchParams(window.location.search);
+    const requestedFilter = params.get("filter");
+    const initialFilter = FILTERS.some((item) => item.id === requestedFilter)
+      ? requestedFilter as FilterKey
+      : "all";
+    const initialQuery = params.get("q") || "";
+    setFilter(initialFilter);
+    setQuery(initialQuery);
+    setAppliedQuery(initialQuery);
+    void loadEvents(false, initialQuery);
   }, [loadEvents]);
 
   // Recover a pending correction after a browser reload and keep its visible
@@ -595,6 +612,7 @@ export default function TimelinePage() {
             event.preventDefault();
             const nextQuery = query.trim();
             setAppliedQuery(nextQuery);
+            updateHistoryUrl(filter, nextQuery);
             void loadEvents(true, nextQuery);
           }}
         >
@@ -607,7 +625,7 @@ export default function TimelinePage() {
           {appliedQuery && (
             <p className="timeline-search-note">
               Showing results for “{appliedQuery}”. Search includes older records, not just the items currently shown.
-              <button type="button" onClick={() => { setQuery(""); setAppliedQuery(""); void loadEvents(true, ""); }} className="timeline-clear-search">Clear search</button>
+              <button type="button" onClick={() => { setQuery(""); setAppliedQuery(""); updateHistoryUrl(filter, ""); void loadEvents(true, ""); }} className="timeline-clear-search">Clear search</button>
             </p>
           )}
         </form>
@@ -615,7 +633,7 @@ export default function TimelinePage() {
           {FILTERS.map((item) => {
             const active = filter === item.id;
             return (
-              <button key={item.id} type="button" aria-pressed={active} onClick={() => setFilter(item.id)} className={`timeline-filter${active ? " is-active" : ""}`}>
+              <button key={item.id} type="button" aria-pressed={active} onClick={() => { setFilter(item.id); updateHistoryUrl(item.id, appliedQuery); }} className={`timeline-filter${active ? " is-active" : ""}`}>
                 {item.label}
               </button>
             );
@@ -645,7 +663,7 @@ export default function TimelinePage() {
           <p className="mobile-empty-body">{events.length ? "Try another filter or search term. No records were removed." : "SolenOS will show care updates here after they have been saved. This screen never adds example care history."}</p>
           <div className="mobile-empty-actions timeline-empty-actions">
             <Button variant="primary" onClick={() => router.push("/workspace?compose=1")}><Plus size={18} aria-hidden /> Add a care update</Button>
-            {(query || filter !== "all") && <Button variant="secondary" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</Button>}
+            {(query || filter !== "all") && <Button variant="secondary" onClick={() => { setQuery(""); setAppliedQuery(""); setFilter("all"); updateHistoryUrl("all", ""); void loadEvents(true, ""); }}>Clear filters</Button>}
           </div>
         </section>
       ) : (
