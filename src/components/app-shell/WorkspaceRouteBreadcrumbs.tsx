@@ -17,14 +17,14 @@ export function WorkspaceRouteBreadcrumbs() {
     .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
     .sort((left, right) => right.href.length - left.href.length)[0];
 
-  const label = current?.label || "Care Record";
+  const label = current?.label || "Home";
   const isHome = !current || current.href === "/workspace";
 
   return (
     <nav className="solenos-workspace-breadcrumbs" aria-label="Breadcrumb">
       <ol>
         {isHome ? (
-          <li aria-current="page"><span>Care Record</span></li>
+          <li aria-current="page"><span>Home</span></li>
         ) : (
           <>
             <li><Link href="/workspace">Care Record</Link></li>
