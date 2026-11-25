@@ -15,6 +15,10 @@ const collectNamedFiles = (directory: string, pattern: RegExp): string[] =>
   });
 const navigation = read("src/lib/workspace-navigation.ts");
 const shell = read("src/components/app-shell/AppShell.tsx");
+const workspaceLayout = read("src/app/workspace/layout.tsx");
+const workspaceShell = read("src/components/app-shell/WorkspaceShellContent.tsx");
+const workspaceContext = read("src/lib/workspace-context.tsx");
+const apiClient = read("src/api/client.ts");
 const breadcrumbs = read("src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx");
 const home = read("src/app/workspace/page.tsx");
 const addUpdate = read("src/app/workspace/daily-care/page.tsx");
@@ -134,6 +138,12 @@ for (const route of ["/workspace/timeline", "/workspace/documents", "/workspace/
   assert.ok(!moreDestinations.includes(`href: "${route}"`), `More does not own ${route}`);
 }
 assert.ok(shell.includes("CARE_INFORMATION_NAVIGATION.some"), "the Care information parent remains active on its child routes");
+assert.ok(workspaceLayout.includes("<WorkspaceProvider>") && workspaceLayout.includes("<WorkspaceShellContent>"), "every workspace route shares the authenticated workspace provider and shell");
+assert.ok(workspaceShell.includes("<WorkspaceEntryGate>") && workspaceShell.includes("entryReady"), "direct workspace entry waits for session bootstrap");
+assert.ok(workspaceContext.includes("ensureAnonymousSession()") && workspaceContext.includes('getJSON('), "workspace bootstrap uses the server-issued caregiver session and authorized record read");
+assert.ok(workspaceContext.includes("Legacy browser caches do not") && workspaceContext.includes("setRuntime({"), "legacy browser cache cannot repopulate caregiver-visible care information");
+assert.ok(apiClient.includes('Authorization: `Bearer ${token}`') && apiClient.includes("personIdChanged"), "API requests retain bearer authorization and active care-recipient change signalling");
+
 assert.ok(shell.includes("solenos-chat-nav-subnav") && shell.includes("aria-expanded={careInformationExpanded}"), "desktop and mobile menus expose an accessible expandable Care information hierarchy");
 assert.ok(shell.includes("solenos-mobile-bottom-nav"), "mobile navigation exposes Home, Care, Ask and More");
 assert.ok(shell.includes("solenos-mobile-add-update"), "Add an update remains a prominent action outside the mobile destination bar");
