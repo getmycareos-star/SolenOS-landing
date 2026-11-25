@@ -61,7 +61,7 @@ const openLoopCreateWrites = page.match(/postJSON\("\/open-loops",/g) ?? [];
 assert.equal(openLoopCreateWrites.length, 1, "event-derived follow-ups must use one canonical create writer");
 assert.match(page, /async function createFollowUp\(item: AttentionDecision\)[\s\S]*?if \(\(item\.source !== "events" && item\.source !== "persisted_change"\) \|\| !item\.record_id\) return;[\s\S]*?postJSON\("\/open-loops",\s*\{[\s\S]*?source_type: item\.source,[\s\S]*?source_id: item\.record_id,[\s\S]*?idempotency_key: idempotencyKey/s, "follow-up creation must remain bound to a persisted source record and retry-safe");
 assert.doesNotMatch(page, /function createLoop/, "do not add a second general-purpose follow-up writer");
-assert.match(page, /!loop && \(item\.source === "events" \|\| item\.source === "persisted_change"\) && item\.record_id/, "persisted change candidates must expose the same explicit Add to Follow-ups action");
+assert.match(page, /!loop && \(item\.source === "events" \|\| item\.source === "persisted_change"\) && item\.record_id/, "persisted change candidates must expose the same explicit Add a follow-up action");
 assert.match(page, /item\.evidence_status/, "follow-up cards must expose evidence status separately from care significance");
 assert.match(page, /item\.history_completeness/, "follow-up cards must disclose incomplete history");
 assert.match(page, /Who is following up:[\s\S]*?loop\?\.owner_label/, "follow-up cards must show who is responsible or say no one is assigned");
@@ -92,7 +92,7 @@ assert.match(page, /const unclassifiedLoops = linkedLoops\.filter\(\(loop\) => !
 assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
 assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an unknown follow-up outcome must not be described as resolved");
 assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
-assert.ok(page.includes("Follow-ups are based on the care information saved here"), "caregiver copy must explain what follow-ups are based on");
+assert.ok(page.includes("These are care matters that remain unresolved"), "caregiver copy must explain what follow-ups are based on");
 assert.match(careContinuity, /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/, "LCR important changes must show evidence status and incomplete history");
 assert.match(careContinuity, /item\.linked_follow_up_outcome_status[\s\S]*?caregiverStatusLabel/, "LCR important changes must show the linked follow-up outcome");
 
