@@ -10,7 +10,7 @@ const collectNamedFiles = (directory: string, pattern: RegExp): string[] =>
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) return collectNamedFiles(absolute, pattern);
     return entry.isFile() && pattern.test(entry.name)
-      ? [path.relative(root, absolute).replaceAll("\\\\", "/")]
+      ? [path.relative(root, absolute).replaceAll("\\", "/")]
       : [];
   });
 const navigation = read("src/lib/workspace-navigation.ts");
