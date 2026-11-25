@@ -29,6 +29,9 @@ assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop sta
 assert(!source.includes("createProcessedImage("), "the browser must not transform the original image bytes before upload");
 assert(!source.includes("createMultiPagePdf(") && !source.includes("Combine scan pages into one PDF"), "multiple scan pages must remain separate original files rather than being recomposed in the browser");
 assert.match(source, /scan_rotation_degrees: String\(page\.rotation\)/, "per-page rotation must accompany the immutable original for server-side processing");
+assert.match(source, /kind: "No longer listed"/, "a missing detail in a newer document must not be labelled as a confirmed removal");
+assert.match(source, /does not confirm that a medication or care instruction was stopped/, "document differences must not be interpreted as real-world discontinuation");
+assert.match(source, /page_number \? " \(page " \+ v\.page_number/, "document comparisons must retain source-page references");
 assert.match(source, /scan_crop_json: JSON\.stringify\(page\.crop\)/, "per-page crop metadata must accompany the immutable original for server-side processing");
 assert.match(source, /scan_text_prepared: "false"/, "the upload must not claim that browser OCR prepared the source");
 assert.match(source, /stored\.processing_status === "completed"[\s\S]*?backgroundProcessingCompleted \+= 1/, "completed document processing must be tracked separately from queued work");
