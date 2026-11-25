@@ -1709,7 +1709,7 @@ export function LCRCurrentUnderstanding() {
                   </li>
                 ))}
               </ul>
-              {immediateCareDecisions.length > 2 && <p className="lcr-entry-status">{immediateCareDecisions.length - 2} more items may need attention. Open follow-ups to review them.</p>}
+              {immediateCareDecisions.length > 2 && <p className="lcr-entry-status">{immediateCareDecisions.length - 2} more items may need attention. Open Needs attention to review them.</p>}
             </>
           ) : needsAttentionNow.length > 0 ? (
             <ul className="lcr-first-screen-list">
@@ -1756,7 +1756,7 @@ export function LCRCurrentUnderstanding() {
               </button>
             </section>
           )}
-          <Link href="/workspace/open-loops" className="lcr-text-action">Review follow-ups <span aria-hidden="true">→</span></Link>
+          <Link href="/workspace/open-loops" className="lcr-text-action">Review needs attention <span aria-hidden="true">→</span></Link>
         </div>
 
         <div className="lcr-first-screen-card">
@@ -1943,7 +1943,7 @@ export function LCRCurrentUnderstanding() {
           <div>
             <h3 id="lcr-attention-now-heading">What needs attention</h3>
             <p>Only items that may need your attention appear here. This is not a diagnosis or medical advice.</p>
-            <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
+            <Link href="/workspace/open-loops" className="lcr-text-action">See needs attention <span aria-hidden="true">→</span></Link>
           </div>
         </div>
         {sourceFreshness?.reassessment_recommended && (
@@ -2168,8 +2168,8 @@ export function LCRCurrentUnderstanding() {
 
             <div className="lcr-current-fact" aria-labelledby="lcr-attention-watch-heading">
               <h4 id="lcr-attention-watch-heading">Changes to watch</h4>
-              <p>These are changes or things that are still unclear in the saved care history. They are not automatically tasks. You can see items that need follow-up on the Follow-ups screen.</p>
-              <Link href="/workspace/open-loops" className="lcr-text-action">See follow-ups <span aria-hidden="true">→</span></Link>
+              <p>These are changes or things that are still unclear in the saved care history. They are not automatically tasks. You can see items that need follow-up on the Needs attention page.</p>
+              <Link href="/workspace/open-loops" className="lcr-text-action">See needs attention <span aria-hidden="true">→</span></Link>
               {(changesError || patternsError) && <RecordState kind="error" title="Some care changes could not be loaded" description="This view may be incomplete. Your saved information remains visible." onAction={() => void load(true)} />}
               {watchChanges.length === 0 && watchUncertainties.length === 0 && watchPriorityCandidates.length === 0 && watchMissingInformation.length === 0 && watchOpenLoops.length === 0 && activeWatchPatterns.length === 0 && baselineItems.length === 0 ? (
                 (changesError || patternsError) ? null : <RecordState kind="period-empty" title="No recent changes recorded" description="Recorded changes will appear here as information is added." />
