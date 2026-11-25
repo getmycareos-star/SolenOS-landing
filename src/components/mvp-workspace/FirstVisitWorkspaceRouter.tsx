@@ -70,25 +70,25 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
   }, [state]);
 
   if (state === "loading") {
-    return <main className="workspace-route-loading" role="status" aria-live="polite">Preparing your care record…</main>;
+    return <div className="workspace-route-loading" role="status" aria-live="polite">Preparing your care record…</div>;
   }
 
   if (state === "unavailable") {
     return (
-      <main className="mobile-screen feature-page" aria-labelledby="care-record-unavailable">
+      <div className="mobile-screen feature-page" aria-labelledby="care-record-unavailable">
         <section className="workspace-panel-inner">
           <h1 id="care-record-unavailable">We couldn’t check your Care Record</h1>
           <p>Your existing care information has not been changed. Check your connection and try again. We won’t treat an unavailable record as a new one.</p>
           <button type="button" className="workspace-primary" onClick={() => setAttempt((value) => value + 1)}>Try again</button>
           <p><Link href="/workspace/timeline">Open care history</Link></p>
         </section>
-      </main>
+      </div>
     );
   }
 
   if (state === "first_visit") {
     return (
-      <main className="mobile-screen feature-page solenos-first-visit" aria-labelledby="first-visit-heading">
+      <div className="mobile-screen feature-page solenos-first-visit" aria-labelledby="first-visit-heading">
         <section className="workspace-panel-inner">
           <p className="public-eyebrow">Welcome to SolenOS</p>
           <h1 id="first-visit-heading">{firstCaptureComplete ? "Here’s what we know so far." : "Your care journey starts here."}</h1>
@@ -103,7 +103,7 @@ export function FirstVisitWorkspaceRouter({ fallback }: { fallback: ReactNode })
         </section>
         <CognitiveWorkspace onSituationComplete={() => setFirstCaptureComplete(true)} />
         {!firstCaptureComplete && <p className="panel-muted">Your words stay yours. SolenOS keeps your original note and clearly shows when it has — or hasn’t — been saved.</p>}
-      </main>
+      </div>
     );
   }
 
