@@ -2256,6 +2256,28 @@ await record("Daily Care capture survives secondary read failures", async () => 
     });
     const currentPersonId = localStorage.getItem("solenos_backend_person_id");
     const currentCaregiverId = localStorage.getItem("solenos_backend_caregiver_id");
+    // A queue item older than the former 30-day retention window must still
+    // remain durable and syncable; age alone is never permission to delete it.
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction("writes", "readwrite");
+      const store = transaction.objectStore("writes");
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const stale = request.result.find((row) =>
+          row.endpoint === "/daily-care/entries"
+          && row.person_id === currentPersonId
+          && row.caregiver_id === currentCaregiverId
+        );
+        if (stale) {
+          stale.created_at = Date.now() - 31 * 24 * 60 * 60 * 1000;
+          store.put(stale);
+        }
+      };
+      request.onerror = () => reject(request.error);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+    });
     const rows = await new Promise((resolve, reject) => {
       const transaction = db.transaction("writes", "readonly");
       const request = transaction.objectStore("writes").getAll();
