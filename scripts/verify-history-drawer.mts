@@ -128,7 +128,7 @@ assert.match(drawer, /<RecordState kind="first-empty" title="No saved care histo
 assert.doesNotMatch(shell, /<HistoryDrawer \/>/, "care history must not crowd the primary navigation");
 assert.match(careInformationPage, /CARE_INFORMATION_NAVIGATION\.map/, "care history is discoverable from Care information");
 assert.doesNotMatch(morePage, /HistoryDrawer/, "More remains focused on application management");
-assert.match(morePage, /Recent care history/, "the history section uses plain caregiver language");
+assert.doesNotMatch(morePage, /Recent care history/, "More does not contain a duplicate care-history section");
 assert.match(drawer, /function historyLoadStatusLabel\(status: HistoryLoadStatus\)/,
   "saved-history availability uses caregiver-readable labels");
 for (const status of ["Up to date", "Some entries may be missing", "Could not load", "No entries yet", "May be out of date"]) {
@@ -155,7 +155,7 @@ for (const [route, label] of [
   ["/workspace/handoffs", "Share care information"],
 ]) {
   assert.match(navigation, new RegExp('href: "' + route.replaceAll("/", "\\/") + '"[\\s\\S]*?label: "' + label + '"'),
-    label + " remains available under More");
+    label + " remains available in caregiver navigation");
 }
 assert.match(navigation, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.doesNotMatch(shell, /Community/);
