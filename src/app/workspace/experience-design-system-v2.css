@@ -127,6 +127,7 @@
   border-color: #dce6dc;
   background: #f3f6f2;
 }
+.solenos-chat-app .solenos-chat-nav-subnav[hidden] { display: none !important; }
 .solenos-chat-app .solenos-chat-nav-subnav {
   display: grid;
   gap: 2px;
