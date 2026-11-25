@@ -125,7 +125,7 @@ for (const [route, label] of [
   ["/workspace/appointments", "Appointments"],
   ["/workspace/open-loops", "Needs attention"],
   ["/workspace/reminders", "Reminders"],
-  ["/workspace/handoffs", "Share care information"],
+  ["/workspace/handoffs", "Care handoffs"],
 ] as const) {
   const routeIndex = navigation.indexOf(`href: "${route}"`);
   assert.ok(routeIndex >= 0, `${route} exists in the navigation registry`);
