@@ -762,7 +762,7 @@ export default function DocumentsPage() {
 
   const deleteSelectedDocument = async () => {
     if (!selected || deletingDocument) return;
-    if (!window.confirm("Delete this document and its unreviewed details? This cannot be undone.")) return;
+    if (!window.confirm("Delete this document and its unreviewed details? If it supports accepted information in your Care Record, SolenOS will prevent deletion until those source links are resolved. This cannot be undone.")) return;
     setDeletingDocument(true);
     setPreviewError(null);
     try {
@@ -771,9 +771,15 @@ export default function DocumentsPage() {
       closePreview();
       await loadDocuments(true);
       setDocumentIntelligenceRefresh((value) => value + 1);
-      setUploadMessage({ kind: "success", text: "The document and its unreviewed details were deleted. If details from this document are already in your Care Record, review those details before deleting the original." });
+      setUploadMessage({ kind: "success", text: "The original document and its unaccepted suggestions were removed. The Care Record was not changed." });
     } catch (error) {
-      setPreviewError("SolenOS could not delete this document. No deletion was confirmed. Try again.");
+      if (error instanceof ApiResponseError && error.status === 409) {
+        setPreviewError(error.message || "This document still supports saved care information. Resolve those source links before deleting it.");
+      } else if (error instanceof ApiResponseError && error.status === 403) {
+        setPreviewError("You do not have permission to delete this document. The original has not been removed.");
+      } else {
+        setPreviewError("SolenOS could not delete this document. No deletion was confirmed. Try again.");
+      }
     } finally {
       setDeletingDocument(false);
     }
