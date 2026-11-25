@@ -275,7 +275,8 @@
     "verify:companion-context-preferences": "tsx scripts/verify-companion-context-preferences.mts",
     "verify:server-authoritative-care-state": "tsx scripts/verify-server-authoritative-care-state.mts",
     "verify:caregiver-ui-language-all": "tsx scripts/verify-caregiver-ui-language-all.mts",
-    "verify:browser-dictation-preserved": "tsx scripts/verify-browser-dictation-preserved.mts"
+    "verify:browser-dictation-preserved": "tsx scripts/verify-browser-dictation-preserved.mts",
+    "verify:workspace-bootstrap-reliability": "tsx scripts/verify-workspace-bootstrap-reliability.mts"
   },
   "dependencies": {
     "@aws-sdk/client-polly": "^3.1100.0",
