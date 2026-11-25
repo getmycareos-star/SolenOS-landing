@@ -180,6 +180,7 @@ export default function DocumentsPage() {
   const [attentionUploads, setAttentionUploads] = useState(0);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const requestedEvidenceIdRef = useRef<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -703,6 +704,18 @@ export default function DocumentsPage() {
       setPreviewLoading(false);
     }
   };
+
+  useEffect(() => {
+    const requestedEvidenceId = new URLSearchParams(window.location.search).get("evidenceId");
+    if (!requestedEvidenceId || loading || requestedEvidenceIdRef.current === requestedEvidenceId) return;
+    const matchingDocument = documents.find((doc) => doc.id === requestedEvidenceId || doc.evidence.id === requestedEvidenceId);
+    requestedEvidenceIdRef.current = requestedEvidenceId;
+    if (!matchingDocument) {
+      setListError("This source document is not available in the current saved document list. The care history entry remains available.");
+      return;
+    }
+    void openOriginal(matchingDocument);
+  }, [documents, loading]);
 
   const closePreview = () => {
     setSelectedId(null);
