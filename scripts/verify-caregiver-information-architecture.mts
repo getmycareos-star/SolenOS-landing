@@ -159,7 +159,7 @@ assert.ok(shell.includes("solenos:notifications-updated") && notificationCenter.
 assert.ok(breadcrumbs.includes("CARE_INFORMATION_NAVIGATION"), "breadcrumbs share the canonical care destination labels");
 
 for (const [source, expected, label] of [
-  [home, "<h1>Today</h1>", "Today"],
+  [home, "<h1>Home</h1>", "Home"],
   [addUpdate, "<h1>Add an update</h1>", "Add an update"],
   [careInformation, "<h1>Care information</h1>", "Care information"],
   [appointments, "<h1>Appointments</h1>", "Appointments"],
