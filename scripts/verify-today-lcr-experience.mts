@@ -47,6 +47,9 @@ assert.match(understanding, /showNextStep\?: boolean/, "contextual next steps mu
 assert.match(understanding, /immediateCareDecisions\.length > 0/, "saved immediate follow-ups must influence the next step");
 assert.match(understanding, /clarificationCareDecisions\.length > 0 \|\| watchMissingInformation\.length > 0/, "uncertainty and relevant missing information must influence the next step");
 assert.match(understanding, /importantCareDecisions\.length > 0 \|\| watchChanges\.length > 0/, "important changes must influence the next step");
+assert.match(understanding, /importantCareDecisions\.slice\(0, 2\)/, "Today must show the actual important care changes, not only a count");
+assert.match(understanding, /Nothing in the information reviewed is marked for immediate attention/, "important review items must not be mislabeled as urgent");
+
 assert.match(understanding, /Your Care Record starts here/, "a confirmed empty record must offer initial-record guidance");
 assert.match(understanding, /refreshWholeRecord\(\)/, "failed or unavailable understanding must offer recovery rather than a fabricated action");
 assert.match(understanding, /response\.person_id !== scopedPersonId/, "the LCR projection must be checked against the active care recipient");
