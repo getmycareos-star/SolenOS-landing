@@ -89,7 +89,7 @@ assert.match(intelligenceReviewSource, /job\?\.status === "failed" \? "Try readi
 assert.match(intelligenceReviewSource, /window\.setTimeout\(\(\) => \{ void load\(\); \}, 3000\)/, "document review status must refresh while background processing is active");
 assert.match(intelligenceReviewSource, /postJSON\("\/documents\/" \+ encodeURIComponent\(evidenceId\) \+ "\/queue"/, "initial upload handoff must use the durable server processing queue");
 assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURIComponent(document.id) + "/extract"'), "the review screen must not perform blocking extraction");
-assert.doesNotMatch(intelligenceReviewSource, /Retry background processing|Continue reading/, "caregivers must not be asked to supervise or manually resume document processing");
+assert.doesNotMatch(intelligenceReviewSource, /Retry background processing/, "caregivers must not be asked to supervise or manually retry transient extraction failures");
 assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial"/, "partial source extraction must be distinct from Qwen processing status");
 assert.match(intelligenceReviewSource, /Continue reading remaining pages/, "long documents with additional readable page windows must expose a continuation action");
 assert.match(intelligenceReviewSource, /analysis\.unprocessed_page_numbers\?\.length && documentExtractionIsComplete\(analysis\)/, "pending interpretation pages must be distinguished from OCR extraction failures");
