@@ -8,6 +8,8 @@ const styles = readFileSync("src/app/workspace/experience-design-system-v2.css",
 assert.ok(home.includes("UpcomingAppointmentSummary"), "caregiver home must surface recorded appointments");
 assert.ok(component.includes('getJSON("/appointment-workspaces/preparation-brief?window_days=90")'), "use the existing appointment preparation contract");
 assert.ok(component.includes("await ensureAnonymousSession()"), "appointment information must use the current authenticated/anonymous session");
+assert.ok(component.includes("result.person_scope_verified !== true"), "appointment summary must reject a response without verified active-person scope");
+assert.ok(component.includes("result.read_only !== true"), "appointment summary must require the read-only preparation contract");
 assert.ok(component.includes("No appointment information was returned from the available sources. This does not prove that no appointment exists."), "empty results must not be represented as proof that no appointment exists");
 assert.ok(component.includes("Appointment information is unavailable"), "retrieval failures must remain visible");
 assert.ok(component.includes("appointmentHasTime"), "date-only appointments must not be assigned an invented time-sensitive urgency");
