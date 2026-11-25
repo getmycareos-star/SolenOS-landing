@@ -3183,6 +3183,7 @@
 
 
 .solenos-chat-app .solenos-notification-shortcut {
+  position: relative;
   display: inline-flex;
   width: 38px;
   height: 38px;
@@ -3194,6 +3195,23 @@
   background: var(--sn-surface);
   color: #58685d;
   text-decoration: none;
+}
+.solenos-chat-app .solenos-notification-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #355640;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1;
 }
 .solenos-chat-app .solenos-notification-shortcut:hover,
 .solenos-chat-app .solenos-notification-shortcut.is-active {
