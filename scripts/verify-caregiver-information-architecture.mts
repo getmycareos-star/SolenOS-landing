@@ -69,6 +69,11 @@ for (const route of ["/workspace/timeline", "/workspace/documents", "/workspace/
   assert.ok(!moreDestinations.includes(`href: "${route}"`), `More does not own ${route}`);
 }
 assert.ok(shell.includes("CARE_INFORMATION_NAVIGATION.some"), "the Care information parent remains active on its child routes");
+assert.ok(shell.includes("solenos-chat-nav-subnav") && shell.includes("aria-expanded={careInformationExpanded}"), "desktop and mobile menus expose an accessible expandable Care information hierarchy");
+assert.ok(shell.includes("solenos-mobile-bottom-nav"), "mobile navigation exposes Home, Care, Ask and More");
+assert.ok(shell.includes("solenos-mobile-add-update"), "Add an update remains a prominent action outside the mobile destination bar");
+assert.ok(shell.includes("solenos-notification-shortcut"), "Notifications remains directly accessible from the workspace header");
+
 assert.ok(breadcrumbs.includes("CARE_INFORMATION_NAVIGATION"), "breadcrumbs share the canonical care destination labels");
 
 for (const [source, expected, label] of [
@@ -88,7 +93,7 @@ assert.ok(history.includes("Care history"), "the history route retains its disti
 assert.ok(notifications.includes("<NotificationsCenter />"), "Notifications renders a dedicated inbox rather than redirecting into Settings");
 assert.ok(notificationCenter.includes("/notifications?limit=100&offset=0") && notificationCenter.includes("/notifications/unread-count"), "the notification inbox reads its authenticated feed and unread count");
 assert.ok(settings.includes('href="/workspace/notifications"'), "Settings links to the separate notification destination");
-assert.ok(settings.includes("/read"), "marking a notification read uses its own notification endpoint");
+assert.ok(notificationCenter.includes("/read"), "marking a notification read uses its own notification endpoint");
 assert.ok(needsAttention.includes("/open-loops?limit="), "Needs attention retrieves persisted follow-ups from their own service");
 assert.ok(navigation.includes("Notifications") && navigation.includes("Needs attention"), "notifications and unresolved matters have distinct caregiver labels");
 assert.ok(navigation.includes('href: "/workspace/documents"') && navigation.indexOf('href: "/workspace/documents"') > navigation.indexOf("export const CARE_INFORMATION_NAVIGATION"), "Documents belongs inside Care information, not at the top navigation level");
