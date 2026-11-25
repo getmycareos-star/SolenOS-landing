@@ -3194,7 +3194,8 @@
   color: #58685d;
   text-decoration: none;
 }
-.solenos-chat-app .solenos-notification-shortcut:hover {
+.solenos-chat-app .solenos-notification-shortcut:hover,
+.solenos-chat-app .solenos-notification-shortcut.is-active {
   border-color: #cbd9cb;
   background: #f1f5f0;
   color: #294333;
