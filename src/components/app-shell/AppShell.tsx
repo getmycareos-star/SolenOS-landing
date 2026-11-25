@@ -77,23 +77,21 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
   useEffect(() => {
     let active = true;
-    let inFlight = false;
+    let requestVersion = 0;
     const refreshUnreadCount = async () => {
-      if (inFlight) return;
-      inFlight = true;
+      const requestId = ++requestVersion;
       try {
         await ensureAnonymousSession();
         const result = await getJSON("/notifications/unread-count") as { unread_count?: unknown };
-        if (!active) return;
+        if (!active || requestId !== requestVersion) return;
         const count = Number(result?.unread_count);
         setUnreadNotificationCount(Number.isFinite(count) ? Math.max(0, Math.floor(count)) : null);
       } catch {
-        if (active) setUnreadNotificationCount(null);
-      } finally {
-        inFlight = false;
+        if (active && requestId === requestVersion) setUnreadNotificationCount(null);
       }
     };
     const refreshForPersonChange = () => {
+      requestVersion += 1;
       setUnreadNotificationCount(null);
       void refreshUnreadCount();
     };
