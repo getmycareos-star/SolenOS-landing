@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId, postFormData } from "@/api/client";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
-import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import {
   deliverDurableWrite,
   discardDurableWrite,
@@ -121,7 +120,7 @@ export default function DailyCarePhotoCapture() {
     if (selected.size <= 0 || selected.size > MAX_SERVER_PHOTO_BYTES) {
       setFile(null);
       setIngestionKey(null);
-      setError("Photos must be smaller than 10 MiB. Choose a smaller photo and try again.");
+      setError("Photos must be 10 MiB or smaller. Choose a smaller photo and try again.");
       return;
     }
     const sameSelection = file
@@ -296,7 +295,7 @@ export default function DailyCarePhotoCapture() {
         </button>
       )}
       {pendingCount > 0 && !pendingLocal && (
-        <p role="status">{pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to be added to your Care Record.</p>
+        <p role="status">{pendingCount} queued item{pendingCount === 1 ? "" : "s"} waiting to reach SolenOS.</p>
       )}
       {syncNotice && <p role="status">{syncNotice}</p>}
       {saved && <p role="status">Photo uploaded and saved as evidence. It has not been confirmed as a care-record event.</p>}
