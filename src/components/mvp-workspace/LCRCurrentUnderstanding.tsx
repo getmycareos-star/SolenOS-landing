@@ -1415,6 +1415,17 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     (projection.failed_sources?.length ?? 0) === 0
   );
 
+  const hasIncompleteProjection = Boolean(
+    projection &&
+    !hasConfirmedEmptyRecord &&
+    (
+      projection.schema_status !== "complete" ||
+      projection.missing_required_sources.length > 0 ||
+      projection.missing_optional_sources.length > 0 ||
+      (projection.failed_sources?.length ?? 0) > 0
+    )
+  );
+
   const approveFollowUp = async (item: (typeof openLoopItems)[number]) => {
     if (item.source !== "open_loop_records") {
       setActionApprovalError("Only a saved follow-up with a current version can be approved here. Refresh the Care Record and review the latest details.");
@@ -2679,8 +2690,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <p role="alert">Your care information could not be checked, so SolenOS cannot suggest a next step yet.</p>
                   ) : loading ? (
                     <p role="status">Loading your care information…</p>
-                  ) : hasConfirmedEmptyRecord ? (
-                    <p>Your Care Record is ready to begin. Add one detail you already know or something you have noticed. You can add more whenever you are ready.</p>
+                  ) : hasIncompleteProjection ? (
+                    <p>Some care information could not be checked. Review the available record before relying on this summary.</p>
                   ) : assessmentLoading || !assessment ? (
                     <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
                   ) : immediateCareDecisions.length > 0 ? (
@@ -2689,8 +2700,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <p>Some saved information is missing, unclear or does not match. Reviewing it may help make the care picture clearer.</p>
                   ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
                     <p>There are changes or unresolved matters you may want to review.</p>
-                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
-                    <p>Start with one care detail you already know or something you have noticed. You can add more whenever you are ready.</p>
                   ) : (
                     <p>You can explore the full care history or add an update whenever something changes.</p>
                   )}
@@ -2700,8 +2709,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
                   ) : loading ? (
                     <span role="status">Loading…</span>
-                  ) : hasConfirmedEmptyRecord ? (
-                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
+                  ) : hasIncompleteProjection ? (
+                    <Link href="/workspace/care-continuity" className="solenos-care-primary-action">Review available care information</Link>
                   ) : assessmentLoading || !assessment ? (
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
                   ) : immediateCareDecisions.length > 0 ? (
@@ -2717,8 +2726,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     )}
                   ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
                     <Link href="/workspace/timeline" className="solenos-care-primary-action">View Care history</Link>
-                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
-                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add an update</Link>
                   ) : (
                     <Link href="/workspace/care-continuity" className="solenos-care-primary-action">View care information</Link>
                   )}
