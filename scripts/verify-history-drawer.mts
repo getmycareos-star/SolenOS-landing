@@ -11,6 +11,7 @@ const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 const followUpsPage = fs.readFileSync(path.join(root, "src/app/workspace/open-loops/page.tsx"), "utf8");
 const navigation = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
 const morePage = fs.readFileSync(path.join(root, "src/app/workspace/more/page.tsx"), "utf8");
+const careInformationPage = fs.readFileSync(path.join(root, "src/app/workspace/care-continuity/page.tsx"), "utf8");
 const evidenceReview = fs.readFileSync(path.join(root, "src/components/EvidenceReviewPanel.tsx"), "utf8");
 const caregiverLanguage = fs.readFileSync(path.join(root, "src/lib/caregiver-language.ts"), "utf8");
 const darkStyles = fs.readFileSync(path.join(root, "src/app/dark-mode-remediation.css"), "utf8");
@@ -125,7 +126,8 @@ assert.match(drawer, /error && records.length === 0 \? \(/, "an unavailable hist
 assert.match(drawer, /sourceWarnings.length > 0 \? \(/, "incomplete source coverage must remain distinct from a genuinely empty history");
 assert.match(drawer, /<RecordState kind="first-empty" title="No saved care history yet"/, "a genuinely empty history must use the current concise empty-state copy");
 assert.doesNotMatch(shell, /<HistoryDrawer \/>/, "care history must not crowd the primary navigation");
-assert.match(morePage, /<HistoryDrawer \/>/, "recent care history remains available under More");
+assert.match(careInformationPage, /CARE_INFORMATION_NAVIGATION\.map/, "care history is discoverable from Care information");
+assert.doesNotMatch(morePage, /HistoryDrawer/, "More remains focused on application management");
 assert.match(morePage, /Recent care history/, "the history section uses plain caregiver language");
 assert.match(drawer, /function historyLoadStatusLabel\(status: HistoryLoadStatus\)/,
   "saved-history availability uses caregiver-readable labels");
@@ -137,17 +139,17 @@ assert.doesNotMatch(drawer, /sourceStatuses\[category\]\[0\]\.toUpperCase\(\)/,
 assert.match(shell, /solenos-chat-sidebar/);
 assert.doesNotMatch(shell, /Search history/, "history search is not a primary navigation destination");
 for (const [route, label] of [
-  ["/workspace", "Today"],
-  ["/workspace/daily-care", "Share an update"],
+  ["/workspace", "Home"],
+  ["/workspace/daily-care", "Add an update"],
   ["/workspace/appointments", "Appointments"],
-  ["/workspace/open-loops", "Follow-ups"],
+  ["/workspace/open-loops", "Needs attention"],
   ["/workspace/more", "More"],
 ]) {
   assert.match(navigation, new RegExp('href: "' + route.replaceAll("/", "\\/") + '"[\\s\\S]*?label: "' + label + '"'),
     label + " remains a primary caregiver destination");
 }
 for (const [route, label] of [
-  ["/workspace/companion", "Care Assistant"],
+  ["/workspace/companion", "Ask SolenOS"],
   ["/workspace/timeline", "Care history"],
   ["/workspace/documents", "Documents"],
   ["/workspace/handoffs", "Share care information"],
