@@ -17,6 +17,10 @@ const needsAttention = read("src/app/workspace/open-loops/page.tsx");
 const companion = read("src/components/workflows/AICompanion.tsx");
 const notifications = read("src/app/workspace/notifications/page.tsx");
 const more = read("src/app/workspace/more/page.tsx");
+const legacyRecord = read("src/app/workspace/record/page.tsx");
+const legacyContinuity = read("src/app/workspace/continuity/page.tsx");
+const community = read("src/app/workspace/community/page.tsx");
+const featureFlags = read("src/lib/feature-flags.ts");
 
 const routes = [
   ["/workspace", "src/app/workspace/page.tsx"],
@@ -32,6 +36,9 @@ const routes = [
   ["/workspace/notifications", "src/app/workspace/notifications/page.tsx"],
   ["/workspace/more", "src/app/workspace/more/page.tsx"],
   ["/workspace/settings", "src/app/workspace/settings/page.tsx"],
+  ["/workspace/record", "src/app/workspace/record/page.tsx"],
+  ["/workspace/continuity", "src/app/workspace/continuity/page.tsx"],
+  ["/workspace/community", "src/app/workspace/community/page.tsx"],
 ] as const;
 for (const [route, file] of routes) {
   assert.ok(fs.existsSync(path.join(root, file)), `${route} resolves to an existing page`);
@@ -75,6 +82,10 @@ assert.ok(careInformation.includes("CARE_INFORMATION_NAVIGATION.map"), "Care inf
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
 assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
 assert.ok(notifications.includes("settings#settings-notifications"), "the notification shortcut lands on the real notification inbox");
+assert.ok(legacyRecord.includes("redirect") && legacyRecord.includes("/workspace"), "the legacy record route preserves a safe Home destination");
+assert.ok(legacyContinuity.includes("redirect") && legacyContinuity.includes("/workspace"), "the technical continuity route does not expose a separate caregiver page");
+assert.ok(featureFlags.includes("community: false") && featureFlags.includes("professionalCommunity: false"), "Community remains explicitly disabled");
+assert.ok(community.includes("redirect") && community.includes("/workspace"), "the disabled Community route fails closed");
 assert.ok(more.includes("CaregiverHandoverInbox"), "family access handovers remain reachable under account management");
 assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
