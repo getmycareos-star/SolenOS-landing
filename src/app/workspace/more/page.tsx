@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 
 export default function WorkspaceMorePage() {
@@ -12,11 +13,11 @@ export default function WorkspaceMorePage() {
         {WORKSPACE_SECONDARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
           return (
-            <a key={item.id} href={item.href}>
+            <Link key={item.id} href={item.href}>
               <span aria-hidden="true"><Icon size={18} /></span>
               <strong>{item.label}</strong>
               <span>{item.description}</span>
-            </a>
+            </Link>
           );
         })}
       </nav>
