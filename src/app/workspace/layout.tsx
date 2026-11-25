@@ -1,5 +1,3 @@
-"use client";
-
 import { WorkspaceProvider } from "@/lib/workspace-context";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { WorkspaceShellContent } from "@/components/app-shell/WorkspaceShellContent";
