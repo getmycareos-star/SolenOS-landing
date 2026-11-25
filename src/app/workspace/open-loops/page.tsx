@@ -633,7 +633,7 @@ export default function FollowUpsPage() {
       <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
       <p className="followups-kicker">YOUR FOLLOW-UPS</p>
       <div className="followups-title-row">
-        <div><h1>Follow-ups</h1><p>Follow-ups are based on the care information saved here. You may need to add details or take action when something is unclear.</p></div>
+        <div><h1>Needs attention</h1><p>Follow-ups are based on the care information saved here. You may need to add details or take action when something is unclear.</p></div>
         <button type="button" className="followups-refresh" onClick={() => { setLoading(loops.length === 0 && !assessment); void refresh().catch(() => setError("Follow-ups could not be refreshed. Your previously saved information remains visible.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
       </div>
     </header>
