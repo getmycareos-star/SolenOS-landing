@@ -35,6 +35,7 @@ const appShell = fs.readFileSync(path.join(root, "src/components/app-shell/AppSh
 const navigationRegistry = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
 const morePage = fs.readFileSync(path.join(root, "src/app/workspace/more/page.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+const workspaceExperienceStyles = fs.readFileSync(path.join(root, "src/app/workspace/experience-design-system-v2.css"), "utf8");
 
 assert.match(appShell, /WORKSPACE_NAVIGATION\.care\.map/);
 assert.doesNotMatch(appShell, /WORKSPACE_NAVIGATION\.support\.map/);
@@ -92,6 +93,11 @@ assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?translateX\(-105%\)/,
   "mobile navigation remains a closed drawer until requested");
 assert.match(styles, /\.solenos-chat-nav-item\s*\{[^}]*min-height:\s*48px/s,
   "navigation links have comfortable touch targets");
+assert.match(workspaceExperienceStyles, /\.solenos-mobile-bottom-nav[\s\S]*?grid-template-columns:\s*repeat\(4/, "mobile navigation exposes four stable destinations");
+assert.match(workspaceExperienceStyles, /solenos-mobile-add-update[\s\S]*?safe-area-inset-bottom/, "the mobile Add an update action respects the device safe area");
+assert.match(workspaceExperienceStyles, /solenos-first-visit-mode[\s\S]*?solenos-mobile-bottom-nav/, "first-visit capture hides persistent mobile navigation");
+assert.match(workspaceExperienceStyles, /solenos-chat-nav-subnav\[hidden\]/, "collapsed Care information links are removed from layout");
+
 
 console.log("✓ one canonical navigation registry drives every workspace navigation group");
 console.log("✓ all visible navigation destinations resolve to existing workspace routes");
