@@ -47,6 +47,8 @@ assert.match(mobileDocumentE2E, /--use-fake-device-for-media-stream/, "browser c
 assert.match(mobileDocumentE2E, /video\.videoWidth > 0 && video\.videoHeight > 0/, "camera acceptance must wait for a live video frame before capture");
 assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Take photo"/, "camera acceptance must exercise the actual capture control");
 assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Save files"/, "mobile file-picker acceptance must exercise original upload");
+assert.match(mobileDocumentE2E, /Exact copy of journey-discharge-note-scan/, "the mobile Documents browser journey must show exact duplicate relationships");
+assert.match(mobileDocumentE2E, /Possible newer or corrected copy of journey-discharge-note-scan/, "the mobile Documents browser journey must show possible version relationships");
 assert.match(source, /stored\.processing_status === "completed"[\s\S]*?backgroundProcessingCompleted \+= 1/, "completed document processing must be tracked separately from queued work");
 assert.match(source, /backgroundProcessingCompleted > 0[\s\S]*?has finished processing[\s\S]*?Open each file to see what was extracted/, "completed processing must not imply that every file has reviewable suggestions");
 
