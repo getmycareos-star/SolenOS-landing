@@ -6,11 +6,11 @@ const home = read("src/app/workspace/page.tsx");
 const understanding = read("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx");
 const appointments = read("src/components/app-shell/UpcomingAppointmentSummary.tsx");
 const styles = read("src/app/globals.css");
+const companion = read("src/components/workflows/AICompanion.tsx");
 
 assert.match(home, /<h1>Today<\/h1>/, "the primary caregiver landing page must be Today");
 assert.match(home, /View the complete Care Record/, "Today must explicitly link to the complete record");
 assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Today must render the authoritative LCR understanding in compact mode");
-assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Today must use the concise projection mode");
 assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR component must distinguish Today from the complete record");
 assert.match(understanding, /viewMode === "complete" && \(/, "detailed history and integrity panels must not render on Today");
 const firstCompletePanel = understanding.indexOf('      {viewMode === "complete" && (');
@@ -25,6 +25,7 @@ assert.match(understanding, /href="\/workspace\/daily-care" className="solenos-c
 assert.match(understanding, /href="\/workspace\/documents" className="solenos-care-secondary-action"/, "empty Today state must offer document upload");
 assert.match(understanding, /watchMissingInformation.length > 0/, "relevant missing information must be surfaced");
 assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
+assert.match(understanding, /hasIncompleteProjection/, "incomplete retrieval must not be treated as an empty record");
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Today must retain recorded appointment information");
 assert.match(home, /searchParams\.get\("prompt"\)\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Today shell");
@@ -39,11 +40,13 @@ assert.match(understanding, /showNextStep\?: boolean/, "contextual next steps mu
 assert.match(understanding, /immediateCareDecisions\.length > 0/, "saved immediate follow-ups must influence the next step");
 assert.match(understanding, /clarificationCareDecisions\.length > 0 \|\| watchMissingInformation\.length > 0/, "uncertainty and relevant missing information must influence the next step");
 assert.match(understanding, /importantCareDecisions\.length > 0 \|\| watchChanges\.length > 0/, "important changes must influence the next step");
-assert.match(understanding, /assessment\.coverage\.records_examined === 0/, "an empty record must receive an initial-record action");
+assert.match(understanding, /Your Care Record starts here/, "a confirmed empty record must offer initial-record guidance");
 assert.match(understanding, /refreshWholeRecord\(\)/, "failed or unavailable understanding must offer recovery rather than a fabricated action");
 assert.match(understanding, /response\.person_id !== scopedPersonId/, "the LCR projection must be checked against the active care recipient");
 
 assert.match(appointments, /appointment-workspaces\/preparation-brief\?window_days=90/, "appointments must use the existing persisted appointment contract");
 assert.match(appointments, /Appointment information is unavailable/, "appointment retrieval failures must remain visible");
+assert.match(appointments, /appointmentTime - Date\.now\(\) <= 24 \* 60 \* 60 \* 1000/, "appointments due within 24 hours must receive contextual prominence");
+assert.match(companion, /initialPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "all Companion entry points must bound prompt text");
 
 console.log("PASS: Today, first-visit convergence, Companion prompt context, record-driven next steps and appointment failure states");
