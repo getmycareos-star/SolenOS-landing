@@ -170,6 +170,8 @@ export default function DocumentsPage() {
   const [cameraStarting, setCameraStarting] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [capturedPages, setCapturedPages] = useState<File[]>([]);
+  const [recoveryPageNumbers, setRecoveryPageNumbers] = useState<number[]>([]);
+  const [recoverySourceEvidenceId, setRecoverySourceEvidenceId] = useState<string | null>(null);
   const [reviewPages, setReviewPages] = useState<ReviewPage[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const documentLoadSequenceRef = useRef(0);
@@ -456,6 +458,8 @@ export default function DocumentsPage() {
     setCameraFacingMode("environment");
     setCapturedPages([]);
     setCameraError(null);
+    setRecoveryPageNumbers([]);
+    setRecoverySourceEvidenceId(null);
   };
 
   const captureCameraPage = () => {
@@ -616,7 +620,7 @@ export default function DocumentsPage() {
       const completedPages = reviewPages.filter((page) => completedKeys.has(page.ingestionKey));
       completedPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages(remainingPages);
-      if (remainingPages.length === 0) setIntakeMode(null);
+      if (remainingPages.length === 0) { setIntakeMode(null); setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); }
 
       if (saved > 0 || queuedLocally > 0) {
         const parts: string[] = [];
@@ -793,13 +797,13 @@ export default function DocumentsPage() {
       </header>
       <section className="documents-upload-actions" aria-label="Add care documents">
         <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.eml,.msg,.csv,.json,.xml,.yaml,.yml" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("upload"); void handleFiles(files); }} />
-        <input ref={snapInputRef} type="file" accept="image/*" capture="environment" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("capture"); void handleFiles(files); }} />
+        <input ref={snapInputRef} type="file" accept="image/*" capture="environment" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setIntakeMode("capture"); void handleFiles(files); }} />
         <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Upload size={17} />Upload files</button>
         <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Camera size={17} />Snap a photo</button>
-        <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
+        <button type="button" onClick={() => { setCapturedPages([]); setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setCameraError(null); setCameraFacingMode("environment"); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
       </section>
 
-      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} onAddClearerPages={() => { setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setIntakeMode("scan"); setCameraOpen(true); }} />
+      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} onAddClearerPages={(evidenceId, pages) => { setRecoverySourceEvidenceId(evidenceId); setRecoveryPageNumbers(pages); setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setIntakeMode("scan"); setCameraOpen(true); }} />
 
       <section className="documents-library" aria-label="Saved documents">
         <div className="documents-library-heading">
@@ -815,7 +819,7 @@ export default function DocumentsPage() {
 
         {reviewPages.length > 0 && <section aria-label="Save original documents" style={{ marginTop: 16, padding: 14, border: "2px solid var(--theme-panel-border)", borderRadius: 12, background: "var(--bg)" }}>
           <h3 style={{ margin: 0, fontSize: "calc(17px * var(--solenos-text-scale, 1))" }}>Save your files</h3>
-          <p style={{ margin: "6px 0 12px", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? "Save your captured pages now. SolenOS will read them after upload." : "Save the original file now. SolenOS will read it after upload."} Original files are preserved.</p>
+          <p style={{ margin: "6px 0 12px", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "var(--text-secondary)" }}>{intakeMode === "scan" ? recoveryPageNumbers.length ? "Save clearer copies of pages " + recoveryPageNumbers.join(", ") + " from the earlier document. SolenOS will read these separate files after upload." : "Save your captured pages now. SolenOS will read them after upload." : "Save the original file now. SolenOS will read it after upload."} Original files are preserved.</p>
           <p style={{ margin: "6px 0 12px", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "var(--text-secondary)" }}>You do not need to read or correct the text before saving. SolenOS keeps the original and reads it in the background. Anything unclear stays marked as uncertain.</p>
           <p style={{ margin: "0 0 12px", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5, color: "var(--text-secondary)" }}><strong>About text from scanned pages:</strong> The original page is saved. SolenOS reads the text and keeps suggested details linked to the document. Review each suggested detail before it is added to your Care Record.</p>
           <div style={{ display: "grid", gap: 12 }}>{reviewPages.map((page, index) => <article key={index + "-" + page.file.name + "-" + page.file.lastModified} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface)" }}>
@@ -933,13 +937,13 @@ export default function DocumentsPage() {
       {cameraOpen && <div role="dialog" aria-modal="true" aria-label="Scan care document pages" style={{ position: "fixed", inset: 0, zIndex: 120, background: "rgba(0,0,0,.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
         <section style={{ width: "min(720px, 100%)", maxHeight: "92dvh", display: "grid", gap: 12, padding: 14, background: "var(--surface)", color: "var(--text)", borderRadius: 14, overflow: "auto" }}>
           <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div><h2 style={{ margin: 0, fontSize: "calc(18px * var(--solenos-text-scale, 1))" }}>Scan pages</h2><p style={{ margin: "4px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>Capture each page. Rotate or crop only if needed, then save the originals.</p></div>
+            <div><h2 style={{ margin: 0, fontSize: "calc(18px * var(--solenos-text-scale, 1))" }}>Scan pages</h2><p style={{ margin: "4px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{recoveryPageNumbers.length ? "Take clearer copies of pages " + recoveryPageNumbers.join(", ") + " from " + (documents.find((item) => item.id === recoverySourceEvidenceId)?.title || "the saved document") + ". These copies will be saved as a separate document; the original stays unchanged." : "Capture each page. Rotate or crop only if needed, then save the originals."}</p></div>
             <button type="button" onClick={closeCameraScanner} aria-label="Close scanner" style={{ width: 40, height: 40, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><X size={18} /></button>
           </header>
           <video ref={cameraVideoRef} autoPlay playsInline muted aria-label="Live document camera preview" style={{ width: "100%", maxHeight: "55dvh", background: "#111", borderRadius: 10, objectFit: "contain" }} />
           {cameraStarting && <p role="status" style={{ margin: 0 }}>Starting camera…</p>}
           {cameraError && <p role="alert" style={{ margin: 0, color: "var(--theme-error-fg)" }}>{cameraError}</p>}
-          <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{capturedPages.length} page(s) captured</p>
+          <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{capturedPages.length} page(s) captured{recoveryPageNumbers.length ? " for " + recoveryPageNumbers.slice(0, capturedPages.length).map((pageNumber) => "page " + pageNumber).join(", ") : ""}</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setCameraFacingMode((current) => current === "environment" ? "user" : "environment")} disabled={cameraStarting} aria-label={cameraFacingMode === "environment" ? "Switch to front camera" : "Switch to back camera"} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "9px 13px" }}>{cameraFacingMode === "environment" ? "Use front camera" : "Use back camera"}</button>
             <button type="button" onClick={captureCameraPage} disabled={cameraStarting} style={{ minHeight: 44, border: "1px solid var(--theme-action-border)", borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Take photo</button>
