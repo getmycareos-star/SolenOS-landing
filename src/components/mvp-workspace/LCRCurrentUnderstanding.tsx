@@ -1766,14 +1766,20 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
               <p>
                 {clarificationCareDecisions.length} {clarificationCareDecisions.length === 1 ? "care detail needs" : "care details need"} a closer look before they can be relied on.
               </p>
-              <button
-                type="button"
-                className="lcr-text-action"
-                onClick={openClarification}
-                aria-controls="lcr-clarification-workflow"
-              >
-                Review questions
-              </button>
+              {viewMode === "today" ? (
+                <Link href="/workspace/care-continuity#lcr-clarification-workflow" className="lcr-text-action">
+                  Review questions
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="lcr-text-action"
+                  onClick={openClarification}
+                  aria-controls="lcr-clarification-workflow"
+                >
+                  Review questions
+                </button>
+              )}
             </section>
           )}
           <Link href="/workspace/open-loops" className="lcr-text-action">Review needs attention <span aria-hidden="true">→</span></Link>
@@ -2701,10 +2707,14 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                   ) : immediateCareDecisions.length > 0 ? (
                     <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review Needs attention</Link>
                   ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
-                    <button type="button" className="solenos-care-primary-action" onClick={() => {
-                      openClarification();
-                      document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}>Review details to check</button>
+                    {viewMode === "today" ? (
+                      <Link href="/workspace/care-continuity#lcr-clarification-workflow" className="solenos-care-primary-action">Review details to check</Link>
+                    ) : (
+                      <button type="button" className="solenos-care-primary-action" onClick={() => {
+                        openClarification();
+                        document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}>Review details to check</button>
+                    )}
                   ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
                     <Link href="/workspace/timeline" className="solenos-care-primary-action">View Care history</Link>
                   ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
