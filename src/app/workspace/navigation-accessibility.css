@@ -216,3 +216,5 @@ html.solenos-first-visit-mode .solenos-workspace-breadcrumbs {
   .workspace-connection-alert { align-items: stretch; }
   .workspace-connection-alert button { width: 100%; }
 }
+
+.solenos-workspace-breadcrumbs.is-home { display: none; }
