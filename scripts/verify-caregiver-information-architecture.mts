@@ -13,6 +13,7 @@ const careInformation = read("src/app/workspace/care-continuity/page.tsx");
 const documents = read("src/app/workspace/documents/page.tsx");
 const history = read("src/app/workspace/timeline/page.tsx");
 const appointments = read("src/app/workspace/appointments/page.tsx");
+const reminders = read("src/app/workspace/reminders/page.tsx");
 const needsAttention = read("src/app/workspace/open-loops/page.tsx");
 const companion = read("src/components/workflows/AICompanion.tsx");
 const notifications = read("src/app/workspace/notifications/page.tsx");
@@ -32,6 +33,7 @@ const routes = [
   ["/workspace/documents", "src/app/workspace/documents/page.tsx"],
   ["/workspace/timeline", "src/app/workspace/timeline/page.tsx"],
   ["/workspace/appointments", "src/app/workspace/appointments/page.tsx"],
+  ["/workspace/reminders", "src/app/workspace/reminders/page.tsx"],
   ["/workspace/open-loops", "src/app/workspace/open-loops/page.tsx"],
   ["/workspace/reminders", "src/app/workspace/reminders/page.tsx"],
   ["/workspace/handoffs", "src/app/workspace/handoffs/page.tsx"],
@@ -81,6 +83,7 @@ for (const [source, expected, label] of [
   [addUpdate, "<h1>Add an update</h1>", "Add an update"],
   [careInformation, "<h1>Care information</h1>", "Care information"],
   [appointments, "<h1>Appointments</h1>", "Appointments"],
+  [reminders, "<h1>Reminders</h1>", "Reminders"],
   [needsAttention, "<h1>Needs attention</h1>", "Needs attention"],
   [companion, '<h1 className="companion-page-title">Ask SolenOS</h1>', "Ask SolenOS"],
   [more, "<h1>More</h1>", "More"],
@@ -106,6 +109,7 @@ assert.ok(legacySettings.includes("redirect") && legacySettings.includes("/works
 assert.ok(more.includes("CaregiverHandoverInbox"), "family access handovers remain reachable under account management");
 assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
+assert.ok(addUpdate.includes("Upload a medical document"), "medical document upload is a visible Add an update action");
 assert.ok(!navigation.toLowerCase().includes("community"), "the disabled Community feature remains absent from navigation");
 
 console.log("Caregiver information architecture contract checks passed.");
