@@ -152,7 +152,7 @@ for (const [route, label] of [
   ["/workspace/companion", "Ask SolenOS"],
   ["/workspace/timeline", "Care history"],
   ["/workspace/documents", "Documents"],
-  ["/workspace/handoffs", "Share care information"],
+  ["/workspace/handoffs", "Care handoffs"],
 ]) {
   assert.match(navigation, new RegExp('href: "' + route.replaceAll("/", "\\/") + '"[\\s\\S]*?label: "' + label + '"'),
     label + " remains available in caregiver navigation");
