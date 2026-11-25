@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CaregiverHandoverInbox } from "@/components/mvp-workspace/CaregiverHandoverInbox";
 import { WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 
 export default function WorkspaceMorePage() {
@@ -9,6 +10,7 @@ export default function WorkspaceMorePage() {
         <h1>More</h1>
         <p>Manage your account, privacy, access and app preferences. Your day-to-day care information stays under Care information.</p>
       </header>
+      <CaregiverHandoverInbox />
       <nav aria-label="App and account settings" className="solenos-care-explore__links">
         {WORKSPACE_SECONDARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
