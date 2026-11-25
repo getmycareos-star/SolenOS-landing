@@ -787,7 +787,7 @@ export default function DocumentsPage() {
         <button type="button" onClick={() => { setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
       </section>
 
-      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} />
+      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} onAddClearerPages={() => { setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setIntakeMode("scan"); setCameraOpen(true); }} />
 
       <section className="documents-library" aria-label="Saved documents">
         <div className="documents-library-heading">
