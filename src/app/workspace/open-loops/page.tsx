@@ -316,10 +316,10 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
       {loop && <button type="button" className="followup-text-button" onClick={() => void onHistory(loop)}>View previous updates</button>}
       {!loop && (item.source === "events" || item.source === "persisted_change") && item.record_id && (
         <button type="button" className="followup-primary-button" onClick={() => void onCreate(item)} disabled={busy}>
-          {busy ? "Adding…" : "Add to Follow-ups"}
+          {busy ? "Adding…" : "Add a follow-up"}
         </button>
       )}
-      <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care information: " + ((item.source === "open_loop_records" ? caregiverSourceText(item.title) : caregiverSafeGeneratedText(item.title)) || "this follow-up") + ". Explain what is known, what is not clear yet and what still needs attention.")}><MessageCircle size={15} /> Ask Care Assistant</Link>
+      <Link className="followup-secondary-button" href={"/workspace/companion?prompt=" + encodeURIComponent("Help me understand this follow-up using only saved care information: " + ((item.source === "open_loop_records" ? caregiverSourceText(item.title) : caregiverSafeGeneratedText(item.title)) || "this follow-up") + ". Explain what is known, what is not clear yet and what still needs attention.")}><MessageCircle size={15} /> Ask SolenOS</Link>
     </div>
   </article>;
 }
@@ -546,7 +546,7 @@ export default function FollowUpsPage() {
       });
       await refresh();
       delete pendingCreateKeys.current[sourceKey];
-      setNotice("Added to Follow-ups. The original care information has not changed.");
+      setNotice("Follow-up saved. The original care information has not changed.");
     } catch {
       setError("The follow-up could not be confirmed. Keep this item open and try again.");
     } finally {
@@ -633,8 +633,8 @@ export default function FollowUpsPage() {
       <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
       <p className="followups-kicker">YOUR FOLLOW-UPS</p>
       <div className="followups-title-row">
-        <div><h1>Needs attention</h1><p>Follow-ups are based on the care information saved here. You may need to add details or take action when something is unclear.</p></div>
-        <button type="button" className="followups-refresh" onClick={() => { setLoading(loops.length === 0 && !assessment); void refresh().catch(() => setError("Follow-ups could not be refreshed. Your previously saved information remains visible.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh follow-ups"><RefreshCw size={17} /></button>
+        <div><h1>Needs attention</h1><p>These are care matters that remain unresolved. Some may need more information; others may need a decision or action.</p></div>
+        <button type="button" className="followups-refresh" onClick={() => { setLoading(loops.length === 0 && !assessment); void refresh().catch(() => setError("Follow-ups could not be refreshed. Your previously saved information remains visible.")).finally(() => setLoading(false)); }} disabled={loading} aria-label="Refresh Needs attention"><RefreshCw size={17} /></button>
       </div>
     </header>
     {error && <p className="followups-alert" role="alert">{error}</p>}
