@@ -141,6 +141,9 @@ assert.ok(shell.includes("CARE_INFORMATION_NAVIGATION.some"), "the Care informat
 assert.ok(workspaceLayout.includes("<WorkspaceProvider>") && workspaceLayout.includes("<WorkspaceShellContent>"), "every workspace route shares the authenticated workspace provider and shell");
 assert.ok(workspaceShell.includes("<WorkspaceEntryGate>") && workspaceShell.includes("entryReady"), "direct workspace entry waits for session bootstrap");
 assert.ok(workspaceContext.includes("ensureAnonymousSession()") && workspaceContext.includes('getJSON('), "workspace bootstrap uses the server-issued caregiver session and authorized record read");
+assert.ok(workspaceContext.includes('addEventListener("personIdChanged", refreshForPersonChange)'), "the shared workspace projection refreshes when the active caregiver or care recipient changes");
+assert.ok(workspaceContext.includes("scopeRefreshVersionRef") && workspaceContext.includes("setRuntime({ ...createEmptyUiRuntimeState()"), "a scope change clears prior-person content and rejects stale refresh responses");
+
 assert.ok(workspaceContext.includes("Legacy browser caches do not") && workspaceContext.includes("setRuntime({"), "legacy browser cache cannot repopulate caregiver-visible care information");
 assert.ok(apiClient.includes('Authorization: `Bearer ${token}`') && apiClient.includes("personIdChanged"), "API requests retain bearer authorization and active care-recipient change signalling");
 
