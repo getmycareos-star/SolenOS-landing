@@ -51,7 +51,7 @@ Five route handlers were present: `/api/analyze`, `/api/extract`, `/api/share-in
 
 ## State and security boundaries
 
-All workspace routes are composed inside the workspace layout and `WorkspaceProvider`. The workspace entry gate waits for session bootstrap and displays a connection warning when the care record cannot be confirmed. The backend remains responsible for enforcing caregiver, care-recipient and shared-record permissions. A visible route or hidden navigation item is not a security boundary.
+All workspace routes are composed inside the workspace layout and `WorkspaceProvider`. The workspace entry gate waits for session bootstrap and displays a connection warning when the care record cannot be confirmed. The shared provider also clears its current projection and reloads the authorized situation when the API client announces a caregiver or care-recipient identity change. A version guard prevents a late response for the previous scope from replacing the current view. The backend remains responsible for enforcing caregiver, care-recipient and shared-record permissions. A visible route or hidden navigation item is not a security boundary.
 
 This route inventory does not yet constitute a complete endpoint-by-endpoint permission audit. The remaining implementation work must verify the actual API requests and role checks for each page, including direct URL access and care-recipient changes.
 
