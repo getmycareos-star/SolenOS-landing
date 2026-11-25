@@ -5,7 +5,7 @@ const page = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
 const understanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
 const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
 
-assert.match(page, /<h1>Today<\/h1>/, "first-time and returning caregivers must enter through Home");
+assert.match(page, /<h1>Home<\/h1>/, "first-time and returning caregivers must enter through Home");
 assert.match(page, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "the shared entry page must use the concise Living Care Record projection");
 assert.match(page, /View the complete Care Record/, "the complete record must remain directly discoverable");
 assert.doesNotMatch(page, /FirstVisitWorkspaceRouter/, "Home must not branch into a separate first-visit presentation");
