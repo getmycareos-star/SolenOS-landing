@@ -102,6 +102,9 @@ assert.match(intelligenceReviewSource, /analysis\.extraction_unprocessed_page_nu
 assert.match(source, /onAddClearerPages=\{\(evidenceId, pages\) => \{ setRecoverySourceEvidenceId\(evidenceId\); setRecoveryPageNumbers\(pages\)/, "the recovery action must carry its source document and exact page numbers into the scanner");
 assert.match(source, /Take clearer copies of pages " \+ recoveryPageNumbers\.join\(", "\)/, "the camera scanner must keep the unreadable page numbers visible while the caregiver captures replacements");
 assert.match(source, /Save clearer copies of pages " \+ recoveryPageNumbers\.join\(", "\)/, "the save step must explain which pages are being recaptured and that they remain separate evidence");
+assert.match(source, /sourcePageNumber\?: number/, "a re-captured page must retain its original document page number in the upload model");
+assert.match(source, /handleFiles\(pages, recoveryPageNumbers\)/, "the camera flow must pass the original page numbers into the saved page records");
+assert.match(source, /capture_page_number = String\(page\.sourcePageNumber \?\? scanPageNumber\)/, "re-captured page provenance must retain the original page number instead of being renumbered from one");
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
 assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "caregivers must be warned that names, dates and numbers can be misread");
 assert.match(intelligenceReviewSource, /Compare each suggested detail with the original document before accepting it/, "handwriting uncertainty must remain visible");
