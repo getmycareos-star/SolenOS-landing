@@ -13,8 +13,8 @@ import {
   syncDurableWrites,
 } from "@/lib/offline-sync/durable-write-queue";
 
-const MAX_OFFLINE_PHOTO_BYTES = 8 * 1024 * 1024;
 const MAX_SERVER_PHOTO_BYTES = 10 * 1024 * 1024;
+const MAX_OFFLINE_PHOTO_BYTES = MAX_SERVER_PHOTO_BYTES;
 const SUPPORTED_PHOTO_TYPES = new Set([
   "image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/tiff",
 ]);
