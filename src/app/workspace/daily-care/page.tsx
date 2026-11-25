@@ -624,8 +624,8 @@ export default function DailyCarePage() {
 
       {error ? (
         <section className="daily-care-error" role="alert">
-          <h2>Daily Care could not be opened</h2>
-          <p>{caregiverSafeAssistantText(error) || "Daily Care could not be opened. Check your connection and try again."}</p>
+          <h2>Add an update could not be opened</h2>
+          <p>{caregiverSafeAssistantText(error) || "Add an update could not be opened. Check your connection and try again."}</p>
           <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button>
         </section>
       ) : ready ? (
@@ -679,6 +679,10 @@ export default function DailyCarePage() {
               <div className="daily-care-capture-state">
                 {!captureMode ? (
                   <div role="group" aria-label="Choose what you want to share" className="daily-care-capture-options">
+                    <Link href="/workspace/documents" className="daily-care-capture-option">
+                      <strong>Medical document</strong>
+                      <span>Upload a report, prescription or medical record.</span>
+                    </Link>
                     {([
                       { value: "something", label: "Something happened", detail: "Share an observation in your own words." },
                       { value: "medicine", label: "Medicine", detail: "Record what happened with a medicine." },
@@ -710,7 +714,6 @@ export default function DailyCarePage() {
                         note: "Note",
                       } as const)[captureMode]}</strong>
                       <Button variant="secondary" onClick={() => setCaptureMode(null)}>More ways to share</Button>
-                      <Link href="/workspace/documents" className="solenos-care-secondary-action">Add a document</Link>
                     </div>
                     {captureMode === "checkin" ? (
                       <QuickDailyCheckIn />
@@ -774,7 +777,7 @@ export default function DailyCarePage() {
           </details>
 
           <details className="daily-care-context-panel">
-            <summary><h2 id="daily-care-follow-ups-title">Follow-ups</h2></summary>
+            <summary><h2 id="daily-care-follow-ups-title">Needs attention</h2></summary>
             <p className="daily-care-muted">
               {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} that may need checking.
               Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, Daily Care will use it instead of creating a duplicate.
