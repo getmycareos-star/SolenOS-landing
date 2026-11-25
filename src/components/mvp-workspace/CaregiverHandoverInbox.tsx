@@ -97,7 +97,15 @@ export function CaregiverHandoverInbox() {
     setBusy(true);
     setError("");
     try {
-      await postJSON("/caregiver-access/" + (kind === "primary" ? "primary-transfers/" : "responsibility-transfers/") + encodeURIComponent(id) + "/" + decision, {});
+      if (kind === "primary" && decision === "accept") {
+        await postJSON(`/caregiver-access/primary-transfers/${encodeURIComponent(id)}/accept`, {});
+      } else if (kind === "primary") {
+        await postJSON(`/caregiver-access/primary-transfers/${encodeURIComponent(id)}/reject`, {});
+      } else if (decision === "accept") {
+        await postJSON(`/caregiver-access/responsibility-transfers/${encodeURIComponent(id)}/accept`, {});
+      } else {
+        await postJSON(`/caregiver-access/responsibility-transfers/${encodeURIComponent(id)}/reject`, {});
+      }
       // Refresh the inherited care summary so the new responsibility owner and
       // primary-caregiver permissions are reflected immediately.
       window.location.reload();

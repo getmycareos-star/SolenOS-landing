@@ -574,7 +574,11 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setError("");
     setNotice("");
     try {
-      await postJSON("/caregiver-access/primary-transfers/" + encodeURIComponent(transfer.id) + "/" + decision, {});
+      if (decision === "accept") {
+        await postJSON(`/caregiver-access/primary-transfers/${encodeURIComponent(transfer.id)}/accept`, {});
+      } else {
+        await postJSON(`/caregiver-access/primary-transfers/${encodeURIComponent(transfer.id)}/reject`, {});
+      }
       setNotice(decision === "accept"
         ? "You are now the main caregiver. The previous caregiver's access and past notes have been kept."
         : "You declined the change. The current main caregiver remains in place.");
@@ -591,7 +595,11 @@ export function CaregiverAccessPanel({ enabled = true }: { enabled?: boolean }) 
     setError("");
     setNotice("");
     try {
-      await postJSON("/caregiver-access/responsibility-transfers/" + encodeURIComponent(transfer.id) + "/" + decision, {});
+      if (decision === "accept") {
+        await postJSON(`/caregiver-access/responsibility-transfers/${encodeURIComponent(transfer.id)}/accept`, {});
+      } else {
+        await postJSON(`/caregiver-access/responsibility-transfers/${encodeURIComponent(transfer.id)}/reject`, {});
+      }
       setNotice(decision === "accept"
         ? "This care task is now assigned to you. The earlier assignment is kept in the Care Record."
          : "You did not accept the transfer of care. The current caregiver remains responsible.");
