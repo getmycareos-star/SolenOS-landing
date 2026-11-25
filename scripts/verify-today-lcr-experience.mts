@@ -33,6 +33,10 @@ assert.match(understanding, /viewMode === "today" \? `\/workspace\/care-continui
 
 assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
 assert.match(understanding, /hasIncompleteProjection/, "incomplete retrieval must not be treated as an empty record");
+assert.match(understanding, /sourceFreshness\?\.reassessment_recommended/, "stale understanding warnings must remain visible on Today");
+assert.match(understanding, /assessment\.coverage\.is_complete/, "Today must disclose incomplete assessment coverage");
+assert.match(understanding, /Happened \\u0024\{formatWhen\(item\.occurred_at\)\}/, "Today must distinguish when care happened from when it was saved");
+
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Today must retain recorded appointment information");
 assert.match(home, /searchParams\.get\("prompt"\)\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Today shell");
