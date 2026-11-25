@@ -1406,6 +1406,14 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
   const suggestionReference = (item: (typeof openLoopItems)[number]) => `${item.source}:${item.id}`;
   const actionForSuggestion = (item: (typeof openLoopItems)[number]) =>
     registeredActions.find((action) => action.suggestion_id === suggestionReference(item));
+  const hasConfirmedEmptyRecord = Boolean(
+    projection &&
+    projection.items.length === 0 &&
+    projection.schema_status === "complete" &&
+    projection.missing_required_sources.length === 0 &&
+    projection.missing_optional_sources.length === 0 &&
+    (projection.failed_sources?.length ?? 0) === 0
+  );
 
   const approveFollowUp = async (item: (typeof openLoopItems)[number]) => {
     if (item.source !== "open_loop_records") {
@@ -2095,6 +2103,10 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
                   <h4 id="lcr-contextual-next-step-heading">What may help next</h4>
                   {error ? (
                     <p role="alert">Your care information could not be checked, so SolenOS cannot suggest a next step yet.</p>
+                  ) : loading ? (
+                    <p role="status">Loading your care information…</p>
+                  ) : hasConfirmedEmptyRecord ? (
+                    <p>Your Care Record is ready to begin. Add one detail you already know or something you have noticed. You can add more whenever you are ready.</p>
                   ) : assessmentLoading || !assessment ? (
                     <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
                   ) : immediateCareDecisions.length > 0 ? (
@@ -2112,6 +2124,10 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
                 <div className="solenos-care-next-step__actions">
                   {error ? (
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
+                  ) : loading ? (
+                    <span role="status">Loading…</span>
+                  ) : hasConfirmedEmptyRecord ? (
+                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
                   ) : assessmentLoading || !assessment ? (
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
                   ) : immediateCareDecisions.length > 0 ? (
