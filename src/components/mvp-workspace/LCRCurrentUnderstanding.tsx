@@ -737,7 +737,7 @@ function historySourceLabel(source: string): string {
   return HISTORY_SOURCE_LABELS[source] ?? "Care information";
 }
 
-export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep?: boolean } = {}) {
+export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "complete" }: { showNextStep?: boolean; viewMode?: "today" | "complete" } = {}) {
   const [personId, setPersonId] = useState("");
   const personIdRef = useRef("");
   const caregiverIdRef = useRef("");
@@ -1639,7 +1639,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
       <div className="lcr-section-heading">
         <div>
           <p className="lcr-eyebrow">YOUR CARE</p>
-          <h2 id="lcr-current-understanding-heading">Your Care Record</h2>
+          <h2 id="lcr-current-understanding-heading">{viewMode === "today" ? "Current care picture" : "Your Care Record"}</h2>
           <p className="lcr-record-introduction">This record reflects the care information saved here. It may not include everything happening in care.</p>
         </div>
         <button type="button" className="lcr-text-action" onClick={() => void refreshWholeRecord()} disabled={loading || refreshing || assessmentLoading} aria-label="Refresh care summary">
@@ -1694,8 +1694,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
             <RecordState kind="error" title="We couldn’t check what needs attention" description="We couldn’t check what may need attention. Please try again." onAction={() => void refreshWholeRecord()} />
           ) : !assessment ? (
             <RecordState kind="incomplete" title="Care priorities haven’t been reviewed yet" description="Review the saved care information to see what may need attention." onAction={() => void refreshWholeRecord()} />
-          ) : assessment.coverage.records_examined === 0 ? (
-            <RecordState kind="incomplete" title="Not enough information to say what needs attention" description="More care information may be needed before we can say what needs attention." />
+          ) : hasConfirmedEmptyRecord || assessment.coverage.records_examined === 0 ? (
+            <RecordState kind="first-empty" title="Nothing needs review yet" description="There is not enough saved care information to identify a follow-up. Add information as it becomes available." />
           ) : immediateCareDecisions.length > 0 ? (
             <>
               <ul className="lcr-first-screen-list">
@@ -1738,6 +1738,9 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
             </p>
           ) : (
             <RecordState kind="period-empty" title="No immediate follow-up is shown" description={assessment.coverage.is_complete ? "The information reviewed does not currently show an immediate follow-up." : "Some care information may not have been available for this review, so this is not a complete picture."} />
+          )}
+          {watchMissingInformation.length > 0 && (
+            <p className="lcr-entry-status"><strong>Information not yet recorded:</strong> {watchMissingInformation.length} relevant {watchMissingInformation.length === 1 ? "detail is" : "details are"} missing from the saved record. This does not mean the information is absent.</p>
           )}
           {watchUncertainties.length > 0 && (
             <p className="lcr-entry-status">
@@ -1839,6 +1842,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
         </div>
       </section>
 
+      {viewMode === "complete" && (
+        <>
       <details className="lcr-history-details" onToggle={(event) => setDementiaProfileOpen(event.currentTarget.open)}>
         <summary>Dementia care profile and observations</summary>
         {dementiaProfileOpen ? <DementiaCareProfilePanel key={personId} personId={personId} /> : null}
@@ -2649,7 +2654,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
           <p className="lcr-footer-note">{caregiverSafeGeneratedText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
-      {showNextStep && (
+      {showNextStep && !hasConfirmedEmptyRecord && (
               <section className="solenos-care-next-step" aria-labelledby="lcr-contextual-next-step-heading">
                 <div>
                   <h4 id="lcr-contextual-next-step-heading">What may help next</h4>
@@ -2727,6 +2732,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
         </details>
       </details>
       </details>
+        </>
+      )}
     </section>
   );
 }
