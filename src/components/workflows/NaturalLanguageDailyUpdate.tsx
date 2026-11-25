@@ -143,10 +143,10 @@ export default function NaturalLanguageDailyUpdate() {
           setPendingLocal(false);
           setRequestKey(null);
           setReport("");
-          setSyncNotice("Your saved update has now been added to your Care Record.");
+          setSyncNotice("Your original update has reached your Care Record.");
           window.dispatchEvent(new Event("careRecordUpdated"));
         } else if (result.synced > 0) {
-          setSyncNotice("Your saved update has been added to your Care Record.");
+          setSyncNotice("A queued item has reached SolenOS. Any required review or processing may still be outstanding.");
           window.dispatchEvent(new Event("careRecordUpdated"));
         }
       } catch {
@@ -414,18 +414,18 @@ export default function NaturalLanguageDailyUpdate() {
       )}
       {pendingCount > 0 && !pendingLocal && (
         <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>
-          {pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to be added to your Care Record.
+          {pendingCount} queued item{pendingCount === 1 ? "" : "s"} waiting to reach SolenOS. They are not yet confirmed in your care record.
         </p>
       )}
       {attentionCount > 0 && (
         <p role="alert" style={{ margin: 0, color: "var(--theme-danger-fg, #9b3434)" }}>
-          {attentionCount} update{attentionCount === 1 ? "" : "s"} still need attention. They have not been added to your Care Record yet.
+          {attentionCount} queued item{attentionCount === 1 ? "" : "s"} still need attention. SolenOS has not confirmed that they were saved.
         </p>
       )}
       {syncNotice && <p role="status" style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{syncNotice}</p>}
       {receipt && (
         <div role="status" style={{ color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
-          <p style={{ margin: 0 }}>Your update was saved to your Care Record.</p>
+          <p style={{ margin: 0 }}>Your original update was saved to your Care Record.</p>
           {(receipt.processingStatus === "queued" || receipt.processingStatus === "processing") && (
             <p style={{ margin: "6px 0 0" }}>
               SolenOS is organizing the details in the background. You can keep using Daily Care.
