@@ -16,21 +16,18 @@ const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
 
 function WorkspaceHomeInner() {
   const searchParams = useSearchParams();
-  const prompt = searchParams.get("prompt");
-
-  if (prompt) {
-    return (
-      <div className="mobile-screen feature-page companion-route solenos-companion-home">
-        <Companion home initialPrompt={prompt} />
-      </div>
-    );
-  }
+  const prompt = searchParams.get("prompt")?.trim().slice(0, 4000) || null;
 
   return (
     <FirstVisitWorkspaceRouter fallback={(
     <div className="mobile-screen feature-page solenos-lcr-home">
       <header className="solenos-workspace-page-heading"><p className="solenos-home-eyebrow">HOME</p><h1>Home</h1><p>See what is happening, what has changed and what may need your attention. Your saved care information stays connected as things change.</p><p><Link href="/workspace/care-continuity">View care information</Link></p></header>
-      {/* Show the current care situation before inbox and detailed record content. */}
+      {prompt && (
+        <section className="today-companion-entry" aria-label="Your question for SolenOS">
+          <Companion key={prompt} home initialPrompt={prompt} />
+        </section>
+      )}
+      {/* Today and Companion share the same authenticated care-record shell. */}
       <LCRCurrentUnderstanding showNextStep />
       <UpcomingAppointmentSummary />
     </div>
