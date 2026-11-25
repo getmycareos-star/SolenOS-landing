@@ -3209,3 +3209,21 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-mobile-add-update {
 html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
   padding-bottom: 32px;
 }
+
+
+.solenos-chat-app .daily-care-upload-link {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 8px 13px;
+  border: 1px solid #cbdacb;
+  border-radius: 10px;
+  background: #f0f5ef;
+  color: #294333;
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  font-weight: 700;
+  text-decoration: none;
+}
+.solenos-chat-app .daily-care-upload-link:hover { border-color: #9fb89f; background: #e8f0e7; }
