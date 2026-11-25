@@ -95,6 +95,13 @@ export function UpcomingAppointmentSummary() {
     appointmentTime - Date.now() <= 24 * 60 * 60 * 1000 &&
     !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
   );
+  const appointmentCanBePrepared = Boolean(
+    appointment &&
+    !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
+  );
+  const appointmentActionLabel = ["overdue", "date_unknown"].includes(appointmentStatus)
+    ? "Review appointment details"
+    : "Prepare for this visit";
 
   return (
     <section className="solenos-upcoming-appointment" aria-labelledby="solenos-upcoming-appointment-title">
@@ -114,6 +121,7 @@ export function UpcomingAppointmentSummary() {
           <p>{displayDate(appointment.scheduled_at)} · {caregiverStatusLabel(appointment.status) || "Status not recorded"}</p>
           {appointment.provider && <p>{caregiverSourceText(appointment.provider)}</p>}
           {appointment.location && <p>{caregiverSourceText(appointment.location)}</p>}
+          {appointmentCanBePrepared && <p><Link className="solenos-upcoming-appointment__prepare" href="/workspace/appointments">{appointmentActionLabel}</Link></p>}
           <small>This is a Care Record entry. SolenOS has not booked or confirmed it with a provider.</small>
         </div>
       ) : (brief?.appointments?.length ?? 0) > 0 ? (
