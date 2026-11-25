@@ -104,7 +104,7 @@ jobs:
       OLLAMA_MODEL: qwen3.5:4b
       OLLAMA_TIMEOUT_SECONDS: ${{ inputs.require_live_qwen && '180' || '5' }}
       OLLAMA_NUM_CTX: "4096"
-      OLLAMA_NUM_PREDICT: "96"
+      OLLAMA_NUM_PREDICT: "384"
       OLLAMA_NUM_THREADS: "2"
       OLLAMA_SIDECAR_ENABLED: "false"
     steps:
