@@ -156,7 +156,6 @@ assert.match(navigation, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\
 assert.match(navigation, /href: "\/workspace\/timeline"[\s\S]*?label: "Care history"/, "care history remains available under More");
 assert.match(navigation, /href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents remains available under More");
 assert.match(navigation, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"/, "Ask SolenOS is available from the main navigation");
-assert.ok(morePage.includes('href="/workspace/timeline">View all care history</Link>'), "Care history is reached from More through its current browsing link");
 assert.match(handoverInbox, /ensureAnonymousSession\(\)/, "handover requests wait for a valid caregiver session");
 assert.match(handoverInbox, /Promise\.allSettled/, "one unavailable handover list does not hide the other");
 assert.match(handoverInbox, /We couldn't check all pending care handovers/);
@@ -199,3 +198,5 @@ assert.match(companion, /const createCareReport[\s\S]*?if \(!isCurrentCareScope\
 assert.match(companion, /const reviewCareUpdate[\s\S]*?if \(!isCurrentCareScope\(\)\) return[\s\S]*?finally \{\s*if \(isCurrentCareScope\(\)\) setReviewingCareUpdateId\(null\)/, "care proposal review must be scoped to the caregiver who initiated it");
 assert.match(companion, /const loadReviewedCareUpdates[\s\S]*?if \(!isCurrentCareScope\(\)\) return[\s\S]*?finally \{\s*if \(isCurrentCareScope\(\)\) setReviewedCareUpdatesLoading\(false\)/, "review history reads must not overwrite a different caregiver's history");
 assert.match(companion, /setReviewedCareUpdates\(\[\]\)[\s\S]*?setCareUpdateHistory\(\{\}\)[\s\S]*?setCareUpdateError\(null\)/, "changing care scope must clear reviewed proposals, review history, and prior errors");
+
+assert.match(careInformationPage, /CARE_INFORMATION_NAVIGATION\.map/, "Care history is reached through the Care information directory");
