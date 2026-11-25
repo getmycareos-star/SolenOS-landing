@@ -112,38 +112,16 @@ function WorkspacePageInner() {
         <section className="lcr-current-fact lcr-companion-entry" aria-labelledby="lcr-companion-entry-heading">
           <div>
             <h2 id="lcr-companion-entry-heading">Need to add something?</h2>
-            <p>Record a new observation or change in Daily Care. Review suggested changes before they become part of your Care Record.</p>
+            <p>Record a new observation, document or change. Review suggested changes before they become part of your Care Record.</p>
           </div>
           <button type="button" className="lcr-text-action" onClick={() => router.push("/workspace/daily-care")}>
-            Open Daily Care <span aria-hidden="true">→</span>
+            Add an update <span aria-hidden="true">→</span>
           </button>
         </section>
 
         <LCRCurrentUnderstanding />
 
-        <section
-          aria-label="Care Record actions"
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, padding: 18, border: "1px solid var(--solenos-hairline)", borderRadius: 14, background: "var(--solenos-surface)" }}
-        >
-          <div>
-            <h2 style={{ margin: "0 0 5px", fontSize: "calc(16px * var(--solenos-text-scale, 1))" }}>Keep your care information up to date</h2>
-            <p style={{ margin: 0, color: "var(--solenos-muted)", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>
-              Record something new in Daily Care, or open the Timeline when you need to review earlier updates.
-            </p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-            <button
-              type="button"
-              onClick={() => router.push("/workspace/daily-care")}
-              style={{ minHeight: 42, padding: "9px 15px", border: "1px solid #8eae8a", borderRadius: 9, background: "#b9d5b5", color: "#17251c", font: "inherit", fontWeight: 600, cursor: "pointer" }}
-            >
-              Add a care update
-            </button>
-            <button type="button" className="lcr-text-action lcr-record-timeline-action" onClick={() => router.push("/workspace/timeline")}>
-              View care history <span aria-hidden="true">→</span>
-            </button>
-          </div>
-        </section>
+
 
 
       </div>
