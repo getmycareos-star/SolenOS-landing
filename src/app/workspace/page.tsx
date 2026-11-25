@@ -29,20 +29,10 @@ function WorkspaceHomeInner() {
   return (
     <FirstVisitWorkspaceRouter fallback={(
     <div className="mobile-screen feature-page solenos-lcr-home">
-      <header className="solenos-workspace-page-heading"><p className="solenos-home-eyebrow">YOUR CARE, AT A GLANCE</p><h1>Home</h1><p>Here’s what has changed, what may need attention and what is already recorded. You can take things one step at a time.</p></header>
+      <header className="solenos-workspace-page-heading"><p className="solenos-home-eyebrow">YOUR LIVING CARE RECORD</p><h1>Today</h1><p>A current view of the care information saved in your Living Care Record. See what matters, what has changed and what may still need checking.</p><p><Link href="/workspace/care-continuity">View the complete Care Record</Link></p></header>
       {/* Show the current care situation before inbox and detailed record content. */}
       <LCRCurrentUnderstanding />
       <UpcomingAppointmentSummary />
-      <section className="solenos-care-next-step" aria-label="Next step">
-        <div>
-          <h2>When you’re ready, here are two ways to continue.</h2>
-          <p>Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.</p>
-        </div>
-        <div className="solenos-care-next-step__actions">
-          <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add an update</Link>
-          <Link href="/workspace/companion" className="solenos-care-secondary-action">Ask SolenOS</Link>
-        </div>
-      </section>
     </div>
     )} />
   );
