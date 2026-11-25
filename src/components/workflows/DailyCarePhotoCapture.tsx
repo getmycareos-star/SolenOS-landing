@@ -15,6 +15,10 @@ import {
 } from "@/lib/offline-sync/durable-write-queue";
 
 const MAX_OFFLINE_PHOTO_BYTES = 8 * 1024 * 1024;
+const MAX_SERVER_PHOTO_BYTES = 10 * 1024 * 1024;
+const SUPPORTED_PHOTO_TYPES = new Set([
+  "image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/tiff",
+]);
 
 async function encodeFileForOfflineQueue(file: File): Promise<string> {
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -35,7 +39,19 @@ export default function DailyCarePhotoCapture() {
   const [pendingLocal, setPendingLocal] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncNotice, setSyncNotice] = useState("");
+  const [uploadStage, setUploadStage] = useState<"idle" | "preparing" | "sending" | "confirming">("idle");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const pendingQueueId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   useEffect(() => {
     let active = true;
@@ -67,9 +83,10 @@ export default function DailyCarePhotoCapture() {
           setIngestionKey(null);
           setFile(null);
           setSaved(true);
+          setSyncNotice("Your photo has reached SolenOS and is saved as evidence. It has not been confirmed as a care-record event.");
         }
         if (result.synced > 0) {
-          setSyncNotice("A saved update has been added to your Care Record.");
+          setSyncNotice("A queued item has reached SolenOS. Any required review or processing may still be outstanding.");
           window.dispatchEvent(new Event("careRecordUpdated"));
         }
       } catch {
@@ -89,6 +106,32 @@ export default function DailyCarePhotoCapture() {
     };
   }, []);
 
+  function selectPhoto(selected: File | undefined) {
+    if (!selected) return;
+    setError("");
+    setSaved(false);
+    setSyncNotice("");
+    setUploadStage("idle");
+    if (!SUPPORTED_PHOTO_TYPES.has(selected.type.toLowerCase())) {
+      setFile(null);
+      setIngestionKey(null);
+      setError("Choose a JPEG, PNG, WebP, GIF, BMP or TIFF photo.");
+      return;
+    }
+    if (selected.size <= 0 || selected.size > MAX_SERVER_PHOTO_BYTES) {
+      setFile(null);
+      setIngestionKey(null);
+      setError("Photos must be smaller than 10 MiB. Choose a smaller photo and try again.");
+      return;
+    }
+    const sameSelection = file
+      && file.name === selected.name
+      && file.size === selected.size
+      && file.lastModified === selected.lastModified;
+    if (!sameSelection) setIngestionKey(null);
+    setFile(selected);
+  }
+
   async function savePhoto() {
     if (!file || saving) return;
     const personId = getPersonId();
@@ -102,6 +145,7 @@ export default function DailyCarePhotoCapture() {
     setError("");
     setSaved(false);
     setSyncNotice("");
+    setUploadStage("preparing");
     const retryKey = ingestionKey ?? crypto.randomUUID();
     setIngestionKey(retryKey);
     const fields = {
@@ -137,6 +181,7 @@ export default function DailyCarePhotoCapture() {
         throw new Error("This photo is too large to save on this device without a connection. Connect to the internet before trying again.");
       }
 
+      setUploadStage("sending");
       const form = new FormData();
       form.append("file", file);
       form.append("ingestion_key", retryKey);
@@ -146,23 +191,28 @@ export default function DailyCarePhotoCapture() {
       const result = queueId
         ? await deliverDurableWrite<{ evidence_id?: string; persisted?: boolean }>(queueId, sendQueuedCareWrite)
         : await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
+      setUploadStage("confirming");
       if (!result?.evidence_id || result.persisted !== true) {
-        throw new Error("The server did not confirm that the photo was saved.");
+        throw new Error("SolenOS did not confirm that the original photo was saved.");
       }
       pendingQueueId.current = null;
       setPendingLocal(false);
       setSaved(true);
       setFile(null);
       setIngestionKey(null);
+      setUploadStage("idle");
+      setSyncNotice("Your photo was uploaded and saved as evidence. It has not been confirmed as a care-record event.");
       window.dispatchEvent(new Event("careRecordUpdated"));
-    } catch {
+    } catch (cause) {
+      setUploadStage("idle");
       if (queueId) {
         setPendingLocal(true);
         const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
         if (summary) setPendingCount(summary.pending);
-        setError("This photo is saved securely on this device, but it has not been added to your Care Record yet. It will be sent when your connection returns.");
+        setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns.");
       } else {
-        setError(caregiverSafeErrorMessage());
+        const reason = cause instanceof Error ? cause.message : "";
+        setError(reason || "SolenOS could not confirm that this photo was received. Keep the photo selected and retry; the same request key will be reused.");
       }
     } finally {
       setSaving(false);
@@ -181,23 +231,42 @@ export default function DailyCarePhotoCapture() {
       <p style={{ margin: "0 0 12px", color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
         Choose a photo that helps explain something in the care record. Upload only what you want to share.
       </p>
-      <label htmlFor="daily-care-photo-file" style={{ display: "block", marginBottom: 8, fontWeight: 650 }}>
-        Photograph
-      </label>
-      <input
-        id="daily-care-photo-file"
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        onChange={(event) => {
-          setFile(event.target.files?.[0] ?? null);
-          setIngestionKey(null);
-          setPendingLocal(false);
-          setError("");
-          setSaved(false);
-        }}
-        disabled={saving || pendingLocal}
-      />
-      {file && <p style={{ margin: "8px 0", color: "var(--theme-panel-muted)" }}>{file.name}</p>}
+      <div style={{ display: "grid", gap: 10 }}>
+        <div>
+          <label htmlFor="daily-care-photo-camera" style={{ display: "block", marginBottom: 6, fontWeight: 650 }}>
+            Take a photo
+          </label>
+          <input
+            id="daily-care-photo-camera"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
+            capture="environment"
+            onChange={(event) => selectPhoto(event.target.files?.[0])}
+            disabled={saving || pendingLocal}
+          />
+        </div>
+        <div>
+          <label htmlFor="daily-care-photo-library" style={{ display: "block", marginBottom: 6, fontWeight: 650 }}>
+            Choose an existing photo
+          </label>
+          <input
+            id="daily-care-photo-library"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
+            onChange={(event) => selectPhoto(event.target.files?.[0])}
+            disabled={saving || pendingLocal}
+          />
+        </div>
+      </div>
+      {file && (
+        <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+          <p style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{file.name} · {(file.size / (1024 * 1024)).toFixed(1)} MiB</p>
+          {previewUrl && <img src={previewUrl} alt="Preview of the selected care photo" style={{ display: "block", width: "100%", maxHeight: 320, objectFit: "contain", borderRadius: 10, background: "var(--theme-field-bg)" }} />}
+          {typeof navigator !== "undefined" && !navigator.onLine && file.size > MAX_OFFLINE_PHOTO_BYTES && (
+            <p role="status" style={{ color: "var(--theme-panel-muted)", margin: 0 }}>This photo is too large to keep in the offline queue. Connect to the internet before sending it.</p>
+          )}
+        </div>
+      )}
       <button
         type="button"
         onClick={() => void savePhoto()}
@@ -205,8 +274,9 @@ export default function DailyCarePhotoCapture() {
         className="workspace-primary"
         style={{ display: "block", marginTop: 12, minHeight: 44, padding: "10px 16px", borderRadius: 9 }}
       >
-        {saving ? "Uploading…" : pendingLocal ? "Retry upload" : "Save photograph"}
+        {saving ? (uploadStage === "preparing" ? "Preparing photo…" : uploadStage === "confirming" ? "Checking saved copy…" : "Sending photo…") : pendingLocal ? "Retry upload" : "Save photograph"}
       </button>
+      {saving && <p role="status" aria-live="polite" style={{ color: "var(--theme-panel-muted)" }}>{uploadStage === "preparing" ? "Preparing the original photo for a safe upload." : uploadStage === "confirming" ? "Checking that SolenOS saved the original photo." : "Sending the original photo to SolenOS. Keep this screen open until receipt is confirmed."}</p>}
       {error && <p role="alert" style={{ color: "var(--theme-danger-fg, #9b3434)" }}>{error}</p>}
       {pendingLocal && ingestionKey && (
         <button
@@ -229,7 +299,7 @@ export default function DailyCarePhotoCapture() {
         <p role="status">{pendingCount} update{pendingCount === 1 ? "" : "s"} waiting to be added to your Care Record.</p>
       )}
       {syncNotice && <p role="status">{syncNotice}</p>}
-      {saved && <p role="status">Photograph saved with your care information.</p>}
+      {saved && <p role="status">Photo uploaded and saved as evidence. It has not been confirmed as a care-record event.</p>}
     </section>
   );
 }
