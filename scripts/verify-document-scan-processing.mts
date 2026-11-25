@@ -39,6 +39,12 @@ assert.match(source, /does not confirm that a medication or care instruction was
 assert.match(source, /page_number \? " \(page " \+ v\.page_number/, "document comparisons must retain source-page references");
 assert.match(source, /scan_crop_json: JSON\.stringify\(page\.crop\)/, "per-page crop metadata must accompany the immutable original for server-side processing");
 assert.match(source, /scan_text_prepared: "false"/, "the upload must not claim that browser OCR prepared the source");
+const mobileDocumentE2E = readFileSync("e2e/critical-care-journeys.mjs", "utf8");
+assert.match(mobileDocumentE2E, /03b mobile document file picker, upload progress and camera scanner/, "mobile document intake must be exercised in the real browser journey");
+assert.match(mobileDocumentE2E, /--use-fake-device-for-media-stream/, "browser camera acceptance must provide a deterministic camera device");
+assert.match(mobileDocumentE2E, /video\.videoWidth > 0 && video\.videoHeight > 0/, "camera acceptance must wait for a live video frame before capture");
+assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Take photo"/, "camera acceptance must exercise the actual capture control");
+assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Save files"/, "mobile file-picker acceptance must exercise original upload");
 assert.match(source, /stored\.processing_status === "completed"[\s\S]*?backgroundProcessingCompleted \+= 1/, "completed document processing must be tracked separately from queued work");
 assert.match(source, /backgroundProcessingCompleted > 0[\s\S]*?has finished processing[\s\S]*?Open each file to see what was extracted/, "completed processing must not imply that every file has reviewable suggestions");
 
