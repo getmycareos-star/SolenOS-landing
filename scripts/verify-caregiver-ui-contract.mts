@@ -245,8 +245,8 @@ assert.match(notificationCenter, /No notifications yet/,
   "the inbox must explain a genuine empty state");
 assert.match(notificationCenter, /Replaced by newer information/,
   "superseded notifications must be distinguished from active attention");
-assert.match(notificationCenter, /No longer needs attention/,
-  "resolved notifications must not continue to appear as active requests");
+assert.match(notificationCenter, /No longer current/,
+  "resolved notifications must not be described as unresolved care matters");
 assert.match(notificationCenter, /item\.resolved_at/,
   "the inbox must show when an update stopped requiring attention");
 assert.match(notificationCenter, /\(item.status \?\? "active"\) === "active"/,
