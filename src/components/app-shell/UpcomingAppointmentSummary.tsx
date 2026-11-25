@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ensureAnonymousSession, getJSON } from "@/api/client";
 import { caregiverStatusLabel, caregiverSourceText } from "@/lib/caregiver-language";
@@ -43,8 +43,10 @@ export function UpcomingAppointmentSummary() {
   const [brief, setBrief] = useState<AppointmentBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const requestVersion = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestVersion.current;
     setLoading(true);
     setError(false);
     try {
@@ -58,16 +60,28 @@ export function UpcomingAppointmentSummary() {
       ) {
         throw new Error("Appointment information could not be verified for the active care record.");
       }
+      if (requestId !== requestVersion.current) return;
       setBrief(result);
     } catch {
+      if (requestId !== requestVersion.current) return;
       setBrief(null);
       setError(true);
     } finally {
-      setLoading(false);
+      if (requestId === requestVersion.current) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    const refreshForCareChange = () => { void load(); };
+    window.addEventListener("personIdChanged", refreshForCareChange);
+    window.addEventListener("careRecordUpdated", refreshForCareChange);
+    return () => {
+      requestVersion.current += 1;
+      window.removeEventListener("personIdChanged", refreshForCareChange);
+      window.removeEventListener("careRecordUpdated", refreshForCareChange);
+    };
+  }, [load]);
 
   const appointment = brief?.next_appointment ?? null;
   const appointmentStatus = String(appointment?.status ?? "").trim().toLowerCase();
