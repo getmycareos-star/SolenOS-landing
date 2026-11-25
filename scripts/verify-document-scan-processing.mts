@@ -25,6 +25,8 @@ assert(!source.includes('aria-label="Review extracted text before saving"'), "th
 assert.match(source, /if \(!reviewPages\.length\)/, "saving must not require caregivers to review every page first");
 assert.match(source, /scan_review_status: "not_reviewed"/, "the upload must not claim the caregiver reviewed text that has not yet been extracted by the server");
 assert.match(source, /Save files<\/button>/, "caregivers must be able to save originals before reviewing extracted text");
+assert.match(source, /Saving original " \+ \(pageIndex \+ 1\) \+ " of " \+ reviewPages\.length/, "multi-file uploads must show which original is currently being saved");
+assert.match(source, /Reading and review happen separately after the upload is confirmed/, "upload progress must not collapse extraction and caregiver review into the upload operation");
 assert.match(source, /data-scan-crop-stage/, "scan editor must render a crop stage");
 assert(!source.includes("createProcessedImage("), "the browser must not transform the original image bytes before upload");
 assert(!source.includes("createMultiPagePdf(") && !source.includes("Combine scan pages into one PDF"), "multiple scan pages must remain separate original files rather than being recomposed in the browser");
