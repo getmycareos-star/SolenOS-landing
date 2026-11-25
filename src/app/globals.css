@@ -6174,6 +6174,42 @@ html:not([data-solenos-theme="dark"]) [role="button"][style*="var(--trust)"]:hov
 }
 
 
+/* Today puts care attention before the general record summary. */
+.lcr-first-screen-summary > .lcr-first-screen-card:first-child {
+  order: 2;
+}
+.lcr-first-screen-summary > .lcr-first-screen-card:nth-child(2) {
+  order: 1;
+  grid-column: 1 / -1;
+}
+.lcr-first-screen-summary > .lcr-first-screen-card:nth-child(3) {
+  order: 3;
+}
+.lcr-today-empty-state > p {
+  margin: 10px 0 0;
+  color: #657468;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.lcr-today-empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+.solenos-care-next-step h4 {
+  margin: 0;
+  color: #2c4432;
+  font-size: 17px;
+  line-height: 1.35;
+}
+@media (max-width: 640px) {
+  .lcr-today-empty-state__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Caregiver home: one clear care picture, with actions and destinations kept secondary. */
 .lcr-first-screen-summary {
   display: grid;
