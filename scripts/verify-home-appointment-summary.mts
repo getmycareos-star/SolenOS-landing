@@ -25,6 +25,7 @@ assert.ok(component.includes('href="/workspace/appointments"'), "caregivers must
 assert.ok(component.includes("Prepare for this visit"), "a saved upcoming appointment must offer a contextual preparation action");
 assert.ok(component.includes("Review appointment details"), "unknown or overdue appointment timing must offer review rather than false preparation certainty");
 assert.ok(styles.includes(".solenos-upcoming-appointment__prepare"), "the appointment preparation action must have an accessible presentation");
+assert.ok(styles.includes("min-height: 44px"), "appointment actions must meet the minimum touch-target height");
 assert.ok(styles.includes(".solenos-upcoming-appointment"), "the summary must use responsive shared workspace styling");
 assert.ok(styles.includes("@media (max-width: 520px)"), "the appointment summary must adapt to mobile widths");
 
