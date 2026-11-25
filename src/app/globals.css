@@ -5401,6 +5401,22 @@ input[type="file"] { width: 100%; white-space: normal; }
 .settings-section-summary-copy { display: grid; flex: 1; min-width: 0; gap: .18rem; color: var(--foreground, #1d2b22); }
 .settings-section-summary-copy strong { font-size: 1rem; line-height: 1.35; }
 .settings-section-summary-copy small { color: var(--muted-foreground, #647267); font-size: .82rem; line-height: 1.4; }
+.settings-section-summary-action {
+  display: inline-flex;
+  min-height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: .55rem .85rem;
+  border: 1px solid #d8e3d8;
+  border-radius: 10px;
+  background: #f5f8f4;
+  color: #2d4a36;
+  font-size: .86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.settings-section-summary-action:hover { border-color: #a9c0aa; background: #eaf1e9; }
 .settings-section-chevron { color: #526b58; font-size: 1.35rem; transition: transform .18s ease; }
 .settings-section-disclosure[open] .settings-section-chevron { transform: rotate(180deg); }
 .settings-section-content { padding: 0 .8rem .85rem; }
