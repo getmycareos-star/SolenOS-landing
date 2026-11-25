@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { createContext, useContext, useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Situation, UiRuntimeState } from "@/lib/ui-runtime";
 import {
@@ -75,6 +75,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
   const [entryReady, setEntryReady] = useState(false);
   const [recordLoadError, setRecordLoadError] = useState<string | null>(null);
   const [opsMode, setOpsMode] = useState(false);
+  const scopeRefreshVersionRef = useRef(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -211,6 +212,57 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         setEntryReady(true);
       });
   }, [router]);
+
+  const refreshWorkspaceScope = useCallback(async () => {
+    const requestVersion = ++scopeRefreshVersionRef.current;
+    setEntryReady(false);
+    setRecordLoadError(null);
+    setRuntime({ ...createEmptyUiRuntimeState(), decisionSurface: { activeCard: null } });
+
+    try {
+      const nextCareKey = ensureClientDurableCareKey(window.localStorage.getItem(DURABLE_CARE_KEY_STORAGE));
+      const nextSessionId = ensureClientInteractionSessionId(window.localStorage.getItem(CARE_SESSION_STORAGE_KEY));
+      window.localStorage.setItem(DURABLE_CARE_KEY_STORAGE, nextCareKey);
+      window.localStorage.setItem(CARE_SESSION_STORAGE_KEY, nextSessionId);
+      setCareKey(nextCareKey);
+      setSessionId(nextSessionId);
+      setTelemetryUserId(window.localStorage.getItem(TELEMETRY_USER_STORAGE_KEY));
+
+      await ensureAnonymousSession();
+      const data = await getJSON(
+        `/situation?care_session_id=${encodeURIComponent(nextSessionId)}&offer_return_invite=0`,
+      );
+      if (requestVersion !== scopeRefreshVersionRef.current) return;
+
+      const fromServer = openSituationsFromSituationApi(data);
+      const hasDurableServerReality =
+        fromServer.length > 0 ||
+        data?.has_context_root === true ||
+        (data?.total_events ?? 0) > 0 ||
+        Boolean(data?.active_care_situation?.observations?.length);
+      setRuntime((prev) => ({
+        ...prev,
+        situations: fromServer,
+        activeSituationId:
+          fromServer.find((s) => s.status === "active")?.id ??
+          fromServer[0]?.id ??
+          null,
+      }));
+      if (fromServer.length > 0 || hasDurableServerReality) markEnteredCareRecord();
+      setEntryReady(true);
+    } catch {
+      if (requestVersion !== scopeRefreshVersionRef.current) return;
+      setRecordLoadError("Your care information isn't available right now. Check your connection and try again.");
+      setEntryReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!entryReady) return;
+    const refreshForPersonChange = () => void refreshWorkspaceScope();
+    window.addEventListener("personIdChanged", refreshForPersonChange);
+    return () => window.removeEventListener("personIdChanged", refreshForPersonChange);
+  }, [entryReady, refreshWorkspaceScope]);
 
   const updateRuntime = useCallback((updater: (prev: UiRuntimeState) => UiRuntimeState) => {
     setRuntime(updater);
