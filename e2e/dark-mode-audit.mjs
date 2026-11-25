@@ -407,7 +407,7 @@ try {
             ...(routePath === "/workspace" && !rendered.appointmentSummaryText.includes("Responsive audit appointment") ? [{ kind: "appointment_summary_data_missing" }] : []),
             ...(rendered.horizontalOverflowPx > 1 ? [{ kind: "horizontal_overflow", pixels: rendered.horizontalOverflowPx }] : []),
             ...rendered.clippedPrimaryActions.map((selector) => ({ kind: "clipped_primary_action", selector })),
-            ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Share care information"
+            ...(routePath === "/workspace/handoffs" && rendered.handoffsHeading !== "Care handoffs"
               ? [{ kind: "missing_handoffs_heading", actual: rendered.handoffsHeading }]
               : []),
             ...apiFailures.map((item) => ({ kind: "api_error", ...item })),
