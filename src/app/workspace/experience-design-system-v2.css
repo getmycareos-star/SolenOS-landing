@@ -2967,6 +2967,16 @@
   font-weight: 650;
   text-underline-offset: 3px;
 }
+.solenos-chat-app .solenos-upcoming-appointment__item.is-time-sensitive {
+  padding-left: 12px;
+  border-left: 4px solid var(--sn-forest);
+}
+.solenos-chat-app .solenos-upcoming-appointment__timing {
+  margin: 0 0 6px !important;
+  color: var(--sn-forest) !important;
+  font-size: calc(12px * var(--solenos-text-scale, 1)) !important;
+  font-weight: 750;
+}
 .solenos-chat-app .solenos-upcoming-appointment__item strong,
 .solenos-chat-app .solenos-upcoming-appointment__list strong {
   color: var(--sn-ink);
