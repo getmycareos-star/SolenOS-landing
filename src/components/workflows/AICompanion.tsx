@@ -734,7 +734,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }, [checkAvailability])
 
   useEffect(() => {
-    const prompt = initialPrompt?.trim()
+    const prompt = initialPrompt?.trim().slice(0, 4000)
     if (!prompt) return
     setInput(prompt)
     setRequestError(null)
