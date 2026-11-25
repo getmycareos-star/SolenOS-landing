@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { FileText, Home, Menu, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, X } from "lucide-react";
+import { Bell, FileText, Home, Menu, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, X } from "lucide-react";
 import { CARE_INFORMATION_NAVIGATION, WORKSPACE_NAVIGATION, WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 import { SolenosWordmark } from "@/components/brand";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
@@ -486,6 +486,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             <span className="solenos-chat-brand-mark">S</span>
           </button>
           <div className="solenos-chat-topbar-context">{careContext}</div>
+          <Link href="/workspace/notifications" className="solenos-notification-shortcut" aria-label="Notifications" title="Notifications"><Bell size={19} aria-hidden="true" /></Link>
           {pathname === "/workspace" && (
             <WorkspaceMoreMenu
               onAction={(action) => void handleWorkspaceAction(action)}
