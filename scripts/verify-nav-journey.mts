@@ -110,6 +110,7 @@ assert.match(navigationA11y, /host\.inert = true/, "closed mobile navigation can
 assert.match(navigationA11y, /aria-modal/, "mobile drawer is announced as a modal dialog");
 assert.match(navigationA11y, /trigger\.focus/, "focus returns to the menu trigger after closing");
 assert.match(navigationA11y, /main\.focus/, "route changes move keyboard focus to the new page content");
+assert.match(breadcrumbs, /CARE_INFORMATION_NAVIGATION/, "breadcrumbs use the same Care information destination labels");
 assert.match(breadcrumbs, /aria-label="Breadcrumb"/);
 assert.match(breadcrumbs, /aria-current="page"/);
 assert.match(breadcrumbs, /href="\/workspace"/);
