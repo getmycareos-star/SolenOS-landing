@@ -302,7 +302,7 @@ export default function DailyCarePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
-  const [captureOpen, setCaptureOpen] = useState(true);
+  const [captureOpen, setCaptureOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
   const [structuredCaptureMode, setStructuredCaptureMode] = useState<StructuredCaptureMode | null>(null);
   const [reviewAnalysisId, setReviewAnalysisId] = useState<string | null>(null);
