@@ -45,6 +45,12 @@ assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct ro
 assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Home must not match every nested route");
 assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes keep More active");
 assert.match(appShell, /CARE_INFORMATION_NAVIGATION\.some/, "Care information stays active while a caregiver browses its child destinations");
+assert.match(appShell, /solenos-chat-nav-subnav[\s\S]*?aria-label="Care information sections"/, "Care information exposes its child destinations in the sidebar");
+assert.match(appShell, /solenos-mobile-bottom-nav[\s\S]*?href="\/workspace\/companion"/, "mobile bottom navigation includes the Ask destination");
+assert.match(appShell, /solenos-mobile-add-update[\s\S]*?href="\/workspace\/daily-care"/, "Add an update is a separate mobile action");
+assert.match(appShell, /solenos-notification-shortcut[\s\S]*?href="\/workspace\/notifications"/, "Notifications is directly reachable from the workspace header");
+assert.match(navigationRegistry, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents is nested under Care information");
+
 
 for (const label of ["Home", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
