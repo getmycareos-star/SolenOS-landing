@@ -118,6 +118,10 @@ assert.match(navigationA11y, /aria-modal/, "mobile drawer is announced as a moda
 assert.match(navigationA11y, /trigger\.focus/, "focus returns to the menu trigger after closing");
 assert.match(navigationA11y, /main\.focus/, "route changes move keyboard focus to the new page content");
 assert.match(breadcrumbs, /CARE_INFORMATION_NAVIGATION/, "breadcrumbs use the same Care information destination labels");
+assert.match(breadcrumbs, /isCareInformationChild/, "Care information children receive their parent in the breadcrumb trail");
+assert.match(breadcrumbs, /isMoreChild/, "Settings receives More as its breadcrumb parent");
+assert.match(breadcrumbs, /label: "Home"/, "workspace breadcrumbs use Home rather than an internal record label");
+
 assert.match(breadcrumbs, /aria-label="Breadcrumb"/);
 assert.match(breadcrumbs, /aria-current="page"/);
 assert.match(breadcrumbs, /href="\/workspace"/);
