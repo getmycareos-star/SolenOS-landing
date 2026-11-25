@@ -2097,56 +2097,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
               )}
             </div>
 
-            {showNextStep && (
-              <section className="solenos-care-next-step" aria-labelledby="lcr-contextual-next-step-heading">
-                <div>
-                  <h4 id="lcr-contextual-next-step-heading">What may help next</h4>
-                  {error ? (
-                    <p role="alert">Your care information could not be checked, so SolenOS cannot suggest a next step yet.</p>
-                  ) : loading ? (
-                    <p role="status">Loading your care information…</p>
-                  ) : hasConfirmedEmptyRecord ? (
-                    <p>Your Care Record is ready to begin. Add one detail you already know or something you have noticed. You can add more whenever you are ready.</p>
-                  ) : assessmentLoading || !assessment ? (
-                    <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
-                  ) : immediateCareDecisions.length > 0 ? (
-                    <p>Some care matters remain unresolved. Review the saved details before deciding what to do.</p>
-                  ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
-                    <p>Some saved information is missing, unclear or does not match. Reviewing it may help make the care picture clearer.</p>
-                  ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
-                    <p>There are changes or unresolved matters you may want to review.</p>
-                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
-                    <p>Start with one care detail you already know or something you have noticed. You can add more whenever you are ready.</p>
-                  ) : (
-                    <p>You can explore the full care history or add an update whenever something changes.</p>
-                  )}
-                </div>
-                <div className="solenos-care-next-step__actions">
-                  {error ? (
-                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
-                  ) : loading ? (
-                    <span role="status">Loading…</span>
-                  ) : hasConfirmedEmptyRecord ? (
-                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
-                  ) : assessmentLoading || !assessment ? (
-                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
-                  ) : immediateCareDecisions.length > 0 ? (
-                    <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review Needs attention</Link>
-                  ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
-                    <button type="button" className="solenos-care-primary-action" onClick={() => {
-                      openClarification();
-                      document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}>Review details to check</button>
-                  ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
-                    <Link href="/workspace/timeline" className="solenos-care-primary-action">View Care history</Link>
-                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
-                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add an update</Link>
-                  ) : (
-                    <Link href="/workspace/care-continuity" className="solenos-care-primary-action">View care information</Link>
-                  )}
-                </div>
-              </section>
-            )}
 
             {careAttention && (careAttention.important_to_address.length > 0 || careAttention.needs_clarification.length > 0) && (
               <section className="lcr-current-fact" aria-labelledby="lcr-care-attention-review-heading">
@@ -2699,6 +2649,56 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
           <p className="lcr-footer-note">{caregiverSafeGeneratedText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
+      {showNextStep && (
+              <section className="solenos-care-next-step" aria-labelledby="lcr-contextual-next-step-heading">
+                <div>
+                  <h4 id="lcr-contextual-next-step-heading">What may help next</h4>
+                  {error ? (
+                    <p role="alert">Your care information could not be checked, so SolenOS cannot suggest a next step yet.</p>
+                  ) : loading ? (
+                    <p role="status">Loading your care information…</p>
+                  ) : hasConfirmedEmptyRecord ? (
+                    <p>Your Care Record is ready to begin. Add one detail you already know or something you have noticed. You can add more whenever you are ready.</p>
+                  ) : assessmentLoading || !assessment ? (
+                    <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
+                  ) : immediateCareDecisions.length > 0 ? (
+                    <p>Some care matters remain unresolved. Review the saved details before deciding what to do.</p>
+                  ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
+                    <p>Some saved information is missing, unclear or does not match. Reviewing it may help make the care picture clearer.</p>
+                  ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
+                    <p>There are changes or unresolved matters you may want to review.</p>
+                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
+                    <p>Start with one care detail you already know or something you have noticed. You can add more whenever you are ready.</p>
+                  ) : (
+                    <p>You can explore the full care history or add an update whenever something changes.</p>
+                  )}
+                </div>
+                <div className="solenos-care-next-step__actions">
+                  {error ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
+                  ) : loading ? (
+                    <span role="status">Loading…</span>
+                  ) : hasConfirmedEmptyRecord ? (
+                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
+                  ) : assessmentLoading || !assessment ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
+                  ) : immediateCareDecisions.length > 0 ? (
+                    <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review Needs attention</Link>
+                  ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => {
+                      openClarification();
+                      document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}>Review details to check</button>
+                  ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
+                    <Link href="/workspace/timeline" className="solenos-care-primary-action">View Care history</Link>
+                  ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
+                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add an update</Link>
+                  ) : (
+                    <Link href="/workspace/care-continuity" className="solenos-care-primary-action">View care information</Link>
+                  )}
+                </div>
+              </section>
+            )}
       <div id="lcr-clarification-workflow">
         <details ref={clarificationDetailsRef} className="lcr-history-details" onToggle={(event) => setClarificationOpen(event.currentTarget.open)}>
           <summary>Questions to clarify care</summary>
