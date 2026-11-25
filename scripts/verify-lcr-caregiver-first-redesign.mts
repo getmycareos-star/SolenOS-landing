@@ -103,11 +103,12 @@ assert.match(currentUnderstanding, /There isn’t enough recorded care informati
 assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) => void load\(true\)\}/s, "failed current-care retrieval renders an actionable error state with a real retry");
 assert.ok(
   workspaceHome.indexOf("<LCRCurrentUnderstanding />") < workspaceHome.indexOf('className="solenos-care-next-step"'),
-  "Today presents current care information before its primary actions"
+  "Home presents current care information before its primary actions"
 );
 assert.doesNotMatch(workspaceHome, /<CaregiverHandoverInbox \/>/, "the Today page does not carry a secondary inbox");
 assert.match(workspaceMore, /<CaregiverHandoverInbox \/>/, "the handover inbox remains available under More");
-assert.match(workspaceMore, /<HistoryDrawer \/>/, "recent care history remains available under More");
+assert.doesNotMatch(workspaceMore, /HistoryDrawer/, "More does not contain care-history browsing");
+assert.match(careContinuity, /CARE_INFORMATION_NAVIGATION\.map/, "care-history and care-information destinations are discoverable together");
 assert.ok(workspaceHome.includes('href="/workspace/companion"'), "Care Assistant remains directly accessible");
 assert.ok(workspaceHome.includes('href="/workspace/daily-care"'), "Share an update remains directly accessible");
 assert.match(currentUnderstanding, /evidenceReviewOpen \? <EvidenceReviewPanel personId={personId} \/>/, "evidence review mounts only when its own disclosure is opened");
@@ -220,11 +221,11 @@ assert.doesNotMatch(integrityPanel, /Care Record details|Care details shared wit
 assert.doesNotMatch(currentUnderstanding, /bounded record view|deterministic state checks/i, "internal assessment terminology is not shown in the caregiver record");
 assert.doesNotMatch(currentUnderstanding, /Compared: Time not recorded.*Time not recorded/, "missing comparison dates are not displayed as a fake date range");
 
-console.log("✓ legacy LCR home is not exposed; its route returns caregivers to the Care Assistant");
+console.log("✓ legacy LCR home is not exposed; its route returns caregivers to Home");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
 assert.match(companion, /Care Assistant/, "the caregiver-facing assistant uses the approved caregiver-facing name");
 assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
-assert.match(navigation, /label: "Care Assistant"/, "workspace navigation uses the approved caregiver-facing name");
+assert.match(navigation, /label: "Ask SolenOS"/, "workspace navigation uses the Ask SolenOS destination name");
 assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
 assert.match(publicHome, /Care Assistant/, "the public home page uses the familiar Care Assistant name");
