@@ -115,7 +115,7 @@ const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.ts
 
 assert.match(layout, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
 assert.ok(workspaceHome.includes("<h1>Today</h1>"), "the workspace entry page is titled Today");
-assert.ok(workspaceHome.includes("<LCRCurrentUnderstanding showNextStep />"), "Today uses the authoritative LCR projection and contextual next step");
+assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Today uses the authoritative LCR projection and contextual next step");
 assert.match(workspaceHome, /View the complete Care Record/, "the complete record is discoverable from Today");
 assert.doesNotMatch(workspaceHome, /FirstVisitWorkspaceRouter/, "first-time and returning caregivers share the same Today route");
 assert.match(workspaceContext, /ensureAnonymousSession\(\)/, "caregiver workspace bootstraps a server-issued session before entry");
