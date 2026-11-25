@@ -4,6 +4,15 @@ import path from "node:path";
 
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
+
+const collectNamedFiles = (directory: string, pattern: RegExp): string[] =>
+  fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) return collectNamedFiles(absolute, pattern);
+    return entry.isFile() && pattern.test(entry.name)
+      ? [path.relative(root, absolute).replaceAll("\\\\", "/")]
+      : [];
+  });
 const navigation = read("src/lib/workspace-navigation.ts");
 const shell = read("src/components/app-shell/AppShell.tsx");
 const breadcrumbs = read("src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx");
@@ -25,6 +34,60 @@ const legacyContinuity = read("src/app/workspace/continuity/page.tsx");
 const community = read("src/app/workspace/community/page.tsx");
 const featureFlags = read("src/lib/feature-flags.ts");
 const legacySettings = read("src/app/settings/page.tsx");
+
+const expectedPageFiles = [
+  "src/app/about/page.tsx",
+  "src/app/capabilities/page.tsx",
+  "src/app/contact/page.tsx",
+  "src/app/early-access/page.tsx",
+  "src/app/help/page.tsx",
+  "src/app/how-it-works/page.tsx",
+  "src/app/invite/caregiver/page.tsx",
+  "src/app/metrics/page.tsx",
+  "src/app/mission/page.tsx",
+  "src/app/ops/clarity/page.tsx",
+  "src/app/ops/devtools/page.tsx",
+  "src/app/ops/page.tsx",
+  "src/app/our-story/page.tsx",
+  "src/app/page.tsx",
+  "src/app/privacy/page.tsx",
+  "src/app/settings/page.tsx",
+  "src/app/share/page.tsx",
+  "src/app/start/page.tsx",
+  "src/app/support/page.tsx",
+  "src/app/team/page.tsx",
+  "src/app/terms/page.tsx",
+  "src/app/welcome/page.tsx",
+  "src/app/why-solenos/page.tsx",
+  "src/app/workspace/appointments/page.tsx",
+  "src/app/workspace/care-continuity/page.tsx",
+  "src/app/workspace/community/page.tsx",
+  "src/app/workspace/companion/page.tsx",
+  "src/app/workspace/continuity/page.tsx",
+  "src/app/workspace/daily-care/page.tsx",
+  "src/app/workspace/documents/page.tsx",
+  "src/app/workspace/handoffs/page.tsx",
+  "src/app/workspace/more/page.tsx",
+  "src/app/workspace/notifications/page.tsx",
+  "src/app/workspace/open-loops/page.tsx",
+  "src/app/workspace/page.tsx",
+  "src/app/workspace/record/page.tsx",
+  "src/app/workspace/reminders/page.tsx",
+  "src/app/workspace/settings/page.tsx",
+  "src/app/workspace/timeline/page.tsx",
+].sort();
+const actualPageFiles = collectNamedFiles(path.join(root, "src", "app"), /^page\\.(tsx|ts|jsx|js)$/).sort();
+assert.deepEqual(actualPageFiles, expectedPageFiles, "every App Router page must have an explicit route inventory entry");
+assert.equal(actualPageFiles.length, 39, "the inspected application page inventory contains 39 routes");
+const expectedRouteHandlers = [
+  "src/app/api/analyze/route.ts",
+  "src/app/api/extract/route.ts",
+  "src/app/api/share-intake/route.ts",
+  "src/app/api/situation/route.ts",
+  "src/app/share-target/route.ts",
+].sort();
+const actualRouteHandlers = collectNamedFiles(path.join(root, "src", "app"), /^route\\.(ts|js)$/).sort();
+assert.deepEqual(actualRouteHandlers, expectedRouteHandlers, "all App Router handlers remain accounted for");
 
 const routes = [
   ["/workspace", "src/app/workspace/page.tsx"],
