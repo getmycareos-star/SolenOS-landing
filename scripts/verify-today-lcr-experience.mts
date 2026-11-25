@@ -9,6 +9,14 @@ const appointments = read("src/components/app-shell/UpcomingAppointmentSummary.t
 assert.match(home, /<h1>Today<\/h1>/, "the primary caregiver landing page must be Today");
 assert.match(home, /View the complete Care Record/, "Today must explicitly link to the complete record");
 assert.match(home, /<LCRCurrentUnderstanding showNextStep \/>/, "Today must render the authoritative LCR understanding and contextual next step");
+assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Today must use the concise projection mode");
+assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR component must distinguish Today from the complete record");
+assert.match(understanding, /viewMode === "complete" && \(/, "detailed history and integrity panels must not render on Today");
+assert.match(understanding, /Your Care Record starts here/, "a confirmed empty record must explain the purpose of the record");
+assert.match(understanding, /href="\/workspace\/daily-care" className="solenos-care-primary-action"/, "empty Today state must offer an initial care update");
+assert.match(understanding, /href="\/workspace\/documents" className="solenos-care-secondary-action"/, "empty Today state must offer document upload");
+assert.match(understanding, /watchMissingInformation.length > 0/, "relevant missing information must be surfaced");
+assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Today must retain recorded appointment information");
 assert.match(home, /searchParams\.get\("prompt"\)\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Today shell");
