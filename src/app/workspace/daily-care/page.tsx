@@ -617,7 +617,7 @@ export default function DailyCarePage() {
         </Button>
         <div>
           <p className="daily-care-eyebrow"><CalendarDays size={15} aria-hidden /> DAILY CARE</p>
-          <h1>Share an update</h1>
+          <h1>Add an update</h1>
           <p>Tell SolenOS what happened, what you noticed or what you want to remember. Use your own words; you do not need to choose a category.</p>
         </div>
       </div>
