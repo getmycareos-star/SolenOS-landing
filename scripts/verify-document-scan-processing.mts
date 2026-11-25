@@ -91,6 +91,10 @@ assert.match(intelligenceReviewSource, /postJSON\("\/documents\/" \+ encodeURICo
 assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURIComponent(document.id) + "/extract"'), "the review screen must not perform blocking extraction");
 assert.doesNotMatch(intelligenceReviewSource, /Retry background processing|Continue reading/, "caregivers must not be asked to supervise or manually resume document processing");
 assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial"/, "partial source extraction must be distinct from Qwen processing status");
+assert.match(intelligenceReviewSource, /Continue reading remaining pages/, "long documents with additional readable page windows must expose a continuation action");
+assert.match(intelligenceReviewSource, /analysis\.unprocessed_page_numbers\?\.length && documentExtractionIsComplete\(analysis\)/, "pending interpretation pages must be distinguished from OCR extraction failures");
+assert.match(intelligenceReviewSource, /SolenOS has read \$\{analysis\.processed_page_count/, "long-document progress must report the pages actually interpreted, not only the OCR pages extracted");
+assert.match(intelligenceReviewSource, /waiting to be read: pages/, "queued interpretation pages must not be described as actively processing when no job is running");
 assert.match(intelligenceReviewSource, /Scan clearer page copies/, "unreadable source pages must offer an actionable re-capture route");
 assert.match(intelligenceReviewSource, /This original stays unchanged, and the Care Record will not change unless you review and accept new details/, "page recovery must preserve the original and must not imply automatic Care Record acceptance");
 assert.match(source, /onAddClearerPages=\{\(\) => \{ setCapturedPages\(\[\]\);[\s\S]*?setCameraOpen\(true\); \}\}/, "the unreadable-page recovery action must open the existing camera scanner");
