@@ -22,6 +22,9 @@ assert.ok(styles.includes(".solenos-upcoming-appointment__item.is-time-sensitive
 assert.ok(component.includes("onAction={() => void load()}"), "failed retrieval must be recoverable");
 assert.ok(component.includes("SolenOS has not booked or confirmed it with a provider."), "recorded appointments must not be represented as external bookings");
 assert.ok(component.includes('href="/workspace/appointments"'), "caregivers must be able to open the existing appointment workflow");
+assert.ok(component.includes("Prepare for this visit"), "a saved upcoming appointment must offer a contextual preparation action");
+assert.ok(component.includes("Review appointment details"), "unknown or overdue appointment timing must offer review rather than false preparation certainty");
+assert.ok(styles.includes(".solenos-upcoming-appointment__prepare"), "the appointment preparation action must have an accessible presentation");
 assert.ok(styles.includes(".solenos-upcoming-appointment"), "the summary must use responsive shared workspace styling");
 assert.ok(styles.includes("@media (max-width: 520px)"), "the appointment summary must adapt to mobile widths");
 
