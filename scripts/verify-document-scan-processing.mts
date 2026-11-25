@@ -73,6 +73,9 @@ assert.match(intelligenceReviewSource, /postJSON\("\/documents\/" \+ encodeURICo
 assert(!intelligenceReviewSource.includes('postJSON("/documents/" + encodeURIComponent(document.id) + "/extract"'), "the review screen must not perform blocking extraction");
 assert.doesNotMatch(intelligenceReviewSource, /Retry background processing|Continue reading/, "caregivers must not be asked to supervise or manually resume document processing");
 assert.match(intelligenceReviewSource, /analysis\.extraction_status === "partial"/, "partial source extraction must be distinct from Qwen processing status");
+assert.match(intelligenceReviewSource, /Scan clearer page copies/, "unreadable source pages must offer an actionable re-capture route");
+assert.match(intelligenceReviewSource, /This original stays unchanged, and the Care Record will not change unless you review and accept new details/, "page recovery must preserve the original and must not imply automatic Care Record acceptance");
+assert.match(source, /onAddClearerPages=\{\(\) => \{ setCapturedPages\(\[\]\);[\s\S]*?setCameraOpen\(true\); \}\}/, "the unreadable-page recovery action must open the existing camera scanner");
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
 assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "caregivers must be warned that names, dates and numbers can be misread");
 assert.match(intelligenceReviewSource, /Compare each suggested detail with the original document before accepting it/, "handwriting uncertainty must remain visible");
