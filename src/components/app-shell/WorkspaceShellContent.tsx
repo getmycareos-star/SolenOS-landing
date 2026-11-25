@@ -1,8 +1,5 @@
 "use client";
 
-import "@/app/workspace/experience-design-system.css";
-import "@/app/workspace/experience-design-system-v2.css";
-import "@/app/workspace/navigation-accessibility.css";
 
 import Link from "next/link";
 import type { ReactNode } from "react";
