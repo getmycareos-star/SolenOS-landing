@@ -9,10 +9,10 @@ import type { ReactNode } from "react";
 
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
-    <WorkspaceProvider>
-      <ErrorBoundary name="Workspace" fallback={<WorkspaceErrorFallback />}>
+    <ErrorBoundary name="Workspace" fallback={<WorkspaceErrorFallback />}>
+      <WorkspaceProvider>
         <WorkspaceShellContent>{children}</WorkspaceShellContent>
-      </ErrorBoundary>
-    </WorkspaceProvider>
+      </WorkspaceProvider>
+    </ErrorBoundary>
   );
 }
