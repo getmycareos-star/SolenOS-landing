@@ -69,6 +69,7 @@ type DocumentItem = {
   status: string;
   extractedText: string;
   possibleVersionOfEvidenceId?: string | null;
+  duplicateOfEvidenceId?: string | null;
   evidence: EvidenceRecord;
 };
 
@@ -120,6 +121,7 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     status: item.evidence_status || "recorded",
     extractedText: item.source_text || "",
     possibleVersionOfEvidenceId: asString(meta.possible_version_of_evidence_id) || null,
+    duplicateOfEvidenceId: asString(meta.duplicate_of_evidence_id) || null,
     evidence: item,
   };
 }
@@ -909,7 +911,7 @@ export default function DocumentsPage() {
                 <span className="documents-list-copy">
                   <span className="documents-list-title">{doc.title}</span>
                   <span className="documents-list-meta">{formatBytes(doc.sizeBytes)} · Added {formatDate(doc.uploadedAt)}{doc.careDate ? ` · ${doc.careDateLabel} ${formatDate(doc.careDate)}` : ""}</span>
-                  <span className="documents-list-status">{doc.extractedText.trim() ? "Text available to review" : "Original saved · no readable text yet"}</span>
+                  <span className="documents-list-status">{doc.duplicateOfEvidenceId ? `Exact copy of ${documents.find((item) => item.id === doc.duplicateOfEvidenceId)?.title || "another saved document"}. Kept as a separate upload, but it is not independent evidence.` : doc.extractedText.trim() ? "Text available to review" : "Original saved · no readable text yet"}</span>{doc.possibleVersionOfEvidenceId && <span className="documents-list-status">Possible newer or corrected copy of {documents.find((item) => item.id === doc.possibleVersionOfEvidenceId)?.title || "an earlier document"}. Compare the two before treating them as versions.</span>}
                 </span>
                 <span aria-hidden="true" className="documents-list-open">Open</span>
               </button>
