@@ -2098,11 +2098,11 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
                   ) : assessmentLoading || !assessment ? (
                     <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
                   ) : immediateCareDecisions.length > 0 ? (
-                    <p>There are saved follow-ups marked for attention. Review their details before deciding what to do.</p>
+                    <p>Some care matters remain unresolved. Review the saved details before deciding what to do.</p>
                   ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
                     <p>Some saved information is missing, unclear or does not match. Reviewing it may help make the care picture clearer.</p>
                   ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
-                    <p>The record contains changes or follow-ups that may be useful to review.</p>
+                    <p>There are changes or unresolved matters you may want to review.</p>
                   ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
                     <p>Start with one care detail you already know or something you have noticed. You can add more whenever you are ready.</p>
                   ) : (
@@ -2115,18 +2115,18 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
                   ) : assessmentLoading || !assessment ? (
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
                   ) : immediateCareDecisions.length > 0 ? (
-                    <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review follow-ups</Link>
+                    <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review Needs attention</Link>
                   ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
                     <button type="button" className="solenos-care-primary-action" onClick={() => {
                       openClarification();
                       document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}>Review information to check</button>
+                    }}>Review details to check</button>
                   ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
-                    <Link href="/workspace/timeline" className="solenos-care-primary-action">Review care changes</Link>
+                    <Link href="/workspace/timeline" className="solenos-care-primary-action">View Care history</Link>
                   ) : assessment.coverage.records_examined === 0 && projection?.items.length === 0 ? (
-                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
+                    <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add an update</Link>
                   ) : (
-                    <Link href="/workspace/care-continuity" className="solenos-care-primary-action">Explore the complete Care Record</Link>
+                    <Link href="/workspace/care-continuity" className="solenos-care-primary-action">View care information</Link>
                   )}
                 </div>
               </section>
@@ -2134,8 +2134,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false }: { showNextStep
 
             {careAttention && (careAttention.important_to_address.length > 0 || careAttention.needs_clarification.length > 0) && (
               <section className="lcr-current-fact" aria-labelledby="lcr-care-attention-review-heading">
-                <h4 id="lcr-care-attention-review-heading">Important changes and follow-ups</h4>
-                <p>These changes and follow-ups may need review. They are not automatically emergencies.</p>
+                <h4 id="lcr-care-attention-review-heading">Important changes and matters to review</h4>
+                <p>These changes and unresolved matters may need review. They are not automatically emergencies.</p>
                 {careAttention.important_to_address.length > 0 && (
                   <ul className="lcr-current-facts">
                     {careAttention.important_to_address.map((item) => (
