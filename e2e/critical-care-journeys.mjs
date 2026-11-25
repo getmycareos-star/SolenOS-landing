@@ -1566,7 +1566,7 @@ await record("01d secondary routes and reminder actions persist through reload",
     ["/workspace/community", "/workspace", ""],
     ["/workspace/continuity", "/workspace", ""],
     ["/workspace/record", "/workspace", ""],
-    ["/workspace/notifications", "/workspace/settings", "#settings-notifications"],
+    ["/workspace/notifications", "/workspace/notifications", ""],
   ]) {
     await page.goto(new URL(route, frontend).toString(), { waitUntil: "domcontentloaded" });
     await page.waitForURL((url) =>
@@ -1574,6 +1574,8 @@ await record("01d secondary routes and reminder actions persist through reload",
       { timeout: 15_000 },
     );
   }
+  await page.getByRole("heading", { name: "Notifications", exact: true }).waitFor({ timeout: 15_000 });
+  await verifyMobile(page);
 
   await page.goto(new URL("/workspace/reminders", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Care reminders", exact: true }).waitFor({ timeout: 15_000 });
