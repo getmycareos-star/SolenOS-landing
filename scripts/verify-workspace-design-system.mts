@@ -35,6 +35,8 @@ assert.match(shell, /WorkspaceEntryGate[\s\S]*?Preparing your care workspace/,
 assert.match(shell, /<GlobalDisplayPreferences\s*\/>/,
   "global display preferences remain mounted in the workspace");
 assert.match(breadcrumbs, /solenos-workspace-breadcrumb-current/);
+assert.match(breadcrumbs, /isHome \? " is-home" : ""/);
+assert.match(navigation, /\.solenos-workspace-breadcrumbs\.is-home \{ display: none; \}/, "the Care Record home page does not retain an empty breadcrumb row");
 assert.match(navigation, /\.solenos-workspace-breadcrumb-current[\s\S]*?clip: rect\(0, 0, 0, 0\)/,
   "current route title remains available to assistive technology without repeating the visible page heading");
 
