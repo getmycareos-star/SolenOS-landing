@@ -1379,7 +1379,14 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     !internalCaptureRecordTypes.has(change.subject_type.trim().toLowerCase()) &&
     !internalCaptureEventType.test(change.explanation || "")
   );
-  const watchUncertainties = assessment?.uncertainties_and_conflicts ?? [];
+  const closedCareInformationStatuses = new Set([
+    "resolved", "closed", "reconciled", "withdrawn", "retracted",
+    "superseded", "cancelled", "dismissed", "confirmed_absent",
+    "not_applicable", "not_needed",
+  ]);
+  const isUnresolvedCareInformation = (item: { status?: string | null }) =>
+    !closedCareInformationStatuses.has(String(item.status ?? "").trim().toLowerCase());
+  const watchUncertainties = (assessment?.uncertainties_and_conflicts ?? []).filter(isUnresolvedCareInformation);
   const isMedicationConflict = (item: (typeof watchUncertainties)[number]) => {
     const subjectType = item.subject_type?.trim().toLowerCase();
     const field = item.field?.trim().toLowerCase();
@@ -1394,7 +1401,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     !["resolved", "closed", "reconciled", "withdrawn", "retracted", "superseded", "cancelled", "dismissed"].includes(item.status.trim().toLowerCase())
   );
   const watchPriorityCandidates = assessment?.priorities ?? [];
-  const watchMissingInformation = assessment?.missing_information ?? [];
+  const watchMissingInformation = (assessment?.missing_information ?? []).filter(isUnresolvedCareInformation);
   const watchOpenLoops = openLoopItems.filter((item) =>
     !needsAttentionNow.some((candidate) => candidate.id === item.id && candidate.source === item.source) &&
     !canWaitItems.some((candidate) => candidate.id === item.id && candidate.source === item.source) &&
