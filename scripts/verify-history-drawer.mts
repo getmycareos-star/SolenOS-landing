@@ -206,3 +206,5 @@ assert.match(drawer, /response\.count !== expectedCount[\s\S]*?changed while it 
 
 assert.match(drawer, /const resetAfterSessionChange = \(\) => \{[\s\S]*?loadedPersonIdRef\.current = null[\s\S]*?setHasLoaded\(false\)/, "history clears its loaded-person marker and load state when the active person or caregiver changes");
 assert.match(drawer, /addEventListener\("personIdChanged", resetAfterSessionChange\)/, "history listens for active-person changes");
+
+assert.match(careInformationPage, /CARE_INFORMATION_NAVIGATION/);
