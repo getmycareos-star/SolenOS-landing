@@ -2363,10 +2363,21 @@ await record("Daily Care capture survives secondary read failures", async () => 
     mimeType: "image/png",
     buffer: tinyPng,
   });
+  assert.equal(
+    await resilient.page.locator("#daily-care-photo-camera").getAttribute("capture"),
+    "environment",
+    "mobile photo capture should request the rear camera when the browser supports it",
+  );
+  await resilient.page.getByRole("img", { name: "Preview of the selected care photo" }).waitFor({ timeout: 5_000 });
   await resilient.page.getByRole("button", { name: "Save photograph", exact: true }).click();
   await resilient.page.getByRole("alert")
     .filter({ hasText: "photo is saved on this device" })
     .waitFor({ timeout: 10_000 });
+  assert.doesNotMatch(
+    await resilient.page.locator("body").innerText(),
+    /photo saved to your care record/i,
+    "a device-local photo must never be presented as a server-saved care-record event",
+  );
   const photoQueueRows = await resilient.page.evaluate(async () => {
     return await new Promise((resolve, reject) => {
       const open = indexedDB.open("solenos-durable-write-queue", 1);
