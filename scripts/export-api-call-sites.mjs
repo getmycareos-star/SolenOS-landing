@@ -57,7 +57,7 @@ function routeExpression(node) {
       return routeExpression(node.arguments[0]);
     }
   }
-  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.Plus) {
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
     const left = routeExpression(node.left);
     const right = routeExpression(node.right);
     return {
