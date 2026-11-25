@@ -18,7 +18,7 @@ The App Router tree on the inspected `main` revision contains 39 page files: 16 
 | `/workspace/appointments` | Appointments | Upcoming and previous appointments | Child of Care information |
 | `/workspace/open-loops` | Needs attention | Unresolved care matters, clarification and resolution history | Child of Care information; separate from notification read state |
 | `/workspace/reminders` | Reminders | Caregiver-created scheduled reminders | Child of Care information; separate from unresolved matters |
-| `/workspace/handoffs` | Share care information | Prepare and manage shared care summaries | Child of Care information |
+| `/workspace/handoffs` | Care handoffs | Prepare and manage shared care summaries | Child of Care information |
 | `/workspace/companion` | Ask SolenOS | Questions grounded in authorised care information | Primary workspace destination |
 | `/workspace/notifications` | Notifications | Application and care-update inbox; read state and notification preferences | Dedicated route; no longer a redirect to Settings |
 | `/workspace/more` | More | Account, privacy, access and application management | Application-management destination |
@@ -43,7 +43,7 @@ Five route handlers were present: `/api/analyze`, `/api/extract`, `/api/share-in
 ## Navigation ownership
 
 - Primary destinations: Home, Add an update, Care information, Ask SolenOS.
-- Care information children: Care history, Documents, Appointments, Needs attention, Reminders, Share care information.
+- Care information children: Care history, Documents, Appointments, Needs attention, Reminders, Care handoffs.
 - Notification control: persistent header shortcut and a dedicated Notifications destination.
 - Application management: More, with Settings beneath it.
 - Mobile destinations: Home, Care, Ask, More; Add an update remains a separate prominent action.
