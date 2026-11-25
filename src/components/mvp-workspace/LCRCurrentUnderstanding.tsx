@@ -1388,6 +1388,11 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const medicationConflicts = watchUncertainties.filter((item) =>
     (item.source === "conflicts" || item.source === "reconciliations") && isMedicationConflict(item)
   );
+  const careConflicts = watchUncertainties.filter((item) =>
+    (item.source === "conflicts" || item.source === "reconciliations") &&
+    !isMedicationConflict(item) &&
+    !["resolved", "closed", "reconciled", "withdrawn", "retracted", "superseded", "cancelled", "dismissed"].includes(item.status.trim().toLowerCase())
+  );
   const watchPriorityCandidates = assessment?.priorities ?? [];
   const watchMissingInformation = assessment?.missing_information ?? [];
   const watchOpenLoops = openLoopItems.filter((item) =>
@@ -1762,7 +1767,19 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             <RecordState kind="period-empty" title="No immediate follow-up is shown" description={assessment.coverage.is_complete ? "The information reviewed does not currently show an immediate follow-up." : "Some care information may not have been available for this review, so this is not a complete picture."} />
           )}
           {watchMissingInformation.length > 0 && (
-            <p className="lcr-entry-status"><strong>Information not yet recorded:</strong> {watchMissingInformation.length} relevant {watchMissingInformation.length === 1 ? "detail is" : "details are"} missing from the saved record. This does not mean the information is absent.</p>
+            <p className="lcr-entry-status">
+              <strong>Information not yet recorded:</strong> {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "A relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail is" : "details are"} missing` : " is missing"} from the saved record. This does not mean the information is absent.
+            </p>
+          )}
+          {careConflicts.length > 0 && (
+            <p className="lcr-entry-status">
+              <strong>Reports that do not match:</strong> {careConflicts.length} unresolved {careConflicts.length === 1 ? "disagreement is" : "disagreements are"} recorded. SolenOS has not treated one report as the final answer.{" "}
+              {viewMode === "today" ? (
+                <Link href="/workspace/care-continuity#lcr-conflict-review">Review both reports</Link>
+              ) : (
+                <a href="#lcr-conflict-review">Review both reports</a>
+              )}
+            </p>
           )}
           {watchUncertainties.length > 0 && (
             <p className="lcr-entry-status">
@@ -2754,7 +2771,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           <summary>Check a care detail against the original information</summary>
           {claimAssessmentOpen ? <ClaimAssessmentPanel /> : null}
         </details>
-        <details ref={conflictReviewDetailsRef} className="lcr-history-details" onToggle={(event) => setConflictReviewOpen(event.currentTarget.open)}>
+        <details id="lcr-conflict-review" ref={conflictReviewDetailsRef} className="lcr-history-details" onToggle={(event) => setConflictReviewOpen(event.currentTarget.open)}>
           <summary>When reports do not match</summary>
           {conflictReviewOpen ? <ConflictResolutionPanel personId={personId} /> : null}
         </details>
