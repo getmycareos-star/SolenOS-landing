@@ -36,13 +36,6 @@ export const WORKSPACE_NAVIGATION = {
       icon: FileText,
     },
     {
-      id: "documents",
-      href: "/workspace/documents",
-      label: "Documents",
-      description: "Find original medical records and review their progress",
-      icon: FileText,
-    },
-    {
       id: "ask-solenos",
       href: "/workspace/companion",
       label: "Ask SolenOS",
@@ -73,6 +66,13 @@ export const WORKSPACE_NAVIGATION = {
 
 /** Care-related destinations are grouped under Care information, not More. */
 export const CARE_INFORMATION_NAVIGATION: WorkspaceNavigationItem[] = [
+  {
+    id: "documents",
+    href: "/workspace/documents",
+    label: "Documents",
+    description: "Find original medical records and review their progress",
+    icon: FileText,
+  },
   {
     id: "care-history",
     href: "/workspace/timeline",
