@@ -9,7 +9,7 @@ const styles = read("src/app/globals.css");
 
 assert.match(home, /<h1>Today<\/h1>/, "the primary caregiver landing page must be Today");
 assert.match(home, /View the complete Care Record/, "Today must explicitly link to the complete record");
-assert.match(home, /<LCRCurrentUnderstanding showNextStep \/>/, "Today must render the authoritative LCR understanding and contextual next step");
+assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Today must render the authoritative LCR understanding in compact mode");
 assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Today must use the concise projection mode");
 assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR component must distinguish Today from the complete record");
 assert.match(understanding, /viewMode === "complete" && \(/, "detailed history and integrity panels must not render on Today");
