@@ -73,12 +73,12 @@ export default function DailyCareOfflineQueueNotice() {
     <>
       {pending > 0 && (
         <p role="status" className="daily-care-muted">
-          {pending} update{pending === 1 ? "" : "s"} waiting to sync with the care record.
+          {pending} update{pending === 1 ? "" : "s"} saved on this device and waiting to reach SolenOS. They are not yet confirmed in your care record.
         </p>
       )}
       {synced && (
         <p role="status" className="daily-care-muted">
-          A pending update has synced to the care record.
+          A queued item has reached SolenOS. Any required review or processing may still be outstanding before its details become part of the care record.
         </p>
       )}
       {attention > 0 && (
