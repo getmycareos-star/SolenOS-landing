@@ -2559,31 +2559,27 @@ await record("Daily Care structured capture validates units and medication outco
 });
 
 await record("Care history opens the original caregiver report and its source details", async () => {
-  const history = await createBrowserPage(session, "/workspace/more");
-  await history.page.getByRole("heading", { name: "More", exact: true }).waitFor({ timeout: 20_000 });
+  const history = await createBrowserPage(session, "/workspace/timeline");
+  await history.page.getByRole("heading", { name: "Care history", exact: true }).waitFor({ timeout: 20_000 });
 
-  // Recent history is shown on More, not in the primary navigation.
-  const reportCard = history.page.locator(".history-event-card")
+  const reportCard = history.page.locator("article.timeline-event")
     .filter({ hasText: scenarioReports[0] }).first();
   await reportCard.waitFor({ state: "visible", timeout: 15_000 });
-  await reportCard.locator("button.history-event-open").click();
+  await reportCard.locator(".timeline-event-toggle").click();
 
-  await history.page.locator(".history-drawer-heading strong").filter({ hasText: "Care record" }).waitFor({ state: "visible", timeout: 15_000 });
-  await history.page.getByRole("heading", { name: "Original record", exact: true }).waitFor({ timeout: 15_000 });
-  const originalText = history.page.locator(".history-original-text");
+  const originalText = reportCard.locator(".timeline-event-description");
   await originalText.waitFor({ state: "visible", timeout: 15_000 });
   assert.ok((await originalText.innerText()).includes(scenarioReports[0]),
-    "the history detail must show the exact original caregiver wording");
+    "Care history must show the exact original caregiver wording");
 
-  await history.page.getByRole("heading", { name: "More details", exact: true }).waitFor({ timeout: 10_000 });
-  const sourceDetails = await history.page.locator(".history-detail-list").innerText();
+  const sourceDetails = await reportCard.locator(".timeline-event-details").innerText();
   assert.match(sourceDetails, /When it happened/,
     "the history detail must show when the caregiver says the event happened");
   assert.match(sourceDetails, /When it was saved/,
     "the history detail must distinguish the saved time");
   assert.match(sourceDetails, /Who shared it\s+Caregiver/,
     "the history detail must identify the caregiver as the source");
-  assert.match(sourceDetails, /Related notes or documents\s+1 related note or document/,
+  assert.match(sourceDetails, /Related notes or documents\s+1 saved item/,
     "the history detail must show its linked source record");
 
   const evidenceList = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, {
@@ -2600,7 +2596,7 @@ await record("Care history opens the original caregiver report and its source de
     "the exact original caregiver wording must remain inside the saved source text",
   );
 
-  await history.page.getByRole("button", { name: "Back to care history", exact: true }).click();
+  await reportCard.locator(".timeline-event-toggle").click();
   await reportCard.waitFor({ state: "visible", timeout: 10_000 });
   await verifyMobile(history.page);
   await history.context.close();
