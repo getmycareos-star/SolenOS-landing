@@ -10,6 +10,7 @@ assert.ok(component.includes('getJSON("/appointment-workspaces/preparation-brief
 assert.ok(component.includes("await ensureAnonymousSession()"), "appointment information must use the current authenticated/anonymous session");
 assert.ok(component.includes("No appointment information was returned from the available sources. This does not prove that no appointment exists."), "empty results must not be represented as proof that no appointment exists");
 assert.ok(component.includes("Appointment information is unavailable"), "retrieval failures must remain visible");
+assert.ok(component.includes("appointmentHasTime"), "date-only appointments must not be assigned an invented time-sensitive urgency");
 assert.ok(component.includes("appointmentTime - Date.now() <= 24 * 60 * 60 * 1000"), "appointments due within 24 hours must be identified as time-sensitive");
 assert.ok(component.includes("is-time-sensitive"), "time-sensitive appointments must receive a distinct presentation");
 assert.ok(styles.includes(".solenos-upcoming-appointment__item.is-time-sensitive"), "time-sensitive appointment styling must be present");
