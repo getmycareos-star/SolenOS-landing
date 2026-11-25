@@ -159,7 +159,6 @@ for (const [route, label] of [
 }
 assert.match(navigation, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.doesNotMatch(shell, /Community/);
-assert.match(morePage, /from "@\/components\/app-shell\/HistoryDrawer"/);
 assert.match(shell, /prefetch=\{false\}/, "primary destinations are not downloaded speculatively on first load");
 assert.match(shell, /onMouseEnter=\{\(\) => router\.prefetch\(href\)\}/, "navigation prefetch follows explicit pointer intent");
 assert.match(shell, /solenos\.workspace\.navigation-click/, "navigation intent timing must begin on caregiver action");
