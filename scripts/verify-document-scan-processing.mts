@@ -95,8 +95,10 @@ assert.match(intelligenceReviewSource, /Continue reading remaining pages/, "long
 assert.match(intelligenceReviewSource, /analysis\.unprocessed_page_numbers\?\.length && documentExtractionIsComplete\(analysis\)/, "pending interpretation pages must be distinguished from OCR extraction failures");
 assert.match(intelligenceReviewSource, /SolenOS has read \$\{analysis\.processed_page_count/, "long-document progress must report the pages actually interpreted, not only the OCR pages extracted");
 assert.match(intelligenceReviewSource, /waiting to be read: pages/, "queued interpretation pages must not be described as actively processing when no job is running");
-assert.match(intelligenceReviewSource, /Scan clearer page copies/, "unreadable source pages must offer an actionable re-capture route");
+assert.match(intelligenceReviewSource, /Scan these pages again/, "unreadable, blocked and exhausted pages must offer an actionable re-capture route");
 assert.match(intelligenceReviewSource, /This original stays unchanged, and the Care Record will not change unless you review and accept new details/, "page recovery must preserve the original and must not imply automatic Care Record acceptance");
+assert.match(intelligenceReviewSource, /analysis\.retry_exhausted_page_numbers/, "pages that exhausted automatic retries must be visible and recoverable");
+assert.match(intelligenceReviewSource, /analysis\.extraction_unprocessed_page_numbers \|\| \[\]/, "pages omitted from source extraction must be included in the recovery route");
 assert.match(source, /onAddClearerPages=\{\(\) => \{ setCapturedPages\(\[\]\);[\s\S]*?setCameraOpen\(true\); \}\}/, "the unreadable-page recovery action must open the existing camera scanner");
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
 assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "caregivers must be warned that names, dates and numbers can be misread");
