@@ -445,7 +445,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     .filter({ hasText: firstNote }).first();
   await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   await page.goto(new URL("/workspace", frontend).toString());
-  await page.getByRole("heading", { name: "Today", exact: true })
+  await page.getByRole("heading", { name: "Home", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Your Care Record", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
@@ -496,7 +496,7 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Today", exact: true })
+  await page.getByRole("heading", { name: "Home", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
@@ -927,7 +927,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 20_000 });
 
   const homeHeading = page.locator(".solenos-chat-main .solenos-workspace-page-heading h1").first();
   const defaultHeadingSize = await homeHeading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
@@ -984,7 +984,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("heading", { name: "Workspace archived", exact: true }).waitFor({ timeout: 10_000 });
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Restore", exact: true }).click();
-  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 10_000 });
+  await page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 10_000 });
 
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "View record details", exact: true }).click();
@@ -1491,7 +1491,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await disposable.page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
+  await disposable.page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 20_000 });
   const identityBeforeDeletion = await disposable.page.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
     personId: localStorage.getItem("solenos_backend_person_id"),
