@@ -292,6 +292,46 @@ try {
               }
             }
 
+            for (const element of [...document.querySelectorAll("input, select, textarea")]) {
+              if (!visible(element) || element.disabled) continue;
+              const style = getComputedStyle(element);
+              const foreground = parseColor(style.color);
+              if (foreground && foreground.a >= 0.05) {
+                const background = backgroundFor(element);
+                const contrast = ratio(foreground, background);
+                if (contrast < 4.5) {
+                  issues.push({
+                    kind: "form_control",
+                    selector: selectorFor(element),
+                    text: element.getAttribute("aria-label") || element.getAttribute("placeholder") || element.tagName.toLowerCase(),
+                    foreground: style.color,
+                    background: "rgb(" + Math.round(background.r) + ", " + Math.round(background.g) + ", " + Math.round(background.b) + ")",
+                    contrast: Number(contrast.toFixed(2)),
+                    threshold: 4.5,
+                  });
+                }
+              }
+              if (element.matches("input, textarea") && element.getAttribute("placeholder")) {
+                const placeholderStyle = getComputedStyle(element, "::placeholder");
+                const placeholderForeground = parseColor(placeholderStyle.color);
+                if (placeholderForeground && placeholderForeground.a >= 0.05) {
+                  const background = backgroundFor(element);
+                  const contrast = ratio(placeholderForeground, background);
+                  if (contrast < 4.5) {
+                    issues.push({
+                      kind: "placeholder",
+                      selector: selectorFor(element),
+                      text: element.getAttribute("placeholder") || "",
+                      foreground: placeholderStyle.color,
+                      background: "rgb(" + Math.round(background.r) + ", " + Math.round(background.g) + ", " + Math.round(background.b) + ")",
+                      contrast: Number(contrast.toFixed(2)),
+                      threshold: 4.5,
+                    });
+                  }
+                }
+              }
+            }
+
             for (const element of [...document.querySelectorAll("svg")]) {
               if (!visible(element)) continue;
               const style = getComputedStyle(element);
