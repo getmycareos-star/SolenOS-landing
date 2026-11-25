@@ -21,6 +21,7 @@ assert.match(understanding, /viewMode === "today" \? \([\s\S]*?href="\/workspace
 assert.match(styles, /\.lcr-first-screen-summary > \.lcr-first-screen-card:nth-child\(2\) \{\s*order: 1;/, "care attention must appear before ordinary record details");
 
 assert.match(understanding, /Your Care Record starts here/, "a confirmed empty record must explain the purpose of the record");
+assert.match(understanding, /No care information to review yet/, "an empty record must not be presented as evidence that nothing needs attention");
 assert.match(understanding, /href="\/workspace\/daily-care" className="solenos-care-primary-action"/, "empty Home state must offer an initial care update");
 assert.match(understanding, /href="\/workspace\/documents" className="solenos-care-secondary-action"/, "empty Home state must offer document upload");
 assert.match(understanding, /watchMissingInformation.length > 0/, "relevant missing information must be surfaced");
