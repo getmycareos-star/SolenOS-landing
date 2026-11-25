@@ -30,6 +30,7 @@ async function encodeFileForOfflineQueue(file: File): Promise<string> {
 
 export default function DailyCarePhotoCapture() {
   const [file, setFile] = useState<File | null>(null);
+  const [captureMethod, setCaptureMethod] = useState<"snap" | "upload">("upload");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -105,7 +106,7 @@ export default function DailyCarePhotoCapture() {
     };
   }, []);
 
-  function selectPhoto(selected: File | undefined) {
+  function selectPhoto(selected: File | undefined, method: "snap" | "upload") {
     if (!selected) return;
     setError("");
     setSaved(false);
@@ -128,6 +129,7 @@ export default function DailyCarePhotoCapture() {
       && file.size === selected.size
       && file.lastModified === selected.lastModified;
     if (!sameSelection) setIngestionKey(null);
+    setCaptureMethod(method);
     setFile(selected);
   }
 
@@ -152,6 +154,7 @@ export default function DailyCarePhotoCapture() {
       person_id: personId,
       caregiver_id: caregiverId,
       evidence_type: "care_photo",
+      capture_method: captureMethod,
     };
     let queueId: string | null = null;
     try {
@@ -187,6 +190,7 @@ export default function DailyCarePhotoCapture() {
       form.append("person_id", personId);
       form.append("caregiver_id", caregiverId);
       form.append("evidence_type", "care_photo");
+      form.append("capture_method", captureMethod);
       const result = queueId
         ? await deliverDurableWrite<{ evidence_id?: string; persisted?: boolean }>(queueId, sendQueuedCareWrite)
         : await postFormData("/upload", form) as { evidence_id?: string; persisted?: boolean };
@@ -240,7 +244,7 @@ export default function DailyCarePhotoCapture() {
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
             capture="environment"
-            onChange={(event) => selectPhoto(event.target.files?.[0])}
+            onChange={(event) => selectPhoto(event.target.files?.[0], "snap")}
             disabled={saving || pendingLocal}
           />
         </div>
@@ -252,7 +256,7 @@ export default function DailyCarePhotoCapture() {
             id="daily-care-photo-library"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
-            onChange={(event) => selectPhoto(event.target.files?.[0])}
+            onChange={(event) => selectPhoto(event.target.files?.[0], "upload")}
             disabled={saving || pendingLocal}
           />
         </div>
