@@ -21,6 +21,7 @@ const legacyRecord = read("src/app/workspace/record/page.tsx");
 const legacyContinuity = read("src/app/workspace/continuity/page.tsx");
 const community = read("src/app/workspace/community/page.tsx");
 const featureFlags = read("src/lib/feature-flags.ts");
+const legacySettings = read("src/app/settings/page.tsx");
 
 const routes = [
   ["/workspace", "src/app/workspace/page.tsx"],
@@ -39,6 +40,7 @@ const routes = [
   ["/workspace/record", "src/app/workspace/record/page.tsx"],
   ["/workspace/continuity", "src/app/workspace/continuity/page.tsx"],
   ["/workspace/community", "src/app/workspace/community/page.tsx"],
+  ["/settings", "src/app/settings/page.tsx"],
 ] as const;
 for (const [route, file] of routes) {
   assert.ok(fs.existsSync(path.join(root, file)), `${route} resolves to an existing page`);
@@ -86,6 +88,7 @@ assert.ok(legacyRecord.includes("redirect") && legacyRecord.includes("/workspace
 assert.ok(legacyContinuity.includes("redirect") && legacyContinuity.includes("/workspace"), "the technical continuity route does not expose a separate caregiver page");
 assert.ok(featureFlags.includes("community: false") && featureFlags.includes("professionalCommunity: false"), "Community remains explicitly disabled");
 assert.ok(community.includes("redirect") && community.includes("/workspace"), "the disabled Community route fails closed");
+assert.ok(legacySettings.includes("redirect") && legacySettings.includes("/workspace/settings"), "the legacy Settings route preserves its destination");
 assert.ok(more.includes("CaregiverHandoverInbox"), "family access handovers remain reachable under account management");
 assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
