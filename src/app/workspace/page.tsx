@@ -30,7 +30,7 @@ function WorkspaceHomeInner() {
           <Companion key={prompt} home initialPrompt={prompt} />
         </section>
       )}
-      <LCRCurrentUnderstanding showNextStep />
+      <LCRCurrentUnderstanding showNextStep viewMode="today" />
       <UpcomingAppointmentSummary />
     </div>
   );
