@@ -1031,34 +1031,36 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
       // Initial hydration is read-only. Reassessment is a caregiver-triggered
       // action, never an automatic write every time the workspace is opened.
       const backgroundTasks = [
-        (async () => {
-          try {
-            const members = await getJSON("/caregiver-access/assignable-members");
-            if (!isCurrentRequest()) return;
-            if (!Array.isArray(members) || members.some((member) => !member?.caregiver_id || !member?.name)) {
-              throw new Error("Assignable caregiver response was invalid.");
+        ...(viewMode === "complete" ? [
+          (async () => {
+            try {
+              const members = await getJSON("/caregiver-access/assignable-members");
+              if (!isCurrentRequest()) return;
+              if (!Array.isArray(members) || members.some((member) => !member?.caregiver_id || !member?.name)) {
+                throw new Error("Assignable caregiver response was invalid.");
+              }
+              setAssignableCaregivers(members as AssignableCaregiver[]);
+            } catch {
+              if (!isCurrentRequest()) return;
+              setAssignableCaregivers([]);
+              setResponsibleCaregiverId(session.caregiver.id);
             }
-            setAssignableCaregivers(members as AssignableCaregiver[]);
-          } catch {
-            if (!isCurrentRequest()) return;
-            setAssignableCaregivers([]);
-            setResponsibleCaregiverId(session.caregiver.id);
-          }
-        })(),
-        (async () => {
-          try {
-            const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
-            if (!isCurrentRequest()) return;
-            if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== scopedPersonId)) {
-              throw new Error("Saved actions did not match this care record.");
+          })(),
+          (async () => {
+            try {
+              const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
+              if (!isCurrentRequest()) return;
+              if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== scopedPersonId)) {
+                throw new Error("Saved actions did not match this care record.");
+              }
+              setRegisteredActions(savedActions as RegisteredAction[]);
+              setRegisteredActionsError(null);
+            } catch {
+              if (!isCurrentRequest()) return;
+              setRegisteredActionsError("Agreed actions could not be loaded. Please try again.");
             }
-            setRegisteredActions(savedActions as RegisteredAction[]);
-            setRegisteredActionsError(null);
-          } catch {
-            if (!isCurrentRequest()) return;
-            setRegisteredActionsError("Agreed actions could not be loaded. Please try again.");
-          }
-        })(),
+          })(),
+        ] : []),
         (async () => {
           const validateChanges = (value: unknown): PersistedChange[] => {
             if (!Array.isArray(value) || value.some((item) => item?.person_id !== scopedPersonId)) {
@@ -1076,20 +1078,22 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             setChangesError("Saved care changes could not be loaded. Please try again.");
           }
         })(),
-        (async () => {
-          try {
-            const persistedPatterns = await getJSON(`/change/patterns/${encodeURIComponent(scopedPersonId)}`);
-            if (!isCurrentRequest()) return;
-            if (!Array.isArray(persistedPatterns) || persistedPatterns.some((item) => item?.person_id !== scopedPersonId)) {
-              throw new Error("The saved repeated-change information did not match the active care record.");
+        ...(viewMode === "complete" ? [
+          (async () => {
+            try {
+              const persistedPatterns = await getJSON(`/change/patterns/${encodeURIComponent(scopedPersonId)}`);
+              if (!isCurrentRequest()) return;
+              if (!Array.isArray(persistedPatterns) || persistedPatterns.some((item) => item?.person_id !== scopedPersonId)) {
+                throw new Error("The saved repeated-change information did not match the active care record.");
+              }
+              setPatterns(persistedPatterns as PersistedPattern[]);
+              setPatternsError(null);
+            } catch {
+              if (!isCurrentRequest()) return;
+              setPatternsError("Repeated changes could not be loaded. Please try again.");
             }
-            setPatterns(persistedPatterns as PersistedPattern[]);
-            setPatternsError(null);
-          } catch {
-            if (!isCurrentRequest()) return;
-            setPatternsError("Repeated changes could not be loaded. Please try again.");
-          }
-        })(),
+          })(),
+        ] : []),
         (async () => {
           try {
             const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
@@ -1114,7 +1118,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             setAssessmentError("The saved care summary could not be loaded. Please try again.");
           }
         })(),
-      ];
+      ];;
       const backgroundWork = Promise.allSettled(backgroundTasks).finally(() => { if (isCurrentRequest()) setRefreshing(false); });
       if (manual) await backgroundWork;
       else void backgroundWork;
@@ -1188,7 +1192,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
         if (!backgroundStarted) setRefreshing(false);
       }
     }
-  }, []);
+  }, [viewMode]);
 
   const transitionConfirmation = useCallback(async (
     change: PersistedChange,
