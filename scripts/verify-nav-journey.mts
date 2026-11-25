@@ -114,10 +114,10 @@ const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICo
 const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
 assert.match(layout, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
-assert.ok(workspaceHome.includes("<h1>Today</h1>"), "the workspace entry page is titled Today");
-assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Today uses the authoritative LCR projection and contextual next step");
-assert.match(workspaceHome, /View the complete Care Record/, "the complete record is discoverable from Today");
-assert.doesNotMatch(workspaceHome, /FirstVisitWorkspaceRouter/, "first-time and returning caregivers share the same Today route");
+assert.ok(workspaceHome.includes("<h1>Home</h1>"), "the canonical workspace entry page is titled Home");
+assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Home uses the concise authoritative LCR projection and contextual next step");
+assert.match(workspaceHome, /View the complete Care Record/, "the complete record is discoverable from Home");
+assert.doesNotMatch(workspaceHome, /FirstVisitWorkspaceRouter/, "first-time and returning caregivers share the same Home route");
 assert.match(workspaceContext, /ensureAnonymousSession\(\)/, "caregiver workspace bootstraps a server-issued session before entry");
 assert.match(navigationA11y, /event\.key === "Escape"/, "Escape closes the mobile drawer");
 assert.match(navigationA11y, /event\.key !== "Tab"/, "Tab handling is explicitly trapped in the open drawer");
