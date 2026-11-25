@@ -1931,11 +1931,16 @@ await record("04 scanned document upload, original bytes, page tracking, idempot
   assert.equal(duplicate.payload.duplicate_detected, true);
   assert.equal(duplicate.payload.duplicate_of_evidence_id, documentId);
 
+  const revisedScanPage = await browser.newPage({ viewport: { width: 1200, height: 1600 }, deviceScaleFactor: 2 });
+  await revisedScanPage.setContent('<!doctype html><html><body style="margin:0;background:#eee;font-family:Arial,sans-serif;color:#111"><article style="box-sizing:border-box;width:960px;min-height:1350px;margin:40px auto;padding:76px;background:#fff"><h1>Revised Discharge Summary</h1><p>Updated follow-up instruction.</p></article></body></html>');
+  const revisedDocumentBytes = await revisedScanPage.locator("article").screenshot({ type: "png" });
+  await revisedScanPage.close();
+
   const possibleVersionForm = new FormData();
   possibleVersionForm.append("person_id", identity.personId);
   possibleVersionForm.append("caregiver_id", identity.caregiverId);
   possibleVersionForm.append("evidence_type", "document");
-  possibleVersionForm.append("file", new Blob([Buffer.from("A revised document with different content.")], { type: "image/png" }), "journey-discharge-note-scan.png");
+  possibleVersionForm.append("file", new Blob([revisedDocumentBytes], { type: "image/png" }), "journey-discharge-note-scan.png");
   const possibleVersion = await request("/api/v1/upload", { token: identity.token, method: "POST", form: possibleVersionForm });
   assert.equal(possibleVersion.status, 201, JSON.stringify(possibleVersion.payload));
   assert.equal(possibleVersion.payload.duplicate_detected, false);
