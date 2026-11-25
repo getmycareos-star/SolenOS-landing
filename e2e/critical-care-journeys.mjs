@@ -2489,6 +2489,54 @@ await record("Daily Care capture survives secondary read failures", async () => 
   await resilient.context.close();
 });
 
+await record("Daily Care structured capture validates units and medication outcomes", async () => {
+  const structured = await createBrowserPage(session, "/workspace/daily-care");
+  await structured.page.getByRole("button", { name: "Share something", exact: true }).click();
+  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
+  await structured.page.getByRole("button", { name: "Measurement", exact: true }).click();
+  const type = structured.page.locator("#capture-vital-type");
+  await type.waitFor({ state: "visible", timeout: 15_000 });
+
+  await type.selectOption("temperature");
+  assert.equal(await structured.page.locator("#vital-unit").inputValue(), "°F");
+  await type.selectOption("weight");
+  assert.equal(await structured.page.locator("#vital-unit").inputValue(), "lb");
+  await type.selectOption("blood_glucose");
+  assert.equal(await structured.page.locator("#vital-unit").inputValue(), "mg/dL");
+
+  await type.selectOption("blood_pressure");
+  await structured.page.locator("#capture-vital-value").fill("70");
+  await structured.page.locator("#capture-vital-diastolic").fill("120");
+  await structured.page.getByRole("button", { name: "Add measurement", exact: true }).click();
+  await structured.page.getByRole("alert")
+    .filter({ hasText: "top number should be higher" })
+    .waitFor({ timeout: 5_000 });
+
+  await structured.page.locator("#capture-vital-value").fill("120");
+  await structured.page.locator("#capture-vital-diastolic").fill("80");
+  await structured.page.getByRole("button", { name: "Add measurement", exact: true }).click();
+  await structured.page.getByRole("status")
+    .filter({ hasText: "Added to this draft" })
+    .waitFor({ timeout: 5_000 });
+
+  await type.selectOption("other");
+  await structured.page.locator("#capture-vital-other-name").fill("Step count");
+  await structured.page.locator("#capture-vital-value").fill("100");
+  assert.equal(await structured.page.locator("#vital-unit").getAttribute("required"), "");
+
+  await structured.page.getByRole("button", { name: "Back to capture choices", exact: true }).click();
+  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
+  await structured.page.getByRole("button", { name: "Medicine", exact: true }).click();
+  const medicationStatus = structured.page.locator("#capture-medication-status");
+  await medicationStatus.waitFor({ state: "visible", timeout: 15_000 });
+  const medicationOptions = await medicationStatus.locator("option").allTextContents();
+  assert.ok(medicationOptions.includes("Refused"));
+  assert.ok(medicationOptions.includes("Missed"));
+  await structured.context.close();
+});
+
 await record("Care history opens the original caregiver report and its source details", async () => {
   const history = await createBrowserPage(session, "/workspace/more");
   await history.page.getByRole("heading", { name: "More", exact: true }).waitFor({ timeout: 20_000 });
