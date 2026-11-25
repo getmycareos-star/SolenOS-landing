@@ -1,35 +1,21 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const router = fs.readFileSync("src/components/mvp-workspace/FirstVisitWorkspaceRouter.tsx", "utf8");
 const page = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
-const capture = fs.readFileSync("src/components/mvp-workspace/AddSituationPanel.tsx", "utf8");
-const workspace = fs.readFileSync("src/components/mvp-workspace/CognitiveWorkspace.tsx", "utf8");
+const understanding = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "utf8");
 
-assert.match(page, /FirstVisitWorkspaceRouter/);
-assert.match(router, /ensureAnonymousSession/);
-assert.match(router, /api\/situation\?care_session_id=/);
-assert.match(router, /data\.has_context_root/);
-assert.match(router, /suppress_first_time_ux/);
-assert.match(router, /\(data\.total_events \?\? 0\) > 0/);
-assert.match(router, /setState\(hasSavedCare \? "returning" : "first_visit"\)/);
-assert.match(router, /setState\("unavailable"\)/);
-assert.match(router, /We won’t treat an unavailable record as a new one/);
-assert.match(router, /<CognitiveWorkspace onSituationComplete=\{\(\) => setFirstCaptureComplete\(true\)\}/);
-assert.match(router, /Your care journey starts here/);
-assert.match(router, /Here’s what we know so far/);
-assert.match(router, /onSituationComplete=\{\(\) => setFirstCaptureComplete\(true\)\}/);
-assert.match(router, /Your words stay yours/);
-assert.match(router, /solenos-first-visit-mode/);
-assert.match(capture, /const isFirstCapture/);
-assert.match(capture, /What’s been happening\?/);
-assert.match(workspace, /Start with one thing you want to remember/);
-assert.match(capture, /Add to my care record/);
-assert.match(capture, /rows=\{isFirstCapture \? 3 : 6\}/);
-assert.ok(
-  capture.indexOf('<textarea\n          className="brain-dump composer-textarea"') <
-    capture.indexOf('<div className="composer-toolbar"'),
-  "first-time caregivers should see the input before capture actions",
-);
+assert.match(page, /<h1>Today<\/h1>/, "first-time and returning caregivers must enter through Today");
+assert.match(page, /<LCRCurrentUnderstanding showNextStep \/>/, "the shared entry page must use the Living Care Record projection");
+assert.match(page, /View the complete Care Record/, "the complete record must remain directly discoverable");
+assert.doesNotMatch(page, /FirstVisitWorkspaceRouter/, "Today must not branch into a separate first-visit presentation");
+assert.doesNotMatch(page, /CognitiveWorkspace/, "new caregivers must not be forced through a capture-only route");
+assert.match(understanding, /first-empty/, "an empty record must have a clear empty state");
+assert.match(understanding, /Your Care Record does not have any care information yet\./, "the empty state must explain how to begin");
+assert.match(understanding, /Add what you know in Daily Care or upload a care document\./, "the empty state must provide useful starting actions");
+assert.match(understanding, /response\.person_id !== scopedPersonId/, "the visible record must be checked against the active care recipient");
+assert.match(understanding, /We couldn’t load your care information/, "failed retrieval must remain distinct from an empty record");
+assert.match(companion, /const prompt = initialPrompt\?\.trim\(\)/, "Companion must treat a deep-link prompt as user-provided text");
+assert.match(companion, /params\.delete\('prompt'\)/, "Companion must clear the consumed prompt from the URL");
 
-console.log("First-visit capture and fail-closed return-routing checks passed.");
+console.log("PASS: first-time and returning caregivers share Today, with an honest empty state and a bounded Companion entry path.");
