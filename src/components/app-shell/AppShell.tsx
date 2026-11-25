@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { FileText, Home, Menu, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, X } from "lucide-react";
 import { CARE_INFORMATION_NAVIGATION, WORKSPACE_NAVIGATION, WORKSPACE_SECONDARY_NAVIGATION } from "@/lib/workspace-navigation";
 import { SolenosWordmark } from "@/components/brand";
 const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/share/ShareCareSummaryPanel").then((module) => module.ShareCareSummaryPanel), { ssr: false });
@@ -403,7 +403,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
                         aria-label={careInformationExpanded ? "Collapse Care information sections" : "Expand Care information sections"}
                         aria-expanded={careInformationExpanded}
                         aria-controls="solenos-care-information-subnav"
-                        onClick={() => setCareInformationExpanded((expanded) => !expanded)}
+                        onClick={() => { if (sidebarCollapsed) setSidebarCollapsed(false); setCareInformationExpanded((expanded) => !expanded); }}
                       >
                         <span aria-hidden="true">{careInformationExpanded ? "−" : "+"}</span>
                       </button>
@@ -521,6 +521,23 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
             </section>
           </div>
         )}
+        <nav className="solenos-mobile-bottom-nav" aria-label="Main destinations">
+          <Link href="/workspace" aria-current={active("/workspace") ? "page" : undefined} className={active("/workspace") ? "is-active" : ""}>
+            <Home size={19} aria-hidden="true" /><span>Home</span>
+          </Link>
+          <Link href="/workspace/care-continuity" aria-current={active("/workspace/care-continuity") ? "page" : undefined} className={active("/workspace/care-continuity") ? "is-active" : ""}>
+            <FileText size={19} aria-hidden="true" /><span>Care</span>
+          </Link>
+          <Link href="/workspace/companion" aria-current={active("/workspace/companion") ? "page" : undefined} className={active("/workspace/companion") ? "is-active" : ""}>
+            <MessageCircle size={19} aria-hidden="true" /><span>Ask</span>
+          </Link>
+          <Link href="/workspace/more" aria-current={active("/workspace/more") ? "page" : undefined} className={active("/workspace/more") ? "is-active" : ""}>
+            <MoreHorizontal size={19} aria-hidden="true" /><span>More</span>
+          </Link>
+        </nav>
+        <Link href="/workspace/daily-care" className="solenos-mobile-add-update">
+          <Plus size={18} aria-hidden="true" /><span>Add an update</span>
+        </Link>
         {sharePanelContext && (
           <ShareCareSummaryPanel
             caregiverId={sharePanelContext.caregiverId}
