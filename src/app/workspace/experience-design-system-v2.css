@@ -3111,3 +3111,71 @@
   min-width: 44px;
   min-height: 44px;
 }
+
+
+/* Mobile destinations keep the four most common caregiver tasks visible. */
+.solenos-mobile-bottom-nav,
+.solenos-mobile-add-update { display: none; }
+@media (max-width: 900px) {
+  .solenos-chat-app .solenos-chat-main {
+    padding-bottom: calc(142px + env(safe-area-inset-bottom));
+  }
+  .solenos-chat-app .solenos-mobile-bottom-nav {
+    position: fixed;
+    z-index: 70;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-height: 62px;
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(218,228,218,.92);
+    background: rgba(250,252,249,.97);
+    box-shadow: 0 -5px 22px rgba(34,51,38,.07);
+    backdrop-filter: blur(16px);
+  }
+  .solenos-chat-app .solenos-mobile-bottom-nav a {
+    display: flex;
+    min-width: 0;
+    min-height: 46px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 9px;
+    color: #68766b;
+    font-size: calc(10px * var(--solenos-text-scale, 1));
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .solenos-chat-app .solenos-mobile-bottom-nav a.is-active {
+    background: #edf3ec;
+    color: #294333;
+  }
+  .solenos-chat-app .solenos-mobile-add-update {
+    position: fixed;
+    z-index: 71;
+    right: 14px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 15px;
+    border: 1px solid #314b39;
+    border-radius: 999px;
+    background: #314b39;
+    box-shadow: 0 5px 18px rgba(33,58,41,.22);
+    color: #fff;
+    font-size: calc(12px * var(--solenos-text-scale, 1));
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .solenos-chat-app .solenos-mobile-add-update:focus-visible {
+    outline: 3px solid rgba(82,125,91,.48);
+    outline-offset: 3px;
+  }
+}
