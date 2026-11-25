@@ -1850,8 +1850,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
             <div style={{ display: 'flex', gap: '16px' }}>
               {medicationForm.status === "scheduled" && (
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Scheduled for</label>
+                  <label htmlFor="medication-scheduled-for" style={{ display: 'block', fontSize: 'calc(13px * var(--solenos-text-scale, 1))', fontWeight: '500', marginBottom: '4px' }}>Scheduled for</label>
                   <input
+                    id="medication-scheduled-for"
                     type="datetime-local"
                     required={medicationForm.status === "scheduled"}
                     value={medicationForm.scheduled_for || ''}
