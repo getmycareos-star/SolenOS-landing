@@ -233,13 +233,13 @@ try {
     has: page.getByRole("heading", { name: candidateTitle, exact: true }),
   });
   await candidateCard.waitFor({ timeout: 20_000 });
-  await candidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).click();
+  await candidateCard.getByRole("button", { name: "Add a follow-up", exact: true }).click();
   await page.getByRole("alert").filter({
     hasText: "The follow-up could not be confirmed. Keep this item open and try again.",
   }).waitFor({ timeout: 15_000 });
-  await candidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).click();
+  await candidateCard.getByRole("button", { name: "Add a follow-up", exact: true }).click();
   await page.getByRole("status").filter({
-    hasText: "Added to Follow-ups. The original care information has not changed.",
+    hasText: "Follow-up saved. The original care information has not changed.",
   }).waitFor({ timeout: 15_000 });
 
   const createdLoopsResponse = await fetch(new URL("/api/v1/open-loops?limit=100", backend), {
@@ -267,7 +267,7 @@ try {
   });
   await linkedCandidateCard.waitFor({ timeout: 20_000 });
   assert.equal(
-    await linkedCandidateCard.getByRole("button", { name: "Add to Follow-ups", exact: true }).count(),
+    await linkedCandidateCard.getByRole("button", { name: "Add a follow-up", exact: true }).count(),
     0,
     "a source-linked persisted follow-up must not remain as a second untracked responsibility",
   );
