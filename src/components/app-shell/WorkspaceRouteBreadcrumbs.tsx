@@ -21,7 +21,7 @@ export function WorkspaceRouteBreadcrumbs() {
   const isHome = !current || current.href === "/workspace";
 
   return (
-    <nav className="solenos-workspace-breadcrumbs" aria-label="Breadcrumb">
+    <nav className={`solenos-workspace-breadcrumbs${isHome ? " is-home" : ""}`} aria-label="Breadcrumb">
       <ol>
         {isHome ? (
           <li aria-current="page"><span className="solenos-workspace-breadcrumb-current">{label}</span></li>
