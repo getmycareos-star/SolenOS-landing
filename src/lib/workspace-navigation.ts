@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, FileText, Handshake, History, Home, MessageCircle, MoreHorizontal, Settings, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, Clock3, FileText, Handshake, History, Home, MessageCircle, MoreHorizontal, Settings, type LucideIcon } from "lucide-react";
 
 export type WorkspaceNavigationItem = {
   id: string;
@@ -9,45 +9,60 @@ export type WorkspaceNavigationItem = {
 };
 
 /**
- * Core care destinations stay visible. Less-used tools remain available through More.
+ * One caregiver-facing navigation registry. Route-level authorization remains
+ * enforced by the workspace session gate and the backend APIs.
  */
 export const WORKSPACE_NAVIGATION = {
   care: [
     {
-      id: "today",
+      id: "home",
       href: "/workspace",
-      label: "Today",
-      description: "What matters in care right now",
+      label: "Home",
+      description: "What is happening and what matters now",
       icon: Home,
     },
     {
-      id: "share-update",
+      id: "add-update",
       href: "/workspace/daily-care",
-      label: "Share an update",
-      description: "Tell SolenOS what happened",
+      label: "Add an update",
+      description: "Record something you noticed or something that happened",
       icon: MessageCircle,
     },
     {
-      id: "appointments",
-      href: "/workspace/appointments",
-      label: "Appointments",
-      description: "Prepare and share care information",
-      icon: CalendarDays,
+      id: "care-information",
+      href: "/workspace/care-continuity",
+      label: "Care information",
+      description: "Browse the current care picture and supporting information",
+      icon: FileText,
     },
     {
-      id: "follow-ups",
-      href: "/workspace/open-loops",
-      label: "Follow-ups",
-      description: "Questions and agreed next steps",
-      icon: Clock3,
+      id: "documents",
+      href: "/workspace/documents",
+      label: "Documents",
+      description: "Find original medical records and review their progress",
+      icon: FileText,
+    },
+    {
+      id: "ask-solenos",
+      href: "/workspace/companion",
+      label: "Ask SolenOS",
+      description: "Ask questions about information saved in the Care Record",
+      icon: MessageCircle,
     },
   ],
   settings: [
     {
+      id: "notifications",
+      href: "/workspace/notifications",
+      label: "Notifications",
+      description: "See care updates and reminders",
+      icon: Bell,
+    },
+    {
       id: "more",
       href: "/workspace/more",
       label: "More",
-      description: "History, documents and settings",
+      description: "Account, privacy, sharing and app preferences",
       icon: MoreHorizontal,
     },
   ],
@@ -56,8 +71,8 @@ export const WORKSPACE_NAVIGATION = {
   settings: WorkspaceNavigationItem[];
 };
 
-/** Existing routes retained as secondary destinations; permissions stay at route/API boundaries. */
-export const WORKSPACE_SECONDARY_NAVIGATION: WorkspaceNavigationItem[] = [
+/** Care-related destinations are grouped under Care information, not More. */
+export const CARE_INFORMATION_NAVIGATION: WorkspaceNavigationItem[] = [
   {
     id: "care-history",
     href: "/workspace/timeline",
@@ -66,52 +81,42 @@ export const WORKSPACE_SECONDARY_NAVIGATION: WorkspaceNavigationItem[] = [
     icon: History,
   },
   {
-    id: "care-assistant",
-    href: "/workspace/companion",
-    label: "Care Assistant",
-    description: "Ask about saved care information",
-    icon: MessageCircle,
+    id: "appointments",
+    href: "/workspace/appointments",
+    label: "Appointments",
+    description: "Prepare for visits and keep appointment details together",
+    icon: CalendarDays,
   },
   {
-    id: "documents",
-    href: "/workspace/documents",
-    label: "Documents",
-    description: "Original files and reviewed details",
-    icon: FileText,
+    id: "follow-ups",
+    href: "/workspace/open-loops",
+    label: "Needs attention",
+    description: "Review care matters that remain unresolved",
+    icon: Clock3,
   },
   {
     id: "reminders",
     href: "/workspace/reminders",
     label: "Reminders",
-    description: "Upcoming reminders and their status",
+    description: "Manage reminders you have saved",
     icon: Clock3,
   },
   {
     id: "care-sharing",
     href: "/workspace/handoffs",
     label: "Share care information",
-    description: "Prepare information for another person",
+    description: "Prepare and review information shared with others",
     icon: Handshake,
   },
-  {
-    id: "notifications",
-    href: "/workspace/notifications",
-    label: "Notifications",
-    description: "Review care updates and delivery notices",
-    icon: MessageCircle,
-  },
-  {
-    id: "advanced-care-record",
-    href: "/workspace/care-continuity",
-    label: "Full care details",
-    description: "See more of the saved care information.",
-    icon: FileText,
-  },
+];
+
+/** More is reserved for application and account management destinations. */
+export const WORKSPACE_SECONDARY_NAVIGATION: WorkspaceNavigationItem[] = [
   {
     id: "settings",
     href: "/workspace/settings",
     label: "Settings",
-    description: "Account, privacy and accessibility",
+    description: "Account, privacy, access and accessibility",
     icon: Settings,
   },
 ];
