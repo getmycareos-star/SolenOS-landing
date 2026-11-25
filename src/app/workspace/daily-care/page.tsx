@@ -808,7 +808,7 @@ export default function DailyCarePage() {
               </div>
             )}
             {deliveryStatusError && <p role="status">{deliveryStatusError}</p>}
-            <Button variant="secondary" asChild><Link href="/workspace/open-loops">Open Follow-ups</Link></Button>
+            <Button variant="secondary" asChild><Link href="/workspace/open-loops">Open Needs attention</Link></Button>
           </details>
 
           <details className="daily-care-context-panel">
