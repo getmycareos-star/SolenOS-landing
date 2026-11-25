@@ -1715,6 +1715,16 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
 
         <div className="lcr-first-screen-card">
           <h3>What matters now</h3>
+          {sourceFreshness?.reassessment_recommended && (
+            <div className="lcr-entry-status" role="status">
+              <p>{sourceFreshness.status === "freshness_check_unavailable"
+                ? "We couldn’t check whether this care summary is up to date. The last saved version may be out of date."
+                : "Some information may have changed since this care picture was last reviewed."}</p>
+              <button type="button" className="lcr-text-action" onClick={() => void refreshWholeRecord()} disabled={assessmentLoading || refreshing}>
+                {assessmentLoading ? "Refreshing…" : "Refresh care summary"}
+              </button>
+            </div>
+          )}
           {assessmentError ? (
             <RecordState kind="error" title="We couldn’t check what needs attention" description="We couldn’t check what may need attention. Please try again." onAction={() => void refreshWholeRecord()} />
           ) : !assessment ? (
