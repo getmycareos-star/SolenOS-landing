@@ -8,8 +8,8 @@ const apiClient = await readFile(new URL("../src/api/client.ts", import.meta.url
 
 assert.match(handoffPage, /CareHandoffSharing/,
   "Care Handoffs route must render the persisted handoff workspace");
-assert.match(handoffPage, /Share care information/,
-  "the handoff route must have its own visible page heading");
+assert.match(handoffPage, /Care handoffs/,
+  "the handoff route must have its own destination heading");
 assert.match(handoffPage, /onResumeDraft=\{resumeDraft\}/,
   "caregivers must be able to resume a persisted draft from the Handoffs workspace");
 assert.doesNotMatch(handoffPage, /href="\/workspace\/companion"/,
