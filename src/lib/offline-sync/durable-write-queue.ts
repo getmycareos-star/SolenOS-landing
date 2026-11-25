@@ -53,6 +53,7 @@ type QueueInput = {
 type SendWrite = (endpoint: string, payload: unknown) => Promise<unknown>;
 
 let databasePromise: Promise<IDBDatabase> | null = null;
+let storagePersistencePromise: Promise<boolean> | null = null;
 const syncPromises = new Map<string, Promise<DurableWriteSyncResult>>();
 
 function ensureBrowserStorage(): void {
@@ -61,8 +62,17 @@ function ensureBrowserStorage(): void {
   }
 }
 
-function openDatabase(): Promise<IDBDatabase> {
+async function openDatabase(): Promise<IDBDatabase> {
   ensureBrowserStorage();
+  if (databasePromise) return databasePromise;
+  // Ask the browser to protect the encrypted queue from routine storage
+  // eviction. This is best-effort; unsupported browsers still use IndexedDB.
+  if (!storagePersistencePromise) {
+    storagePersistencePromise = typeof navigator !== "undefined" && navigator.storage?.persist
+      ? navigator.storage.persist().catch(() => false)
+      : Promise.resolve(false);
+  }
+  await storagePersistencePromise;
   if (databasePromise) return databasePromise;
   databasePromise = new Promise((resolve, reject) => {
     const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
