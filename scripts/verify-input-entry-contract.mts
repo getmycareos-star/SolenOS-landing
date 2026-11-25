@@ -198,14 +198,15 @@ console.log("\nAll input-entry-contract checks passed.");
 
 
 const settingsPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "settings", "page.tsx"), "utf8");
-assert(settingsPage.includes('putJSON("/notifications/preferences"'));
 assert(settingsPage.includes("revokeAnonymousSession"), "Account settings must expose secure sign-out backed by server-side session revocation.");
 assert(settingsPage.includes("await revokeAnonymousSession()"), "Sign-out must revoke the server session before the browser clears its credentials.");
 assert(!settingsPage.includes("SecurityCard"));
-assert(settingsPage.includes('getJSON("/notifications?limit=100&offset=0")'));
-assert(settingsPage.includes('getJSON("/notifications/unread-count")'));
-assert(settingsPage.includes('patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {})'));
-assert(settingsPage.includes("Notification inbox"));
 const notificationPage = fs.readFileSync(path.join(root, "src", "app", "workspace", "notifications", "page.tsx"), "utf8");
-assert(notificationPage.includes('router.replace("/workspace/settings#settings-notifications")'));
-console.log("✓ Notification inbox and preferences live inside Settings; old notification URL redirects there");
+const notificationsCenter = fs.readFileSync(path.join(root, "src", "components", "mvp-workspace", "NotificationsCenter.tsx"), "utf8");
+assert(notificationPage.includes("<NotificationsCenter />"), "Notifications has a dedicated caregiver-facing page");
+assert(notificationsCenter.includes('getJSON("/notifications?limit=100&offset=0")'));
+assert(notificationsCenter.includes('getJSON("/notifications/unread-count")'));
+assert(notificationsCenter.includes('patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {})'));
+assert(notificationsCenter.includes('putJSON("/notifications/preferences"'));
+assert(settingsPage.includes('href="/workspace/notifications"'), "Settings links to the separate notification destination");
+console.log("✓ Notification inbox has a dedicated route and persists through authenticated backend contracts");
