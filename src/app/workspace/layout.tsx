@@ -1,6 +1,6 @@
-import "@/app/workspace/experience-design-system.css";
-import "@/app/workspace/experience-design-system-v2.css";
-import "@/app/workspace/navigation-accessibility.css";
+import "./experience-design-system.css";
+import "./experience-design-system-v2.css";
+import "./navigation-accessibility.css";
 import { WorkspaceProvider } from "@/lib/workspace-context";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { WorkspaceErrorFallback } from "@/components/app-shell/WorkspaceErrorFallback";
