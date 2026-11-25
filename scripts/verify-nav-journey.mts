@@ -147,7 +147,7 @@ const routeContracts = [
   ["src/app/workspace/documents/page.tsx", "Documents"],
   ["src/app/workspace/appointments/page.tsx", "Appointments"],
   ["src/app/workspace/reminders/page.tsx", "Reminders"],
-  ["src/app/workspace/handoffs/page.tsx", "Share care information"],
+  ["src/app/workspace/handoffs/page.tsx", "Care handoffs"],
   ["src/components/workflows/AICompanion.tsx", "Ask SolenOS"],
   ["src/app/workspace/settings/page.tsx", "Settings"],
   ["src/app/workspace/more/page.tsx", "More"],
