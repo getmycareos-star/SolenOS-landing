@@ -3199,3 +3199,12 @@
   background: #f1f5f0;
   color: #294333;
 }
+
+
+html.solenos-first-visit-mode .solenos-chat-app .solenos-mobile-bottom-nav,
+html.solenos-first-visit-mode .solenos-chat-app .solenos-mobile-add-update {
+  display: none !important;
+}
+html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
+  padding-bottom: 32px;
+}
