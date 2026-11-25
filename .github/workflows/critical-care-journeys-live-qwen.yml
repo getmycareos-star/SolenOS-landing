@@ -16,6 +16,8 @@ on:
       - "src/components/mvp-workspace/LivingCareRecordPanel.tsx"
       - "src/components/workflows/AppointmentWorkspace.tsx"
       - "src/components/workflows/CareHandoffSharing.tsx"
+      - "src/components/mvp-workspace/CaregiverAccessPanel.tsx"
+      - "src/components/mvp-workspace/CaregiverHandoverInbox.tsx"
   workflow_dispatch:
 
 permissions:
