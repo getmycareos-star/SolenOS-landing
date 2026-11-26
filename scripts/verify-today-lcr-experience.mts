@@ -71,6 +71,7 @@ assert.match(understanding, /<Link href="\/workspace\/care-continuity" className
 
 
 assert.match(understanding, /Happened: \$\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
+assert.match(understanding, /item\.time_provenance === "entry_time_defaulted" \|\| !item\.occurred_at \? "Event time not provided/, "missing event time must be explicit even when no provenance marker was supplied");
 assert.match(understanding, /Change review saved \{formatWhen\(change\.created_at\)\}/, "change detection time must not be confused with the event comparison window");
 
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
