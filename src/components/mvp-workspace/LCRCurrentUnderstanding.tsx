@@ -1926,7 +1926,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <article key={source.id}>
                       <strong>{caregiverSafeAssistantText(source.title) || "Saved care record"}</strong>
                       {displayDescription(source.description) && <p>{displayDescription(source.description)}</p>}
-                      <small>Happened {formatWhen(source.occurred_at)} · Saved {formatWhen(source.recorded_at)}</small>
+                      <small>{eventTimeLabel(source.occurred_at, source.time_provenance)} · Saved {formatWhen(source.recorded_at)}</small>
                     </article>
                   ))}
                   {expandedChangeId === change.id && changeEvidence[change.id]?.source_evidence.map((source) => (
@@ -1935,7 +1935,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       <p>{caregiverReadableCaptureText(source.source_text) || "Original wording is not available."}</p>
                       <small>{caregiverInformationLabel(source.evidence_kind || source.epistemic_status || "reported") || "Reported information"}</small>
                       {source.reported_by_label && <small>Shared by {caregiverSafeAssistantText(source.reported_by_label) || "a caregiver"}</small>}
-                      <small>Happened {formatWhen(source.occurred_at)} · Saved {formatWhen(source.ingested_at || source.uploaded_at)}</small>
+                      <small>{eventTimeLabel(source.occurred_at, source.time_provenance)} · Saved {formatWhen(source.ingested_at || source.uploaded_at)}</small>
                     </article>
                   ))}
                   {expandedChangeId === change.id && changeEvidence[change.id]?.assertions.map((item) => (
@@ -1943,7 +1943,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       <strong>{caregiverFieldLabel(item.field) || caregiverLabel(item.field)}: {caregiverSourceText(item.asserted_value) || "Information was reported"}</strong>
                       {item.source_text && <p>{caregiverReadableCaptureText(item.source_text) || "Original wording is saved."}</p>}
                       <small>{caregiverInformationLabel(item.epistemic_state || "reported") || "Caregiver report"} · {caregiverSafeGeneratedText(item.source_label) || "Saved care record"}</small>
-                      <small>Observed {formatWhen(item.observed_at)} · Saved {formatWhen(item.recorded_at)}</small>
+                      <small>Observed {eventTimeLabel(item.observed_at, item.time_provenance)} · Saved {formatWhen(item.recorded_at)}</small>
                     </article>
                   ))}
                   {expandedChangeId === change.id && changeEvidence[change.id]?.observations.map((item) => (
@@ -1954,7 +1954,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                         <p>What was recorded: {caregiverSourceText(item.value_text)}{item.units ? ` ${item.units}` : ""}</p>
                       )}
                       <small>{caregiverInformationLabel(item.epistemic_status || "reported") || "Reported information"} · {caregiverLabel(item.observation_kind)}</small>
-                      <small>Observed {formatWhen(item.observed_at || item.occurred_at)} · Reported {formatWhen(item.reported_at)} · Saved {formatWhen(item.recorded_at)}</small>
+                      <small>Observed {eventTimeLabel(item.observed_at || item.occurred_at, item.time_provenance)} · Reported {formatWhen(item.reported_at)} · Saved {formatWhen(item.recorded_at)}</small>
                     </article>
                   ))}
                   {expandedChangeId === change.id && changeEvidence[change.id]?.confirmation_history.map((transition) => (
@@ -2562,9 +2562,9 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                         <strong>{caregiverSourceText(item.title) || "Care information"}</strong>
                         <p>{displayDescription(item.description)}</p>
                         <small>{item.event_type === "structured_daily_capture" ? "Daily care update" : item.event_type === "quick_daily_checkin" ? "Daily check-in" : caregiverLabel(item.event_type)} · {item.status === "recorded" ? "Saved" : caregiverLabel(item.status)}</small>
-                        <small>Happened: {formatWhen(item.occurred_at)}{item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
+                        <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)}{item.time_provenance !== "server_recorded_at" && item.time_provenance !== "entry_time_defaulted" && item.occurred_at_timezone ? ` (${item.occurred_at_timezone})` : ""}</small>
                         <small>Saved: {formatWhen(item.recorded_at)}</small>
-                        <small>When this happened: {caregiverLabel(item.time_provenance)}</small>
+                        <small>How the date was described: {caregiverLabel(item.time_provenance)}</small>
                       </article>
                     ))}
                     {changeEvidence[change.id] && !changeEvidence[change.id].error && changeEvidence[change.id].evidence.length === 0 && (
@@ -2672,7 +2672,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
 
                       <small>Shared by: {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"}</small>
                       {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
-                      <small>{item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                      <small>{item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted" ? "Event time not provided · " : item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                       {item.evidence_ids?.length > 0 ? (
                         <div>
                           <small>{item.evidence_link_validation === "valid" ? "Original report attached" : "Related report linked"}</small>
