@@ -67,6 +67,11 @@ assert.match(understanding, /hasCompleteSourceCoverage/, "an empty record must r
 assert.match(understanding, /hasIncompleteProjection/, "incomplete retrieval must not be treated as an empty record");
 assert.match(understanding, /sourceFreshness\?\.reassessment_recommended/, "stale understanding warnings must remain visible on Today");
 assert.match(understanding, /assessment\.coverage\.is_complete/, "Today must disclose incomplete assessment coverage");
+assert.match(understanding, /retrieval_status\?: "available" \| "empty" \| "partial" \| "failed"/, "Today must consume explicit retrieval states rather than infer emptiness from an empty item list");
+assert.match(understanding, /projection\.retrieval_status === "empty"/, "Today must require a confirmed empty retrieval before showing the first-visit empty state");
+assert.match(understanding, /projection\.evidence_authorization_status === "failed"/, "Today must treat evidence authorization failure as incomplete care information");
+assert.match(understanding, /projection\.evidence_lineage_status === "failed"/, "Today must treat failed evidence-lineage checks as incomplete care information");
+assert.match(understanding, /enrichment_status\?: string \| null/, "Today must receive source enrichment failures separately from base-source reads");
 assert.match(understanding, /setChangesLoading\(true\)/, "Today must track the recent-change query while it is running");
 assert.match(understanding, /setAssessmentLoading\(true\)/, "Today must track the care-priority query while it is running");
 assert.match(understanding, /changesLoading \? \(/, "an in-flight change query must not be shown as no recent changes");
