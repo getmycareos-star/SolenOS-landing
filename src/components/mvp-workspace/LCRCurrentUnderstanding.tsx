@@ -2784,6 +2784,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <p role="status">Loading your care information…</p>
                   ) : hasIncompleteProjection ? (
                     <p>Some care information could not be checked. Review the available record before relying on this summary.</p>
+                  ) : assessmentError ? (
+                    <p role="alert">The saved care summary could not be loaded, so SolenOS cannot suggest a next step yet.</p>
                   ) : assessmentLoading || !assessment ? (
                     <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
                   ) : immediateCareDecisions.length > 0 ? (
@@ -2803,6 +2805,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <span role="status">Loading…</span>
                   ) : hasIncompleteProjection ? (
                     <Link href="/workspace/care-continuity" className="solenos-care-primary-action">Review available care information</Link>
+                  ) : assessmentError ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
                   ) : assessmentLoading || !assessment ? (
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
                   ) : immediateCareDecisions.length > 0 ? (
