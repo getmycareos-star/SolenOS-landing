@@ -148,7 +148,6 @@ export default function DailyCarePhotoCapture() {
     const capturedAt = captureTimestamp ?? new Date().toISOString();
     const queueId = durableWriteId("/upload", retryKey);
     setIngestionKey(retryKey);
-    pendingQueueId.current = queueId;
 
     try {
       setUploadStage("sending");
@@ -175,10 +174,22 @@ export default function DailyCarePhotoCapture() {
       }
 
       if (result.status === "pending" || await hasDurableWrite(queueId)) {
-        setPendingLocal(true);
-        const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
-        if (summary) setPendingCount(summary.pending);
-        setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns.");
+        const stillQueued = await hasDurableWrite(queueId);
+        if (stillQueued) {
+          pendingQueueId.current = queueId;
+          setPendingLocal(true);
+          const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
+          if (summary) setPendingCount(summary.pending);
+          setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns.");
+        } else {
+          pendingQueueId.current = null;
+          setPendingLocal(false);
+          setSaved(true);
+          setFile(null);
+          setIngestionKey(null);
+          setCaptureTimestamp(null);
+          setSyncNotice("Your photo has reached SolenOS and is saved as evidence. It has not been confirmed as a care-record event.");
+        }
         return;
       }
 
@@ -186,6 +197,7 @@ export default function DailyCarePhotoCapture() {
     } catch (cause) {
       const queued = await hasDurableWrite(queueId).catch(() => false);
       if (queued) {
+        pendingQueueId.current = queueId;
         setPendingLocal(true);
         const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
         if (summary) setPendingCount(summary.pending);
