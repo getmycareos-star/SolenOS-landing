@@ -193,8 +193,8 @@ assert.ok(needsAttention.includes("/open-loops?limit="), "Needs attention retrie
 assert.ok(navigation.includes("Notifications") && navigation.includes("Needs attention"), "notifications and unresolved matters have distinct caregiver labels");
 assert.ok(navigation.includes('href: "/workspace/documents"') && navigation.indexOf('href: "/workspace/documents"') > navigation.indexOf("export const CARE_INFORMATION_NAVIGATION"), "Documents belongs inside Care information, not at the top navigation level");
 
-assert.ok(legacyRecord.includes("redirect") && legacyRecord.includes("/workspace"), "the legacy record route preserves a safe Home destination");
-assert.ok(legacyContinuity.includes("redirect") && legacyContinuity.includes("/workspace"), "the technical continuity route does not expose a separate caregiver page");
+assert.ok(legacyRecord.includes("redirect") && legacyRecord.includes("/workspace/care-continuity"), "the legacy full-record route preserves a safe Care information destination");
+assert.ok(legacyContinuity.includes("redirect") && legacyContinuity.includes("/workspace/care-continuity"), "the legacy continuity route returns to the caregiver-facing Care information destination");
 assert.ok(featureFlags.includes("community: false") && featureFlags.includes("professionalCommunity: false"), "Community remains explicitly disabled");
 assert.ok(community.includes("redirect") && community.includes("/workspace"), "the disabled Community route fails closed");
 assert.ok(legacySettings.includes("redirect") && legacySettings.includes("/workspace/settings"), "the legacy Settings route preserves its destination");
