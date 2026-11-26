@@ -44,6 +44,7 @@ assert.match(source, /scan_text_prepared: "false"/, "the upload must not claim t
 const mobileDocumentE2E = readFileSync("e2e/critical-care-journeys.mjs", "utf8");
 assert.match(mobileDocumentE2E, /03b mobile document file picker, upload progress and camera scanner/, "mobile document intake must be exercised in the real browser journey");
 assert.match(mobileDocumentE2E, /--use-fake-device-for-media-stream/, "browser camera acceptance must provide a deterministic camera device");
+assert.match(mobileDocumentE2E, /input\[capture="environment"\]/, "mobile camera file input must be exercised separately from the in-page camera stream");
 assert.match(mobileDocumentE2E, /video\.videoWidth > 0 && video\.videoHeight > 0/, "camera acceptance must wait for a live video frame before capture");
 assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Take photo"/, "camera acceptance must exercise the actual capture control");
 assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Save files"/, "mobile file-picker acceptance must exercise original upload");
