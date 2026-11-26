@@ -754,7 +754,7 @@ function PrivacyCard() {
         </ul>
       </div>
 
-      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes sign-in details and unsent updates saved only in this browser. Those updates have not reached SolenOS and will be deleted from this device. If you have no other way to sign in, you may not be able to open your Care Record on this device. It does not delete your Care Record from SolenOS.</p>}
+      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes sign-in details and unsent updates saved only in this browser. Those updates have not reached SolenOS and will be deleted from this device. An update already being sent may still reach SolenOS. If you have no other way to sign in, you may not be able to open your Care Record on this device. It does not delete your Care Record from SolenOS.</p>}
       <div className="mobile-settings-buttons">
         {confirmClear ? (
           <div className="mobile-settings-actions">
