@@ -17,6 +17,7 @@ type CareItem = {
   source_label?: string;
   recorded_at?: string | null;
   occurred_at?: string | null;
+  time_provenance?: string | null;
 };
 
 type ChangeItem = {
@@ -32,6 +33,11 @@ function when(value?: string | null): string {
   if (!value) return "Date not recorded";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "Date not recorded" : date.toLocaleString();
+}
+
+function happenedWhen(item: CareItem): string {
+  if (item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted") return "Not provided";
+  return when(item.occurred_at);
 }
 
 function plainStatus(value?: string | null): string {
@@ -170,7 +176,7 @@ export function CareRecordOverview() {
                       <span className="care-record-overview__status">{plainStatus(item.epistemic_status || item.status)}</span>
                     </div>
                     {caregiverSourceText(item.description) && <p className="care-record-overview__description">{caregiverSourceText(item.description)}</p>}
-                    <p className="care-record-overview__meta">Shared by: {caregiverSafeGeneratedText(item.source_label) || "Not recorded"} · Happened: {when(item.occurred_at)} · Saved: {when(item.recorded_at)}</p>
+                    <p className="care-record-overview__meta">Shared by: {caregiverSafeGeneratedText(item.source_label) || "Not recorded"} · Happened: {happenedWhen(item)} · Saved: {when(item.recorded_at)}</p>
                   </article>
                 ))}
               </div>
