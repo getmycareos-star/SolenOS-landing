@@ -579,7 +579,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         )}
         <nav className="solenos-mobile-bottom-nav" aria-label="Main destinations">
           <Link href="/workspace" aria-current={active("/workspace") ? "page" : undefined} className={active("/workspace") ? "is-active" : ""}>
-            <Home size={19} aria-hidden="true" /><span>Home</span>
+            <Home size={19} aria-hidden="true" /><span>Today</span>
           </Link>
           <Link href="/workspace/care-continuity" aria-current={active("/workspace/care-continuity") ? "page" : undefined} className={active("/workspace/care-continuity") ? "is-active" : ""}>
             <FileText size={19} aria-hidden="true" /><span>Care</span>
