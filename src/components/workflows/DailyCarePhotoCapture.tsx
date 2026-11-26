@@ -76,7 +76,7 @@ export default function DailyCarePhotoCapture() {
           setCaptureTimestamp(null);
           setRotationDegrees(0);
           setFile(null);
-          setSyncNotice("Your photo has reached SolenOS and is saved as evidence. It has not been confirmed as a care-record event.");
+          setSyncNotice("Your photo has reached SolenOS and is saved with this care recipient’s information. It has not been added as a care update.");
         }
         if (result.synced > 0) {
           setSyncNotice("A queued item has reached SolenOS. Any required review or processing may still be outstanding.");
@@ -172,7 +172,7 @@ export default function DailyCarePhotoCapture() {
         setIngestionKey(null);
         setCaptureTimestamp(null);
         setRotationDegrees(0);
-        setSyncNotice("Your photo was uploaded and saved as evidence. It has not been confirmed as a care-record event.");
+        setSyncNotice("Your photo was uploaded and saved with this care recipient’s information. It has not been added as a care update.");
         window.dispatchEvent(new Event("careRecordUpdated"));
         return;
       }
@@ -191,7 +191,7 @@ export default function DailyCarePhotoCapture() {
           setFile(null);
           setIngestionKey(null);
           setCaptureTimestamp(null);
-          setSyncNotice("Your photo has reached SolenOS and is saved as evidence. It has not been confirmed as a care-record event.");
+          setSyncNotice("Your photo has reached SolenOS and is saved with this care recipient’s information. It has not been added as a care update.");
         }
         return;
       }
@@ -239,7 +239,7 @@ export default function DailyCarePhotoCapture() {
     }}>
       <h3 id="daily-care-photo-title" style={{ margin: "0 0 6px", fontSize: "calc(18px * var(--solenos-text-scale, 1))" }}>Add a photograph</h3>
       <p style={{ margin: "0 0 12px", color: "var(--theme-panel-muted)", lineHeight: 1.5 }}>
-        Take a new photo or choose one from this device. A saved photo is evidence, not proof that a care event happened.
+        Take a new photo or choose one from this device. A photo is saved with this care recipient’s information, but it does not say what happened by itself.
       </p>
       <div style={{ display: "grid", gap: 10 }}>
         <button
