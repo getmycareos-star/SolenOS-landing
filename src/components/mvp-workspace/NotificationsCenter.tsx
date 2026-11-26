@@ -220,6 +220,7 @@ export function NotificationsCenter() {
       setScheduleSupported(false);
       setQuietStart("21:00");
       setQuietEnd("08:00");
+      setTimezoneName(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       setReminders(true);
       setError("");
       setSaving(false);
