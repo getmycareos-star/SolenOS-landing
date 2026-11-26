@@ -6,6 +6,7 @@ const root = process.cwd();
 const workspace = fs.readFileSync(path.join(root, "src/lib/workspace-context.tsx"), "utf8");
 const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 const layout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
+const shell = fs.readFileSync(path.join(root, "src/components/app-shell/WorkspaceShellContent.tsx"), "utf8");
 const runtimeExports = fs.readFileSync(path.join(root, "src/lib/ui-runtime/index.ts"), "utf8");
 const situationStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/situation-store.ts"), "utf8");
 const timelineStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/timeline-store.ts"), "utf8");
@@ -51,8 +52,8 @@ assert.match(
   /Always replace the visible projection with the server result[\s\S]*?including an empty result/,
   "an empty authorized server result must clear the visible projection",
 );
-assert.match(layout, /recordLoadError/);
-assert.match(layout, /window\.location\.reload\(\)/);
+assert.match(shell, /recordLoadError/);
+assert.match(shell, /window\.location\.reload\(\)/);
 assert.match(companion, /getJSON\('\/conversations\?limit=1'\)/);
 assert.match(companion, /listing\.person_id !== session\.person\.id/);
 assert.match(companion, /latest\.session_id/);
