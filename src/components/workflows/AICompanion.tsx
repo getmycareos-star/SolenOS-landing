@@ -955,7 +955,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     params.delete('prompt')
     const remainingQuery = params.toString()
     const nextUrl = window.location.pathname + (remainingQuery ? '?' + remainingQuery : '') + window.location.hash
-    window.history.replaceState({}, '', nextUrl)
+    window.history.replaceState(window.history.state, '', nextUrl)
   }, [initialPrompt])
 
 
