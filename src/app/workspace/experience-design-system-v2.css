@@ -3500,3 +3500,10 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
 .solenos-chat-app .solenos-mobile-bottom-nav a {
   color: #5f6d62;
 }
+@media (max-width: 900px) {
+  /* Home already presents an inline first-update action; avoid a fixed duplicate
+     covering the adjacent review action on short screens. */
+  .solenos-chat-app:has(.lcr-today-empty-state__actions) .solenos-mobile-add-update {
+    display: none;
+  }
+}
