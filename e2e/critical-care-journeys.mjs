@@ -1183,6 +1183,14 @@ await record("01c workspace links, browser back, More menu and account form vali
   assert.equal(await careInformationParent.getAttribute("aria-current"), "page",
     "browser back restores the Care information navigation context");
 
+  await page.goto(new URL("/workspace/record?source=legacy&tag=first&tag=second", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.waitForURL((url) => url.pathname === "/workspace/care-continuity" &&
+    url.searchParams.get("source") === "legacy" &&
+    url.searchParams.getAll("tag").join(",") === "first,second", { timeout: 15_000 });
+  await page.goto(new URL("/settings?section=privacy", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await page.waitForURL((url) => url.pathname === "/workspace/settings" &&
+    url.searchParams.get("section") === "privacy", { timeout: 15_000 });
+
   const filteredHistoryReturn = "/workspace/timeline?filter=documents&q=discharge";
   await page.goto(new URL(`/workspace/documents?returnTo=${encodeURIComponent(filteredHistoryReturn)}`, frontend).toString(), { waitUntil: "domcontentloaded" });
   const returnToHistory = page.getByRole("link", { name: "Back to Care history", exact: true });
