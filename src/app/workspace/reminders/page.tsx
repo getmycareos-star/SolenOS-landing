@@ -199,11 +199,16 @@ export default function CareRemindersPage() {
         assigned_to_caregiver_id: assignedTo || undefined,
       });
       if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
-      await refresh(requestPersonId);
-      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setTitle("");
       setNote("");
       setNotice("Reminder saved. It will appear in this list, and an in-app notification will be added when it is due.");
+      try {
+        await refresh(requestPersonId);
+      } catch {
+        if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
+          setError("The reminder was saved, but the list could not be refreshed. Refresh the list before trying to add it again.");
+        }
+      }
     } catch {
       if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
         setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
@@ -228,9 +233,14 @@ export default function CareRemindersPage() {
         expected_version: reminder.version,
       });
       if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
-      await refresh(requestPersonId);
-      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder responsibility updated and saved.");
+      try {
+        await refresh(requestPersonId);
+      } catch {
+        if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
+          setNotice("Reminder responsibility was updated, but the list could not refresh. Refresh before making another change.");
+        }
+      }
     } catch {
       if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
         setError("We couldn’t change who is responsible. Refresh the reminders and try again.");
@@ -253,9 +263,14 @@ export default function CareRemindersPage() {
     try {
       await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/complete`, {});
       if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
-      await refresh(requestPersonId);
-      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder marked complete.");
+      try {
+        await refresh(requestPersonId);
+      } catch {
+        if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
+          setNotice("Reminder marked complete, but the list could not refresh. Refresh before changing it again.");
+        }
+      }
     } catch {
       if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setError("We couldn’t update this reminder. Please try again.");
     } finally {
@@ -278,9 +293,14 @@ export default function CareRemindersPage() {
         snooze_until: snoozeUntil,
       });
       if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
-      await refresh(requestPersonId);
-      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder moved one hour later. It remains open and will not be marked complete.");
+      try {
+        await refresh(requestPersonId);
+      } catch {
+        if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
+          setNotice("Reminder moved one hour later, but the list could not refresh. It remains open. Refresh before changing it again.");
+        }
+      }
     } catch {
       if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setError("We couldn’t snooze this reminder. Please try again.");
     } finally {
@@ -300,9 +320,14 @@ export default function CareRemindersPage() {
     try {
       await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/cancel`, {});
       if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
-      await refresh(requestPersonId);
-      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder cancelled. The record keeps its status and attribution.");
+      try {
+        await refresh(requestPersonId);
+      } catch {
+        if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
+          setNotice("Reminder cancelled, but the list could not refresh. Refresh before changing it again.");
+        }
+      }
     } catch {
       if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setError("We couldn’t cancel this reminder. Please try again.");
     } finally {
