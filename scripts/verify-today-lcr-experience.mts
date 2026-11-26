@@ -117,7 +117,7 @@ assert.match(understanding, /response\.person_id !== scopedPersonId/, "the LCR p
 
 assert.match(appointments, /appointment-workspaces\/preparation-brief\?window_days=90/, "appointments must use the existing persisted appointment contract");
 assert.match(appointments, /Appointment information is unavailable/, "appointment retrieval failures must remain visible");
-assert.match(appointments, /appointmentTime - Date\.now\(\) <= 24 \* 60 \* 60 \* 1000/, "appointments due within 24 hours must receive contextual prominence");
+assert.match(appointments, /appointmentTime - now <= 24 \* 60 \* 60 \* 1000/, "appointments due within 24 hours must receive contextual prominence");
 assert.match(companion, /initialPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "all Companion entry points must bound prompt text");
 assert.match(companion, /history\.replaceState\(window\.history\.state, '', nextUrl\)/, "consuming a Companion prompt must preserve Next.js navigation state");
 

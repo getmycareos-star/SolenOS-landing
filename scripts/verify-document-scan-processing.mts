@@ -165,7 +165,7 @@ assert.match(source, /Keep this page open until the originals are saved\. Readin
 assert.match(source, /You can leave this page while it finishes\./, "the caregiver must be told that background reading continues after leaving Documents");
 
 assert.match(source, /capture_timestamp: page\.captureTimestamp/, "scan retry must preserve capture time");
-assert.match(source, /deleteJSON\("\/upload\/" \+ encodeURIComponent\(selected\.id\)\)/, "document deletion must call the authenticated backend lifecycle endpoint");
+assert.match(source, /deleteJSON\("\/upload\/" \+ encodeURIComponent\(selectedDocumentId\)\)/, "document deletion must call the authenticated backend lifecycle endpoint");
 assert.match(source, /The document and its unreviewed details were deleted/, "the caregiver must receive a success message only after backend deletion confirms");
 assert.match(source, /Mark as corrected copy/, "caregivers must be able to explicitly link a corrected copy to its predecessor");
 assert.match(source, /selected\.possibleVersionOfEvidenceId && !selected\.evidence\.parent_evidence_id/, "corrected-version clarification must appear only when a possible predecessor is detected");
