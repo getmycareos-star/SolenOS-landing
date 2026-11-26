@@ -40,7 +40,24 @@ type PreparationBrief = {
   appointments: Array<{ source_id: string; title: string; scheduled_at?: string | null; provider?: string | null; location?: string | null; status: string } & LinkedSource>
   open_loops?: Array<{ source_id: string; title: string; description?: string | null; status: string; priority?: string | null; deadline_at?: string | null; source_type?: string | null; source_reference?: string | null; appointment_id?: string | null; source_workspace_id?: string | null }>
   appointment_needs?: Array<{ source_id: string; question: string; subject_type: string; status: string; intended_answerer_role?: string | null; intended_answerer_label?: string | null; necessity_rationale?: string | null; evidence_ids?: string[]; interpretation_limit?: string }>
-  documents?: Array<{ source_id: string; source_evidence_id?: string; filename?: string | null; extraction_status: string; extracted_text?: string; recorded_at?: string | null; uploaded_at?: string | null; epistemic_status?: string; interpretation_limit?: string }>
+  documents?: Array<{
+    source_id: string;
+    source_evidence_id?: string;
+    filename?: string | null;
+    extraction_status: string;
+    extracted_text?: string | null;
+    page_count?: number | null;
+    page_count_verified?: boolean;
+    processed_page_numbers?: number[];
+    unreadable_page_numbers?: number[];
+    unprocessed_page_numbers?: number[];
+    retryable_page_numbers?: number[];
+    retry_exhausted_page_numbers?: number[];
+    recorded_at?: string | null;
+    uploaded_at?: string | null;
+    epistemic_status?: string;
+    interpretation_limit?: string;
+  }>
   source_coverage: Record<string, string>
   freshness_assessments?: FreshnessAssessment[]
   freshness_assessment_scope?: { status: string; bounded: boolean; limit: number; history_complete: boolean; interpretation_limit: string }
@@ -406,6 +423,13 @@ export default function DetailedAppointmentWorkspace() {
                       ? <ul>{lcrBrief.documents.slice(0, 8).map(item => <li key={item.source_id}>
                         <span>{caregiverSourceText(item.filename) || 'Saved document'}</span>
                         <small>{caregiverStatusLabel(item.extraction_status) || 'Reading status not available'} · Uploaded: {item.uploaded_at ? new Date(item.uploaded_at).toLocaleString() : 'Date not recorded'}</small>
+                        {typeof item.page_count === 'number' && <small>
+                          {item.page_count_verified === false
+                            ? 'Original PDF page total could not be verified.'
+                            : 'Pages read: ' + (item.processed_page_numbers?.length ?? 0) + ' of ' + item.page_count}
+                          {item.unreadable_page_numbers?.length ? ' · Unreadable: ' + item.unreadable_page_numbers.join(', ') : ''}
+                          {item.unprocessed_page_numbers?.length ? ' · Not read yet: ' + item.unprocessed_page_numbers.join(', ') : ''}
+                        </small>}
                         {item.extracted_text && <p>{caregiverSourceText(item.extracted_text.slice(0, 500))}</p>}
                         <small>{caregiverSafeAssistantText(item.interpretation_limit) || 'Document text is source material, not an accepted care fact or clinical verification.'}</small>
                       </li>)}</ul>
