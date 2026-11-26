@@ -279,7 +279,7 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   );
 
   const firstNote = "Mum has been forgetting whether she has eaten breakfast.";
-  await page.getByRole("link", { name: "Add an update", exact: true }).click();
+  await firstContributionLink.click();
   await page.getByRole("heading", { name: "Add an update", exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
   await page.getByRole("button", { name: /Describe an update/ }).click();
