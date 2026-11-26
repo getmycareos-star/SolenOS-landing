@@ -1,7 +1,7 @@
 
 Ause clientA
 
-import { useState, useRef, useEffect, useCallback } from AreactA
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from AreactA
 import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from Alucide-reactA
 import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from A@/api/clientA
 import { isEmergencyCompanionResponse } from A@/lib/companion-safetyA
