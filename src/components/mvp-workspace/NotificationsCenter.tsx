@@ -114,9 +114,11 @@ export function NotificationsCenter() {
     setInboxError("");
     try {
       const session = await ensureAnonymousSession();
-      if (!session.person?.id || !session.caregiver?.id
-        || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()
-        || !isCurrentRequest()) return;
+      if (!session.person?.id || !session.caregiver?.id) throw new Error("A valid care session is required to load notifications.");
+      if (!isCurrentRequest()) return;
+      if (session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()) {
+        throw new Error("The active care record could not be confirmed. Refresh and try again.");
+      }
       const [feed, unread] = await Promise.all([
         getJSON("/notifications?limit=100&offset=0") as Promise<{ items: CareNotification[] }>,
         getJSON("/notifications/unread-count") as Promise<{ unread_count: number }>,
@@ -181,9 +183,11 @@ export function NotificationsCenter() {
     setError("");
     try {
       const session = await ensureAnonymousSession();
-      if (!session.person?.id || !session.caregiver?.id
-        || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()
-        || !isCurrentRequest()) return;
+      if (!session.person?.id || !session.caregiver?.id) throw new Error("A valid care session is required to load notification settings.");
+      if (!isCurrentRequest()) return;
+      if (session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()) {
+        throw new Error("The active care record could not be confirmed. Refresh and try again.");
+      }
       const prefs = await getJSON("/notifications/preferences") as {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
         quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
@@ -252,7 +256,9 @@ export function NotificationsCenter() {
     setError("");
     try {
       const session = await ensureAnonymousSession();
-      if (!isCurrentScope() || session.person?.id !== requestPersonId || session.caregiver?.id !== requestCaregiverId) return;
+      if (!session.person?.id || !session.caregiver?.id) throw new Error("A valid care session is required to save notification settings.");
+      if (!isCurrentScope()) return;
+      if (session.person.id !== requestPersonId || session.caregiver.id !== requestCaregiverId) return;
       const payload = key === "quiet_hours_enabled"
         ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: timezoneName }
         : { reminders_enabled: value };
