@@ -378,6 +378,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
 
   return (
     <div className={`solenos-chat-app${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
+      <a className="solenos-skip-link" href="#solenos-main-content">Skip to main content</a>
       {sidebarOpen && (
         <button
           type="button"
@@ -548,7 +549,7 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           )}
         </header>
         {actionNotice && <p role="status" className="solenos-workspace-action-notice">{actionNotice}</p>}
-        <main className="solenos-chat-main">
+        <main id="solenos-main-content" tabIndex={-1} className="solenos-chat-main">
           {pathname === "/workspace" && isArchived ? (
             <section className="panel" aria-label="Archived workspace">
               <h2 className="workspace-headline">Workspace archived</h2>
