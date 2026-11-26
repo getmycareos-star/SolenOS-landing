@@ -546,7 +546,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setSavedConversations([])
       setShowConversationHistory(false)
       setConversationHistoryError(null)
-      setPendingCareUpdates([]
+      setPendingCareUpdates([])
       setLoadingOlderMessages(false)
       setCareUpdateLoading(false)
       setCareUpdateLoadFailed(false)
