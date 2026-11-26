@@ -180,3 +180,5 @@ assert.match(source, /versionComparisonError/, "a failed version comparison must
 assert.match(source, /No conclusion about what changed is available yet/, "an unavailable comparison must not imply that the documents match");
 assert.match(source, /Try comparison again/, "caregivers must be able to retry a failed version comparison without re-uploading either document");
 assert.match(source, /versionComparisonLoading/, "the version comparison must expose its loading state");
+
+assert.match(source, /versionComparisonRequestSequenceRef/, "a late comparison response must not overwrite the currently selected document version");
