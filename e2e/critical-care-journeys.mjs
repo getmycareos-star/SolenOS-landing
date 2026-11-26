@@ -280,7 +280,7 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   await page.getByRole("link", { name: "Add a care update", exact: true }).click();
   await page.getByRole("heading", { name: "Add an update", exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
-  await page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await page.getByRole("button", { name: /Describe an update/ }).click();
   await page.getByRole("textbox", { name: "Your update", exact: true }).fill(firstNote);
   const saveResponsePromise = page.waitForResponse((response) =>
     new URL(response.url()).pathname === "/api/v1/daily-care/entries" &&
