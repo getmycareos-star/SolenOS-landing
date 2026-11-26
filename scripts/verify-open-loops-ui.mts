@@ -55,6 +55,8 @@ for (const [label, pattern] of required) {
   assert.match(allCareViews, pattern, `Follow-ups contract missing: ${label}`);
 }
 
+assert.match(page, /scopeSequenceRef\.current \+= 1[\s\S]*?setLoops\(\[\]\)/, "recipient changes invalidate follow-up mutations and clear the old record");
+assert.match(page, /async function loadHistory[\s\S]*?if \(!isCurrentScope\(\)\) return/, "follow-up history responses from a previous recipient cannot repopulate the new record");
 assert.match(page, /item\.category === "needs_attention_now" \? "Needs attention now"[\s\S]*?item\.category === "important_to_address" \? "Important to address"/, "the card label preserves the difference between immediate and important non-immediate matters");
 assert.doesNotMatch(page, /followup-status/, "follow-up cards avoid repeated internal status text");
 const openLoopCreateWrites = page.match(/postJSON\("\/open-loops",/g) ?? [];
