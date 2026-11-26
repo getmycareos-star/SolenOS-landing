@@ -43,7 +43,9 @@ export function verifySourcePointer(claim: ExtractedClaim, originalText: string)
     return false;
   }
 
-  if (span.start_offset > originalText.length) {
+  // Backend offsets use Unicode code points, not JavaScript UTF-16 units.
+  const originalCharacters = Array.from(originalText);
+  if (span.start_offset > originalCharacters.length || span.end_offset > originalCharacters.length) {
     return false;
   }
 
@@ -51,7 +53,7 @@ export function verifySourcePointer(claim: ExtractedClaim, originalText: string)
     return false;
   }
 
-  const actualText = originalText.slice(span.start_offset, span.end_offset);
+  const actualText = originalCharacters.slice(span.start_offset, span.end_offset).join("");
 
   if (actualText !== span.text) {
     return false;
