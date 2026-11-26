@@ -408,7 +408,7 @@ export default function FollowUpsPage() {
     let active = true;
     setLoading(true);
     setError("");
-    void refresh().catch(() => { if (active) setError("Follow-ups could not be loaded from the care record. Check your connection and try again."); })
+    void refresh().catch(() => { if (active) setError("Needs attention could not be loaded. Check your connection and try again."); })
       .finally(() => { if (active) setLoading(false); });
     const refreshAfterCareChange = () => { void refresh().catch(() => setAttentionWarning("SolenOS could not check the latest follow-ups. Your saved follow-ups remain visible.")); };
     const refreshAfterSessionChange = () => {
