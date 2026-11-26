@@ -108,3 +108,15 @@ The workspace shell exposes a first-focusable “Skip to main content” link. I
 ## Verification
 
 The frontend test suite now includes a caregiver information architecture contract covering route ownership, canonical labels, nested navigation, notification separation, legacy routes, disabled Community, mobile destinations and source-document drill-down. Browser and build checks remain required; source-level contract checks alone do not prove the rendered experience works.
+
+## Additional implementation details
+
+The following source changes extend the route map above. They are implementation records, not a claim of completed browser verification:
+
+- Home's compact `today` view retains its own record-aware next-step panel; the full Care information disclosure and source-review sections remain gated to the complete view.
+- Care history no longer fills a missing event timestamp with `recorded_at`. When the event time is absent or invalid, the UI says it was not provided and shows the saved time separately.
+- A document-backed history entry links to the exact evidence ID. Documents opens that original file, validates the `returnTo` destination as same-origin Care history, and preserves its search/filter query.
+- Document preview requests are invalidated when the caregiver or care recipient changes. Both the in-flight response and the deep-link lookup are bound to the active identity scope, so a late response cannot display a previous recipient's file.
+- Needs attention preserves the assessment's separate `needs_attention_now` and `important_to_address` categories. If a source appears in both, the immediate-attention classification takes precedence rather than showing duplicate cards.
+- The critical-care browser journey now includes a persisted-document source-preview path and checks that the original download is enabled before treating the preview as ready.
+
