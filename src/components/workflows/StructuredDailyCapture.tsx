@@ -663,7 +663,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       setMedicationImageUploadKey(null);
       setMedicationImageCapturedAt(null);
       
-      setMedicationFeedback('Added to this daily-care draft. Save the daily care update below to keep it.');
+      setMedicationFeedback(
+        photoIngestionKey && !evidenceId
+          ? "Medicine added to this draft. Its photo is saved on this device and will be linked after it reaches SolenOS."
+          : "Added to this daily-care draft. Save the daily care update below to keep it.",
+      );
     } catch {
       setMedicationUploading(false);
       setMedicationCompressing(false);
