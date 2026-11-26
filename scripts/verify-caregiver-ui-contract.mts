@@ -24,7 +24,7 @@ for (const phrase of [
 }
 assert.equal(adaptForCaregiverCapacity("Can you explain the appointment time?").overload_likely, false);
 const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICompanion.tsx"), "utf8");
-const settings = fs.readFileSync(path.join(root, "src/app/workspace/settings/page.tsx"), "utf8");
+const notificationCenter = fs.readFileSync(path.join(root, "src/components/mvp-workspace/NotificationsCenter.tsx"), "utf8");
 const orientation = fs.readFileSync(path.join(root, "src/components/mvp-workspace/PersistedCareOrientation.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 const deltaPanel = fs.readFileSync(path.join(root, "src/components/CareDeltaPanel.tsx"), "utf8");
@@ -76,12 +76,12 @@ assert.match(companion, /Save as a care note/, "the report action must be explic
 assert.match(companion, /Add to Care Record/, "adding a Companion report must require an explicit caregiver action");
 assert.match(companion, /Don’t add/, "caregivers must be able to decline a suggested update");
 assert.match(companion, /A healthcare professional has not confirmed it/, "accepted Companion reports must remain distinct from clinical verification");
-assert.match(settings, /notificationReviewHref/);
-assert.match(settings, /care_attention.*care_change/s, "care attention and change notifications must link to the Care Record");
-assert.match(settings, /\/workspace\/care-continuity/);
-assert.match(settings, /\/workspace\/open-loops/);
-assert.match(settings, /\/workspace\/reminders/);
-assert.match(settings, /Review in Care Record/);
+assert.match(notificationCenter, /notificationReviewHref/);
+assert.match(notificationCenter, /care_attention.*care_change/s, "care attention and change notifications must link to the Care Record");
+assert.match(notificationCenter, /\/workspace\/care-continuity/);
+assert.match(notificationCenter, /\/workspace\/open-loops/);
+assert.match(notificationCenter, /\/workspace\/reminders/);
+assert.match(notificationCenter, /Review in Care Record/);
 assert.match(companion, /Nothing is added to your Care Record unless you choose to save a message as a care note and approve it\./, "Companion must accurately explain the explicit approval boundary");
 assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
   "Delta comparison must not support hidden automatic reconciliation");
