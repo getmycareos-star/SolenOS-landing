@@ -265,8 +265,10 @@ await record("00 first-time and returning caregivers share Home and the same LCR
     0,
     "first-time caregivers must not be routed into a separate capture-only presentation",
   );
+  const firstContributionLink = page.locator("#solenos-main-content")
+    .getByRole("link", { name: "Add an update", exact: true }).first();
   assert.equal(
-    await page.getByRole("link", { name: "Add an update", exact: true }).isVisible(),
+    await firstContributionLink.isVisible(),
     true,
     "the shared empty state must provide a direct first contribution path",
   );
