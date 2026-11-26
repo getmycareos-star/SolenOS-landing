@@ -128,10 +128,12 @@ try {
   await page.getByRole("navigation", { name: "Primary navigation" }).waitFor({ state: "visible" });
   const mobileMenuOpenMs = Date.now() - menuStartedAt;
 
-  const moreLink = page.locator("#solenos-navigation").getByRole("link", { name: "More", exact: true });
-  await moreLink.click();
-  await page.waitForURL(/\/workspace\/more(?:\?|$)/);
-  const documentsLink = page.locator('a[href="/workspace/documents"]').last();
+  const careLink = page.locator(".solenos-mobile-bottom-nav")
+    .getByRole("link", { name: "Care", exact: true });
+  await careLink.click();
+  await page.waitForURL(/\/workspace\/care-continuity(?:\?|$)/);
+  const documentsLink = page.locator(".care-information-directory")
+    .getByRole("link", { name: "Documents", exact: true });
   await documentsLink.waitFor({ state: "visible" });
   const routeStartedAt = Date.now();
   await documentsLink.click();
