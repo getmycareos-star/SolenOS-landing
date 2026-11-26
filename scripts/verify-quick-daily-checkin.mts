@@ -140,6 +140,8 @@ assert.match(photoCapture, /Take a photo/,
   "camera capture is an explicit action");
 assert.match(photoCapture, /Choose an existing photo/,
   "gallery selection remains distinct from live camera capture");
+assert.match(photoCapture, /event\.currentTarget\.value = ""[\s\S]*?selectPhoto\(selected, "upload"\)/,
+  "the native file picker resets after reading a photo so the same file can be selected again after failure");
 assert.match(photoCapture, /Rotate left[\s\S]*?Rotate right/,
   "caregivers can correct photo orientation before upload");
 assert.match(photoCapture, /not been added as a care update/,
