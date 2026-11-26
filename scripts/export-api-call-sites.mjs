@@ -75,7 +75,8 @@ function methodFor(call) {
   if (wrappers.has(name)) return wrappers.get(name);
   if (name !== 'fetch' && name !== 'fetchWithTimeout') return null;
   const init = call.arguments[1];
-  if (init && ts.isObjectLiteralExpression(init)) {
+  if (!init) return 'GET';
+  if (ts.isObjectLiteralExpression(init)) {
     const method = init.properties.find(property =>
       ts.isPropertyAssignment(property) &&
       ((ts.isIdentifier(property.name) && property.name.text === 'method') ||
@@ -84,6 +85,7 @@ function methodFor(call) {
     if (method && ts.isPropertyAssignment(method) && ts.isStringLiteralLike(method.initializer)) {
       return method.initializer.text.toUpperCase();
     }
+    return init.properties.some(ts.isSpreadAssignment) ? 'GET_OR_DYNAMIC' : 'GET';
   }
   return 'GET_OR_DYNAMIC';
 }
