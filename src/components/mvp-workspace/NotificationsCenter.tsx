@@ -124,8 +124,11 @@ export function NotificationsCenter() {
         getJSON("/notifications/unread-count") as Promise<{ unread_count: number }>,
       ]);
       if (!isCurrentRequest() || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()) return;
-      setNotifications(feed.items ?? []);
-      setUnreadCount(unread.unread_count ?? 0);
+      if (!Array.isArray(feed?.items) || !Number.isInteger(unread?.unread_count) || unread.unread_count < 0) {
+        throw new Error("The notification response was incomplete.");
+      }
+      setNotifications(feed.items);
+      setUnreadCount(unread.unread_count);
     } catch {
       if (isCurrentRequest()) setInboxError("We couldn't load notifications. Check your connection and try again.");
     } finally {
