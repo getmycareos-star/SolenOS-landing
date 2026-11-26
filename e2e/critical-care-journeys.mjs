@@ -389,7 +389,7 @@ await record("00a Home never presents a failed LCR retrieval as an empty record"
     body: JSON.stringify({ detail: "Temporary current-care retrieval failure for acceptance testing." }),
   }));
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByText("Your care information isn’t available right now. Please try again.", { exact: true })
+  await page.getByText("We couldn’t load your care information. Please try again.", { exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   assert.equal(
     await page.getByText("Your Care Record starts here", { exact: true }).count(),
