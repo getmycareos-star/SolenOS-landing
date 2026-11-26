@@ -2486,6 +2486,9 @@ await record("Daily Care structured capture validates units and medication outco
   await resumedPage.getByRole("status")
     .filter({ hasText: "waiting to reach SolenOS" })
     .waitFor({ timeout: 15_000 });
+  await resumedPage.getByRole("status")
+    .filter({ hasText: "2 updates saved on this device" })
+    .waitFor({ timeout: 10_000 });
   const medicationPhotoSyncResponsePromise = resumedPage.waitForResponse((response) =>
     response.url().includes("/api/v1/upload") && response.request().method() === "POST",
   );
