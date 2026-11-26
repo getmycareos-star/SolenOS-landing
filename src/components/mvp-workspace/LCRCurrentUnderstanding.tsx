@@ -301,6 +301,7 @@ type SituationAssessment = {
       epistemic_status: string;
       occurred_at?: string | null;
       recorded_at?: string | null;
+      time_provenance?: string | null;
       evidence_ids: string[];
       priority?: string | null;
       priority_reasons?: string[];
@@ -316,7 +317,7 @@ type SituationAssessment = {
     has_more: boolean;
     notice: string;
   };
-  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; subject_type?: string | null; subject_id?: string | null; field?: string | null; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
+  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; subject_type?: string | null; subject_id?: string | null; field?: string | null; occurred_at?: string | null; recorded_at?: string | null; time_provenance?: string | null; evidence_ids: string[] }>;
   baseline_assessment?: {
     status: string;
     items: Array<{
@@ -327,6 +328,7 @@ type SituationAssessment = {
       epistemic_status: string;
       occurred_at?: string | null;
       recorded_at?: string | null;
+      time_provenance?: string | null;
       evidence_ids: string[];
       baseline_basis?: string;
       interpretation_limit?: string;
@@ -336,7 +338,7 @@ type SituationAssessment = {
     source_of_truth: string;
     limitation: string;
   };
-  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
+  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; time_provenance?: string | null; evidence_ids: string[] }>;
   confidence_assessment: { overall: string; limitations: string[] };
   evolution_since_previous_assessment?: {
     comparison_available: boolean;
@@ -392,6 +394,7 @@ type ChangeAssertionEvidence = {
   assertion_status: string;
   observed_at?: string | null;
   recorded_at: string;
+  time_provenance?: string | null;
   evidence_ids: string[];
 };
 
@@ -409,6 +412,7 @@ type ChangeObservationEvidence = {
   occurred_at?: string | null;
   reported_at?: string | null;
   recorded_at?: string | null;
+  time_provenance?: string | null;
   observer_label?: string | null;
   observation_method?: string | null;
   source_passage: string;
@@ -423,6 +427,7 @@ type ChangeSourceEvidence = {
   occurred_at?: string | null;
   uploaded_at?: string | null;
   ingested_at?: string | null;
+  time_provenance?: string | null;
   reported_at?: string | null;
   collection_method?: string | null;
   origin_channel?: string | null;
