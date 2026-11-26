@@ -299,7 +299,9 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         let accessRevoked = false;
         let offlineQueueCleared = false;
         try {
-          await clearDurableWriteQueue();
+          await clearDurableWriteQueue(() => {
+            window.alert("SolenOS is waiting for another tab to close before clearing device-only updates. Close other SolenOS tabs and keep this page open; clearing will continue automatically.");
+          });
           offlineQueueCleared = true;
           if (getAnonymousAccessToken()) await revokeAnonymousSession();
           else markAnonymousSessionRevokedLocally();
