@@ -1980,7 +1980,7 @@ await record("Daily Care saves and retrieves original reports without relying on
   const daily = await createBrowserPage(session, "/workspace/daily-care");
   const saveFreeTextUpdate = async (text, afterSaved) => {
     console.log(`Daily Care Scenario 01: opening capture for: ${text}`);
-    const happenedButton = daily.page.getByRole("button", { name: "Describe an update", exact: true });
+    const happenedButton = daily.page.getByRole("button", { name: /^Describe an update/ });
     await happenedButton.waitFor({ state: "visible", timeout: 15_000 });
     await happenedButton.click();
     const originalWords = daily.page.locator("#natural-daily-update-report");
@@ -2213,7 +2213,7 @@ await record("Add an update stays usable without unrelated dashboard reads", asy
   await resilient.page.reload({ waitUntil: "domcontentloaded" });
 
   const originalReport = `Add an update survives secondary service failures ${randomUUID()}`;
-  await resilient.page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await resilient.page.getByRole("button", { name: /^Describe an update/ }).click();
   const reportField = resilient.page.locator("#natural-daily-update-report");
   await reportField.waitFor({ state: "visible", timeout: 15_000 });
   await reportField.fill(originalReport);
@@ -2472,9 +2472,9 @@ await record("Add an update stays usable without unrelated dashboard reads", asy
 
 await record("Daily Care structured capture validates units and medication outcomes", async () => {
   const structured = await createBrowserPage(session, "/workspace/daily-care");
-  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await structured.page.getByRole("button", { name: /^Describe an update/ }).click();
   await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
-  await structured.page.getByRole("button", { name: "Measurement", exact: true }).click();
+  await structured.page.getByRole("button", { name: /^Measurement/ }).click();
   const type = structured.page.locator("#capture-vital-type");
   await type.waitFor({ state: "visible", timeout: 15_000 });
 
@@ -2506,9 +2506,9 @@ await record("Daily Care structured capture validates units and medication outco
   assert.equal(await structured.page.locator("#vital-unit").getAttribute("required"), "");
 
   await structured.page.getByRole("button", { name: "Back to choices", exact: true }).click();
-  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await structured.page.getByRole("button", { name: /^Describe an update/ }).click();
   await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
-  await structured.page.getByRole("button", { name: "Medication", exact: true }).click();
+  await structured.page.getByRole("button", { name: /^Medication/ }).click();
   const medicationStatus = structured.page.locator("#capture-medication-status");
   await medicationStatus.waitFor({ state: "visible", timeout: 15_000 });
   const medicationOptions = await medicationStatus.locator("option").allTextContents();
