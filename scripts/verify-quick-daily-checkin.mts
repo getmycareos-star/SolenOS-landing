@@ -89,6 +89,8 @@ assert.match(offlineQueueNotice, /before\.sending > 0/,
   "an interrupted in-flight submission is included in automatic queue recovery");
 assert.match(offlineQueueNotice, /16_000/,
   "the queue rechecks after an interrupted send lease can expire");
+assert.match(offlineQueueNotice, /window\.addEventListener\("focus", update\)/,
+  "returning to a backgrounded Daily Care tab refreshes and resumes queued updates");
 assert.match(checkIn, /does not confirm medicines were given or measurements were taken/,
   "an overall impression cannot imply medication or measurement completion");
 assert.match(checkIn, /window\.dispatchEvent\(new Event\("careRecordUpdated"\)\)/,
