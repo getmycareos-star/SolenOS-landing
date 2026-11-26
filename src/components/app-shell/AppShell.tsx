@@ -11,6 +11,7 @@ const ShareCareSummaryPanel = dynamic(() => import("@/components/mvp-workspace/s
 import { ensureAnonymousSession, getAnonymousAccessToken, getJSON, markAnonymousSessionRevokedLocally, revokeAnonymousSession } from "@/api/client";
 import { caregiverSafeErrorMessage } from "@/lib/caregiver-language";
 import { ensureClientInteractionSessionId } from "@/lib/care-identity/durable-care-key";
+import { clearDurableWriteQueue } from "@/lib/offline-sync/durable-write-queue";
 import { WorkspaceMoreMenu, type WorkspaceAction } from "@/components/mvp-workspace/WorkspaceMoreMenu";
 
 const CareRecordOverview = dynamic(
@@ -294,10 +295,13 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         return;
       }
       case "delete": {
-        if (!window.confirm("Clear this device? This removes local session and workspace data from this browser. It does not delete care information already saved in SolenOS. Continue?")) return;
+        if (!window.confirm("Clear this device? This removes local session and workspace data, including unsent updates stored only in this browser. Those unsent updates have not reached SolenOS and will be deleted from this device. It does not delete care information already saved in SolenOS. Continue?")) return;
+        let accessRevoked = false;
         try {
           if (getAnonymousAccessToken()) await revokeAnonymousSession();
           else markAnonymousSessionRevokedLocally();
+          accessRevoked = true;
+          await clearDurableWriteQueue();
           const ownedKeys = new Set<string>(LOCAL_WORKSPACE_KEYS);
           for (let index = 0; index < window.localStorage.length; index += 1) {
             const key = window.localStorage.key(index);
@@ -320,8 +324,11 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           } catch {
             // The local deletion boundary remains in place if sessionStorage is unavailable.
           }
-        } catch {
-          window.alert("We couldn't confirm your access to SolenOS, so nothing was cleared. Check your connection and try again.");
+        } catch (cause) {
+          const detail = cause instanceof Error ? cause.message : "The local offline queue could not be cleared.";
+          window.alert(accessRevoked
+            ? `Your SolenOS access was revoked, but some updates saved only on this device could not be removed. They have not been sent. Close other SolenOS tabs and try clearing this device again. ${detail}`
+            : "We couldn't confirm your access to SolenOS, so nothing was cleared. Check your connection and try again.");
           return;
         }
         window.location.assign("/start");
