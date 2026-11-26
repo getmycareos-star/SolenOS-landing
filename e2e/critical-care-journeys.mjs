@@ -2179,7 +2179,7 @@ await record("Daily Care saves and retrieves original reports without relying on
 
 });
 
-await record("Daily Care capture survives secondary read failures", async () => {
+await record("Add an update stays usable without unrelated dashboard reads", async () => {
   const resilient = await createBrowserPage(firstVisitSession, "/workspace/daily-care", { width: 390, height: 844 }, { permissions: ["camera"] });
   const resilientIdentity = auth(firstVisitSession);
   const unavailable = (route) => route.fulfill({
@@ -2352,23 +2352,21 @@ await record("Daily Care capture survives secondary read failures", async () => 
     matchingPersistedEvent && JSON.stringify(matchingPersistedEvent).includes(originalReport),
     `saved report must be retrievable despite secondary read failures; receipt=${JSON.stringify(savePayload)}; returned_count=${Array.isArray(persisted.payload) ? persisted.payload.length : "not-an-array"}; matching_event=${JSON.stringify(matchingPersistedEvent ?? null)}; returned_ids=${JSON.stringify(Array.isArray(persisted.payload) ? persisted.payload.map((event) => ({ id: event.id, event_type: event.event_type, title: event.title })) : persisted.payload)}`
   );
-  assert.ok(resilient.observed.some((item) =>
-    item.status === 503 && [
-      "/api/v1/care-continuity/current-care",
-      "/api/v1/daily-care/intelligence/history",
-      "/api/v1/open-loops",
-      "/api/v1/notifications",
-      "/api/v1/documents/status",
-    ].includes(item.path)
-  ), "the browser journey must confirm that a secondary read actually failed");
+  assert.equal(resilient.observed.filter((item) => [
+    "/api/v1/care-continuity/current-care",
+    "/api/v1/daily-care/intelligence/history",
+    "/api/v1/open-loops",
+    "/api/v1/notifications",
+    "/api/v1/documents/status",
+  ].includes(item.path)).length, 0,
+    "Add an update must not depend on Home, history, Needs attention, Notifications or document-status reads");
 
   // Original photo bytes use the same encrypted, identity-scoped queue.
   const tinyPng = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p0cAAAAASUVORK5CYII=",
     "base64",
   );
-  await resilient.page.getByRole("button", { name: /Share something/i }).click();
-  await resilient.page.getByRole("button", { name: /Add a photo or document/ }).click();
+  await resilient.page.getByRole("button", { name: "Add a photo", exact: true }).click();
   await resilient.page.getByRole("button", { name: "Take a photo", exact: true }).click();
   const snapDialog = resilient.page.getByRole("dialog", { name: "Snap" });
   await snapDialog.waitFor({ timeout: 10_000 });
@@ -2448,9 +2446,6 @@ await record("Daily Care capture survives secondary read failures", async () => 
 
 await record("Daily Care structured capture validates units and medication outcomes", async () => {
   const structured = await createBrowserPage(session, "/workspace/daily-care");
-  await structured.page.getByRole("button", { name: "Share something", exact: true }).click();
-  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
-  await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
   await structured.page.getByRole("button", { name: "Measurement", exact: true }).click();
   const type = structured.page.locator("#capture-vital-type");
   await type.waitFor({ state: "visible", timeout: 15_000 });
@@ -2482,10 +2477,8 @@ await record("Daily Care structured capture validates units and medication outco
   await structured.page.locator("#capture-vital-value").fill("100");
   assert.equal(await structured.page.locator("#vital-unit").getAttribute("required"), "");
 
-  await structured.page.getByRole("button", { name: "Back to capture choices", exact: true }).click();
-  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
-  await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
-  await structured.page.getByRole("button", { name: "Medicine", exact: true }).click();
+  await structured.page.getByRole("button", { name: "Back to choices", exact: true }).click();
+  await structured.page.getByRole("button", { name: "Medication update", exact: true }).click();
   const medicationStatus = structured.page.locator("#capture-medication-status");
   await medicationStatus.waitFor({ state: "visible", timeout: 15_000 });
   const medicationOptions = await medicationStatus.locator("option").allTextContents();
