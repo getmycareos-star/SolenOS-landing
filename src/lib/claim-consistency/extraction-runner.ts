@@ -1,5 +1,5 @@
 import type { ExtractedClaim, ExtractionRunOutput, ConsistencyGateInput } from "./types";
-import { createRunId, createClaimId, createRawInputId } from "./ids";
+import { createRunId, createRawInputId } from "./ids";
 import { verifySourcePointer, enforceSourcePointer, coerceEntityType } from "./source-pointer";
 import { ClaimExtractionOutputSchema } from "./claim-schema";
 import { postJSON } from "@/api/client";
@@ -22,7 +22,7 @@ function parseClaimsFromOutput(
 
   for (const c of validation.data.claims) {
     const rawClaim: ExtractedClaim = {
-      id: createClaimId(),
+      id: c.candidate_id,
       claim_text: c.claim_text,
       entity_type: coerceEntityType(c.entity_type),
       event_type: c.event_type,
