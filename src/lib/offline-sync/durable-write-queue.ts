@@ -70,7 +70,7 @@ function ensureBrowserStorage(): void {
 
 async function openDatabase(): Promise<IDBDatabase> {
   ensureBrowserStorage();
-  if (queueClearing) {
+  if (queueClearing || window.localStorage.getItem("solenos_offline_queue_clearing")) {
     throw new Error("This device's saved updates are being cleared. Reopen Daily Care after cleanup finishes.");
   }
   if (window.localStorage.getItem("solenos_anonymous_session_revoked")) {
@@ -336,6 +336,12 @@ export async function clearDurableWriteQueue(): Promise<void> {
   // already accepted by the server may finish; remaining local copies are
   // deleted below. No queued item can start sending after this boundary.
   queueClearing = true;
+  try {
+    window.localStorage.setItem("solenos_offline_queue_clearing", "1");
+  } catch {
+    queueClearing = false;
+    throw new Error("SolenOS could not pause other tabs, so no device updates were cleared. Close other SolenOS tabs and try again.");
+  }
   await Promise.all([...activeDeliveries].map((delivery) => delivery.catch(() => undefined)));
 
   const existing = databasePromise
@@ -358,6 +364,11 @@ export async function clearDurableWriteQueue(): Promise<void> {
     });
   } catch (error) {
     queueClearing = false;
+    try {
+      window.localStorage.removeItem("solenos_offline_queue_clearing");
+    } catch {
+      // If storage itself is unavailable, fail closed through the in-memory guard.
+    }
     throw error;
   }
 }
