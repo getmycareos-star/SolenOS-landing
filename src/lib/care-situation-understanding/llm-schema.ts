@@ -28,7 +28,7 @@ const LlmCandidateMetadataSchema = z.object({
   care_recipient_id: z.string().min(1),
   event_time: z.string().nullable(),
   event_time_resolution: z.enum(["unresolved", "missing"]),
-  epistemic_status: z.enum(["reported", "inferred", "uncertain", "conflicting", "missing"]),
+  epistemic_status: z.enum(["reported", "observed", "inferred", "uncertain", "conflicting", "missing"]),
   confidence: z.literal("unavailable"),
   review_state: z.literal("pending"),
 });
