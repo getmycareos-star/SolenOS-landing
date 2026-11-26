@@ -59,6 +59,7 @@ type Analysis = {
   document_name: string;
   document_type?: string;
   page_count?: number;
+  page_count_verified?: boolean;
   page_states?: Array<{
     source_page_number: number;
     status: "processed" | "unprocessed" | "retryable" | "retry_exhausted" | "unreadable" | "blocked";
@@ -375,7 +376,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverInformationAreaLabel(analysis.document_type) || caregiverFieldLabel(analysis.document_type) || "Care document"} · {analysis.page_count ?? "?"} {analysis.page_count === 1 ? "page" : "pages"} · {analysis.observations.length} {analysis.observations.length === 1 ? "suggested detail" : "suggested details"}</p>
             <p role="status" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
-              {!documentExtractionIsComplete(analysis)
+              {analysis.page_count_verified === false
+                ? "SolenOS could not verify the number of pages in the original PDF. Review is paused until the saved file can be checked."
+                : !documentExtractionIsComplete(analysis)
                 ? `Some pages have not been fully read · ${analysis.extraction_processed_page_count ?? "?"} of ${analysis.page_count ?? analysis.total_page_count ?? "?"} pages${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && job.status === "processing") ? " · SolenOS is reading the remaining pages in the background" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && job.status === "queued") ? " · SolenOS will continue when background processing starts" : ""}`
                 : analysis.unprocessed_page_numbers?.length
                   ? `SolenOS has read ${analysis.processed_page_count ?? 0} of ${analysis.total_page_count ?? analysis.page_count ?? "?"} pages.${processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && job.status === "processing") ? " It is reading the remaining pages in the background." : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && job.status === "queued") ? " It is waiting to read the remaining pages." : " The remaining pages are ready to read."}`
@@ -386,7 +389,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                   : analysis.intelligence_status === "available" ? "All pages have been read" : processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) ? "SolenOS is reading the document in the background" : "SolenOS has not finished reading this document"}
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read yet: pages ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · waiting to be read: pages ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · ready to try again: pages ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · could not be read because the file is too large: pages ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · could not be read: pages ${analysis.unreadable_page_numbers.join(", ")}` : ""}{analysis.retry_exhausted_page_numbers?.length ? ` · could not be read after retries: pages ${analysis.retry_exhausted_page_numbers.join(", ")}` : ""}
             </p>
-            {!documentExtractionIsComplete(analysis) && <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
+            {analysis.page_count_verified === false
+              ? <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>The original file is still saved, but SolenOS cannot confirm its full page count. No suggested details from this file can be accepted until the original is verified.</p>
+              : !documentExtractionIsComplete(analysis) && <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
             {!!analysis.page_states?.length && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
               <summary style={{ cursor: "pointer", fontSize: "calc(12px * var(--solenos-text-scale, 1))", fontWeight: 650 }}>Page-by-page status</summary>
               <ol aria-label="Document page reading status" style={{ margin: "8px 0 0", paddingLeft: 22, display: "grid", gap: 5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
