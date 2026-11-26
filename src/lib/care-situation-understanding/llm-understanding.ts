@@ -9,13 +9,13 @@ import {
 
 /**
  * Map private Qwen typed output to existing CareRealityExtractionResult types.
- * Assigns unique in-memory IDs and maintains structure compatibility.
+ * Preserves backend-stable candidate IDs and maintains structure compatibility.
  */
 function mapLlmOutputToExtractionResult(
   llm: LlmUnderstandingOutput,
   source: string,
 ): CareRealityExtractionResult {
-  const observations = llm.observations.map((o, i) => ({
+  const observations = llm.observations.map((o) => ({
     id: o.candidate_id,
     layer: "observation" as const,
     description: o.description,
@@ -25,7 +25,7 @@ function mapLlmOutputToExtractionResult(
     raw_fragment: o.raw_fragment,
   }));
 
-  const events = llm.events.map((e, i) => ({
+  const events = llm.events.map((e) => ({
     id: e.candidate_id,
     layer: "event" as const,
     description: e.description,
@@ -35,7 +35,7 @@ function mapLlmOutputToExtractionResult(
     raw_fragment: e.raw_fragment,
   }));
 
-  const decisions = llm.decisions.map((d, i) => ({
+  const decisions = llm.decisions.map((d) => ({
     id: d.candidate_id,
     layer: "decision" as const,
     description: d.description,
@@ -49,7 +49,7 @@ function mapLlmOutputToExtractionResult(
     raw_fragment: d.raw_fragment,
   }));
 
-  const outcomes = llm.outcomes.map((o, i) => ({
+  const outcomes = llm.outcomes.map((o) => ({
     id: o.candidate_id,
     layer: "outcome" as const,
     description: o.description,
@@ -61,7 +61,7 @@ function mapLlmOutputToExtractionResult(
     raw_fragment: o.raw_fragment,
   }));
 
-  const unknowns = llm.unknowns.map((u, i) => ({
+  const unknowns = llm.unknowns.map((u) => ({
     id: u.candidate_id,
     layer: "unknown" as const,
     question: u.question,
@@ -73,14 +73,14 @@ function mapLlmOutputToExtractionResult(
     raw_fragment: u.raw_fragment,
   }));
 
-  const non_care_facts = llm.non_care_facts.map((n, i) => ({
+  const non_care_facts = llm.non_care_facts.map((n) => ({
     id: n.candidate_id,
     layer: n.layer as "contributor_load" | "disagreement_perspective",
     text: n.text,
     raw_fragment: n.raw_fragment,
   }));
 
-  const relationships = llm.possible_links.map((l, i) => ({
+  const relationships = llm.possible_links.map((l) => ({
     id: l.candidate_id,
     from_id: "",
     to_id: "",
