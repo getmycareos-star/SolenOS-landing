@@ -4128,7 +4128,7 @@ await record("Companion retry preserves one turn and recovers after a transient 
   await retryInput.fill(retryText);
   await retryInput.press("Enter");
   await retryCompanion.page.getByText(
-    /Care Assistant is temporarily unavailable|Care Assistant could not respond/,
+    /SolenOS is temporarily unavailable|SolenOS could not respond/,
   ).waitFor({ timeout: 15_000 });
   assert.equal(
     await retryInput.inputValue(),
