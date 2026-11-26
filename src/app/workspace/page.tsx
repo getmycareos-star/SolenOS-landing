@@ -53,7 +53,7 @@ function WorkspaceHomeInner() {
 
 export default function WorkspaceHomePage() {
   return (
-    <Suspense fallback={<BrandLoading animate message="Opening your Care Record…" />}>
+    <Suspense fallback={<BrandLoading animate message="Opening Home…" />}>
       <WorkspaceHomeInner />
     </Suspense>
   );
