@@ -1129,7 +1129,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
   const documentsBreadcrumbs = await page.getByRole("navigation", { name: "Breadcrumb", exact: true }).innerText();
-  assert.match(documentsBreadcrumbs, /Home[\\s\\S]*Care information[\\s\\S]*Documents/,
+  assert.match(documentsBreadcrumbs, /Home[\s\S]*Care information[\s\S]*Documents/,
     "Documents exposes its Home and Care information context in the breadcrumb trail");
   const careInformationParent = navigation.locator('a[href="/workspace/care-continuity"]');
   assert.equal(await careInformationParent.getAttribute("aria-current"), "page",
@@ -1160,7 +1160,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await moreNavigationLink.click();
   await page.waitForURL("**/workspace/more", { timeout: 15_000 });
   const moreBreadcrumbs = await page.getByRole("navigation", { name: "Breadcrumb", exact: true }).innerText();
-  assert.match(moreBreadcrumbs, /Home[\\s\\S]*More/, "More exposes its Home parent in the breadcrumb trail");
+  assert.match(moreBreadcrumbs, /Home[\s\S]*More/, "More exposes its Home parent in the breadcrumb trail");
   const moreTools = page.getByRole("navigation", { name: "App and account settings", exact: true });
   await moreTools.waitFor({ state: "visible", timeout: 10_000 });
   await moreTools.getByRole("link", { name: "Settings", exact: true }).waitFor({ state: "visible", timeout: 5_000 });
@@ -2529,11 +2529,11 @@ await record("Care history opens the original caregiver report and its source de
     "Care history must show the exact original caregiver wording");
 
   const sourceDetails = await reportCard.locator(".timeline-event-details").innerText();
-  assert.match(sourceDetails, /When it happened\\s+Not provided/,
+  assert.match(sourceDetails, /When it happened\s+Not provided/,
     "a server receipt timestamp must not be presented as the time the event happened");
   assert.match(sourceDetails, /When it was saved/,
     "the history detail must distinguish the saved time");
-  assert.match(sourceDetails, /How the date was described\\s+No event time was provided; SolenOS used the time it received this update/,
+  assert.match(sourceDetails, /How the date was described\s+No event time was provided; SolenOS used the time it received this update/,
     "the history detail must explain why the server timestamp is shown only as the saved time");
   assert.match(sourceDetails, /Who shared it\s+Caregiver/,
     "the history detail must identify the caregiver as the source");
