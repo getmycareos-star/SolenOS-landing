@@ -278,8 +278,23 @@ function parseDescription(description?: string | null): string {
   return caregiverSafeAssistantText(description) || "Saved care information";
 }
 
+function eventTimeWasNotProvided(event: CareEvent): boolean {
+  return event.time_provenance === "server_recorded_at" || event.time_provenance === "entry_time_defaulted";
+}
+
+function eventTimeDisplay(event: CareEvent): string {
+  return eventTimeWasNotProvided(event) ? "Not provided" : formatDateTime(event.occurred_at);
+}
+
+function eventTimeSummary(event: CareEvent): string {
+  if (eventTimeWasNotProvided(event)) {
+    return `Time not provided · Added ${formatDateTime(event.recorded_at)}`;
+  }
+  return formatDateTime(event.occurred_at);
+}
+
 function groupLabel(event: CareEvent): string {
-  return formatDay(event.occurred_at);
+  return formatDay(eventTimeWasNotProvided(event) ? event.recorded_at || event.occurred_at : event.occurred_at);
 }
 
 export default function TimelinePage() {
@@ -610,7 +625,7 @@ export default function TimelinePage() {
         ) : latestEvent ? (
           <>
             <h3 className="timeline-latest-event-title">{caregiverSafeAssistantText(latestEvent.title) || "Care update"}</h3>
-            <p className="timeline-latest-meta">{formatDateTime(latestEvent.occurred_at)} · {eventCategory(latestEvent)}</p>
+            <p className="timeline-latest-meta">{eventTimeSummary(latestEvent)} · {eventCategory(latestEvent)}</p>
             <p className="timeline-latest-description">{parseDescription(latestEvent.description) || "No event description was saved."}</p>
           </>
         ) : (
@@ -699,7 +714,7 @@ export default function TimelinePage() {
                       <button type="button" className="timeline-event-toggle" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)}>
                         <span className="timeline-event-meta">
                           <span className="timeline-event-category"><Clock3 size={13} aria-hidden />{category}</span>
-                          <span className="timeline-event-date">{formatDateTime(event.occurred_at)}</span>
+                          <span className="timeline-event-date">{eventTimeSummary(event)}</span>
                           {event.follow_up_candidate && <span className="timeline-event-flag">May need follow-up</span>}
                           {event.attention_candidate && <span className="timeline-event-flag">May need attention</span>}
                           {event.capture_processing?.review_required && <span className="timeline-event-flag">Review suggested details</span>}
@@ -712,7 +727,7 @@ export default function TimelinePage() {
                         <div id={`timeline-details-${event.id}`} className="timeline-event-details">
                           <h4 className="timeline-event-details-title">More details</h4>
                           <dl className="timeline-event-facts">
-                            <dt>When it happened</dt><dd>{formatDateTime(event.occurred_at)}{event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
+                            <dt>When it happened</dt><dd>{eventTimeDisplay(event)}{!eventTimeWasNotProvided(event) && event.occurred_at_timezone ? ` (${event.occurred_at_timezone})` : ""}</dd>
                             <dt>When it was saved</dt><dd>{formatDateTime(event.recorded_at)}</dd>
                             <dt>What is known</dt><dd>{caregiverStatusLabel(event.status) || caregiverInformationLabel(event.status) || "Not recorded"}</dd>
                             <dt>How the date was described</dt><dd>{caregiverStatusLabel(event.time_provenance) || "Not recorded"}</dd>
