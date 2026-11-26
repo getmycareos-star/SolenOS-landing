@@ -8,6 +8,7 @@ import { RecordState } from "@/components/ui/RecordState";
 
 type AppointmentBrief = {
   person_scope_verified?: boolean;
+  person_id?: string;
   read_only?: boolean;
   next_appointment?: {
     source_id: string;
@@ -69,11 +70,14 @@ export function UpcomingAppointmentSummary() {
     setLoading(true);
     setError(false);
     try {
-      await ensureAnonymousSession();
+      const session = await ensureAnonymousSession();
+      const activePersonId = session.person?.id;
       const result = await getJSON("/appointment-workspaces/preparation-brief?window_days=90") as AppointmentBrief;
       if (
         !result ||
+        !activePersonId ||
         result.person_scope_verified !== true ||
+        result.person_id !== activePersonId ||
         result.read_only !== true ||
         !Array.isArray(result.appointments)
       ) {
