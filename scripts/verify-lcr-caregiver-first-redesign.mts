@@ -226,7 +226,7 @@ console.log("✓ underlying capture and longitudinal continuity components remai
 assert.match(companion, /Ask SolenOS/, "the caregiver-facing assistant uses the approved caregiver-facing destination name");
 assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
 assert.match(navigation, /label: "Ask SolenOS"/, "workspace navigation uses the Ask SolenOS destination name");
-assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
+assert.match(howItWorks, /Ask SolenOS/, "the public how-it-works guide uses the canonical Ask SolenOS name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
 assert.match(publicHome, /Ask SolenOS/, "the public home page uses the canonical Ask SolenOS name");
 assert.doesNotMatch(publicHome, /AI Companion/, "the public home page does not expose internal product terminology");
