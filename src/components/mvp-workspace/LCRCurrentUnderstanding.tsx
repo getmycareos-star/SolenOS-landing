@@ -1412,8 +1412,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   );
   const careConflicts = watchUncertainties.filter((item) =>
     (item.source === "conflicts" || item.source === "reconciliations") &&
-    !isMedicationConflict(item) &&
-    !["resolved", "closed", "reconciled", "withdrawn", "retracted", "superseded", "cancelled", "dismissed"].includes(item.status.trim().toLowerCase())
+    !isMedicationConflict(item)
   );
   const watchPriorityCandidates = assessment?.priorities ?? [];
   const watchMissingInformation = (assessment?.missing_information ?? []).filter(isUnresolvedCareInformation);
