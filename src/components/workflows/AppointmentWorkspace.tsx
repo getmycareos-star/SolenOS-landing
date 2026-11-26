@@ -266,13 +266,6 @@ export default function AppointmentWorkspace() {
   const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [reloadToken, setReloadToken] = useState(0)
-
-  useEffect(() => {
-    const reloadForSessionChange = () => setReloadToken((value) => value + 1)
-    window.addEventListener("personIdChanged", reloadForSessionChange)
-    return () => window.removeEventListener("personIdChanged", reloadForSessionChange)
-  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -411,7 +404,7 @@ export default function AppointmentWorkspace() {
       }
     })()
     return () => { cancelled = true }
-  }, [open, reloadToken])
+  }, [open])
 
   const refreshOutcome = async (recordId: string) => {
     setError('')
