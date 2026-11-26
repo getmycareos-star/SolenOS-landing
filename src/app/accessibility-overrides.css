@@ -195,6 +195,10 @@ a, button, input, select, textarea, label, summary { -webkit-tap-highlight-color
 .solenos-display-panel input[type="radio"] { width:20px; height:20px; flex:0 0 auto; }
 .solenos-display-note { margin:12px 0 0; font-size:.875rem; }
 .solenos-display-panel input[type="radio"] { accent-color:#267c78; }
+:root[data-solenos-theme="dark"] :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline-color: #f4d35e !important;
+  outline-offset: 3px;
+}
 :root[data-solenos-theme="dark"] .solenos-display-panel {
   background:#202a24; color:#ffffff; border-color:#647568;
 }
