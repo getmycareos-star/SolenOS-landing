@@ -74,6 +74,9 @@ assert.match(understanding, /Change review saved \{formatWhen\(change\.created_a
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
 assert.match(home, /searchParams\.getAll\("prompt"\)/, "Companion deep links must inspect repeated prompt parameters");
 assert.match(home, /promptValues\.length === 1/, "ambiguous repeated prompt parameters must not select one value silently");
+assert.match(home, /params\.delete\("prompt"\)/, "malformed or repeated Companion prompt parameters must be removed from the URL");
+assert.match(home, /history\.replaceState\(window\.history\.state/, "cleaning a malformed prompt must preserve the framework navigation state");
+assert.match(home, /const prompt = rawPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "a single Companion prompt must remain bounded before entering the input");
 assert.match(home, /promptValues\[0\]\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Home shell");
 assert.ok(home.indexOf('<LCRCurrentUnderstanding showNextStep viewMode="today" />') < home.indexOf('<section className="today-companion-entry"'), "a Companion deep link must not push the current care picture below the question workspace");
