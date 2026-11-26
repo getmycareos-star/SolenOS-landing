@@ -86,15 +86,27 @@ export default function CareRemindersPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const hasLoadedRef = useRef(false);
+  const requestSequenceRef = useRef(0);
+  const scopeSequenceRef = useRef(0);
 
   const refresh = useCallback(async (knownPersonId?: string) => {
+    const requestSequence = ++requestSequenceRef.current;
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentRequest = () =>
+      requestSequence === requestSequenceRef.current
+      && scopeSequence === scopeSequenceRef.current;
     const session = await ensureAnonymousSession();
     const id = knownPersonId || session.person.id;
+    const caregiverId = session.caregiver?.id;
+    if (!session.person?.id || !caregiverId || id !== session.person.id
+      || session.person.id !== getPersonId() || caregiverId !== getCaregiverId()
+      || !isCurrentRequest()) return;
     setPersonId(id);
     const [data, members] = await Promise.all([
       getJSON(`/reminders/${encodeURIComponent(id)}`),
       getJSON("/caregiver-access/assignable-members").catch(() => []),
     ]);
+    if (!isCurrentRequest() || id !== getPersonId() || caregiverId !== getCaregiverId()) return;
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
     const items = data as CareReminder[];
     setReminders(items);
@@ -108,17 +120,39 @@ export default function CareRemindersPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    void refresh()
-      .catch((reason: unknown) => {
-        if (!active) return;
-        setError("We couldn’t load your reminders. Check your connection and try again.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    const loadCurrentScope = () => {
+      setLoading(true);
+      void refresh()
+        .catch(() => {
+          if (active) setError("We couldn’t load your reminders. Check your connection and try again.");
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+    const refreshForSessionChange = () => {
+      scopeSequenceRef.current += 1;
+      requestSequenceRef.current += 1;
+      hasLoadedRef.current = false;
+      setPersonId("");
+      setReminders([]);
+      setAssignableMembers([]);
+      setAssignedTo("");
+      setSnoozeSupported(false);
+      setSaving(false);
+      setBusyId("");
+      setError("");
+      setNotice("");
+      setLoading(true);
+      loadCurrentScope();
+    };
+    window.addEventListener("personIdChanged", refreshForSessionChange);
+    loadCurrentScope();
     return () => {
       active = false;
+      window.removeEventListener("personIdChanged", refreshForSessionChange);
+      scopeSequenceRef.current += 1;
+      requestSequenceRef.current += 1;
     };
   }, [refresh]);
 
