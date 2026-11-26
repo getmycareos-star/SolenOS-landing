@@ -366,6 +366,29 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   await context.close();
 });
 
+await record("00a Home never presents a failed LCR retrieval as an empty record", async () => {
+  const { context, page, pageErrors } = await createBrowserPage(
+    firstVisitSession,
+    "/workspace",
+    { width: 390, height: 844 },
+  );
+  await page.route("**/api/v1/care-continuity/current-care*", (route) => route.fulfill({
+    status: 503,
+    contentType: "application/json",
+    body: JSON.stringify({ detail: "Temporary current-care retrieval failure for acceptance testing." }),
+  }));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("Your care information isn’t available right now. Please try again.", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  assert.equal(
+    await page.getByText("Your Care Record starts here", { exact: true }).count(),
+    0,
+    "a failed current-care read must never be rendered as a confirmed empty Care Record",
+  );
+  assert.deepEqual(pageErrors, [], `Home retrieval failure must remain recoverable without browser errors: ${JSON.stringify(pageErrors)}`);
+  await context.close();
+});
+
 await record("01 first caregiver session", async () => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
