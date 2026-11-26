@@ -222,7 +222,6 @@ assert.ok(themeOverrides.includes("[data-solenos-error-surface]"));
 
 const settingsPage = fs.readFileSync(path.join(root, "src/app/workspace/settings/page.tsx"), "utf8");
 assert.match(settingsPage, /href="\/workspace\/notifications"/, "Settings must link to the dedicated notification destination");
-const notificationCenter = fs.readFileSync(path.join(root, "src/components/mvp-workspace/NotificationsCenter.tsx"), "utf8");
 assert.match(notifications, /<NotificationsCenter \/>/,
   "Notifications must render its own caregiver-facing inbox");
 assert.match(notificationCenter, /getJSON\("\/notifications\?limit=100&offset=0"\)/,
