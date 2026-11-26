@@ -34,6 +34,13 @@ assert.match(understanding, /No care information to review yet/, "an empty recor
 assert.match(understanding, /href="\/workspace\/daily-care" className="solenos-care-primary-action"/, "empty Home state must offer an initial care update");
 assert.match(understanding, /href="\/workspace\/documents" className="solenos-care-secondary-action"/, "empty Home state must offer document upload");
 assert.match(understanding, /watchMissingInformation.length > 0/, "relevant missing information must be surfaced");
+assert.match(understanding, /gap_reason\?: string \| null/, "the care summary must retain structured information-gap reasons");
+assert.match(understanding, /case "not_provided": return "Not provided"/, "not-provided information must remain distinct from unrecorded information");
+assert.match(understanding, /case "not_documented": return "Not recorded"/, "not-recorded information must have its own caregiver label");
+assert.match(understanding, /case "outdated": return "May be out of date"/, "outdated information must not be collapsed into a generic missing state");
+assert.match(understanding, /case "conflicting": return "Reports do not match"/, "conflicting information must retain its conflict classification");
+assert.match(understanding, /case "inaccessible": return "Source unavailable"/, "inaccessible sources must not be represented as absent information");
+assert.match(understanding, /Information still to check:/, "the caregiver-facing missing-information summary must explain the kind of gap");
 assert.match(understanding, /Reports that do not match:/, "unresolved disagreements must be named explicitly on Home");
 
 assert.match(understanding, /const watchUncertainties = \(assessment\?\.uncertainties_and_conflicts \?\? \[\]\)\.filter\(isUnresolvedCareInformation\)/, "resolved disagreements must not remain in the current uncertainty summary");
