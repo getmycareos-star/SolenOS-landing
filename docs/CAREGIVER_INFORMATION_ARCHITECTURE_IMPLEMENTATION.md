@@ -118,5 +118,8 @@ The following source changes extend the route map above. They are implementation
 - A document-backed history entry links to the exact evidence ID. Documents opens that original file, validates the `returnTo` destination as same-origin Care history, and preserves its search/filter query.
 - Document preview requests are invalidated when the caregiver or care recipient changes. Both the in-flight response and the deep-link lookup are bound to the active identity scope, so a late response cannot display a previous recipient's file.
 - Needs attention preserves the assessment's separate `needs_attention_now` and `important_to_address` categories. If a source appears in both, the immediate-attention classification takes precedence rather than showing duplicate cards.
+- Recipient changes synchronously clear Documents, Care history, Reminders and Needs attention state. Documents invalidates preview, extraction-review, upload, retry, version-link and deletion work; Care history invalidates paged reads and correction polling/writes; Reminders scopes list reads and all mutations; Needs attention scopes history reads and follow-up writes.
+- The Appointments route remounts its entire workspace when the active care record changes. Care handoff inbox and sharing views also remount, so a prior recipient's draft or inbox state is not retained.
+- Legacy `/workspace/record`, `/workspace/continuity` and `/settings` redirects preserve repeated and single query parameters. Browser journey checks cover the preserved return paths.
 - The critical-care browser journey now includes a persisted-document source-preview path and checks that the original download is enabled before treating the preview as ready.
 
