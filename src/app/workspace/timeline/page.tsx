@@ -125,8 +125,7 @@ function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
       : typeof row.event_time === "string" ? row.event_time
         : typeof row.observed_at === "string" ? row.observed_at
           : typeof row.scheduled_at === "string" ? row.scheduled_at
-            : typeof row.uploaded_at === "string" ? row.uploaded_at
-              : typeof row.recorded_at === "string" ? row.recorded_at : null,
+            : typeof row.uploaded_at === "string" ? row.uploaded_at : null,
     recorded_at: typeof row.recorded_at === "string" ? row.recorded_at
       : typeof row.uploaded_at === "string" ? row.uploaded_at
         : typeof row.created_at === "string" ? row.created_at : null,
@@ -289,7 +288,7 @@ function parseDescription(description?: string | null): string {
 }
 
 function eventTimeWasNotProvided(event: CareEvent): boolean {
-  return event.time_provenance === "server_recorded_at" || event.time_provenance === "entry_time_defaulted";
+  return !safeDate(event.occurred_at) || event.time_provenance === "server_recorded_at" || event.time_provenance === "entry_time_defaulted";
 }
 
 function eventTimeDisplay(event: CareEvent): string {
