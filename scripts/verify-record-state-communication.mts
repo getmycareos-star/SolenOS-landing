@@ -70,16 +70,14 @@ assert(documents.includes("() => setQuery(\"\")"), "the no-results action must c
 console.log("PASS: document retrieval failures cannot masquerade as an empty library; empty and search states have working actions.");
 
 const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
-assert(dailyCare.includes("hasContextLoadedRef.current"), "Daily Care must retain the last successful load across refreshes");
-assert(dailyCare.includes("if (!hasContextLoadedRef.current) setContextLoading(true)"), "refreshing existing Daily Care data must not hide it behind an initial loading screen");
-assert(dailyCare.includes("contextError && careItems.filter((item) => !isOpenMatter(item)).length === 0"), "a failed current-care read with no cached records must show an error, not an empty state");
-assert(dailyCare.includes("contextError && careItems.length > 0"), "a failed refresh with cached care information must retain the information and show a warning");
-const historyFailureStart = dailyCare.indexOf('if (!Array.isArray(payload?.records))');
-const historyFailureEnd = dailyCare.indexOf('} else {', historyFailureStart);
-assert(historyFailureStart >= 0 && historyFailureEnd > historyFailureStart, "Daily Care history response must be validated");
-assert(!dailyCare.slice(historyFailureStart, historyFailureEnd).includes("setHistoryItems([])"), "a failed history read must not erase previously loaded care history");
-assert(dailyCare.includes("historyError ? null : (") && dailyCare.includes("No new care updates recorded"), "a failed history read must not appear as no new updates");
-console.log("PASS: Daily Care preserves previously loaded care and history when a refresh fails.");
+assert(dailyCare.includes("<DailyCareOfflineQueueNotice />"), "the capture screen must surface the actual offline queue state");
+assert(dailyCare.includes("<NaturalLanguageDailyUpdate />"), "the primary detailed capture must preserve the caregiver's own words");
+assert(dailyCare.includes("<QuickDailyCheckIn />"), "the quick check-in remains available without becoming a required workflow");
+assert(dailyCare.includes("<DailyCarePhotoCapture />"), "photo capture remains available from Daily Care");
+assert(dailyCare.includes('href="/workspace/timeline"'), "full historical review belongs to the dedicated Care Timeline");
+assert(!dailyCare.includes("/daily-care/intelligence/history"), "Daily Care capture must not duplicate the full history retrieval surface");
+console.log("PASS: Daily Care keeps capture, offline status and historical navigation separate.");
+
 
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
 assert(followUps.includes("if (nextLoops !== null) {") && followUps.includes("setLoops(displayOrdered)"), "a failed follow-up read must not clear previously loaded follow-ups; successful reads retain the caregiver-facing sort order");
