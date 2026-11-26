@@ -142,7 +142,8 @@ assert.match(breadcrumbs, /aria-label="Breadcrumb"/);
 assert.match(breadcrumbs, /aria-current="page"/);
 assert.match(breadcrumbs, /href="\/workspace"/);
 assert.match(workspaceStyles, /:focus-visible/);
-assert.match(workspaceStyles, /\.solenos-skip-link:focus/);
+assert.match(workspaceExperienceStyles, /\.solenos-skip-link:focus/);
+assert.match(workspaceExperienceStyles, /\.solenos-chat-main:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
