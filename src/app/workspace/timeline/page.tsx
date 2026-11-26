@@ -302,6 +302,7 @@ function groupLabel(event: CareEvent): string {
 export default function TimelinePage() {
   const router = useRouter();
   const [events, setEvents] = useState<CareEvent[]>([]);
+  const initialHistoryLoadRef = useRef(false);
   const [personId, setPersonId] = useState<string | null>(null);
   const [changeHistoryOpen, setChangeHistoryOpen] = useState(false);
   const changeHistoryDetailsRef = useRef<HTMLDetailsElement | null>(null);
@@ -424,6 +425,8 @@ export default function TimelinePage() {
   }, [router]);
 
   useEffect(() => {
+    if (initialHistoryLoadRef.current) return;
+    initialHistoryLoadRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const requestedFilter = params.get("filter");
     const initialFilter = FILTERS.some((item) => item.id === requestedFilter)
