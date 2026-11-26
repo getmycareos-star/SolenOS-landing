@@ -45,6 +45,11 @@ assert.match(understanding, /hasCompleteSourceCoverage/, "an empty record must r
 assert.match(understanding, /hasIncompleteProjection/, "incomplete retrieval must not be treated as an empty record");
 assert.match(understanding, /sourceFreshness\?\.reassessment_recommended/, "stale understanding warnings must remain visible on Home");
 assert.match(understanding, /assessment\.coverage\.is_complete/, "Home must disclose incomplete assessment coverage");
+assert.match(understanding, /setChangesLoading\(true\)/, "Today must track the recent-change query while it is running");
+assert.match(understanding, /setAssessmentLoading\(true\)/, "Today must track the care-priority query while it is running");
+assert.match(understanding, /changesLoading \? \(/, "an in-flight change query must not be shown as no recent changes");
+assert.match(understanding, /assessmentLoading \? \(/, "an in-flight assessment must not be shown as no care priorities");
+
 assert.match(understanding, /Happened \\u0024\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
 
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
