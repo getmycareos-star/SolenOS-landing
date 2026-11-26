@@ -5,7 +5,7 @@ const component = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnders
 const legacyRoute = fs.readFileSync("src/app/workspace/record/page.tsx", "utf8");
 const timeline = fs.readFileSync("src/app/workspace/timeline/page.tsx", "utf8");
 
-assert.match(legacyRoute, /redirect\("\/workspace"\)/, "legacy LCR screen must not render as a separate workspace");
+assert.match(legacyRoute, /redirect\(preserveLegacySearchParams\("\/workspace\/care-continuity", await searchParams\)\)/, "legacy LCR entry must preserve query context while redirecting into the shared Care information workspace");
 assert.doesNotMatch(legacyRoute, /<LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/, "legacy route must not expose the old LCR interface");
 assert.match(component, /\/care-continuity\/current-care\?limit_per_source=12/, "LCR data projection remains implemented");
 assert.match(component, /read_only !== true/, "projection contract must identify itself as read-only");
