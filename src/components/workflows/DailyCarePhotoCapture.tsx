@@ -26,7 +26,6 @@ export default function DailyCarePhotoCapture() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
   const [ingestionKey, setIngestionKey] = useState<string | null>(null);
   const [pendingLocal, setPendingLocal] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -76,7 +75,6 @@ export default function DailyCarePhotoCapture() {
           setCaptureTimestamp(null);
           setRotationDegrees(0);
           setFile(null);
-          setSaved(true);
           setSyncNotice("Your photo has reached SolenOS and is saved as evidence. It has not been confirmed as a care-record event.");
         }
         if (result.synced > 0) {
@@ -103,7 +101,6 @@ export default function DailyCarePhotoCapture() {
   function selectPhoto(selected: File | undefined, method: "snap" | "upload") {
     if (!selected) return;
     setError("");
-    setSaved(false);
     setSyncNotice("");
     setUploadStage("idle");
     if (!SUPPORTED_PHOTO_TYPES.has(selected.type.toLowerCase())) {
@@ -145,7 +142,6 @@ export default function DailyCarePhotoCapture() {
 
     setSaving(true);
     setError("");
-    setSaved(false);
     setSyncNotice("");
     setUploadStage("preparing");
     const retryKey = ingestionKey ?? crypto.randomUUID();
@@ -169,7 +165,6 @@ export default function DailyCarePhotoCapture() {
       if (result.status === "saved" && result.evidenceId) {
         pendingQueueId.current = null;
         setPendingLocal(false);
-        setSaved(true);
         setFile(null);
         setIngestionKey(null);
         setCaptureTimestamp(null);
@@ -190,7 +185,6 @@ export default function DailyCarePhotoCapture() {
         } else {
           pendingQueueId.current = null;
           setPendingLocal(false);
-          setSaved(true);
           setFile(null);
           setIngestionKey(null);
           setCaptureTimestamp(null);
@@ -310,7 +304,6 @@ export default function DailyCarePhotoCapture() {
         <p role="status">{pendingCount} queued item{pendingCount === 1 ? "" : "s"} waiting to reach SolenOS.</p>
       )}
       {syncNotice && <p role="status">{syncNotice}</p>}
-      {saved && <p role="status">Photo uploaded and saved as evidence. It has not been confirmed as a care-record event.</p>}
     </section>
   );
 }
