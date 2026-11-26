@@ -27,6 +27,8 @@ assert.ok(component.includes("SolenOS has not booked or confirmed it with a prov
 assert.ok(component.includes('href="/workspace/appointments"'), "caregivers must be able to open the existing appointment workflow");
 assert.ok(component.includes("Prepare for this visit"), "a saved upcoming appointment must offer a contextual preparation action");
 assert.ok(component.includes("Review appointment details"), "unknown or overdue appointment timing must offer review rather than false preparation certainty");
+assert.ok(component.includes("appointmentIsPast"), "a past appointment still marked scheduled must not be described as an upcoming visit");
+assert.ok(component.includes("appointmentIsPast || [\"overdue\", \"date_unknown\"]"), "past or uncertain appointment timing must route to review");
 assert.ok(component.includes("appointment_related_open_loops"), "Home must read persisted appointment-related follow-ups from the existing preparation contract");
 assert.ok(component.includes("appointment_needs"), "Home must surface unresolved appointment questions from the care record");
 assert.ok(component.includes("Appointment follow-ups"), "appointment-related open loops and questions must be visible even without a booked appointment");
