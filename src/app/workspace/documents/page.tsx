@@ -235,18 +235,28 @@ export default function DocumentsPage() {
         loadedDocumentScopeRef.current.personId !== personId
         || loadedDocumentScopeRef.current.caregiverId !== caregiverId
       )) {
-        setDocuments([]);
+        documentSessionEpochRef.current += 1;
         previewRequestSequenceRef.current += 1;
+        versionComparisonRequestSequenceRef.current += 1;
+        requestedEvidenceIdRef.current = null;
+        fileSelectionScopeRef.current = null;
+        setDocuments([]);
         setSelectedId(null);
         setPreviewUrl(null);
+        setPreviewLoading(false);
         setPreviewError(null);
+        setHistoryReturnTo(null);
         setVersionComparison(null);
+        setVersionComparisonError(null);
+        setVersionComparisonLoading(false);
         setVersionPredecessorId("");
         setQuery("");
         setCapturedPages([]);
         setReviewPages([]);
         setIntakeMode(null);
         setUploadMessage(null);
+        setUploadProgress(null);
+        setUploading(false);
         setPendingUploads(0);
         setAttentionUploads(0);
         setCameraOpen(false);
@@ -269,17 +279,28 @@ export default function DocumentsPage() {
           // A confirmed session with denied access is not a transient network
           // failure. Do not leave private document names, extracted text, or
           // previews visible after the backend rejects this identity.
+          documentSessionEpochRef.current += 1;
+          previewRequestSequenceRef.current += 1;
+          versionComparisonRequestSequenceRef.current += 1;
+          requestedEvidenceIdRef.current = null;
+          fileSelectionScopeRef.current = null;
           setDocuments([]);
           setSelectedId(null);
           setPreviewUrl(null);
+          setPreviewLoading(false);
           setPreviewError(null);
+          setHistoryReturnTo(null);
           setVersionComparison(null);
+          setVersionComparisonError(null);
+          setVersionComparisonLoading(false);
           setVersionPredecessorId("");
           setQuery("");
           setCapturedPages([]);
           setReviewPages([]);
           setIntakeMode(null);
           setUploadMessage(null);
+          setUploadProgress(null);
+          setUploading(false);
           setPendingUploads(0);
           setAttentionUploads(0);
           setCameraOpen(false);
