@@ -151,6 +151,14 @@ const sharedEvidenceCapture = fs.readFileSync(
   `${root}/src/components/mvp-workspace/capture/extract-attached.ts`,
   "utf8",
 );
+const snapCameraCapture = fs.readFileSync(
+  `${root}/src/components/mvp-workspace/capture/SnapCameraCapture.tsx`,
+  "utf8",
+);
+assert.match(snapCameraCapture, /Try camera again/,
+  "camera permission and device errors expose an explicit retry action");
+assert.match(snapCameraCapture, /\[open, stop, cameraFacingMode, retryCount\]/,
+  "retrying the camera actually restarts the camera acquisition effect");
 assert.match(photoCapture, /SnapCameraCapture/,
   "new photos use the existing live-camera component");
 assert.match(photoCapture, /extractAttachedDocument\(/,
