@@ -83,6 +83,7 @@ type CurrentCareItem = {
   occurred_at?: string | null;
   reported_at?: string | null;
   recorded_at?: string | null;
+  time_provenance?: string | null;
   evidence_ids: string[];
   evidence_link_validation?: string;
   source_span_start?: number | null;
@@ -138,6 +139,7 @@ type CareAttentionEvidenceRef = {
   title: string;
   occurred_at?: string | null;
   recorded_at?: string | null;
+  time_provenance?: string | null;
   evidence_ids: string[];
 };
 
@@ -152,6 +154,7 @@ type CareAttentionDecision = {
   evidence_ids?: string[];
   occurred_at?: string | null;
   recorded_at?: string | null;
+  time_provenance?: string | null;
   due_at?: string | null;
   review_at?: string | null;
   evidence_status?: string;
@@ -233,7 +236,7 @@ type SituationAssessment = {
     }>;
     policy: string;
   };
-  priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; evidence_ids: string[] }>;
+  priorities: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; time_provenance?: string | null; evidence_ids: string[] }>;
   situation_trajectory?: {
     entries: Array<{
       source: string;
@@ -634,6 +637,11 @@ function formatWhen(value?: string | null): string {
   return Number.isNaN(date.getTime())
     ? "Time not recorded"
     : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function eventTimeLabel(value?: string | null, provenance?: string | null): string {
+  if (provenance === "server_recorded_at" || provenance === "entry_time_defaulted") return "Not provided";
+  return formatWhen(value);
 }
 
 const CAREGIVER_LABELS: Record<string, string> = {
@@ -1724,7 +1732,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
                     <small>
                       {caregiverLabel(item.epistemic_status)} · Shared by {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "you" : "another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"}
-                      {item.occurred_at ? ` · Happened ${formatWhen(item.occurred_at)}` : ""}
+                      {item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted" ? " · Event time not provided" : item.occurred_at ? ` · Happened ${formatWhen(item.occurred_at)}` : ""}
                       {item.reported_at ? ` · Reported ${formatWhen(item.reported_at)}` : ""}
                       {item.recorded_at ? ` · Saved ${formatWhen(item.recorded_at)}` : ""}
                     </small>
@@ -2132,7 +2140,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                           <summary>More about this item</summary>
                           <p>Why it appears: {(item.priority_reasons ?? []).map(caregiverSafeGeneratedText).filter(Boolean).join("; ") || "The saved record marks this item for attention, but no reason was provided."}</p>
                           <p>Status: {caregiverLabel(item.recorded_status)} · What we know: {caregiverLabel(item.epistemic_status)} · Where it came from: {historySourceLabel(item.source)}</p>
-                          <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                          <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                           {item.verification_rule && <small>What shows this was done: {caregiverSafeGeneratedText(item.verification_rule) || "No further details are available."}</small>}
                           {item.outcome_status && <small>Outcome: {caregiverStatusLabel(item.outcome_status) || "Not available"}</small>}
                           {item.evidence_ids.length > 0
@@ -2289,7 +2297,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       {item.priority_reasons && item.priority_reasons.length > 0
                         ? <small>Why this was marked for attention: {item.priority_reasons.map(caregiverSafeGeneratedText).filter(Boolean).join("; ") || "No readable reason was recorded."}</small>
                         : <small>No reason was recorded. Review this again if the care information changes.</small>}
-                      <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                      <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                       <small>Where it came from: {historySourceLabel(item.source)}</small>
                       <small>{item.evidence_ids.length > 0 ? "Related to " + item.evidence_ids.length + " saved care details" : "No related note or document is available"}</small>
                     </li>
@@ -2315,7 +2323,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       <strong>Usual or starting point · {caregiverSafeGeneratedText(item.title) || "Care detail"}</strong>
                       <p>This was marked as a usual or starting point for this person. It is not a comparison with other people.</p>
                       <p className="lcr-entry-status">Where it came from: {historySourceLabel(item.source)} · Status: {caregiverLabel(item.status)} · What we know: {caregiverLabel(item.epistemic_status)}</p>
-                      <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                      <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                       <small>{item.evidence_ids.length > 0 ? "Related to " + item.evidence_ids.length + " saved care details" : "No related note or document is available"}</small>
                       {item.interpretation_limit && <small>{caregiverSafeGeneratedText(item.interpretation_limit) || "The available information may not tell the whole story."}</small>}
                     </li>
@@ -2330,7 +2338,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                         <p>This item was marked for follow-up. That does not mean it needs attention right away.</p>
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · What we know: {caregiverLabel(item.epistemic_status)} · Where it came from: {historySourceLabel(item.source)}</p>
                         {source?.description && <p>{displayDescription(source.description)}</p>}
-                        <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                        <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                         <small>{item.evidence_ids.length > 0 ? "Related to " + item.evidence_ids.length + " saved care details" : "No related note or document is available"}</small>
                         <small>Where it came from: {historySourceLabel(item.source)}</small>
                       </li>
@@ -2344,7 +2352,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       {item.description && <p>{displayDescription(item.description)}</p>}
                       {item.owner && <small>Responsible person: {caregiverSafeAssistantText(item.owner) || "Not recorded"}</small>}
                       {item.due_at && <small>Due date: {formatWhen(item.due_at)}</small>}
-                      <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                      <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                       <small>{item.evidence_ids.length > 0 ? "Related to " + item.evidence_ids.length + " saved care details" : "No related note or document is available"}</small>
                       <small>Where it came from: {historySourceLabel(item.source)}</small>
                     </li>
@@ -2354,7 +2362,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       <strong>Information still missing · {caregiverSafeGeneratedText(item.title) || "Care detail to check"}</strong>
                       <p>This information is still missing. That alone does not tell us how urgent it is.</p>
                       <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · What we know: {caregiverLabel(item.epistemic_status)} · Where it came from: {historySourceLabel(item.source)}</p>
-                      <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                      <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                       <small>{item.evidence_ids.length > 0 ? "Related to " + item.evidence_ids.length + " saved care details" : "No related note or document is available"}</small>
                       <small>Where it came from: {historySourceLabel(item.source)}</small>
                     </li>
@@ -2371,7 +2379,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                         <p className="lcr-entry-status">Status: {caregiverLabel(item.status)} · What we know: {caregiverLabel(item.epistemic_status)} · Where it came from: {historySourceLabel(item.source)}</p>
                         {source?.description && <p>{displayDescription(source.description)}</p>}
                         {source?.source_passage && <details><summary>Read the original note</summary><blockquote>{caregiverReadableCaptureText(source.source_passage) || "The original note could not be displayed."}</blockquote></details>}
-                        <small>When it happened: {formatWhen(item.occurred_at)} · When it was saved: {formatWhen(item.recorded_at)}</small>
+                        <small>When it happened: {eventTimeLabel(item.occurred_at, item.time_provenance)} · When it was saved: {formatWhen(item.recorded_at)}</small>
                         <small>{item.evidence_ids.length > 0 ? "Related to " + item.evidence_ids.length + " saved care details" : "No related note or document is available"}</small>
                         <small>Where it came from: {historySourceLabel(item.source)}</small>
                       </li>
