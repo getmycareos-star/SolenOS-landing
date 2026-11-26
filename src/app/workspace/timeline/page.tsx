@@ -69,7 +69,7 @@ const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "observations", label: "What caregivers noticed" },
   { id: "decisions", label: "Decisions" },
   { id: "documents", label: "Documents" },
-  { id: "open", label: "Follow-ups" },
+  { id: "open", label: "Needs attention" },
 ];
 
 function mapHistoryRecord(value: unknown, personId: string): CareEvent | null {
