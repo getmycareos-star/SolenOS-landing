@@ -13,6 +13,8 @@ assert.match(completeness, /typeof processedPageCount === "number"[\s\S]*?proces
 assert.doesNotMatch(completeness, /totalPageCount === undefined\s*\|\|/, "missing page metadata must fail closed instead of bypassing completeness checks");
 assert.match(review, /page_count_verified\?: boolean/, "the review UI must receive the backend's source-page verification state");
 assert.match(review, /analysis\.page_count_verified === false[\s\S]*?could not verify the number of pages in the original PDF/, "unverified PDF page totals must be explained instead of shown as complete");
+assert.match(review, /source_analysis_id\?: string/, "review history must identify the extraction pass that recorded each decision");
+assert.match(review, /Earlier reading of this document[\s\S]*?Page \{sourcePage\}/, "history from earlier extraction passes must remain visible with its source page");
 assert.match(review, /sourcePageUnresolved[\s\S]*?candidateNeedsRewrite \|\| sourcePageUnresolved/, "suggested details without a verified source page must not be accepted");
 assert.match(review, /sourcePageUnresolved && pending[\s\S]*?cannot be added or corrected/, "the caregiver must be told why an untraceable suggestion cannot be added");
 assert.match(snapCamera, /cameraFacingMode[\s\S]*?facingMode: \{ ideal: cameraFacingMode \}[\s\S]*?Switch to \{cameraFacingMode === "environment" \? "front" : "back"\} camera/, "Snap must let caregivers switch front and rear cameras");
