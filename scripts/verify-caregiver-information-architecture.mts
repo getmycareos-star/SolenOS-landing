@@ -185,7 +185,7 @@ assert.ok(history.includes('addEventListener("personIdChanged", clearPreviousCar
 assert.ok(!history.includes(': typeof row.recorded_at === "string" ? row.recorded_at : null,'), "the timeline mapping keeps event time separate from record time");
 
 assert.ok(history.includes("updateHistoryUrl") && history.includes('params.get("filter")') && history.includes('params.get("q")'), "Care history preserves its search and filters when a caregiver opens a source and returns");
-assert.ok(history.includes("Open original document"), "document-backed history entries expose a direct source link");
+assert.ok(history.includes("Open original file"), "document-backed history entries expose a direct source link");
 assert.ok(history.includes('event.source_type === "evidence"') && history.includes("encodeURIComponent(event.id)"), "document drill-down uses the exact evidence event identity rather than an unrelated evidence list entry");
 assert.ok(history.includes("HistoryDrawer") && history.includes("Browse all saved records"), "Care history retains the full source-aware history explorer as a secondary view");
 assert.ok(documents.includes('get("evidenceId")') && documents.includes("openOriginal(matchingDocument)"), "Documents opens the exact source selected from Care history");
