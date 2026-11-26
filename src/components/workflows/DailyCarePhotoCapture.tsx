@@ -259,7 +259,13 @@ export default function DailyCarePhotoCapture() {
             id="daily-care-photo-library"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
-            onChange={(event) => selectPhoto(event.target.files?.[0], "upload")}
+            onChange={(event) => {
+              const selected = event.currentTarget.files?.[0];
+              // Reset the native picker after reading the File so choosing the
+              // same image again still emits change after a failed or completed upload.
+              event.currentTarget.value = "";
+              selectPhoto(selected, "upload");
+            }}
             disabled={saving || pendingLocal}
           />
         </div>
