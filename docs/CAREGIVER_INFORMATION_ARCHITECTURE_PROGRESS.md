@@ -35,12 +35,12 @@ This ledger is deliberately conservative. A source change, static assertion or q
 | Phase 8 | Consistent contextual breadcrumbs | Implemented, not yet verified | Home → Care information → child route and Home → More → Settings trails added |
 | Phase 8 | Preserve relevant search/filter context across source review | Implemented, not yet verified | Care history query/filter URL state and source-document deep link added; initial history load is guarded against duplicate requests; browser history verification remains |
 | Phase 9 | Consistent page headers and page structure | In progress | Navigation, breadcrumb and mobile shell are unified; specialised page header patterns still need a full consistency pass |
-| Phase 9 | WCAG 2.2 AA accessibility | In progress | Landmark nesting fixed in affected workspace routes; keyboard, screen-reader, contrast and zoom verification remain |
+| Phase 9 | WCAG 2.2 AA accessibility | In progress | Landmark nesting and a keyboard skip link with a focusable main target are implemented; keyboard, screen-reader, contrast and zoom verification remain |
 | Phase 10 | Responsive desktop/tablet/mobile workflows | Implemented, not yet verified | Mobile bottom navigation, safe-area handling and first-visit focus behaviour added; execute device-width browser journeys |
 | Phase 11 | Preserve authenticated caregiver and care-recipient context | Implemented, not yet verified | Workspace provider now clears and refreshes its authorized projection on identity-change events; test shared-record and mid-session switch flows |
 | Phase 11 | Preserve LCR authority, provenance and approval boundaries | In progress | No parallel store or silent-write change introduced; end-to-end contribution/document/Companion data-flow verification remains |
 | Phase 12 | Route, component and integration regression suite | In progress | New route/IA contract is registered in `npm test`; full test run is pending |
-| Phase 12 | Critical browser journeys and responsive verification | In progress | E2E assertions updated for Home, Notifications and Reminders; actual E2E run is pending |
+| Phase 12 | Critical browser journeys and responsive verification | In progress | E2E assertions cover Home, Ask SolenOS, Care information, More ownership, breadcrumbs, source-return state, skip navigation, Notifications and Reminders; actual E2E run is pending |
 | Phase 12 | Real caregiver comprehension/usability validation | Not started | Requires 8–12 US family caregivers; no participant evidence exists yet |
 
 ## Current verification state
