@@ -2465,39 +2465,46 @@ await record("Daily Care structured capture validates units and medication outco
   await structured.page.getByRole("img", { name: "Medication preview" }).waitFor({ timeout: 10_000 });
   await structured.context.setOffline(true);
   await structured.page.getByRole("button", { name: "Add medicine with photo", exact: true }).click();
-  await structured.page.getByRole("alert")
-    .filter({ hasText: "medicine photo is saved on this device" })
+  await structured.page.getByRole("status")
+    .filter({ hasText: "Medicine added to this draft. Its photo is saved on this device" })
     .waitFor({ timeout: 10_000 });
-  const medicationPhotoSyncResponsePromise = structured.page.waitForResponse((response) =>
+  await structured.page.getByRole("button", { name: "Save to care record", exact: true }).click();
+  await structured.page.getByRole("status")
+    .filter({ hasText: "This update is encrypted and saved on this device" })
+    .waitFor({ timeout: 15_000 });
+
+  // Closing the page must not discard either the photo upload or the dependent
+  // medication event. Reopen the same browser context and let the queue resume.
+  await structured.page.close();
+  const resumedPage = await structured.context.newPage();
+  await resumedPage.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await resumedPage.getByRole("status")
+    .filter({ hasText: "waiting to reach SolenOS" })
+    .waitFor({ timeout: 15_000 });
+  const medicationPhotoSyncResponsePromise = resumedPage.waitForResponse((response) =>
     response.url().includes("/api/v1/upload") && response.request().method() === "POST",
   );
+  const medicationEventSyncResponsePromise = resumedPage.waitForResponse((response) =>
+    response.url().includes("/api/v1/daily/log") && response.request().method() === "POST",
+  );
   await structured.context.setOffline(false);
-  const medicationPhotoSyncResponse = await medicationPhotoSyncResponsePromise;
+  const [medicationPhotoSyncResponse, medicationEventSyncResponse] = await Promise.all([
+    medicationPhotoSyncResponsePromise,
+    medicationEventSyncResponsePromise,
+  ]);
   const medicationPhotoSyncPayload = await medicationPhotoSyncResponse.json();
+  const medicationEventSyncPayload = await medicationEventSyncResponse.json();
   assert.equal(medicationPhotoSyncResponse.status(), 201, JSON.stringify(medicationPhotoSyncPayload));
   assert.equal(medicationPhotoSyncPayload.persisted, true, JSON.stringify(medicationPhotoSyncPayload));
+  assert.equal(medicationEventSyncResponse.status(), 200, JSON.stringify(medicationEventSyncPayload));
+  assert.ok(medicationEventSyncPayload.success, JSON.stringify(medicationEventSyncPayload));
   const medicationPhotoEvidenceId = medicationPhotoSyncPayload.evidence_id;
-  await structured.page.getByRole("status")
+  assert.ok(medicationEventSyncPayload.evidence_ids.includes(medicationPhotoEvidenceId),
+    "the dependent medication event must be sent only after its photo upload and retain the evidence link");
+  await resumedPage.getByRole("status")
     .filter({ hasText: "A queued item has reached SolenOS" })
     .waitFor({ timeout: 20_000 });
 
-  const medicationPhotoReplayPromise = structured.page.waitForResponse((response) =>
-    response.url().includes("/api/v1/upload") && response.request().method() === "POST",
-  );
-  await structured.page.getByRole("button", { name: "Add medicine with photo", exact: true }).click();
-  const medicationPhotoReplay = await medicationPhotoReplayPromise;
-  const medicationPhotoReplayPayload = await medicationPhotoReplay.json();
-  assert.equal(medicationPhotoReplay.status(), 201, JSON.stringify(medicationPhotoReplayPayload));
-  assert.equal(medicationPhotoReplayPayload.evidence_id, medicationPhotoEvidenceId,
-    "retrying the medicine photo after offline synchronization must reuse the original evidence ID");
-  await structured.page.getByRole("status")
-    .filter({ hasText: "Added to this daily-care draft" })
-    .waitFor({ timeout: 20_000 });
-
-  await structured.page.getByRole("button", { name: "Save to care record", exact: true }).click();
-  await structured.page.getByRole("status")
-    .filter({ hasText: "Related notes or documents: linked" })
-    .waitFor({ timeout: 30_000 });
   const structuredEvents = await request(
     `/api/v1/events/${encodeURIComponent(identity.personId)}`,
     { token: identity.token },
@@ -2508,9 +2515,9 @@ await record("Daily Care structured capture validates units and medication outco
     try { detail = JSON.parse(event.description || "{}"); } catch { return false; }
     return detail.medications?.some((item) => item.medication_name === "E2E medication photo");
   });
-  assert.ok(linkedMedicationEvent, "the medication entry must be saved as a Daily Care event");
+  assert.ok(linkedMedicationEvent, "the medication entry must be saved as a Daily Care event after reconnect");
   assert.ok(linkedMedicationEvent.evidence_ids.includes(medicationPhotoEvidenceId),
-    "the Daily Care event must retain the original medicine photo evidence link");
+    "the saved Daily Care event must retain the original medicine photo evidence link");
   await structured.context.close();
 });
 
