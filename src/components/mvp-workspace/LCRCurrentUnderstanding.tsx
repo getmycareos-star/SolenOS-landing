@@ -1837,7 +1837,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           )}
           {watchMissingInformation.length > 0 && (
             <p className="lcr-entry-status">
-              <strong>Information not yet recorded:</strong> {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "A relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail is" : "details are"} missing` : " is missing"} from the saved record. This does not mean the information is absent.
+              <strong>Information not yet recorded:</strong> The saved record does not include {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "a relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail" : "details"}` : ""}. This does not mean the information is absent.
             </p>
           )}
           {careConflicts.length > 0 && (
