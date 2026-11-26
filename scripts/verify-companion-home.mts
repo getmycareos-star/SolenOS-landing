@@ -167,7 +167,7 @@ assert.match(shellStyles, /\.workspace-more-menu-trigger \{[^}]*touch-action: ma
 assert.match(shell, /finally \{\s*setInstallPrompt\(null\)/);
 assert.doesNotMatch(moreMenu, /Daily Care|Documents|Care handoffs|Appointments|Settings/);
 assert.doesNotMatch(shell, /MoreVertical|solenos-main-menu/);
-assert.match(record, /redirect\\("\\/workspace\\/care-continuity"\\)/);
+assert.match(record, /redirect\("\/workspace\/care-continuity"\)/);
 assert.doesNotMatch(record, /LCRCurrentUnderstanding|Record timeline|CognitiveWorkspace/);
 assert.doesNotMatch(record, /lcr-support-section|AI Companion/);
 assert.ok(lcrHome.includes('href="/workspace/daily-care"'), "Daily Care is directly reachable from the Care Record");
