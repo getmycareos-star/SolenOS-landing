@@ -40,6 +40,41 @@ The legacy `/settings` route redirects to `/workspace/settings`.
 
 Five route handlers were present: `/api/analyze`, `/api/extract`, `/api/share-intake`, `/api/situation`, and `/share-target`. These are not caregiver navigation destinations.
 
+## Route-to-API and state map
+
+The following is a source-inspected dependency map, not proof that each endpoint succeeds in a running environment. All workspace pages are rendered inside the shared workspace layout and session gate. The API client supplies the bearer-scoped caregiver session; the backend remains responsible for authorizing the caregiver against the active care recipient and any shared-record grant.
+
+| Route owner | Existing data/API dependencies observed in source | State and integrity responsibilities |
+|---|---|---|
+| Home | Shared workspace projection; `LCRCurrentUnderstanding` reads current-care facts, situation understanding, change summaries/patterns and registered actions; `UpcomingAppointmentSummary` reads the appointment preparation brief | Show the compact current-care view; distinguish unavailable data from empty data; next actions must be derived from returned state |
+| Add an update | Existing capture components: assistant jobs, medication review, document intelligence, capture-analysis review and durable offline write queue | Keep specialised validation; preserve original caregiver text; distinguish saved source from accepted care information; expose retry/review state |
+| Care information | Shared workspace projection and the full `LCRCurrentUnderstanding` projection; current-care facts, situation understanding, changes, patterns and registered actions | Current picture only; preserve source, status and uncertainty; do not duplicate the historical feed |
+| Documents | `GET /evidence/{person_id}`, `GET /upload/{evidence_id}`, version comparison, upload/version creation and document deletion; durable upload queue | Preserve original files; show retrieval/upload/processing/review failures; extracted content remains a proposal until the existing review and approval path accepts it |
+| Care history | `GET /daily-care/intelligence/history`, `GET /corrections/{person_id}`, `POST /corrections` | Preserve event time separately from recorded time; retain corrections and source references; search/filter state is encoded in the URL |
+| Appointments | Appointment workspace and appointment APIs: preparation brief, workspace list/create/update, upcoming workspace reconciliation, appointment lifecycle and outcome proposals | Preserve partial-save and loading/error feedback; distinguish preparation from completed outcomes |
+| Reminders | `/reminders/{person_id}`, assignable caregiver members, create, assignment, complete, snooze and cancel endpoints | Keep reminder lifecycle separate from unresolved care matters and notification read state; preserve assignment and lifecycle history |
+| Needs attention | `/open-loops`, `/care-continuity/situation-understanding`, reassessment, response, outcome and action endpoints | Preserve unresolved/resolved/cancelled state; partial assessment failures must not erase saved matters; no AI-generated urgency without evidence |
+| Care handoffs | Consent, recipient directory, handoff inbox/outbox, handoff drafts, preparation and handoff create/read endpoints; responsibility and primary-caregiver transfer endpoints | Review what will be shared; respect consent and access grants; accept/decline responsibility transfers explicitly; no silent LCR writes |
+| Ask SolenOS | Assistant availability, saved conversations, conversation messages and proposed care-update endpoints | Retrieve only authorised context; keep conversation history distinct from the Care Record; preserve unsent input on failure; require explicit review/approval before care updates |
+| Notifications | Notification feed, unread count, read state, notification preferences and push-subscription endpoints | Read/dismiss changes notification state only; must not resolve a Needs attention matter |
+| More | No care-data endpoint; renders application-management destinations | Must not become a second care browser or host core care workflows |
+| Settings | Care profile, caregiver preferences, account/recovery, privacy requests, push subscription and caregiver access endpoints | Preserve account identity, privacy and caregiver/care-recipient access boundaries |
+| Community | Feature-flag check and redirect | Remains disabled and fails closed |
+| Legacy record/continuity | Server redirects only | Redirect to Care information without changing the bearer-scoped active care-recipient context |
+| Legacy settings | Server redirect only | Redirect to current Settings destination |
+
+### Permission verification boundary
+
+The shared workspace gate prevents an uninitialised workspace from rendering as ready, and the workspace provider clears the previous projection when the active caregiver or care recipient changes. This is a presentation and session-continuity safeguard, not authorization. Each API must independently enforce bearer validity, caregiver identity, person scope, role/access grant and operation-specific permission. The current source inventory does not prove every role/endpoint combination. Direct URL access, shared-record roles, document-only access, mid-session recipient switching and mutation permissions remain explicit browser/integration verification items.
+
+### Page state contract
+
+- **Loading:** identify the part of the workspace being opened; do not show stale prior-recipient data as current.
+- **Empty:** only show an empty state after a successful, complete read. An unavailable or partial response is not an empty record.
+- **Error:** explain what could not be confirmed and offer a relevant retry or safe return path.
+- **Populated:** preserve care-recipient identity, source provenance, status and time semantics.
+- **Mutation feedback:** say what the server confirmed. Do not display a successful state for a queued, unconfirmed or failed operation.
+
 ## Navigation ownership
 
 - Primary destinations: Home, Add an update, Care information, Ask SolenOS.
