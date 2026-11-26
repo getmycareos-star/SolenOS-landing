@@ -62,5 +62,9 @@ assert.match(component, /contextualNextDecision\.priority_basis/, "the next step
 assert.match(component, /contextualNextDecision\.records\?\.length/, "the next step must expose linked care-record support when available");
 assert.match(component, /contextualNextDecision\.due_at/, "a recorded due date must be visible without inventing one");
 assert.match(component, /solenos-care-next-step__detail/, "the next-step evidence detail must have a distinct caregiver-facing presentation");
+assert.match(component, /contextualNextRecordHref/, "the next step must resolve a related source only when it exists in the current care projection");
+assert.match(component, /Open the related care information/, "the caregiver must be able to open the saved care record behind the next step");
+assert.match(component, /item\.source_collection === reference\.source && item\.id === reference\.record_id/, "next-step source links must match the exact source and record identifier");
+assert.match(component, /lcr-care-item-\$\{encodeURIComponent\(contextualNextRecord\.source\)\}/, "the source link must target the exact complete-record evidence anchor");
 
 console.log("Attention summary classification and evidence-display contract checks passed.");
