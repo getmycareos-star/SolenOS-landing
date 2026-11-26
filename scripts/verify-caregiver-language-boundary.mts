@@ -632,7 +632,7 @@ assert.doesNotMatch(lcr, /Your Living Care Record|Progress:|Shared through:|Revi
   "the Care Record must not expose internal evidence, baseline or review terminology");
 assert.match(lcr, /Your Care Record/);
 assert.doesNotMatch(companion, /Source review:|No source review has been recorded|latest source reviews/i,
-  "Care Assistant explanations must refer to notes and documents, not source-review terminology");
+  "Ask SolenOS explanations must refer to notes and documents, not source-review terminology");
 assert.doesNotMatch(documentReview, /Extraction status|Contains negative wording|Tentative wording|Conditional wording|ORIGINAL WORDS IN THE DOCUMENT/i,
   "document review must use ordinary language");
 assert.doesNotMatch(sourceReview, /Evidence records could not be loaded|Saved evidence reviews could not be loaded/i,
