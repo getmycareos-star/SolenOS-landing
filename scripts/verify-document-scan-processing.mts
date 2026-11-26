@@ -42,6 +42,8 @@ assert(!source.includes("createMultiPagePdf(") && !source.includes("Combine scan
 assert.match(source, /scan_rotation_degrees: String\(page\.rotation\)/, "per-page rotation must accompany the immutable original for server-side processing");
 assert.match(source, /kind: "No longer listed"/, "a missing detail in a newer document must not be labelled as a confirmed removal");
 assert.match(source, /duplicateOfEvidenceId: asString\(meta\.duplicate_of_evidence_id\)/, "exact duplicate identity must be read from persisted upload metadata");
+assert.match(review, /possible_text_duplicate_of_evidence_id\?: string/, "document review must receive matching-text suggestions for different file hashes");
+assert.match(review, /These are different files[\s\S]*?Both originals are kept/, "matching-text suggestions must preserve both originals and avoid automatic merging");
 assert.match(source, /does not add new information/, "exact duplicate uploads must be explained in plain caregiver language");
 assert.match(source, /Possible newer or corrected copy of/, "possible document versions must be surfaced before caregivers compare or link them");
 assert.match(source, /error\.status === 409[\s\S]*?source links before deleting it/, "blocked document deletion must explain the actual source dependency instead of showing a generic retry message");
