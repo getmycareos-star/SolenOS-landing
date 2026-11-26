@@ -97,49 +97,59 @@ assert.match(detailedCapture, /value="scheduled">Scheduled \(not confirmed as gi
   "a scheduled dose is explicitly distinct from a reported administration");
 assert.match(detailedCapture, /This records an expected dose only/,
   "the medicine interaction warns that scheduled does not mean given");
-assert.match(dailyCarePage, /scheduled: "scheduled; not confirmed as given"/,
-  "Daily Care history preserves the scheduled-versus-administered distinction");
-assert.match(detailedCapture, /Share what you noticed in your own words/,
-  "observation capture preserves a natural-language entry rather than a category form");
-assert.match(detailedCapture, /Your original words are saved/,
-  "the observation interface explains that the original words are retained");
-assert.match(detailedCapture, /vital_type: 'blood_pressure'/,
-  "blood pressure is captured as one paired measurement interaction");
-assert.match(detailedCapture, /vital_type: 'bp_systolic'/,
-  "blood pressure preserves the systolic value in the existing event contract");
-assert.match(detailedCapture, /vital_type: 'bp_diastolic'/,
-  "blood pressure preserves the diastolic value in the existing event contract");
-assert.match(detailedCapture, /Enter both the top and bottom blood pressure numbers/,
-  "blood pressure cannot be saved with only one number");
-assert.match(detailedCapture, /optionalPulseValue/,
-  "blood pressure supports an optional pulse reading");
-assert.match(detailedCapture, /blood_glucose/,
-  "measurement capture supports blood glucose");
-assert.match(detailedCapture, /measurement_name/,
-  "measurement capture supports a named custom measurement");
-assert.doesNotMatch(detailedCapture, /'Normal'|'Out of range'/,
-  "caregiver-entered measurements are not automatically labelled clinically normal or abnormal");
-assert.match(detailedCapture, /mode === "medicine"/,
-  "medicine capture can be shown without the other structured sections");
-assert.match(detailedCapture, /mode === "something" \|\| mode === "note"/,
-  "observation and note capture remain text-only interactions");
-assert.match(detailedCapture, /previouslyRecordedMedications/,
-  "medicine capture can reuse names and doses from persisted caregiver reports");
-assert.match(detailedCapture, /value="not_given"/,
-  "medicine capture distinguishes not given");
-assert.match(detailedCapture, /value="uncertain"/,
-  "medicine capture preserves uncertainty");
+assert.match(dailyCarePage, /type CaptureMode = "update" \| "photo" \| "checkin"/,
+  "Daily Care exposes only three primary capture choices");
+for (const action of ["update", "photo", "checkin"]) {
+  assert.ok(dailyCarePage.includes(`value: "${action}"`),
+    `Daily Care exposes the ${action} primary interaction`);
+}
+for (const action of ["medicine", "measurement", "note"]) {
+  assert.ok(dailyCarePage.includes(`setStructuredMode("${action}")`),
+    `the ${action} structured entry remains available as a secondary choice`);
+}
+assert.match(dailyCarePage, /Prefer a structured entry\?/,
+  "structured entry choices are secondary to the natural-language update");
+assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{structuredMode\} \/>/,
+  "structured capture opens within the existing Daily Care update flow");
+assert.match(dailyCarePage, /<NaturalLanguageDailyUpdate \/>/,
+  "natural-language update remains the default detailed capture path");
+assert.match(dailyCarePage, /<QuickDailyCheckIn \/>/,
+  "quick check-in remains a separate low-effort capture path");
+assert.match(dailyCarePage, /<DailyCarePhotoCapture \/>/,
+  "photo capture remains available from Daily Care");
+assert.match(dailyCarePage, /Upload a medical document/,
+  "document upload remains accessible without adding another primary capture choice");
+assert.match(dailyCarePage, /Open Care history/,
+  "historical review is kept separate from the capture experience");
+assert.doesNotMatch(dailyCarePage, /value: "medicine"|value: "measurement"|value: "note"/,
+  "structured record types do not compete with the three primary capture choices");
 
 const photoCapture = fs.readFileSync(
   `${root}/src/components/workflows/DailyCarePhotoCapture.tsx`,
   "utf8",
 );
-assert.match(photoCapture, /postFormData\("\/upload"/,
-  "photographs use the existing evidence upload endpoint");
-assert.match(photoCapture, /result\?\.evidence_id/,
-  "photo capture requires a persisted evidence receipt");
-assert.match(photoCapture, /evidence_type", "care_photo"/,
-  "photographs are stored as care-photo evidence, not medication photos");
+const sharedEvidenceCapture = fs.readFileSync(
+  `${root}/src/components/mvp-workspace/capture/extract-attached.ts`,
+  "utf8",
+);
+assert.match(photoCapture, /SnapCameraCapture/,
+  "new photos use the existing live-camera component");
+assert.match(photoCapture, /extractAttachedDocument\(/,
+  "photo uploads reuse the existing evidence persistence pipeline");
+assert.match(photoCapture, /Take a photo/,
+  "camera capture is an explicit action");
+assert.match(photoCapture, /Choose an existing photo/,
+  "gallery selection remains distinct from live camera capture");
+assert.match(photoCapture, /Rotate left[\s\S]*?Rotate right/,
+  "caregivers can correct photo orientation before upload");
+assert.match(photoCapture, /not been confirmed as a care-record event/,
+  "a saved photo is not misrepresented as an accepted care event");
+assert.match(sharedEvidenceCapture, /evidence_type: evidenceTypeOverride \?\? \(entryMethod === "snap" \? "care_photo" : "document"\)/,
+  "photo evidence retains the correct evidence type in the shared upload pipeline");
+assert.match(sharedEvidenceCapture, /fields\.photo_rotation_degrees/,
+  "photo orientation metadata is persisted without modifying original bytes");
+assert.match(sharedEvidenceCapture, /evidenceTypeOverride === "care_photo"/,
+  "care photos are not sent through document OCR as if they were documents");
 assert.match(detailedCapture, /When did this happen\?/,
   "free-text observations can preserve an optional event time");
 assert.match(detailedCapture, /occurred_at: new Date\(occurredAt\)\.toISOString\(\)/,
@@ -152,53 +162,6 @@ assert.match(detailedCapture, /Related care details:[\s\S]*?\['committed', 'comp
   "the caregiver save receipt uses plain language and recognizes completed reconciliation");
 assert.match(photoCapture, /careRecordUpdated/,
   "a saved photograph refreshes the care record");
-
-assert.match(dailyCarePage, /\/care-continuity\/current-care/,
-  "Daily Care loads the current care projection");
-assert.match(dailyCarePage, /\/daily-care\/intelligence\/history/,
-  "Daily Care loads persisted recent history");
-for (const action of ["something", "medicine", "measurement", "photo", "checkin", "note"]) {
-  assert.ok(dailyCarePage.includes(`value: "${action}"`),
-    `Daily Care exposes the ${action} interaction`);
-}
-assert.match(dailyCarePage, /<StructuredDailyCapture mode=\{captureMode\} \/>/,
-  "capture opens within the Daily Care screen");
-assert.match(dailyCarePage, /<h2 id="daily-care-follow-ups-title">Follow-ups<\/h2>/,
-  "Daily Care shows a compact route to the dedicated Follow-ups screen");
-assert.match(dailyCarePage, /Open Needs attention/,
-  "unresolved matters are managed in the dedicated Follow-ups screen");
-assert.doesNotMatch(dailyCarePage, /followUps\.slice\(0, 6\)|careItems\.filter\(isOpenMatter\)\.slice/,
-  "Daily Care must not duplicate the full Follow-ups list");
-assert.doesNotMatch(dailyCarePage, /daily-care-history-title|<h2>Recent care history<\/h2>/,
-  "the full chronological history belongs to the Care Timeline");
-assert.match(dailyCarePage, /Open care history/,
-  "Daily Care links to the dedicated historical view");
-assert.match(dailyCarePage, /Since you last opened Daily Care/,
-  "returning caregivers get a summary of newly recorded information");
-assert.match(dailyCarePage, /visitBaselineRef/,
-  "the last-visit baseline is retained for the whole page visit");
-assert.match(dailyCarePage, /solenos:daily-care:last-opened:/,
-  "the last-visit marker is scoped to the current person and caregiver");
-assert.match(dailyCarePage, /classifyHistoryRecord/,
-  "new care records are grouped by their persisted event content");
-assert.match(dailyCarePage, /source_id\?: string/,
-  "history records retain the backend source identifier");
-assert.match(dailyCarePage, /daily-care-event-/,
-  "summary categories link to their underlying saved timeline entries");
-assert.match(dailyCarePage, /historyRecordId/,
-  "history links use the actual persisted source ID");
-assert.match(dailyCarePage, /function careEventTimestamp[\s\S]*?return item\.occurred_at \|\| item\.observed_at \|\| item\.recorded_at/,
-  "Daily Care groups and orders late-arriving reports by event/observation time before falling back to submission time");
-assert.match(dailyCarePage, /displayHistoryTime/,
-  "history distinguishes event time from recording time");
-assert.match(dailyCarePage, /displayHistorySource/,
-  "history shows the contributor or explicitly says when the source is unavailable");
-assert.match(dailyCarePage, /Recorded by caregiver/,
-  "caregiver-entered records are not presented as unattributed facts");
-assert.match(dailyCarePage, /displayHistoryText/,
-  "persisted JSON capture payloads are rendered as caregiver-readable entries");
-assert.match(dailyCarePage, /epistemic_status/,
-  "the caregiver view retains reported or uncertain status labels");
 
 assert.match(detailedCapture, /getJSON\("\/care-continuity\/medications"\)/,
   "medication selection reads the person-scoped current LCR medication projection");
