@@ -1167,6 +1167,25 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   assert.equal(await careInformationParent.getAttribute("aria-current"), "page",
     "browser back restores the Care information navigation context");
+
+  const filteredHistoryReturn = "/workspace/timeline?filter=documents&q=discharge";
+  await page.goto(new URL(`/workspace/documents?returnTo=${encodeURIComponent(filteredHistoryReturn)}`, frontend).toString(), { waitUntil: "domcontentloaded" });
+  const returnToHistory = page.getByRole("link", { name: "Back to Care history", exact: true });
+  await returnToHistory.waitFor({ state: "visible", timeout: 10_000 });
+  assert.equal(await returnToHistory.getAttribute("href"), filteredHistoryReturn,
+    "Documents preserves the exact filtered Care history return destination");
+  await returnToHistory.click();
+  await page.waitForURL((url) => url.pathname === "/workspace/timeline" &&
+    url.searchParams.get("filter") === "documents" &&
+    url.searchParams.get("q") === "discharge", { timeout: 15_000 });
+  assert.equal(await page.locator("#timeline-search").inputValue(), "discharge",
+    "Care history restores the search term when returning from a source document");
+  assert.equal(await page.getByRole("button", { name: "Documents", exact: true }).getAttribute("aria-pressed"), "true",
+    "Care history restores the selected document filter");
+
+  await page.goto(new URL("/workspace/documents?returnTo=https%3A%2F%2Fexample.com", frontend).toString(), { waitUntil: "domcontentloaded" });
+  assert.equal(await page.getByRole("link", { name: "Back to Care history", exact: true }).count(), 0,
+    "Documents must reject an external return destination");
   await verifyMobile(page);
 
   await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
