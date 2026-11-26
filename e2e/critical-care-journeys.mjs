@@ -1454,6 +1454,27 @@ await record("01c workspace links, browser back, More menu and account form vali
     personId: disposableIdentity.personId,
     caregiverId: disposableIdentity.caregiverId,
   }, "the disposable browser must start with its own identity before deletion");
+  await disposable.page.evaluate(async () => {
+    const database = await new Promise((resolve, reject) => {
+      const open = indexedDB.open("solenos-durable-write-queue", 1);
+      open.onupgradeneeded = () => {
+        const db = open.result;
+        if (!db.objectStoreNames.contains("writes")) db.createObjectStore("writes", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("keys")) db.createObjectStore("keys", { keyPath: "id" });
+      };
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    const transaction = database.transaction(["writes", "keys"], "readwrite");
+    transaction.objectStore("writes").put({ id: "synthetic-unsent-care-update" });
+    transaction.objectStore("keys").put({ id: "device-encryption-key" });
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+    });
+    database.close();
+  });
   const deletionRequests = [];
   disposable.page.on("request", (request) => {
     if (request.url().includes("/api/v1/") && request.method() === "DELETE") {
@@ -1467,6 +1488,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   const deleteDialogPromise = disposable.page.waitForEvent("dialog");
   const deleteClick = deleteMenu.getByRole("menuitem", { name: "Clear this device", exact: true }).click();
   const deleteDialog = await deleteDialogPromise;
+  assert.match(deleteDialog.message(), /unsent updates stored only in this browser/i,
+    "device cleanup must tell caregivers that unsent local updates will be removed");
   assert.match(deleteDialog.message(), /does not delete care information already saved in SolenOS/i,
     "workspace deletion must distinguish local browser data from saved care information");
   await deleteDialog.accept();
@@ -1480,6 +1503,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     legacyPersonId: window.localStorage.getItem("solenos_person_id"),
     deletionMarker: window.localStorage.getItem("solenos_anonymous_session_revoked"),
     sessionStorageCount: window.sessionStorage.length,
+    indexedDatabaseNames: (await window.indexedDB.databases()).map((database) => database.name),
   }));
   assert.deepEqual({
     token: clearedLocalData.token,
@@ -1496,6 +1520,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   }, "workspace deletion must clear current and legacy browser identity data without recreating a session on /start");
   assert.ok(clearedLocalData.deletionMarker, "workspace deletion must retain the local marker that blocks silent record recreation");
   assert.equal(clearedLocalData.sessionStorageCount, 0, "workspace deletion must clear temporary browser-session state");
+  assert.ok(!clearedLocalData.indexedDatabaseNames.includes("solenos-durable-write-queue"),
+    "workspace deletion must remove encrypted offline submissions and their device key from IndexedDB");
   assert.equal(deletionRequests.length, 0,
     "workspace deletion must not call an endpoint that deletes saved care information");
   const revokedSession = await request(
