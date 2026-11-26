@@ -247,288 +247,96 @@ const firstVisitConsent = await request("/api/v1/consent", {
 assert.equal(firstVisitConsent.status, 200, JSON.stringify(firstVisitConsent.payload));
 assert.equal(firstVisitConsent.payload.verified, true);
 assert.equal(firstVisitConsent.payload.profile?.data_improvement_consent, true);
-await record("00 first-time caregiver capture and persisted return", async () => {
+await record("00 first-time and returning caregivers share Home and the same LCR projection", async () => {
   const { context, page, pageErrors } = await createBrowserPage(
     firstVisitSession,
     "/workspace",
     { width: 390, height: 844 },
   );
-  let firstVisitAssistStatus = null;
-  page.on("pageerror", (error) => console.log("FIRST_VISIT_PAGE_ERROR", error.message));
-  page.on("console", (message) => { if (message.type() === "error") console.log("FIRST_VISIT_CONSOLE_ERROR", message.text()); });
-  page.on("response", async (response) => {
-    const responseUrl = new URL(response.url());
-    if (responseUrl.pathname === "/api/v1/assistant/assist") {
-      firstVisitAssistStatus = response.status();
-      const payload = await response.json().catch(() => null);
-      console.log("FIRST_VISIT_ASSIST_RESPONSE", JSON.stringify({
-        status: response.status(),
-        error: payload?.detail ?? payload?.error ?? null,
-      }));
-    }
-    if (response.status() >= 400) {
-      console.log("FIRST_VISIT_HTTP_ERROR", response.status(), response.url());
-    }
-  });
-  await page.getByRole("heading", { name: "Your care journey starts here.", exact: true })
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.getByRole("heading", { name: "Home", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  await page.getByRole("heading", { name: "What’s been happening?", exact: true })
-    .waitFor({ state: "visible", timeout: 10_000 });
-  await page.waitForFunction(() => document.documentElement.classList.contains("solenos-first-visit-mode"), undefined, { timeout: 5_000 });
+  await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.getByText("Your Care Record starts here", { exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(
-    await page.locator(".solenos-workspace-breadcrumbs").isVisible(),
-    false,
-    "first visit should not show a workspace breadcrumb before the caregiver has started",
+    await page.locator(".solenos-first-visit-mode").count(),
+    0,
+    "first-time caregivers must not be routed into a separate capture-only presentation",
   );
   assert.equal(
-    await page.locator(".solenos-chat-topbar").isVisible(),
-    false,
-    "first visit should focus on the care entry instead of showing workspace navigation",
+    await page.getByRole("link", { name: "Add a care update", exact: true }).isVisible(),
+    true,
+    "the shared empty state must provide a direct first contribution path",
   );
+  assert.equal(
+    await page.getByRole("link", { name: "Upload a care document", exact: true }).isVisible(),
+    true,
+    "the shared empty state must expose the existing document workflow",
+  );
+
   const firstNote = "Mum has been forgetting whether she has eaten breakfast.";
-  await page.getByRole("textbox", { name: "Describe your situation", exact: true }).fill(firstNote);
-  const captureResponsePromise = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === "/api/situation" &&
+  await page.getByRole("link", { name: "Add a care update", exact: true }).click();
+  await page.getByRole("heading", { name: "Add an update", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await page.getByRole("textbox", { name: "Your update", exact: true }).fill(firstNote);
+  const saveResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/v1/daily-care/entries" &&
     response.request().method() === "POST",
     { timeout: 30_000 },
   );
-  const addToRecordButton = page.getByRole("button", { name: "Add to record", exact: true });
-  assert.equal(await addToRecordButton.isEnabled(), true, "the first care entry must be ready to save");
-  await addToRecordButton.click();
-  let captureResponse;
-  try {
-    captureResponse = await captureResponsePromise;
-  } catch (error) {
-    const diagnostic = await page.evaluate(() => {
-      const button = document.querySelector('button[aria-label="Add to record"]');
-      const textarea = document.querySelector("textarea");
-      return {
-        buttonText: button?.innerText ?? null,
-        buttonDisabled: button instanceof HTMLButtonElement ? button.disabled : null,
-        noteLength: textarea instanceof HTMLTextAreaElement ? textarea.value.length : null,
-        accessTokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
-        accessTokenExpiry: localStorage.getItem("solenos_anonymous_access_expires_at"),
-        sessionStorageKeys: Object.keys(sessionStorage),
-        sessionRelatedLocalStorageKeys: Object.keys(localStorage).filter((key) =>
-          /session|care|person|caregiver|token|expires|revoke/i.test(key)
-        ),
-        visibleMessages: Array.from(document.querySelectorAll('[role="alert"], [role="status"]'))
-          .filter((element) => element.getClientRects().length > 0)
-          .map((element) => element.textContent?.trim())
-          .filter(Boolean),
-        fetchTrace: window.__solenosE2EFetchTrace ?? [],
-        sessionBootstrapMeasures: performance.getEntriesByName("solenos.session.bootstrap").map((entry) => ({ duration: entry.duration, startTime: entry.startTime })),
-      };
-    });
-    console.error("FIRST_VISIT_SUBMIT_DIAGNOSTIC", JSON.stringify(diagnostic));
-    throw error;
-  }
-  const capturePayload = await captureResponse.json().catch(() => null);
-  const persistedEventRead = await request(
+  await page.getByRole("button", { name: "Save update", exact: true }).click();
+  const saveResponse = await saveResponsePromise;
+  const receipt = await saveResponse.json().catch(() => null);
+  assert.equal(saveResponse.status(), 200, JSON.stringify(receipt));
+  assert.equal(receipt?.success, true, "Daily Care must confirm the saved capture");
+  assert.equal(typeof receipt?.id, "string", "the save receipt must identify the persisted care event");
+  assert.ok(receipt?.id, "the saved care event ID must not be empty");
+  assert.ok(Array.isArray(receipt?.evidence_ids) && receipt.evidence_ids.length > 0,
+    "the saved care event must retain its linked evidence");
+  await page.getByText("Your original update was saved to your Care Record.", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+
+  const eventHistory = await request(
     `/api/v1/events/${encodeURIComponent(firstVisitSession.person.id)}`,
     { token: firstVisitSession.access_token },
   );
-  const persistedEvents = Array.isArray(persistedEventRead.payload) ? persistedEventRead.payload : [];
-  const capturedEvent = persistedEvents.find((event) => event?.id === capturePayload?.care_event_id);
-  assert.equal(persistedEventRead.status, 200, JSON.stringify(persistedEventRead.payload));
-  assert.ok(capturedEvent, "the saved capture event must be retrievable from the authenticated event-history API");
-  assert.equal(capturedEvent.person_id, firstVisitSession.person.id);
+  assert.equal(eventHistory.status, 200, JSON.stringify(eventHistory.payload));
   assert.ok(
-    [capturedEvent.title, capturedEvent.description].some((value) =>
-      typeof value === "string" && value.includes(firstNote)
-    ),
-    "the persisted event must retain the caregiver's original note",
+    eventHistory.payload.some((item) => item.id === receipt.id && item.person_id === firstVisitSession.person.id),
+    "the original first update must be retrievable from the authenticated event history",
   );
-  assert.equal(capturePayload?.qwen_extraction_status, "queued", "a saved free-text care report must receive a durable extraction job");
-  assert.equal(typeof capturePayload?.qwen_analysis_id, "string", "the capture receipt must identify its persisted analysis");
-  assert.ok(capturePayload.qwen_analysis_id, "the persisted analysis ID must not be empty");
-  assert.equal(typeof capturePayload?.qwen_job_id, "string", "the capture receipt must identify its durable background job");
-  assert.ok(capturePayload.qwen_job_id, "the durable background job ID must not be empty");
-  assert.deepEqual(capturePayload?.qwen_job_ids, [capturePayload.qwen_job_id], "the response must expose the complete queued job list");
-  assert.equal(capturePayload?.care_continuity_execution?.workflow, "situation_capture");
-  assert.equal(capturePayload?.care_continuity_execution?.stages?.extraction, "queued");
-  assert.equal(capturePayload?.care_continuity_execution?.stages?.reconciliation, "pending");
-  assert.equal(capturePayload?.care_continuity_execution?.stages?.longitudinal_retrieval, "not_verified");
-  assert.equal(capturePayload?.qwen_written_to_lcr, false, "model suggestions must not be written directly to the Living Care Record");
-  console.log("FIRST_VISIT_CAPTURE_RESPONSE", JSON.stringify({
-    status: captureResponse.status(),
-    keys: Object.keys(capturePayload ?? {}),
-    ok: capturePayload?.ok,
-    person_id: capturePayload?.person_id,
-    care_recipient_id: capturePayload?.care_recipient_id,
-    caregiver_id: capturePayload?.caregiver_id,
-    care_session_id: capturePayload?.care_session_id,
-    care_event_id: capturePayload?.care_event_id,
-    has_context_root: capturePayload?.has_context_root,
-    active_care_situation: capturePayload?.active_care_situation ? {
-      keys: Object.keys(capturePayload.active_care_situation),
-      subject_label: capturePayload.active_care_situation.subject_label,
-      theme: capturePayload.active_care_situation.theme,
-      understanding_stage: capturePayload.active_care_situation.understanding_stage,
-      observations_count: capturePayload.active_care_situation.observations?.length,
-      first_observation_keys: Object.keys(capturePayload.active_care_situation.observations?.[0] ?? {}),
-      first_raw_text_type: typeof capturePayload.active_care_situation.observations?.[0]?.raw_text,
-      first_human_fact_type: typeof capturePayload.active_care_situation.observations?.[0]?.human_fact,
-    } : null,
-    active_care_situation_turn: capturePayload?.active_care_situation_turn ? {
-      keys: Object.keys(capturePayload.active_care_situation_turn),
-      relation: capturePayload.active_care_situation_turn.relation,
-      situation_keys: Object.keys(capturePayload.active_care_situation_turn.situation ?? {}),
-      what_needs_context: capturePayload.active_care_situation_turn.what_needs_context,
-    } : null,
-  }));
-  await page.waitForTimeout(2_000);
-  console.log("FIRST_VISIT_CAPTURE_DOM", await page.locator("body").innerText());
-  console.log("FIRST_VISIT_CAPTURE_STATE", await page.locator(".cognitive-workspace").getAttribute("class").catch(() => null));
-  // The saved original note is the durable first-visit success criterion; the page title may remain unchanged.
-  await page.locator(".care-card-note-body").getByText(firstNote, { exact: true })
-    .waitFor({ state: "visible", timeout: 30_000 });
-  await page.locator(".situation-response").waitFor({ state: "visible", timeout: 15_000 });
-  const contextInterpretationRegion = page.getByRole("region", { name: "Possible explanation for this update", exact: true });
-  await contextInterpretationRegion.waitFor({ state: "visible", timeout: 10_000 });
-  await page.waitForFunction(() => {
-    const region = document.querySelector('[aria-label="Possible explanation for this update"]');
-    const text = region?.textContent ?? "";
-    return text.includes("We couldn’t prepare an explanation from the saved care information right now.")
-      || text.includes("Suggested explanation for you to review.");
-  }, undefined, { timeout: 210_000 });
-  const contextInterpretationText = await contextInterpretationRegion.innerText();
-  assert.ok(firstVisitAssistStatus !== null, "the first saved observation must trigger the read-only Companion interpretation request");
-  assert.notEqual(firstVisitAssistStatus, 413, "a first-visit question must not be rejected because retrieval metadata exceeds the model context budget");
-  assert.match(contextInterpretationText, /Your Care Record is unchanged\./,
-    "the optional interpretation must never imply that it changed the Care Record");
-  assert.match(contextInterpretationText, /You do not need to add the update again\./,
-    "an unavailable interpretation must not encourage duplicate care-record submissions");
+  const currentCare = await request("/api/v1/care-continuity/current-care", {
+    token: firstVisitSession.access_token,
+  });
+  assert.equal(currentCare.status, 200, JSON.stringify(currentCare.payload));
+  assert.ok(
+    currentCare.payload.items.some((item) => item.id === receipt.id && item.evidence_ids?.some((id) => receipt.evidence_ids.includes(id))),
+    "the same persisted event and evidence must appear in the authoritative LCR projection",
+  );
 
-  assert.equal(
-    await page.locator(".care-card-understanding").count(),
-    0,
-    "first capture must not show Clarity when no grounded interpretation is available",
-  );
-  await page.getByText("What else have you noticed alongside this?", { exact: true })
-    .waitFor({ state: "visible", timeout: 10_000 });
-  const firstCaptureUnderstanding = await page.locator(".lcr-recognition").innerText();
-  assert.match(
-    firstCaptureUnderstanding,
-    /first update about E2E first visit capture/i,
-    "one first-capture observation must be described as one update",
-  );
-  assert.doesNotMatch(firstCaptureUnderstanding, /several care concerns/i);
-  const firstCaptureRecordText = await page.locator(".living-care-record-panel").innerText();
-  assert.doesNotMatch(
-    firstCaptureRecordText,
-    /Keep tracking: Mum has been forgetting whether she has eaten breakfast/i,
-    "the record must not turn the original note into a repetitive next action",
-  );
-  assert.equal(await page.getByText("Your original note is still saved.", { exact: false }).count(), 0, "the first care summary should render rather than fall back to a summary error");
-
-  const helpfulFeedback = page.getByRole("button", { name: "Helpful", exact: true });
-  await helpfulFeedback.waitFor({ state: "visible", timeout: 15_000 });
-  const feedbackResponsePromise = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === "/api/v1/feedback" &&
-    response.request().method() === "POST",
-    { timeout: 30_000 },
-  );
-  await helpfulFeedback.click();
-  const feedbackResponse = await feedbackResponsePromise;
-  const feedbackPayload = await feedbackResponse.json().catch(() => null);
-  assert.equal(feedbackResponse.status(), 200, JSON.stringify(feedbackPayload));
-  assert.equal(feedbackPayload?.event_type, "feedback");
-  assert.equal(feedbackPayload?.source_type, "feedback");
-  await page.locator(".research-feedback-thanks").waitFor({ state: "visible", timeout: 10_000 });
-  // Saved history is grouped under More in the simplified caregiver navigation.
-  // Verify the durable history row there, then return to Today for the rest of this journey.
-  await page.goto(new URL("/workspace/more", frontend).toString());
-  await page.getByRole("heading", { name: "Recent care history", exact: true })
-    .waitFor({ state: "visible", timeout: 15_000 });
-  const savedHistoryRecord = page.locator(".history-event-list .history-event-open")
-    .filter({ hasText: firstNote }).first();
-  await savedHistoryRecord.waitFor({ state: "visible", timeout: 15_000 });
   await page.goto(new URL("/workspace", frontend).toString());
   await page.getByRole("heading", { name: "Home", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(
-    await page.getByText("More about your Care Record — follow-ups, details and history", { exact: true }).count(),
+    await page.getByText("Your Care Record starts here", { exact: true }).count(),
     0,
-    "Home must stay a concise care summary rather than render the full record history",
+    "a returning caregiver must see the populated state of the same Home architecture",
   );
-  for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
-    await page.getByRole("heading", { name: heading, exact: true })
-      .waitFor({ state: "visible", timeout: 15_000 });
-  }
-  const firstVisitPersonId = String(firstVisitSession.person?.id ?? "").trim();
-  assert.ok(firstVisitPersonId, "anonymous session must return its server-issued care-record ID");
-  const learningEventsPath = `/api/v1/learning-events/${encodeURIComponent(firstVisitPersonId)}?person_id=${encodeURIComponent(firstVisitPersonId)}`;
-  console.log("FIRST_VISIT_LEARNING_EVENTS_READ", JSON.stringify({
-    path: learningEventsPath,
-    session_person_id_present: Boolean(firstVisitPersonId),
-  }));
-  const persistedFeedbackEvents = await request(
-    learningEventsPath,
-    { token: firstVisitSession.access_token },
-  );
-  assert.equal(persistedFeedbackEvents.status, 200, JSON.stringify(persistedFeedbackEvents.payload));
-  assert.ok(
-    persistedFeedbackEvents.payload.some((event) => event.event_type === "feedback" && event.source_type === "feedback"),
-    "explicit caregiver feedback must persist through the consent-gated backend contract",
-  );
-
-  const browserIdentity = await page.evaluate(() => ({
-    tokenPresent: Boolean(localStorage.getItem("solenos_anonymous_access_token")),
-    personId: localStorage.getItem("solenos_backend_person_id"),
-    caregiverId: localStorage.getItem("solenos_backend_caregiver_id"),
-    careSessionId: localStorage.getItem("solenos_care_session_id"),
-  }));
-  console.log("FIRST_VISIT_BROWSER_IDENTITY", JSON.stringify(browserIdentity));
-  const careSessionId = browserIdentity.careSessionId;
-  assert.ok(careSessionId, "first capture must retain the interaction session identity");
-  const persisted = await request(
-    `/api/situation?caregiver_id=${encodeURIComponent(browserIdentity.caregiverId ?? "")}&care_session_id=${encodeURIComponent(careSessionId)}&offer_return_invite=0`,
-    { token: firstVisitSession.access_token },
-  );
-  assert.equal(persisted.status, 200, JSON.stringify(persisted.payload));
-  console.log("FIRST_VISIT_PERSISTED_READ", JSON.stringify({
-    care_recipient_id: persisted.payload?.care_recipient_id,
-    has_context_root: persisted.payload?.has_context_root,
-    total_events: persisted.payload?.total_events,
-    observations: persisted.payload?.observations?.length,
-    browser_person_id: browserIdentity.personId,
-    bootstrap_person_id: firstVisitSession.person.id,
-  }));
-  assert.equal(persisted.payload?.has_context_root, true, "first capture must create durable care context");
-  assert.ok((persisted.payload?.total_events ?? 0) > 0, "first capture must be retrievable as a persisted event");
-
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Home", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
-    await page.getByRole("heading", { name: heading, exact: true })
-      .waitFor({ state: "visible", timeout: 15_000 });
-  }
-  await page.goto(new URL("/workspace/care-continuity", frontend).toString());
-  await page.getByRole("heading", { name: "Care information", exact: true })
+  await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
-  await page.getByRole("heading", { name: "Your Care Record", exact: true }).first()
-    .waitFor({ state: "visible", timeout: 15_000 });
-  await page.getByText("More about your Care Record — follow-ups, details and history", { exact: true }).click();
-  for (const heading of ["What happened", "Your care history"]) {
-    await page.getByRole("heading", { name: heading, exact: true })
-      .waitFor({ state: "visible", timeout: 15_000 });
-  }
-  await page.waitForFunction(() => !document.documentElement.classList.contains("solenos-first-visit-mode"));
-  assert.equal(
-    await page.getByRole("heading", { name: "Your care journey starts here.", exact: true }).count(),
-    0,
-    "a returning caregiver must not be sent through first-visit welcome again",
-  );
   await verifyMobile(page);
-  assert.deepEqual(pageErrors, [], `first-visit and returning-caregiver screens must not throw browser errors: ${JSON.stringify(pageErrors)}`);
+  assert.deepEqual(pageErrors, [], `first-time and returning caregiver Home journeys must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
 });
 
-// 1. First caregiver session: the browser, not a seeded fixture, creates the identity.
 await record("01 first caregiver session", async () => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
