@@ -2,13 +2,14 @@ import fs from "node:fs";
 import assert from "node:assert/strict";
 
 const settings = fs.readFileSync("src/app/workspace/settings/page.tsx", "utf8");
-const notificationLoad = settings.slice(
-  settings.indexOf("const loadPreferences = useCallback"),
-  settings.indexOf("useEffect(() => { void loadPreferences();"),
+const notificationCenter = fs.readFileSync("src/components/mvp-workspace/NotificationsCenter.tsx", "utf8");
+const notificationLoad = notificationCenter.slice(
+  notificationCenter.indexOf("const loadPreferences = useCallback"),
+  notificationCenter.indexOf("const persist = async"),
 );
-const notificationPersist = settings.slice(
-  settings.indexOf("const persist = async"),
-  settings.indexOf("return (", settings.indexOf("const persist = async")),
+const notificationPersist = notificationCenter.slice(
+  notificationCenter.indexOf("const persist = async"),
+  notificationCenter.indexOf("return (", notificationCenter.indexOf("const persist = async")),
 );
 const caregiverCardStart = settings.indexOf("function CaregiverPreferencesCard()");
 const caregiverCard = settings.slice(caregiverCardStart);
