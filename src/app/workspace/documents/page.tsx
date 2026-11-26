@@ -70,6 +70,8 @@ type DocumentItem = {
   extractedText: string;
   possibleVersionOfEvidenceId?: string | null;
   duplicateOfEvidenceId?: string | null;
+  recoverySourceEvidenceId?: string | null;
+  recoverySourcePageNumber?: number | null;
   evidence: EvidenceRecord;
 };
 
@@ -82,7 +84,7 @@ type VersionComparison = {
   reason?: string;
 };
 type CropInsets = { top: number; right: number; bottom: number; left: number };
-type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; previewUrl: string | null; sourcePageNumber?: number };
+type ReviewPage = { ingestionKey: string; captureTimestamp: string; file: File; note: string | null; rotation: number; crop: CropInsets; previewUrl: string | null; sourcePageNumber?: number; sourceEvidenceId?: string };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 function metadataOf(value: EvidenceRecord["extra_metadata"]): Record<string, unknown> {
@@ -108,6 +110,7 @@ function asNumber(value: unknown): number | null {
 
 function toDocument(item: EvidenceRecord): DocumentItem {
   const meta = metadataOf(item.extra_metadata);
+  const capture = meta.capture && typeof meta.capture === "object" ? meta.capture as Record<string, unknown> : {};
   const title = caregiverSourceText(asString(meta.filename)) || "Untitled document";
   return {
     id: item.id,
@@ -122,6 +125,8 @@ function toDocument(item: EvidenceRecord): DocumentItem {
     extractedText: item.source_text || "",
     possibleVersionOfEvidenceId: asString(meta.possible_version_of_evidence_id) || null,
     duplicateOfEvidenceId: asString(meta.duplicate_of_evidence_id) || null,
+    recoverySourceEvidenceId: asString(capture.source_evidence_id) || null,
+    recoverySourcePageNumber: asNumber(capture.source_page_number),
     evidence: item,
   };
 }
@@ -375,7 +380,7 @@ export default function DocumentsPage() {
     );
   }, [documents, query]);
 
-  const handleFiles = async (fileList: FileList | File[] | null, sourcePageNumbers: number[] = []) => {
+  const handleFiles = async (fileList: FileList | File[] | null, sourcePageNumbers: number[] = [], sourceEvidenceId?: string | null) => {
     const files = Array.from(fileList || []);
     if (!files.length) return;
     setUploadMessage(null);
@@ -395,6 +400,7 @@ export default function DocumentsPage() {
         crop: { top: 0, right: 0, bottom: 0, left: 0 },
         previewUrl: isScannedImage ? URL.createObjectURL(file) : file.type === "application/pdf" ? URL.createObjectURL(file) : null,
         ...(Number.isInteger(sourcePageNumbers[index]) && sourcePageNumbers[index] > 0 ? { sourcePageNumber: sourcePageNumbers[index] } : {}),
+        ...(sourceEvidenceId ? { sourceEvidenceId } : {}),
       };
     });
     setReviewPages((current) => [...current, ...pages]);
@@ -501,7 +507,7 @@ export default function DocumentsPage() {
     setCameraOpen(false);
     setCapturedPages([]);
     setIntakeMode("scan");
-    void handleFiles(pages, recoveryPageNumbers);
+    void handleFiles(pages, recoveryPageNumbers, recoverySourceEvidenceId);
   };
 
 
@@ -551,6 +557,7 @@ export default function DocumentsPage() {
         };
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) {
           fields.capture_page_number = String(page.sourcePageNumber ?? scanPageNumber);
+          if (page.sourceEvidenceId) fields.capture_source_evidence_id = page.sourceEvidenceId;
         }
 
         let queueId: string | null = null;
@@ -927,7 +934,7 @@ export default function DocumentsPage() {
                 <span className="documents-list-copy">
                   <span className="documents-list-title">{doc.title}</span>
                   <span className="documents-list-meta">{formatBytes(doc.sizeBytes)} · Added {formatDate(doc.uploadedAt)}{doc.careDate ? ` · ${doc.careDateLabel} ${formatDate(doc.careDate)}` : ""}</span>
-                  <span className="documents-list-status">{doc.duplicateOfEvidenceId ? `Exact copy of ${documents.find((item) => item.id === doc.duplicateOfEvidenceId)?.title || "another saved document"}. Kept as a separate upload, but it is not independent evidence.` : doc.extractedText.trim() ? "Text available to review" : "Original saved · no readable text yet"}</span>{doc.possibleVersionOfEvidenceId && <span className="documents-list-status">Possible newer or corrected copy of {documents.find((item) => item.id === doc.possibleVersionOfEvidenceId)?.title || "an earlier document"}. Compare the two before treating them as versions.</span>}
+                  <span className="documents-list-status">{doc.duplicateOfEvidenceId ? `Exact copy of ${documents.find((item) => item.id === doc.duplicateOfEvidenceId)?.title || "another saved document"}. Kept as a separate upload, but it is not independent evidence.` : doc.extractedText.trim() ? "Text available to review" : "Original saved · no readable text yet"}</span>{doc.possibleVersionOfEvidenceId && <span className="documents-list-status">Possible newer or corrected copy of {documents.find((item) => item.id === doc.possibleVersionOfEvidenceId)?.title || "an earlier document"}. Compare the two before treating them as versions.</span>}{doc.recoverySourceEvidenceId && <span className="documents-list-status">Clearer copy of page {doc.recoverySourcePageNumber ?? "?"} from {documents.find((item) => item.id === doc.recoverySourceEvidenceId)?.title || "another saved document"}.</span>}
                 </span>
                 <span aria-hidden="true" className="documents-list-open">Open</span>
               </button>
