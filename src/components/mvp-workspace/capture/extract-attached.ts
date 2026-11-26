@@ -26,7 +26,7 @@ async function fileToBase64(file: File): Promise<string> {
   return window.btoa(binary);
 }
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing, evidenceTypeOverride?: "care_photo" | "document", photoRotationDegrees = 0, onUploadProgress?: (loaded: number, total: number) => void): Promise<UploadReceipt> {
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing, evidenceTypeOverride?: "care_photo" | "medication_photo" | "document", photoRotationDegrees = 0, onUploadProgress?: (loaded: number, total: number) => void): Promise<UploadReceipt> {
   const session = await ensureAnonymousSession();
   const fields: Record<string, string> = {
     ingestion_key: uploadRetryKey,
@@ -119,7 +119,7 @@ export async function extractAttachedDocument(
   uploadRetryKey = crypto.randomUUID(),
   captureTimestamp = new Date().toISOString(),
   scanProcessing?: ScanProcessing,
-  evidenceTypeOverride?: "care_photo" | "document",
+  evidenceTypeOverride?: "care_photo" | "medication_photo" | "document",
   photoRotationDegrees = 0,
   onUploadProgress?: (loaded: number, total: number) => void,
 ): Promise<AttachedDocument> {
@@ -161,7 +161,7 @@ export async function extractAttachedDocument(
   // The upload endpoint durably queues document extraction and understanding.
   // Do not make the caregiver wait for OCR or Qwen before using the saved source.
   window.dispatchEvent(new Event("careRecordUpdated"));
-  let processingQueued = evidenceTypeOverride === "care_photo" || entryMethod === "snap" || (
+  let processingQueued = evidenceTypeOverride === "care_photo" || evidenceTypeOverride === "medication_photo" || entryMethod === "snap" || (
     !!uploadReceipt.processingJobId &&
     ["queued", "processing", "completed"].includes(uploadReceipt.processingStatus || "")
   );
