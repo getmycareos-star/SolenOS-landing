@@ -1104,8 +1104,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             const saved = await getJSON("/care-continuity/situation-understanding") as SituationAssessmentResponse;
             if (!isCurrentRequest()) return;
             const savedNeedsReassessment = saved.source_freshness?.reassessment_recommended === true;
-            const savedBelongsToPerson =
-              saved.status === "available" && saved.assessment?.person_id === scopedPersonId;
+            const savedBelongsToPerson = saved.assessment?.person_id === scopedPersonId;
             if (savedBelongsToPerson) {
               setAssessment(saved.assessment);
               setSourceFreshness(saved.source_freshness ?? null);
@@ -1113,10 +1112,14 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                 // Hydration remains read-only; the caregiver can request a refresh explicitly.
               }
               setAssessmentError(null);
+            } else if (saved.status === "not_assessed" && !saved.assessment) {
+              setAssessment(null);
+              setSourceFreshness(saved.source_freshness ?? null);
+              setAssessmentError(null);
             } else {
               setAssessment(null);
               setSourceFreshness(null);
-              setAssessmentError("The care summary is not available yet. Some care information may be missing.");
+              setAssessmentError("The saved care summary could not be loaded. Some care information may be missing.");
             }
           } catch {
             if (!isCurrentRequest()) return;
