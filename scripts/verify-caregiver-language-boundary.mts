@@ -458,6 +458,10 @@ assert.doesNotMatch(appointment, /Information status not available|Review status
 assert.match(appointment, /Notes and documents:/);
 assert.doesNotMatch(settings, /anonymous session|one-time recovery code|Clear local data/);
 assert.match(settings, /Clear saved information from this device/);
+assert.match(settings, /await clearDurableWriteQueue\(\)/,
+  "Settings device cleanup must remove unsent encrypted updates before clearing the session");
+assert.match(settings, /unsent updates saved only in this browser/,
+  "Settings must explain that unsent local updates are deleted by device cleanup");
 assert.doesNotMatch(companion, /distinct, dated|The same wording appears in .*saved item/);
 
 assert.match(companion, /Based on saved information/);
