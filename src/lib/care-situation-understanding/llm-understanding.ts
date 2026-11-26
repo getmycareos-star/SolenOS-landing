@@ -155,16 +155,25 @@ export async function llmStructuredUnderstanding(params: {
   if (!boundary.ok) {
     throw new Error("Qwen returned care information outside SolenOS's safety boundaries.");
   }
-  const fragments = [
-    ...validation.data.observations.map((item) => item.raw_fragment),
-    ...validation.data.events.map((item) => item.raw_fragment),
-    ...validation.data.decisions.map((item) => item.raw_fragment),
-    ...validation.data.outcomes.map((item) => item.raw_fragment),
-    ...validation.data.unknowns.map((item) => item.raw_fragment),
-    ...validation.data.non_care_facts.map((item) => item.raw_fragment),
+  const candidateMetadata = [
+    ...validation.data.observations.map((item) => ({ ...item, displayedText: item.description })),
+    ...validation.data.events.map((item) => ({ ...item, displayedText: item.description })),
+    ...validation.data.decisions.map((item) => ({ ...item, displayedText: item.description })),
+    ...validation.data.outcomes.map((item) => ({ ...item, displayedText: item.description })),
+    ...validation.data.unknowns.map((item) => ({ ...item, displayedText: item.question })),
+    ...validation.data.non_care_facts.map((item) => ({ ...item, displayedText: item.text })),
+    ...validation.data.possible_links.map((item) => ({ ...item, displayedText: item.text })),
   ];
-  if (fragments.some((fragment) => !source.includes(fragment))) {
-    throw new Error("Qwen returned a source quotation that could not be verified.");
+  const candidateIds = candidateMetadata.map((item) => item.candidate_id);
+  if (
+    candidateMetadata.some((item) =>
+      item.source_id !== params.evidenceId ||
+      !source.includes(item.source_fragment) ||
+      item.candidate_description !== item.displayedText
+    ) ||
+    new Set(candidateIds).size !== candidateIds.length
+  ) {
+    throw new Error("Qwen returned candidate metadata that did not match its source or stable identity.");
   }
   return mapLlmOutputToExtractionResult(validation.data, contributor);
 }
