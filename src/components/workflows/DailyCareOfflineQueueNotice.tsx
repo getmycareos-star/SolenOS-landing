@@ -21,6 +21,8 @@ export default function DailyCareOfflineQueueNotice() {
     if (!personId || !caregiverId) return;
 
     try {
+      if (retryTimer.current) window.clearTimeout(retryTimer.current);
+      retryTimer.current = null;
       const before = await getDurableWriteSummary(personId, caregiverId);
       const storageIsPersistent = await isDurableWriteStoragePersistent().catch(() => false);
       setPersistentStorage(storageIsPersistent);
