@@ -546,6 +546,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setSavedConversations([])
       setShowConversationHistory(false)
       setConversationHistoryError(null)
+      setLoadingConversationHistory(false)
       setPendingCareUpdates([])
       setLoadingOlderMessages(false)
       setCareUpdateLoading(false)
@@ -942,7 +943,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         {conversationHistoryError && <p className="companion-history-error" role="alert">{conversationHistoryError}</p>}
         {!loadingConversationHistory && !conversationHistoryError && savedConversations.length === 0 && <p>No saved conversations yet.</p>}
         <div className="companion-history-items">
-          {savedConversations.map(item => <button key={item.session_id} type="button" onClick={() => void openSavedConversation(item.session_id)} disabled={loading || loadingOlderMessages}>
+          {savedConversations.map(item => <button key={item.session_id} type="button" onClick={() => void openSavedConversation(item.session_id)} disabled={loading || loadingOlderMessages || loadingConversationHistory}>
             <strong>{item.title?.trim() || 'Care conversation'}</strong>
             <span>{item.last_message_at ? new Date(item.last_message_at).toLocaleString() : 'Saved conversation'} · {item.message_count ?? 0} messages</span>
           </button>)}
@@ -1337,6 +1338,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-history-items span { color:#7a877c; font-size:10px; }
         .companion-history-toggle { min-height:40px; padding:8px 12px; border:1px solid #dce6da; border-radius:999px; background:#f8faf7; color:#47634a; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
         .companion-history-toggle:disabled { opacity:.6; cursor:wait; }
+        @media(max-width:560px) { .companion-history-toggle { min-height:38px; padding:7px 9px; font-size:10px; } }
         .companion-history-older { display:flex; justify-content:center; padding:0 0 18px; }
         .companion-history-older button { min-height:38px; padding:8px 13px; border:1px solid #dce6da; border-radius:999px; background:#f8faf7; color:#47634a; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
         .companion-history-older button:disabled { opacity:.6; cursor:wait; }
