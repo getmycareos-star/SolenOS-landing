@@ -128,9 +128,9 @@ try {
   await page.getByRole("navigation", { name: "Primary navigation" }).waitFor({ state: "visible" });
   const mobileMenuOpenMs = Date.now() - menuStartedAt;
 
-  const careLink = page.locator(".solenos-mobile-bottom-nav")
-    .getByRole("link", { name: "Care", exact: true });
-  await careLink.click();
+  const careInformationLink = page.locator("#solenos-navigation")
+    .getByRole("link", { name: "Care information", exact: true });
+  await careInformationLink.click();
   await page.waitForURL(/\/workspace\/care-continuity(?:\?|$)/);
   const documentsLink = page.locator(".care-information-directory")
     .getByRole("link", { name: "Documents", exact: true });
