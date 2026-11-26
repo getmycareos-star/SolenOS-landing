@@ -627,11 +627,11 @@ function PrivacyCard() {
     setClearingLocalData(true);
     try {
       // Clear device-only care submissions before revoking the session or
-      // deleting identity keys. If another tab blocks deletion, preserve the
-      // rest of the device state and ask the caregiver to retry.
+      // deleting identity keys. If another tab holds the database open, wait
+      // for it to close before continuing with the rest of the cleanup.
       await clearDurableWriteQueue(() => {
-            window.alert("SolenOS is waiting for another tab to close before clearing device-only updates. Close other SolenOS tabs and keep this page open; clearing will continue automatically.");
-          });
+        window.alert("SolenOS is waiting for another tab to close before clearing device-only updates. Close other SolenOS tabs and keep this page open; clearing will continue automatically.");
+      });
     } catch (cause) {
       show(
         cause instanceof Error
