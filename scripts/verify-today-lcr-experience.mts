@@ -81,6 +81,7 @@ assert.match(home, /history\.replaceState\(window\.history\.state/, "cleaning a 
 assert.match(home, /const prompt = rawPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "a single Companion prompt must remain bounded before entering the input");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Home shell");
 assert.ok(home.indexOf('<LCRCurrentUnderstanding showNextStep viewMode="today" />') < home.indexOf('<section className="today-companion-entry"'), "a Companion deep link must not push the current care picture below the question workspace");
+assert.ok(home.indexOf("<UpcomingAppointmentSummary />") < home.indexOf('<section className="today-companion-entry"'), "an optional Companion prompt must not displace upcoming appointments");
 assert.doesNotMatch(home, /if\s*\(prompt\)\s*\{/, "a prompt query must not replace the Home shell");
 assert.doesNotMatch(home, /When you’re ready, here are two ways to continue/, "the fixed two-action panel must not return");
 
