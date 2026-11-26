@@ -71,6 +71,9 @@ assert.match(understanding, /retrieval_status\?: "available" \| "empty" \| "part
 assert.match(understanding, /projection\.retrieval_status === "empty"/, "Today must require a confirmed empty retrieval before showing the first-visit empty state");
 assert.match(understanding, /projection\.evidence_authorization_status === "failed"/, "Today must treat evidence authorization failure as incomplete care information");
 assert.match(understanding, /projection\.evidence_lineage_status === "failed"/, "Today must treat failed evidence-lineage checks as incomplete care information");
+assert.match(understanding, /function currentCareLineageNotice/, "Today and the full Care Record must explain when correction lineage is unknown or pending");
+assert.match(understanding, /correction_lineage_unverified/, "a correction without a verified source relationship must not appear as applied");
+assert.match(understanding, /event_currentness_unknown/, "an event with unchecked correction history must be visibly qualified");
 assert.match(understanding, /enrichment_status\?: string \| null/, "Today must receive source enrichment failures separately from base-source reads");
 assert.match(understanding, /setChangesLoading\(true\)/, "Today must track the recent-change query while it is running");
 assert.match(understanding, /setAssessmentLoading\(true\)/, "Today must track the care-priority query while it is running");

@@ -34,6 +34,7 @@ assert.ok(component.includes("appointment_needs"), "Home must surface unresolved
 assert.ok(component.includes("closedAppointmentStatuses"), "closed appointment follow-ups and questions must not remain in the active summary");
 assert.ok(component.includes("priorityRank(left.priority) - priorityRank(right.priority)"), "appointment follow-ups must use recorded priority as a deterministic tie-breaker");
 assert.ok(component.includes("followUpTimingLabel"), "overdue and near-term appointment follow-ups must receive contextual timing labels");
+assert.ok(component.includes("urgencyRank(leftDue) - urgencyRank(rightDue)"), "overdue follow-ups must rank before near-term and later follow-ups regardless of lower priority labels");
 assert.ok(component.includes("left.source_id.localeCompare(right.source_id)"), "appointment follow-up ordering must be deterministic when timing and priority match");
 assert.ok(component.includes("Appointment follow-ups"), "appointment-related open loops and questions must be visible even without a booked appointment");
 assert.ok(component.includes('href="/workspace/open-loops"'), "caregivers must have a direct route to review recorded follow-ups");

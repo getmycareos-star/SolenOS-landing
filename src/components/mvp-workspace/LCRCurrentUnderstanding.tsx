@@ -65,6 +65,9 @@ type CurrentCareItem = {
   source_collection: string;
   source_type: string;
   source_label: string;
+  information_status?: string | null;
+  correction_lineage_status?: string | null;
+  interpretation_limit?: string | null;
   reported_by_caregiver_id?: string | null;
   related_record_type?: string | null;
   related_record_id?: string | null;
@@ -662,6 +665,22 @@ function displayCurrentCareDescription(item: CurrentCareItem): string | null {
   return normalizedDescription === displayCurrentCareTitle(item).trim().toLowerCase()
     ? null
     : description;
+}
+
+function currentCareLineageNotice(item: CurrentCareItem): string | null {
+  if (item.information_status === "event_currentness_unknown" || (item.source_collection === "events" && item.correction_lineage_status === "failed")) {
+    return "The correction history for this update could not be checked. Its current status is unknown.";
+  }
+  if (item.information_status === "correction_lineage_unverified" || (item.source_collection === "corrections" && item.correction_lineage_status === "unverified")) {
+    return "This correction is saved, but its link to the original report could not be verified. It has not replaced the original report.";
+  }
+  if (item.information_status === "event_correction_pending" || item.information_status === "correction_pending") {
+    return "A correction is still being processed. The original report remains available until the correction is applied.";
+  }
+  if (item.information_status === "historical_event") {
+    return "A correction is linked to this earlier report. Review the correction before relying on the original wording.";
+  }
+  return null;
 }
 
 function displayDescription(value?: string | null): string {
@@ -1843,6 +1862,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                   <li key={item.source_collection + ":" + item.id}>
                     <strong>{displayCurrentCareTitle(item)}</strong>
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
+                    {currentCareLineageNotice(item) && <p role="status" className="lcr-entry-status">{currentCareLineageNotice(item)}</p>}
                     <small>
                       {caregiverLabel(item.epistemic_status)} · Shared by {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "you" : "another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"}
                       {item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted" || !item.occurred_at ? " · Event time not provided" : ` · Happened ${formatWhen(item.occurred_at)}`}
@@ -2794,6 +2814,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       <span>{caregiverLabel(item.epistemic_status)}</span>
                     </div>
                     {displayCurrentCareDescription(item) && <p style={{ whiteSpace: "pre-line" }}>{displayCurrentCareDescription(item)}</p>}
+                    {currentCareLineageNotice(item) && <p role="status" className="lcr-entry-status">{currentCareLineageNotice(item)}</p>}
                     <details className="lcr-entry-status">
                       <summary>Care details</summary>
                       <p>{caregiverLabel(item.kind)} · {item.status === "recorded" ? "Saved" : caregiverStatusLabel(item.status) || "Status not available"}</p>
