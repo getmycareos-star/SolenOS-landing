@@ -472,6 +472,7 @@ export default function DocumentsPage() {
   };
 
   const captureCameraPage = () => {
+    if (recoveryPageNumbers.length > 0 && capturedPages.length >= recoveryPageNumbers.length) return;
     const video = cameraVideoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) {
       setCameraError("The camera is not ready yet. Wait a moment and try again.");
@@ -957,7 +958,7 @@ export default function DocumentsPage() {
           <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>{capturedPages.length} page(s) captured{recoveryPageNumbers.length ? " for " + recoveryPageNumbers.slice(0, capturedPages.length).map((pageNumber) => "page " + pageNumber).join(", ") : ""}</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setCameraFacingMode((current) => current === "environment" ? "user" : "environment")} disabled={cameraStarting} aria-label={cameraFacingMode === "environment" ? "Switch to front camera" : "Switch to back camera"} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "9px 13px" }}>{cameraFacingMode === "environment" ? "Use front camera" : "Use back camera"}</button>
-            <button type="button" onClick={captureCameraPage} disabled={cameraStarting} style={{ minHeight: 44, border: "1px solid var(--theme-action-border)", borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Take photo</button>
+            <button type="button" onClick={captureCameraPage} disabled={cameraStarting || (recoveryPageNumbers.length > 0 && capturedPages.length >= recoveryPageNumbers.length)} style={{ minHeight: 44, border: "1px solid var(--theme-action-border)", borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Take photo</button>
             <button type="button" onClick={finishCameraScan} disabled={!capturedPages.length || cameraStarting} style={{ minHeight: 44, border: "1px solid var(--theme-action-border)", borderRadius: 9, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700, padding: "9px 13px" }}>Review {capturedPages.length || ""} page(s)</button>
             <button type="button" onClick={closeCameraScanner} style={{ minHeight: 44, border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface)", color: "var(--text)", padding: "9px 13px" }}>Cancel</button>
           </div>
