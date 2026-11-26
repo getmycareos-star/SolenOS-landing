@@ -457,7 +457,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setOlderHistoryCursor(null)
       setHasOlderMessages(false)
       setHistoryLoadError(null)
-      setPendingCareUpdates([]
+      setPendingCareUpdates([])
+      setLoadingOlderMessages(false)
       setCareUpdateLoading(false)
       setCareUpdateLoadFailed(false)
       careUpdateLoadSequenceRef.current += 1
