@@ -349,6 +349,7 @@ export default function TimelinePage() {
       && scopeSequence === historyScopeSequenceRef.current;
     if (manual) setRefreshing(true);
     else setLoading(true);
+    setLoadingMore(false);
     setError(null);
     try {
       const session = await ensureAnonymousSession();
