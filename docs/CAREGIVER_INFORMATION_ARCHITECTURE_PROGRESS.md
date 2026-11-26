@@ -25,15 +25,20 @@ This ledger is deliberately conservative. A source change, static assertion or q
 | Phase 4 | Contribution completion/review feedback and provenance | In progress | Existing capture and approval workflows retained; full browser trace from submission through accepted record state remains |
 | Phase 5 | Separate Care information from Care history | Implemented, not yet verified | Current-care overview and historical timeline have separate route ownership |
 | Phase 5 | Preserve event time, recorded time and correction history | In progress | Existing timeline fields inspected; verify all event types and correction/withdrawal ordering |
+| Phase 5 | Never substitute a saved timestamp for a missing event time | Implemented, not yet verified | Timeline mapping preserves missing event time and labels the saved time separately; static contract added |
+| Phase 5 | Open the exact original document from a document-backed history entry | Implemented, not yet verified | Timeline links by evidence event ID; Documents resolves the exact saved file and validates same-origin return context |
+| Phase 5 | Prevent stale document previews from crossing caregiver or recipient changes | Implemented, not yet verified | Preview requests are sequence- and identity-scoped; source deep links include active caregiver/recipient scope |
 | Phase 5 | Link document-backed history entries to original documents | Implemented, not yet verified | Timeline source link and Documents `evidenceId` auto-open path added; browser source retrieval remains unverified |
 | Phase 5 | Surface evidence-supported patterns and changes without duplication | In progress | Complete Care information projection retains detailed information; verify pattern ownership and avoid duplicated panels |
 | Phase 5 | Expose real document processing and review lifecycle | In progress | Existing processing and review components retained; validate every backend status and failure/retry path |
 | Phase 6 | Separate Notifications from Needs attention | Implemented, not yet verified | Dedicated Notifications route; notification read endpoint remains separate from open-loop state |
 | Phase 6 | Reading a notification never resolves a care matter | Implemented, not yet verified | Separate write contracts and regression assertions added; run integration and browser tests |
 | Phase 6 | Reminders remain distinct from unresolved matters | Implemented, not yet verified | Reminders page title and navigation label separated from Needs attention |
+| Phase 6 | Distinguish matters marked for attention now from important non-immediate matters | Implemented, not yet verified | Needs attention page now preserves the backend assessment categories as separate sections and card labels; duplicate sources prefer the higher-priority category |
 | Phase 7 | More contains application/account management, not duplicate care browsing | Implemented, not yet verified | More now contains Settings only; incoming responsibility handovers are placed in Care handoffs; verify rendered access and permissions |
 | Phase 8 | Consistent contextual breadcrumbs | Implemented, not yet verified | Home → Care information → child route and Home → More → Settings trails added |
 | Phase 8 | Preserve relevant search/filter context across source review | Implemented, not yet verified | Care history query/filter URL state and source-document deep link added; initial history load is guarded against duplicate requests; browser history verification remains |
+| Phase 8 | Preserve document-source navigation context without leaking stale return paths | Implemented, not yet verified | Documents accepts only same-origin Care history return paths and clears stale return state on direct entry; browser source-preview journey added |
 | Phase 9 | Consistent page headers and page structure | In progress | Navigation, breadcrumb and mobile shell are unified; specialised page header patterns still need a full consistency pass |
 | Phase 9 | WCAG 2.2 AA accessibility | In progress | Landmark nesting and a keyboard skip link with a focusable main target are implemented; keyboard, screen-reader, contrast and zoom verification remain |
 | Phase 10 | Responsive desktop/tablet/mobile workflows | Implemented, not yet verified | Mobile bottom navigation, safe-area handling and first-visit focus behaviour added; execute device-width browser journeys |
@@ -41,6 +46,7 @@ This ledger is deliberately conservative. A source change, static assertion or q
 | Phase 11 | Preserve LCR authority, provenance and approval boundaries | In progress | No parallel store or silent-write change introduced; end-to-end contribution/document/Companion data-flow verification remains |
 | Phase 12 | Route, component and integration regression suite | In progress | New route/IA contract is registered in `npm test`; full test run is pending |
 | Phase 12 | Critical browser journeys and responsive verification | In progress | E2E assertions cover Home, Ask SolenOS, Care information, More ownership, breadcrumbs, source-return state, skip navigation, Notifications and Reminders; actual E2E run is pending |
+| Phase 12 | Verify original-document drill-down from the real saved document | Implemented, not yet verified | Critical-care browser journey now opens a persisted upload by its evidence ID, waits for the original preview and enabled download, and checks the filtered return link |
 | Phase 12 | Real caregiver comprehension/usability validation | Not started | Requires 8–12 US family caregivers; no participant evidence exists yet |
 
 ## Current verification state
