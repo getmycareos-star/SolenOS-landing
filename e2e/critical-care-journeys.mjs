@@ -1229,65 +1229,70 @@ await record("01c workspace links, browser back, More menu and account form vali
   const expectedRoutes = [
     "/workspace",
     "/workspace/daily-care",
-    "/workspace/appointments",
+    "/workspace/companion",
+    "/workspace/care-continuity",
+    "/workspace/notifications",
     "/workspace/more",
   ];
   for (const route of expectedRoutes) {
     assert.ok(links.includes(route), `primary navigation is missing ${route}`);
   }
-  assert.ok(!links.includes("/workspace/companion"), "Care Assistant must remain under More, not in primary navigation");
+
+  const careInformationExpand = navigation.getByRole("button", { name: "Expand Care information sections", exact: true });
+  await careInformationExpand.click();
+  const careInformationLinks = navigation.locator("#solenos-care-information-subnav");
+  await careInformationLinks.getByRole("link", { name: "Documents", exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  for (const label of ["Care history", "Documents", "Appointments", "Needs attention", "Reminders", "Care handoffs"]) {
+    await careInformationLinks.getByRole("link", { name: label, exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  }
+
+  await careInformationLinks.getByRole("link", { name: "Documents", exact: true }).click();
+  await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
+  await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
+  const careInformationParent = navigation.locator('a[href="/workspace/care-continuity"]');
+  assert.equal(await careInformationParent.getAttribute("aria-current"), "page",
+    "Care information stays selected while a nested care destination is open");
+
+  await page.getByRole("button", { name: "Open navigation", exact: true }).click();
   const moreNavigationLink = navigation.locator('a[href="/workspace/more"]');
   const moreNavigationState = await moreNavigationLink.evaluate((element) => {
-    const chain = [];
-    let current = element;
-    while (current && chain.length < 8) {
-      const style = getComputedStyle(current);
-      const rect = current.getBoundingClientRect();
-      chain.push({
-        tag: current.tagName,
-        className: typeof current.className === "string" ? current.className : "",
-        ariaHidden: current.getAttribute("aria-hidden"),
-        hidden: current instanceof HTMLElement ? current.hidden : false,
-        display: style.display,
-        visibility: style.visibility,
-        opacity: style.opacity,
-        transform: style.transform,
-        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-      });
-      current = current.parentElement;
-    }
-    return chain;
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      display: style.display,
+      visibility: style.visibility,
+      width: rect.width,
+      height: rect.height,
+      x: rect.x,
+    };
   });
-  console.log("MORE_NAV_STATE", JSON.stringify(moreNavigationState));
   assert.ok(
-    moreNavigationState[0]?.display !== "none" &&
-      moreNavigationState[0]?.visibility !== "hidden" &&
-      moreNavigationState[0]?.rect.width > 0 &&
-      moreNavigationState[0]?.rect.height > 0 &&
-      moreNavigationState[0]?.rect.x >= -1 &&
-      moreNavigationState[0]?.rect.x < (page.viewportSize()?.width ?? 0),
+    moreNavigationState.display !== "none" &&
+      moreNavigationState.visibility !== "hidden" &&
+      moreNavigationState.width > 0 &&
+      moreNavigationState.height > 0 &&
+      moreNavigationState.x >= -1 &&
+      moreNavigationState.x < (page.viewportSize()?.width ?? 0),
     `More navigation link must be visibly rendered after opening navigation: ${JSON.stringify(moreNavigationState)}`,
   );
   await moreNavigationLink.click();
   await page.waitForURL("**/workspace/more", { timeout: 15_000 });
-  const moreTools = page.getByRole("navigation", { name: "More care record tools", exact: true });
+  const moreTools = page.getByRole("navigation", { name: "App and account settings", exact: true });
   await moreTools.waitFor({ state: "visible", timeout: 10_000 });
-  const careAssistantLink = moreTools.getByRole("link", { name: /Care Assistant/ });
-  await careAssistantLink.waitFor({ state: "visible", timeout: 10_000 });
-  assert.equal(await careAssistantLink.getAttribute("href"), "/workspace/companion");
-  await moreTools.getByRole("link", { name: /Documents/ }).click();
-  await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
-  await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
+  await moreTools.getByRole("link", { name: "Settings", exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  assert.equal(await moreTools.getByRole("link", { name: "Settings", exact: true }).getAttribute("href"), "/workspace/settings");
+  assert.equal(await page.getByRole("heading", { name: "Ask SolenOS", exact: true }).count(), 0,
+    "More must not contain the Companion workspace");
+  assert.equal(await page.getByRole("heading", { name: "Documents", exact: true }).count(), 0,
+    "More must not contain document management");
   const moreSidebarLink = navigation.locator('a[href="/workspace/more"]');
   assert.equal(await moreSidebarLink.getAttribute("aria-label"), "More");
-  assert.equal(
-    await moreSidebarLink.getAttribute("aria-current"),
-    "page",
-    "More stays selected while a secondary destination is open",
-  );
+  assert.equal(await moreSidebarLink.getAttribute("aria-current"), "page",
+    "More stays selected while application settings are open");
   await page.goBack({ waitUntil: "domcontentloaded" });
-  await page.waitForURL("**/workspace/more", { timeout: 15_000 });
-  await moreTools.waitFor({ state: "visible", timeout: 10_000 });
+  await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
+  assert.equal(await careInformationParent.getAttribute("aria-current"), "page",
+    "browser back restores the Care information navigation context");
   await verifyMobile(page);
 
   await page.goto(new URL("/workspace/settings", frontend).toString(), { waitUntil: "domcontentloaded" });
