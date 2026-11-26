@@ -1200,6 +1200,27 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.waitForURL((url) => url.pathname === "/workspace/settings" &&
     url.searchParams.get("section") === "privacy", { timeout: 15_000 });
 
+  for (const viewport of [
+    { width: 390, height: 844, label: "small mobile" },
+    { width: 768, height: 1024, label: "tablet" },
+    { width: 1440, height: 900, label: "desktop" },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const layout = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+      body: document.body.scrollWidth,
+      main: document.querySelector("main")?.getBoundingClientRect().width ?? 0,
+      hasMainLandmark: Boolean(document.querySelector("main")),
+    }));
+    assert.ok(layout.hasMainLandmark, `${viewport.label} must retain the main content landmark`);
+    assert.ok(layout.document <= layout.viewport + 1 && layout.body <= layout.viewport + 1,
+      `${viewport.label} must not introduce horizontal page overflow: ${JSON.stringify(layout)}`);
+    assert.ok(layout.main <= layout.viewport + 1,
+      `${viewport.label} main content must fit its viewport: ${JSON.stringify(layout)}`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+
   const filteredHistoryReturn = "/workspace/timeline?filter=documents&q=discharge";
   await page.goto(new URL(`/workspace/documents?returnTo=${encodeURIComponent(filteredHistoryReturn)}`, frontend).toString(), { waitUntil: "domcontentloaded" });
   const returnToHistory = page.getByRole("link", { name: "Back to Care history", exact: true });
