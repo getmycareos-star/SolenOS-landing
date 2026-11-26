@@ -186,11 +186,11 @@ function formatDay(value?: string | null): string {
 
 function eventCategory(event: CareEvent): string {
   const value = `${event.event_type} ${event.source_type ?? ""} ${event.title} ${(event.tags ?? []).join(" ")}`.toLowerCase();
+  if (event.source_type === "correction" || /correction|amend|supersed/.test(value)) return "Correction";
   if (/decision|decided|choice/.test(value)) return "Decision";
   if (/document|upload|file|discharge|letter|report/.test(value)) return "Document";
   if (/follow.?up|open.?loop|pending|unresolved|question|appointment|conflict|uncertaint|missing.?information|information.?gap|reconciliation/.test(value) || event.follow_up_candidate || event.attention_candidate) return "Follow-up";
   if (/observation|daily.?care|daily.?capture|symptom|behavio[u]?r/.test(value)) return "Observation";
-  if (/correction|amend|supersed/.test(value)) return "Correction";
   if (/handoff|hand.?over|transfer/.test(value)) return "Handoff";
   if (/outcome|result|completed/.test(value)) return "Outcome";
   return caregiverStatusLabel(event.event_type) || "Care update";
@@ -709,7 +709,7 @@ export default function TimelinePage() {
                   const category = eventCategory(event);
                   const description = parseDescription(event.description);
                   return (
-                    <article id={`timeline-event-${event.id}`} key={event.id} className="timeline-event">
+                    <article id={`timeline-event-${event.id}`} key={event.id} className={`timeline-event${event.source_type === "correction" ? " is-correction" : ""}`}>
                       <span className="timeline-event-dot" aria-hidden="true" />
                       <button type="button" className="timeline-event-toggle" aria-expanded={expanded} aria-controls={`timeline-details-${event.id}`} onClick={() => setExpandedId(expanded ? null : event.id)}>
                         <span className="timeline-event-meta">
