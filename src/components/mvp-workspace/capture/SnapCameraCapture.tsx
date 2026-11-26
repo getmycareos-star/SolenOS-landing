@@ -38,6 +38,7 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [cameraFacingMode, setCameraFacingMode] = useState<"environment" | "user">("environment");
+  const [retryCount, setRetryCount] = useState(0);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -83,7 +84,7 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
       cancelled = true;
       stop();
     };
-  }, [open, stop, cameraFacingMode]);
+  }, [open, stop, cameraFacingMode, retryCount]);
 
   function captureFrame() {
     const video = videoRef.current;
@@ -128,9 +129,18 @@ export function SnapCameraCapture({ open, onClose, onCapture }: Props) {
         </header>
 
         {error ? (
-          <p className="workspace-error" role="alert">
-            {error}
-          </p>
+          <div>
+            <p className="workspace-error" role="alert">
+              {error}
+            </p>
+            <button
+              type="button"
+              className="workspace-secondary"
+              onClick={() => setRetryCount((count) => count + 1)}
+            >
+              Try camera again
+            </button>
+          </div>
         ) : (
           <div className="entry-capture-viewport">
             <video ref={videoRef} playsInline muted autoPlay className="entry-capture-video" />
