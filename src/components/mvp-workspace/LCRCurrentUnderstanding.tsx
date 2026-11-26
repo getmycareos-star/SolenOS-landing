@@ -2883,8 +2883,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           <p className="lcr-footer-note">{caregiverSafeGeneratedText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
-        </>
-      )}
       {showNextStep && !hasConfirmedEmptyRecord && (
               <section className="solenos-care-next-step" aria-labelledby="lcr-contextual-next-step-heading">
                 <div>
@@ -2988,7 +2986,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           <summary>Care information and history</summary>
           {recordHistoryOpen ? <CareContinuityIntegrityPanel personId={personId} /> : null}
         </details>
-      </details>
       </details>
         </>
       )}
