@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { CareHandoffSharing } from "@/components/workflows/CareHandoffSharing";
+import { CaregiverHandoverInbox } from "@/components/mvp-workspace/CaregiverHandoverInbox";
 
 type HandoffDraft = NonNullable<Parameters<typeof CareHandoffSharing>[0]["draft"]>;
 type HandoffAudience = Parameters<typeof CareHandoffSharing>[0]["audience"];
@@ -65,6 +66,8 @@ export default function HandoffsPage() {
           Back to summaries
         </button>
       )}
+
+      <CaregiverHandoverInbox />
 
       <CareHandoffSharing
         draft={draft}
