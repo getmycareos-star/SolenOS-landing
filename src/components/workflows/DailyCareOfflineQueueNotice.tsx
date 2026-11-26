@@ -99,7 +99,7 @@ export default function DailyCareOfflineQueueNotice() {
     <>
       {pending > 0 && (
         <p role="status" className="daily-care-muted">
-          {pending} update{pending === 1 ? "" : "s"} saved on this device and waiting to reach SolenOS. They are not yet confirmed in your care record.
+          {pending} update{pending === 1 ? "" : "s"} saved on this device and waiting to reach SolenOS. They are not yet confirmed in your care record. Keep this browser data until they are sent.
         </p>
       )}
       {sending > 0 && (
