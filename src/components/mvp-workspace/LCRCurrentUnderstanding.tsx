@@ -792,6 +792,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const [assessmentLoading, setAssessmentLoading] = useState(false);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [changes, setChanges] = useState<PersistedChange[]>([]);
+  const [changesLoading, setChangesLoading] = useState(false);
   const [changesError, setChangesError] = useState<string | null>(null);
   const [patterns, setPatterns] = useState<PersistedPattern[]>([]);
   const [patternsError, setPatternsError] = useState<string | null>(null);
@@ -960,6 +961,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     }
     setError(null);
     setRegisteredActionsError(null);
+    setChangesLoading(true);
+    setAssessmentLoading(true);
     setChangesError(null);
     setPatternsError(null);
     setAssessmentError(null);
@@ -1076,6 +1079,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           } catch {
             if (!isCurrentRequest()) return;
             setChangesError("Saved care changes could not be loaded. Please try again.");
+          } finally {
+            if (isCurrentRequest()) setChangesLoading(false);
           }
         })(),
         ...(viewMode === "complete" ? [
@@ -1116,6 +1121,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           } catch {
             if (!isCurrentRequest()) return;
             setAssessmentError("The saved care summary could not be loaded. Please try again.");
+          } finally {
+            if (isCurrentRequest()) setAssessmentLoading(false);
           }
         })(),
       ];
@@ -1189,7 +1196,11 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     } finally {
       if (isCurrentRequest()) {
         setLoading(false);
-        if (!backgroundStarted) setRefreshing(false);
+        if (!backgroundStarted) {
+          setChangesLoading(false);
+          setAssessmentLoading(false);
+          setRefreshing(false);
+        }
       }
     }
   }, [viewMode]);
