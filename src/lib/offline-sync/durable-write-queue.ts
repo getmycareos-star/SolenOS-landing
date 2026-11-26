@@ -50,7 +50,8 @@ type QueueInput = {
   payload: unknown;
 };
 
-type SendWrite = (endpoint: string, payload: unknown) => Promise<unknown>;
+type UploadProgressHandler = (loaded: number, total: number) => void;
+type SendWrite = (endpoint: string, payload: unknown, onUploadProgress?: UploadProgressHandler) => Promise<unknown>;
 
 let databasePromise: Promise<IDBDatabase> | null = null;
 let storagePersistencePromise: Promise<boolean> | null = null;
@@ -323,6 +324,7 @@ export async function markDurableWritePending(
 export async function deliverDurableWrite<T>(
   id: string,
   send: SendWrite,
+  onUploadProgress?: UploadProgressHandler,
 ): Promise<T> {
   const db = await openDatabase();
   const record = await readWrite(db, id);
@@ -331,7 +333,7 @@ export async function deliverDurableWrite<T>(
   await putWrite(db, { ...record, status: "sending", updated_at: Date.now() });
   try {
     const payload = await decryptPayload(db, record);
-    const result = await send(record.endpoint, payload);
+    const result = await send(record.endpoint, payload, onUploadProgress);
     await deleteWrite(db, id);
     dispatchQueueUpdated();
     return result as T;
