@@ -34,12 +34,14 @@ const LlmCandidateMetadataSchema = z.object({
 });
 
 export const LlmObservationSchema = LlmCandidateMetadataSchema.extend({
+  candidate_type: z.literal("observations"),
   description: z.string().min(1).max(500),
   approximate_time: z.string().nullable(),
   raw_fragment: z.string().min(1),
 });
 
 export const LlmEventSchema = LlmCandidateMetadataSchema.extend({
+  candidate_type: z.literal("events"),
   description: z.string().min(1).max(500),
   time: z.string().nullable(),
   participants: z.array(z.string()).max(10),
@@ -47,6 +49,7 @@ export const LlmEventSchema = LlmCandidateMetadataSchema.extend({
 });
 
 export const LlmDecisionSchema = LlmCandidateMetadataSchema.extend({
+  candidate_type: z.literal("decisions"),
   description: z.string().min(1).max(500),
   who: z.array(z.string()).max(10),
   why: z.string().nullable(),
@@ -56,24 +59,28 @@ export const LlmDecisionSchema = LlmCandidateMetadataSchema.extend({
 });
 
 export const LlmOutcomeSchema = LlmCandidateMetadataSchema.extend({
+  candidate_type: z.literal("outcomes"),
   description: z.string().min(1).max(500),
   status: z.enum(["observed", "pending", "uncertain", "ongoing", "resolved", "changed"]),
   raw_fragment: z.string().min(1),
 });
 
 export const LlmUnknownSchema = LlmCandidateMetadataSchema.extend({
+  candidate_type: z.literal("unknowns"),
   question: z.string().min(1).max(500),
   status: z.literal("open"),
   raw_fragment: z.string().min(1),
 });
 
 export const LlmNonCareFactSchema = LlmCandidateMetadataSchema.extend({
+  candidate_type: z.literal("non_care_facts"),
   layer: z.enum(["contributor_load", "disagreement_perspective"]),
   text: z.string().min(1).max(500),
   raw_fragment: z.string().min(1),
 });
 
 export const LlmPossibleLinkSchema = LlmCandidateMetadataSchema.extend({
+  candidate_type: z.literal("possible_links"),
   text: z.string().min(1).max(500),
   causation_claimed: z.literal(false, {
     message: "causation_claimed must always be false — never assert causation",
