@@ -108,7 +108,7 @@ assert.match(source, /onAddClearerPages=\{\(evidenceId, pages\) => \{ setRecover
 assert.match(source, /Take clearer copies of pages " \+ recoveryPageNumbers\.join\(", "\)/, "the camera scanner must keep the unreadable page numbers visible while the caregiver captures replacements");
 assert.match(source, /Save clearer copies of pages " \+ reviewPages\.filter\(\(page\) => page\.sourcePageNumber\)/, "the save step must explain which still-unsaved source pages are being recaptured as separate evidence");
 assert.match(source, /sourcePageNumber\?: number/, "a re-captured page must retain its original document page number in the upload model");
-assert.match(source, /handleFiles\(pages, recoveryPageNumbers\)/, "the camera flow must pass the original page numbers into the saved page records");
+assert.match(source, /handleFiles\(pages, recoveryPageNumbers, recoverySourceEvidenceId\)/, "the camera flow must pass the original page numbers into the saved page records");
 assert.match(source, /capture_page_number = String\(page\.sourcePageNumber \?\? scanPageNumber\)/, "re-captured page provenance must retain the original page number instead of being renumbered from one");
 assert.match(source, /capture_source_evidence_id = page\.sourceEvidenceId/, "clearer page copies must persist the identity of the original document they came from");
 assert.match(source, /Clearer copy of page \{doc\.recoverySourcePageNumber/, "the document library must display the original document and page for a clearer copy");
