@@ -4,6 +4,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const workspace = fs.readFileSync(path.join(root, "src/lib/workspace-context.tsx"), "utf8");
+const apiClient = fs.readFileSync(path.join(root, "src/api/client.ts"), "utf8");
 const layout = fs.readFileSync(path.join(root, "src/app/workspace/layout.tsx"), "utf8");
 const runtimeExports = fs.readFileSync(path.join(root, "src/lib/ui-runtime/index.ts"), "utf8");
 const situationStore = fs.readFileSync(path.join(root, "src/lib/ui-runtime/situation-store.ts"), "utf8");
@@ -28,7 +29,9 @@ for (const { file, source } of activeIdentityClients) {
   assert.doesNotMatch(source, /from ["']@\/lib\/care-identity["']/, `${file} must not pull the legacy filesystem-backed identity barrel into the browser`);
 }
 assert.match(workspace, /situations:\s*fromServer/);
-assert.match(workspace, /cache:\s*"no-store"/);
+assert.match(apiClient, /fetchGetWithRetry\(resolveApiUrl\(path\), \{ headers, cache: "no-store" \}\)/);
+assert.match(apiClient, /headers: \{ \.\.\.headers, Authorization: `Bearer \$\{nextToken\}` \},\s*cache: "no-store"/);
+assert.doesNotMatch(workspace, /cache:\s*"no-store"/);
 assert.match(workspace, /setRecordLoadError\(/);
 assert.doesNotMatch(workspace, /situations:\s*localSituations/);
 assert.doesNotMatch(workspace, /persistSituations\(|persistTimeline\(|persistActiveSituationId\(/);
