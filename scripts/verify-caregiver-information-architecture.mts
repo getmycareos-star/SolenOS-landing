@@ -179,6 +179,7 @@ assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Docum
 assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
 assert.ok(history.includes("updateHistoryUrl") && history.includes('params.get("filter")') && history.includes('params.get("q")'), "Care history preserves its search and filters when a caregiver opens a source and returns");
 assert.ok(history.includes("Open original document"), "document-backed history entries expose a direct source link");
+assert.ok(history.includes('event.source_type === "evidence"') && history.includes("encodeURIComponent(event.id)"), "document drill-down uses the exact evidence event identity rather than an unrelated evidence list entry");
 assert.ok(history.includes("HistoryDrawer") && history.includes("Browse all saved records"), "Care history retains the full source-aware history explorer as a secondary view");
 assert.ok(documents.includes('get("evidenceId")') && documents.includes("openOriginal(matchingDocument)"), "Documents opens the exact source selected from Care history");
 
