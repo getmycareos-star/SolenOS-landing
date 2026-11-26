@@ -11,7 +11,7 @@ export type SourceSpan = {
 export type ExtractedClaim = {
   id: string;
   /** Stable backend identity for this source-anchored proposal across inference runs. */
-  candidate_id: string;
+  candidate_id?: string;
   claim_text: string;
   entity_type: EntityType;
   event_type: string;
