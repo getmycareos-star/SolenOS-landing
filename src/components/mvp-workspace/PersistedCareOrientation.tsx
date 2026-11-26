@@ -18,6 +18,7 @@ type CurrentCareItem = {
   occurred_at?: string | null;
   reported_at?: string | null;
   recorded_at?: string | null;
+  time_provenance?: string | null;
   evidence_ids: string[];
   evidence_link_validation?: string;
 };
@@ -43,6 +44,16 @@ function formatDate(value?: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Date not recorded";
   return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function careDateLabel(item: CurrentCareItem): string {
+  if (item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted") {
+    return item.recorded_at || item.reported_at
+      ? `Added ${formatDate(item.recorded_at || item.reported_at)}`
+      : "Event time not provided";
+  }
+  const date = item.occurred_at || item.reported_at || item.recorded_at;
+  return date ? `Happened ${formatDate(date)}` : "Date not recorded";
 }
 
 function readableStatus(value?: string | null): string {
@@ -143,7 +154,7 @@ export function PersistedCareOrientation() {
               <strong>{caregiverSourceText(item.title) || "Saved care detail"}</strong>
               {caregiverSourceText(item.description) && <p>{caregiverSourceText(item.description)}</p>}
               <p>{readableStatus(item.epistemic_status)} · {readableStatus(item.status)}</p>
-              <p>{caregiverSafeGeneratedText(item.source_label) || "Who shared this was not recorded"} · {formatDate(item.occurred_at || item.reported_at || item.recorded_at)}</p>
+              <p>{caregiverSafeGeneratedText(item.source_label) || "Who shared this was not recorded"} · {careDateLabel(item)}</p>
               {item.evidence_ids.length > 0 && (
                 <small>The original note or document is available to review.</small>
               )}
