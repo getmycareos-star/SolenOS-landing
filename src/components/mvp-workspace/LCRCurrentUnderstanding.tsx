@@ -2883,6 +2883,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           <p className="lcr-footer-note">{caregiverSafeGeneratedText(projection.notice) || "This view reflects the care information currently available."}</p>
         </>
       ) : null}
+      </details>
         </>
       )}
       {showNextStep && !hasConfirmedEmptyRecord && (
@@ -2960,7 +2961,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                 </div>
               </section>
             )}
-      </details>
       {viewMode === "complete" && (
         <>
       <div id="lcr-clarification-workflow">
