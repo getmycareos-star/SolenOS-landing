@@ -11,6 +11,12 @@ assert.ok(source.includes("daily-care/intelligence/history"));
 assert.match(source, /occurred_at/);
 assert.match(source, /recorded_at/);
 assert.match(source, /time_provenance/);
+assert.match(source, /eventTimeWasNotProvided/,
+  "server receipt time must not be presented as the time a care event happened");
+assert.match(source, /Time not provided · Added/,
+  "the timeline distinguishes an unknown event time from the time SolenOS received the update");
+assert.match(source, /eventTimeDisplay\(event\)/,
+  "expanded history details label missing event time honestly");
 assert.match(source, /evidence_ids/);
 assert.match(source, /aria-expanded/);
 assert.match(source, /Search the care history/);
