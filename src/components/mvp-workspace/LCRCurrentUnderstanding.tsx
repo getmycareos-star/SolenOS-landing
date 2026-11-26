@@ -2767,7 +2767,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
 
                       <small>Shared by: {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "You" : "Another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"}</small>
                       {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
-                      <small>{item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted" ? "Event time not provided · " : item.occurred_at ? `Happened: ${formatWhen(item.occurred_at)} · ` : ""}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
+                      <small>{item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted" || !item.occurred_at ? "Event time not provided · " : `Happened: ${formatWhen(item.occurred_at)} · `}{item.reported_at ? `Caregiver shared: ${formatWhen(item.reported_at)} · ` : ""}Saved to the care record: {formatWhen(item.recorded_at || item.occurred_at)}</small>
                       {item.evidence_ids?.length > 0 ? (
                         <div>
                           <small>{item.evidence_link_validation === "valid" ? "Original report attached" : "Related report linked"}</small>
