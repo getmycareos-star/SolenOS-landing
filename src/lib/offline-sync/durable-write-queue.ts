@@ -279,7 +279,8 @@ export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
   }
   const allRows = await getAllWrites(db);
   const latestCreatedAt = allRows.reduce((latest, row) => Math.max(latest, row.created_at), 0);
-  const now = Math.max(Date.now(), latestCreatedAt + 1);
+  const now = Date.now();
+  const createdAt = Math.max(now, latestCreatedAt + 1);
 
   if (existing) {
     const existingPayload = await decryptPayload(db, existing);
@@ -307,7 +308,7 @@ export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
     status: dependsOn.length > 0 ? "pending" : "sending",
     attempts: 0,
     next_retry_at: now,
-    created_at: now,
+    created_at: createdAt,
     updated_at: now,
     last_error: null,
   });
