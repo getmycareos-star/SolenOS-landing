@@ -120,7 +120,7 @@ for (const [route, file] of routes) {
   assert.ok(fs.existsSync(path.join(root, file)), `${route} resolves to an existing page`);
 }
 
-for (const label of ["Home", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
+for (const label of ["Today", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
   assert.ok(navigation.includes(`label: "${label}"`), `${label} has a canonical navigation label`);
 }
 for (const [route, label] of [
@@ -151,7 +151,7 @@ assert.ok(workspaceContext.includes("Legacy browser caches do not") && workspace
 assert.ok(apiClient.includes('Authorization: `Bearer ${token}`') && apiClient.includes("personIdChanged"), "API requests retain bearer authorization and active care-recipient change signalling");
 
 assert.ok(shell.includes("solenos-chat-nav-subnav") && shell.includes("aria-expanded={careInformationExpanded}"), "desktop and mobile menus expose an accessible expandable Care information hierarchy");
-assert.ok(shell.includes("solenos-mobile-bottom-nav"), "mobile navigation exposes Home, Care, Ask and More");
+assert.ok(shell.includes("solenos-mobile-bottom-nav"), "mobile navigation exposes Today, Care, Ask and More");
 assert.ok(shell.includes("solenos-mobile-add-update"), "Add an update remains a prominent action outside the mobile destination bar");
 assert.ok(shell.includes("solenos-notification-shortcut"), "Notifications remains directly accessible from the workspace header");
 assert.ok(shell.includes('getJSON("/notifications/unread-count")') && shell.includes("unreadNotificationCount"), "the header notification indicator reads the authenticated unread count");
@@ -161,7 +161,7 @@ assert.ok(shell.includes("solenos:notifications-updated") && notificationCenter.
 assert.ok(breadcrumbs.includes("CARE_INFORMATION_NAVIGATION"), "breadcrumbs share the canonical care destination labels");
 
 for (const [source, expected, label] of [
-  [home, "<h1>Home</h1>", "Home"],
+  [home, "<h1>Today</h1>", "Today"],
   [addUpdate, "<h1>Add an update</h1>", "Add an update"],
   [careInformation, "<h1>Care information</h1>", "Care information"],
   [appointments, "<h1>Appointments</h1>", "Appointments"],
@@ -175,7 +175,7 @@ for (const [source, expected, label] of [
 }
 assert.ok(careInformation.includes("CARE_INFORMATION_NAVIGATION.map"), "Care information exposes its child destinations");
 assert.ok(careInformation.includes("Care summary updated") && !careInformation.includes("<span>Updated {formatLastUpdated"), "the date label describes the summary timestamp rather than implying every care record was updated");
-assert.ok(home.includes('viewMode="today"'), "Home uses the concise current-care projection");
+assert.ok(home.includes('viewMode="today"'), "Today uses the concise current-care projection");
 assert.ok(appointments.includes('addEventListener("personIdChanged", resetAppointmentWorkspace)') && appointments.includes("<AppointmentWorkspace key={scopeEpoch}"), "appointment drafts and in-flight workspace state are discarded when the active care recipient changes");
 assert.ok(careInformation.includes("<LCRCurrentUnderstanding />"), "Care information retains the complete care-record view");
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
@@ -235,7 +235,7 @@ assert.ok(reminders.includes('href="/workspace/care-continuity"'), "Reminders re
 assert.ok(reminders.includes('addEventListener("personIdChanged", refreshForSessionChange)') && reminders.includes("scopeSequenceRef.current += 1") && reminders.includes("setReminders([])"), "Reminders clears previous-recipient data and reloads on an active care-record change");
 assert.ok(reminders.includes("isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)"), "reminder writes and feedback remain bound to the initiating caregiver and care recipient");
 
-assert.ok(home.includes('href="/workspace/care-continuity"') && home.includes("View care information"), "Home links to Care information using the canonical destination name");
+assert.ok(home.includes('href="/workspace/care-continuity"') && home.includes("View care information"), "Today links to Care information using the canonical destination name");
 assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
 assert.ok(addUpdate.includes("Upload a medical document"), "medical document upload is a visible Add an update action");
