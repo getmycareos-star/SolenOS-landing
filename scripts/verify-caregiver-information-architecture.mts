@@ -177,6 +177,9 @@ assert.ok(home.includes('viewMode="today"'), "Home uses the concise current-care
 assert.ok(careInformation.includes("<LCRCurrentUnderstanding />"), "Care information retains the complete care-record view");
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
 assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
+assert.ok(history.includes("return !safeDate(event.occurred_at)"), "a missing or invalid event timestamp is never silently replaced with the time the record was saved");
+assert.ok(!history.includes(': typeof row.recorded_at === "string" ? row.recorded_at : null,'), "the timeline mapping keeps event time separate from record time");
+
 assert.ok(history.includes("updateHistoryUrl") && history.includes('params.get("filter")') && history.includes('params.get("q")'), "Care history preserves its search and filters when a caregiver opens a source and returns");
 assert.ok(history.includes("Open original document"), "document-backed history entries expose a direct source link");
 assert.ok(history.includes('event.source_type === "evidence"') && history.includes("encodeURIComponent(event.id)"), "document drill-down uses the exact evidence event identity rather than an unrelated evidence list entry");
