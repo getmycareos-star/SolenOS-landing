@@ -228,7 +228,7 @@ export default function CareRemindersPage() {
   return (
     <div className="mobile-screen care-reminders-page">
       <div className="care-reminders-header">
-        <Link href="/workspace" className="care-reminders-back">
+        <Link href="/workspace/care-continuity" className="care-reminders-back">
           <ArrowLeft size={18} aria-hidden /> Back to Care information
         </Link>
         <p className="care-reminders-eyebrow"><Clock3 size={15} aria-hidden /> REMINDERS</p>
