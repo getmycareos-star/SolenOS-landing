@@ -1303,6 +1303,8 @@ await record("01c workspace links, browser back, More menu and account form vali
   const deleteDialog = await deleteDialogPromise;
   assert.match(deleteDialog.message(), /unsent updates stored only in this browser/i,
     "device cleanup must tell caregivers that unsent local updates will be removed");
+  assert.match(deleteDialog.message(), /An update already being sent may still reach SolenOS/i,
+    "device cleanup must disclose that an in-flight request may still reach the server");
   assert.match(deleteDialog.message(), /does not delete care information already saved in SolenOS/i,
     "workspace deletion must distinguish local browser data from saved care information");
   await deleteDialog.accept();
