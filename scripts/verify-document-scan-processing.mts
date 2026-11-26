@@ -47,7 +47,7 @@ assert.match(mobileDocumentE2E, /--use-fake-device-for-media-stream/, "browser c
 assert.match(mobileDocumentE2E, /video\.videoWidth > 0 && video\.videoHeight > 0/, "camera acceptance must wait for a live video frame before capture");
 assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Take photo"/, "camera acceptance must exercise the actual capture control");
 assert.match(mobileDocumentE2E, /getByRole\("button", \{ name: "Save files"/, "mobile file-picker acceptance must exercise original upload");
-assert.match(mobileDocumentE2E, /Exact copy of/, "the mobile Documents browser journey must show exact duplicate relationships");
+assert.match(mobileDocumentE2E, /This is the same file as/, "the mobile Documents browser journey must show exact duplicate relationships");
 assert.match(mobileDocumentE2E, /Possible newer or corrected copy of/, "the mobile Documents browser journey must show possible version relationships");
 assert.match(mobileDocumentE2E, /unreadableExtraction\.payload\.unreadable_page_numbers, \[1\]/, "the browser journey must exercise a genuinely unreadable source page");
 assert.match(mobileDocumentE2E, /Scan these pages again/, "the browser journey must recover an unreadable page through the camera scanner");
