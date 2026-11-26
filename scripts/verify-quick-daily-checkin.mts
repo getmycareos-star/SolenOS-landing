@@ -129,7 +129,7 @@ assert.match(detailedCapture, /value="scheduled">Scheduled \(not confirmed as gi
   "a scheduled dose is explicitly distinct from a reported administration");
 assert.match(detailedCapture, /This records an expected dose only/,
   "the medicine interaction warns that scheduled does not mean given");
-assert.match(detailedCapture, /temperature: \["°F", "°C"\]/,
+assert.match(detailedCapture, /temperature:\s*\[\s*['"]°F['"],\s*['"]°C['"]\s*\]/,
   "temperature capture offers explicit US and metric units");
 assert.match(detailedCapture, /weight: \["lb", "kg"\]/,
   "weight capture offers explicit US and metric units");
