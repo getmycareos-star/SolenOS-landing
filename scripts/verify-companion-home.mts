@@ -125,6 +125,13 @@ assert.match(shell, /intent={sharePanelIntent}/);
 assert.match(shell, /It does not delete care information already saved in SolenOS/i, "workspace deletion must clearly distinguish local device data from saved care information");
 assert.match(shell, /getAnonymousAccessToken/);
 assert.match(shell, /revokeAnonymousSession/);
+assert.match(shell, /await clearDurableWriteQueue\(\)/,
+  "clearing a device must delete device-only offline care submissions as well as local session keys");
+assert.match(shell, /unsent updates stored only in this browser/,
+  "the confirmation must explain that unsent local updates will be removed");
+const durableQueue = read("src/lib/offline-sync/durable-write-queue.ts");
+assert.match(durableQueue, /indexedDB\.deleteDatabase\(DATABASE_NAME\)/,
+  "explicit device cleanup must remove the encrypted queue and its local encryption key");
 assert.doesNotMatch(home, /startInUpdateMode|CognitiveWorkspace/);
 assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /I need to talk it through/);
