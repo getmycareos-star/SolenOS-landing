@@ -1411,8 +1411,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     (item.source === "conflicts" || item.source === "reconciliations") && isMedicationConflict(item)
   );
   const careConflicts = watchUncertainties.filter((item) =>
-    (item.source === "conflicts" || item.source === "reconciliations") &&
-    !isMedicationConflict(item)
+    item.source === "conflicts" || item.source === "reconciliations"
   );
   const otherUncertainties = watchUncertainties.filter((item) =>
     item.source !== "conflicts" && item.source !== "reconciliations"
