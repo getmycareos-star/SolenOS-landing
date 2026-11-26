@@ -249,9 +249,10 @@ function AttentionCard({ item, loops, onUpdate, onAction, onHistory, onCreate, b
   const reasonLines = reasonCandidates
     .map((line) => caregiverSafeGeneratedText(line))
     .filter((line): line is string => Boolean(line));
-  const categoryLabel = item.category === "needs_attention_now" || item.category === "important_to_address" ? "Needs attention"
-    : item.category === "can_wait_with_documented_basis" ? "Being monitored"
-    : item.category === "needs_clarification" ? "Needs clarification" : "Follow-up";
+  const categoryLabel = item.category === "needs_attention_now" ? "Needs attention now"
+    : item.category === "important_to_address" ? "Important to address"
+      : item.category === "can_wait_with_documented_basis" ? "Being monitored"
+        : item.category === "needs_clarification" ? "Needs clarification" : "Follow-up";
 
   return <article className="followup-card">
     <div className="followup-card-heading">
@@ -451,11 +452,16 @@ export default function FollowUpsPage() {
       const seen = new Set<string>();
       return items.filter((item) => { const key = decisionKey(item); if (seen.has(key)) return false; seen.add(key); return true; });
     };
+    // Keep the highest-priority classification when a source appears in more
+    // than one assessment bucket. Do not collapse "now" and "important" into
+    // one category; caregivers need to understand the difference.
+    const needsAttentionNow = unique(care?.needs_attention_now || []);
+    const needsAttentionNowKeys = new Set(needsAttentionNow.map(decisionKey));
+    const importantToAddress = unique(care?.important_to_address || [])
+      .filter((item) => !needsAttentionNowKeys.has(decisionKey(item)));
     return {
-      // Keep assessment classification visible even when an Open Loop is linked.
-      // AttentionCard resolves the linked loop so the caregiver sees the correct
-      // category and the saved action history on the same card.
-      needsAttention: unique([...(care?.needs_attention_now || []), ...(care?.important_to_address || [])]),
+      needsAttentionNow,
+      importantToAddress,
       monitored: unique(care?.can_wait_with_documented_basis || []),
       needsClarification: unique(care?.needs_clarification || []),
     };
@@ -610,7 +616,7 @@ export default function FollowUpsPage() {
     }
   }
 
-  const allAttention = [...categorized.needsAttention, ...categorized.monitored, ...categorized.needsClarification];
+  const allAttention = [...categorized.needsAttentionNow, ...categorized.importantToAddress, ...categorized.monitored, ...categorized.needsClarification];
   const linkedLoops = loops.filter((loop) => !["closed", "cancelled"].includes(loop.status));
   const unclassifiedLoops = linkedLoops.filter((loop) => !allAttention.some((item) =>
     item.record_id === loop.id
@@ -643,9 +649,14 @@ export default function FollowUpsPage() {
     {assessmentIsBounded && <p className="followups-limitation" role="note">Some saved care information is missing or has not been checked. There may still be something that needs attention, even if it is not shown here.</p>}
     {loading ? <section className="followups-empty" aria-live="polite">Checking saved care information…</section> : error && loops.length === 0 && !assessment ? <section className="followups-empty"><AlertCircle size={22} /><h2>Saved care information is unavailable</h2><p>We can’t tell what still needs attention until your Care Record loads.</p></section> : <>
       <section className="followups-section">
-        <div className="followups-section-heading"><div><h2>Needs attention</h2><p>Things that may need your attention now or soon.</p></div><span>{categorized.needsAttention.length}</span></div>
-        {categorized.needsAttention.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} occurrences={loops.find((loop) => loop.id === item.record_id) ? occurrencesById[item.record_id || ""] : undefined} />)}
-        {categorized.needsAttention.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "Nothing was marked as needing attention the last time we checked. There may still be things your family wants to follow up on." : "We couldn’t check what needs attention just now. Your saved follow-ups are still shown below."}</p>}
+        <div className="followups-section-heading"><div><h2>Needs attention now</h2><p>The latest review marked these matters for attention now. Check the saved details and timing; this is not a diagnosis.</p></div><span>{categorized.needsAttentionNow.length}</span></div>
+        {categorized.needsAttentionNow.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} occurrences={loops.find((loop) => loop.id === item.record_id) ? occurrencesById[item.record_id || ""] : undefined} />)}
+        {categorized.needsAttentionNow.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "The latest review did not mark any matters for attention now. The information may still be incomplete." : "We couldn’t check what needs attention now. Your saved follow-ups are still shown below."}</p>}
+      </section>
+      <section className="followups-section">
+        <div className="followups-section-heading"><div><h2>Important to address</h2><p>Important unresolved matters that were not marked for immediate attention.</p></div><span>{categorized.importantToAddress.length}</span></div>
+        {categorized.importantToAddress.map((item) => <AttentionCard key={decisionKey(item)} item={item} loops={loops} onUpdate={shareUpdate} onAction={recordAction} onHistory={loadHistory} onCreate={createFollowUp} busy={busyId === item.record_id || busyId === item.source + ":" + item.record_id} history={loops.find((loop) => loop.id === item.record_id) ? historyById[item.record_id || ""] : undefined} occurrences={loops.find((loop) => loop.id === item.record_id) ? occurrencesById[item.record_id || ""] : undefined} />)}
+        {categorized.importantToAddress.length === 0 && <p className="followups-empty-inline">{assessment?.care_attention ? "No separate important matters were marked in the latest review." : "We couldn’t check which matters are important to address just now."}</p>}
       </section>
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Being monitored</h2><p>Things that can wait based on the information available.</p></div><span>{categorized.monitored.length}</span></div>
