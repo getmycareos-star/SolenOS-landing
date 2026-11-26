@@ -764,21 +764,35 @@ function historySourceLabel(source: string): string {
   return HISTORY_SOURCE_LABELS[source] ?? "Care information";
 }
 
-function missingInformationReasonLabel(reason?: string | null): string {
-  switch (String(reason ?? "").trim().toLowerCase()) {
-    case "not_provided": return "Not provided";
-    case "not_documented": return "Not recorded";
+function missingInformationReasonLabel(reason?: string | null, epistemicStatus?: string | null): string {
+  const normalizedReason = String(reason ?? "").trim().toLowerCase();
+  if (normalizedReason) {
+    switch (normalizedReason) {
+      case "not_provided": return "Not provided";
+      case "not_documented": return "Not recorded";
+      case "not_assessed": return "Not checked yet";
+      case "absent": return "Recorded as absent";
+      case "not_yet_observed": return "Not observed yet";
+      case "ambiguous": return "Unclear";
+      case "conflicting": return "Reports do not match";
+      case "low_quality": return "Source needs checking";
+      case "outdated": return "May be out of date";
+      case "missing_context": return "More context needed";
+      case "expected_but_unavailable": return "Expected information unavailable";
+      case "insufficient_evidence": return "Not enough information to confirm";
+      case "inaccessible": return "Source unavailable";
+    }
+  }
+  switch (String(epistemicStatus ?? "").trim().toLowerCase()) {
+    case "unknown": return "Unknown";
     case "not_assessed": return "Not checked yet";
-    case "absent": return "Recorded as absent";
-    case "not_yet_observed": return "Not observed yet";
+    case "not_documented": return "Not recorded";
+    case "not_verified":
+    case "unverified": return "Not verified";
+    case "partially_known": return "Partly known";
     case "ambiguous": return "Unclear";
     case "conflicting": return "Reports do not match";
-    case "low_quality": return "Source needs checking";
-    case "outdated": return "May be out of date";
-    case "missing_context": return "More context needed";
-    case "expected_but_unavailable": return "Expected information unavailable";
-    case "insufficient_evidence": return "Not enough information to confirm";
-    case "inaccessible": return "Source unavailable";
+    case "stale": return "May be out of date";
     default: return "Needs checking";
   }
 }
@@ -1892,7 +1906,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           )}
           {watchMissingInformation.length > 0 && (
             <p className="lcr-entry-status">
-              <strong>Information still to check:</strong> {missingInformationReasonLabel(watchMissingInformation[0].gap_reason)} — {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "A relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail" : "details"}` : ""}. A missing detail is not proof that the information is absent.
+              <strong>Information still to check:</strong> {missingInformationReasonLabel(watchMissingInformation[0].gap_reason, watchMissingInformation[0].epistemic_status)} — {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "A relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail" : "details"}` : ""}. A missing detail is not proof that the information is absent.
             </p>
           )}
           {careConflicts.length > 0 && (
