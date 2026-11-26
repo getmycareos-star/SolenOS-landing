@@ -3470,3 +3470,33 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
   outline: 3px solid var(--theme-link);
   outline-offset: -3px;
 }
+
+/* Dark-mode contrast repairs from rendered 8-viewport workspace audit.
+   Keep the intentionally pale action/navigation surfaces paired with dark ink. */
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-subitem.is-active,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-subitem.is-active > span,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-subitem.is-active .solenos-chat-nav-subicon,
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-nav-subitem.is-active .solenos-chat-nav-subicon svg {
+  color: #263f32 !important;
+  -webkit-text-fill-color: #263f32 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .lcr-first-screen-card .lcr-today-empty-state__actions > a.solenos-care-primary-action {
+  background: #b9d0ba !important;
+  border-color: #b9d0ba !important;
+  color: #1b2b20 !important;
+  -webkit-text-fill-color: #1b2b20 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .settings-section-wrap .settings-section-summary-action {
+  color: #294333 !important;
+  -webkit-text-fill-color: #294333 !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .solenos-chat-main .daily-care-capture-option-icon svg {
+  color: #52675a !important;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .care-record-overview__eyebrow {
+  color: #c4d0c6 !important;
+  -webkit-text-fill-color: #c4d0c6 !important;
+}
+.solenos-chat-app .solenos-mobile-bottom-nav a {
+  color: #5f6d62;
+}
