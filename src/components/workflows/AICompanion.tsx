@@ -133,6 +133,7 @@ interface LcrContextCoverage {
 interface PendingCareUpdate {
   id: string
   status: string
+  source_message_id?: string | null
   proposed_change: { asserted_value?: string; source_quote?: string; event_time_text?: string | null }
   created_at?: string | null
 }
