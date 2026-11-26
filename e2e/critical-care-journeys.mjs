@@ -1339,7 +1339,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await deleteDialog.accept();
   await deleteClick;
   await disposable.page.waitForURL("**/start", { timeout: 15_000 });
-  const clearedLocalData = await disposable.page.evaluate(() => ({
+  const clearedLocalData = await disposable.page.evaluate(async () => ({
     token: window.localStorage.getItem("solenos_anonymous_access_token"),
     personId: window.localStorage.getItem("solenos_backend_person_id"),
     caregiverId: window.localStorage.getItem("solenos_backend_caregiver_id"),
@@ -4544,7 +4544,7 @@ await record("16 clearing this device revokes the session and removes SolenOS br
   await privacySettings.getByRole("button", { name: "Clear now", exact: true }).click();
   await page.getByText("Saved SolenOS information, unsent updates and this browser's push subscription were cleared.", { exact: true }).waitFor({ timeout: 10_000 });
 
-  const remaining = await page.evaluate(() => ({
+  const remaining = await page.evaluate(async () => ({
     solenosKeys: Object.keys(localStorage).filter((key) => key.startsWith("solenos_") || key.startsWith("solenos:")),
     deletionMarker: localStorage.getItem("solenos_anonymous_session_revoked"),
     onboarding: localStorage.getItem("onboarding_complete"),
