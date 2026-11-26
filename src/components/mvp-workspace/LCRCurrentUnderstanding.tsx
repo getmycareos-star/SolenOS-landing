@@ -825,6 +825,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const [responsibleCaregiverId, setResponsibleCaregiverId] = useState("");
   const [registeredActions, setRegisteredActions] = useState<RegisteredAction[]>([]);
   const [registeredActionsError, setRegisteredActionsError] = useState<string | null>(null);
+  const [registeredActionsLoading, setRegisteredActionsLoading] = useState(true);
   const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(null);
   const [actionApprovalLoadingId, setActionApprovalLoadingId] = useState<string | null>(null);
   const [actionApprovalError, setActionApprovalError] = useState<string | null>(null);
@@ -1043,6 +1044,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     }
     setError(null);
     setRegisteredActionsError(null);
+    setRegisteredActionsLoading(true);
     setChangesLoading(true);
     setAssessmentLoading(true);
     setChangesError(null);
@@ -1116,6 +1118,26 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
       // Initial hydration is read-only. Reassessment is a caregiver-triggered
       // action, never an automatic write every time the workspace is opened.
       const backgroundTasks = [
+        // Today also needs the persisted action lifecycle so it does not keep
+        // recommending work that a caregiver has already accepted or closed.
+        // This read is deliberately background-only and never blocks the first
+        // current-care projection from appearing.
+        (async () => {
+          try {
+            const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
+            if (!isCurrentRequest()) return;
+            if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== scopedPersonId)) {
+              throw new Error("Saved actions did not match this care record.");
+            }
+            setRegisteredActions(savedActions as RegisteredAction[]);
+            setRegisteredActionsError(null);
+          } catch {
+            if (!isCurrentRequest()) return;
+            setRegisteredActionsError("Agreed actions could not be checked. Refresh before relying on a suggested next step.");
+          } finally {
+            if (isCurrentRequest()) setRegisteredActionsLoading(false);
+          }
+        })(),
         ...(viewMode === "complete" ? [
           (async () => {
             try {
@@ -1129,20 +1151,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
               if (!isCurrentRequest()) return;
               setAssignableCaregivers([]);
               setResponsibleCaregiverId(session.caregiver.id);
-            }
-          })(),
-          (async () => {
-            try {
-              const savedActions = await getJSON(`/registered-actions/${encodeURIComponent(scopedPersonId)}`);
-              if (!isCurrentRequest()) return;
-              if (!Array.isArray(savedActions) || savedActions.some((item) => item?.person_id !== scopedPersonId)) {
-                throw new Error("Saved actions did not match this care record.");
-              }
-              setRegisteredActions(savedActions as RegisteredAction[]);
-              setRegisteredActionsError(null);
-            } catch {
-              if (!isCurrentRequest()) return;
-              setRegisteredActionsError("Agreed actions could not be loaded. Please try again.");
             }
           })(),
         ] : []),
@@ -1463,11 +1471,23 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const immediateCareDecisions = careAttention?.needs_attention_now ?? [];
   const importantCareDecisions = careAttention?.important_to_address ?? [];
   const clarificationCareDecisions = careAttention?.needs_clarification ?? [];
-  const contextualNextDecision =
-    immediateCareDecisions[0] ??
-    clarificationCareDecisions[0] ??
-    importantCareDecisions[0] ??
-    null;
+  const isDecisionAlreadyActioned = (decision: CareAttentionDecision) => {
+    const linkedLoop = openLoopItems.find((item) => item.id === decision.record_id && item.source === decision.source);
+    return Boolean(linkedLoop && registeredActions.some(
+      (action) => action.suggestion_id === `${linkedLoop.source}:${linkedLoop.id}`,
+    ));
+  };
+  const hasRegisteredNextStep = [
+    ...immediateCareDecisions,
+    ...clarificationCareDecisions,
+    ...importantCareDecisions,
+  ].some(isDecisionAlreadyActioned);
+  const contextualNextDecision = registeredActionsLoading || registeredActionsError
+    ? null
+    : immediateCareDecisions.find((decision) => !isDecisionAlreadyActioned(decision)) ??
+      clarificationCareDecisions.find((decision) => !isDecisionAlreadyActioned(decision)) ??
+      importantCareDecisions.find((decision) => !isDecisionAlreadyActioned(decision)) ??
+      null;
   const careRecordHref = (reference: CareAttentionEvidenceRef): string | null => {
     const existsInProjection = projection?.items.some((item) =>
       item.source_collection === reference.source && item.id === reference.record_id
@@ -2913,12 +2933,18 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <p role="alert">The saved care summary could not be loaded, so SolenOS cannot suggest a next step yet.</p>
                   ) : assessmentLoading ? (
                     <p role="status">The current care picture is still being reviewed. No next step has been assumed.</p>
+                  ) : registeredActionsLoading ? (
+                    <p role="status">Checking whether a next step is already saved…</p>
+                  ) : registeredActionsError ? (
+                    <p role="alert">{registeredActionsError}</p>
                   ) : !assessment ? (
                     <p>Care priorities have not been reviewed yet. Review the saved information before relying on a next step.</p>
                   ) : immediateCareDecisions.length > 0 ? (
                     <p>Some care matters remain unresolved. Review the saved details before deciding what to do.</p>
                   ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
                     <p>Some saved information is missing, unclear or does not match. Reviewing it may help make the care picture clearer.</p>
+                  ) : hasRegisteredNextStep ? (
+                    <p>A next step is already saved. Check Needs attention for its current status before creating another one.</p>
                   ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
                     <p>There are changes or unresolved matters you may want to review.</p>
                   ) : (
@@ -2953,6 +2979,10 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
                   ) : assessmentLoading ? (
                     <span role="status">Reviewing…</span>
+                  ) : registeredActionsLoading ? (
+                    <span role="status">Checking saved next steps…</span>
+                  ) : registeredActionsError ? (
+                    <button type="button" className="solenos-care-primary-action" onClick={() => void load(true)}>Try again</button>
                   ) : !assessment ? (
                     <Link href="/workspace/care-continuity" className="solenos-care-primary-action">Review care information</Link>
                   ) : immediateCareDecisions.length > 0 ? (
