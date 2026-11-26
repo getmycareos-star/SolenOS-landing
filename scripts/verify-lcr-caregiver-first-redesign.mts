@@ -224,7 +224,7 @@ console.log("✓ legacy LCR home is not exposed; its route returns caregivers to
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
 assert.match(companion, /Care Assistant/, "the caregiver-facing assistant uses the approved caregiver-facing name");
 assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
-assert.match(navigation, /label: "Ask SolenOS"/, "workspace navigation uses the Care Assistant destination name");
+assert.match(navigation, /label: "Care Assistant"/, "workspace navigation uses the Care Assistant destination name");
 assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
 assert.match(publicHome, /Ask SolenOS/, "the public home page uses the canonical Ask SolenOS name");

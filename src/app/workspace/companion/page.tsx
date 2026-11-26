@@ -75,7 +75,7 @@ function WorkspaceHomeInner() {
 
 export default function WorkspaceHomePage() {
   return (
-    <Suspense fallback={<BrandLoading animate message="Opening Ask SolenOS…" />}>
+    <Suspense fallback={<BrandLoading animate message="Opening Care Assistant…" />}>
       <WorkspaceHomeInner />
     </Suspense>
   );
