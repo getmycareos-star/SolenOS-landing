@@ -138,4 +138,42 @@ console.log("✓ SoT + priority order");
   console.log("✓ reality recurrence ≠ text recurrence");
 }
 
+{
+  resetCareRealityMemoryStore();
+  resetMultiCaregiverContextStore();
+  const careKey = resolveCareRealityStoreKey("crm_unavailable_confidence");
+  const evidenceId = "observation-confidence-unavailable";
+  const result = ingestCareRealityMemoryFromCapture({
+    careKey,
+    rawText: "A caregiver observation with no confidence assessment was supplied.",
+    subject: "Mom",
+    contributorId: "crm_unavailable_confidence",
+    nowIso: "2026-07-21T10:00:00.000Z",
+    extraction: {
+      observations: [{
+        id: evidenceId,
+        layer: "observation",
+        description: "Caregiver noticed an unfamiliar sleep pattern.",
+        approximate_time: null,
+        source: "caregiver",
+        confidence: "unavailable",
+        raw_fragment: "unfamiliar sleep pattern",
+      }],
+      events: [],
+      decisions: [],
+      actions: [],
+      outcomes: [],
+      unknowns: [],
+      non_care_facts: [],
+      relationships: [],
+      observation_focus_lines: [],
+    },
+  });
+  const stored = listCareRealityMemory(careKey).find((item) => item.evidence_ref === evidenceId);
+  assert.ok(result.objects.some((item) => item.evidence_ref === evidenceId), "the observation should remain eligible for memory");
+  assert.equal(stored?.confidence.observation, "unavailable",
+    "missing confidence must remain unavailable rather than being upgraded or relabeled as low");
+  console.log("✓ unavailable observation confidence remains explicit");
+}
+
 console.log("\nverify:care-reality-memory OK");
