@@ -26,10 +26,10 @@ const CARE_EXPERIENCE = [
       "Use it when something happens today, when you need to add or correct a care note, or when you want to capture an update for later review.",
   },
   {
-    title: "Care Assistant",
+    title: "Ask SolenOS",
     subtitle: "Get help working through care situations",
     body:
-      "The Care Assistant helps caregivers think through a situation, understand saved information, prepare questions and get ready for appointments or care handoffs. It explains when something is not clear.",
+      "Ask SolenOS helps caregivers think through a situation, understand saved information, prepare questions and get ready for appointments or care handoffs. It explains when something is not clear.",
     useWhen:
       "Use it when you want help thinking through a situation, making sense of information, or preparing what to ask a care professional.",
   },
@@ -87,7 +87,7 @@ export default function HowItWorksPage() {
           Imagine you notice that a family member has been sleeping poorly.
           Record what you observed in Daily Care. After you review the update,
           it can be saved to your Care Record with what was reported and when.
-          Then use the Care Assistant if you want help preparing questions for
+          Then use Ask SolenOS if you want help preparing questions for
           the next care professional. Its suggestions do not become care facts
           unless they are reviewed and saved.
         </p>
@@ -95,14 +95,14 @@ export default function HowItWorksPage() {
           You do not have to visit all three parts every time. Something
           happened? Start in Daily Care. Need the bigger picture? Open the
           Care Record. Need help thinking something through or getting ready for an appointment?
-          Use the Care Assistant.
+          Use Ask SolenOS.
         </p>
         <blockquote className="public-pull">
           Add an update in Daily Care. Find it later in your Care Record.
-          Talk it through with the Care Assistant.
+          Talk it through with Ask SolenOS.
         </blockquote>
         <p className="public-prose">
-          The Care Record keeps saved care information together. Daily Care helps you add or correct information. The Care Assistant can help explain it, but it is not a healthcare professional and its suggestions do not automatically become part of the Care Record. SolenOS should clearly show what was reported, what is not certain, and what information is missing.
+          The Care Record keeps saved care information together. Daily Care helps you add or correct information. Ask SolenOS can help explain it, but it is not a healthcare professional and its suggestions do not automatically become part of the Care Record. SolenOS should clearly show what was reported, what is not certain, and what information is missing.
         </p>
       </section>
 
