@@ -3507,3 +3507,73 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
     display: none;
   }
 }
+
+
+/* Shared record states: one loading/empty/error treatment across workspaces. */
+.solenos-chat-app .record-state {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--sn-line);
+  border-radius: 12px;
+  background: var(--sn-surface);
+  color: var(--sn-ink);
+}
+.solenos-chat-app .record-state-title {
+  color: var(--sn-forest);
+  font-size: calc(15px * var(--solenos-text-scale, 1));
+}
+.solenos-chat-app .record-state-description {
+  margin: 0;
+  color: var(--sn-muted);
+  font-size: calc(14px * var(--solenos-text-scale, 1));
+  line-height: 1.6;
+}
+.solenos-chat-app .record-state--error,
+.solenos-chat-app .record-state--forbidden,
+.solenos-chat-app .record-state--unavailable {
+  border-color: #e5c4b6;
+  background: #fff8f4;
+  color: #4d2c21;
+}
+.solenos-chat-app .record-state-action {
+  justify-self: start;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--sn-line);
+  border-radius: 9px;
+  background: var(--sn-surface-soft);
+  color: var(--sn-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app {
+  --sn-canvas: #101713;
+  --sn-surface: #1b2520;
+  --sn-surface-soft: #202d25;
+  --sn-surface-hover: #29372e;
+  --sn-ink: #eef4ed;
+  --sn-muted: #b7c4b9;
+  --sn-subtle: #93a398;
+  --sn-line: #3a4a3e;
+  --sn-sage: #8ba68d;
+  --sn-sage-strong: #a7c9aa;
+  --sn-forest: #e6f0e5;
+  --sn-focus: #f4d35e;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app .record-state--error,
+:root[data-solenos-theme="dark"] .solenos-chat-app .record-state--forbidden,
+:root[data-solenos-theme="dark"] .solenos-chat-app .record-state--unavailable {
+  border-color: #79523e;
+  background: #34251f;
+  color: #ffe8d7;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border-color: #53685a;
+  background: #202b24;
+  color: #f1f6ef;
+}
+:root[data-solenos-theme="dark"] .solenos-chat-app :where(input, textarea)::placeholder {
+  color: #a3b1a5;
+}
