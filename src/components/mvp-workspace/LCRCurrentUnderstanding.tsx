@@ -2748,7 +2748,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             ) : (
               <div className="lcr-empty-state">
                 <h3>Your Care Record does not have any care information yet.</h3>
-                <p>Add what you know in Daily Care or upload a care document. You can also ask the Care Assistant to help you understand saved information.</p>
+                <p>Add what you know in Daily Care or upload a care document. You can also ask SolenOS to help you understand saved information.</p>
               </div>
             )
           ) : (
