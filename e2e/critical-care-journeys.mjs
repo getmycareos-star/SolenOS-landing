@@ -266,18 +266,18 @@ await record("00 first-time and returning caregivers share Home and the same LCR
     "first-time caregivers must not be routed into a separate capture-only presentation",
   );
   assert.equal(
-    await page.getByRole("link", { name: "Add a care update", exact: true }).isVisible(),
+    await page.getByRole("link", { name: "Add an update", exact: true }).isVisible(),
     true,
     "the shared empty state must provide a direct first contribution path",
   );
   assert.equal(
-    await page.getByRole("link", { name: "Upload a care document", exact: true }).isVisible(),
+    await page.getByRole("link", { name: "Upload a medical document", exact: true }).isVisible(),
     true,
     "the shared empty state must expose the existing document workflow",
   );
 
   const firstNote = "Mum has been forgetting whether she has eaten breakfast.";
-  await page.getByRole("link", { name: "Add a care update", exact: true }).click();
+  await page.getByRole("link", { name: "Add an update", exact: true }).click();
   await page.getByRole("heading", { name: "Add an update", exact: true })
     .waitFor({ state: "visible", timeout: 15_000 });
   await page.getByRole("button", { name: /Describe an update/ }).click();
