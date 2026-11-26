@@ -1843,7 +1843,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           )}
           {careConflicts.length > 0 && (
             <p className="lcr-entry-status">
-              <strong>Reports that do not match:</strong> {careConflicts.length} unresolved {careConflicts.length === 1 ? "disagreement is" : "disagreements are"} recorded. SolenOS has not treated one report as the final answer.{" "}
+              <strong>Reports that do not match:</strong> {caregiverSafeAssistantText(careConflicts[0].title) || "Care reports"} · {careConflicts.length} unresolved {careConflicts.length === 1 ? "disagreement is" : "disagreements are"} recorded. SolenOS has not treated one report as the final answer.{" "}
               {viewMode === "today" ? (
                 <Link href="/workspace/care-continuity#lcr-conflict-review">Review both reports</Link>
               ) : (
