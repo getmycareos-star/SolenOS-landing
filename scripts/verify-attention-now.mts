@@ -57,6 +57,7 @@ assert.match(component, /assessment\?\.care_attention/);
 assert.match(component, /careAttention\.important_to_address/);
 assert.match(component, /careAttention\.needs_clarification/);
 assert.match(component, /contextualNextDecision/, "Home next steps must select from persisted care-attention decisions");
+assert.match(component, /immediateCareDecisions\[0\] \?\? clarificationCareDecisions\[0\] \?\? importantCareDecisions\[0\]/, "next-step ordering must prefer immediate concerns, then clarification, then important review");
 assert.match(component, /contextualNextDecision\.reason/, "the recommended next step must explain its record-grounded reason");
 assert.match(component, /contextualNextDecision\.priority_basis/, "the next step may explain the deterministic priority basis when no reason text is supplied");
 assert.match(component, /contextualNextDecision\.records\?\.length/, "the next step must expose linked care-record support when available");
