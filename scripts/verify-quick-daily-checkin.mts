@@ -97,6 +97,25 @@ assert.match(detailedCapture, /value="scheduled">Scheduled \(not confirmed as gi
   "a scheduled dose is explicitly distinct from a reported administration");
 assert.match(detailedCapture, /This records an expected dose only/,
   "the medicine interaction warns that scheduled does not mean given");
+assert.match(detailedCapture, /temperature: \["°F", "°C"\]/,
+  "temperature capture offers explicit US and metric units");
+assert.match(detailedCapture, /weight: \["lb", "kg"\]/,
+  "weight capture offers explicit US and metric units");
+assert.match(detailedCapture, /blood_glucose: \["mg\/dL", "mmol\/L"\]/,
+  "blood glucose capture offers explicit supported units");
+assert.match(detailedCapture, /top number should be higher than the bottom number/,
+  "blood pressure capture rejects reversed systolic and diastolic values");
+assert.match(detailedCapture, /oxygen level must be 100% or lower/,
+  "oxygen saturation capture rejects values above its percentage scale");
+assert.match(detailedCapture, /Enter the unit for this measurement/,
+  "custom measurements require an explicit unit");
+assert.match(detailedCapture, /<option value="refused">Refused<\/option>/,
+  "medication refusal is distinct from an unspecified not-given status");
+assert.match(detailedCapture, /<option value="missed">Missed<\/option>/,
+  "missed medication is distinct from refusal");
+assert.match(detailedCapture, /Dose or strength \(optional\)/,
+  "caregivers are not forced to guess an unknown medication dose");
+
 assert.match(dailyCarePage, /type CaptureMode = "update" \| "photo" \| "checkin"/,
   "Daily Care exposes only three primary capture choices");
 for (const action of ["update", "photo", "checkin"]) {
