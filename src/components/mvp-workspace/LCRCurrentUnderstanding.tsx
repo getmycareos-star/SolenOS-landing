@@ -1118,7 +1118,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             setAssessmentError("The saved care summary could not be loaded. Please try again.");
           }
         })(),
-      ];;
+      ];
       const backgroundWork = Promise.allSettled(backgroundTasks).finally(() => { if (isCurrentRequest()) setRefreshing(false); });
       if (manual) await backgroundWork;
       else void backgroundWork;
