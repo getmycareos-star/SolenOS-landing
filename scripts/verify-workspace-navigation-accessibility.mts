@@ -34,7 +34,7 @@ assert.match(accessibilityOverrides, /data-solenos-theme="dark"[\s\S]*?outline-c
 assert.match(recordState, /aria-labelledby={titleId}/);
 assert.match(recordState, /aria-busy={kind === "loading"}/);
 assert.match(designSystem, /\.record-state-action[\s\S]*?min-height: 44px/);
-assert.match(designSystem, /data-solenos-theme="dark" \.solenos-chat-app[\s\S]*?--sn-surface: #1b2520[\s\S]*?--sn-ink: #eef4ed/);
+assert.match(designSystem, /:root\[data-solenos-theme="dark"\] \.solenos-chat-app[\s\S]*?--sn-surface: #1d2821[\s\S]*?--sn-ink: #edf3ed/);
 
 
 assert.match(shell, /className="solenos-sidebar-icon-button solenos-sidebar-toggle"/);
