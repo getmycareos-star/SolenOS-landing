@@ -153,7 +153,7 @@ export default function DailyCarePhotoCapture() {
     setIngestionKey(retryKey);
 
     try {
-      setUploadStage("sending");
+      if (typeof navigator !== "undefined" && navigator.onLine) setUploadStage("sending");
       const result = await extractAttachedDocument(
         file,
         captureMethod,
