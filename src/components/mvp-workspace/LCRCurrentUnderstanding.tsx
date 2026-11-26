@@ -1817,11 +1817,11 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       {item.recorded_at ? ` · Saved ${formatWhen(item.recorded_at)}` : ""}
                     </small>
                     {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
-                    <a className="lcr-text-action" aria-label={`View ${displayCurrentCareTitle(item)} in the complete Care Record`} href={viewMode === "today" ? `/workspace/care-continuity#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}` : `#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View this detail</a>
+                    <a className="lcr-text-action" aria-label={`View ${displayCurrentCareTitle(item)} in Care information`} href={viewMode === "today" ? `/workspace/care-continuity#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}` : `#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View this detail</a>
                   </li>
                 ))}
               </ul>
-              {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. Open your full care history to review the rest.</p>}
+              {projection.item_count > 2 && <p className="lcr-entry-status">Showing 2 of {projection.item_count} saved care details. <Link href="/workspace/care-continuity" className="lcr-text-action">View all care information</Link>.</p>}
             </>
           ) : projection && (projection.missing_required_sources.length > 0 || projection.missing_optional_sources.length > 0 || (projection.failed_sources?.length ?? 0) > 0) ? (
             <>
@@ -1833,8 +1833,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
               <RecordState kind="first-empty" title="Your Care Record starts here" description="Keep care notes and documents together so you can understand what is happening and what has changed." />
               <p>Start with one thing you already know or something you have noticed. You can add more whenever you are ready.</p>
               <div className="lcr-today-empty-state__actions">
-                <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add a care update</Link>
-                <Link href="/workspace/documents" className="solenos-care-secondary-action">Upload a care document</Link>
+                <Link href="/workspace/daily-care" className="solenos-care-primary-action">Add an update</Link>
+                <Link href="/workspace/documents" className="solenos-care-secondary-action">Upload a medical document</Link>
               </div>
             </div>
           ) : projection ? (
@@ -2748,7 +2748,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
             ) : (
               <div className="lcr-empty-state">
                 <h3>Your Care Record does not have any care information yet.</h3>
-                <p>Add what you know in Daily Care or upload a care document. You can also ask SolenOS to help you understand saved information.</p>
+                <p>Add what you know in Daily Care or upload a medical document. You can also ask SolenOS to help you understand saved information.</p>
               </div>
             )
           ) : (
