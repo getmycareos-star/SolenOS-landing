@@ -6,6 +6,11 @@ const snapCamera = readFileSync("src/components/mvp-workspace/capture/SnapCamera
 const scanCamera = readFileSync("src/components/mvp-workspace/capture/ScanDocumentCapture.tsx", "utf8");
 const dailyCare = readFileSync("src/app/workspace/daily-care/page.tsx", "utf8");
 const review = readFileSync("src/components/DocumentIntelligenceReview.tsx", "utf8");
+const completeness = review.slice(review.indexOf("export function documentExtractionIsComplete"), review.indexOf("type LibraryDocument"));
+assert.match(completeness, /typeof totalPageCount === "number"/, "unknown source page totals must never be treated as complete");
+assert.match(completeness, /Number\.isInteger\(totalPageCount\)[\s\S]*?totalPageCount > 0/, "a complete document must have a positive integer source-page total");
+assert.match(completeness, /typeof processedPageCount === "number"[\s\S]*?processedPageCount >= totalPageCount/, "a complete document must prove every source page was extracted");
+assert.doesNotMatch(completeness, /totalPageCount === undefined\s*\|\|/, "missing page metadata must fail closed instead of bypassing completeness checks");
 assert.match(snapCamera, /cameraFacingMode[\s\S]*?facingMode: \{ ideal: cameraFacingMode \}[\s\S]*?Switch to \{cameraFacingMode === "environment" \? "front" : "back"\} camera/, "Snap must let caregivers switch front and rear cameras");
 assert.match(scanCamera, /cameraFacingMode[\s\S]*?facingMode: \{ ideal: cameraFacingMode \}[\s\S]*?Switch to \{cameraFacingMode === "environment" \? "front" : "back"\} camera/, "Scan must let caregivers switch front and rear cameras");
 assert.match(scanCamera, /setPages\(\[\]\);[\s\S]*?\}, \[open\]\);/, "switching cameras must not discard captured scan pages");
