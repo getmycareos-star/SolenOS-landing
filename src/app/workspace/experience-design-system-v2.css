@@ -3424,3 +3424,22 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
     min-height: 76px;
   }
 }
+
+
+.solenos-chat-app .documents-return-context {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 10px;
+  color: var(--theme-link);
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  font-weight: 650;
+  text-decoration: none;
+}
+.solenos-chat-app .documents-return-context:hover {
+  background: var(--theme-panel-bg);
+}
