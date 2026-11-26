@@ -329,7 +329,7 @@ export async function isDurableWriteStoragePersistent(): Promise<boolean> {
  * Permanently clears device-only queued writes and their encryption key.
  * Call only after the caregiver explicitly confirms clearing this device.
  */
-export async function clearDurableWriteQueue(): Promise<void> {
+export async function clearDurableWriteQueue(onBlocked?: () => void): Promise<void> {
   if (typeof window === "undefined" || !window.indexedDB) return;
 
   // Stop new writes and wait for any request already in flight. A submission
@@ -354,13 +354,20 @@ export async function clearDurableWriteQueue(): Promise<void> {
   try {
     await new Promise<void>((resolve, reject) => {
       const request = window.indexedDB.deleteDatabase(DATABASE_NAME);
+      let notifiedBlocked = false;
       request.onsuccess = () => resolve();
       request.onerror = () => reject(
         request.error ?? new Error("Could not clear encrypted offline updates from this device."),
       );
-      request.onblocked = () => reject(
-        new Error("Offline updates are still open in another SolenOS tab. Close other SolenOS tabs and try clearing this device again."),
-      );
+      request.onblocked = () => {
+        if (notifiedBlocked) return;
+        notifiedBlocked = true;
+        try {
+          onBlocked?.();
+        } catch {
+          // A caregiver-facing notice must not change the database deletion outcome.
+        }
+      };
     });
   } catch (error) {
     queueClearing = false;
