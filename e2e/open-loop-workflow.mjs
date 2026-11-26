@@ -64,6 +64,26 @@ try {
 
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Needs attention", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Resolved", exact: true }).waitFor({ timeout: 20_000 });
+  const followUpSectionPlacement = await page.evaluate(() => {
+    const findSection = (heading) => [...document.querySelectorAll(".followups-section")]
+      .find((section) => section.querySelector(".followups-section-heading h2")?.textContent?.trim() === heading);
+    const resolved = findSection("Resolved");
+    const noLongerRelevant = findSection("No longer relevant");
+    return {
+      resolvedExists: Boolean(resolved),
+      noLongerRelevantExists: Boolean(noLongerRelevant),
+      resolvedContainsNoLongerRelevant: Boolean(resolved && noLongerRelevant && resolved.contains(noLongerRelevant)),
+      noLongerRelevantContainsResolved: Boolean(resolved && noLongerRelevant && noLongerRelevant.contains(resolved)),
+    };
+  });
+  assert.ok(
+    followUpSectionPlacement.resolvedExists &&
+    followUpSectionPlacement.noLongerRelevantExists &&
+    !followUpSectionPlacement.resolvedContainsNoLongerRelevant &&
+    !followUpSectionPlacement.noLongerRelevantContainsResolved,
+    "Resolved and No longer relevant must be separate peer sections",
+  );
   await page.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
