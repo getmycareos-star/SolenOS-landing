@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/brand";
 import Link from "next/link";
@@ -16,11 +16,21 @@ const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
 function WorkspaceHomeInner() {
   const searchParams = useSearchParams();
   const promptValues = searchParams.getAll("prompt");
+  const hasSinglePrompt = promptValues.length === 1;
+  const rawPrompt = hasSinglePrompt ? promptValues[0] : null;
   // Repeated prompt parameters are ambiguous; do not let them alter the
   // caregiver's Home experience or choose one value silently.
-  const prompt = promptValues.length === 1
-    ? promptValues[0]?.trim().slice(0, 4000) || null
-    : null;
+  const prompt = rawPrompt?.trim().slice(0, 4000) || null;
+
+  useEffect(() => {
+    if (hasSinglePrompt && rawPrompt?.trim()) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("prompt")) return;
+    params.delete("prompt");
+    const remainingQuery = params.toString();
+    const nextUrl = window.location.pathname + (remainingQuery ? `?${remainingQuery}` : "") + window.location.hash;
+    window.history.replaceState(window.history.state, "", nextUrl);
+  }, [hasSinglePrompt, rawPrompt]);
 
   return (
     <div className="mobile-screen feature-page solenos-lcr-home">
