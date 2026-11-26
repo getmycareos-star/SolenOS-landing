@@ -177,6 +177,10 @@ function companionConversationStorageKey(personId: string, caregiverId: string):
   return `solenos_companion_session:${encodeURIComponent(personId)}:${encodeURIComponent(caregiverId)}`
 }
 
+function pendingCompanionTurnStorageKey(personId: string, caregiverId: string): string {
+  return `solenos_companion_pending_turn:${encodeURIComponent(personId)}:${encodeURIComponent(caregiverId)}`
+}
+
 function activeCompanionConversationStorageKey(): string | null {
   if (typeof window === 'undefined') return null
   const personId = window.localStorage.getItem('solenos_backend_person_id')
@@ -686,6 +690,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       }
       conversationScopeRef.current = activeScopeKey
       const activeSessionId = scopeChanged ? null : sessionId
+      // Keep the idempotency key and draft across a page reload. This allows a
+      // caregiver to retry a request whose response was interrupted in transit.
+      const pendingStorageKey = pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id)
+      try {
+        window.sessionStorage.setItem(pendingStorageKey, JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }))
+      } catch {
+        // In-memory retry remains available when browser session storage is unavailable.
+      }
       // Every Companion turn, including greetings and thanks, uses the same
       // authenticated conversation pipeline so it can restore prior turns,
       // persist the exchange, and retain one consistent response contract.
@@ -708,6 +720,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setInput('')
       pendingTurnId.current = null
       pendingTurnText.current = null
+      try {
+        window.sessionStorage.removeItem(pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id))
+      } catch {
+        // A stale recovery draft is harmless; the server remains authoritative.
+      }
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (response.session_id) {
         setSessionId(response.session_id)
@@ -761,6 +778,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       }
       setMessages(prev => prev.filter(message => message !== userMsg))
       setInput(submittedText)
+      // Retain the same client_turn_id so retry is an idempotent replay rather
+      // than a second conversation turn if the server committed before disconnect.
+      const pendingKey = activeCompanionConversationStorageKey()
+      if (pendingKey) {
+        try {
+          const [prefix, personId, caregiverId] = pendingKey.split(':')
+          if (prefix === 'solenos_companion_session' && personId && caregiverId) {
+            window.sessionStorage.setItem(pendingCompanionTurnStorageKey(decodeURIComponent(personId), decodeURIComponent(caregiverId)), JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }))
+          }
+        } catch {
+          // The current mounted session can still retry using the in-memory key.
+        }
+      }
       const inferenceUnavailable =
         error instanceof ApiResponseError && [502, 503, 504].includes(error.status)
       setAvailability(inferenceUnavailable ? 'unavailable' : 'unknown')
