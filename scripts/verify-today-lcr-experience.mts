@@ -61,7 +61,9 @@ assert.match(understanding, /Happened \\u0024\{formatWhen\(item\.occurred_at\)\}
 assert.match(understanding, /Change review saved \{formatWhen\(change\.created_at\)\}/, "change detection time must not be confused with the event comparison window");
 
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
-assert.match(home, /searchParams\.get\("prompt"\)\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
+assert.match(home, /searchParams\.getAll\("prompt"\)/, "Companion deep links must inspect repeated prompt parameters");
+assert.match(home, /promptValues\.length === 1/, "ambiguous repeated prompt parameters must not select one value silently");
+assert.match(home, /promptValues\[0\]\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Home shell");
 assert.doesNotMatch(home, /if\s*\(prompt\)\s*\{/, "a prompt query must not replace the Home shell");
 assert.doesNotMatch(home, /When you’re ready, here are two ways to continue/, "the fixed two-action panel must not return");
