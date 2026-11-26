@@ -52,7 +52,7 @@ assert.match(understanding, /const watchUncertainties = \(assessment\?\.uncertai
 assert.match(understanding, /const watchMissingInformation = \(assessment\?\.missing_information \?\? \[\]\)\.filter\(isUnresolvedCareInformation\)/, "resolved or otherwise closed details must not remain in the missing-information summary");assert.match(understanding, /Sol enOS has not treated one report as the final answer|SolenOS has not treated one report as the final answer/, "Home must not silently select one conflicting report");
 assert.match(understanding, /href="\/workspace\/care-continuity#lcr-conflict-review"/, "Home must provide a path to review the conflicting reports");
 assert.match(understanding, /id="lcr-conflict-review"/, "the complete record must expose the conflict-review destination");
-assert.match(understanding, /id=\{\`lcr-care-item-/, "complete-record care details must expose stable evidence anchors");
+assert.match(understanding, /id=\{`lcr-care-item-/, "complete-record care details must expose stable evidence anchors");
 assert.match(understanding, /viewMode === "today" \? `\/workspace\/care-continuity#lcr-care-item-/, "Home evidence links must open the matching complete-record item");
 
 assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
@@ -78,7 +78,6 @@ assert.match(home, /promptValues\.length === 1/, "ambiguous repeated prompt para
 assert.match(home, /params\.delete\("prompt"\)/, "malformed or repeated Companion prompt parameters must be removed from the URL");
 assert.match(home, /history\.replaceState\(window\.history\.state/, "cleaning a malformed prompt must preserve the framework navigation state");
 assert.match(home, /const prompt = rawPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "a single Companion prompt must remain bounded before entering the input");
-assert.match(home, /promptValues\[0\]\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Home shell");
 assert.ok(home.indexOf('<LCRCurrentUnderstanding showNextStep viewMode="today" />') < home.indexOf('<section className="today-companion-entry"'), "a Companion deep link must not push the current care picture below the question workspace");
 assert.doesNotMatch(home, /if\s*\(prompt\)\s*\{/, "a prompt query must not replace the Home shell");
