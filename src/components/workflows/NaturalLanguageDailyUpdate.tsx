@@ -143,7 +143,7 @@ export default function NaturalLanguageDailyUpdate() {
           setPendingLocal(false);
           setRequestKey(null);
           setReport("");
-          setSyncNotice("Your original update has reached your Care Record.");
+          setSyncNotice("Your original update has reached SolenOS. Any additional details still need review before they become part of your Care Record.");
           window.dispatchEvent(new Event("careRecordUpdated"));
         } else if (result.synced > 0) {
           setSyncNotice("A queued item has reached SolenOS. Any required review or processing may still be outstanding.");
