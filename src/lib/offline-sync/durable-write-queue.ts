@@ -566,20 +566,22 @@ export async function syncDurableWrites(input: {
     // pass can unlock its care-record submission without relying on hash order.
     while (madeProgress && candidates.length > 0) {
       madeProgress = false;
-      const currentRows = await getAllWrites(db);
-      const liveIds = new Set(currentRows
-        .filter((row) => row.person_id === input.personId && row.caregiver_id === input.caregiverId)
-        .map((row) => row.id));
+      const currentRows = (await getAllWrites(db)).filter(
+        (row) => row.person_id === input.personId && row.caregiver_id === input.caregiverId,
+      );
+      const liveById = new Map(currentRows.map((row) => [row.id, row]));
 
       for (const row of [...candidates]) {
-        if (!liveIds.has(row.id)) {
+        const currentRow = liveById.get(row.id);
+        if (!currentRow) {
           candidates = candidates.filter((candidate) => candidate.id !== row.id);
+          madeProgress = true;
           continue;
         }
-        if (!isEligible(row, Date.now())) continue;
-        if ((row.depends_on ?? []).some((dependencyId) => liveIds.has(dependencyId))) continue;
+        if (!isEligible(currentRow, Date.now())) continue;
+        if ((currentRow.depends_on ?? []).some((dependencyId) => liveById.has(dependencyId))) continue;
         try {
-          const payload = await decryptPayload(db, row);
+          const payload = await decryptPayload(db, currentRow);
           const result = await deliverDurableWrite(row.id, input.send);
           synced += 1;
           candidates = candidates.filter((candidate) => candidate.id !== row.id);
