@@ -10,19 +10,15 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { LCRCurrentUnderstanding } from "@/components/mvp-workspace/LCRCurrentUnderstanding";
 import { CARE_INFORMATION_NAVIGATION } from "@/lib/workspace-navigation";
 
-function formatLastUpdated(iso: string | null): string {
-  if (!iso) return "Not yet updated";
-  try {
-    const date = new Date(iso);
-    const today = new Date();
-    if (date.toDateString() === today.toDateString()) return "Today";
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return "Not yet updated";
-  }
+function formatLastUpdated(iso: string): string | null {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const today = new Date();
+  if (date.toDateString() === today.toDateString()) return "Today";
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function WorkspacePageInner() {
@@ -84,7 +80,7 @@ function WorkspacePageInner() {
             <p className="lcr-intro">Find the current care picture, earlier events, documents and the care matters that still need attention.</p>
           </div>
           <div className="lcr-record-meta">
-            <span>Updated {formatLastUpdated(latestUpdated)}</span>
+            {latestUpdated && formatLastUpdated(latestUpdated) && <span>Care summary updated {formatLastUpdated(latestUpdated)}</span>}
           </div>
         </header>
 
