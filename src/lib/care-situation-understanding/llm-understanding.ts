@@ -16,7 +16,7 @@ function mapLlmOutputToExtractionResult(
   source: string,
 ): CareRealityExtractionResult {
   const observations = llm.observations.map((o, i) => ({
-    id: `llm_obs_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+    id: o.candidate_id,
     layer: "observation" as const,
     description: o.description,
     approximate_time: o.approximate_time,
@@ -26,7 +26,7 @@ function mapLlmOutputToExtractionResult(
   }));
 
   const events = llm.events.map((e, i) => ({
-    id: `llm_evt_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+    id: e.candidate_id,
     layer: "event" as const,
     description: e.description,
     time: e.time,
@@ -36,7 +36,7 @@ function mapLlmOutputToExtractionResult(
   }));
 
   const decisions = llm.decisions.map((d, i) => ({
-    id: `llm_dec_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+    id: d.candidate_id,
     layer: "decision" as const,
     description: d.description,
     who: d.who,
@@ -50,7 +50,7 @@ function mapLlmOutputToExtractionResult(
   }));
 
   const outcomes = llm.outcomes.map((o, i) => ({
-    id: `llm_out_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+    id: o.candidate_id,
     layer: "outcome" as const,
     description: o.description,
     related_id: null as string | null,
@@ -62,7 +62,7 @@ function mapLlmOutputToExtractionResult(
   }));
 
   const unknowns = llm.unknowns.map((u, i) => ({
-    id: `llm_unk_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+    id: u.candidate_id,
     layer: "unknown" as const,
     question: u.question,
     related_object_id: null as string | null,
@@ -74,14 +74,14 @@ function mapLlmOutputToExtractionResult(
   }));
 
   const non_care_facts = llm.non_care_facts.map((n, i) => ({
-    id: `llm_ncf_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+    id: n.candidate_id,
     layer: n.layer as "contributor_load" | "disagreement_perspective",
     text: n.text,
     raw_fragment: n.raw_fragment,
   }));
 
   const relationships = llm.possible_links.map((l, i) => ({
-    id: `llm_rel_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+    id: l.candidate_id,
     from_id: "",
     to_id: "",
     kind: "observation_to_observation" as const,
