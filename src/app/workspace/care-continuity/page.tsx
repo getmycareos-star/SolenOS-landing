@@ -42,7 +42,7 @@ function WorkspacePageInner() {
   }, []);
 
   if (!hydrated || !entryReady || !archiveStateLoaded) {
-    return <BrandLoading animate message="Opening your Care Record…" />;
+    return <BrandLoading animate message="Opening Care information…" />;
   }
 
   if (isArchived) {
@@ -131,7 +131,7 @@ function WorkspacePageInner() {
 
 export default function WorkspacePage() {
   return (
-    <Suspense fallback={<BrandLoading animate message="Opening your Care Record…" />}>
+    <Suspense fallback={<BrandLoading animate message="Opening Care information…" />}>
       <WorkspacePageInner />
     </Suspense>
   );
