@@ -150,24 +150,15 @@ export function UpcomingAppointmentSummary() {
             </p>
           )}
           {appointment ? (
-        <div className={`solenos-upcoming-appointment__item${appointmentIsTimeSensitive ? " is-time-sensitive" : ""}`}>
-          {appointmentIsTimeSensitive && <p className="solenos-upcoming-appointment__timing">Coming up within 24 hours</p>}
-          <strong>{caregiverSourceText(appointment.title) || "Recorded appointment"}</strong>
-          <p>{displayDate(appointment.scheduled_at)} · {caregiverStatusLabel(appointment.status) || "Status not recorded"}</p>
-          {appointment.provider && <p>{caregiverSourceText(appointment.provider)}</p>}
-          {appointment.location && <p>{caregiverSourceText(appointment.location)}</p>}
-          {appointmentCanBePrepared && <p><Link className="solenos-upcoming-appointment__prepare" href="/workspace/appointments">{appointmentActionLabel}</Link></p>}
-          <small>This is a Care Record entry. SolenOS has not booked or confirmed it with a provider.</small>
-        </div>
-      ) : (brief?.appointments?.length ?? 0) > 0 ? (
-        <ul className="solenos-upcoming-appointment__list">
-          {(brief?.appointments ?? []).slice(0, 2).map(item => (
-            <li key={item.source_id}>
-              <strong>{caregiverSourceText(item.title) || "Recorded appointment"}</strong>
-              <span>{displayDate(item.scheduled_at)} · {caregiverStatusLabel(item.status) || "Status not recorded"}</span>
-            </li>
-          ))}
-        </ul>
+            <div className={`solenos-upcoming-appointment__item${appointmentIsTimeSensitive ? " is-time-sensitive" : ""}`}>
+              {appointmentIsTimeSensitive && <p className="solenos-upcoming-appointment__timing">Coming up within 24 hours</p>}
+              <strong>{caregiverSourceText(appointment.title) || "Recorded appointment"}</strong>
+              <p>{displayDate(appointment.scheduled_at)} · {caregiverStatusLabel(appointment.status) || "Status not recorded"}</p>
+              {appointment.provider && <p>{caregiverSourceText(appointment.provider)}</p>}
+              {appointment.location && <p>{caregiverSourceText(appointment.location)}</p>}
+              {appointmentCanBePrepared && <p><Link className="solenos-upcoming-appointment__prepare" href="/workspace/appointments">{appointmentActionLabel}</Link></p>}
+              <small>This is a Care Record entry. SolenOS has not booked or confirmed it with a provider.</small>
+            </div>
           ) : (brief?.appointments?.length ?? 0) > 0 ? (
             <ul className="solenos-upcoming-appointment__list">
               {(brief?.appointments ?? []).slice(0, 2).map(item => (
