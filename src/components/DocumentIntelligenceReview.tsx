@@ -444,6 +444,9 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
             const safeSubject = caregiverCorrected ? candidate.subject : caregiverSafeGeneratedText(candidate.subject);
             const safeObservation = caregiverCorrected ? candidate.observation : caregiverSafeGeneratedText(candidate.observation);
             const candidateNeedsRewrite = !safeSubject || !safeObservation;
+            const sourcePageUnresolved = typeof candidate.page_number !== "number"
+              || !Number.isInteger(candidate.page_number)
+              || candidate.page_number < 1;
             const displaySubject = safeSubject || caregiverFieldLabel(candidate.field_type) || "Care detail";
             const correction = corrections[key] || {
               subject: safeSubject || "",
@@ -475,6 +478,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <span>Date shown on document: {candidate.recorded_date ? new Date(candidate.recorded_date).toLocaleDateString() : "Not stated in document"}</span>
                 {candidate.extracted_at && <span>Text read on: {new Date(candidate.extracted_at).toLocaleString()}</span>}
               </div>
+              {sourcePageUnresolved && pending && <p role="alert" style={{ margin: 0, fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>SolenOS could not match this suggestion to one page in the original document. It cannot be added or corrected. You can choose not to add it.</p>}
               {!!candidate.canonical_candidate && <div role="note" aria-label="How this statement is worded" style={{ display: "flex", flexWrap: "wrap", gap: 6, fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>
                 {candidate.canonical_candidate.source_attribution === "patient_reported" && <span>Reported by the patient</span>}
                 {candidate.canonical_candidate.source_attribution === "caregiver_reported" && <span>Reported by a family caregiver</span>}
@@ -500,8 +504,8 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                 <label style={{ display: "grid", gap: 4, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>Text SolenOS read from the document<textarea value={sourceQuote} readOnly rows={3} style={{ padding: 8, border: "1px solid var(--border)", borderRadius: 7, background: "var(--surface)", color: "var(--text)", resize: "vertical" }} /></label>
                 <p style={{ margin: 0, fontSize: "calc(11px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>This text stays unchanged in this review. Check the original document before adding anything to your Care Record.</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  <button type="button" disabled={busy !== null || candidateNeedsRewrite} onClick={() => void decide(analysis, candidate, candidateIndex, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }} data-testid={`accept-document-candidate-${candidateIndex}`}>Add to Care Record</button>
-                  <button type="button" disabled={busy !== null || !hasCorrectionSubject} onClick={() => void decide(analysis, candidate, candidateIndex, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }} data-testid={`correct-document-candidate-${candidateIndex}`}>Suggest a correction</button>
+                  <button type="button" disabled={busy !== null || candidateNeedsRewrite || sourcePageUnresolved} onClick={() => void decide(analysis, candidate, candidateIndex, "accept")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid #8eae8a", borderRadius: 8, background: "#b9d5b5", color: "#17251c", fontWeight: 700 }} data-testid={`accept-document-candidate-${candidateIndex}`}>Add to Care Record</button>
+                  <button type="button" disabled={busy !== null || !hasCorrectionSubject || sourcePageUnresolved} onClick={() => void decide(analysis, candidate, candidateIndex, "correct")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }} data-testid={`correct-document-candidate-${candidateIndex}`}>Suggest a correction</button>
                   <button type="button" disabled={busy !== null} onClick={() => void decide(analysis, candidate, candidateIndex, "reject")} style={{ minHeight: 38, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }} data-testid={`reject-document-candidate-${candidateIndex}`}>Do not add</button>
                 </div>
               </>}
