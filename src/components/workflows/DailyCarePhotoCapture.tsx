@@ -278,7 +278,7 @@ export default function DailyCarePhotoCapture() {
       {file && (
         <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
           <p style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{file.name} · {(file.size / (1024 * 1024)).toFixed(1)} MiB</p>
-          {previewUrl && <img src={previewUrl} alt="Preview of the selected care photo" style={{ display: "block", width: "100%", maxHeight: 320, objectFit: "contain", borderRadius: 10, background: "var(--theme-field-bg)", transform: `rotate(${rotationDegrees}deg)` }} />}
+          {previewUrl && <img src={previewUrl} alt="Preview of the selected care photo" style={{ display: "block", width: "100%", maxWidth: 320, maxHeight: 320, margin: "0 auto", objectFit: "contain", borderRadius: 10, background: "var(--theme-field-bg)", transform: `rotate(${rotationDegrees}deg)` }} />}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <button type="button" className="workspace-secondary" onClick={() => setRotationDegrees((value) => (value + 270) % 360)} disabled={saving || pendingLocal || Boolean(ingestionKey)}>Rotate left</button>
             <button type="button" className="workspace-secondary" onClick={() => setRotationDegrees((value) => (value + 90) % 360)} disabled={saving || pendingLocal || Boolean(ingestionKey)}>Rotate right</button>
