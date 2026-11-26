@@ -211,6 +211,8 @@ assert.match(offlineQueue, /sending: matching\.filter\(\(row\) => row\.status ==
   "the durable queue distinguishes in-flight transmission from waiting");
 assert.match(offlineNotice, /being sent to SolenOS[\s\S]*does not mean they have been added to your care record/,
   "the caregiver is told that transmission is not LCR acceptance");
+assert.match(offlineNotice, /Keep this browser data until they are sent/,
+  "caregivers are warned not to clear local data before synchronization completes");
 assert.match(offlineNotice, /Try sending again/,
   "queued failures expose an actionable retry");
 
