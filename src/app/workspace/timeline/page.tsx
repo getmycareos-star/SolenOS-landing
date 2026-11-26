@@ -752,7 +752,11 @@ export default function TimelinePage() {
                               </>
                             )}
                             <dt>Related care topic</dt><dd>{event.situation_id ? "Available" : "Not recorded"}</dd>
-                            <dt>Related notes or documents</dt><dd>{event.evidence_ids?.length ? `${event.evidence_ids.length} saved item(s)` : "None attached"}</dd>
+                            <dt>Related notes or documents</dt><dd>{event.source_type === "evidence" ? (
+                              <Link href={`/workspace/documents?evidenceId=${encodeURIComponent(event.id)}`}>Open original document</Link>
+                            ) : event.evidence_ids?.length ? (
+                              `${event.evidence_ids.length} saved item(s) attached`
+                            ) : "None attached"}</dd>
                             <dt>Labels</dt><dd>{event.tags?.length ? event.tags.map(tag => caregiverStatusLabel(tag) || "Care update").join(", ") : "None recorded"}</dd>
                             <dt>Updated</dt><dd>{formatDateTime(event.updated_at)}</dd>
                           </dl>
