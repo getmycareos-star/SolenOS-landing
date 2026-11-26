@@ -63,7 +63,7 @@ try {
   });
 
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Follow-ups", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Needs attention", exact: true }).waitFor();
   await page.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
     localStorage.getItem("solenos_backend_person_id") &&
