@@ -2585,6 +2585,23 @@ await record("Care history opens the original caregiver report and its source de
   assert.match(sourceDetails, /Related notes or documents\s+1 saved item/,
     "the history detail must show its linked source record");
 
+  await history.page.getByRole("button", { name: "Browse all saved records", exact: true }).click();
+  const sourceCard = history.page.locator(".care-history-source-explorer .history-event-card")
+    .filter({ hasText: scenarioReports[0] }).first();
+  await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
+  await sourceCard.locator("button.history-event-open").click();
+  const originalRecord = history.page.locator(".care-history-source-explorer .history-original-text");
+  await originalRecord.waitFor({ state: "visible", timeout: 15_000 });
+  assert.ok((await originalRecord.innerText()).includes(scenarioReports[0]),
+    "the all-records view must expose the exact original caregiver wording");
+  const allRecordDetails = await history.page.locator(".care-history-source-explorer .history-detail-list").innerText();
+  assert.match(allRecordDetails, /When it happened/);
+  assert.match(allRecordDetails, /When it was saved/);
+  assert.match(allRecordDetails, /Who shared it\s+Caregiver/);
+  assert.match(allRecordDetails, /Related notes or documents\s+1 related note or document/);
+  await history.page.getByRole("button", { name: "Back to care history", exact: true }).click();
+  await sourceCard.waitFor({ state: "visible", timeout: 10_000 });
+
   const evidenceList = await request(`/api/v1/evidence/${encodeURIComponent(identity.personId)}`, {
     token: identity.token,
   });
