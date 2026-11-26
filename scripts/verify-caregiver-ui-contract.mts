@@ -81,7 +81,7 @@ assert.match(notificationCenter, /care_attention.*care_change/s, "care attention
 assert.match(notificationCenter, /\/workspace\/care-continuity/);
 assert.match(notificationCenter, /\/workspace\/open-loops/);
 assert.match(notificationCenter, /\/workspace\/reminders/);
-assert.match(notificationCenter, /Review in Care Record/);
+assert.match(notificationCenter, /View care information/);
 assert.match(companion, /Nothing is added to your Care Record unless you choose to save a message as a care note and approve it\./, "Companion must accurately explain the explicit approval boundary");
 assert.doesNotMatch(deltaPanel, /autoInput|showPanel|lastToken/,
   "Delta comparison must not support hidden automatic reconciliation");
