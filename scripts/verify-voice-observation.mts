@@ -47,7 +47,7 @@ for (const [name, source] of [
   ["app shell", shell],
   ["care update form", addSituation],
   ["Daily Care", dailyCapture],
-  ["Care Assistant", companion],
+  ["Ask SolenOS", companion],
   ["Companion review panel", qwenPanel],
 ] as const) {
   if (/VoiceConversationPanel|RealMomentPanel|useVoiceInput|SpeechRecognition|webkitSpeechRecognition|microphone|Voice Mode/i.test(source)) {
