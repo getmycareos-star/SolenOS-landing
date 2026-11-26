@@ -186,6 +186,8 @@ assert.ok(history.includes('event.source_type === "evidence"') && history.includ
 assert.ok(history.includes("HistoryDrawer") && history.includes("Browse all saved records"), "Care history retains the full source-aware history explorer as a secondary view");
 assert.ok(documents.includes('get("evidenceId")') && documents.includes("openOriginal(matchingDocument)"), "Documents opens the exact source selected from Care history");
 assert.ok(documents.includes("previewRequestSequenceRef") && documents.includes("requestPersonId === getPersonId()") && documents.includes("requestCaregiverId === getCaregiverId()"), "an in-flight document preview cannot cross a caregiver or care-recipient switch");
+assert.ok(documents.includes("const requestKey = `${requestPersonId}:${requestCaregiverId}:${requestedEvidenceId}`") && documents.includes("requestedEvidenceIdRef.current = null"), "document deep links are scoped to the active caregiver and care recipient and reset when no source is requested");
+
 assert.ok(documents.includes("if (!isCurrentRequest()) return;"), "a stale source-document response is discarded before it can become visible");
 assert.ok(documents.includes("setHistoryReturnTo(null)"), "a previous Care history return link cannot leak into a later direct Documents visit");
 
