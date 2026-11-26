@@ -2401,14 +2401,49 @@ await record("Daily Care structured capture validates units and medication outco
   await structured.page.getByRole("alert")
     .filter({ hasText: "medicine photo is saved on this device" })
     .waitFor({ timeout: 10_000 });
+  const medicationPhotoSyncResponsePromise = structured.page.waitForResponse((response) =>
+    response.url().includes("/api/v1/upload") && response.request().method() === "POST",
+  );
   await structured.context.setOffline(false);
+  const medicationPhotoSyncResponse = await medicationPhotoSyncResponsePromise;
+  const medicationPhotoSyncPayload = await medicationPhotoSyncResponse.json();
+  assert.equal(medicationPhotoSyncResponse.status(), 201, JSON.stringify(medicationPhotoSyncPayload));
+  assert.equal(medicationPhotoSyncPayload.persisted, true, JSON.stringify(medicationPhotoSyncPayload));
+  const medicationPhotoEvidenceId = medicationPhotoSyncPayload.evidence_id;
   await structured.page.getByRole("status")
     .filter({ hasText: "A queued item has reached SolenOS" })
     .waitFor({ timeout: 20_000 });
+
+  const medicationPhotoReplayPromise = structured.page.waitForResponse((response) =>
+    response.url().includes("/api/v1/upload") && response.request().method() === "POST",
+  );
   await structured.page.getByRole("button", { name: "Add medicine with photo", exact: true }).click();
+  const medicationPhotoReplay = await medicationPhotoReplayPromise;
+  const medicationPhotoReplayPayload = await medicationPhotoReplay.json();
+  assert.equal(medicationPhotoReplay.status(), 201, JSON.stringify(medicationPhotoReplayPayload));
+  assert.equal(medicationPhotoReplayPayload.evidence_id, medicationPhotoEvidenceId,
+    "retrying the medicine photo after offline synchronization must reuse the original evidence ID");
   await structured.page.getByRole("status")
     .filter({ hasText: "Added to this daily-care draft" })
     .waitFor({ timeout: 20_000 });
+
+  await structured.page.getByRole("button", { name: "Save to care record", exact: true }).click();
+  await structured.page.getByRole("status")
+    .filter({ hasText: "Related notes or documents: linked" })
+    .waitFor({ timeout: 30_000 });
+  const structuredEvents = await request(
+    `/api/v1/events/${encodeURIComponent(identity.personId)}`,
+    { token: identity.token },
+  );
+  assert.equal(structuredEvents.status, 200, JSON.stringify(structuredEvents.payload));
+  const linkedMedicationEvent = structuredEvents.payload.find((event) => {
+    let detail;
+    try { detail = JSON.parse(event.description || "{}"); } catch { return false; }
+    return detail.medications?.some((item) => item.medication_name === "E2E medication photo");
+  });
+  assert.ok(linkedMedicationEvent, "the medication entry must be saved as a Daily Care event");
+  assert.ok(linkedMedicationEvent.evidence_ids.includes(medicationPhotoEvidenceId),
+    "the Daily Care event must retain the original medicine photo evidence link");
   await structured.context.close();
 });
 
