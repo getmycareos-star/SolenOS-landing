@@ -50,6 +50,9 @@ assert.match(understanding, /setAssessmentLoading\(true\)/, "Today must track th
 assert.match(understanding, /changesLoading \? \(/, "an in-flight change query must not be shown as no recent changes");
 assert.match(understanding, /assessmentLoading \? \(/, "an in-flight assessment must not be shown as no care priorities");
 assert.match(understanding, /saved\.status === "not_assessed" && !saved\.assessment/, "a genuinely unassessed record must remain distinct from a failed retrieval");
+assert.match(understanding, /Care priorities have not been reviewed yet\. Review the saved information/, "an unassessed record must offer a truthful explanation rather than a false empty state");
+assert.match(understanding, /<Link href="\/workspace\/care-continuity" className="solenos-care-primary-action">Review care information<\/Link>/, "an unassessed record must provide a useful review destination");
+
 
 assert.match(understanding, /Happened \\u0024\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
 assert.match(understanding, /Change review saved \\u0024\{formatWhen\(change\.created_at\)\}/, "change detection time must not be confused with the event comparison window");
