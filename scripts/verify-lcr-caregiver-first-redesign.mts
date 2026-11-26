@@ -108,7 +108,7 @@ assert.doesNotMatch(workspaceHome, /<CaregiverHandoverInbox \/>/, "the Home page
 assert.match(workspaceMore, /<CaregiverHandoverInbox \/>/, "the handover inbox remains available under More");
 assert.doesNotMatch(workspaceMore, /HistoryDrawer/, "More does not contain care-history browsing");
 assert.match(careContinuity, /CARE_INFORMATION_NAVIGATION\.map/, "care-history and care-information destinations are discoverable together");
-assert.ok(navigation.includes('href: "/workspace/companion"') && navigation.includes('label: "Ask SolenOS"'), "Ask SolenOS remains a primary destination");
+assert.ok(navigation.includes('href: "/workspace/companion"') && navigation.includes('label: "Care Assistant"'), "Care Assistant remains a primary destination");
 assert.ok(navigation.includes('href: "/workspace/daily-care"') && navigation.includes('label: "Add an update"'), "Add an update remains a primary destination");
 assert.match(currentUnderstanding, /evidenceReviewOpen \? <EvidenceReviewPanel personId={personId} \/>/, "evidence review mounts only when its own disclosure is opened");
 assert.match(currentUnderstanding, /claimAssessmentOpen \? <ClaimAssessmentPanel \/>/, "claim review mounts only when its own disclosure is opened");
@@ -224,7 +224,7 @@ console.log("✓ legacy LCR home is not exposed; its route returns caregivers to
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
 assert.match(companion, /Care Assistant/, "the caregiver-facing assistant uses the approved caregiver-facing name");
 assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
-assert.match(navigation, /label: "Ask SolenOS"/, "workspace navigation uses the Ask SolenOS destination name");
+assert.match(navigation, /label: "Ask SolenOS"/, "workspace navigation uses the Care Assistant destination name");
 assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
 assert.match(publicHome, /Ask SolenOS/, "the public home page uses the canonical Ask SolenOS name");

@@ -950,7 +950,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Ask SolenOS</h1></div>
+          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Care Assistant</h1></div>
         </div>
         {(messages.length > 0 || sessionId) && <button className="companion-history-toggle" type="button" onClick={() => { const next = !showConversationHistory; setShowConversationHistory(next); if (next) void loadConversationHistory() }} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Conversation history</button>}
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || loadingOlderMessages || loadingConversationHistory}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}

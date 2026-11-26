@@ -152,7 +152,7 @@ for (const [route, label] of [
     label + " remains a primary caregiver destination");
 }
 for (const [route, label] of [
-  ["/workspace/companion", "Ask SolenOS"],
+  ["/workspace/companion", "Care Assistant"],
   ["/workspace/timeline", "Care history"],
   ["/workspace/documents", "Documents"],
   ["/workspace/handoffs", "Care handoffs"],

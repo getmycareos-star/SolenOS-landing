@@ -38,7 +38,7 @@ export const WORKSPACE_NAVIGATION = {
     {
       id: "ask-solenos",
       href: "/workspace/companion",
-      label: "Ask SolenOS",
+      label: "Care Assistant",
       description: "Ask questions about information saved in the Care Record",
       icon: MessageCircle,
     },
