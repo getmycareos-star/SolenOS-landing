@@ -241,7 +241,7 @@ const lcrInterpretation = read("src/components/mvp-workspace/LcrQwenInterpretati
 assert(!/reply\s*:\s*["'`]/.test(lcrInterpretation), "LCR interpretation must not include canned reply text.");
 assert(!lcrInterpretation.includes("workflow: rawInput"), "Caregiver input must not select the internal workflow.");
 requireText("src/app/workspace/settings/page.tsx", [
-  "function AccountCard()",
+  "function AccountCard({ onSignedOut }",
   "createAccount(email, password)",
   'deleteJSON("/accounts/me"',
 ]);
@@ -251,7 +251,7 @@ requireText("src/api/client.ts", [
 ]);
 const accountSettings = read("src/app/workspace/settings/page.tsx");
 const accountCard = accountSettings.slice(
-  accountSettings.indexOf("function AccountCard()"),
+  accountSettings.indexOf("function AccountCard({ onSignedOut }"),
   accountSettings.indexOf("/** Legal"),
 );
 assert(accountCard.includes("Sign in to an existing account"), "Optional account sign-in must remain available.");
