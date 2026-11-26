@@ -68,7 +68,7 @@ assert.match(documents, /getBlob\("\/upload\//, "saved original files remain ret
 assert.doesNotMatch(home, /compose=1|CognitiveWorkspace|lcr-add-screen/, "the legacy LCR entry screen is removed from Companion home");
 assert.match(dailyCare, /StructuredDailyCapture/);
 assert.doesNotMatch(dailyCare, /DailyCareQwen|daily-care\/intelligence\/ask|Ask Daily Care Qwen/);
-assert.match(navigation, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Care Assistant"/, "Care Assistant is directly accessible from primary navigation");
+assert.match(navigation, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Ask SolenOS"/, "Ask SolenOS is directly accessible from primary navigation");
 assert.doesNotMatch(shell, /href: "\/workspace\/record"/);
 assert.match(shell, /useState\(false\)/);
 assert.match(shell, /is-sidebar-open/);
