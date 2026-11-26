@@ -127,6 +127,8 @@ assert.match(detailedCapture, /<option value="missed">Missed<\/option>/,
   "missed medication is distinct from refusal");
 assert.match(detailedCapture, /Dose or strength \(optional\)/,
   "caregivers are not forced to guess an unknown medication dose");
+assert.match(detailedCapture, /cameraState\.status === 'error' \? 'Try camera again'/,
+  "a denied or interrupted medicine-photo camera request can be retried after permissions change");
 assert.match(detailedCapture, /extractAttachedDocument\([\s\S]*?"medication_photo"/,
   "medicine photos must use the encrypted durable evidence upload path");
 assert.doesNotMatch(detailedCapture, /postFormData\(['"]\/upload/,
