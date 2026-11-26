@@ -83,6 +83,8 @@ assert.match(workspaceSource, /SolenOS is reading it in the background/, "the ca
 assert.match(workspaceSource, /d\.status === "saved" && d\.evidenceId/, "saved evidence must remain eligible for care-entry submission");
 assert.match(workspaceSource, /evidence_id: d\.evidenceId/, "care-entry submission must reference the persisted evidence ID");
 assert.match(intelligenceReviewSource, /analysis.extraction_status === "partial"/, "incomplete documents must remain visibly partial");
+assert.match(intelligenceReviewSource, /page_states\?\.length[\s\S]*?Page-by-page status[\s\S]*?analysis\.page_states\.map/, "document review must expose a page-by-page outcome list when the backend provides it");
+assert.match(intelligenceReviewSource, /page\.status === "retryable"[\s\S]*?needs another try/, "transient page failures must be distinguishable from unreadable or unprocessed pages");
 assert.match(intelligenceReviewSource, /SolenOS is trying to read those pages again/, "transient page failures must be retried automatically");
 assert.match(intelligenceReviewSource, /retry_exhausted_page_numbers/, "exhausted page retries must remain visible and distinct from unreadable pages");
 assert.match(intelligenceReviewSource, /SolenOS is reading this document in the background\. You do not need to stay on this screen\./, "caregivers must not supervise background processing");
