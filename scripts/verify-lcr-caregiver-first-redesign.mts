@@ -17,6 +17,7 @@ const dailyCare = fs.readFileSync("src/app/workspace/daily-care/page.tsx", "utf8
 const structuredDailyCapture = fs.readFileSync("src/components/workflows/StructuredDailyCapture.tsx", "utf8");
 const durableWriteSender = fs.readFileSync("src/lib/offline-sync/send-queued-care-write.ts", "utf8");
 const workspaceHome = fs.readFileSync("src/app/workspace/page.tsx", "utf8");
+const handoffs = fs.readFileSync("src/app/workspace/handoffs/page.tsx", "utf8");
 const workspaceMore = fs.readFileSync("src/app/workspace/more/page.tsx", "utf8");
 const historyDrawer = fs.readFileSync("src/components/app-shell/HistoryDrawer.tsx", "utf8");
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
@@ -25,7 +26,7 @@ const navigation = fs.readFileSync("src/lib/workspace-navigation.ts", "utf8");
 const howItWorks = fs.readFileSync("src/app/how-it-works/page.tsx", "utf8");
 const publicHome = fs.readFileSync("src/app/page.tsx", "utf8");
 
-assert.match(legacyRoute, /redirect\("\/workspace"\)/, "the legacy record route redirects safely to Home");
+assert.match(legacyRoute, /redirect\("\/workspace\/care-continuity"\)/, "the legacy record route redirects safely to Care information");
 assert.doesNotMatch(legacyRoute, /SOLENOS · LIVING CARE RECORD|Record timeline|Add to record|CognitiveWorkspace/, "old LCR interface must not be rendered as a separate home");
 assert.doesNotMatch(capture, /ConsentGatePanel|consentState !== "accepted"|ResearchPreviewAckGate/, "care-record capture is not blocked by acknowledgement checkboxes");
 assert.doesNotMatch(capture, /HelpImproveSolenos|QwenAssistPanel/, "capture workspace does not interleave feedback or a separate AI chat panel");
@@ -105,10 +106,10 @@ assert.match(currentUnderstanding, /RecordState kind="error".*onAction=\{\(\) =>
 assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Home uses the concise current-care projection and record-aware next step");
 assert.ok(workspaceHome.includes("<UpcomingAppointmentSummary />"), "Home retains upcoming appointment context after the current-care picture");
 assert.doesNotMatch(workspaceHome, /<CaregiverHandoverInbox \/>/, "the Home page does not carry a secondary inbox");
-assert.match(workspaceMore, /<CaregiverHandoverInbox \/>/, "the handover inbox remains available under More");
+assert.match(handoffs, /<CaregiverHandoverInbox \/>/, "the handover inbox remains available within Care handoffs");
 assert.doesNotMatch(workspaceMore, /HistoryDrawer/, "More does not contain care-history browsing");
 assert.match(careContinuity, /CARE_INFORMATION_NAVIGATION\.map/, "care-history and care-information destinations are discoverable together");
-assert.ok(navigation.includes('href: "/workspace/companion"') && navigation.includes('label: "Care Assistant"'), "Care Assistant remains a primary destination");
+assert.ok(navigation.includes('href: "/workspace/companion"') && navigation.includes('label: "Ask SolenOS"'), "Ask SolenOS remains a primary destination");
 assert.ok(navigation.includes('href: "/workspace/daily-care"') && navigation.includes('label: "Add an update"'), "Add an update remains a primary destination");
 assert.match(currentUnderstanding, /evidenceReviewOpen \? <EvidenceReviewPanel personId={personId} \/>/, "evidence review mounts only when its own disclosure is opened");
 assert.match(currentUnderstanding, /claimAssessmentOpen \? <ClaimAssessmentPanel \/>/, "claim review mounts only when its own disclosure is opened");
@@ -222,9 +223,9 @@ assert.doesNotMatch(currentUnderstanding, /Compared: Time not recorded.*Time not
 
 console.log("✓ legacy LCR home is not exposed; its route returns caregivers to Home");
 console.log("✓ underlying capture and longitudinal continuity components remain in the codebase");
-assert.match(companion, /Care Assistant/, "the caregiver-facing assistant uses the approved caregiver-facing name");
+assert.match(companion, /Ask SolenOS/, "the caregiver-facing assistant uses the approved caregiver-facing destination name");
 assert.doesNotMatch(companion, /AI Companion/, "internal product terminology is not shown in the caregiver interface");
-assert.match(navigation, /label: "Care Assistant"/, "workspace navigation uses the Care Assistant destination name");
+assert.match(navigation, /label: "Ask SolenOS"/, "workspace navigation uses the Ask SolenOS destination name");
 assert.match(howItWorks, /Care Assistant/, "the public how-it-works guide uses the approved caregiver-facing name");
 assert.doesNotMatch(howItWorks, /AI Companion/, "the public how-it-works guide does not expose internal product terminology");
 assert.match(publicHome, /Ask SolenOS/, "the public home page uses the canonical Ask SolenOS name");
