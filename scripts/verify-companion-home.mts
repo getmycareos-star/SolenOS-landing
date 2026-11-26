@@ -132,6 +132,8 @@ assert.match(shell, /unsent updates stored only in this browser/,
 const durableQueue = read("src/lib/offline-sync/durable-write-queue.ts");
 assert.match(durableQueue, /indexedDB\.deleteDatabase\(DATABASE_NAME\)/,
   "explicit device cleanup must remove the encrypted queue and its local encryption key");
+assert.match(durableQueue, /solenos_anonymous_session_revoked/,
+  "other tabs must not recreate the offline queue after device cleanup");
 assert.doesNotMatch(home, /startInUpdateMode|CognitiveWorkspace/);
 assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /I need to talk it through/);
