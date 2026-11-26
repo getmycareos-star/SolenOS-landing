@@ -14,6 +14,7 @@ import {
   syncDurableWrites,
   enqueueDurableWrite,
   deliverDurableWrite,
+  durableWriteId,
 } from "@/lib/offline-sync/durable-write-queue";
 
 const QWEN_JOB_POLL_INTERVAL_MS = 2_000;
@@ -202,6 +203,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       scheduled_for: string | null;
       administered_at: string | null;
       photo_evidence_id: string | null;
+      photo_ingestion_key: string | null;
       note: string | null;
     }>,
     vitals: [] as Array<{
@@ -591,14 +593,16 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
     setMedicationUploading(true);
     
     try {
-      // If we have an image preview, upload it first to get an evidence ID
+      // Keep the photo upload and medication report as dependent durable writes.
+      // The medication report can be queued offline and will not sync until the
+      // original photo upload has reached SolenOS.
       let evidenceId: string | null = null;
+      let photoIngestionKey: string | null = null;
       if (medicationImagePreview) {
-        // Reuse the encrypted, idempotent evidence upload path. If the device is
-        // offline, the original remains queued and this medication draft stays open.
         const file = dataURLtoFile(medicationImagePreview, "medication.png");
         const retryKey = medicationImageUploadKey ?? crypto.randomUUID();
         const capturedAt = medicationImageCapturedAt ?? new Date().toISOString();
+        photoIngestionKey = retryKey;
         setMedicationImageUploadKey(retryKey);
         setMedicationImageCapturedAt(capturedAt);
         setMedicationCompressing(true);
@@ -611,28 +615,31 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           "medication_photo",
         );
         setMedicationCompressing(false);
-        if (uploadReceipt.status !== "saved" || !uploadReceipt.evidenceId) {
-          setMedicationError(
-            uploadReceipt.status === "pending"
-              ? "Your medicine photo is saved on this device, but it has not reached SolenOS yet. When it has synced, tap Add medicine again to finish this entry. Keep this browser data until it is sent."
-              : uploadReceipt.errorNote || "We couldn't save the medicine photo. Keep it selected and try again.",
-          );
+        const photoQueueId = durableWriteId("/upload", retryKey);
+        const photoStillQueued = await hasDurableWrite(photoQueueId).catch(() => false);
+        if (uploadReceipt.status === "saved" && uploadReceipt.evidenceId) {
+          evidenceId = uploadReceipt.evidenceId;
+          setMedicationImageUploadKey(null);
+          setMedicationImageCapturedAt(null);
+        } else if (uploadReceipt.status === "pending" || photoStillQueued) {
+          setMedicationFeedback("Your medicine photo is saved on this device. This medication update will wait for the photo to reach SolenOS before it is added to your Care Record.");
+          setMedicationError(null);
+        } else {
+          setMedicationError(uploadReceipt.errorNote || "We couldn't save the medicine photo. Keep it selected and try again.");
           return;
         }
-        evidenceId = uploadReceipt.evidenceId;
-        setMedicationImageUploadKey(null);
-        setMedicationImageCapturedAt(null);
       }
-      
-      // Add medication to the form
+
+      // Add medication to the form. The stable upload key lets the backend
+      // attach the photo after an offline upload has synchronized.
       const medicationData = {
         ...medicationForm,
         medication_name: medicationForm.medication_name.trim(),
         scheduled_for: medicationForm.scheduled_for ? new Date(medicationForm.scheduled_for).toISOString() : null,
         administered_at: medicationForm.administered_at ? new Date(medicationForm.administered_at).toISOString() : null,
-        photo_evidence_id: evidenceId, // Set the photo evidence ID from upload
+        photo_evidence_id: evidenceId,
+        photo_ingestion_key: photoIngestionKey,
       };
-      
 
       // Optimistically add to medications list
       setForm(prev => ({
