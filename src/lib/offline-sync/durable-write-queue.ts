@@ -71,6 +71,9 @@ async function openDatabase(): Promise<IDBDatabase> {
   if (queueClearing) {
     throw new Error("This device's saved updates are being cleared. Reopen Daily Care after cleanup finishes.");
   }
+  if (window.localStorage.getItem("solenos_anonymous_session_revoked")) {
+    throw new Error("This device was cleared. Reopen your Care Record before saving another update.");
+  }
   if (databasePromise) return databasePromise;
   // Ask the browser to protect the encrypted queue from routine storage
   // eviction. This is best-effort; unsupported browsers still use IndexedDB.
