@@ -376,16 +376,20 @@ export default function CareRemindersPage() {
         const requestCaregiverId = getCaregiverId();
         const requestScopeSequence = scopeSequenceRef.current;
         const expectedRequestSequence = requestSequenceRef.current + 1;
+        const isCurrentRetry = () =>
+          requestScopeSequence === scopeSequenceRef.current
+          && (requestPersonId || null) === getPersonId()
+          && requestCaregiverId === getCaregiverId();
         setError("");
         if (!hasLoadedRef.current) setLoading(true);
         void refresh(requestPersonId || undefined)
           .catch(() => {
-            if (requestPersonId && requestCaregiverId && isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence) && expectedRequestSequence === requestSequenceRef.current) {
+            if (isCurrentRetry() && expectedRequestSequence === requestSequenceRef.current) {
               setError("We couldn’t load your reminders. Check your connection and try again.");
             }
           })
           .finally(() => {
-            if (requestPersonId && requestCaregiverId && isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence) && expectedRequestSequence === requestSequenceRef.current) {
+            if (isCurrentRetry() && expectedRequestSequence === requestSequenceRef.current) {
               setLoading(false);
             }
           });
