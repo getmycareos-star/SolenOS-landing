@@ -149,6 +149,10 @@ export default function CareRemindersPage() {
       setAssignableMembers([]);
       setAssignedTo("");
       setSnoozeSupported(false);
+      setTitle("");
+      setNote("");
+      setDueAt(localDateTimeValue(new Date(Date.now() + 24 * 60 * 60 * 1000)));
+      setFilter("open");
       setSaving(false);
       setBusyId("");
       setError("");
@@ -367,7 +371,25 @@ export default function CareRemindersPage() {
         </Button>
       </form>
 
-      {error ? <RecordState kind="error" description={error} onAction={() => { setError(""); if (!hasLoadedRef.current) setLoading(true); void refresh(personId || undefined).catch(() => setError("We couldn’t load your reminders. Check your connection and try again.")).finally(() => setLoading(false)); }} /> : null}
+      {error ? <RecordState kind="error" description={error} onAction={() => {
+        const requestPersonId = personId;
+        const requestCaregiverId = getCaregiverId();
+        const requestScopeSequence = scopeSequenceRef.current;
+        const expectedRequestSequence = requestSequenceRef.current + 1;
+        setError("");
+        if (!hasLoadedRef.current) setLoading(true);
+        void refresh(requestPersonId || undefined)
+          .catch(() => {
+            if (requestPersonId && requestCaregiverId && isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence) && expectedRequestSequence === requestSequenceRef.current) {
+              setError("We couldn’t load your reminders. Check your connection and try again.");
+            }
+          })
+          .finally(() => {
+            if (requestPersonId && requestCaregiverId && isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence) && expectedRequestSequence === requestSequenceRef.current) {
+              setLoading(false);
+            }
+          });
+      }} /> : null}
       {notice ? <p className="care-reminder-notice" role="status">{notice}</p> : null}
 
       <section className="care-reminders-list" aria-labelledby="care-reminders-list-title">
