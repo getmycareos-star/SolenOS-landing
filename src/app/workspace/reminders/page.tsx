@@ -88,6 +88,10 @@ export default function CareRemindersPage() {
   const hasLoadedRef = useRef(false);
   const requestSequenceRef = useRef(0);
   const scopeSequenceRef = useRef(0);
+  const personIdRef = useRef<string | null>(null);
+  const caregiverIdRef = useRef<string | null>(null);
+  const getPersonId = () => personIdRef.current;
+  const getCaregiverId = () => caregiverIdRef.current;
   const isCurrentScope = (expectedPersonId: string, expectedCaregiverId: string | null, expectedScopeSequence: number) =>
     expectedScopeSequence === scopeSequenceRef.current
     && expectedPersonId === getPersonId()
@@ -100,11 +104,15 @@ export default function CareRemindersPage() {
       requestSequence === requestSequenceRef.current
       && scopeSequence === scopeSequenceRef.current;
     const session = await ensureAnonymousSession();
-    const id = knownPersonId || session.person.id;
-    const caregiverId = session.caregiver?.id;
-    if (!session.person?.id || !caregiverId) throw new Error("A valid SolenOS care session is required to load reminders.");
-    if (id !== session.person.id || session.person.id !== getPersonId()
-      || caregiverId !== getCaregiverId() || !isCurrentRequest()) return;
+    const sessionPersonId = session.person?.id;
+    const sessionCaregiverId = session.caregiver?.id ?? null;
+    const id = knownPersonId || sessionPersonId;
+    if (!sessionPersonId || !sessionCaregiverId) throw new Error("A valid SolenOS care session is required to load reminders.");
+    if (id !== sessionPersonId || !isCurrentRequest()) return;
+    if (personIdRef.current && personIdRef.current !== sessionPersonId) return;
+    if (caregiverIdRef.current && caregiverIdRef.current !== sessionCaregiverId) return;
+    personIdRef.current = sessionPersonId;
+    caregiverIdRef.current = sessionCaregiverId;
     setPersonId(id);
     const [data, members] = await Promise.all([
       getJSON(`/reminders/${encodeURIComponent(id)}`),
@@ -144,6 +152,8 @@ export default function CareRemindersPage() {
       scopeSequenceRef.current += 1;
       requestSequenceRef.current += 1;
       hasLoadedRef.current = false;
+      personIdRef.current = null;
+      caregiverIdRef.current = null;
       setPersonId("");
       setReminders([]);
       setAssignableMembers([]);
