@@ -173,6 +173,7 @@ for (const [source, expected, label] of [
   assert.ok(source.includes(expected), `${label} page title matches its navigation label`);
 }
 assert.ok(careInformation.includes("CARE_INFORMATION_NAVIGATION.map"), "Care information exposes its child destinations");
+assert.ok(careInformation.includes("Care summary updated") && !careInformation.includes("<span>Updated {formatLastUpdated"), "the date label describes the summary timestamp rather than implying every care record was updated");
 assert.ok(home.includes('viewMode="today"'), "Home uses the concise current-care projection");
 assert.ok(careInformation.includes("<LCRCurrentUnderstanding />"), "Care information retains the complete care-record view");
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
