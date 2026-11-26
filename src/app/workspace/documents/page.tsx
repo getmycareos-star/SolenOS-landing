@@ -197,6 +197,7 @@ export default function DocumentsPage() {
   const requestedEvidenceIdRef = useRef<string | null>(null);
   const previewRequestSequenceRef = useRef(0);
   const documentSessionEpochRef = useRef(0);
+  const fileSelectionScopeRef = useRef<{ epoch: number; personId: string | null; caregiverId: string | null } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -305,6 +306,7 @@ export default function DocumentsPage() {
       versionComparisonRequestSequenceRef.current += 1;
       loadedDocumentScopeRef.current = null;
       requestedEvidenceIdRef.current = null;
+      fileSelectionScopeRef.current = null;
       setDocuments([]);
       setSelectedId(null);
       setPreviewUrl(null);
@@ -423,6 +425,24 @@ export default function DocumentsPage() {
       [doc.title, doc.mimeType, doc.status, doc.extractedText].some((value) => value.toLowerCase().includes(normalized)),
     );
   }, [documents, query]);
+
+  const openDocumentFilePicker = (input: HTMLInputElement | null) => {
+    fileSelectionScopeRef.current = {
+      epoch: documentSessionEpochRef.current,
+      personId: getPersonId(),
+      caregiverId: getCaregiverId(),
+    };
+    input?.click();
+  };
+
+  const consumeFileSelectionScope = (): boolean => {
+    const scope = fileSelectionScopeRef.current;
+    fileSelectionScopeRef.current = null;
+    return Boolean(scope)
+      && scope!.epoch === documentSessionEpochRef.current
+      && (!scope!.personId || scope!.personId === getPersonId())
+      && (!scope!.caregiverId || scope!.caregiverId === getCaregiverId());
+  };
 
   const handleFiles = async (fileList: FileList | File[] | null, sourcePageNumbers: number[] = [], sourceEvidenceId?: string | null) => {
     const files = Array.from(fileList || []);
@@ -979,10 +999,10 @@ export default function DocumentsPage() {
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
       <section className="documents-upload-actions" aria-label="Add care files and photos">
-        <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.eml,.msg,.csv,.json,.xml,.yaml,.yml" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("upload"); void handleFiles(files); }} />
-        <input ref={snapInputRef} type="file" accept="image/*" capture="environment" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setIntakeMode("capture"); void handleFiles(files); }} />
-        <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Upload size={17} />Upload files</button>
-        <button type="button" onClick={() => snapInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Camera size={17} />Snap a photo</button>
+        <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.eml,.msg,.csv,.json,.xml,.yaml,.yml" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; if (!consumeFileSelectionScope()) { setUploadMessage({ kind: "error", text: "The active care record changed while you were choosing a file. Choose the file again for the current person." }); return; } setIntakeMode("upload"); void handleFiles(files); }} />
+        <input ref={snapInputRef} type="file" accept="image/*" capture="environment" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; if (!consumeFileSelectionScope()) { setUploadMessage({ kind: "error", text: "The active care record changed while you were taking a photo. Choose the photo again for the current person." }); return; } setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setIntakeMode("capture"); void handleFiles(files); }} />
+        <button type="button" onClick={() => openDocumentFilePicker(uploadInputRef.current)} disabled={uploading} className="documents-upload-action"><Upload size={17} />Upload files</button>
+        <button type="button" onClick={() => openDocumentFilePicker(snapInputRef.current)} disabled={uploading} className="documents-upload-action"><Camera size={17} />Snap a photo</button>
         <button type="button" onClick={() => { setCapturedPages([]); setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setCameraError(null); setCameraFacingMode("environment"); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
       </section>
 
@@ -1098,7 +1118,7 @@ export default function DocumentsPage() {
             title={documents.length === 0 ? "No documents added yet" : "No matching documents"}
             description={documents.length === 0 ? "Add a document to keep it with the care information in this record." : "Try another search term or clear your search."}
             actionLabel={documents.length === 0 ? "Add a document" : "Clear search"}
-            onAction={documents.length === 0 ? () => uploadInputRef.current?.click() : () => setQuery("")}
+            onAction={documents.length === 0 ? () => openDocumentFilePicker(uploadInputRef.current) : () => setQuery("")}
           />
         ) : (
           <div className="documents-list">
