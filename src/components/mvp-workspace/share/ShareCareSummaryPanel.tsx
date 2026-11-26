@@ -61,7 +61,7 @@ function downloadBriefing(draft: BriefingDraft) {
     ] : []),
     "",
     draft.generation?.status === "source_only_fallback"
-      ? "The Care Assistant could not prepare a summary. This draft uses words from your saved notes and documents only. Check each item and date before sharing it."
+      ? "Ask SolenOS could not prepare a summary. This draft uses words from your saved notes and documents only. Check each item and date before sharing it."
       : "This summary was prepared with help from SolenOS. It is a draft, not a confirmed medical record. Each item includes words from a saved note or document. Check each item and date before sharing it.",
     ...sections.flatMap((item, index) => [
       "",
