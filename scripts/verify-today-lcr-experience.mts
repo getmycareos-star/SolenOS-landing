@@ -75,6 +75,7 @@ assert.match(home, /searchParams\.getAll\("prompt"\)/, "Companion deep links mus
 assert.match(home, /promptValues\.length === 1/, "ambiguous repeated prompt parameters must not select one value silently");
 assert.match(home, /promptValues\[0\]\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
 assert.match(home, /<Companion key=\{prompt\} home initialPrompt=\{prompt\} \/>/, "a Companion prompt must be opened within the shared Home shell");
+assert.ok(home.indexOf('<LCRCurrentUnderstanding showNextStep viewMode="today" />') < home.indexOf('<section className="today-companion-entry"'), "a Companion deep link must not push the current care picture below the question workspace");
 assert.doesNotMatch(home, /if\s*\(prompt\)\s*\{/, "a prompt query must not replace the Home shell");
 assert.doesNotMatch(home, /When you’re ready, here are two ways to continue/, "the fixed two-action panel must not return");
 
