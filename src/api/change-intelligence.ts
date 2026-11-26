@@ -97,6 +97,7 @@ export type SituationSourceRecord = {
   excerpt: string | null;
   occurred_at: string | null;
   recorded_at: string | null;
+  time_provenance?: string | null;
   source_label: string | null;
   status: string | null;
   evidence_ids: string[];
