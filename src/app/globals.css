@@ -3450,6 +3450,13 @@ button.public-cta-primary:disabled:hover {
   flex-wrap: wrap;
 }
 
+.care-context-recipient {
+  font-family: var(--font-solenos-sans);
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: var(--ink);
+}
+
 .care-context-name {
   font-family: var(--font-solenos-sans);
   font-size: 0.85rem;

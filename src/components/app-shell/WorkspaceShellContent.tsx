@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell/AppShell";
 import { WorkspaceNavigationAccessibility } from "@/components/app-shell/WorkspaceNavigationAccessibility";
 import { WorkspaceRouteBreadcrumbs } from "@/components/app-shell/WorkspaceRouteBreadcrumbs";
@@ -11,6 +11,7 @@ import { GlobalDisplayPreferences } from "@/components/accessibility/GlobalDispl
 import { BrandLoading } from "@/components/brand";
 import { caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
 import { useWorkspace } from "@/lib/workspace-context";
+import { getJSON } from "@/api/client";
 
 function formatUpdatedDate(iso: string | null): string {
   if (!iso) return "";
@@ -23,15 +24,44 @@ function CareContextBar() {
   const active = runtime.situations.find((s) => s.status === "active");
   const hasSituations = runtime.situations.length > 0;
   const [mounted, setMounted] = useState(false);
+  const [recipientName, setRecipientName] = useState<string | null>(null);
+  const recipientRequestVersionRef = useRef(0);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    let activeRequest = true;
+    const loadRecipientName = async () => {
+      const requestVersion = ++recipientRequestVersionRef.current;
+      try {
+        const profile = await getJSON("/care-profile") as { name?: unknown };
+        if (!activeRequest || requestVersion !== recipientRequestVersionRef.current) return;
+        setRecipientName(typeof profile.name === "string" && profile.name.trim() ? profile.name.trim() : null);
+      } catch {
+        if (activeRequest && requestVersion === recipientRequestVersionRef.current) setRecipientName(null);
+      }
+    };
+    const refreshForPersonChange = () => {
+      recipientRequestVersionRef.current += 1;
+      setRecipientName(null);
+      void loadRecipientName();
+    };
+    void loadRecipientName();
+    window.addEventListener("personIdChanged", refreshForPersonChange);
+    return () => {
+      activeRequest = false;
+      recipientRequestVersionRef.current += 1;
+      window.removeEventListener("personIdChanged", refreshForPersonChange);
+    };
+  }, []);
 
   const updatedLabel = mounted && active ? formatUpdatedDate(active.updatedAt) : "";
 
   return (
-    <section className="care-context-bar" aria-label="Care record status">
+    <section className="care-context-bar" aria-label="Care recipient and record status">
       <div className="care-context-inner">
         <div className="care-context-info" aria-live="polite" aria-atomic="true">
+          {recipientName && <span className="care-context-recipient">Care for {recipientName}</span>}
           {recordLoadError ? (
             <>
               <span className="care-context-name">Care information unavailable</span>

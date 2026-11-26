@@ -17,6 +17,8 @@ const navigation = read("src/lib/workspace-navigation.ts");
 const shell = read("src/components/app-shell/AppShell.tsx");
 const workspaceLayout = read("src/app/workspace/layout.tsx");
 const workspaceShell = read("src/components/app-shell/WorkspaceShellContent.tsx");
+assert.ok(workspaceShell.includes('getJSON("/care-profile")') && workspaceShell.includes("Care for {recipientName}"), "the persistent workspace context must identify the active care recipient from the authorized server profile");
+assert.ok(workspaceShell.includes('addEventListener("personIdChanged", refreshForPersonChange)'), "the visible recipient identity must refresh and clear when the active care record changes");
 const workspaceContext = read("src/lib/workspace-context.tsx");
 const apiClient = read("src/api/client.ts");
 const breadcrumbs = read("src/components/app-shell/WorkspaceRouteBreadcrumbs.tsx");
