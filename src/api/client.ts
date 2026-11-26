@@ -749,27 +749,62 @@ export async function revokeAnonymousSession(): Promise<void> {
 
 // Multipart uploads go directly to Railway to avoid Netlify's proxy body-size
 // limits. Do not set Content-Type manually: the browser must add the boundary.
-export async function postFormData(path: string, body: FormData) {
+type UploadProgressHandler = (loaded: number, total: number) => void;
+
+function uploadFormDataWithProgress(
+  url: string,
+  headers: Record<string, string>,
+  body: FormData,
+  onProgress: UploadProgressHandler,
+): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.timeout = 120_000;
+    for (const [name, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(name, value);
+    }
+    xhr.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable || event.total <= 0) return;
+      try { onProgress(event.loaded, event.total); } catch { /* UI progress must not interrupt an upload. */ }
+    });
+    xhr.addEventListener("load", () => {
+      const responseHeaders = new Headers();
+      for (const line of xhr.getAllResponseHeaders().trim().split(/[\\r\\n]+/)) {
+        const separator = line.indexOf(":");
+        if (separator > 0) {
+          responseHeaders.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
+        }
+      }
+      resolve(new Response(xhr.responseText || "", {
+        status: xhr.status,
+        statusText: xhr.statusText,
+        headers: responseHeaders,
+      }));
+    });
+    xhr.addEventListener("error", () => reject(new Error("Network error while uploading the file.")));
+    xhr.addEventListener("timeout", () => reject(new Error("The file upload timed out. Keep the original selected and try again.")));
+    xhr.addEventListener("abort", () => reject(new Error("The file upload was interrupted. Keep the original selected and try again.")));
+    xhr.send(body);
+  });
+}
+
+export async function postFormData(path: string, body: FormData, onUploadProgress?: UploadProgressHandler) {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const backendPath = normalized.startsWith("/api/v1/")
     ? normalized
     : `/api/v1${normalized}`;
   const headers = await requestAuthorizationHeaders(backendPath);
   const url = apiUrl(backendPath);
-  let res = await fetchWithTimeout(url, {
-    method: "POST",
-    headers,
-    body,
-  });
+  const send = (requestHeaders: Record<string, string>) => onUploadProgress
+    ? uploadFormDataWithProgress(url, requestHeaders, body, onUploadProgress)
+    : fetchWithTimeout(url, { method: "POST", headers: requestHeaders, body });
+  let res = await send(headers);
   const ingestionKey = body.get("ingestion_key");
   if (res.status === 401 && headers.Authorization && typeof ingestionKey === "string" && ingestionKey.trim()) {
     const previousToken = headers.Authorization.replace(/^Bearer\s+/i, "");
     const nextToken = await refreshSessionAfterUnauthorized(previousToken);
-    res = await fetchWithTimeout(url, {
-      method: "POST",
-      headers: { ...headers, Authorization: `Bearer ${nextToken}` },
-      body,
-    });
+    res = await send({ ...headers, Authorization: `Bearer ${nextToken}` });
   }
   return handleResponse(res);
 }
