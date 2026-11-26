@@ -2789,8 +2789,10 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <p>Some care information could not be checked. Review the available record before relying on this summary.</p>
                   ) : assessmentError ? (
                     <p role="alert">The saved care summary could not be loaded, so SolenOS cannot suggest a next step yet.</p>
-                  ) : assessmentLoading || !assessment ? (
-                    <p role="status">The current care picture is not ready yet. No next step has been assumed.</p>
+                  ) : assessmentLoading ? (
+                    <p role="status">The current care picture is still being reviewed. No next step has been assumed.</p>
+                  ) : !assessment ? (
+                    <p>Care priorities have not been reviewed yet. Review the saved information before relying on a next step.</p>
                   ) : immediateCareDecisions.length > 0 ? (
                     <p>Some care matters remain unresolved. Review the saved details before deciding what to do.</p>
                   ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
@@ -2810,8 +2812,10 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <Link href="/workspace/care-continuity" className="solenos-care-primary-action">Review available care information</Link>
                   ) : assessmentError ? (
                     <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Try again</button>
-                  ) : assessmentLoading || !assessment ? (
-                    <button type="button" className="solenos-care-primary-action" onClick={() => void refreshWholeRecord()}>Refresh care information</button>
+                  ) : assessmentLoading ? (
+                    <span role="status">Reviewing…</span>
+                  ) : !assessment ? (
+                    <Link href="/workspace/care-continuity" className="solenos-care-primary-action">Review care information</Link>
                   ) : immediateCareDecisions.length > 0 ? (
                     <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review Needs attention</Link>
                   ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
