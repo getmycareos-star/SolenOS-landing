@@ -1770,6 +1770,14 @@ await record("03b mobile document file picker, upload progress and camera scanne
   await unreadableSourcePage.setContent('<!doctype html><html><body style="margin:0;width:800px;height:1000px;background:#fff"></body></html>');
   const unreadablePng = await unreadableSourcePage.screenshot({ type: "png", fullPage: true });
   await unreadableSourcePage.close();
+  await mobilePage.locator('input[capture="environment"]').setInputFiles({
+    name: "snap-camera-capture.png",
+    mimeType: "image/png",
+    buffer: unreadablePng,
+  });
+  await mobilePage.getByRole("heading", { name: "Save your files", exact: true }).waitFor();
+  await mobilePage.getByRole("button", { name: "Discard selected files", exact: true }).click();
+
   const unreadableUploadForm = new FormData();
   unreadableUploadForm.append("person_id", identity.personId);
   unreadableUploadForm.append("caregiver_id", identity.caregiverId);
