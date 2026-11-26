@@ -176,6 +176,7 @@ for (const [source, expected, label] of [
 assert.ok(careInformation.includes("CARE_INFORMATION_NAVIGATION.map"), "Care information exposes its child destinations");
 assert.ok(careInformation.includes("Care summary updated") && !careInformation.includes("<span>Updated {formatLastUpdated"), "the date label describes the summary timestamp rather than implying every care record was updated");
 assert.ok(home.includes('viewMode="today"'), "Home uses the concise current-care projection");
+assert.ok(appointments.includes('addEventListener("personIdChanged", resetAppointmentWorkspace)') && appointments.includes("<AppointmentWorkspace key={scopeEpoch}"), "appointment drafts and in-flight workspace state are discarded when the active care recipient changes");
 assert.ok(careInformation.includes("<LCRCurrentUnderstanding />"), "Care information retains the complete care-record view");
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
 assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
