@@ -8,7 +8,7 @@ import { z } from "zod";
 export const LlmObservationSchema = z.object({
   description: z.string().min(1).max(500),
   approximate_time: z.string().nullable(),
-  confidence: z.enum(["low", "medium", "high"]),
+  confidence: z.enum(["low", "medium", "high", "unavailable"]),
   raw_fragment: z.string().min(1),
 });
 
