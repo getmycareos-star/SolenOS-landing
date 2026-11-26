@@ -2472,6 +2472,8 @@ await record("Add an update stays usable without unrelated dashboard reads", asy
 
 await record("Daily Care structured capture validates units and medication outcomes", async () => {
   const structured = await createBrowserPage(session, "/workspace/daily-care");
+  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
   await structured.page.getByRole("button", { name: "Measurement", exact: true }).click();
   const type = structured.page.locator("#capture-vital-type");
   await type.waitFor({ state: "visible", timeout: 15_000 });
@@ -2504,7 +2506,9 @@ await record("Daily Care structured capture validates units and medication outco
   assert.equal(await structured.page.locator("#vital-unit").getAttribute("required"), "");
 
   await structured.page.getByRole("button", { name: "Back to choices", exact: true }).click();
-  await structured.page.getByRole("button", { name: "Medication update", exact: true }).click();
+  await structured.page.getByRole("button", { name: "Describe an update", exact: true }).click();
+  await structured.page.getByText("Prefer a structured entry?", { exact: true }).click();
+  await structured.page.getByRole("button", { name: "Medication", exact: true }).click();
   const medicationStatus = structured.page.locator("#capture-medication-status");
   await medicationStatus.waitFor({ state: "visible", timeout: 15_000 });
   const medicationOptions = await medicationStatus.locator("option").allTextContents();
