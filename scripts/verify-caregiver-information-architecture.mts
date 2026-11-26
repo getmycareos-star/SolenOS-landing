@@ -182,6 +182,8 @@ assert.ok(history.includes("Open original document"), "document-backed history e
 assert.ok(history.includes('event.source_type === "evidence"') && history.includes("encodeURIComponent(event.id)"), "document drill-down uses the exact evidence event identity rather than an unrelated evidence list entry");
 assert.ok(history.includes("HistoryDrawer") && history.includes("Browse all saved records"), "Care history retains the full source-aware history explorer as a secondary view");
 assert.ok(documents.includes('get("evidenceId")') && documents.includes("openOriginal(matchingDocument)"), "Documents opens the exact source selected from Care history");
+assert.ok(history.includes("returnTo=") && history.includes("historyPath(filter, appliedQuery)"), "opening a source document carries the current Care history search and filter context");
+assert.ok(documents.includes("parsedReturnTo.pathname === \"/workspace/timeline\"") && documents.includes("Back to Care history"), "Documents only offers a same-origin return to the Care history destination");
 
 assert.ok(notifications.includes("<NotificationsCenter />"), "Notifications renders a dedicated inbox rather than redirecting into Settings");
 assert.ok(notificationCenter.includes("/notifications?limit=100&offset=0") && notificationCenter.includes("/notifications/unread-count"), "the notification inbox reads its authenticated feed and unread count");
