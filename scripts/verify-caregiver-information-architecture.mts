@@ -180,6 +180,7 @@ assert.ok(careInformation.includes("<LCRCurrentUnderstanding />"), "Care informa
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
 assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
 assert.ok(history.includes("return !safeDate(event.occurred_at)"), "a missing or invalid event timestamp is never silently replaced with the time the record was saved");
+assert.ok(history.includes('addEventListener("personIdChanged", clearPreviousCareRecipient)') && history.includes("historyRequestSequenceRef") && history.includes("historyScopeSequenceRef"), "Care history clears prior-recipient events and invalidates in-flight reads and corrections on a scope change");
 assert.ok(!history.includes(': typeof row.recorded_at === "string" ? row.recorded_at : null,'), "the timeline mapping keeps event time separate from record time");
 
 assert.ok(history.includes("updateHistoryUrl") && history.includes('params.get("filter")') && history.includes('params.get("q")'), "Care history preserves its search and filters when a caregiver opens a source and returns");
