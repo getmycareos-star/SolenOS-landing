@@ -162,7 +162,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
               {row.source_record_refs.map((reference: Record<string, any>, referenceIndex: number) => (
                 <div key={(reference.record_type || 'source') + '-' + referenceIndex} style={{ marginTop: 6 }}>
                   <p style={{ fontSize: 11, margin: 0, fontWeight: 600 }}>{caregiverSafeGeneratedText(String(reference.label || '')) || (reference.record_type === 'care_event' ? 'Care update' : reference.record_type === 'evidence' ? 'Original note or document' : 'Care record detail')}</p>
-                  {reference.occurred_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it happened: {new Date(reference.occurred_at).toLocaleString()}</p>}
+                  {(reference.time_provenance === "server_recorded_at" || reference.time_provenance === "entry_time_defaulted") ? <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it happened: Not provided</p> : reference.occurred_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it happened: {new Date(reference.occurred_at).toLocaleString()}</p>}
                   {reference.recorded_at && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>When it was recorded: {new Date(reference.recorded_at).toLocaleString()}</p>}
                   {reference.reported_by && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>Reported by: {caregiverSourceText(String(reference.reported_by)) || 'Not recorded'}</p>}
                   {reference.entered_by && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>Recorded by: {caregiverSourceText(String(reference.entered_by)) || 'Not recorded'}</p>}
@@ -269,7 +269,7 @@ export default function CareDeltaPanel({ personId }: { personId: string }) {
               {claim.support_status === 'matched_exact_source_wording' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears in a saved note or document.</p>}
               {claim.support_status === 'historical_only' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>This wording appears only in earlier information.</p>}
               {claim.support_status === 'not_matched_to_source' && <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>We could not match this summary to the words in a saved note or document. Check it before relying on it.</p>}
-              {claim.source_references.map((reference, index) => <p key={reference.record_type + '-' + index} style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>{reference.label || 'Saved care information'}{reference.occurred_at ? ' · ' + new Date(reference.occurred_at).toLocaleString() : ''}</p>)}
+              {claim.source_references.map((reference, index) => <p key={reference.record_type + '-' + index} style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '3px 0 0' }}>{reference.label || 'Saved care information'}{reference.time_provenance === "server_recorded_at" || reference.time_provenance === "entry_time_defaulted" ? ` · Event time not provided · Added ${reference.recorded_at ? new Date(reference.recorded_at).toLocaleString() : "time not recorded"}` : reference.occurred_at ? ` · Happened ${new Date(reference.occurred_at).toLocaleString()}` : ""}</p>)}
             </article>
           ))}
         </section>
