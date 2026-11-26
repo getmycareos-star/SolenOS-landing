@@ -497,7 +497,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     const cursor = olderHistoryCursor
     const activeScopeKey = activeCompanionConversationStorageKey()
     const requestScopeSequence = conversationScopeSequenceRef.current
-    if (!currentSessionId || !cursor || !hasOlderMessages || loadingOlderMessages) return
+    if (!currentSessionId || !cursor || !hasOlderMessages || loadingOlderMessages || loadingConversationHistory) return
     const isCurrentRequest = () => requestScopeSequence === conversationScopeSequenceRef.current
       && activeScopeKey === activeCompanionConversationStorageKey()
       && conversationScopeRef.current === activeScopeKey
@@ -582,7 +582,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     const submittedText = (textOverride ?? input).trim()
     // React state updates are asynchronous. A ref closes the same-tick
     // double-submit window before the loading state reaches the next render.
-    if (!submittedText || loading || sendingRef.current) return
+    if (!submittedText || loading || loadingOlderMessages || loadingConversationHistory || sendingRef.current) return
     sendingRef.current = true
     const requestScopeSequence = conversationScopeSequenceRef.current
     const initialScopeKey = activeCompanionConversationStorageKey()
@@ -949,7 +949,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           </button>)}
         </div>
       </section>}
-      {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
+      {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Try again</button></div>}
       {conversationRestoreError && <div className="companion-error" role="alert"><span>{conversationRestoreError}</span></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
@@ -1198,9 +1198,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === AEnterA && !event.shiftKey) { event.preventDefault(); void sendMessage() }
-          }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading || (availability !== "available" && availability !== "unverified")} rows={2} />
+          }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified")} rows={2} />
           <div className="companion-composer-footer">
-            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || (availability !== "available" && availability !== "unverified") || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? ASendingA : ASendA}</span></button></div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified") || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? ASendingA : ASendA}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
