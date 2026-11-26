@@ -44,6 +44,8 @@ assert.match(appShell, /WORKSPACE_NAVIGATION\.settings\.map/);
 assert.doesNotMatch(appShell, /const NAVIGATION\s*=|NAVIGATION\.map/);
 assert.doesNotMatch(layout, /WORKSPACE_NAV\s*=|navItems=/);
 assert.match(appShell, /href=\{brandHref\}/, "the brand link remains a direct route to the Care Record");
+assert.match(appShell, /href="#solenos-main-content"/, "keyboard users can bypass repeated workspace navigation");
+assert.match(appShell, /id="solenos-main-content" tabIndex=\{-1\}/, "the skip link has a programmatically focusable main-content target");
 assert.match(appShell, /if \(href === "\/workspace"\) return pathname === href/, "Home must not match every nested route");
 assert.match(appShell, /WORKSPACE_SECONDARY_NAVIGATION\.some/, "secondary routes keep More active");
 assert.match(appShell, /CARE_INFORMATION_NAVIGATION\.some/, "Care information stays active while a caregiver browses its child destinations");
@@ -140,6 +142,7 @@ assert.match(breadcrumbs, /aria-label="Breadcrumb"/);
 assert.match(breadcrumbs, /aria-current="page"/);
 assert.match(breadcrumbs, /href="\/workspace"/);
 assert.match(workspaceStyles, /:focus-visible/);
+assert.match(workspaceStyles, /\.solenos-skip-link:focus/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
