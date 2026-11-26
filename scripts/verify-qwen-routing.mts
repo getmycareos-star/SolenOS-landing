@@ -86,7 +86,7 @@ requireText("src/app/workspace/page.tsx", [
   'import Link from "next/link";',
   'href="/workspace/care-continuity"',
   "View care information",
-  "See what is happening, what has changed and what may need your attention.",
+  "See what is happening today, what has changed and what may need your attention. Your saved care information stays connected as things change.",
 ]);
 assert(workspaceNavigation.includes('id: "ask-solenos"') && workspaceNavigation.includes('href: "/workspace/companion"') && workspaceNavigation.includes('label: "Ask SolenOS"'),
   "The existing Companion is directly reachable as Ask SolenOS from primary navigation.");
