@@ -1422,11 +1422,13 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const suggestionReference = (item: (typeof openLoopItems)[number]) => `${item.source}:${item.id}`;
   const actionForSuggestion = (item: (typeof openLoopItems)[number]) =>
     registeredActions.find((action) => action.suggestion_id === suggestionReference(item));
+  const sourceCoverage = projection?.source_coverage;
+  const requestedSources = projection?.requested_sources ?? [];
   const hasCompleteSourceCoverage = Boolean(
-    projection?.source_coverage &&
-    projection.requested_sources?.length &&
-    projection.requested_sources.every((sourceName) => {
-      const status = projection.source_coverage?.[sourceName]?.status;
+    sourceCoverage &&
+    requestedSources.length > 0 &&
+    requestedSources.every((sourceName) => {
+      const status = sourceCoverage[sourceName]?.status;
       return status === "available" || status === "empty";
     })
   );
