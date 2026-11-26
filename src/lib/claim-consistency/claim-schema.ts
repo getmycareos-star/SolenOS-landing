@@ -8,6 +8,23 @@ export const ClaimSourceSpanSchema = z.object({
 });
 
 export const ExtractedClaimSchema = z.object({
+  candidate_id: z.string().min(1),
+  candidate_type: z.literal("claim"),
+  candidate_description: z.string().min(1).max(1000),
+  source_id: z.string().min(1),
+  source_fragment: z.string().min(1),
+  recorded_at: z.string().nullable(),
+  recorded_time_status: z.enum(["available", "unavailable"]),
+  person: z.object({
+    id: z.string().nullable(),
+    resolution_status: z.enum(["resolved", "unresolved"]),
+  }),
+  care_recipient_id: z.string().min(1),
+  event_time: z.string().nullable(),
+  event_time_resolution: z.enum(["unresolved", "missing"]),
+  epistemic_status: z.enum(["reported", "observed", "inferred", "uncertain", "conflicting", "missing"]),
+  confidence: z.literal("unavailable"),
+  review_state: z.literal("pending"),
   claim_text: z.string().min(1).max(1000),
   entity_type: z.enum([
     "person",
