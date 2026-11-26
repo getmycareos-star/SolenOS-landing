@@ -4022,6 +4022,17 @@ await record("browser renders caregiver surfaces and submits Companion through t
   assert.ok(JSON.stringify(afterCorrectedAcceptance.payload).includes(correctedSource));
   assert.equal(JSON.stringify(afterCorrectedAcceptance.payload).includes(correctionSource), false);
 
+  const timeline = await createBrowserPage(session, "/workspace/timeline");
+  await timeline.page.getByRole("button", { name: "Corrections", exact: true }).click();
+  const correctionTimelineCard = timeline.page.locator(".timeline-event.is-correction").filter({ hasText: correctedSource }).first();
+  await correctionTimelineCard.waitFor({ timeout: 20_000 });
+  assert.equal(
+    (await correctionTimelineCard.locator(".timeline-event-category").textContent())?.trim(),
+    "Correction",
+    "the Care Timeline must visually identify a corrected entry as a correction",
+  );
+  await timeline.context.close();
+
   const correctedHistoryCard = companion.page.locator(".companion-reviewed-care-updates .companion-care-update").filter({ hasText: correctionSource }).first();
   await correctedHistoryCard.waitFor({ timeout: 15_000 });
   await correctedHistoryCard.getByRole("button", { name: "Review history" }).click();
