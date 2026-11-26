@@ -844,7 +844,7 @@ export default function TimelinePage() {
                             )}
                             <dt>Related care topic</dt><dd>{event.situation_id ? "Available" : "Not recorded"}</dd>
                             <dt>Related notes or documents</dt><dd>{event.source_type === "evidence" ? (
-                              <Link href={`/workspace/documents?evidenceId=${encodeURIComponent(event.id)}&returnTo=${encodeURIComponent(historyPath(filter, appliedQuery))}`}>Open original document</Link>
+                              <Link href={`/workspace/documents?evidenceId=${encodeURIComponent(event.id)}&returnTo=${encodeURIComponent(historyPath(filter, appliedQuery))}`}>Open original file</Link>
                             ) : event.evidence_ids?.length ? (
                               `${event.evidence_ids.length} saved item(s) attached`
                             ) : "None attached"}</dd>
