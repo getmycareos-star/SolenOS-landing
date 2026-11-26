@@ -27,6 +27,25 @@ type AppointmentBrief = {
     code?: string;
     has_appointment_information?: boolean;
   };
+  appointment_related_open_loops?: Array<{
+    source_id: string;
+    title: string;
+    description?: string | null;
+    status: string;
+    priority?: string | null;
+    deadline_at?: string | null;
+    appointment_id?: string | null;
+  }>;
+  appointment_needs?: Array<{
+    source_id: string;
+    question: string;
+    priority?: string | null;
+    status: string;
+  }>;
+  lcr_retrieval_status?: {
+    status?: "complete" | "partial" | "failed" | string;
+    failed_sources?: string[];
+  };
 };
 
 function displayDate(value?: string | null) {
@@ -89,6 +108,11 @@ export function UpcomingAppointmentSummary() {
 
   const appointment = brief?.next_appointment ?? null;
   const appointmentStatus = String(appointment?.status ?? "").trim().toLowerCase();
+  const appointmentFollowUps = brief?.appointment_related_open_loops ?? [];
+  const appointmentQuestions = brief?.appointment_needs ?? [];
+  const retrievalStatus = brief?.lcr_retrieval_status?.status;
+  const appointmentContextCode = brief?.appointment_context_status?.code;
+  const appointmentContextIncomplete = retrievalStatus === "partial" || retrievalStatus === "failed" || appointmentContextCode === "retrieval_failed";
   const appointmentHasTime = Boolean(appointment?.scheduled_at && /T\d{2}:\d{2}/.test(appointment.scheduled_at));
   const appointmentTime = appointmentHasTime ? Date.parse(appointment?.scheduled_at ?? "") : Number.NaN;
   const appointmentIsTimeSensitive = Boolean(
@@ -118,7 +142,14 @@ export function UpcomingAppointmentSummary() {
       </div>
       {loading ? <RecordState kind="loading" title="Checking recorded appointments" /> : error ? (
         <RecordState kind="error" title="Appointment information is unavailable" description="Your saved care information has not been changed." onAction={() => void load()} />
-      ) : appointment ? (
+      ) : (
+        <>
+          {appointmentContextIncomplete && (
+            <p className="solenos-upcoming-appointment__notice" role="status">
+              Some care-record sources could not be checked. The appointment information below may be incomplete.
+            </p>
+          )}
+          {appointment ? (
         <div className={`solenos-upcoming-appointment__item${appointmentIsTimeSensitive ? " is-time-sensitive" : ""}`}>
           {appointmentIsTimeSensitive && <p className="solenos-upcoming-appointment__timing">Coming up within 24 hours</p>}
           <strong>{caregiverSourceText(appointment.title) || "Recorded appointment"}</strong>
@@ -137,10 +168,48 @@ export function UpcomingAppointmentSummary() {
             </li>
           ))}
         </ul>
-      ) : brief?.appointment_context_status?.code === "no_appointment_information" ? (
-        <p role="status">No appointment information was returned from the available sources. This does not prove that no appointment exists.</p>
-      ) : (
-        <p role="status">Appointment information could not be confirmed in this summary.</p>
+          ) : (brief?.appointments?.length ?? 0) > 0 ? (
+            <ul className="solenos-upcoming-appointment__list">
+              {(brief?.appointments ?? []).slice(0, 2).map(item => (
+                <li key={item.source_id}>
+                  <strong>{caregiverSourceText(item.title) || "Recorded appointment"}</strong>
+                  <span>{displayDate(item.scheduled_at)} · {caregiverStatusLabel(item.status) || "Status not recorded"}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {(appointmentFollowUps.length > 0 || appointmentQuestions.length > 0) && (
+            <div className="solenos-upcoming-appointment__follow-ups">
+              <h3>Appointment follow-ups</h3>
+              {appointmentFollowUps.slice(0, 2).map(item => (
+                <div key={item.source_id}>
+                  <strong>{caregiverSourceText(item.title) || "Recorded follow-up"}</strong>
+                  {item.description && <p>{caregiverSourceText(item.description)}</p>}
+                  <small>
+                    {caregiverStatusLabel(item.status) || "Open"}
+                    {item.deadline_at ? ` · Due ${displayDate(item.deadline_at)}` : ""}
+                  </small>
+                </div>
+              ))}
+              {appointmentQuestions.slice(0, 2).map(item => (
+                <div key={item.source_id}>
+                  <strong>{caregiverSourceText(item.question) || "Appointment question to resolve"}</strong>
+                  <small>{caregiverStatusLabel(item.status) || "Open question"}</small>
+                </div>
+              ))}
+              <p><Link href="/workspace/open-loops">Review care follow-ups</Link></p>
+            </div>
+          )}
+          {!appointment && (brief?.appointments?.length ?? 0) === 0 && appointmentFollowUps.length === 0 && appointmentQuestions.length === 0 && (
+            appointmentContextCode === "no_appointment_information" ? (
+              <p role="status">No appointment information was returned from the available sources. This does not prove that no appointment exists.</p>
+            ) : appointmentContextCode === "follow_up_needed" ? (
+              <p role="status">A follow-up is recorded, but no appointment date or booking is confirmed.</p>
+            ) : (
+              <p role="status">Appointment information could not be confirmed in this summary.</p>
+            )
+          )}
+        </>
       )}
     </section>
   );
