@@ -2543,6 +2543,28 @@ await record("Daily Care structured capture validates units and medication outco
   await medicationStatus.selectOption("scheduled");
   assert.equal(await structured.page.locator("#medication-scheduled-for").getAttribute("required"), "",
     "a scheduled medication entry must include its planned time");
+
+  await medicationStatus.selectOption("refused");
+  await structured.page.locator("#capture-medication-name").fill("E2E medication photo");
+  await structured.page.locator("#medication-file-input").setInputFiles({
+    name: "medication-label.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=", "base64"),
+  });
+  await structured.page.getByRole("img", { name: "Medication preview" }).waitFor({ timeout: 10_000 });
+  await structured.context.setOffline(true);
+  await structured.page.getByRole("button", { name: "Add medicine with photo", exact: true }).click();
+  await structured.page.getByRole("alert")
+    .filter({ hasText: "medicine photo is saved on this device" })
+    .waitFor({ timeout: 10_000 });
+  await structured.context.setOffline(false);
+  await structured.page.getByRole("status")
+    .filter({ hasText: "A queued item has reached SolenOS" })
+    .waitFor({ timeout: 20_000 });
+  await structured.page.getByRole("button", { name: "Add medicine with photo", exact: true }).click();
+  await structured.page.getByRole("status")
+    .filter({ hasText: "Added to this daily-care draft" })
+    .waitFor({ timeout: 20_000 });
   await structured.context.close();
 });
 
