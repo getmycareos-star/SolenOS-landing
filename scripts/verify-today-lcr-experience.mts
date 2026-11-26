@@ -54,6 +54,7 @@ assert.match(understanding, /href="\/workspace\/care-continuity#lcr-conflict-rev
 assert.match(understanding, /id="lcr-conflict-review"/, "the complete record must expose the conflict-review destination");
 assert.match(understanding, /id=\{`lcr-care-item-/, "complete-record care details must expose stable evidence anchors");
 assert.match(understanding, /viewMode === "today" \? `\/workspace\/care-continuity#lcr-care-item-/, "Home evidence links must open the matching complete-record item");
+assert.match(understanding, /aria-label=\{\`View \$\{displayCurrentCareTitle\(item\)\} in the complete Care Record\`\}/, "repeated evidence links must remain distinguishable to screen-reader users");
 
 assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
 assert.match(understanding, /hasCompleteSourceCoverage/, "an empty record must require successful or empty results from every requested source");
