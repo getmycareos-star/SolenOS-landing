@@ -367,6 +367,11 @@ await record("00 first-time and returning caregivers share Home and the same LCR
       (careHeading.compareDocumentPosition(companion) & Node.DOCUMENT_POSITION_FOLLOWING));
   });
   assert.equal(careRemainsFirst, true, "a valid Companion prompt must not displace the current care picture");
+  await page.goBack({ waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Home", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
   await verifyMobile(page);
   assert.deepEqual(pageErrors, [], `first-time and returning caregiver Home journeys must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
