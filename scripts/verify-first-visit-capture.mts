@@ -7,7 +7,7 @@ const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "u
 
 assert.match(page, /<h1>Home<\/h1>/, "first-time and returning caregivers must enter through Home");
 assert.match(page, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "the shared entry page must use the concise Living Care Record projection");
-assert.match(page, /<Link href="\\/workspace\\/care-continuity">View care information<\\/Link>/, "Care information must remain directly discoverable from Home");
+assert.match(page, /<Link href="\/workspace\/care-continuity">View care information<\/Link>/, "Care information must remain directly discoverable from Home");
 assert.doesNotMatch(page, /FirstVisitWorkspaceRouter/, "Home must not branch into a separate first-visit presentation");
 assert.doesNotMatch(page, /CognitiveWorkspace/, "new caregivers must not be forced through a capture-only route");
 assert.match(understanding, /first-empty/, "an empty record must have a clear empty state");
