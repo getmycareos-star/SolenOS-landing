@@ -96,10 +96,14 @@ This route inventory does not yet constitute a complete endpoint-by-endpoint per
 2. Reading or dismissing a notification does not resolve a Needs attention item.
 3. Resolving or withdrawing a care matter does not erase its historical evidence.
 4. Documents remain source evidence; extracted content is not treated as accepted care information until the existing review and approval rules are satisfied.
-5. Care history preserves event time separately from recorded time and correction time; the all-saved-records explorer is owned by Care history, not More.
+5. Care history preserves event time separately from recorded time and correction time; the all-saved-records explorer is owned by Care history, not More. Document-backed entries open the exact source document and carry the active history filter/search into a validated same-origin return link.
 6. Caregiver and care-recipient context must remain scoped across route changes and browser history.
 7. A failed or partial API read must not be presented as an empty or complete record.
 8. Legacy links must resolve without changing the active care-recipient context.
+
+## Keyboard and assistive navigation
+
+The workspace shell exposes a first-focusable “Skip to main content” link. Its target is the workspace main landmark and receives a visible focus treatment. Route changes focus the main landmark after navigation; the mobile sidebar uses a modal focus trap, Escape handling, inert background content and focus restoration to the menu trigger. These source-level controls still require keyboard and screen-reader verification in a running browser.
 
 ## Verification
 
