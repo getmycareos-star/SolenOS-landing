@@ -12,6 +12,12 @@ assert.match(home, /<h1>Home<\/h1>/, "the primary caregiver landing page must be
 assert.match(home, /View the complete Care Record/, "Home must link to the complete Care Record");
 assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Home must render the authoritative care understanding in compact mode");
 assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR component must distinguish the compact Home view from the complete record");
+const assignableFetch = understanding.indexOf('getJSON("/caregiver-access/assignable-members")');
+const registeredActionsFetch = understanding.indexOf('getJSON(`/registered-actions/');
+const patternsFetch = understanding.indexOf('getJSON(`/change/patterns/');
+const detailFetchGate = understanding.indexOf('viewMode === "complete" ? [', understanding.indexOf("const backgroundTasks = ["));
+assert.ok(detailFetchGate >= 0 && assignableFetch > detailFetchGate && registeredActionsFetch > detailFetchGate && patternsFetch > detailFetchGate, "Today must not wait for complete-record-only caregiver, action and pattern queries");
+
 assert.match(understanding, /viewMode === "complete" && \(/, "detailed history and integrity panels must not render on Home");
 const firstCompletePanel = understanding.indexOf('      {viewMode === "complete" && (');
 const contextualNextStep = understanding.indexOf('      {showNextStep && !hasConfirmedEmptyRecord && (');
