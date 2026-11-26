@@ -35,6 +35,8 @@ assert.match(companion, /Earlier conversation message.*conversation history, not
 assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
 assert.ok(companion.includes("Load earlier messages"), "long conversations must expose older history pages");
 assert.ok(companion.includes("before_id: cursor.before_id"), "history pagination must use the stable server cursor");
+assert.ok(companion.includes("loadConversationHistory") && companion.includes("openSavedConversation"), "caregivers must be able to list and reopen saved conversations");
+assert.ok(companion.includes("Saved conversations") && companion.includes("Conversation history"), "conversation history must be discoverable in the Companion workspace");
 assert.ok(companion.includes("useLayoutEffect") && companion.includes("current.scrollTop = previousTop"), "prepending older messages must preserve the caregiver's reading position");
 assert.ok(companion.includes("loadingOlderMessages") && companion.includes("disabled={loading || loadingOlderMessages}"), "a conversation cannot be switched while older history is loading");
 assert.doesNotMatch(companion, /Add to care story/);
