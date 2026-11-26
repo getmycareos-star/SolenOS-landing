@@ -1500,8 +1500,8 @@ export function HistoryDrawer() {
                   <span className="history-drawer-mark"><ShieldCheck size={19} aria-hidden /></span>
                 )}
                 <div className="history-drawer-heading">
-                  <strong>{selectedRecord ? "Care record" : "Care history"}</strong>
-                  <span>{selectedRecord ? "What was saved and where it came from" : "Your saved care history, in date order"}</span>
+                  <strong>{selectedRecord ? "Care record" : "All saved records"}</strong>
+                  <span>{selectedRecord ? "What was saved and where it came from" : "Original reports, documents and care events in date order"}</span>
                 </div>
 
               </div>
