@@ -835,7 +835,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 return <article className={Acompanion-message A + (isUser ? Ais-userA : Ais-assistantA)} key={index}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
-                    <div className="companion-message-meta"><strong>{isUser ? AYouA : ACare AssistantA}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: A2-digitA, minute: A2-digitA })}</time></div>
+                    <div className="companion-message-meta"><strong>{isUser ? AYouA : AAI CompanionA}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: A2-digitA, minute: A2-digitA })}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {isUser && msg.source_message_id && <div className="companion-care-report-action">
                       {confirmingCareReportId === msg.source_message_id ? <div className="companion-care-report-confirm" role="group" aria-label="Confirm this care report">
