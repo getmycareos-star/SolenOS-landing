@@ -77,6 +77,19 @@ assert(dailyCare.includes("<DailyCarePhotoCapture />"), "photo capture remains a
 assert(dailyCare.includes('href="/workspace/timeline"'), "full historical review belongs to the dedicated Care Timeline");
 assert(!dailyCare.includes("/daily-care/intelligence/history"), "Daily Care capture must not duplicate the full history retrieval surface");
 console.log("PASS: Daily Care keeps capture, offline status and historical navigation separate.");
+const lcrCurrent = fs.readFileSync("src/components/mvp-workspace/LCRCurrentUnderstanding.tsx", "utf8");
+const careOverview = fs.readFileSync("src/components/app-shell/CareRecordOverview.tsx", "utf8");
+const persistedCare = fs.readFileSync("src/components/mvp-workspace/PersistedCareOrientation.tsx", "utf8");
+const changeIntelligence = fs.readFileSync("src/components/mvp-workspace/ChangeIntelligencePanel.tsx", "utf8");
+const careDelta = fs.readFileSync("src/components/CareDeltaPanel.tsx", "utf8");
+assert(lcrCurrent.includes("eventTimeLabel(item.occurred_at, item.time_provenance)"), "the Living Care Record must respect event-time provenance");
+assert(lcrCurrent.includes("Event time not provided"), "the Living Care Record must not call server receipt time an event time");
+assert(careOverview.includes("happenedWhen(item)"), "the workspace overview must distinguish happened from added time");
+assert(persistedCare.includes("careDateLabel(item)"), "the persisted care orientation must label server-added dates accurately");
+assert(changeIntelligence.includes("formatChangeEvidenceTime(source)"), "change intelligence must respect source event-time provenance");
+assert(careDelta.includes("reference.time_provenance === \"server_recorded_at\""), "care comparisons must not mislabel server receipt time");
+console.log("PASS: LCR and downstream care views distinguish event time from saved time.");
+
 
 
 const followUps = fs.readFileSync("src/app/workspace/open-loops/page.tsx", "utf8");
