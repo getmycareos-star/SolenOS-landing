@@ -9,7 +9,7 @@ const styles = read("src/app/globals.css");
 const companion = read("src/components/workflows/AICompanion.tsx");
 
 assert.match(home, /<h1>Home<\/h1>/, "the primary caregiver landing page must be Home");
-assert.match(home, /View the complete Care Record/, "Home must link to the complete Care Record");
+assert.match(home, /View care information/, "Home must link to the complete Care Record");
 assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Home must render the authoritative care understanding in compact mode");
 assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR component must distinguish the compact Home view from the complete record");
 const assignableFetch = understanding.indexOf('getJSON("/caregiver-access/assignable-members")');
@@ -54,7 +54,7 @@ assert.match(understanding, /href="\/workspace\/care-continuity#lcr-conflict-rev
 assert.match(understanding, /id="lcr-conflict-review"/, "the complete record must expose the conflict-review destination");
 assert.match(understanding, /id=\{`lcr-care-item-/, "complete-record care details must expose stable evidence anchors");
 assert.match(understanding, /viewMode === "today" \? `\/workspace\/care-continuity#lcr-care-item-/, "Home evidence links must open the matching complete-record item");
-assert.match(understanding, /aria-label=\{\`View \$\{displayCurrentCareTitle\(item\)\} in the complete Care Record\`\}/, "repeated evidence links must remain distinguishable to screen-reader users");
+assert.match(understanding, /aria-label=\{\`View \$\{displayCurrentCareTitle\(item\)\} in Care information\`\}/, "repeated evidence links must remain distinguishable to screen-reader users");
 
 assert.match(understanding, /hasConfirmedEmptyRecord/, "an empty record must only be declared when retrieval coverage is complete");
 assert.match(understanding, /hasCompleteSourceCoverage/, "an empty record must require successful or empty results from every requested source");
