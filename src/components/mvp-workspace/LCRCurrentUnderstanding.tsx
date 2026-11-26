@@ -1816,7 +1816,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       {item.recorded_at ? ` · Saved ${formatWhen(item.recorded_at)}` : ""}
                     </small>
                     {documentStatementContextLabels(item).length > 0 && <small>{documentStatementContextLabels(item).join(" · ")}</small>}
-                    <a className="lcr-text-action" href={viewMode === "today" ? `/workspace/care-continuity#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}` : `#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View this detail</a>
+                    <a className="lcr-text-action" aria-label={`View ${displayCurrentCareTitle(item)} in the complete Care Record`} href={viewMode === "today" ? `/workspace/care-continuity#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}` : `#lcr-care-item-${encodeURIComponent(item.source_collection)}-${encodeURIComponent(item.id)}`}>View this detail</a>
                   </li>
                 ))}
               </ul>
