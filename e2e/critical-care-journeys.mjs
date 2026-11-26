@@ -840,86 +840,28 @@ await record("01a dementia profile review window and observation persistence are
   await context.close();
 });
 
-await record("01b visible Follow-ups link and mobile navigation", async () => {
+await record("01b mobile navigation leads to Care information and Needs attention", async () => {
   const { context, page, pageErrors, consoleErrors, failedRequests } = await createBrowserPage(
     session,
     "/workspace/daily-care",
     { width: 390, height: 844 },
   );
-  const followupsSummary = page.locator("details.daily-care-context-panel > summary").filter({ hasText: "Follow-ups" });
-  try {
-    await followupsSummary.waitFor({ state: "visible", timeout: 20_000 });
-  } catch {
-    const browserState = await page.evaluate(() => ({
-      url: location.pathname,
-      body: document.body.innerText.slice(0, 1800),
-      requests: (window.__solenosE2EFetchTrace || []).slice(-20).map(({ method, path, status, error }) => ({ method, path, status, error })),
-      localStorageKeys: Object.keys(localStorage),
-      scripts: Array.from(document.scripts).map((script) => script.src).filter(Boolean).slice(-12),
-    }));
-    const diagnostic = { ...browserState, pageErrors, consoleErrors, failedRequests };
-    throw new Error(`Daily Care did not render its Follow-ups section: ${JSON.stringify(diagnostic)}`);
-  }
-  await followupsSummary.click();
-  const viewFollowups = page.getByRole("link", { name: "Open Needs attention", exact: true });
-  await viewFollowups.waitFor({ state: "visible", timeout: 20_000 });
-  await viewFollowups.click();
-  await page.waitForURL("**/workspace/open-loops", { timeout: 20_000 });
+  await page.getByRole("heading", { name: "Add an update", exact: true }).waitFor({ timeout: 20_000 });
+  const mobileNav = page.locator(".solenos-mobile-bottom-nav");
+  await mobileNav.waitFor({ state: "visible", timeout: 10_000 });
+  await mobileNav.getByRole("link", { name: "Care", exact: true }).click();
+  await page.waitForURL("**/workspace/care-continuity", { timeout: 15_000 });
+  await page.getByRole("heading", { name: "Care information", exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("link", { name: "Needs attention", exact: true }).click();
+  await page.waitForURL("**/workspace/open-loops", { timeout: 15_000 });
   await page.locator(".followups-page h1").getByText("Needs attention", { exact: true })
-    .waitFor({ state: "visible", timeout: 20_000 });
-  for (const heading of ["Needs attention", "Being monitored", "Needs clarification"]) {
-    await page.getByRole("heading", { name: heading, exact: true })
-      .waitFor({ state: "visible", timeout: 10_000 });
-  }
+    .waitFor({ state: "visible", timeout: 15_000 });
+  assert.deepEqual(pageErrors, [], `mobile navigation must not throw: ${JSON.stringify(pageErrors)}`);
+  assert.deepEqual(consoleErrors, [], `mobile navigation must not log console errors: ${JSON.stringify(consoleErrors)}`);
+  assert.deepEqual(failedRequests, [], `mobile navigation must not fail requests: ${JSON.stringify(failedRequests)}`);
   await verifyMobile(page);
-  const navigationToggle = page.getByRole("button", { name: "Open navigation", exact: true });
-  await navigationToggle.click();
-  await page.waitForFunction(() =>
-    document.querySelector(".solenos-sidebar-toggle")?.getAttribute("aria-expanded") === "true" &&
-    document.querySelector(".solenos-chat-sidebar-host")?.classList.contains("is-sidebar-open") === true
-  , undefined, { timeout: 5_000 });
-  const primaryNavigation = page.locator("#solenos-navigation");
-  const followUpsNavigationLink = primaryNavigation.getByRole("link", { name: /Needs attention/ });
-  await followUpsNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
-  assert.equal(await followUpsNavigationLink.getAttribute("href"), "/workspace/open-loops");
-  const moreNavigationLink = primaryNavigation.getByRole("link", { name: /More/ });
-  await moreNavigationLink.waitFor({ state: "visible", timeout: 10_000 });
-  await moreNavigationLink.click();
-  await page.waitForURL("**/workspace/more", { timeout: 15_000 });
-  await page.getByRole("link", { name: /Care Assistant/ }).waitFor({ state: "visible", timeout: 10_000 });
   await context.close();
 });
-
-const shareSession = await newSession("share summary export");
-const shareIdentity = auth(shareSession);
-const shareSeed = await request("/api/v1/daily/log", {
-  token: shareIdentity.token,
-  method: "POST",
-  body: {
-    person_id: shareIdentity.personId,
-    caregiver_id: shareIdentity.caregiverId,
-    capture_idempotency_key: unique("share-summary-seed"),
-    observation: "Caregiver reports that Mum slept poorly last night and seemed unsettled this morning.",
-    source: "critical_care_journey_share_seed",
-  },
-});
-assert.ok([200, 201].includes(shareSeed.status), JSON.stringify(shareSeed.payload));
-const shareAppointment = await request("/api/v1/appointments", {
-  token: shareIdentity.token,
-  method: "POST",
-  body: {
-    person_id: shareIdentity.personId,
-    title: "Primary care follow-up",
-    scheduled_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    provider: "Primary care clinician",
-    healthcare_org: "E2E clinic",
-    preparation_notes: "Discuss recent sleep and appetite observations.",
-    status: "scheduled",
-    created_by_caregiver_id: shareIdentity.caregiverId,
-  },
-});
-assert.equal(shareAppointment.status, 200, JSON.stringify(shareAppointment.payload));
-assert.ok(shareAppointment.payload.id, "appointment briefing journey must start with a persisted appointment");
 
 await record("01c workspace links, browser back, More menu and account form validation", async () => {
   const { context, page, observed } = await createBrowserPage(
