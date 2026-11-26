@@ -1009,11 +1009,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         {conversationHistoryError && <p className="companion-history-error" role="alert">{conversationHistoryError}</p>}
         {!loadingConversationHistory && !conversationHistoryError && savedConversations.length === 0 && <p>No saved conversations yet.</p>}
         <div className="companion-history-items">
-          {savedConversations.map(item => <button key={item.session_id} type="button" onClick={() => void openSavedConversation(item.session_id)} disabled={loading || loadingOlderMessages || loadingConversationHistory}>
+          {savedConversations.map(item => <button key={item.session_id} type="button" onClick={() => void openSavedConversation(item.session_id)} disabled={loading || loadingOlderMessages || loadingConversationHistory || loadingMoreSavedConversations}>
             <strong>{item.title?.trim() || 'Care conversation'}</strong>
             <span>{item.last_message_at ? new Date(item.last_message_at).toLocaleString() : 'Saved conversation'} · {item.message_count ?? 0} messages</span>
           </button>)}
         </div>
+        {hasMoreSavedConversations && <button className="companion-history-more" type="button" onClick={() => void loadMoreSavedConversations()} disabled={loadingMoreSavedConversations || loadingConversationHistory}>{loadingMoreSavedConversations ? 'Loading more…' : 'Load more conversations'}</button>}
       </section>}
       {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Try again</button></div>}
       {conversationRestoreError && <div className="companion-error" role="alert"><span>{conversationRestoreError}</span></div>}
@@ -1402,6 +1403,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-history-items button:disabled { opacity:.6; cursor:wait; }
         .companion-history-items strong { color:#334c38; font-size:12px; }
         .companion-history-items span { color:#7a877c; font-size:10px; }
+        .companion-history-more { margin-top:10px; min-height:36px; padding:7px 12px; border:1px solid #dce6da; border-radius:999px; background:#f8faf7; color:#47634a; font:inherit; font-size:11px; font-weight:700; cursor:pointer; }
+        .companion-history-more:disabled { opacity:.6; cursor:wait; }
         .companion-history-toggle { min-height:40px; padding:8px 12px; border:1px solid #dce6da; border-radius:999px; background:#f8faf7; color:#47634a; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
         .companion-history-toggle:disabled { opacity:.6; cursor:wait; }
         @media(max-width:560px) { .companion-history-toggle { min-height:38px; padding:7px 9px; font-size:10px; } }
