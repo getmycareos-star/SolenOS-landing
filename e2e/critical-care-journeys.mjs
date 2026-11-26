@@ -305,7 +305,7 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   );
   assert.equal(eventHistory.status, 200, JSON.stringify(eventHistory.payload));
   assert.ok(
-    eventHistory.payload.some((item) => item.id === receipt.id && item.person_id === firstVisitSession.person.id),
+    eventHistory.payload.some((item) => item.id === receipt.id && Array.isArray(item.evidence_ids) && item.evidence_ids.some((id) => receipt.evidence_ids.includes(id))),
     "the original first update must be retrievable from the authenticated event history",
   );
   const currentCare = await request("/api/v1/care-continuity/current-care", {
