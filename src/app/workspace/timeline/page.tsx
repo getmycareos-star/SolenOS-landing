@@ -64,6 +64,14 @@ type CareEvent = {
 
 type FilterKey = "all" | "observations" | "decisions" | "documents" | "corrections" | "open";
 
+function historyPath(filter: FilterKey, query: string): string {
+  const params = new URLSearchParams();
+  if (filter !== "all") params.set("filter", filter);
+  if (query.trim()) params.set("q", query.trim());
+  const suffix = params.toString();
+  return `/workspace/timeline${suffix ? "?" + suffix : ""}`;
+}
+
 const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "all", label: "All updates" },
   { id: "observations", label: "What caregivers noticed" },
@@ -417,11 +425,7 @@ export default function TimelinePage() {
   }, [historyCoverage, historyOffset, loadingMore, appliedQuery]);
 
   const updateHistoryUrl = useCallback((nextFilter: FilterKey, nextQuery: string) => {
-    const params = new URLSearchParams();
-    if (nextFilter !== "all") params.set("filter", nextFilter);
-    if (nextQuery.trim()) params.set("q", nextQuery.trim());
-    const suffix = params.toString();
-    router.replace(`/workspace/timeline${suffix ? "?" + suffix : ""}`, { scroll: false });
+    router.replace(historyPath(nextFilter, nextQuery), { scroll: false });
   }, [router]);
 
   useEffect(() => {
@@ -753,7 +757,7 @@ export default function TimelinePage() {
                             )}
                             <dt>Related care topic</dt><dd>{event.situation_id ? "Available" : "Not recorded"}</dd>
                             <dt>Related notes or documents</dt><dd>{event.source_type === "evidence" ? (
-                              <Link href={`/workspace/documents?evidenceId=${encodeURIComponent(event.id)}`}>Open original document</Link>
+                              <Link href={`/workspace/documents?evidenceId=${encodeURIComponent(event.id)}&returnTo=${encodeURIComponent(historyPath(filter, appliedQuery))}`}>Open original document</Link>
                             ) : event.evidence_ids?.length ? (
                               `${event.evidence_ids.length} saved item(s) attached`
                             ) : "None attached"}</dd>
