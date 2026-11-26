@@ -31,6 +31,10 @@ assert.match(source, /mapHistoryRecord/,
   "the timeline maps persisted history records from all supported source types");
 assert.match(source, /sourceType === "correction"/,
   "corrections are included as separate history entries");
+assert.match(source, /id: "corrections", label: "Corrections"/,
+  "caregivers can filter history to corrections");
+assert.match(source, /filter === "corrections"/,
+  "the Corrections filter returns correction entries rather than ordinary events");
 assert.match(source, /event\.source_type === "correction" \? " is-correction" : ""/,
   "correction entries receive a distinct visual treatment");
 assert.match(styles, /\.timeline-event\.is-correction/,
