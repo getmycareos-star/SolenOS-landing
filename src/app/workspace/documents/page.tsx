@@ -757,36 +757,56 @@ export default function DocumentsPage() {
   const retryPendingUploads = async () => {
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
+    const requestEpoch = documentSessionEpochRef.current;
+    const isCurrentScope = () =>
+      requestEpoch === documentSessionEpochRef.current
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId();
     if (!personId || !caregiverId) return;
     try {
       await retryBlockedDurableWrites(personId, caregiverId, ["/upload"]);
+      if (!isCurrentScope()) return;
       const result = await syncDurableWrites({
         personId,
         caregiverId,
         send: sendQueuedCareWrite,
         endpoints: ["/upload"],
       });
+      if (!isCurrentScope()) return;
       const summary = await getDurableWriteSummary(personId, caregiverId, ["/upload"]);
+      if (!isCurrentScope()) return;
       setPendingUploads(summary.pending);
       setAttentionUploads(summary.blocked + summary.failed_recoverable);
       if (result.synced > 0) {
         setUploadMessage({ kind: "success", text: result.synced + " pending file upload" + (result.synced === 1 ? " has" : "s have") + " synced to the care record." });
         await loadDocuments(true);
+        if (!isCurrentScope()) return;
         setDocumentIntelligenceRefresh((value) => value + 1);
       }
     } catch {
-      setUploadMessage({ kind: "error", text: "SolenOS could not retry the pending file uploads. The encrypted originals remain on this device." });
+      if (isCurrentScope()) setUploadMessage({ kind: "error", text: "SolenOS could not retry the pending file uploads. The encrypted originals remain on this device." });
     }
   };
 
   const removeBlockedUploads = async () => {
     const personId = getPersonId();
     const caregiverId = getCaregiverId();
+    const requestEpoch = documentSessionEpochRef.current;
+    const isCurrentScope = () =>
+      requestEpoch === documentSessionEpochRef.current
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId();
     if (!personId || !caregiverId) return;
-    await discardBlockedDurableWrites(personId, caregiverId, ["/upload"]);
-    const summary = await getDurableWriteSummary(personId, caregiverId, ["/upload"]);
-    setPendingUploads(summary.pending);
-    setAttentionUploads(summary.blocked + summary.failed_recoverable);
+    try {
+      await discardBlockedDurableWrites(personId, caregiverId, ["/upload"]);
+      if (!isCurrentScope()) return;
+      const summary = await getDurableWriteSummary(personId, caregiverId, ["/upload"]);
+      if (!isCurrentScope()) return;
+      setPendingUploads(summary.pending);
+      setAttentionUploads(summary.blocked + summary.failed_recoverable);
+    } catch {
+      if (isCurrentScope()) setUploadMessage({ kind: "error", text: "SolenOS could not clear the blocked upload copies. Your original documents have not been deleted." });
+    }
   };
 
   const openOriginal = useCallback(async (doc: DocumentItem) => {
