@@ -630,7 +630,7 @@ export default function FollowUpsPage() {
 
   return <div className="mobile-screen followups-page">
     <header className="followups-header">
-      <Link href="/workspace" className="followups-back"><ArrowLeft size={17} /> Care Record</Link>
+      <Link href="/workspace/care-continuity" className="followups-back"><ArrowLeft size={17} /> Care information</Link>
       <p className="followups-kicker">YOUR FOLLOW-UPS</p>
       <div className="followups-title-row">
         <div><h1>Needs attention</h1><p>These are care matters that remain unresolved. Some may need more information; others may need a decision or action.</p></div>
