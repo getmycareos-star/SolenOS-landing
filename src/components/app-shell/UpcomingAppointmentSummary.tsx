@@ -188,7 +188,8 @@ export function UpcomingAppointmentSummary() {
                   <small>{caregiverStatusLabel(item.status) || "Open question"}</small>
                 </div>
               ))}
-              <p><Link href="/workspace/open-loops">Review care follow-ups</Link></p>
+              {appointmentFollowUps.length > 0 && <p><Link href="/workspace/open-loops">Review care follow-ups</Link></p>}
+              {appointmentQuestions.length > 0 && <p><Link href="/workspace/care-continuity#lcr-clarification-workflow">Review appointment questions</Link></p>}
             </div>
           )}
           {!appointment && (brief?.appointments?.length ?? 0) === 0 && appointmentFollowUps.length === 0 && appointmentQuestions.length === 0 && (
