@@ -161,7 +161,8 @@ const saveFunction = source.slice(source.indexOf("const saveReviewedPages"), sou
 assert.match(saveFunction, /document_processing_job_id/, "the save response must confirm durable background processing was queued");
 assert(!saveFunction.includes("/extract"), "the caregiver page must not own document extraction after upload");
 assert(!saveFunction.includes("/intelligence"), "the caregiver page must not own document understanding after upload");
-assert.match(source, /Keep this page open until your files are saved\. After that, SolenOS will keep reading them even if you leave\./, "the caregiver must be told to wait only until the original and background job are saved");
+assert.match(source, /Keep this page open until the originals are saved\. Reading and review happen separately after the upload is confirmed\./, "the caregiver must wait only for the original upload, not document interpretation");
+assert.match(source, /You can leave this page while it finishes\./, "the caregiver must be told that background reading continues after leaving Documents");
 
 assert.match(source, /capture_timestamp: page\.captureTimestamp/, "scan retry must preserve capture time");
 assert.match(source, /deleteJSON\("\/upload\/" \+ encodeURIComponent\(selected\.id\)\)/, "document deletion must call the authenticated backend lifecycle endpoint");
