@@ -85,6 +85,10 @@ assert.match(detailedCapture, /photo_ingestion_key: photoIngestionKey/,
   "the medication report carries a stable upload reference so the backend can link the photo after reconnecting");
 assert.match(offlineQueueNotice, /automatic storage cleanup/,
   "caregivers are warned when their browser has not protected device-only queued updates");
+assert.match(offlineQueueNotice, /before\.sending > 0/,
+  "an interrupted in-flight submission is included in automatic queue recovery");
+assert.match(offlineQueueNotice, /16_000/,
+  "the queue rechecks after an interrupted send lease can expire");
 assert.match(checkIn, /does not confirm medicines were given or measurements were taken/,
   "an overall impression cannot imply medication or measurement completion");
 assert.match(checkIn, /window\.dispatchEvent\(new Event\("careRecordUpdated"\)\)/,
