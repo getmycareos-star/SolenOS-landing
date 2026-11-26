@@ -97,10 +97,10 @@ const SOURCE_REFERENCE_LABELS: Record<string, string> = {
   missing_information: 'Information not recorded',
   conflicts: 'Reports that do not match',
   reconciliations: 'Information checked against other reports',
-  appointments: ''ppointment',
-  appointment_workspace: ''ppointment notes',
-  appointment_workspace_stale: ''ppointment notes to review',
-  appointment_workspace_currentness_unknown: ''ppointment notes — currentness not checked',
+  appointments: 'Appointment',
+  appointment_workspace: 'Appointment notes',
+  appointment_workspace_stale: 'Appointment notes to review',
+  appointment_workspace_currentness_unknown: 'Appointment notes — currentness not checked',
   appointment_workspace_revision: 'Earlier appointment notes',
   caregiver_observations: 'What a caregiver noticed',
   caregiver_perspectives: 'Caregiver view',
@@ -1243,7 +1243,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
               <button type="button" onClick={() => void correctCareUpdate(item.id)} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId) || !correctedCareUpdateText.trim()}>{reviewingCareUpdateId === item.id ? 'Saving correction…' : 'Save correction for review'}</button>
               <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(null); setCorrectedCareUpdateText(''); setCareUpdateCorrectionContext('') }} disabled={Boolean(reviewingCareUpdateId)}>Cancel</button>
             </> : <>
-              <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : ''dd to Care Record'}</button>
+              <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : 'Add to Care Record'}</button>
               <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Don’t add</button>
               <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || '') }} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Correct wording</button>
             </>}
@@ -1267,7 +1267,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified")} rows={2} />
           <div className="companion-composer-footer">
-            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified") || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <'rrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? ASending' : 'Send'}</span></button></div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified") || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" />  : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? 'Sending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
