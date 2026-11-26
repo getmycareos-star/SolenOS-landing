@@ -115,6 +115,12 @@ assert.match(detailedCapture, /<option value="missed">Missed<\/option>/,
   "missed medication is distinct from refusal");
 assert.match(detailedCapture, /Dose or strength \(optional\)/,
   "caregivers are not forced to guess an unknown medication dose");
+assert.match(detailedCapture, /extractAttachedDocument\([\s\S]*?"medication_photo"/,
+  "medicine photos must use the encrypted durable evidence upload path");
+assert.doesNotMatch(detailedCapture, /postFormData\(['"]\/upload/,
+  "medicine photos must not bypass the offline-safe evidence queue with a direct upload");
+assert.match(read("src/components/mvp-workspace/capture/extract-attached.ts"), /"care_photo" \| "medication_photo" \| "document"/,
+  "the shared evidence pipeline must retain medication photos as a distinct evidence type");
 
 assert.match(dailyCarePage, /type CaptureMode = "update" \| "photo" \| "checkin"/,
   "Daily Care exposes only three primary capture choices");
