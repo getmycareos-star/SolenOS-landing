@@ -200,6 +200,8 @@ export default function DocumentsPage() {
   const [versionPredecessorId, setVersionPredecessorId] = useState("");
   const [linkingVersion, setLinkingVersion] = useState(false);
   const [versionComparison, setVersionComparison] = useState<VersionComparison | null>(null);
+  const [versionComparisonError, setVersionComparisonError] = useState<string | null>(null);
+  const [versionComparisonLoading, setVersionComparisonLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [documentIntelligenceRefresh, setDocumentIntelligenceRefresh] = useState(0);
 
@@ -409,18 +411,37 @@ export default function DocumentsPage() {
     setUploadMessage({ kind: "success", text: `${files.length} ${files.length === 1 ? "file is" : "files are"} ready to save. SolenOS will read them and prepare details for you to check after upload.` });
   };
 
+  const loadVersionComparison = useCallback(async (evidenceId: string) => {
+    setVersionComparison(null);
+    setVersionComparisonError(null);
+    setVersionComparisonLoading(true);
+    try {
+      const result = await getJSON("/upload/" + encodeURIComponent(evidenceId) + "/version-comparison") as VersionComparison;
+      setVersionComparison(result);
+    } catch {
+      setVersionComparisonError("We could not compare these document versions. No conclusion about what changed is available yet.");
+    } finally {
+      setVersionComparisonLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     setVersionPredecessorId(selected?.possibleVersionOfEvidenceId || "");
     const predecessorId = selected?.evidence.parent_evidence_id;
     if (!selected || !predecessorId) {
       setVersionComparison(null);
+      setVersionComparisonError(null);
+      setVersionComparisonLoading(false);
       return;
     }
     let active = true;
     setVersionComparison(null);
+    setVersionComparisonError(null);
+    setVersionComparisonLoading(true);
     void getJSON("/upload/" + encodeURIComponent(selected.id) + "/version-comparison")
       .then((result) => { if (active) setVersionComparison(result as VersionComparison); })
-      .catch(() => { if (active) setVersionComparison(null); });
+      .catch(() => { if (active) setVersionComparisonError("We could not compare these document versions. No conclusion about what changed is available yet."); })
+      .finally(() => { if (active) setVersionComparisonLoading(false); });
     return () => { active = false; };
   }, [selected?.id, selected?.evidence.parent_evidence_id]);
 
@@ -989,13 +1010,15 @@ export default function DocumentsPage() {
                 <button type="button" onClick={() => void linkSelectedVersion()} disabled={!versionPredecessorId || linkingVersion} style={{ minHeight: 40, padding: "8px 11px", border: "1px solid var(--theme-action-border)", borderRadius: 8, background: "var(--theme-action-bg)", color: "var(--theme-action-fg)", fontWeight: 700 }}>{linkingVersion ? "Saving…" : "Mark as corrected copy"}</button>
               </div>
             </section>}
-            {versionComparison && <section aria-label="Document version comparison" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+            {(versionComparison || versionComparisonLoading || versionComparisonError) && <section aria-label="Document version comparison" style={{ marginBottom: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
               <strong style={{ fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>What changed in this corrected copy</strong>
-              {versionComparison.comparison_status === "pending" ? <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{caregiverSafeGeneratedText(versionComparison.reason) || "SolenOS is still checking both copies."}</p> : <>
+              {versionComparisonLoading && <p role="status" style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Checking both documents…</p>}
+              {versionComparisonError && <div role="alert"><p style={{ margin: "6px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{versionComparisonError}</p><button type="button" onClick={() => void loadVersionComparison(selected.id)} disabled={versionComparisonLoading} style={{ minHeight: 40, marginTop: 8, padding: "7px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Try comparison again</button></div>}
+              {versionComparison && (versionComparison.comparison_status === "pending" ? <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>{caregiverSafeGeneratedText(versionComparison.reason) || "SolenOS is still checking both copies."}</p> : <>
                 <p style={{ margin: "6px 0 10px", color: "var(--text-secondary)", fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>This only compares the words found in each document. A healthcare professional has not confirmed these differences, and your Care Record has not changed. A detail missing from the newer document may simply have been left out; it does not confirm that a medication or care instruction was stopped.</p>
                 {!(versionComparison.added?.length || versionComparison.removed?.length || versionComparison.changed?.length) && <p style={{ margin: 0, fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>No differences were found in the text SolenOS could read.</p>}
                 {[...(versionComparison.changed || []).map((item) => ({ kind: "Changed", subject: item.subject, details: (item.previous_statements || []).map((v) => (v.statement || "") + (v.page_number ? " (page " + v.page_number + ")" : "")).join("; ") + " → " + (item.replacement_statements || []).map((v) => (v.statement || "") + (v.page_number ? " (page " + v.page_number + ")" : "")).join("; ") })), ...(versionComparison.added || []).map((item) => ({ kind: "Added", subject: item.subject, details: (item.statement || "") + (item.page_number ? " (page " + item.page_number + ")" : "") })), ...(versionComparison.removed || []).map((item) => ({ kind: "No longer listed", subject: item.subject, details: (item.statement || "") + (item.page_number ? " (previous document, page " + item.page_number + ")" : "") }))].map((item, index) => <p key={item.kind + "-" + index} style={{ margin: "8px 0 0", fontSize: "calc(13px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}><strong>{item.kind + (caregiverSafeAssistantText(item.subject) ? " · " + caregiverSafeAssistantText(item.subject) : "")}:</strong> {caregiverSafeAssistantText(item.details) || "No further details are available."}</p>)}
-              </>}
+              </>)}
             </section>}
             {previewLoading ? <p role="status"><LoaderCircle size={18} className="animate-spin" style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />Opening original file…</p> : previewError ? <div role="alert"><p>{previewError}</p><button type="button" onClick={() => void openOriginal(selected)} style={{ minHeight: 42, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}>Retry</button></div> : previewUrl && isPdf(selected.mimeType) ? <iframe title={selected.title} src={previewUrl} style={{ width: "100%", height: "65dvh", border: 0 }} /> : previewUrl && isImage(selected.mimeType) ? <img src={previewUrl} alt={selected.title} style={{ display: "block", maxWidth: "min(100%, 65dvh)", maxHeight: "65dvh", margin: "0 auto", objectFit: "contain", transform: `rotate(${selected.rotationDegrees}deg)` }} /> : previewUrl ? <div><p style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))", color: "var(--text-secondary)" }}>The original file was opened successfully. Download it to open it in another app.</p>{selected.extractedText.trim() && <><h3 style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>Text saved with this document</h3><p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>{caregiverSourceText(selected.extractedText) || "The saved text is available, but cannot be displayed in a readable form here."}</p></>}</div> : <p>This file cannot be previewed here yet. Try downloading it instead.</p>}
           </div>
