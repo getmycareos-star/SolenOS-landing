@@ -758,6 +758,15 @@ await record("01c workspace links, browser back, More menu and account form vali
   );
   await page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 20_000 });
 
+  const inlineFirstUpdate = page.locator(".lcr-today-empty-state__actions a[href='/workspace/daily-care']");
+  if (await inlineFirstUpdate.count()) {
+    assert.equal(
+      await page.locator(".solenos-mobile-add-update").isVisible(),
+      false,
+      "the floating mobile update action must not cover the inline first-update action on Home",
+    );
+  }
+
   const homeHeading = page.locator(".solenos-chat-main .solenos-workspace-page-heading h1").first();
   const defaultHeadingSize = await homeHeading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
   const displayTrigger = page.getByRole("button", { name: "Display and accessibility settings", exact: true });
