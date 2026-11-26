@@ -73,6 +73,16 @@ assert.match(durableWriteSender, /response\.id === undefined \|\| response\.id =
   "the shared durable sender requires a persisted record identifier before clearing the queue");
 assert.match(durableWriteQueue, /navigator\.storage\.persist\(\)/,
   "the offline queue requests browser storage persistence when supported");
+assert.match(durableWriteQueue, /row\.depends_on/,
+  "dependent care writes wait for their queued evidence prerequisites");
+assert.match(durableWriteQueue, /sort\(\(left, right\) => left\.created_at/,
+  "offline writes are synchronized in creation order");
+assert.match(durableWriteQueue, /status: dependsOn\.length > 0 \? "pending" : "sending"/,
+  "dependent writes do not begin sending before their prerequisites");
+assert.match(detailedCapture, /depends_on: evidenceDependencies/,
+  "a medication event declares its photo upload as a durable queue dependency");
+assert.match(detailedCapture, /photo_ingestion_key: photoIngestionKey/,
+  "the medication report carries a stable upload reference so the backend can link the photo after reconnecting");
 assert.match(offlineQueueNotice, /automatic storage cleanup/,
   "caregivers are warned when their browser has not protected device-only queued updates");
 assert.match(checkIn, /does not confirm medicines were given or measurements were taken/,
