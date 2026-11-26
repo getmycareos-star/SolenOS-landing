@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCaregiverId, getPersonId } from "@/api/client";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
-import { getDurableWriteSummary, retryBlockedDurableWrites, retryPendingDurableWrites, syncDurableWrites } from "@/lib/offline-sync/durable-write-queue";
+import { getDurableWriteSummary, isDurableWriteStoragePersistent, retryBlockedDurableWrites, retryPendingDurableWrites, syncDurableWrites } from "@/lib/offline-sync/durable-write-queue";
 
 export default function DailyCareOfflineQueueNotice() {
   const [pending, setPending] = useState(0);
@@ -12,6 +12,7 @@ export default function DailyCareOfflineQueueNotice() {
   const [synced, setSynced] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retryNotice, setRetryNotice] = useState("");
+  const [persistentStorage, setPersistentStorage] = useState<boolean | null>(null);
 
   const refresh = useCallback(async () => {
     const personId = getPersonId();
@@ -20,6 +21,8 @@ export default function DailyCareOfflineQueueNotice() {
 
     try {
       const before = await getDurableWriteSummary(personId, caregiverId);
+      const storageIsPersistent = await isDurableWriteStoragePersistent().catch(() => false);
+      setPersistentStorage(storageIsPersistent);
       setPending(before.pending);
       setSending(before.sending);
       setAttention(before.blocked + before.failed_recoverable);
@@ -100,6 +103,11 @@ export default function DailyCareOfflineQueueNotice() {
       {pending > 0 && (
         <p role="status" className="daily-care-muted">
           {pending} update{pending === 1 ? "" : "s"} saved on this device and waiting to reach SolenOS. They are not yet confirmed in your care record. Keep this browser data until they are sent.
+        </p>
+      )}
+      {pending > 0 && persistentStorage === false && (
+        <p role="alert" className="daily-care-muted">
+          This browser has not protected these unsent updates from automatic storage cleanup. Keep this browser data and reconnect as soon as you can.
         </p>
       )}
       {sending > 0 && (
