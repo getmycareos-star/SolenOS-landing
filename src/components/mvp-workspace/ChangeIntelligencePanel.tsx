@@ -56,6 +56,19 @@ function formatWindow(start: string | null, end: string | null): string {
   return `${left.toLocaleDateString()} – ${right.toLocaleDateString()}`;
 }
 
+function formatChangeEvidenceTime(source: {
+  occurred_at?: string | null;
+  recorded_at?: string | null;
+  time_provenance?: string | null;
+}): string {
+  const missingEventTime = source.time_provenance === "server_recorded_at" || source.time_provenance === "entry_time_defaulted";
+  const value = missingEventTime ? source.recorded_at ?? source.occurred_at : source.occurred_at ?? source.recorded_at;
+  if (!value) return missingEventTime ? "Event time not provided" : "Time not recorded";
+  const date = new Date(value);
+  const formatted = Number.isNaN(date.getTime()) ? "Time not recorded" : date.toLocaleString();
+  return missingEventTime ? `Event time not provided · Added ${formatted}` : `Happened ${formatted}`;
+}
+
 /** Shows persisted backend assessments only; it never infers a care pattern from UI text. */
 export function ChangeIntelligencePanel({ personId }: { personId: string }) {
   const personIdRef = useRef(personId);
@@ -518,7 +531,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       <article key={source.id}>
                         <strong>{caregiverSourceText(source.title) ?? "Saved care update"}</strong>
                         <p>{caregiverSourceText(source.description) ?? "No further details are available."}</p>
-                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
+                        <p className="panel-muted">{formatChangeEvidenceTime(source)} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
                       </article>
                     ))}
                     {details[change.id].assertions.map((source) => (
@@ -590,7 +603,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                       <article key={source.id}>
                         <strong>{caregiverSourceText(source.title) ?? "Saved care update"}</strong>
                         <p>{caregiverSourceText(source.description) ?? "No further details are available."}</p>
-                        <p className="panel-muted">{new Date(source.occurred_at).toLocaleString()} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
+                        <p className="panel-muted">{formatChangeEvidenceTime(source)} · {caregiverStatusLabel(source.status) ?? "Status not available"}</p>
                       </article>
                     ))}
                     {patternDetails[pattern.id].changes.length > 0 ? (
