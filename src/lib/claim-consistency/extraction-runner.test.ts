@@ -5,6 +5,25 @@ jest.mock("@/api/client", () => ({ postJSON: jest.fn() }));
 
 const mockedPostJSON = jest.mocked(postJSON);
 
+function candidateMetadata(candidateId: string, description: string, fragment: string) {
+  return {
+    candidate_id: candidateId,
+    candidate_type: "claim" as const,
+    candidate_description: description,
+    source_id: "evidence-1",
+    source_fragment: fragment,
+    recorded_at: null,
+    recorded_time_status: "unavailable" as const,
+    person: { id: null, resolution_status: "unresolved" as const },
+    care_recipient_id: "person-1",
+    event_time: null,
+    event_time_resolution: "missing" as const,
+    epistemic_status: "reported" as const,
+    confidence: "unavailable" as const,
+    review_state: "pending" as const,
+  };
+}
+
 const input = {
   evidence_id: "evidence-1",
   raw_text: "Mom fell yesterday. She seemed tired.",
@@ -23,6 +42,7 @@ describe("Qwen claim extraction adapter", () => {
       written_to_lcr: false,
       review_required: true,
       run_a: { claims: [{
+        ...candidateMetadata("candidate-1", "Mom fell yesterday", "Mom fell yesterday"),
         claim_text: "Mom fell yesterday",
         entity_type: "event",
         event_type: "fall_reported",
@@ -30,6 +50,7 @@ describe("Qwen claim extraction adapter", () => {
         source_span: { start_offset: 0, end_offset: 18, text: "Mom fell yesterday" },
       }] },
       run_b: { claims: [{
+        ...candidateMetadata("candidate-2", "She seemed tired", "She seemed tired"),
         claim_text: "She seemed tired",
         entity_type: "symptom",
         event_type: "fatigue_reported",
