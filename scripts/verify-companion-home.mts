@@ -36,6 +36,7 @@ assert.match(companion, /source_record_refs/, "the Companion must render the bac
 assert.ok(companion.includes("Load earlier messages"), "long conversations must expose older history pages");
 assert.ok(companion.includes("before_id: cursor.before_id"), "history pagination must use the stable server cursor");
 assert.ok(companion.includes("loadConversationHistory") && companion.includes("openSavedConversation"), "caregivers must be able to list and reopen saved conversations");
+assert.ok(companion.includes("Load more conversations") && companion.includes("next_offset"), "older saved conversations must remain reachable beyond the first history page");
 assert.ok(companion.includes("Saved conversations") && companion.includes("Conversation history"), "conversation history must be discoverable in the Companion workspace");
 assert.ok(companion.includes("useLayoutEffect") && companion.includes("current.scrollTop = previousTop"), "prepending older messages must preserve the caregiver's reading position");
 assert.ok(companion.includes("key={msg.id || msg.source_message_id"), "message rendering must use stable identity when older pages are prepended");
