@@ -297,8 +297,10 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
       case "delete": {
         if (!window.confirm("Clear this device? This removes local session and workspace data, including unsent updates stored only in this browser. Those unsent updates have not reached SolenOS and will be deleted from this device. It does not delete care information already saved in SolenOS. Continue?")) return;
         let accessRevoked = false;
+        let offlineQueueCleared = false;
         try {
           await clearDurableWriteQueue();
+          offlineQueueCleared = true;
           if (getAnonymousAccessToken()) await revokeAnonymousSession();
           else markAnonymousSessionRevokedLocally();
           accessRevoked = true;
@@ -326,9 +328,11 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
           }
         } catch (cause) {
           const detail = cause instanceof Error ? cause.message : "The local offline queue could not be cleared.";
-          window.alert(accessRevoked
-            ? `Your SolenOS access was revoked, but some updates saved only on this device could not be removed. They have not been sent. Close other SolenOS tabs and try clearing this device again. ${detail}`
-            : "We couldn't confirm your access to SolenOS, so nothing was cleared. Check your connection and try again.");
+          window.alert(!offlineQueueCleared
+            ? `We couldn't remove unsent updates from this device, so no other local information was cleared. Close other SolenOS tabs and try again. ${detail}`
+            : accessRevoked
+              ? `Your SolenOS access was revoked, but some other device information could not be cleared. ${detail}`
+              : `Unsent updates were removed, but we couldn't confirm your access to SolenOS. Your other local information was not cleared. Check your connection and try again. ${detail}`);
           return;
         }
         window.location.assign("/start");
