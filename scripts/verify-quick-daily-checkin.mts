@@ -73,7 +73,7 @@ assert.match(durableWriteSender, /response\.id === undefined \|\| response\.id =
   "the shared durable sender requires a persisted record identifier before clearing the queue");
 assert.match(durableWriteQueue, /navigator\.storage\.persist\(\)/,
   "the offline queue requests browser storage persistence when supported");
-assert.match(durableWriteQueue, /row\.depends_on/,
+assert.match(durableWriteQueue, /currentRow\.depends_on/,
   "dependent care writes wait for their queued evidence prerequisites");
 assert.match(durableWriteQueue, /sort\(\(left, right\) => left\.created_at/,
   "offline writes are synchronized in creation order");
