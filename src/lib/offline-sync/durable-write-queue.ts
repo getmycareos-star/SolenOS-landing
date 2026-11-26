@@ -303,6 +303,11 @@ export async function hasDurableWrite(id: string): Promise<boolean> {
   return Boolean(await readWrite(db, id));
 }
 
+export async function isDurableWriteStoragePersistent(): Promise<boolean> {
+  await openDatabase();
+  return Boolean(await storagePersistencePromise);
+}
+
 /**
  * Permanently clears device-only queued writes and their encryption key.
  * Call only after the caregiver explicitly confirms clearing this device.
