@@ -120,6 +120,7 @@ The following source changes extend the route map above. They are implementation
 - Needs attention preserves the assessment's separate `needs_attention_now` and `important_to_address` categories. If a source appears in both, the immediate-attention classification takes precedence rather than showing duplicate cards.
 - Recipient changes synchronously clear Documents, Care history, Reminders and Needs attention state. Documents invalidates preview, extraction-review, upload, retry, version-link and deletion work; Care history invalidates paged reads and correction polling/writes; Reminders scopes list reads and all mutations; Needs attention scopes history reads and follow-up writes.
 - The Appointments route remounts its entire workspace when the active care record changes. Care handoff inbox and sharing views also remount, so a prior recipient's draft or inbox state is not retained.
+- The Notifications inbox, unread count and preferences reload on recipient changes. Read and preference mutations are guarded so a late response cannot update another recipient's view.
 - Legacy `/workspace/record`, `/workspace/continuity` and `/settings` redirects preserve repeated and single query parameters. Browser journey checks cover the preserved return paths.
 - The critical-care browser journey now includes a persisted-document source-preview path and checks that the original download is enabled before treating the preview as ready.
 
