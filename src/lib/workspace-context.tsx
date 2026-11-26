@@ -150,7 +150,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           markEnteredCareRecord();
           params.delete(ENTER_CARE_QUERY);
           const next = params.toString();
-          window.history.replaceState({}, "", next ? `/workspace?${next}` : "/workspace");
+          window.history.replaceState(window.history.state, "", next ? `/workspace?${next}` : "/workspace");
         }
         // Use the shared authorized GET path so bootstrap reads inherit the
         // standard timeout, safe GET retry, and expired-session refresh policy.
