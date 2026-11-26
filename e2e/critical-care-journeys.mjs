@@ -447,8 +447,13 @@ await record("00 first-time caregiver capture and persisted return", async () =>
   await page.goto(new URL("/workspace", frontend).toString());
   await page.getByRole("heading", { name: "Home", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
-  await page.getByRole("heading", { name: "Your Care Record", exact: true }).first()
+  await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
+  assert.equal(
+    await page.getByText("More about your Care Record — follow-ups, details and history", { exact: true }).count(),
+    0,
+    "Home must stay a concise care summary rather than render the full record history",
+  );
   for (const heading of ["Your care information", "What matters now", "What’s changed"]) {
     await page.getByRole("heading", { name: heading, exact: true })
       .waitFor({ state: "visible", timeout: 15_000 });
@@ -502,6 +507,11 @@ await record("00 first-time caregiver capture and persisted return", async () =>
     await page.getByRole("heading", { name: heading, exact: true })
       .waitFor({ state: "visible", timeout: 15_000 });
   }
+  await page.goto(new URL("/workspace/care-continuity", frontend).toString());
+  await page.getByRole("heading", { name: "Care information", exact: true })
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.getByRole("heading", { name: "Your Care Record", exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
   await page.getByText("More about your Care Record — follow-ups, details and history", { exact: true }).click();
   for (const heading of ["What happened", "Your care history"]) {
     await page.getByRole("heading", { name: heading, exact: true })
