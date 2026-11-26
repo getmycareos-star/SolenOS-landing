@@ -1769,6 +1769,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           )}
           {assessmentError ? (
             <RecordState kind="error" title="We couldn’t check what needs attention" description="We couldn’t check what may need attention. Please try again." onAction={() => void refreshWholeRecord()} />
+          ) : assessmentLoading ? (
+            <RecordState kind="loading" title="Checking what may need attention" description="Reviewing the saved care information. No priority has been assumed yet." />
           ) : !assessment ? (
             <RecordState kind="incomplete" title="Care priorities haven’t been reviewed yet" description="Review the saved care information to see what may need attention." onAction={() => void refreshWholeRecord()} />
           ) : hasConfirmedEmptyRecord ? (
@@ -1886,6 +1888,8 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           <h3>What’s changed</h3>
           {changesError || patternsError ? (
             <RecordState kind="error" title="Recent changes could not be loaded" description="Some saved changes could not be checked. Please try again." onAction={() => void load(true)} />
+          ) : changesLoading ? (
+            <RecordState kind="loading" title="Checking recent changes" description="Checking what has changed in the saved care information." />
           ) : watchChanges.length > 0 ? (
             <ul className="lcr-first-screen-list">
               {watchChanges.slice(0, 2).map((change) => (
