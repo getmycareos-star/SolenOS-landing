@@ -100,6 +100,8 @@ assert.match(intelligenceReviewSource, /Continue reading remaining pages/, "long
 assert.match(intelligenceReviewSource, /analysis\.unprocessed_page_numbers\?\.length && documentExtractionIsComplete\(analysis\)/, "pending interpretation pages must be distinguished from OCR extraction failures");
 assert.match(intelligenceReviewSource, /SolenOS has read \$\{analysis\.processed_page_count/, "long-document progress must report the pages actually interpreted, not only the OCR pages extracted");
 assert.match(intelligenceReviewSource, /waiting to be read: pages/, "queued interpretation pages must not be described as actively processing when no job is running");
+assert.match(intelligenceReviewSource, /SolenOS will continue when background processing starts/, "queued document work must not be described as actively reading");
+assert.match(intelligenceReviewSource, /It is waiting to read the remaining pages/, "queued Qwen page windows must be distinguished from active reading");
 assert.match(intelligenceReviewSource, /Scan these pages again/, "unreadable, blocked and exhausted pages must offer an actionable re-capture route");
 assert.match(intelligenceReviewSource, /This original stays unchanged, and the Care Record will not change unless you review and accept new details/, "page recovery must preserve the original and must not imply automatic Care Record acceptance");
 assert.match(intelligenceReviewSource, /analysis\.retry_exhausted_page_numbers/, "pages that exhausted automatic retries must be visible and recoverable");
