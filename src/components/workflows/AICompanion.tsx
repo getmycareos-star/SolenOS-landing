@@ -1053,7 +1053,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         </div>
         {hasMoreSavedConversations && <button className="companion-history-more" type="button" onClick={() => void loadMoreSavedConversations()} disabled={loadingMoreSavedConversations || loadingConversationHistory}>{loadingMoreSavedConversations ? 'Loading more…' : 'Load more conversations'}</button>}
       </section>}
-      {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Try again</button></div>}
+      {requestError && (messages.length > 0 || pendingTurnId.current !== null) && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Try again</button></div>}
       {conversationRestoreError && <div className="companion-error" role="alert"><span>{conversationRestoreError}</span></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
 
