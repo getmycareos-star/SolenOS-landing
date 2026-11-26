@@ -2478,11 +2478,10 @@ await record("Daily Care structured capture validates units and medication outco
     .filter({ hasText: "This update is encrypted and saved on this device" })
     .waitFor({ timeout: 15_000 });
 
-  // Closing the page must not discard either the photo upload or the dependent
-  // medication event. Reopen the same browser context and let the queue resume.
-  await structured.page.close();
-  const resumedPage = await structured.context.newPage();
-  await resumedPage.goto(new URL("/workspace/daily-care", frontend).toString(), { waitUntil: "domcontentloaded" });
+  // Reloading the application simulates closing and reopening it while
+  // preserving the browser's durable IndexedDB queue and the backend test proxy.
+  await structured.page.reload({ waitUntil: "domcontentloaded" });
+  const resumedPage = structured.page;
   await resumedPage.getByRole("status")
     .filter({ hasText: "waiting to reach SolenOS" })
     .waitFor({ timeout: 15_000 });
