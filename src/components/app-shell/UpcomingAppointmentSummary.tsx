@@ -158,7 +158,7 @@ export function UpcomingAppointmentSummary() {
   const appointmentContextCode = brief?.appointment_context_status?.code;
   const appointmentContextIncomplete = (retrievalStatus !== undefined && retrievalStatus !== "complete")
     || ["retrieval_failed", "retrieval_partial", "source_unavailable", "incomplete"].includes(String(appointmentContextCode ?? ""));
-  const appointmentHasTime = Boolean(appointment?.scheduled_at && /T\\d{2}:\\d{2}/.test(appointment.scheduled_at));
+  const appointmentHasTime = Boolean(appointment?.scheduled_at && /T\d{2}:\d{2}/.test(appointment.scheduled_at));
   const appointmentTime = appointmentHasTime ? timestamp(appointment?.scheduled_at) : null;
   const appointmentIsPast = Boolean(
     appointment && appointmentTime !== null && appointmentTime <= now
