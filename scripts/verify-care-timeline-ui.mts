@@ -4,6 +4,7 @@ import path from "node:path";
 
 const pagePath = path.join(process.cwd(), "src/app/workspace/timeline/page.tsx");
 const source = fs.readFileSync(pagePath, "utf8");
+const styles = fs.readFileSync(path.join(process.cwd(), "src/app/workspace/experience-design-system-v2.css"), "utf8");
 
 assert.match(source, /ensureAnonymousSession/);
 assert.match(source, /getJSON/);
@@ -30,6 +31,10 @@ assert.match(source, /mapHistoryRecord/,
   "the timeline maps persisted history records from all supported source types");
 assert.match(source, /sourceType === "correction"/,
   "corrections are included as separate history entries");
+assert.match(source, /event\.source_type === "correction" \? " is-correction" : ""/,
+  "correction entries receive a distinct visual treatment");
+assert.match(styles, /\.timeline-event\.is-correction/,
+  "correction cards have a visibly distinct border and category treatment");
 assert.match(source, /original_text/,
   "correction history preserves the earlier source text");
 assert.match(source, /scheduled: "scheduled; not confirmed as given"/,
