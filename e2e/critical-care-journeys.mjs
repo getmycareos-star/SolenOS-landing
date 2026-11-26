@@ -1145,7 +1145,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.waitForURL("**/workspace/documents", { timeout: 15_000 });
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
   const documentsBreadcrumbs = await page.getByRole("navigation", { name: "Breadcrumb", exact: true }).innerText();
-  assert.match(documentsBreadcrumbs, /Home[\s\S]*Care information[\s\S]*Documents/,
+  assert.match(documentsBreadcrumbs, /Today[\s\S]*Care information[\s\S]*Documents/,
     "Documents exposes its Today and Care information context in the breadcrumb trail");
   const careInformationParent = navigation.locator('a[href="/workspace/care-continuity"]');
   assert.equal(await careInformationParent.getAttribute("aria-current"), "page",
@@ -1176,7 +1176,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await moreNavigationLink.click();
   await page.waitForURL("**/workspace/more", { timeout: 15_000 });
   const moreBreadcrumbs = await page.getByRole("navigation", { name: "Breadcrumb", exact: true }).innerText();
-  assert.match(moreBreadcrumbs, /Home[\s\S]*More/, "More exposes its Today parent in the breadcrumb trail");
+  assert.match(moreBreadcrumbs, /Today[\s\S]*More/, "More exposes its Today parent in the breadcrumb trail");
   const moreTools = page.getByRole("navigation", { name: "App and account settings", exact: true });
   await moreTools.waitFor({ state: "visible", timeout: 10_000 });
   await moreTools.getByRole("link", { name: "Settings", exact: true }).waitFor({ state: "visible", timeout: 5_000 });
