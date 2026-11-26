@@ -345,6 +345,26 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         ) return
         storageKey = nextStorageKey
         conversationScopeRef.current = storageKey
+        // Recover an interrupted draft independently of whether the server had
+        // already created a conversation for it.
+        try {
+          const pendingKey = pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id)
+          const pendingRaw = window.sessionStorage.getItem(pendingKey)
+          if (pendingRaw) {
+            const pending = JSON.parse(pendingRaw) as { client_turn_id?: unknown; text?: unknown }
+            if (typeof pending.client_turn_id === 'string' && pending.client_turn_id.length <= 36
+              && typeof pending.text === 'string' && pending.text.trim().length > 0 && pending.text.length <= 4000) {
+              pendingTurnId.current = pending.client_turn_id
+              pendingTurnText.current = pending.text
+              setInput(pending.text)
+              setRequestError('Your last message may not have received a response. Try again to safely resume it.')
+            } else {
+              window.sessionStorage.removeItem(pendingKey)
+            }
+          }
+        } catch {
+          // Recovery storage is optional; server-backed history remains available.
+        }
         let savedSessionId: string | null = null
         try {
           savedSessionId = window.localStorage.getItem(storageKey)
@@ -418,26 +438,6 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         setHasOlderMessages(response.has_more === true)
         setOlderHistoryCursor(response.has_more === true && response.next_before && response.next_before_id
           ? { before: response.next_before, before_id: response.next_before_id } : null)
-        // Restore an interrupted draft with its original idempotency key. The
-        // server history is loaded first, so retrying replays a committed turn
-        // instead of creating a duplicate if only the response was lost.
-        try {
-          const pendingRaw = window.sessionStorage.getItem(pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id))
-          if (pendingRaw) {
-            const pending = JSON.parse(pendingRaw) as { client_turn_id?: unknown; text?: unknown }
-            if (typeof pending.client_turn_id === 'string' && pending.client_turn_id.length <= 36
-              && typeof pending.text === 'string' && pending.text.trim().length > 0 && pending.text.length <= 4000) {
-              pendingTurnId.current = pending.client_turn_id
-              pendingTurnText.current = pending.text
-              setInput(pending.text)
-              setRequestError('Your last message may not have received a response. Try again to safely resume it.')
-            } else {
-              window.sessionStorage.removeItem(pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id))
-            }
-          }
-        } catch {
-          // Recovery storage is optional; the saved conversation remains available.
-        }
 
       } catch (error) {
         if (error instanceof ApiResponseError && error.status === 404 && storageKey && isCurrentRestore()) {
