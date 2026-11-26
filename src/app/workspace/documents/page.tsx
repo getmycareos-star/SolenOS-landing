@@ -253,7 +253,7 @@ export default function DocumentsPage() {
       const result = await getJSON("/evidence/" + encodeURIComponent(personId));
       if (!Array.isArray(result)) throw new Error("The document list returned an unexpected response.");
       const next = (result as EvidenceRecord[])
-        .filter((item) => item && ["document", "care_photo", "medication_photo"].includes(item.type) && item.id)
+        .filter((item): item is EvidenceRecord & { type: string } => Boolean(item && typeof item.type === "string" && ["document", "care_photo", "medication_photo"].includes(item.type) && typeof item.id === "string" && item.id.length > 0))
         .map(toDocument)
         .sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
       if (isCurrentRequest()) setDocuments(next);
