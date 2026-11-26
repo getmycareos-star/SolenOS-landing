@@ -87,7 +87,16 @@ async function openDatabase(): Promise<IDBDatabase> {
         db.createObjectStore(KEY_STORE, { keyPath: "id" });
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      // Close this tab's connection when another tab clears or upgrades the
+      // queue, so device cleanup does not remain blocked by stale connections.
+      db.onversionchange = () => {
+        db.close();
+        databasePromise = null;
+      };
+      resolve(db);
+    };
     request.onerror = () => {
       databasePromise = null;
       reject(request.error ?? new Error("Could not open encrypted offline storage."));
@@ -285,6 +294,36 @@ export async function hasDurableWrite(id: string): Promise<boolean> {
   const db = await openDatabase();
   return Boolean(await readWrite(db, id));
 }
+
+/**
+ * Permanently clears device-only queued writes and their encryption key.
+ * Call only after the caregiver explicitly confirms clearing this device.
+ */
+export async function clearDurableWriteQueue(): Promise<void> {
+  if (typeof window === "undefined" || !window.indexedDB) return;
+
+  const existing = databasePromise
+    ? await databasePromise.catch(() => null)
+    : null;
+  existing?.close();
+  databasePromise = null;
+  storagePersistencePromise = null;
+
+  await new Promise<void>((resolve, reject) => {
+    const request = window.indexedDB.deleteDatabase(DATABASE_NAME);
+    request.onsuccess = () => {
+      dispatchQueueUpdated();
+      resolve();
+    };
+    request.onerror = () => reject(
+      request.error ?? new Error("Could not clear encrypted offline updates from this device."),
+    );
+    request.onblocked = () => reject(
+      new Error("Offline updates are still open in another SolenOS tab. Close other SolenOS tabs and try clearing this device again."),
+    );
+  });
+}
+
 
 export async function completeDurableWrite(id: string): Promise<void> {
   const db = await openDatabase();
