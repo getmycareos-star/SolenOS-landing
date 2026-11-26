@@ -778,7 +778,7 @@ export default function DocumentsPage() {
 
   const deleteSelectedDocument = async () => {
     if (!selected || deletingDocument) return;
-    if (!window.confirm("Delete this document and its unreviewed details? If it supports accepted information in your Care Record, SolenOS will prevent deletion until those source links are resolved. This cannot be undone.")) return;
+    if (!window.confirm("Delete this document and its unreviewed details? If it supports accepted information in your Care Record or is the source for clearer page copies, SolenOS will prevent deletion until those links are resolved. This cannot be undone.")) return;
     setDeletingDocument(true);
     setPreviewError(null);
     try {
