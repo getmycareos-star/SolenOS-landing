@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   Camera,
@@ -192,6 +193,7 @@ export default function DocumentsPage() {
   const [attentionUploads, setAttentionUploads] = useState(0);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [historyReturnTo, setHistoryReturnTo] = useState<string | null>(null);
   const requestedEvidenceIdRef = useRef<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -757,7 +759,19 @@ export default function DocumentsPage() {
   }, [previewUrl]);
 
   useEffect(() => {
-    const requestedEvidenceId = new URLSearchParams(window.location.search).get("evidenceId");
+    const params = new URLSearchParams(window.location.search);
+    const requestedReturnTo = params.get("returnTo");
+    if (requestedReturnTo) {
+      try {
+        const parsedReturnTo = new URL(requestedReturnTo, window.location.origin);
+        if (parsedReturnTo.origin === window.location.origin && parsedReturnTo.pathname === "/workspace/timeline") {
+          setHistoryReturnTo(parsedReturnTo.pathname + parsedReturnTo.search);
+        }
+      } catch {
+        setHistoryReturnTo(null);
+      }
+    }
+    const requestedEvidenceId = params.get("evidenceId");
     if (!requestedEvidenceId || loading || listError || requestedEvidenceIdRef.current === requestedEvidenceId) return;
     const matchingDocument = documents.find((doc) => doc.id === requestedEvidenceId || doc.evidence.id === requestedEvidenceId);
     requestedEvidenceIdRef.current = requestedEvidenceId;
@@ -833,6 +847,7 @@ export default function DocumentsPage() {
   return (
     <div className="mobile-screen documents-page">
       <header className="mobile-page-head documents-page-head">
+        {historyReturnTo && <Link href={historyReturnTo} className="documents-return-context">Back to Care history</Link>}
         <h1>Documents</h1>
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
