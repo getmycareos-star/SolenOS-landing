@@ -189,6 +189,7 @@ assert.ok(history.includes("HistoryDrawer") && history.includes("Browse all save
 assert.ok(documents.includes('get("evidenceId")') && documents.includes("openOriginal(matchingDocument)"), "Documents opens the exact source selected from Care history");
 assert.ok(documents.includes("previewRequestSequenceRef") && documents.includes("requestPersonId === getPersonId()") && documents.includes("requestCaregiverId === getCaregiverId()"), "an in-flight document preview cannot cross a caregiver or care-recipient switch");
 assert.ok(documents.includes("documentSessionEpochRef.current += 1") && documents.includes("loadedDocumentScopeRef.current = null") && documents.includes("setDocuments([])"), "Documents clears the previous recipient's local file list before awaiting the next session");
+assert.ok(documents.includes("<DocumentIntelligenceReview key={documentSessionEpochRef.current}"), "document extraction and review state is remounted for the new recipient rather than briefly showing the previous recipient's analyses");
 assert.ok(documents.includes("if (!isCurrentScope()) return;") && documents.includes("requestEpoch === documentSessionEpochRef.current"), "a document upload started for one recipient cannot continue updating another recipient's screen");
 
 assert.ok(documents.includes("const requestKey = `${requestPersonId}:${requestCaregiverId}:${requestedEvidenceId}`") && documents.includes("requestedEvidenceIdRef.current = null"), "document deep links are scoped to the active caregiver and care recipient and reset when no source is requested");
