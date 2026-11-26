@@ -65,7 +65,7 @@ assert.match(mobileDocumentE2E, /This is the same file as/, "the mobile Document
 assert.match(mobileDocumentE2E, /Possible newer or corrected copy of/, "the mobile Documents browser journey must show possible version relationships");
 assert.match(mobileDocumentE2E, /unreadableExtraction\.payload\.unreadable_page_numbers, \[1\]/, "the browser journey must exercise a genuinely unreadable source page");
 assert.match(mobileDocumentE2E, /Scan these pages again/, "the browser journey must recover an unreadable page through the camera scanner");
-assert.match(mobileDocumentE2E, /metadata\.capture\?\.source_evidence_id === unreadableEvidenceId/, "the browser journey must verify persisted source-document lineage");
+assert.match(mobileDocumentE2E, /metadata\??\.capture\?\.source_evidence_id === unreadableEvidenceId/, "the browser journey must verify persisted source-document lineage");
 assert.match(mobileDocumentE2E, /recoveredMetadata\.capture\.source_page_number, 1/, "the browser journey must verify original page-number provenance");
 assert.match(mobileDocumentE2E, /source for clearer page copies/, "the browser journey must verify the original cannot be deleted while recovery evidence depends on it");
 assert.match(source, /stored\.processing_status === "completed"[\s\S]*?backgroundProcessingCompleted \+= 1/, "completed document processing must be tracked separately from queued work");
