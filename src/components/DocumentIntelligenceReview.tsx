@@ -60,6 +60,8 @@ type Analysis = {
   document_type?: string;
   page_count?: number;
   page_count_verified?: boolean;
+  possible_text_duplicate_of_evidence_id?: string;
+  possible_text_duplicate_document_name?: string;
   page_states?: Array<{
     source_page_number: number;
     status: "processed" | "unprocessed" | "retryable" | "retry_exhausted" | "unreadable" | "blocked";
@@ -375,6 +377,7 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
       {!items.length && documents.length === 0 ? <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "calc(14px * var(--solenos-text-scale, 1))" }}>No documents are ready to review yet. Upload or scan a document. SolenOS will read the text so you can check the suggested details.</p> : items.map((analysis) => (
         <article key={analysis.analysis_id} style={{ display: "grid", gap: 10, padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
           <div><strong style={{ overflowWrap: "anywhere" }}>{analysis.document_name || "Uploaded document"}</strong><p style={{ margin: "3px 0 0", color: "var(--text-secondary)", fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>{caregiverInformationAreaLabel(analysis.document_type) || caregiverFieldLabel(analysis.document_type) || "Care document"} · {analysis.page_count ?? "?"} {analysis.page_count === 1 ? "page" : "pages"} · {analysis.observations.length} {analysis.observations.length === 1 ? "suggested detail" : "suggested details"}</p>
+            {analysis.possible_text_duplicate_of_evidence_id && <p role="note" style={{ margin: "6px 0 0", padding: 9, border: "1px solid var(--border)", borderRadius: 8, fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>The words SolenOS read match another saved document: <strong>{caregiverSourceText(analysis.possible_text_duplicate_document_name || "another document")}</strong>. These are different files. This may be a repeat, an updated copy or a separate document. Both originals are kept, and nothing has been merged or removed.</p>}
             <p role="status" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: analysis.intelligence_status === "partial" ? "#8a5a12" : "var(--text-secondary)" }}>
               {analysis.page_count_verified === false
                 ? "SolenOS could not verify the number of pages in the original PDF. Review is paused until the saved file can be checked."
