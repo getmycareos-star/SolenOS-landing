@@ -15,7 +15,12 @@ const Companion = dynamic(() => import("@/components/workflows/AICompanion"), {
 
 function WorkspaceHomeInner() {
   const searchParams = useSearchParams();
-  const prompt = searchParams.get("prompt")?.trim().slice(0, 4000) || null;
+  const promptValues = searchParams.getAll("prompt");
+  // Repeated prompt parameters are ambiguous; do not let them alter the
+  // caregiver's Home experience or choose one value silently.
+  const prompt = promptValues.length === 1
+    ? promptValues[0]?.trim().slice(0, 4000) || null
+    : null;
 
   return (
     <div className="mobile-screen feature-page solenos-lcr-home">
