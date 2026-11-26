@@ -38,6 +38,8 @@ assert.ok(companion.includes("before_id: cursor.before_id"), "history pagination
 assert.ok(companion.includes("loadConversationHistory") && companion.includes("openSavedConversation"), "caregivers must be able to list and reopen saved conversations");
 assert.ok(companion.includes("Saved conversations") && companion.includes("Conversation history"), "conversation history must be discoverable in the Companion workspace");
 assert.ok(companion.includes("useLayoutEffect") && companion.includes("current.scrollTop = previousTop"), "prepending older messages must preserve the caregiver's reading position");
+assert.ok(companion.includes("key={msg.id || msg.source_message_id"), "message rendering must use stable identity when older pages are prepended");
+assert.ok(companion.includes("formatConversationTimestamp") && companion.includes("dateTime={msg.timestamp.toISOString()}"), "historical messages must show an unambiguous date and time");
 assert.ok(companion.includes("loadingOlderMessages") && companion.includes("disabled={loading || loadingOlderMessages || loadingConversationHistory}"), "a conversation cannot be switched while older history is loading");
 assert.doesNotMatch(companion, /Add to care story/);
 assert.doesNotMatch(
