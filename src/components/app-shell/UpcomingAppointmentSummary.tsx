@@ -55,6 +55,32 @@ function displayDate(value?: string | null) {
   return Number.isNaN(date.getTime()) ? "Date not recorded" : date.toLocaleString();
 }
 
+const closedAppointmentStatuses = new Set(["cancelled", "canceled", "completed", "resolved", "closed", "answered", "reconciled", "no_show", "no-show"]);
+
+function timestamp(value?: string | null): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function followUpTimingLabel(value: string | null | undefined, now: number): string | null {
+  const due = timestamp(value);
+  if (due === null) return null;
+  if (due <= now) return "Past due";
+  if (due - now <= 24 * 60 * 60 * 1000) return "Due within 24 hours";
+  return null;
+}
+
+function priorityRank(value?: string | null): number {
+  switch (String(value ?? "").trim().toLowerCase()) {
+    case "critical": return 0;
+    case "high": return 1;
+    case "medium": return 2;
+    case "low": return 3;
+    default: return 4;
+  }
+}
+
 /**
  * A compact view of appointment information already returned by the
  * appointment workflow. It never creates, books, or infers an appointment.
@@ -112,32 +138,38 @@ export function UpcomingAppointmentSummary() {
 
   const appointment = brief?.next_appointment ?? null;
   const appointmentStatus = String(appointment?.status ?? "").trim().toLowerCase();
-  const appointmentFollowUps = brief?.appointment_related_open_loops ?? [];
-  const appointmentQuestions = brief?.appointment_needs ?? [];
+  const now = Date.now();
+  const appointmentFollowUps = (brief?.appointment_related_open_loops ?? [])
+    .filter((item) => !closedAppointmentStatuses.has(String(item.status ?? "").trim().toLowerCase()))
+    .sort((left, right) => {
+      const leftDue = timestamp(left.deadline_at);
+      const rightDue = timestamp(right.deadline_at);
+      const leftOverdue = leftDue !== null && leftDue <= now ? 0 : 1;
+      const rightOverdue = rightDue !== null && rightDue <= now ? 0 : 1;
+      return leftOverdue - rightOverdue
+        || priorityRank(left.priority) - priorityRank(right.priority)
+        || (leftDue ?? Number.POSITIVE_INFINITY) - (rightDue ?? Number.POSITIVE_INFINITY)
+        || left.source_id.localeCompare(right.source_id);
+    });
+  const appointmentQuestions = (brief?.appointment_needs ?? [])
+    .filter((item) => !closedAppointmentStatuses.has(String(item.status ?? "").trim().toLowerCase()))
+    .sort((left, right) => priorityRank(left.priority) - priorityRank(right.priority) || left.source_id.localeCompare(right.source_id));
   const retrievalStatus = brief?.lcr_retrieval_status?.status;
   const appointmentContextCode = brief?.appointment_context_status?.code;
-  const appointmentContextIncomplete = retrievalStatus === "partial" || retrievalStatus === "failed" || appointmentContextCode === "retrieval_failed";
-  const appointmentHasTime = Boolean(appointment?.scheduled_at && /T\d{2}:\d{2}/.test(appointment.scheduled_at));
-  const appointmentTime = appointmentHasTime ? Date.parse(appointment?.scheduled_at ?? "") : Number.NaN;
+  const appointmentContextIncomplete = (retrievalStatus !== undefined && retrievalStatus !== "complete")
+    || ["retrieval_failed", "retrieval_partial", "source_unavailable", "incomplete"].includes(String(appointmentContextCode ?? ""));
+  const appointmentHasTime = Boolean(appointment?.scheduled_at && /T\\d{2}:\\d{2}/.test(appointment.scheduled_at));
+  const appointmentTime = appointmentHasTime ? timestamp(appointment?.scheduled_at) : null;
   const appointmentIsPast = Boolean(
-    appointment &&
-    appointmentHasTime &&
-    Number.isFinite(appointmentTime) &&
-    appointmentTime <= Date.now() &&
-    !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
+    appointment && appointmentTime !== null && appointmentTime <= now
+    && !closedAppointmentStatuses.has(appointmentStatus)
   );
   const appointmentIsTimeSensitive = Boolean(
-    appointment &&
-    appointmentHasTime &&
-    Number.isFinite(appointmentTime) &&
-    appointmentTime > Date.now() &&
-    appointmentTime - Date.now() <= 24 * 60 * 60 * 1000 &&
-    !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
+    appointment && appointmentTime !== null && appointmentTime > now
+    && appointmentTime - now <= 24 * 60 * 60 * 1000
+    && !closedAppointmentStatuses.has(appointmentStatus)
   );
-  const appointmentCanBePrepared = Boolean(
-    appointment &&
-    !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
-  );
+  const appointmentCanBePrepared = Boolean(appointment && !closedAppointmentStatuses.has(appointmentStatus));
   const appointmentActionLabel = appointmentIsPast || ["overdue", "date_unknown"].includes(appointmentStatus)
     ? "Review appointment details"
     : "Prepare for this visit";
