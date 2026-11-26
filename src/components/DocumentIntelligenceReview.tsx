@@ -44,6 +44,7 @@ type Candidate = {
 };
 type ReviewEvent = {
   id: string;
+  source_analysis_id?: string;
   candidate_index: number;
   decision_version: number;
   decision: "accept" | "correct" | "reject";
@@ -530,8 +531,12 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
                         const after = event.after || {};
                         const subject = typeof after.subject === "string" ? after.subject : "Care detail";
                         const observation = typeof after.observation === "string" ? after.observation : "";
+                        const sourcePage = typeof after.page_number === "number" ? after.page_number : null;
+                        const earlierExtraction = !!event.source_analysis_id && event.source_analysis_id !== analysis.analysis_id;
                         return <li key={event.id} style={{ fontSize: "calc(12px * var(--solenos-text-scale, 1))", lineHeight: 1.5 }}>
                           <strong>Detail {event.candidate_index + 1} · {event.decision === "accept" ? "Added to Care Record" : event.decision === "correct" ? "Correction saved" : "Not added"}</strong>
+                          {earlierExtraction ? <span> · Earlier reading of this document</span> : null}
+                          {sourcePage ? <span> · Page {sourcePage}</span> : null}
                           {event.created_at ? <span> · {new Date(event.created_at).toLocaleString()}</span> : null}
                           {observation ? <p style={{ margin: "3px 0" }}>{subject}: {observation}</p> : null}
                           {event.rationale ? <p style={{ margin: "3px 0", color: "var(--text-secondary)" }}>Caregiver note: {caregiverSourceText(event.rationale) || "No further note was recorded."}</p> : null}
