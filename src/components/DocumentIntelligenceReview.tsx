@@ -123,8 +123,15 @@ export function documentExtractionIsComplete(analysis: Analysis): boolean {
   ];
   const processedPageCount = analysis.extraction_processed_page_count ?? analysis.processed_page_count;
   const totalPageCount = analysis.total_page_count ?? analysis.page_count;
-  const pageCountIsComplete = totalPageCount === undefined
-    || (typeof processedPageCount === "number" && processedPageCount >= totalPageCount);
+  // A missing or invalid total is not evidence that every source page was read.
+  // Fail closed: never label a document complete when the source-page denominator
+  // or the successfully extracted page count is unknown.
+  const pageCountIsComplete = typeof totalPageCount === "number"
+    && Number.isInteger(totalPageCount)
+    && totalPageCount > 0
+    && typeof processedPageCount === "number"
+    && Number.isInteger(processedPageCount)
+    && processedPageCount >= totalPageCount;
 
   return analysis.interpretation_blocked !== true
     && analysis.extraction_status === "available"
