@@ -12,6 +12,7 @@ const followUpsPage = fs.readFileSync(path.join(root, "src/app/workspace/open-lo
 const navigation = fs.readFileSync(path.join(root, "src/lib/workspace-navigation.ts"), "utf8");
 const morePage = fs.readFileSync(path.join(root, "src/app/workspace/more/page.tsx"), "utf8");
 const careInformationPage = fs.readFileSync(path.join(root, "src/app/workspace/care-continuity/page.tsx"), "utf8");
+const careHistoryPage = fs.readFileSync(path.join(root, "src/app/workspace/timeline/page.tsx"), "utf8");
 const evidenceReview = fs.readFileSync(path.join(root, "src/components/EvidenceReviewPanel.tsx"), "utf8");
 const caregiverLanguage = fs.readFileSync(path.join(root, "src/lib/caregiver-language.ts"), "utf8");
 const darkStyles = fs.readFileSync(path.join(root, "src/app/dark-mode-remediation.css"), "utf8");
@@ -128,6 +129,8 @@ assert.match(drawer, /<RecordState kind="first-empty" title="No saved care histo
 assert.doesNotMatch(shell, /<HistoryDrawer \/>/, "care history must not crowd the primary navigation");
 assert.match(careInformationPage, /CARE_INFORMATION_NAVIGATION\.map/, "care history is discoverable from Care information");
 assert.doesNotMatch(morePage, /HistoryDrawer/, "More remains focused on application management");
+assert.match(careHistoryPage, /HistoryDrawer/, "the complete source-aware history explorer is owned by Care history");
+assert.match(careHistoryPage, /Browse all saved records/, "caregivers can open the full source history without leaving Care history");
 assert.doesNotMatch(morePage, /Recent care history/, "More does not contain a duplicate care-history section");
 assert.match(drawer, /function historyLoadStatusLabel\(status: HistoryLoadStatus\)/,
   "saved-history availability uses caregiver-readable labels");
