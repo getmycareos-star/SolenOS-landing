@@ -15,6 +15,7 @@ function requireText(file: string, snippets: string[]): void {
 
 const assist = read("src/components/qwen/QwenAssistPanel.tsx");
 const appointmentWorkspace = read("src/components/workflows/AppointmentWorkspace.tsx");
+const workspaceNavigation = read("src/lib/workspace-navigation.ts");
 assert(!appointmentWorkspace.includes("QwenAssistPanel"),
   "Appointment continuity must remain a persisted care workflow, not a separate embedded AI assistant panel.");
 requireText("src/components/workflows/AppointmentWorkspace.tsx", [
@@ -83,10 +84,12 @@ assert(!assist.includes("reply.model"), "Provider/model names must not be shown 
 
 requireText("src/app/workspace/page.tsx", [
   'import Link from "next/link";',
-  'href="/workspace/companion"',
-  "Ask Care Assistant",
-  "Add something you noticed, or ask a question about information already saved. There’s no need to do everything at once.",
+  'href="/workspace/care-continuity"',
+  "View care information",
+  "See what is happening, what has changed and what may need your attention.",
 ]);
+assert(workspaceNavigation.includes('id: "ask-solenos"') && workspaceNavigation.includes('href: "/workspace/companion"') && workspaceNavigation.includes('label: "Ask SolenOS"'),
+  "The existing Companion is directly reachable as Ask SolenOS from primary navigation.");
 assert(!read("src/app/workspace/page.tsx").includes("QwenAssistPanel"),
   "The caregiver home must route questions through the conversational Companion, not a separate care-management assistant panel.");
 requireText("src/components/mvp-workspace/CognitiveWorkspace.tsx", [
@@ -155,12 +158,12 @@ requireText("src/components/workflows/AICompanion.tsx", [
   "aggregate_count_mismatch",
   "aggregate_not_validated",
   "postJSON('/conversation/message'",
-  "The Care Assistant could not respond.",
+  "SolenOS could not respond.",
   "{loading ? 'Sending' : 'Send'}",
 ]);
 const companion = read("src/components/workflows/AICompanion.tsx");
 assert(!companion.includes("QwenAssistPanel"), "Companion must not render a second AI assistance input above its primary conversation composer.");
-assert.equal((companion.match(/aria-label="Send a message to the Care Assistant"/g) ?? []).length, 1, "Companion must render exactly one message form.");
+assert.equal((companion.match(/aria-label="Send a message to SolenOS"/g) ?? []).length, 1, "Companion must render exactly one message form.");
 assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1, "Companion must render exactly one message textarea.");
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
