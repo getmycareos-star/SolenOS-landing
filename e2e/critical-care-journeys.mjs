@@ -1900,6 +1900,15 @@ await record("04 scanned document upload, original bytes, page tracking, idempot
   const documentsLibrary = await createBrowserPage(session, "/workspace/documents", { width: 390, height: 844 });
   await documentsLibrary.page.getByText(/This is the same file as/).waitFor({ timeout: 20_000 });
   await documentsLibrary.page.getByText(/Possible newer or corrected copy of/).waitFor({ timeout: 20_000 });
+  const historyReturn = "/workspace/timeline?filter=documents&q=discharge";
+  await documentsLibrary.page.goto(new URL(`/workspace/documents?evidenceId=${encodeURIComponent(documentId)}&returnTo=${encodeURIComponent(historyReturn)}`, frontend).toString(), { waitUntil: "domcontentloaded" });
+  const sourcePreview = documentsLibrary.page.getByRole("dialog", { name: "journey-discharge-note-scan.png", exact: true });
+  await sourcePreview.waitFor({ state: "visible", timeout: 20_000 });
+  await sourcePreview.getByRole("button", { name: "Download original document", exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+  await sourcePreview.locator('img[alt="journey-discharge-note-scan.png"]').waitFor({ state: "visible", timeout: 15_000 });
+  assert.equal(await documentsLibrary.page.getByRole("link", { name: "Back to Care history", exact: true }).getAttribute("href"), historyReturn,
+    "opening an original document from Care history preserves the exact filtered return destination");
+  await sourcePreview.getByRole("button", { name: "Close document preview", exact: true }).click();
   await documentsLibrary.context.close();
 });
 
