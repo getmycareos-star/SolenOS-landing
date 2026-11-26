@@ -41,6 +41,7 @@ const legacyContinuity = read("src/app/workspace/continuity/page.tsx");
 const community = read("src/app/workspace/community/page.tsx");
 const featureFlags = read("src/lib/feature-flags.ts");
 const legacySettings = read("src/app/settings/page.tsx");
+const legacyRedirect = read("src/lib/legacy-route-redirect.ts");
 
 const expectedPageFiles = [
   "src/app/about/page.tsx",
@@ -211,6 +212,12 @@ assert.ok(legacyContinuity.includes("redirect") && legacyContinuity.includes("/w
 assert.ok(featureFlags.includes("community: false") && featureFlags.includes("professionalCommunity: false"), "Community remains explicitly disabled");
 assert.ok(community.includes("redirect") && community.includes("/workspace"), "the disabled Community route fails closed");
 assert.ok(legacySettings.includes("redirect") && legacySettings.includes("/workspace/settings"), "the legacy Settings route preserves its destination");
+
+assert.ok(legacyRedirect.includes("query.append(key, item)") && legacyRedirect.includes("query.set(key, value)"), "legacy route redirects preserve repeated and single query parameters");
+assert.ok(legacyRecord.includes("searchParams: Promise<LegacySearchParams>") && legacyRecord.includes("preserveLegacySearchParams"), "the legacy record route preserves deep-link context");
+assert.ok(legacyContinuity.includes("searchParams: Promise<LegacySearchParams>") && legacyContinuity.includes("preserveLegacySearchParams"), "the legacy continuity route preserves deep-link context");
+assert.ok(legacySettings.includes("searchParams: Promise<LegacySearchParams>") && legacySettings.includes("preserveLegacySearchParams"), "the legacy Settings route preserves section context");
+
 assert.ok(handoffs.includes("CaregiverHandoverInbox"), "incoming family responsibility handovers are available within Care handoffs");
 assert.ok(!more.includes("CaregiverHandoverInbox"), "More remains limited to application and account management");
 assert.ok(handoffs.includes("<CaregiverHandoverInbox />"), "incoming care handovers are part of Care handoffs");
