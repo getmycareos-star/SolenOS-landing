@@ -677,7 +677,7 @@ assert.match(statusCareDelta, /Compare with saved care information/);
 assert.match(careRecordOverview, /See what has been saved, who shared it/);
 assert.match(persistedOrientation, /hasRequiredSourceGaps \|\| hasOptionalSourceGaps \|\| projection\.schema_status !== "complete" \|\| projection\.item_count > 0[\s\S]*?This does not mean your Care Record is empty[\s\S]*?Your Care Record does not have any care information yet/, "an incomplete or unavailable source view must not be presented as an empty Care Record");
 assert.match(workspaceNav, /href: "\/workspace"[\s\S]*?label: "Today"/, "the primary Today destination opens the Care Record");
-assert.match(workspaceNav, /label: "Care Assistant"/);
+assert.match(workspaceNav, /label: "Ask SolenOS"/, "the existing Companion remains reachable through its established primary navigation label");
 assert.doesNotMatch(workspaceNav, /label: "Living Care Record"|label: "AI Companion"/);
 assert.match(informationStatus, /Known/);
 assert.match(informationStatus, /Not sure yet/);
