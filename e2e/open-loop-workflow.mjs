@@ -65,6 +65,7 @@ try {
   await page.goto(new URL("/workspace/open-loops", frontend).toString(), { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Needs attention", exact: true }).waitFor();
   await page.getByRole("heading", { name: "Resolved", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "No longer relevant", exact: true }).waitFor({ timeout: 20_000 });
   const followUpSectionPlacement = await page.evaluate(() => {
     const findSection = (heading) => [...document.querySelectorAll(".followups-section")]
       .find((section) => section.querySelector(".followups-section-heading h2")?.textContent?.trim() === heading);
