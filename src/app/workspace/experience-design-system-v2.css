@@ -119,7 +119,7 @@
   background: transparent;
   color: #69786d;
   font: inherit;
-  font-size: 18px;
+  font-size: calc(18px * var(--solenos-text-scale, 1));
   cursor: pointer;
 }
 .solenos-chat-app .solenos-chat-nav-expand:hover,
@@ -3290,7 +3290,7 @@
   border-radius: 999px;
   background: #355640;
   color: #fff;
-  font-size: 9px;
+  font-size: calc(9px * var(--solenos-text-scale, 1));
   font-weight: 750;
   line-height: 1;
 }
@@ -3456,7 +3456,7 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
   border-radius: 10px;
   background: var(--theme-panel-bg);
   color: var(--theme-field-fg);
-  font-size: 14px;
+  font-size: calc(14px * var(--solenos-text-scale, 1));
   font-weight: 700;
   text-decoration: none;
   box-shadow: 0 4px 18px rgba(20, 32, 24, .16);
