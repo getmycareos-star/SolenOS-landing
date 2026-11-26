@@ -4668,7 +4668,7 @@ await record("16 clearing this device revokes the session and removes SolenOS br
   await clearDeviceButton.click();
   await privacySettings.getByRole("alert").filter({ hasText: "unsent updates saved only in this browser" }).waitFor({ timeout: 5_000 });
   await privacySettings.getByRole("button", { name: "Clear now", exact: true }).click();
-  await page.getByText("Saved SolenOS information and this browser's push subscription were cleared.", { exact: true }).waitFor({ timeout: 10_000 });
+  await page.getByText("Saved SolenOS information, unsent updates and this browser's push subscription were cleared.", { exact: true }).waitFor({ timeout: 10_000 });
 
   const remaining = await page.evaluate(() => ({
     solenosKeys: Object.keys(localStorage).filter((key) => key.startsWith("solenos_") || key.startsWith("solenos:")),
