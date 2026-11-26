@@ -54,5 +54,11 @@ assert.match(component, /assessment\.open_loops\.has_more/);
 assert.match(component, /assessment\?\.care_attention/);
 assert.match(component, /careAttention\.important_to_address/);
 assert.match(component, /careAttention\.needs_clarification/);
+assert.match(component, /contextualNextDecision/, "Home next steps must select from persisted care-attention decisions");
+assert.match(component, /contextualNextDecision\.reason/, "the recommended next step must explain its record-grounded reason");
+assert.match(component, /contextualNextDecision\.priority_basis/, "the next step may explain the deterministic priority basis when no reason text is supplied");
+assert.match(component, /contextualNextDecision\.records\?\.length/, "the next step must expose linked care-record support when available");
+assert.match(component, /contextualNextDecision\.due_at/, "a recorded due date must be visible without inventing one");
+assert.match(component, /solenos-care-next-step__detail/, "the next-step evidence detail must have a distinct caregiver-facing presentation");
 
 console.log("Attention summary classification and evidence-display contract checks passed.");
