@@ -168,7 +168,7 @@ assert.equal((companion.match(/id="companion-message-input"/g) ?? []).length, 1,
 requireText("src/components/workflows/AICompanion.tsx", [
   'postJSON(\'/conversation/message\'',
   'placeholder="Ask about saved care information, a recent change, or something that is unclear…"',
-  "aria-label=\"Send a message to the Care Assistant\"",
+  "aria-label=\"Send a message to SolenOS\"",
   "status.runtime_available === true && status.model_installed === true",
   "setAvailability('unverified')",
   "response.ai_generated === true ? 'available' : 'unverified'",
