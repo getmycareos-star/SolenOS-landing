@@ -234,7 +234,7 @@ const rendered = JSON.stringify(inventory, null, 2) + '\n';
 if (outputPath) fs.writeFileSync(path.resolve(root, outputPath), rendered);
 else process.stdout.write(rendered);
 console.log(
-  `Indexed ${inventory.call_site_count} API call sites; matched ${inventory.matched_call_site_count}; unmatched ${inventory.unmatched_call_site_count}; backend routes ${inventory.backend_route_count}.`
+  `Indexed ${inventory.call_site_count} API call sites; matched ${inventory.matched_call_site_count}; unmatched ${inventory.unmatched_call_site_count}; ambiguous ${inventory.ambiguous_call_site_count}; backend routes ${inventory.backend_route_count}; routes without frontend call sites ${inventory.backend_routes_without_frontend_callsite}.`
 );
 const unmatchedCallSites = entries
   .filter(item => item.backend_match_status === 'no_backend_route_match')
@@ -263,4 +263,17 @@ if (unmatchedCallSites.length > 0) {
 }
 if (ambiguousCallSites.length > 0) {
   console.log('AMBIGUOUS_FRONTEND_API_CALLSITES=' + JSON.stringify(ambiguousCallSites));
+}
+const backendRoutesWithoutFrontendCallSites = backendRouteMatrix
+  .filter(route => route.frontend_call_site_count === 0)
+  .map(route => ({
+    method: route.method,
+    path: route.path,
+    router_module: route.router_module,
+    handler: route.handler,
+    disposition: route.disposition,
+    status: route.status,
+  }));
+if (backendRoutesWithoutFrontendCallSites.length > 0) {
+  console.log('BACKEND_ROUTES_WITHOUT_FRONTEND_CALLSITES=' + JSON.stringify(backendRoutesWithoutFrontendCallSites));
 }
