@@ -2382,6 +2382,12 @@ await record("Add an update stays usable without unrelated dashboard reads", asy
     mimeType: "image/png",
     buffer: tinyPng,
   });
+  await resilient.page.getByRole("button", { name: "Rotate right", exact: true }).click();
+  assert.equal(
+    await resilient.page.getByRole("img", { name: "Preview of the selected care photo" }).evaluate((image) => image.style.transform),
+    "rotate(90deg)",
+    "photo rotation must be visible before the original is uploaded",
+  );
   assert.equal(
     await resilient.page.locator("#daily-care-photo-library").getAttribute("capture"),
     null,
@@ -2438,7 +2444,10 @@ await record("Add an update stays usable without unrelated dashboard reads", asy
   await resilient.page.goto(new URL("/workspace/documents", frontend).toString(), { waitUntil: "domcontentloaded" });
   await resilient.page.getByRole("heading", { name: "Saved documents and photos", exact: true }).waitFor({ timeout: 20_000 });
   await resilient.page.getByRole("button", { name: /offline-care-photo\.png/ }).click();
-  await resilient.page.getByRole("img", { name: "offline-care-photo.png" }).waitFor({ timeout: 10_000 });
+  const savedPhotoPreview = resilient.page.getByRole("img", { name: "offline-care-photo.png" });
+  await savedPhotoPreview.waitFor({ timeout: 10_000 });
+  assert.equal(await savedPhotoPreview.evaluate((image) => image.style.transform), "rotate(90deg)",
+    "the saved photo library must restore the persisted orientation while keeping the original file unchanged");
 
   await verifyMobile(resilient.page);
   await resilient.context.close();
