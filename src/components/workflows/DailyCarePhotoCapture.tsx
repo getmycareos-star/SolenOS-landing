@@ -22,6 +22,7 @@ export default function DailyCarePhotoCapture() {
   const [file, setFile] = useState<File | null>(null);
   const [captureMethod, setCaptureMethod] = useState<"snap" | "upload">("upload");
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
+  const [rotationDegrees, setRotationDegrees] = useState(0);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -73,6 +74,7 @@ export default function DailyCarePhotoCapture() {
           setPendingLocal(false);
           setIngestionKey(null);
           setCaptureTimestamp(null);
+          setRotationDegrees(0);
           setFile(null);
           setSaved(true);
           setSyncNotice("Your photo has reached SolenOS and is saved as evidence. It has not been confirmed as a care-record event.");
@@ -119,12 +121,14 @@ export default function DailyCarePhotoCapture() {
       return;
     }
     const sameSelection = file
+      && captureMethod === method
       && file.name === selected.name
       && file.size === selected.size
       && file.lastModified === selected.lastModified;
     if (!sameSelection) {
       setIngestionKey(null);
       setCaptureTimestamp(new Date().toISOString());
+      setRotationDegrees(0);
     }
     setCaptureMethod(method);
     setFile(selected);
@@ -158,6 +162,7 @@ export default function DailyCarePhotoCapture() {
         capturedAt,
         undefined,
         "care_photo",
+        rotationDegrees,
       );
       setUploadStage("confirming");
 
@@ -168,6 +173,7 @@ export default function DailyCarePhotoCapture() {
         setFile(null);
         setIngestionKey(null);
         setCaptureTimestamp(null);
+        setRotationDegrees(0);
         setSyncNotice("Your photo was uploaded and saved as evidence. It has not been confirmed as a care-record event.");
         window.dispatchEvent(new Event("careRecordUpdated"));
         return;
@@ -272,7 +278,12 @@ export default function DailyCarePhotoCapture() {
       {file && (
         <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
           <p style={{ margin: 0, color: "var(--theme-panel-muted)" }}>{file.name} · {(file.size / (1024 * 1024)).toFixed(1)} MiB</p>
-          {previewUrl && <img src={previewUrl} alt="Preview of the selected care photo" style={{ display: "block", width: "100%", maxHeight: 320, objectFit: "contain", borderRadius: 10, background: "var(--theme-field-bg)" }} />}
+          {previewUrl && <img src={previewUrl} alt="Preview of the selected care photo" style={{ display: "block", width: "100%", maxHeight: 320, objectFit: "contain", borderRadius: 10, background: "var(--theme-field-bg)", transform: `rotate(${rotationDegrees}deg)` }} />}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <button type="button" className="workspace-secondary" onClick={() => setRotationDegrees((value) => (value + 270) % 360)} disabled={saving || pendingLocal || Boolean(ingestionKey)}>Rotate left</button>
+            <button type="button" className="workspace-secondary" onClick={() => setRotationDegrees((value) => (value + 90) % 360)} disabled={saving || pendingLocal || Boolean(ingestionKey)}>Rotate right</button>
+          </div>
+          <p className="daily-care-muted" style={{ margin: 0 }}>Rotation changes how SolenOS displays the photo. The original photo file is kept unchanged.</p>
         </div>
       )}
       <button
