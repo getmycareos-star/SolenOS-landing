@@ -184,7 +184,7 @@ export default function DailyCarePhotoCapture() {
           setPendingLocal(true);
           const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
           if (summary) setPendingCount(summary.pending);
-          setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns.");
+          setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns. Keep this browser data until it is sent.");
         } else {
           pendingQueueId.current = null;
           setPendingLocal(false);
@@ -204,7 +204,7 @@ export default function DailyCarePhotoCapture() {
         setPendingLocal(true);
         const summary = await getDurableWriteSummary(personId, caregiverId).catch(() => null);
         if (summary) setPendingCount(summary.pending);
-        setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns.");
+        setError("This photo is saved on this device. It has not reached SolenOS or been added to your care record yet. It will be sent when your connection returns. Keep this browser data until it is sent.");
       } else {
         setError(cause instanceof Error
           ? cause.message
