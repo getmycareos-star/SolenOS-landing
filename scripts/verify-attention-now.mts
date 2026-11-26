@@ -65,6 +65,9 @@ assert.match(component, /contextualNextDecision\.due_at/, "a recorded due date m
 assert.match(component, /solenos-care-next-step__detail/, "the next-step evidence detail must have a distinct caregiver-facing presentation");
 assert.match(component, /contextualNextRecordHref/, "the next step must resolve a related source only when it exists in the current care projection");
 assert.match(component, /Open the related care information/, "the caregiver must be able to open the saved care record behind the next step");
+assert.match(component, /const careRecordHref = \(reference: CareAttentionEvidenceRef\): string \| null/, "source links must be generated only for typed LCR evidence references");
+assert.match(component, /const existsInProjection = projection\?\.items\.some/, "a care-priority source link must be verified against the current LCR projection");
+assert.match(component, /href \? <Link href=\{href\}>\{title\}<\\/Link> : title/, "care-priority evidence details must open the exact source record when it is available");
 assert.match(component, /item\.source_collection === reference\.source && item\.id === reference\.record_id/, "next-step source links must match the exact source and record identifier");
 assert.match(component, /lcr-care-item-\$\{encodeURIComponent\(contextualNextRecord\.source\)\}/, "the source link must target the exact complete-record evidence anchor");
 
