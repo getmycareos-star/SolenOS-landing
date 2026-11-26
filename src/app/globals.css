@@ -6333,6 +6333,15 @@ html:not([data-solenos-theme="dark"]) [role="button"][style*="var(--trust)"]:hov
   color: #778278;
   font-size: 11px;
 }
+.solenos-care-next-step__detail a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: #52664f;
+  font-size: 12px;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
 .solenos-care-next-step__actions {
   display: flex;
   flex: 0 0 auto;
