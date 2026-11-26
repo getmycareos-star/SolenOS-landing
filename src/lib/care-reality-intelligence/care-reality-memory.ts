@@ -66,7 +66,8 @@ export type CareRealityMemoryStatus =
   | "historical";
 
 /** Engine-only bands — never % in caregiver UI. */
-export type MemoryConfidenceBand = "low" | "medium" | "high";
+/** "unavailable" is explicit absence of an assessment, not low confidence. */
+export type MemoryConfidenceBand = "low" | "medium" | "high" | "unavailable";
 
 /**
  * Care Reality Object — structured long-term memory unit.
