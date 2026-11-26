@@ -1584,7 +1584,6 @@ export function HistoryDrawer() {
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Search care history..."
                     aria-label="Search care history"
-                    autoFocus
                   />
                   {query && (
                     <button type="button" aria-label="Clear search" onClick={() => setQuery("")}>
