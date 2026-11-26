@@ -197,6 +197,7 @@ const STARTER_PROMPTS = [
 
 type ConversationHistoryCursor = { before: string; before_id: string }
 type SavedConversation = { session_id: string; title?: string | null; last_message_at?: string | null; message_count?: number; person_id?: string }
+type SavedConversationCursor = { before_last_message_at: string; before_created_at: string; before_session_id: string }
 
 function formatConversationTimestamp(timestamp: Date): string {
   if (Number.isNaN(timestamp.getTime())) return "Time not available"
@@ -241,7 +242,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false)
   const [historyLoadError, setHistoryLoadError] = useState<string | null>(null)
   const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([])
-  const [savedConversationOffset, setSavedConversationOffset] = useState(0)
+  const [savedConversationCursor, setSavedConversationCursor] = useState<SavedConversationCursor | null>(null)
   const [hasMoreSavedConversations, setHasMoreSavedConversations] = useState(false)
   const [loadingMoreSavedConversations, setLoadingMoreSavedConversations] = useState(false)
   const [showConversationHistory, setShowConversationHistory] = useState(false)
@@ -468,11 +469,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const session = await ensureAnonymousSession()
       const expectedScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
       if (!isCurrentScope() || initialScopeKey !== expectedScopeKey) return
-      const response = await getJSON('/conversations?limit=30&offset=0') as {
+      const response = await getJSON('/conversations?limit=30') as {
         person_id?: string
         items?: SavedConversation[]
         has_more?: boolean
-        next_offset?: number | null
+        next_cursor?: SavedConversationCursor | null
       }
       if (!isCurrentScope()) return
       if (response.person_id !== session.person.id || !Array.isArray(response.items)) {
@@ -481,7 +482,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const items = response.items.filter(item => item.person_id === session.person.id && typeof item.session_id === 'string')
       setSavedConversations(items)
       setHasMoreSavedConversations(response.has_more === true)
-      setSavedConversationOffset(response.next_offset ?? items.length)
+      setSavedConversationCursor(response.next_cursor ?? null)
     } catch {
       if (isCurrentScope()) setConversationHistoryError('Conversation history could not be loaded. Your saved conversations have not changed. Try again.')
     } finally {
@@ -494,7 +495,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     if (!hasMoreSavedConversations || loadingMoreSavedConversations || loadingConversationHistory) return
     const requestScopeSequence = conversationScopeSequenceRef.current
     const initialScopeKey = activeCompanionConversationStorageKey()
-    const offset = savedConversationOffset
+    const cursor = savedConversationCursor
+    if (!cursor) return
     const isCurrentScope = () => requestScopeSequence === conversationScopeSequenceRef.current
       && initialScopeKey === activeCompanionConversationStorageKey()
     setLoadingMoreSavedConversations(true)
@@ -503,11 +505,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const session = await ensureAnonymousSession()
       const expectedScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
       if (!isCurrentScope() || initialScopeKey !== expectedScopeKey) return
-      const response = await getJSON('/conversations?limit=30&offset=' + String(offset)) as {
+      const response = await getJSON('/conversations?' + new URLSearchParams({ limit: '30', ...cursor }).toString()) as {
         person_id?: string
         items?: SavedConversation[]
         has_more?: boolean
-        next_offset?: number | null
+        next_cursor?: SavedConversationCursor | null
       }
       if (!isCurrentScope()) return
       if (response.person_id !== session.person.id || !Array.isArray(response.items)) {
@@ -519,7 +521,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         return [...previous, ...items.filter(item => !existing.has(item.session_id))]
       })
       setHasMoreSavedConversations(response.has_more === true)
-      setSavedConversationOffset(response.next_offset ?? offset + items.length)
+      setSavedConversationCursor(response.next_cursor ?? null)
     } catch {
       if (isCurrentScope()) setConversationHistoryError('More conversations could not be loaded. Your saved conversations have not changed. Try again.')
     } finally {
@@ -630,7 +632,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setHasOlderMessages(false)
       setHistoryLoadError(null)
       setSavedConversations([])
-      setSavedConversationOffset(0)
+      setSavedConversationCursor(null)
       setHasMoreSavedConversations(false)
       setLoadingMoreSavedConversations(false)
       setShowConversationHistory(false)
