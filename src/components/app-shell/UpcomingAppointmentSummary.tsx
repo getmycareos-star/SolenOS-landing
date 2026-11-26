@@ -119,6 +119,13 @@ export function UpcomingAppointmentSummary() {
   const appointmentContextIncomplete = retrievalStatus === "partial" || retrievalStatus === "failed" || appointmentContextCode === "retrieval_failed";
   const appointmentHasTime = Boolean(appointment?.scheduled_at && /T\d{2}:\d{2}/.test(appointment.scheduled_at));
   const appointmentTime = appointmentHasTime ? Date.parse(appointment?.scheduled_at ?? "") : Number.NaN;
+  const appointmentIsPast = Boolean(
+    appointment &&
+    appointmentHasTime &&
+    Number.isFinite(appointmentTime) &&
+    appointmentTime <= Date.now() &&
+    !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
+  );
   const appointmentIsTimeSensitive = Boolean(
     appointment &&
     appointmentHasTime &&
@@ -131,7 +138,7 @@ export function UpcomingAppointmentSummary() {
     appointment &&
     !["cancelled", "canceled", "completed", "no_show", "no-show"].includes(appointmentStatus)
   );
-  const appointmentActionLabel = ["overdue", "date_unknown"].includes(appointmentStatus)
+  const appointmentActionLabel = appointmentIsPast || ["overdue", "date_unknown"].includes(appointmentStatus)
     ? "Review appointment details"
     : "Prepare for this visit";
 
