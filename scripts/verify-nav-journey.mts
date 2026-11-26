@@ -56,7 +56,7 @@ assert.match(appShell, /solenos-notification-shortcut[\s\S]*?href="\/workspace\/
 assert.match(navigationRegistry, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents is nested under Care information");
 
 
-for (const label of ["Home", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
+for (const label of ["Today", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
 assert.match(navigationRegistry, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Needs attention"/, "Needs attention is grouped with Care information");
@@ -121,9 +121,9 @@ const companion = fs.readFileSync(path.join(root, "src/components/workflows/AICo
 const workspaceHome = fs.readFileSync(path.join(root, "src/app/workspace/page.tsx"), "utf8");
 
 assert.match(workspaceShellContent, /function WorkspaceEntryGate[\s\S]*?entryReady[\s\S]*?Preparing your care workspace/);
-assert.ok(workspaceHome.includes("<h1>Home</h1>"), "the canonical workspace entry page is titled Home");
-assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Home uses the concise authoritative LCR projection and contextual next step");
-assert.match(workspaceHome, /View care information/, "Home links to the canonical Care information destination");
+assert.ok(workspaceHome.includes("<h1>Home</h1>"), "the canonical workspace entry page is titled Today");
+assert.ok(workspaceHome.includes('<LCRCurrentUnderstanding showNextStep viewMode="today" />'), "Today uses the concise authoritative LCR projection and contextual next step");
+assert.match(workspaceHome, /View care information/, "Today links to the canonical Care information destination");
 assert.doesNotMatch(workspaceHome, /FirstVisitWorkspaceRouter/, "first-time and returning caregivers share the same Home route");
 assert.match(workspaceContext, /ensureAnonymousSession\(\)/, "caregiver workspace bootstraps a server-issued session before entry");
 assert.match(navigationA11y, /event\.key === "Escape"/, "Escape closes the mobile drawer");
@@ -136,7 +136,7 @@ assert.match(navigationA11y, /main\.focus/, "route changes move keyboard focus t
 assert.match(breadcrumbs, /CARE_INFORMATION_NAVIGATION/, "breadcrumbs use the same Care information destination labels");
 assert.match(breadcrumbs, /isCareInformationChild/, "Care information children receive their parent in the breadcrumb trail");
 assert.match(breadcrumbs, /isMoreChild/, "Settings receives More as its breadcrumb parent");
-assert.match(breadcrumbs, /label: "Home"/, "workspace breadcrumbs use Home rather than an internal record label");
+assert.match(breadcrumbs, /label: "Today"/, "workspace breadcrumbs use Today rather than an internal record label");
 
 assert.match(breadcrumbs, /aria-label="Breadcrumb"/);
 assert.match(breadcrumbs, /aria-current="page"/);
@@ -147,7 +147,7 @@ assert.match(workspaceExperienceStyles, /\.solenos-chat-main:focus-visible/);
 assert.match(workspaceStyles, /overflow-y: auto/);
 
 const routeContracts = [
-  ["src/app/workspace/page.tsx", "Home"],
+  ["src/app/workspace/page.tsx", "Today"],
   ["src/app/workspace/daily-care/page.tsx", "Add an update"],
   ["src/app/workspace/care-continuity/page.tsx", "Care information"],
   ["src/app/workspace/notifications/page.tsx", "Notifications"],
