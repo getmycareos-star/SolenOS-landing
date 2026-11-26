@@ -304,7 +304,7 @@ export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
     ...encrypted,
     // Reserve the write before the caller begins its direct request. If the
     // page exits between enqueue and send, the lease expires and sync recovers it.
-    status: "sending",
+    status: dependsOn.length > 0 ? "pending" : "sending",
     attempts: 0,
     next_retry_at: now,
     created_at: now,
