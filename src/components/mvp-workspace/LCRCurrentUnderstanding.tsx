@@ -2945,14 +2945,10 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                   ) : immediateCareDecisions.length > 0 ? (
                     <Link href="/workspace/open-loops" className="solenos-care-primary-action">Review Needs attention</Link>
                   ) : clarificationCareDecisions.length > 0 || watchMissingInformation.length > 0 || watchUncertainties.length > 0 ? (
-                    viewMode === "today" ? (
-                      <Link href="/workspace/care-continuity#lcr-clarification-workflow" className="solenos-care-primary-action">Review details to check</Link>
-                    ) : (
-                      <button type="button" className="solenos-care-primary-action" onClick={() => {
-                        openClarification();
-                        document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}>Review details to check</button>
-                    )
+                    <button type="button" className="solenos-care-primary-action" onClick={() => {
+                      openClarification();
+                      document.getElementById("lcr-clarification-workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}>Review details to check</button>
                   ) : importantCareDecisions.length > 0 || watchChanges.length > 0 ? (
                     <Link href="/workspace/timeline" className="solenos-care-primary-action">View Care history</Link>
                   ) : (
