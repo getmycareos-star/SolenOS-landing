@@ -489,7 +489,10 @@ export default function TimelinePage() {
       setPendingCorrectionId(null);
       setReviewAnalysisId(null);
       setRetryingCorrection(false);
-      void loadEvents(false, appliedQuery);
+      const nextQuery = new URLSearchParams(window.location.search).get("q") || "";
+      setQuery(nextQuery);
+      setAppliedQuery(nextQuery);
+      void loadEvents(false, nextQuery);
     };
     window.addEventListener("personIdChanged", clearPreviousCareRecipient);
     return () => {
@@ -497,7 +500,7 @@ export default function TimelinePage() {
       historyScopeSequenceRef.current += 1;
       historyRequestSequenceRef.current += 1;
     };
-  }, [loadEvents, appliedQuery]);
+  }, [loadEvents]);
 
   // Recover a pending correction after a browser reload and keep its visible
   // status aligned with the durable backend receipt.
