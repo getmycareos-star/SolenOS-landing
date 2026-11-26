@@ -196,6 +196,7 @@ export default function DocumentsPage() {
   const [historyReturnTo, setHistoryReturnTo] = useState<string | null>(null);
   const requestedEvidenceIdRef = useRef<string | null>(null);
   const previewRequestSequenceRef = useRef(0);
+  const documentSessionEpochRef = useRef(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -296,7 +297,41 @@ export default function DocumentsPage() {
   }, []);
 
   useEffect(() => {
-    const refreshForSessionChange = () => void loadDocuments();
+    const refreshForSessionChange = () => {
+      // Remove the previous recipient's document content synchronously, before
+      // the next session lookup or document-list request can resolve.
+      documentSessionEpochRef.current += 1;
+      previewRequestSequenceRef.current += 1;
+      versionComparisonRequestSequenceRef.current += 1;
+      loadedDocumentScopeRef.current = null;
+      requestedEvidenceIdRef.current = null;
+      setDocuments([]);
+      setSelectedId(null);
+      setPreviewUrl(null);
+      setPreviewLoading(false);
+      setPreviewError(null);
+      setHistoryReturnTo(null);
+      setVersionComparison(null);
+      setVersionComparisonError(null);
+      setVersionComparisonLoading(false);
+      setVersionPredecessorId("");
+      setQuery("");
+      setCapturedPages([]);
+      setReviewPages([]);
+      setIntakeMode(null);
+      setUploadMessage(null);
+      setUploadProgress(null);
+      setUploading(false);
+      setPendingUploads(0);
+      setAttentionUploads(0);
+      setListError(null);
+      setRefreshing(false);
+      setLoading(true);
+      setCameraOpen(false);
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+      void loadDocuments();
+    };
     window.addEventListener("personIdChanged", refreshForSessionChange);
     void loadDocuments();
     return () => window.removeEventListener("personIdChanged", refreshForSessionChange);
