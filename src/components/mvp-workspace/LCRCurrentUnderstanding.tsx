@@ -1920,7 +1920,12 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           )}
           {watchMissingInformation.length > 0 && (
             <p className="lcr-entry-status">
-              <strong>Information still to check:</strong> {missingInformationReasonLabel(watchMissingInformation[0].gap_reason, watchMissingInformation[0].epistemic_status)} — {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "A relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail" : "details"}` : ""}. A missing detail is not proof that the information is absent.
+              <strong>Information still to check:</strong>{" "}
+              {watchMissingInformation.slice(0, 2).map((item) =>
+                `${missingInformationReasonLabel(item.gap_reason, item.epistemic_status)} — ${caregiverSafeGeneratedText(item.title) || "A relevant care detail"}`
+              ).join("; ")}
+              {watchMissingInformation.length > 2 ? `; and ${watchMissingInformation.length - 2} more details` : ""}.
+              A missing detail is not proof that the information is absent.
             </p>
           )}
           {careConflicts.length > 0 && (
