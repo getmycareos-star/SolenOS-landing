@@ -142,7 +142,7 @@ assert.doesNotMatch(drawer, /sourceStatuses\[category\]\[0\]\.toUpperCase\(\)/,
 assert.match(shell, /solenos-chat-sidebar/);
 assert.doesNotMatch(shell, /Search history/, "history search is not a primary navigation destination");
 for (const [route, label] of [
-  ["/workspace", "Home"],
+  ["/workspace", "Today"],
   ["/workspace/daily-care", "Add an update"],
   ["/workspace/appointments", "Appointments"],
   ["/workspace/open-loops", "Needs attention"],
