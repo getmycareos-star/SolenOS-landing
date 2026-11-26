@@ -73,13 +73,17 @@ export function UpcomingAppointmentSummary() {
 
   useEffect(() => {
     void load();
-    const refreshForCareChange = () => { void load(); };
-    window.addEventListener("personIdChanged", refreshForCareChange);
-    window.addEventListener("careRecordUpdated", refreshForCareChange);
+    const refreshAfterPersonChange = () => {
+      setBrief(null);
+      void load();
+    };
+    const refreshAfterRecordWrite = () => { void load(); };
+    window.addEventListener("personIdChanged", refreshAfterPersonChange);
+    window.addEventListener("careRecordUpdated", refreshAfterRecordWrite);
     return () => {
       requestVersion.current += 1;
-      window.removeEventListener("personIdChanged", refreshForCareChange);
-      window.removeEventListener("careRecordUpdated", refreshForCareChange);
+      window.removeEventListener("personIdChanged", refreshAfterPersonChange);
+      window.removeEventListener("careRecordUpdated", refreshAfterRecordWrite);
     };
   }, [load]);
 
