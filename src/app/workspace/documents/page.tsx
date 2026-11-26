@@ -981,7 +981,7 @@ export default function DocumentsPage() {
         <button type="button" onClick={() => { setCapturedPages([]); setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setCameraError(null); setCameraFacingMode("environment"); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
       </section>
 
-      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.filter((doc) => doc.evidence.type === "document").map(({ id, title }) => ({ id, title }))} onAddClearerPages={(evidenceId, pages) => { setRecoverySourceEvidenceId(evidenceId); setRecoveryPageNumbers(pages); setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setIntakeMode("scan"); setCameraOpen(true); }} />
+      <DocumentIntelligenceReview key={documentSessionEpochRef.current} refreshToken={documentIntelligenceRefresh} documents={documents.filter((doc) => doc.evidence.type === "document").map(({ id, title }) => ({ id, title }))} onAddClearerPages={(evidenceId, pages) => { setRecoverySourceEvidenceId(evidenceId); setRecoveryPageNumbers(pages); setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setIntakeMode("scan"); setCameraOpen(true); }} />
 
       <section className="documents-library" aria-label="Saved documents and photos">
         <div className="documents-library-heading">
