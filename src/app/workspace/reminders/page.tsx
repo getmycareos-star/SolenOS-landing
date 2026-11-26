@@ -206,7 +206,7 @@ export default function CareRemindersPage() {
         await refresh(requestPersonId);
       } catch {
         if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
-          setError("The reminder was saved, but the list could not be refreshed. Refresh the list before trying to add it again.");
+          setNotice("The reminder was saved, but the list could not be refreshed. Refresh the list before trying to add it again.");
         }
       }
     } catch {
