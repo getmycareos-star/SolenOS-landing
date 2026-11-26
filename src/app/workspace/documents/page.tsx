@@ -879,8 +879,13 @@ export default function DocumentsPage() {
 
   const closePreview = () => {
     previewRequestSequenceRef.current += 1;
+    versionComparisonRequestSequenceRef.current += 1;
     setSelectedId(null);
     setPreviewError(null);
+    setVersionComparison(null);
+    setVersionComparisonError(null);
+    setVersionComparisonLoading(false);
+    setVersionPredecessorId("");
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
   };
