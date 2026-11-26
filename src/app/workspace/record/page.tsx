@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
+import { preserveLegacySearchParams, type LegacySearchParams } from "@/lib/legacy-route-redirect";
 
-export default function LegacyRecordRoute() {
-  redirect("/workspace/care-continuity");
+export default async function LegacyRecordRoute({ searchParams }: { searchParams: Promise<LegacySearchParams> }) {
+  redirect(preserveLegacySearchParams("/workspace/care-continuity", await searchParams));
 }
