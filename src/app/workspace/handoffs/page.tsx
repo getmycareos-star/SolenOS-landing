@@ -19,12 +19,14 @@ export default function HandoffsPage() {
   const [draft, setDraft] = useState<HandoffDraft | null>(null);
   const [audience, setAudience] = useState<HandoffAudience>(null);
   const [purpose, setPurpose] = useState<HandoffPurpose>(null);
+  const [scopeEpoch, setScopeEpoch] = useState(0);
 
   useEffect(() => {
     const clearDraftForSessionChange = () => {
       setDraft(null);
       setAudience(null);
       setPurpose(null);
+      setScopeEpoch((value) => value + 1);
     };
     window.addEventListener("personIdChanged", clearDraftForSessionChange);
     return () => window.removeEventListener("personIdChanged", clearDraftForSessionChange);
@@ -67,9 +69,10 @@ export default function HandoffsPage() {
         </button>
       )}
 
-      <CaregiverHandoverInbox />
+      <CaregiverHandoverInbox key={scopeEpoch} />
 
       <CareHandoffSharing
+        key={scopeEpoch}
         draft={draft}
         audience={audience}
         purpose={purpose}
