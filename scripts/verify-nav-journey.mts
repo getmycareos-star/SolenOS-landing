@@ -54,11 +54,11 @@ assert.match(appShell, /solenos-notification-shortcut[\s\S]*?href="\/workspace\/
 assert.match(navigationRegistry, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\/documents"[\s\S]*?label: "Documents"/, "Documents is nested under Care information");
 
 
-for (const label of ["Home", "Add an update", "Care information", "Documents", "Care Assistant", "Notifications", "More"]) {
+for (const label of ["Home", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
   assert.ok(navigationRegistry.includes(`label: "${label}"`), `canonical navigation includes ${label}`);
 }
 assert.match(navigationRegistry, /CARE_INFORMATION_NAVIGATION[\s\S]*?href: "\/workspace\/open-loops"[\s\S]*?label: "Needs attention"/, "Needs attention is grouped with Care information");
-assert.match(navigationRegistry, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Care Assistant"/, "Care Assistant is a primary destination");
+assert.match(navigationRegistry, /id: "ask-solenos"[\s\S]*?href: "\/workspace\/companion"[\s\S]*?label: "Ask SolenOS"/, "Ask SolenOS is a primary destination");
 assert.match(navigationRegistry, /WORKSPACE_SECONDARY_NAVIGATION/);
 assert.match(morePage, /WORKSPACE_SECONDARY_NAVIGATION\.map/);
 const careInformationRoutes = ["/workspace/timeline", "/workspace/documents", "/workspace/appointments", "/workspace/open-loops", "/workspace/reminders", "/workspace/handoffs"];
@@ -66,7 +66,7 @@ for (const route of careInformationRoutes) {
   assert.ok(navigationRegistry.slice(navigationRegistry.indexOf("export const CARE_INFORMATION_NAVIGATION")).includes(route),
     `Care information owns the care destination ${route}`);
 }
-assert.ok(navigationRegistry.includes("/workspace/companion"), "Care Assistant remains a primary destination");
+assert.ok(navigationRegistry.includes("/workspace/companion"), "Ask SolenOS remains a primary destination");
 assert.ok(navigationRegistry.includes("/workspace/notifications"), "Notifications remains directly accessible");
 assert.ok(navigationRegistry.slice(navigationRegistry.indexOf("export const WORKSPACE_SECONDARY_NAVIGATION")).includes("/workspace/settings"),
   "More contains application and account settings");
@@ -153,7 +153,7 @@ const routeContracts = [
   ["src/app/workspace/appointments/page.tsx", "Appointments"],
   ["src/app/workspace/reminders/page.tsx", "Reminders"],
   ["src/app/workspace/handoffs/page.tsx", "Care handoffs"],
-  ["src/components/workflows/AICompanion.tsx", "Care Assistant"],
+  ["src/components/workflows/AICompanion.tsx", "Ask SolenOS"],
   ["src/app/workspace/settings/page.tsx", "Settings"],
   ["src/app/workspace/more/page.tsx", "More"],
 ];
