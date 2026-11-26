@@ -19,7 +19,7 @@ assert.ok(component.includes("requestId !== requestVersion.current"), "late appo
 assert.ok(component.includes("No appointment information was returned from the available sources. This does not prove that no appointment exists."), "empty results must not be represented as proof that no appointment exists");
 assert.ok(component.includes("Appointment information is unavailable"), "retrieval failures must remain visible");
 assert.ok(component.includes("appointmentHasTime"), "date-only appointments must not be assigned an invented time-sensitive urgency");
-assert.ok(component.includes("appointmentTime - Date.now() <= 24 * 60 * 60 * 1000"), "appointments due within 24 hours must be identified as time-sensitive");
+assert.ok(component.includes("appointmentTime - now <= 24 * 60 * 60 * 1000"), "appointments due within 24 hours must be identified as time-sensitive");
 assert.ok(component.includes("is-time-sensitive"), "time-sensitive appointments must receive a distinct presentation");
 assert.ok(styles.includes(".solenos-upcoming-appointment__item.is-time-sensitive"), "time-sensitive appointment styling must be present");
 assert.ok(component.includes("onAction={() => void load()}"), "failed retrieval must be recoverable");
@@ -31,6 +31,10 @@ assert.ok(component.includes("appointmentIsPast"), "a past appointment still mar
 assert.ok(component.includes("appointmentIsPast || [\"overdue\", \"date_unknown\"]"), "past or uncertain appointment timing must route to review");
 assert.ok(component.includes("appointment_related_open_loops"), "Home must read persisted appointment-related follow-ups from the existing preparation contract");
 assert.ok(component.includes("appointment_needs"), "Home must surface unresolved appointment questions from the care record");
+assert.ok(component.includes("closedAppointmentStatuses"), "closed appointment follow-ups and questions must not remain in the active summary");
+assert.ok(component.includes("priorityRank(left.priority) - priorityRank(right.priority)"), "appointment follow-ups must use recorded priority as a deterministic tie-breaker");
+assert.ok(component.includes("followUpTimingLabel"), "overdue and near-term appointment follow-ups must receive contextual timing labels");
+assert.ok(component.includes("left.source_id.localeCompare(right.source_id)"), "appointment follow-up ordering must be deterministic when timing and priority match");
 assert.ok(component.includes("Appointment follow-ups"), "appointment-related open loops and questions must be visible even without a booked appointment");
 assert.ok(component.includes('href="/workspace/open-loops"'), "caregivers must have a direct route to review recorded follow-ups");
 assert.ok(component.includes('href="/workspace/care-continuity#lcr-clarification-workflow"'), "appointment questions must open the existing clarification workflow rather than the open-loop list");
@@ -46,4 +50,4 @@ assert.ok(styles.includes("min-height: 44px"), "appointment actions must meet th
 assert.ok(styles.includes(".solenos-upcoming-appointment"), "the summary must use responsive shared workspace styling");
 assert.ok(styles.includes("@media (max-width: 520px)"), "the appointment summary must adapt to mobile widths");
 
-console.log("PASS: caregiver home appointment summary uses persisted appointment data, explicit unavailable states and existing appointment navigation");
+console.log("PASS: caregiver Today appointment summary uses persisted appointment data, explicit unavailable states and existing appointment navigation");
