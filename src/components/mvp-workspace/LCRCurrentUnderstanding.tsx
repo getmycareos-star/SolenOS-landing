@@ -1394,6 +1394,11 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const immediateCareDecisions = careAttention?.needs_attention_now ?? [];
   const importantCareDecisions = careAttention?.important_to_address ?? [];
   const clarificationCareDecisions = careAttention?.needs_clarification ?? [];
+  const contextualNextDecision =
+    immediateCareDecisions[0] ??
+    clarificationCareDecisions[0] ??
+    importantCareDecisions[0] ??
+    null;
   const findAttentionLoop = (decision: CareAttentionDecision) =>
     openLoopItems.find((item) => item.id === decision.record_id && item.source === decision.source);
   const needsAttentionNow = careAttention
@@ -2814,6 +2819,20 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <p>There are changes or unresolved matters you may want to review.</p>
                   ) : (
                     <p>You can explore the full care history or add an update whenever something changes.</p>
+                  )}
+                  {!error && !loading && !hasIncompleteProjection && !assessmentError && !assessmentLoading && contextualNextDecision && (
+                    <div className="solenos-care-next-step__detail">
+                      <strong>{caregiverSafeGeneratedText(contextualNextDecision.title) || "Care information to review"}</strong>
+                      {(caregiverSafeGeneratedText(contextualNextDecision.reason) || contextualNextDecision.priority_basis?.map(caregiverSafeGeneratedText).filter(Boolean).join("; ")) && (
+                        <p>{caregiverSafeGeneratedText(contextualNextDecision.reason) || contextualNextDecision.priority_basis?.map(caregiverSafeGeneratedText).filter(Boolean).join("; ")}</p>
+                      )}
+                      {contextualNextDecision.due_at && <small>Due {formatWhen(contextualNextDecision.due_at)}</small>}
+                      {contextualNextDecision.records?.length ? (
+                        <small>Based on {contextualNextDecision.records.length} linked care record{contextualNextDecision.records.length === 1 ? "" : "s"}</small>
+                      ) : contextualNextDecision.evidence_ids?.length ? (
+                        <small>Linked to {contextualNextDecision.evidence_ids.length} saved source{contextualNextDecision.evidence_ids.length === 1 ? "" : "s"}</small>
+                      ) : null}
+                    </div>
                   )}
                 </div>
                 <div className="solenos-care-next-step__actions">
