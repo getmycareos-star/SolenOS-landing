@@ -15,8 +15,14 @@ assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR compon
 const assignableFetch = understanding.indexOf('getJSON("/caregiver-access/assignable-members")');
 const registeredActionsFetch = understanding.indexOf('getJSON(`/registered-actions/');
 const patternsFetch = understanding.indexOf('getJSON(`/change/patterns/');
-const detailFetchGate = understanding.indexOf('viewMode === "complete" ? [', understanding.indexOf("const backgroundTasks = ["));
-assert.ok(detailFetchGate >= 0 && assignableFetch > detailFetchGate && registeredActionsFetch > detailFetchGate && patternsFetch > detailFetchGate, "Today must not wait for complete-record-only caregiver, action and pattern queries");
+const backgroundTasksStart = understanding.indexOf("const backgroundTasks = [");
+const detailFetchGate = understanding.indexOf('viewMode === "complete" ? [', backgroundTasksStart);
+const firstCareReady = understanding.indexOf("setLoading(false);", understanding.indexOf("setProjection(currentCare as CurrentCareProjection)"));
+assert.ok(detailFetchGate >= 0 && assignableFetch > detailFetchGate && patternsFetch > detailFetchGate, "Today must not wait for complete-record-only caregiver and pattern queries");
+assert.ok(firstCareReady > 0 && firstCareReady < registeredActionsFetch && registeredActionsFetch > backgroundTasksStart, "saved-action lifecycle retrieval must run after the first care projection is ready, without blocking it");
+assert.match(understanding, /setRegisteredActionsLoading\(false\)/, "saved-action retrieval must settle its loading state");
+assert.match(understanding, /isDecisionAlreadyActioned/, "Today must suppress a next-step recommendation already represented by a saved action");
+assert.match(understanding, /registeredActionsLoading \|\| registeredActionsError/, "Today must not recommend a next step before saved-action retrieval is known");
 assert.match(understanding, /\}, \[viewMode\]\);/, "the data-loading effect must rerun when the view mode changes");
 assert.match(understanding, /if \(isCurrentRequest\(\)\) setChangesLoading\(false\)/, "the recent-change loading state must settle for the active request");
 assert.match(understanding, /if \(isCurrentRequest\(\)\) setAssessmentLoading\(false\)/, "the assessment loading state must settle for the active request");
