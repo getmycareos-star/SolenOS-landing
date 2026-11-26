@@ -4614,12 +4614,32 @@ await record("16 clearing this device revokes the session and removes SolenOS br
   });
   const clearDeviceButton = privacySettings.getByRole("button", { name: "Clear saved information from this device", exact: true });
   await clearDeviceButton.waitFor({ state: "visible", timeout: 10_000 });
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     localStorage.setItem("solenos:daily-care:last-opened:synthetic:caregiver", "synthetic");
     localStorage.setItem("unrelated-test-key", "preserve");
     sessionStorage.setItem("temporary-test-key", "clear");
+    const database = await new Promise((resolve, reject) => {
+      const open = indexedDB.open("solenos-durable-write-queue", 1);
+      open.onupgradeneeded = () => {
+        const db = open.result;
+        if (!db.objectStoreNames.contains("writes")) db.createObjectStore("writes", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("keys")) db.createObjectStore("keys", { keyPath: "id" });
+      };
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    const transaction = database.transaction(["writes", "keys"], "readwrite");
+    transaction.objectStore("writes").put({ id: "synthetic-settings-unsent-update" });
+    transaction.objectStore("keys").put({ id: "settings-device-encryption-key" });
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+    });
+    database.close();
   });
   await clearDeviceButton.click();
+  await privacySettings.getByRole("alert").filter({ hasText: "unsent updates saved only in this browser" }).waitFor({ timeout: 5_000 });
   await privacySettings.getByRole("button", { name: "Clear now", exact: true }).click();
   await page.getByText("Saved SolenOS information and this browser's push subscription were cleared.", { exact: true }).waitFor({ timeout: 10_000 });
 
@@ -4629,12 +4649,15 @@ await record("16 clearing this device revokes the session and removes SolenOS br
     onboarding: localStorage.getItem("onboarding_complete"),
     unrelated: localStorage.getItem("unrelated-test-key"),
     sessionStorageCount: sessionStorage.length,
+    indexedDatabaseNames: (await indexedDB.databases()).map((database) => database.name),
   }));
   assert.deepEqual(remaining.solenosKeys, ["solenos_anonymous_session_revoked"], JSON.stringify(remaining));
   assert.ok(remaining.deletionMarker, "device cleanup must retain a local tombstone that blocks silent record recreation");
   assert.equal(remaining.onboarding, null, JSON.stringify(remaining));
   assert.equal(remaining.unrelated, "preserve", JSON.stringify(remaining));
   assert.equal(remaining.sessionStorageCount, 0, JSON.stringify(remaining));
+  assert.ok(!remaining.indexedDatabaseNames.includes("solenos-durable-write-queue"),
+    "settings device cleanup must remove queued offline submissions and the encryption key");
 
   const revoked = await request(`/api/v1/persons/${encodeURIComponent(cleanupIdentity.personId)}`, { token: cleanupIdentity.token });
   assert.equal(revoked.status, 401, "clearing the device must revoke the server-issued anonymous session");
