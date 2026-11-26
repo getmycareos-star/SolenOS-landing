@@ -948,7 +948,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   </div>
                 </article>
               })}
-              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>Care Assistant</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="AI Companion is responding"><i /><i /><i /></div></div></div>}
+              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>AI Companion</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="AI Companion is responding"><i /><i /><i /></div></div></div>}
               <div ref={bottomRef} />
             </div>
           )}
