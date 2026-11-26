@@ -655,7 +655,7 @@ const howItWorksPage = read("../src/app/how-it-works/page.tsx");
 const trustContent = read("../src/lib/trust-content/index.ts");
 const howItWorksCopy = trustContent.slice(trustContent.indexOf("export const HOW_IT_WORKS = {"), trustContent.indexOf("export const FIRST_USE ="));
 assert.match(howItWorksPage, /Care Record/);
-assert.match(howItWorksPage, /Care Assistant/);
+assert.match(howItWorksPage, /Ask SolenOS/);
 assert.doesNotMatch(howItWorksPage, /Living Care Record|AI Companion|source of truth|normal save and review flow/);
 assert.match(howItWorksCopy, /healthcare professional/);
 assert.match(howItWorksCopy, /what is not clear yet/);
@@ -861,7 +861,7 @@ assert.match(earlyAccessLanguage, /Open your Care Record/,
   "early-access entry must use the caregiver-facing Care Record name");
 assert.doesNotMatch(publicShellLanguage, /Living Care Record/,
   "public navigation and footer must use the same Care Record name as the workspace");
-assert.doesNotMatch(landingPageLanguage, /Living Care Record|AI Companion/, "the public landing page must use Care Record and Care Assistant");
+assert.doesNotMatch(landingPageLanguage, /Living Care Record|AI Companion/, "the public landing page must use Care Record and Ask SolenOS");
 assert.match(landingPageLanguage, /A CARE RECORD FOR FAMILY CAREGIVERS/);
 assert.match(landingPageLanguage, /Start your Care Record/);
 
