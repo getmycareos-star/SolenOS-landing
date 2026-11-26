@@ -148,6 +148,7 @@ interface CareUpdateReviewHistoryItem {
 }
 
 interface Message {
+  id?: string
   role: AuserA | AassistantA
   text: string
   source_message_id?: string | null
@@ -192,8 +193,25 @@ const STARTER_PROMPTS = [
 
 type ConversationHistoryCursor = { before: string; before_id: string }
 type SavedConversation = { session_id: string; title?: string | null; last_message_at?: string | null; message_count?: number; person_id?: string }
+
+function formatConversationTimestamp(timestamp: Date): string {
+  if (Number.isNaN(timestamp.getTime())) return "Time not available"
+  const now = new Date()
+  if (timestamp.toDateString() === now.toDateString()) {
+    return timestamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+  }
+  return timestamp.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    year: timestamp.getFullYear() === now.getFullYear() ? undefined : "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
+
 function mapStoredConversationMessage(message: any): Message {
   return {
+    id: message.id,
     role: message.role,
     text: message.role === 'assistant' ? caregiverSafeGeneratedText(message.text) ?? 'I could not safely display part of that earlier response. Your Care Record has not changed. You can ask again using your saved care information.' : message.text,
     source_message_id: message.role === 'user' ? (message.source_message_id || message.id || null) : null,
@@ -597,7 +615,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       pendingTurnText.current = submittedText
     }
     const clientTurnId = pendingTurnId.current
-    const userMsg: Message = { role: AuserA, text: submittedText, timestamp: new Date() }
+    const userMsg: Message = { id: clientTurnId + ':user', role: AuserA, text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
     try {
@@ -662,6 +680,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       if (isEmergency) setEmergency(true)
 
       const assistantMsg: Message = {
+        id: clientTurnId + ':assistant',
         role: AassistantA,
         text: caregiverReply,
         guard_verdict: response.guard_verdict,
@@ -684,7 +703,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         persistence: response.persistence,
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev.map(message => message === userMsg ? { ...message, source_message_id: response.source_message_id || null } : message), assistantMsg])
+      setMessages(prev => [...prev.map(message => message === userMsg ? { ...message, id: response.source_message_id || message.id, source_message_id: response.source_message_id || null } : message), assistantMsg])
       void loadPendingCareUpdates()
 
 
@@ -1000,10 +1019,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   || hasUnselectedMatches
                   || ![Aquery_scanned_ranked_subsetA, Acomplete_history_scan_ranked_subsetA].includes(coverage.history_coverage || AA)
                 ))
-                return <article className={Acompanion-message A + (isUser ? Ais-userA : Ais-assistantA)} key={index}>
+                return <article className={Acompanion-message A + (isUser ? Ais-userA : Ais-assistantA)} key={msg.id || msg.source_message_id || `${msg.role}-${msg.timestamp.getTime()}`}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
-                    <div className="companion-message-meta"><strong>{isUser ? AYouA : ACare AssistantA}</strong><time>{msg.timestamp.toLocaleTimeString([], { hour: A2-digitA, minute: A2-digitA })}</time></div>
+                    <div className="companion-message-meta"><strong>{isUser ? AYouA : ACare AssistantA}</strong><time dateTime={msg.timestamp.toISOString()}>{formatConversationTimestamp(msg.timestamp)}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {isUser && msg.source_message_id && <div className="companion-care-report-action">
                       {confirmingCareReportId === msg.source_message_id ? <div className="companion-care-report-confirm" role="group" aria-label="Confirm this care report">
