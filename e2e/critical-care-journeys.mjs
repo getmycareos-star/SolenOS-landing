@@ -341,6 +341,22 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   await page.waitForFunction(() => !new URLSearchParams(window.location.search).has("prompt"));
   assert.equal(await page.locator(".today-companion-entry").count(), 0,
     "repeated Companion prompt parameters must not open an ambiguous question workspace");
+
+  await page.goto(new URL(`/workspace?prompt=${encodeURIComponent("What has changed in the care record?")}`, frontend).toString());
+  await page.getByRole("heading", { name: "Home", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
+  const companionEntry = page.locator(".today-companion-entry");
+  await companionEntry.waitFor({ state: "visible", timeout: 15_000 });
+  const careRemainsFirst = await page.evaluate(() => {
+    const careHeading = Array.from(document.querySelectorAll("h1, h2, h3, h4"))
+      .find((element) => element.textContent?.trim() === "Current care picture");
+    const companion = document.querySelector(".today-companion-entry");
+    return Boolean(careHeading && companion &&
+      (careHeading.compareDocumentPosition(companion) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(careRemainsFirst, true, "a valid Companion prompt must not displace the current care picture");
   await verifyMobile(page);
   assert.deepEqual(pageErrors, [], `first-time and returning caregiver Home journeys must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
