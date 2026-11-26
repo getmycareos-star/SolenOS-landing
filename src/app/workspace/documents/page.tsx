@@ -587,6 +587,13 @@ export default function DocumentsPage() {
       setUploadMessage({ kind: "error", text: "Choose a file or scan page before saving." });
       return;
     }
+    const requestEpoch = documentSessionEpochRef.current;
+    let personId = getPersonId();
+    let caregiverId = getCaregiverId();
+    const isCurrentScope = () =>
+      requestEpoch === documentSessionEpochRef.current
+      && (!personId || personId === getPersonId())
+      && (!caregiverId || caregiverId === getCaregiverId());
     setUploading(true);
     setUploadProgress("Preparing " + reviewPages.length + " original " + (reviewPages.length === 1 ? "file" : "files") + " to save.");
     setUploadMessage(null);
@@ -600,16 +607,16 @@ export default function DocumentsPage() {
     const remainingPages: ReviewPage[] = [];
 
     try {
-      let personId = getPersonId();
-      let caregiverId = getCaregiverId();
       if (!personId || !caregiverId) {
         const session = await ensureAnonymousSession();
         personId = session.person.id;
         caregiverId = session.caregiver.id;
       }
+      if (!isCurrentScope()) return;
 
       let scanPageNumber = 0;
       for (let pageIndex = 0; pageIndex < reviewPages.length; pageIndex += 1) {
+        if (!isCurrentScope()) return;
         const page = reviewPages[pageIndex];
         setUploadProgress("Saving original " + (pageIndex + 1) + " of " + reviewPages.length + ": " + page.file.name);
         if (intakeMode === "scan" && page.file.type.startsWith("image/")) scanPageNumber += 1;
@@ -664,6 +671,7 @@ export default function DocumentsPage() {
             processing_status?: string;
           };
           if (queueId) {
+            if (!isCurrentScope()) return;
             stored = await deliverDurableWrite<typeof stored>(queueId, sendQueuedCareWrite);
           } else {
             const form = new FormData();
@@ -671,6 +679,7 @@ export default function DocumentsPage() {
             for (const [key, value] of Object.entries(fields)) form.append(key, value);
             stored = await postFormData("/upload", form) as typeof stored;
           }
+          if (!isCurrentScope()) return;
 
           if (!stored.persisted || !stored.evidence_id) {
             throw new Error("The server did not confirm that the original file was saved.");
@@ -685,6 +694,7 @@ export default function DocumentsPage() {
             backgroundQueueUnavailable += 1;
           }
         } catch {
+          if (!isCurrentScope()) return;
           if (queueId) {
             // The encrypted queue owns the original bytes. Do not call this a
             // care-record save; the backend has not confirmed it yet.
@@ -697,6 +707,7 @@ export default function DocumentsPage() {
         }
       }
 
+      if (!isCurrentScope()) return;
       const completedPages = reviewPages.filter((page) => completedKeys.has(page.ingestionKey));
       completedPages.forEach((page) => { if (page.previewUrl) URL.revokeObjectURL(page.previewUrl); });
       setReviewPages(remainingPages);
@@ -733,7 +744,7 @@ export default function DocumentsPage() {
         });
       }
     } catch {
-      setUploadMessage({
+      if (isCurrentScope()) setUploadMessage({
         kind: "error",
         text: "We couldn’t confirm that your files were saved. Your selected files are still here, and nothing has been marked as saved.",
       });
