@@ -31,6 +31,7 @@ export default function DailyCarePhotoCapture() {
   const [pendingCount, setPendingCount] = useState(0);
   const [syncNotice, setSyncNotice] = useState("");
   const [uploadStage, setUploadStage] = useState<"idle" | "preparing" | "sending" | "confirming">("idle");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const pendingQueueId = useRef<string | null>(null);
 
@@ -103,6 +104,7 @@ export default function DailyCarePhotoCapture() {
     setError("");
     setSyncNotice("");
     setUploadStage("idle");
+    setUploadProgress(null);
     if (!SUPPORTED_PHOTO_TYPES.has(selected.type.toLowerCase())) {
       setFile(null);
       setIngestionKey(null);
@@ -144,6 +146,7 @@ export default function DailyCarePhotoCapture() {
     setError("");
     setSyncNotice("");
     setUploadStage("preparing");
+    setUploadProgress(null);
     const retryKey = ingestionKey ?? crypto.randomUUID();
     const capturedAt = captureTimestamp ?? new Date().toISOString();
     const queueId = durableWriteId("/upload", retryKey);
@@ -159,6 +162,7 @@ export default function DailyCarePhotoCapture() {
         undefined,
         "care_photo",
         rotationDegrees,
+        (loaded, total) => setUploadProgress(total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : null),
       );
       setUploadStage("confirming");
 
@@ -290,6 +294,7 @@ export default function DailyCarePhotoCapture() {
         {saving ? (uploadStage === "preparing" ? "Preparing photo…" : uploadStage === "confirming" ? "Checking saved copy…" : "Sending photo…") : pendingLocal ? "Retry upload" : "Save photograph"}
       </button>
       {saving && <p role="status" aria-live="polite" style={{ color: "var(--theme-panel-muted)" }}>{uploadStage === "preparing" ? "Preparing the original photo for a safe upload." : uploadStage === "confirming" ? "Checking that SolenOS saved the original photo." : "Sending the original photo to SolenOS. Keep this screen open until receipt is confirmed."}</p>}
+      {saving && uploadStage === "sending" && <div style={{ display: "grid", gap: 4, marginTop: 6 }}><progress aria-label="Photo upload progress" max={100} value={uploadProgress ?? undefined} style={{ width: "100%", minHeight: 8 }} />{uploadProgress !== null && <span className="daily-care-muted">{uploadProgress}% uploaded</span>}</div>}
       {error && <p role="alert" style={{ color: "var(--theme-danger-fg, #9b3434)" }}>{error}</p>}
       {pendingLocal && ingestionKey && (
         <button
