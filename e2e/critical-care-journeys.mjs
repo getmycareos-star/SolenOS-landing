@@ -680,6 +680,12 @@ await record("01a dementia profile review window and observation persistence are
     correctedUiDescription,
     "the corrected observation wording must be stored in the new revision",
   );
+  await page.goto(new URL("/workspace", frontend).toString());
+  await page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.getByText(correctedUiDescription, { exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
   assert.deepEqual(pageErrors, [], `dementia observation UI must not throw: ${JSON.stringify(pageErrors)}`);
   assert.ok(observed.some((item) => item.path.includes("/care-continuity/caregiver-observations") && item.status === 201),
     "the browser must save the observation through the authenticated API proxy");
