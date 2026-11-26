@@ -195,6 +195,7 @@ export default function DocumentsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [historyReturnTo, setHistoryReturnTo] = useState<string | null>(null);
   const requestedEvidenceIdRef = useRef<string | null>(null);
+  const previewRequestSequenceRef = useRef(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -233,6 +234,7 @@ export default function DocumentsPage() {
         || loadedDocumentScopeRef.current.caregiverId !== caregiverId
       )) {
         setDocuments([]);
+        previewRequestSequenceRef.current += 1;
         setSelectedId(null);
         setPreviewUrl(null);
         setPreviewError(null);
@@ -742,25 +744,43 @@ export default function DocumentsPage() {
   };
 
   const openOriginal = useCallback(async (doc: DocumentItem) => {
+    const requestSequence = ++previewRequestSequenceRef.current;
+    const requestPersonId = getPersonId();
+    const requestCaregiverId = getCaregiverId();
+    const isCurrentRequest = () =>
+      requestSequence === previewRequestSequenceRef.current
+      && Boolean(requestPersonId)
+      && Boolean(requestCaregiverId)
+      && requestPersonId === getPersonId()
+      && requestCaregiverId === getCaregiverId();
+
     setSelectedId(doc.id);
     setPreviewError(null);
     setPreviewLoading(true);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    if (!requestPersonId || !requestCaregiverId) {
+      setPreviewError("Reconnect to the care record before opening this document.");
+      setPreviewLoading(false);
+      return;
+    }
     try {
       const blob = await getBlob("/upload/" + encodeURIComponent(doc.id));
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
+      if (!isCurrentRequest()) return;
+      setPreviewUrl(URL.createObjectURL(blob));
     } catch {
-      setPreviewError("The document details are saved, but the original file could not be opened. Try again or refresh the list.");
+      if (isCurrentRequest()) {
+        setPreviewError("The document details are saved, but the original file could not be opened. Try again or refresh the list.");
+      }
     } finally {
-      setPreviewLoading(false);
+      if (isCurrentRequest()) setPreviewLoading(false);
     }
   }, [previewUrl]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedReturnTo = params.get("returnTo");
+    setHistoryReturnTo(null);
     if (requestedReturnTo) {
       try {
         const parsedReturnTo = new URL(requestedReturnTo, window.location.origin);
@@ -783,6 +803,7 @@ export default function DocumentsPage() {
   }, [documents, loading, listError, openOriginal]);
 
   const closePreview = () => {
+    previewRequestSequenceRef.current += 1;
     setSelectedId(null);
     setPreviewError(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
