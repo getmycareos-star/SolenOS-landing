@@ -9,7 +9,7 @@ const styles = read("src/app/globals.css");
 const companion = read("src/components/workflows/AICompanion.tsx");
 
 assert.match(home, /<h1>Home<\/h1>/, "the primary caregiver landing page must be Home");
-assert.match(home, /<Link href="\\/workspace\\/care-continuity">View care information<\\/Link>/, "Home must link directly to Care information");
+assert.match(home, /<Link href="\/workspace\/care-continuity">View care information<\/Link>/, "Home must link directly to Care information");
 assert.match(home, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "Home must render the authoritative care understanding in compact mode");
 assert.match(understanding, /viewMode\?: "today" \| "complete"/, "the LCR component must distinguish the compact Home view from the complete record");
 const assignableFetch = understanding.indexOf('getJSON("/caregiver-access/assignable-members")');
