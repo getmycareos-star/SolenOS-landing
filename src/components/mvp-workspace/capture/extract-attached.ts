@@ -26,7 +26,7 @@ async function fileToBase64(file: File): Promise<string> {
   return window.btoa(binary);
 }
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing, evidenceTypeOverride?: "care_photo" | "document", photoRotationDegrees = 0): Promise<UploadReceipt> {
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing, evidenceTypeOverride?: "care_photo" | "document", photoRotationDegrees = 0, onUploadProgress?: (loaded: number, total: number) => void): Promise<UploadReceipt> {
   const session = await ensureAnonymousSession();
   const fields: Record<string, string> = {
     ingestion_key: uploadRetryKey,
@@ -79,7 +79,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
   }
 
   const result = queuedId
-    ? await deliverDurableWrite(queuedId, sendQueuedCareWrite) as {
+    ? await deliverDurableWrite(queuedId, sendQueuedCareWrite, onUploadProgress) as {
         evidence_id?: string;
         persisted?: boolean;
         document_processing_job_id?: string | null;
@@ -90,7 +90,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
         form.append("file", file);
         for (const [key, value] of Object.entries(fields)) form.append(key, value);
         return form;
-      })()) as {
+      })(), onUploadProgress) as {
         evidence_id?: string;
         persisted?: boolean;
         document_processing_job_id?: string | null;
@@ -121,6 +121,7 @@ export async function extractAttachedDocument(
   scanProcessing?: ScanProcessing,
   evidenceTypeOverride?: "care_photo" | "document",
   photoRotationDegrees = 0,
+  onUploadProgress?: (loaded: number, total: number) => void,
 ): Promise<AttachedDocument> {
   const base: AttachedDocument = {
     uploadRetryKey,
@@ -136,7 +137,7 @@ export async function extractAttachedDocument(
 
   let uploadReceipt: UploadReceipt;
   try {
-    uploadReceipt = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing, evidenceTypeOverride, photoRotationDegrees);
+    uploadReceipt = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing, evidenceTypeOverride, photoRotationDegrees, onUploadProgress);
   } catch (error) {
     return {
       ...base,
