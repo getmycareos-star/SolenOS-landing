@@ -31,7 +31,12 @@ export function verifySourcePointer(claim: ExtractedClaim, originalText: string)
     return false;
   }
 
-  if (!Number.isFinite(span.start_offset) || !Number.isFinite(span.end_offset)) {
+  if (
+    !Number.isFinite(span.start_offset) ||
+    !Number.isFinite(span.end_offset) ||
+    !Number.isInteger(span.start_offset) ||
+    !Number.isInteger(span.end_offset)
+  ) {
     return false;
   }
 

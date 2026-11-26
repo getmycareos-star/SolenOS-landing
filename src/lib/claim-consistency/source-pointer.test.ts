@@ -28,6 +28,11 @@ describe("Unicode source pointer verification", () => {
     expect(verifySourcePointer(claim(0, 100, source), source)).toBe(false);
   });
 
+  it("rejects fractional offsets", () => {
+    const source = "Mom fell yesterday";
+    expect(verifySourcePointer(claim(0.5, 18, source), source)).toBe(false);
+  });
+
   it("rejects a span whose exact source text does not match", () => {
     const source = "💛 Mom fell yesterday";
     expect(verifySourcePointer(claim(2, 20, "Mom was injured yesterday"), source)).toBe(false);
