@@ -2194,9 +2194,8 @@ await record("Add an update stays usable without unrelated dashboard reads", asy
   await resilient.page.route("**/api/v1/documents/status*", unavailable);
   await resilient.page.reload({ waitUntil: "domcontentloaded" });
 
-  const originalReport = `Daily Care capture survives secondary service failures ${randomUUID()}`;
-  await resilient.page.getByRole("button", { name: "Share something", exact: true }).click();
-  await resilient.page.getByRole("button", { name: /Describe an update/ }).click();
+  const originalReport = `Add an update survives secondary service failures ${randomUUID()}`;
+  await resilient.page.getByRole("button", { name: "Describe an update", exact: true }).click();
   const reportField = resilient.page.locator("#natural-daily-update-report");
   await reportField.waitFor({ state: "visible", timeout: 15_000 });
   await reportField.fill(originalReport);
