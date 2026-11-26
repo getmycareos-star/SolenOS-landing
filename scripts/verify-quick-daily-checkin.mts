@@ -137,7 +137,7 @@ assert.match(detailedCapture, /blood_glucose:\s*\[\s*['"]mg\/dL['"],\s*['"]mmol\
   "blood glucose capture offers explicit supported units");
 assert.match(detailedCapture, /top number should be higher than the bottom number/,
   "blood pressure capture rejects reversed systolic and diastolic values");
-assert.match(detailedCapture, /oxygen level must be 100% or lower/,
+assert.match(detailedCapture, /oxygen level must be 100% or lower/i,
   "oxygen saturation capture rejects values above its percentage scale");
 assert.match(detailedCapture, /Enter the unit for this measurement/,
   "custom measurements require an explicit unit");
