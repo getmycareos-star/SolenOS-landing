@@ -28,7 +28,7 @@ assert.doesNotMatch(component, /situation-understanding\/reassess|postJSON|setSi
 assert.doesNotMatch(component, /fetch\(\x60\/api\/situation/);
 assert.doesNotMatch(component, /Confidence:|Assessment status:/);
 assert.doesNotMatch(component, /sample care event|demo caregiver|fabricated/i);
-assert.match(legacyRoute, /redirect\("\/workspace"\)/, "old LCR screen redirects to the workspace");
+assert.match(legacyRoute, /redirect\(preserveLegacySearchParams\("\/workspace\/care-continuity", await searchParams\)\)/, "old LCR screen redirects into the shared Care information workspace");
 assert.doesNotMatch(legacyRoute, /PersistedCareOrientation|LCRCurrentUnderstanding|Record timeline/, "legacy route must not render the old LCR interface");
 
 console.log("Persisted-care orientation contract checks passed.");
