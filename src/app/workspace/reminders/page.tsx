@@ -88,6 +88,10 @@ export default function CareRemindersPage() {
   const hasLoadedRef = useRef(false);
   const requestSequenceRef = useRef(0);
   const scopeSequenceRef = useRef(0);
+  const isCurrentScope = (expectedPersonId: string, expectedCaregiverId: string | null, expectedScopeSequence: number) =>
+    expectedScopeSequence === scopeSequenceRef.current
+    && expectedPersonId === getPersonId()
+    && expectedCaregiverId === getCaregiverId();
 
   const refresh = useCallback(async (knownPersonId?: string) => {
     const requestSequence = ++requestSequenceRef.current;
@@ -98,9 +102,9 @@ export default function CareRemindersPage() {
     const session = await ensureAnonymousSession();
     const id = knownPersonId || session.person.id;
     const caregiverId = session.caregiver?.id;
-    if (!session.person?.id || !caregiverId || id !== session.person.id
-      || session.person.id !== getPersonId() || caregiverId !== getCaregiverId()
-      || !isCurrentRequest()) return;
+    if (!session.person?.id || !caregiverId) throw new Error("A valid SolenOS care session is required to load reminders.");
+    if (id !== session.person.id || session.person.id !== getPersonId()
+      || caregiverId !== getCaregiverId() || !isCurrentRequest()) return;
     setPersonId(id);
     const [data, members] = await Promise.all([
       getJSON(`/reminders/${encodeURIComponent(id)}`),
@@ -121,13 +125,19 @@ export default function CareRemindersPage() {
   useEffect(() => {
     let active = true;
     const loadCurrentScope = () => {
+      const expectedScopeSequence = scopeSequenceRef.current;
+      const expectedRequestSequence = requestSequenceRef.current + 1;
       setLoading(true);
       void refresh()
         .catch(() => {
-          if (active) setError("We couldn’t load your reminders. Check your connection and try again.");
+          if (active && expectedScopeSequence === scopeSequenceRef.current && expectedRequestSequence === requestSequenceRef.current) {
+            setError("We couldn’t load your reminders. Check your connection and try again.");
+          }
         })
         .finally(() => {
-          if (active) setLoading(false);
+          if (active && expectedScopeSequence === scopeSequenceRef.current && expectedRequestSequence === requestSequenceRef.current) {
+            setLoading(false);
+          }
         });
     };
     const refreshForSessionChange = () => {
