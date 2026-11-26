@@ -91,7 +91,7 @@ assert.match(page, /needsAttention: unique\(\[\.\.\.\(care\?\.needs_attention_no
 assert.match(page, /const unclassifiedLoops = linkedLoops\.filter\(\(loop\) => !allAttention\.some\(\(item\) =>[\s\S]*?item\.source === loop\.source_type && item\.record_id === loop\.source_id/, "only loops with no matching assessed source may enter the unclassified clarification group");
 assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
 assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an unknown follow-up outcome must not be described as resolved");
-assert.ok(page.includes("Follow-ups"), "Follow-ups must be visible as a named caregiver capability");
+assert.ok(page.includes("<h1>Needs attention</h1>"), "unresolved care matters must use the caregiver-facing Needs attention destination");
 assert.ok(page.includes("These are care matters that remain unresolved"), "caregiver copy must explain what follow-ups are based on");
 assert.match(careContinuity, /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/, "LCR important changes must show evidence status and incomplete history");
 assert.match(careContinuity, /item\.linked_follow_up_outcome_status[\s\S]*?caregiverStatusLabel/, "LCR important changes must show the linked follow-up outcome");
