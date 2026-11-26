@@ -685,7 +685,7 @@ export function ChangeIntelligencePanel({ personId }: { personId: string }) {
                               <p className="panel-muted">
                                 {caregiverSafeGeneratedText(record.source_label) || "Saved note or document"}
                                 {record.occurred_at || record.recorded_at
-                                  ? " · " + new Date(record.occurred_at ?? record.recorded_at ?? "").toLocaleString()
+                                  ? " · " + formatChangeEvidenceTime(record)
                                   : ""}
                               </p>
                               {record.excerpt ? (
