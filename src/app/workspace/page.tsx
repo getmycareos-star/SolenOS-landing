@@ -41,12 +41,12 @@ function WorkspaceHomeInner() {
         <p><Link href="/workspace/care-continuity">View care information</Link></p>
       </header>
       <LCRCurrentUnderstanding showNextStep viewMode="today" />
+      <UpcomingAppointmentSummary />
       {prompt && (
         <section className="today-companion-entry" aria-label="Your question for SolenOS">
           <Companion key={prompt} home initialPrompt={prompt} />
         </section>
       )}
-      <UpcomingAppointmentSummary />
     </div>
   );
 }
