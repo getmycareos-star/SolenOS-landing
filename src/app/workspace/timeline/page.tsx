@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { RecordState } from "@/components/ui/RecordState";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 import { caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
@@ -709,26 +710,24 @@ export default function TimelinePage() {
         </section>
       )}
 
-      <section className="timeline-latest" aria-label="Latest recorded update">
-        <div className="timeline-latest-heading">
-          <History size={19} aria-hidden />
-          <h2 className="timeline-latest-title">Latest care update</h2>
-        </div>
-        {loading ? (
-          <p className="timeline-muted" aria-live="polite">Loading saved care updates…</p>
-        ) : error ? (
-          <p className="timeline-muted">The latest update is unavailable until Care history loads.</p>
-        ) : latestEvent ? (
-          <>
-            <h3 className="timeline-latest-event-title">{caregiverSafeAssistantText(latestEvent.title) || "Care update"}</h3>
-            <p className="timeline-latest-meta">{eventTimeSummary(latestEvent)} · {eventCategory(latestEvent)}</p>
-            <p className="timeline-latest-description">{parseDescription(latestEvent.description) || "No event description was saved."}</p>
-          </>
-        ) : (
-          <p className="timeline-latest-description">No saved care updates are available for this record yet. Add an update to begin the history.</p>
-        )}
-        <p className="timeline-event-provenance-note">This is the latest saved update. For the current care summary, return to Care information.</p>
-      </section>
+      {(loading || Boolean(latestEvent)) && (
+        <section className="timeline-latest" aria-label="Latest recorded update">
+          {loading ? (
+            <RecordState kind="loading" title="Loading care history" description="Your saved care updates are being retrieved." />
+          ) : latestEvent ? (
+            <>
+              <div className="timeline-latest-heading">
+                <History size={19} aria-hidden />
+                <h2 className="timeline-latest-title">Latest care update</h2>
+              </div>
+              <h3 className="timeline-latest-event-title">{caregiverSafeAssistantText(latestEvent.title) || "Care update"}</h3>
+              <p className="timeline-latest-meta">{eventTimeSummary(latestEvent)} · {eventCategory(latestEvent)}</p>
+              <p className="timeline-latest-description">{parseDescription(latestEvent.description) || "No event description was saved."}</p>
+              <p className="timeline-event-provenance-note">This is the latest saved update. For the current care summary, return to Care information.</p>
+            </>
+          ) : null}
+        </section>
+      )}
 
       <section className="timeline-controls" aria-label="Care history controls">
         <form
@@ -766,31 +765,35 @@ export default function TimelinePage() {
       </section>
 
       {error && (
-        <section className="timeline-error" role="alert">
-          <div className="timeline-error-layout">
-            <AlertCircle size={20} aria-hidden />
-            <div className="timeline-error-copy">
-              <h2 className="timeline-error-title">Care history couldn't load</h2>
-              <p className="timeline-error-message">{error}</p>
-              <Button variant="primary" onClick={() => void loadEvents(true, appliedQuery)} disabled={refreshing}>Try again</Button>
-            </div>
-          </div>
-        </section>
+        <RecordState
+          kind="error"
+          title="Care history couldn't load"
+          description={error}
+          onAction={() => void loadEvents(true, appliedQuery)}
+        />
       )}
 
-      {loading ? (
-        <p aria-live="polite">Loading care history…</p>
-      ) : !error && visibleEvents.length === 0 ? (
-        <section className="mobile-empty timeline-empty">
-          <div className="mobile-empty-icon" aria-hidden="true"><Activity size={36} /></div>
-          <h2 className="mobile-empty-title">{events.length ? "No matching updates" : "Your care history starts here"}</h2>
-          <p className="mobile-empty-body">{events.length ? "Try another filter or search term. No records were removed." : "SolenOS will show care updates here after they have been saved. This screen never adds example care history."}</p>
-          <div className="mobile-empty-actions timeline-empty-actions">
-            <Button variant="primary" onClick={() => router.push("/workspace/daily-care")}><Plus size={18} aria-hidden /> Add an update</Button>
-            {(query || filter !== "all") && <Button variant="secondary" onClick={() => { setQuery(""); setAppliedQuery(""); setFilter("all"); updateHistoryUrl("all", ""); void loadEvents(true, ""); }}>Clear filters</Button>}
-          </div>
-        </section>
-      ) : (
+      {!loading && !error && visibleEvents.length === 0 ? (
+        <RecordState
+          kind={events.length > 0 || Boolean(appliedQuery) || filter !== "all" ? "no-results" : "first-empty"}
+          title={events.length > 0 || Boolean(appliedQuery) || filter !== "all" ? "No matching updates" : "Your care history starts here"}
+          description={events.length > 0 || Boolean(appliedQuery) || filter !== "all"
+            ? "Try another filter or search term. No records were removed."
+            : "SolenOS will show care updates here after they have been saved. This screen never adds example care history."}
+          actionLabel={events.length > 0 || Boolean(appliedQuery) || filter !== "all" ? "Clear filters" : "Add an update"}
+          onAction={() => {
+            if (events.length > 0 || Boolean(appliedQuery) || filter !== "all") {
+              setQuery("");
+              setAppliedQuery("");
+              setFilter("all");
+              updateHistoryUrl("all", "");
+              void loadEvents(true, "");
+            } else {
+              router.push("/workspace/daily-care");
+            }
+          }}
+        />
+      ) : !loading && !error ? (
         <section aria-label="Care history in date order">
           <div className="timeline-history-heading">
             <h2 className="timeline-history-title">Earlier care updates</h2>
