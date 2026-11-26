@@ -202,6 +202,7 @@ export default function DocumentsPage() {
   const [versionComparison, setVersionComparison] = useState<VersionComparison | null>(null);
   const [versionComparisonError, setVersionComparisonError] = useState<string | null>(null);
   const [versionComparisonLoading, setVersionComparisonLoading] = useState(false);
+  const versionComparisonRequestSequenceRef = useRef(0);
   const [listError, setListError] = useState<string | null>(null);
   const [documentIntelligenceRefresh, setDocumentIntelligenceRefresh] = useState(0);
 
@@ -412,20 +413,24 @@ export default function DocumentsPage() {
   };
 
   const loadVersionComparison = useCallback(async (evidenceId: string) => {
+    const requestSequence = ++versionComparisonRequestSequenceRef.current;
     setVersionComparison(null);
     setVersionComparisonError(null);
     setVersionComparisonLoading(true);
     try {
       const result = await getJSON("/upload/" + encodeURIComponent(evidenceId) + "/version-comparison") as VersionComparison;
-      setVersionComparison(result);
+      if (versionComparisonRequestSequenceRef.current === requestSequence) setVersionComparison(result);
     } catch {
-      setVersionComparisonError("We could not compare these document versions. No conclusion about what changed is available yet.");
+      if (versionComparisonRequestSequenceRef.current === requestSequence) {
+        setVersionComparisonError("We could not compare these document versions. No conclusion about what changed is available yet.");
+      }
     } finally {
-      setVersionComparisonLoading(false);
+      if (versionComparisonRequestSequenceRef.current === requestSequence) setVersionComparisonLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    const requestSequence = ++versionComparisonRequestSequenceRef.current;
     setVersionPredecessorId(selected?.possibleVersionOfEvidenceId || "");
     const predecessorId = selected?.evidence.parent_evidence_id;
     if (!selected || !predecessorId) {
@@ -439,10 +444,13 @@ export default function DocumentsPage() {
     setVersionComparisonError(null);
     setVersionComparisonLoading(true);
     void getJSON("/upload/" + encodeURIComponent(selected.id) + "/version-comparison")
-      .then((result) => { if (active) setVersionComparison(result as VersionComparison); })
-      .catch(() => { if (active) setVersionComparisonError("We could not compare these document versions. No conclusion about what changed is available yet."); })
-      .finally(() => { if (active) setVersionComparisonLoading(false); });
-    return () => { active = false; };
+      .then((result) => { if (active && versionComparisonRequestSequenceRef.current === requestSequence) setVersionComparison(result as VersionComparison); })
+      .catch(() => { if (active && versionComparisonRequestSequenceRef.current === requestSequence) setVersionComparisonError("We could not compare these document versions. No conclusion about what changed is available yet."); })
+      .finally(() => { if (active && versionComparisonRequestSequenceRef.current === requestSequence) setVersionComparisonLoading(false); });
+    return () => {
+      active = false;
+      if (versionComparisonRequestSequenceRef.current === requestSequence) versionComparisonRequestSequenceRef.current += 1;
+    };
   }, [selected?.id, selected?.evidence.parent_evidence_id]);
 
   useEffect(() => {
