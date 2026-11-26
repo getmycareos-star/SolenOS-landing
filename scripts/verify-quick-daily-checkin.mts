@@ -85,6 +85,8 @@ assert.match(detailedCapture, /prerequisitePending\.some\(Boolean\)/,
   "a medication event is not sent while its local photo upload is still queued");
 assert.match(detailedCapture, /photo_ingestion_key: photoIngestionKey/,
   "the medication report carries a stable upload reference so the backend can link the photo after reconnecting");
+assert.match(detailedCapture, /Medicine added to this draft\. Its photo is saved on this device and will be linked after it reaches SolenOS/,
+  "caregivers are told when a medicine photo is locally saved but not yet server-backed");
 assert.match(offlineQueueNotice, /automatic storage cleanup/,
   "caregivers are warned when their browser has not protected device-only queued updates");
 assert.match(offlineQueueNotice, /before\.sending > 0/,
