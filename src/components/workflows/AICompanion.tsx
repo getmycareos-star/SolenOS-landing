@@ -466,6 +466,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         throw new Error('The selected conversation did not match the active Care Record.')
       }
       userInteractedRef.current = true
+      pendingTurnId.current = null
+      pendingTurnText.current = null
+      setEmergency(false)
       conversationScopeRef.current = expectedScopeKey
       setSessionId(savedSessionId)
       setMessages(response.messages.map(mapStoredConversationMessage))
@@ -900,7 +903,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   const startNewSession = () => {
-    if (loading || loadingOlderMessages) return
+    if (loading || loadingOlderMessages || loadingConversationHistory) return
     userInteractedRef.current = true
     const storageKey = activeCompanionConversationStorageKey()
     if (storageKey) window.localStorage.removeItem(storageKey)
@@ -930,7 +933,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Ask SolenOS</h1></div>
         </div>
         {(messages.length > 0 || sessionId) && <button className="companion-history-toggle" type="button" onClick={() => { const next = !showConversationHistory; setShowConversationHistory(next); if (next) void loadConversationHistory() }} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Conversation history</button>}
-        {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || loadingOlderMessages}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
+        {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || loadingOlderMessages || loadingConversationHistory}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
 
       {showConversationHistory && <section className="companion-history-panel" aria-label="Saved conversations">
