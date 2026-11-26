@@ -81,6 +81,8 @@ assert.match(durableWriteQueue, /status: dependsOn\.length > 0 \? "pending" : "s
   "dependent writes do not begin sending before their prerequisites");
 assert.match(detailedCapture, /depends_on: evidenceDependencies/,
   "a medication event declares its photo upload as a durable queue dependency");
+assert.match(detailedCapture, /prerequisitePending\.some\(Boolean\)/,
+  "a medication event is not sent while its local photo upload is still queued");
 assert.match(detailedCapture, /photo_ingestion_key: photoIngestionKey/,
   "the medication report carries a stable upload reference so the backend can link the photo after reconnecting");
 assert.match(offlineQueueNotice, /automatic storage cleanup/,
