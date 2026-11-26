@@ -770,7 +770,7 @@ export default function TimelinePage() {
         />
       )}
 
-      {!loading && !error && visibleEvents.length === 0 ? (
+      {!loading && !error && visibleEvents.length === 0 && (
         <RecordState
           kind={events.length > 0 || Boolean(appliedQuery) || filter !== "all" ? "no-results" : "first-empty"}
           title={events.length > 0 || Boolean(appliedQuery) || filter !== "all" ? "No matching updates" : "Your care history starts here"}
@@ -790,7 +790,9 @@ export default function TimelinePage() {
             }
           }}
         />
-      ) : !loading && !error ? (
+      )}
+
+      {!loading && !error && visibleEvents.length > 0 && (
         <section aria-label="Care history in date order">
           <div className="timeline-history-heading">
             <h2 className="timeline-history-title">Earlier care updates</h2>
