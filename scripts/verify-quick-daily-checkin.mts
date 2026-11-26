@@ -142,7 +142,7 @@ assert.match(photoCapture, /Choose an existing photo/,
   "gallery selection remains distinct from live camera capture");
 assert.match(photoCapture, /Rotate left[\s\S]*?Rotate right/,
   "caregivers can correct photo orientation before upload");
-assert.match(photoCapture, /not been confirmed as a care-record event/,
+assert.match(photoCapture, /not been added as a care update/,
   "a saved photo is not misrepresented as an accepted care event");
 assert.match(sharedEvidenceCapture, /evidence_type: evidenceTypeOverride \?\? \(entryMethod === "snap" \? "care_photo" : "document"\)/,
   "photo evidence retains the correct evidence type in the shared upload pipeline");
