@@ -43,11 +43,13 @@ This ledger is deliberately conservative. A source change, static assertion or q
 | Phase 8 | Isolate Notifications inbox, unread count and preferences by active care recipient | Implemented, not yet verified | Feed, read actions, preference reads/writes and global unread indicator refresh on recipient changes; static contract added |
 | Phase 9 | Consistent page headers and page structure | In progress | Navigation, breadcrumb and mobile shell are unified; specialised page header patterns still need a full consistency pass |
 | Phase 9 | WCAG 2.2 AA accessibility | In progress | Landmark nesting and a keyboard skip link with a focusable main target are implemented; keyboard, screen-reader, contrast and zoom verification remain |
+| Phase 9 | Shared loading, empty and error presentation | Implemented, not yet verified | RecordState now has named regions, busy semantics, theme-aware surfaces and 44px actions; Care history uses it for its primary loading/empty/error states |
 | Phase 10 | Responsive desktop/tablet/mobile workflows | Implemented, not yet verified | Mobile bottom navigation, safe-area handling and first-visit focus behaviour added; execute device-width browser journeys |
 | Phase 11 | Preserve authenticated caregiver and care-recipient context | Implemented, not yet verified | Workspace provider now clears and refreshes its authorized projection on identity-change events; test shared-record and mid-session switch flows |
 | Phase 11 | Preserve LCR authority, provenance and approval boundaries | In progress | No parallel store or silent-write change introduced; end-to-end contribution/document/Companion data-flow verification remains |
 | Phase 12 | Route, component and integration regression suite | In progress | New route/IA contract is registered in `npm test`; full test run is pending |
 | Phase 12 | Critical browser journeys and responsive verification | In progress | E2E assertions cover Home, Ask SolenOS, Care information, More ownership, breadcrumbs, source-return state, skip navigation, Notifications and Reminders; actual E2E run is pending |
+| Phase 12 | Small mobile, tablet and desktop layout smoke | Implemented, not yet verified | Critical-care browser journey now checks the main landmark and horizontal overflow at 390px, 768px and 1440px |
 | Phase 12 | Verify original-document drill-down from the real saved document | Implemented, not yet verified | Critical-care browser journey now opens a persisted upload by its evidence ID, waits for the original preview and enabled download, and checks the filtered return link |
 | Phase 12 | Real caregiver comprehension/usability validation | Not started | Requires 8–12 US family caregivers; no participant evidence exists yet |
 
