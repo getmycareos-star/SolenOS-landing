@@ -2564,6 +2564,11 @@ await record("Daily Care capture survives secondary read failures", async () => 
   assert.ok(typeof retrievedPhoto.payload === "string" && retrievedPhoto.payload.length > 0,
     "the original uploaded photo bytes must remain retrievable after offline synchronization");
 
+  await resilient.page.goto(new URL("/workspace/documents", frontend).toString(), { waitUntil: "domcontentloaded" });
+  await resilient.page.getByRole("heading", { name: "Saved documents and photos", exact: true }).waitFor({ timeout: 20_000 });
+  await resilient.page.getByRole("button", { name: /offline-care-photo\\.png/ }).click();
+  await resilient.page.getByRole("img", { name: "offline-care-photo.png" }).waitFor({ timeout: 10_000 });
+
   await verifyMobile(resilient.page);
   await resilient.context.close();
 });
