@@ -3466,6 +3466,7 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
   outline: 3px solid var(--theme-link);
   outline-offset: 2px;
 }
-.solenos-chat-app .solenos-chat-main:focus {
-  outline: none;
+.solenos-chat-app .solenos-chat-main:focus-visible {
+  outline: 3px solid var(--theme-link);
+  outline-offset: -3px;
 }
