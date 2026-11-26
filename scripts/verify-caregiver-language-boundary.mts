@@ -462,6 +462,8 @@ assert.match(settings, /await clearDurableWriteQueue\(\)/,
   "Settings device cleanup must remove unsent encrypted updates before clearing the session");
 assert.match(settings, /unsent updates saved only in this browser/,
   "Settings must explain that unsent local updates are deleted by device cleanup");
+assert.match(settings, /An update already being sent may still reach SolenOS/,
+  "Settings must disclose that an update already in flight may still reach the server");
 assert.doesNotMatch(companion, /distinct, dated|The same wording appears in .*saved item/);
 
 assert.match(companion, /Based on saved information/);
