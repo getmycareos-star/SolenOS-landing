@@ -1444,8 +1444,8 @@ await record("01d secondary routes and reminder actions persist through reload",
     ["/workspace/community", "/workspace", ""],
     ["/workspace/continuity", "/workspace/care-continuity", ""],
     ["/workspace/record", "/workspace/care-continuity", ""],
-    ["/workspace/notifications", "/workspace/notifications", ""],
     ["/settings", "/workspace/settings", ""],
+    ["/workspace/notifications", "/workspace/notifications", ""],
   ]) {
     await page.goto(new URL(route, frontend).toString(), { waitUntil: "domcontentloaded" });
     await page.waitForURL((url) =>
