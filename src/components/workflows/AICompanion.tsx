@@ -237,6 +237,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false)
   const [historyLoadError, setHistoryLoadError] = useState<string | null>(null)
   const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([])
+  const [savedConversationOffset, setSavedConversationOffset] = useState(0)
+  const [hasMoreSavedConversations, setHasMoreSavedConversations] = useState(false)
+  const [loadingMoreSavedConversations, setLoadingMoreSavedConversations] = useState(false)
   const [showConversationHistory, setShowConversationHistory] = useState(false)
   const [loadingConversationHistory, setLoadingConversationHistory] = useState(false)
   const [conversationHistoryError, setConversationHistoryError] = useState<string | null>(null)
@@ -441,21 +444,62 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       const session = await ensureAnonymousSession()
       const expectedScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
       if (!isCurrentScope() || initialScopeKey !== expectedScopeKey) return
-      const response = await getJSON('/conversations?limit=30') as {
+      const response = await getJSON('/conversations?limit=30&offset=0') as {
         person_id?: string
         items?: SavedConversation[]
+        has_more?: boolean
+        next_offset?: number | null
       }
       if (!isCurrentScope()) return
       if (response.person_id !== session.person.id || !Array.isArray(response.items)) {
         throw new Error('Conversation history did not match the active Care Record.')
       }
-      setSavedConversations(response.items.filter(item =>
-        item.person_id === session.person.id && typeof item.session_id === 'string',
-      ))
+      const items = response.items.filter(item => item.person_id === session.person.id && typeof item.session_id === 'string')
+      setSavedConversations(items)
+      setHasMoreSavedConversations(response.has_more === true)
+      setSavedConversationOffset(response.next_offset ?? items.length)
     } catch {
       if (isCurrentScope()) setConversationHistoryError('Conversation history could not be loaded. Your saved conversations have not changed. Try again.')
     } finally {
       if (isCurrentScope()) setLoadingConversationHistory(false)
+    }
+  }
+
+
+  const loadMoreSavedConversations = async () => {
+    if (!hasMoreSavedConversations || loadingMoreSavedConversations || loadingConversationHistory) return
+    const requestScopeSequence = conversationScopeSequenceRef.current
+    const initialScopeKey = activeCompanionConversationStorageKey()
+    const offset = savedConversationOffset
+    const isCurrentScope = () => requestScopeSequence === conversationScopeSequenceRef.current
+      && initialScopeKey === activeCompanionConversationStorageKey()
+    setLoadingMoreSavedConversations(true)
+    setConversationHistoryError(null)
+    try {
+      const session = await ensureAnonymousSession()
+      const expectedScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+      if (!isCurrentScope() || initialScopeKey !== expectedScopeKey) return
+      const response = await getJSON('/conversations?limit=30&offset=' + String(offset)) as {
+        person_id?: string
+        items?: SavedConversation[]
+        has_more?: boolean
+        next_offset?: number | null
+      }
+      if (!isCurrentScope()) return
+      if (response.person_id !== session.person.id || !Array.isArray(response.items)) {
+        throw new Error('Conversation history did not match the active Care Record.')
+      }
+      const items = response.items.filter(item => item.person_id === session.person.id && typeof item.session_id === 'string')
+      setSavedConversations(previous => {
+        const existing = new Set(previous.map(item => item.session_id))
+        return [...previous, ...items.filter(item => !existing.has(item.session_id))]
+      })
+      setHasMoreSavedConversations(response.has_more === true)
+      setSavedConversationOffset(response.next_offset ?? offset + items.length)
+    } catch {
+      if (isCurrentScope()) setConversationHistoryError('More conversations could not be loaded. Your saved conversations have not changed. Try again.')
+    } finally {
+      if (isCurrentScope()) setLoadingMoreSavedConversations(false)
     }
   }
 
@@ -562,6 +606,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setHasOlderMessages(false)
       setHistoryLoadError(null)
       setSavedConversations([])
+      setSavedConversationOffset(0)
+      setHasMoreSavedConversations(false)
+      setLoadingMoreSavedConversations(false)
       setShowConversationHistory(false)
       setConversationHistoryError(null)
       setLoadingConversationHistory(false)
