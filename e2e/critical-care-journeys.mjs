@@ -322,6 +322,8 @@ await record("00 first-time and returning caregivers share Home and the same LCR
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
+  await page.getByText(firstNote, { exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
   assert.equal(
     await page.getByText("Your Care Record starts here", { exact: true }).count(),
     0,
@@ -331,6 +333,8 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   await page.getByRole("heading", { name: "Home", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.getByText(firstNote, { exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
 
   await page.goto(new URL("/workspace?prompt=first%20question&prompt=second%20question", frontend).toString());
