@@ -3020,6 +3020,58 @@
   display: grid;
   gap: 2px;
 }
+.solenos-chat-app .solenos-upcoming-appointment__notice {
+  margin: 8px 0 12px;
+  padding: 9px 11px;
+  border-left: 3px solid var(--sn-muted);
+  background: var(--sn-surface-soft);
+  color: var(--sn-muted);
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-upcoming-appointment__follow-ups {
+  display: grid;
+  gap: 9px;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sn-line);
+}
+.solenos-chat-app .solenos-upcoming-appointment__follow-ups h3 {
+  margin: 0;
+  color: var(--sn-forest);
+  font-size: calc(13px * var(--solenos-text-scale, 1));
+  font-weight: 700;
+}
+.solenos-chat-app .solenos-upcoming-appointment__follow-ups > div {
+  display: grid;
+  gap: 3px;
+  padding: 9px 11px;
+  border-radius: var(--sn-radius-md);
+  background: var(--sn-surface-soft);
+}
+.solenos-chat-app .solenos-upcoming-appointment__follow-ups strong {
+  color: var(--sn-ink);
+  font-size: calc(13px * var(--solenos-text-scale, 1));
+}
+.solenos-chat-app .solenos-upcoming-appointment__follow-ups p {
+  margin: 0;
+  color: var(--sn-muted);
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  line-height: 1.5;
+}
+.solenos-chat-app .solenos-upcoming-appointment__follow-ups small {
+  color: var(--sn-subtle);
+  font-size: calc(11px * var(--solenos-text-scale, 1));
+}
+.solenos-chat-app .solenos-upcoming-appointment__follow-ups a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--sn-forest);
+  font-size: calc(12px * var(--solenos-text-scale, 1));
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
 @media (max-width: 520px) {
   .solenos-chat-app .solenos-upcoming-appointment {
     width: calc(100% - 24px);
