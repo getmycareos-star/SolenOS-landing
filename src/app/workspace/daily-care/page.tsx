@@ -1,16 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, FileText, ImagePlus, MessageSquareText, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDailyUpdate";
 import DailyCareOfflineQueueNotice from "@/components/workflows/DailyCareOfflineQueueNotice";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 
+type StructuredCaptureMode = "medicine" | "measurement" | "note";
 type CaptureMode = "update" | "photo" | "checkin";
+
+const StructuredDailyCapture = dynamic(
+  () => import("@/components/workflows/StructuredDailyCapture"),
+  {
+    ssr: false,
+    loading: () => <BrandLoading animate message="Opening structured entry…" />,
+  },
+);
 
 const captureOptions: Array<{
   value: CaptureMode;
@@ -26,8 +37,12 @@ const captureOptions: Array<{
 export default function DailyCarePage() {
   const router = useRouter();
   const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
+  const [structuredMode, setStructuredMode] = useState<StructuredCaptureMode | null>(null);
 
-  const returnToChoices = () => setCaptureMode(null);
+  const returnToChoices = () => {
+    setCaptureMode(null);
+    setStructuredMode(null);
+  };
 
   return (
     <div className="mobile-screen daily-care-screen add-update-screen">
@@ -93,8 +108,35 @@ export default function DailyCarePage() {
               </div>
             ) : captureMode === "update" ? (
               <div className="daily-care-capture-specialist">
-                <NaturalLanguageDailyUpdate />
-                <p className="daily-care-muted">You can describe a visit, hospital stay, change in routine or anything else that matters to care.</p>
+                {structuredMode ? (
+                  <>
+                    <div className="daily-care-capture-mode-heading">
+                      <strong>{structuredMode === "medicine" ? "Medication" : structuredMode === "measurement" ? "Measurement" : "Note or observation"}</strong>
+                      <Button variant="secondary" onClick={() => setStructuredMode(null)}>Back to written update</Button>
+                    </div>
+                    <StructuredDailyCapture mode={structuredMode} />
+                  </>
+                ) : (
+                  <>
+                    <NaturalLanguageDailyUpdate />
+                    <details className="daily-care-structured-options">
+                      <summary>Prefer a structured entry?</summary>
+                      <p className="daily-care-muted">Use a short form if you would rather record a medication, measurement or note.</p>
+                      <div role="group" aria-label="Choose a structured care entry" className="daily-care-capture-options">
+                        <button type="button" className="daily-care-capture-option" onClick={() => setStructuredMode("medicine")}>
+                          <span className="daily-care-capture-option-copy"><strong>Medication</strong><span>Record a medicine taken, missed or refused.</span></span>
+                        </button>
+                        <button type="button" className="daily-care-capture-option" onClick={() => setStructuredMode("measurement")}>
+                          <span className="daily-care-capture-option-copy"><strong>Measurement</strong><span>Record a reading with its unit.</span></span>
+                        </button>
+                        <button type="button" className="daily-care-capture-option" onClick={() => setStructuredMode("note")}>
+                          <span className="daily-care-capture-option-copy"><strong>Note or observation</strong><span>Save something you noticed or want to remember.</span></span>
+                        </button>
+                      </div>
+                    </details>
+                    <p className="daily-care-muted">You can describe a visit, hospital stay, change in routine or anything else that matters to care.</p>
+                  </>
+                )}
               </div>
             ) : null}
           </div>
