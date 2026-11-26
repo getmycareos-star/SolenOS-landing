@@ -13,7 +13,7 @@ export default function DailyCareOfflineQueueNotice() {
   const [retrying, setRetrying] = useState(false);
   const [retryNotice, setRetryNotice] = useState("");
   const [persistentStorage, setPersistentStorage] = useState<boolean | null>(null);
-  const retryTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const retryTimer = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
     const personId = getPersonId();
