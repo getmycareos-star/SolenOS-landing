@@ -353,6 +353,11 @@ await record("00 first-time and returning caregivers share Home and the same LCR
     .waitFor({ state: "visible", timeout: 15_000 });
   const companionEntry = page.locator(".today-companion-entry");
   await companionEntry.waitFor({ state: "visible", timeout: 15_000 });
+  assert.equal(
+    await page.locator("#companion-message-input").inputValue(),
+    "What has changed in the care record?",
+    "a valid Companion prompt must be prefilled without being sent automatically",
+  );
   await page.waitForFunction(() => !new URLSearchParams(window.location.search).has("prompt"));
   const careRemainsFirst = await page.evaluate(() => {
     const careHeading = Array.from(document.querySelectorAll("h1, h2, h3, h4"))
