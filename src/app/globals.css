@@ -6300,6 +6300,32 @@ html:not([data-solenos-theme="dark"]) [role="button"][style*="var(--trust)"]:hov
   font-size: 13px;
   line-height: 1.5;
 }
+.solenos-care-next-step__detail {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  max-width: 560px;
+  margin-top: 10px;
+  padding: 11px 13px;
+  border-left: 3px solid #7d8b75;
+  border-radius: 0 10px 10px 0;
+  background: #f1f5f0;
+}
+.solenos-care-next-step__detail strong {
+  color: #2c4031;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.solenos-care-next-step__detail p {
+  margin: 0;
+  color: #657468;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.solenos-care-next-step__detail small {
+  color: #778278;
+  font-size: 11px;
+}
 .solenos-care-next-step__actions {
   display: flex;
   flex: 0 0 auto;
