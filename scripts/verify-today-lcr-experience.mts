@@ -17,6 +17,9 @@ const registeredActionsFetch = understanding.indexOf('getJSON(`/registered-actio
 const patternsFetch = understanding.indexOf('getJSON(`/change/patterns/');
 const detailFetchGate = understanding.indexOf('viewMode === "complete" ? [', understanding.indexOf("const backgroundTasks = ["));
 assert.ok(detailFetchGate >= 0 && assignableFetch > detailFetchGate && registeredActionsFetch > detailFetchGate && patternsFetch > detailFetchGate, "Today must not wait for complete-record-only caregiver, action and pattern queries");
+assert.match(understanding, /\}, \[viewMode\]\);/, "the data-loading effect must rerun when the view mode changes");
+assert.match(understanding, /if \(isCurrentRequest\(\)\) setChangesLoading\(false\)/, "the recent-change loading state must settle for the active request");
+assert.match(understanding, /if \(isCurrentRequest\(\)\) setAssessmentLoading\(false\)/, "the assessment loading state must settle for the active request");
 
 assert.match(understanding, /viewMode === "complete" && \(/, "detailed history and integrity panels must not render on Home");
 const firstCompletePanel = understanding.indexOf('      {viewMode === "complete" && (');
