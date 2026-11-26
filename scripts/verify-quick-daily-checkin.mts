@@ -131,9 +131,9 @@ assert.match(detailedCapture, /This records an expected dose only/,
   "the medicine interaction warns that scheduled does not mean given");
 assert.match(detailedCapture, /temperature:\s*\[\s*['"]°F['"],\s*['"]°C['"]\s*\]/,
   "temperature capture offers explicit US and metric units");
-assert.match(detailedCapture, /weight: \["lb", "kg"\]/,
+assert.match(detailedCapture, /weight:\s*\[\s*['"]lb['"],\s*['"]kg['"]\s*\]/,
   "weight capture offers explicit US and metric units");
-assert.match(detailedCapture, /blood_glucose: \["mg\/dL", "mmol\/L"\]/,
+assert.match(detailedCapture, /blood_glucose:\s*\[\s*['"]mg\/dL['"],\s*['"]mmol\/L['"]\s*\]/,
   "blood glucose capture offers explicit supported units");
 assert.match(detailedCapture, /top number should be higher than the bottom number/,
   "blood pressure capture rejects reversed systolic and diastolic values");
