@@ -26,7 +26,7 @@ async function fileToBase64(file: File): Promise<string> {
   return window.btoa(binary);
 }
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing, evidenceTypeOverride?: "care_photo" | "document"): Promise<UploadReceipt> {
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing, evidenceTypeOverride?: "care_photo" | "document", photoRotationDegrees = 0): Promise<UploadReceipt> {
   const session = await ensureAnonymousSession();
   const fields: Record<string, string> = {
     ingestion_key: uploadRetryKey,
@@ -37,6 +37,7 @@ async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod
     capture_timestamp: captureTimestamp,
     extracted_text: "",
   };
+  if (evidenceTypeOverride === "care_photo") fields.photo_rotation_degrees = String(photoRotationDegrees);
   const scanPageNumber = entryMethod === "scan" ? /scan_page_(\d+)/i.exec(file.name)?.[1] : undefined;
   if (scanPageNumber) fields.capture_page_number = scanPageNumber;
   if (entryMethod === "scan" && scanProcessing) {
@@ -119,6 +120,7 @@ export async function extractAttachedDocument(
   captureTimestamp = new Date().toISOString(),
   scanProcessing?: ScanProcessing,
   evidenceTypeOverride?: "care_photo" | "document",
+  photoRotationDegrees = 0,
 ): Promise<AttachedDocument> {
   const base: AttachedDocument = {
     uploadRetryKey,
@@ -134,7 +136,7 @@ export async function extractAttachedDocument(
 
   let uploadReceipt: UploadReceipt;
   try {
-    uploadReceipt = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing, evidenceTypeOverride);
+    uploadReceipt = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing, evidenceTypeOverride, photoRotationDegrees);
   } catch (error) {
     return {
       ...base,
