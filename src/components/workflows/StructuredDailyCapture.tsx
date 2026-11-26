@@ -551,7 +551,6 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       
       // Convert compressed file to data URL for preview
       setMedicationImageUploadKey(null);
-      setMedicationImageCapturedAt(new Date().toISOString());
       setMedicationImagePreview(await fileToDataUrl(compressedFile));
       
       // Clean up
@@ -560,8 +559,6 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       // Fallback to original image if compression fails
       const reader = new FileReader();
       reader.onload = (event) => {
-        setMedicationImageUploadKey(null);
-        setMedicationImageCapturedAt(new Date().toISOString());
         setMedicationImagePreview(event.target?.result as string);
       };
       reader.readAsDataURL(file);
