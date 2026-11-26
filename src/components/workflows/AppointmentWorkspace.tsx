@@ -266,6 +266,7 @@ export default function AppointmentWorkspace() {
   const [saveRetry, setSaveRetry] = useState<AppointmentSaveRetry | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
     if (!open) return
@@ -404,7 +405,7 @@ export default function AppointmentWorkspace() {
       }
     })()
     return () => { cancelled = true }
-  }, [open])
+  }, [open, reloadToken])
 
   const refreshOutcome = async (recordId: string) => {
     setError('')
