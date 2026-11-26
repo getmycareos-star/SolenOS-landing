@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 export type RecordStateKind =
   | "first-empty"
@@ -72,6 +72,7 @@ export function RecordState({
   actionLabel?: string;
   children?: ReactNode;
 }) {
+  const titleId = useId();
   const copy = COPY[kind];
   const label = actionLabel || copy.actionLabel;
   const isError = kind === "error" || kind === "forbidden" || kind === "unavailable";
@@ -79,39 +80,16 @@ export function RecordState({
   return (
     <section
       role={isError ? "alert" : kind === "loading" ? "status" : "region"}
+      aria-labelledby={titleId}
       aria-live={isError ? "assertive" : "polite"}
+      aria-busy={kind === "loading"}
       className={`record-state record-state--${kind}`}
-      style={{
-        display: "grid",
-        gap: 8,
-        padding: 16,
-        border: "1px solid #e1e9df",
-        borderRadius: 12,
-        background: isError ? "#fff8f4" : "#fbfdfb",
-        color: "#26392c",
-      }}
     >
-      <strong style={{ fontSize: "calc(15px * var(--solenos-text-scale, 1))" }}>{title || copy.title}</strong>
-      <p style={{ margin: 0, color: "#69796c", fontSize: "calc(14px * var(--solenos-text-scale, 1))", lineHeight: 1.6 }}>
-        {description || copy.description}
-      </p>
+      <strong id={titleId} className="record-state-title">{title || copy.title}</strong>
+      <p className="record-state-description">{description || copy.description}</p>
       {children}
       {label && onAction && (
-        <button
-          type="button"
-          onClick={onAction}
-          style={{
-            justifySelf: "start",
-            minHeight: 40,
-            padding: "8px 12px",
-            border: "1px solid #dce6da",
-            borderRadius: 9,
-            background: "#eef4ec",
-            color: "#26392c",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
+        <button type="button" className="record-state-action" onClick={onAction}>
           {label}
         </button>
       )}
