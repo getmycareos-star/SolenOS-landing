@@ -1081,6 +1081,13 @@ await record("01c workspace links, browser back, More menu and account form vali
   await fallbackDialog.accept();
   await fallbackClick;
 
+  await page.keyboard.press("Tab");
+  assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()), "Skip to main content",
+    "keyboard users reach the skip link before the repeated workspace navigation");
+  await page.keyboard.press("Enter");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "solenos-main-content",
+    "the skip link moves keyboard focus to the main workspace content");
+
   const navToggle = page.getByRole("button", { name: "Open navigation", exact: true });
   await navToggle.click();
   await page.waitForFunction(() => {
@@ -1416,8 +1423,8 @@ await record("01d secondary routes and reminder actions persist through reload",
 
   for (const [route, expectedPath, expectedHash] of [
     ["/workspace/community", "/workspace", ""],
-    ["/workspace/continuity", "/workspace", ""],
-    ["/workspace/record", "/workspace", ""],
+    ["/workspace/continuity", "/workspace/care-continuity", ""],
+    ["/workspace/record", "/workspace/care-continuity", ""],
     ["/workspace/notifications", "/workspace/notifications", ""],
   ]) {
     await page.goto(new URL(route, frontend).toString(), { waitUntil: "domcontentloaded" });
