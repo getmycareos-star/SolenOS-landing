@@ -963,6 +963,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         })),
         notes,
       };
+      const evidenceDependencies = payload.medications
+        .map((item) => item.photo_ingestion_key ? durableWriteId("/upload", item.photo_ingestion_key) : null)
+        .filter((dependencyId): dependencyId is string => dependencyId !== null);
       let queueId: string | null = null;
       try {
         queueId = await enqueueDurableWrite({
@@ -971,9 +974,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           endpoint: "/daily/log",
           idempotency_key: captureIdempotencyKey,
           payload,
-          depends_on: payload.medications
-            .map((item) => item.photo_ingestion_key ? durableWriteId("/upload", item.photo_ingestion_key) : null)
-            .filter((dependencyId): dependencyId is string => dependencyId !== null),
+          depends_on: evidenceDependencies,
         });
         pendingQueueId.current = queueId;
       } catch {
@@ -983,6 +984,18 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       }
 
       if (queueId) {
+        const prerequisitePending = await Promise.all(
+          evidenceDependencies.map((dependencyId) => hasDurableWrite(dependencyId).catch(() => false)),
+        );
+        if (prerequisitePending.some(Boolean)) {
+          const queuedError = new Error("This update is saved on this device and waiting for its medicine photo to reach SolenOS.") as Error & {
+            localQueued?: boolean;
+            queueId?: string;
+          };
+          queuedError.localQueued = true;
+          queuedError.queueId = queueId;
+          throw queuedError;
+        }
         try {
           return await deliverDurableWrite<{ success?: boolean; id?: string; [key: string]: unknown }>(
             queueId,
