@@ -70,7 +70,7 @@ assert.match(understanding, /Care priorities have not been reviewed yet\. Review
 assert.match(understanding, /<Link href="\/workspace\/care-continuity" className="solenos-care-primary-action">Review care information<\/Link>/, "an unassessed record must provide a useful review destination");
 
 
-assert.match(understanding, /Happened \$\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
+assert.match(understanding, /Happened: \\$\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
 assert.match(understanding, /Change review saved \{formatWhen\(change\.created_at\)\}/, "change detection time must not be confused with the event comparison window");
 
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
