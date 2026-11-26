@@ -173,7 +173,7 @@ export function UpcomingAppointmentSummary() {
             <div className="solenos-upcoming-appointment__follow-ups">
               <h3>Appointment follow-ups</h3>
               {appointmentFollowUps.slice(0, 2).map(item => (
-                <div key={item.source_id}>
+                <div key={`follow-up:${item.source_id}`}>
                   <strong>{caregiverSourceText(item.title) || "Recorded follow-up"}</strong>
                   {item.description && <p>{caregiverSourceText(item.description)}</p>}
                   <small>
@@ -183,7 +183,7 @@ export function UpcomingAppointmentSummary() {
                 </div>
               ))}
               {appointmentQuestions.slice(0, 2).map(item => (
-                <div key={item.source_id}>
+                <div key={`question:${item.source_id}`}>
                   <strong>{caregiverSourceText(item.question) || "Appointment question to resolve"}</strong>
                   <small>{caregiverStatusLabel(item.status) || "Open question"}</small>
                 </div>
