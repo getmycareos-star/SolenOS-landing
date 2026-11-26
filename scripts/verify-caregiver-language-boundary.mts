@@ -828,8 +828,10 @@ assert.match(caregiverAccessPanel, /Hand care tasks to another caregiver/);
 assert.match(caregiverAccessPanel, /caregiverStatusLabel\(item\.status\) \|\| "Not recorded"/, "unknown responsibility states must have a readable fallback");
 assert.match(caregiverAccessPanel, /caregiverSafeAssistantText\(caregiver\.relationship\) \|\| "Relationship not recorded"/, "unknown caregiver relationships must not render as blank labels");
 
-assert.match(appShellLanguage, /We couldn't confirm your access to SolenOS, so nothing was cleared/,
-  "failed access revocation must clearly say that no local data was cleared");
+assert.match(appShellLanguage, /Your other local information was not cleared/,
+  "failed access revocation must distinguish removed offline updates from other local data");
+assert.match(appShellLanguage, /no other local information was cleared/,
+  "a blocked offline-queue deletion must not claim the rest of the device was cleared");
 assert.doesNotMatch(restrictedRoleLanguage, /server-issued identity|permissions for this role|anonymous care session|unverified or demo dashboard/i,
   "restricted-role page must not expose internal identity or authorization terminology");
 assert.match(restrictedRoleLanguage, /Your care information is protected/,
