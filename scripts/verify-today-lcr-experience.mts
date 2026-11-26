@@ -105,5 +105,6 @@ assert.match(appointments, /appointment-workspaces\/preparation-brief\?window_da
 assert.match(appointments, /Appointment information is unavailable/, "appointment retrieval failures must remain visible");
 assert.match(appointments, /appointmentTime - Date\.now\(\) <= 24 \* 60 \* 60 \* 1000/, "appointments due within 24 hours must receive contextual prominence");
 assert.match(companion, /initialPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "all Companion entry points must bound prompt text");
+assert.match(companion, /history\.replaceState\(window\.history\.state, '', nextUrl\)/, "consuming a Companion prompt must preserve Next.js navigation state");
 
 console.log("PASS: Home, first-visit convergence, Companion prompt context, record-driven next steps and appointment failure states");
