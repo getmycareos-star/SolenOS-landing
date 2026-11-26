@@ -298,10 +298,10 @@ export function AppShell({ children, careContext, brandHref = "/workspace" }: Ap
         if (!window.confirm("Clear this device? This removes local session and workspace data, including unsent updates stored only in this browser. Those unsent updates have not reached SolenOS and will be deleted from this device. It does not delete care information already saved in SolenOS. Continue?")) return;
         let accessRevoked = false;
         try {
+          await clearDurableWriteQueue();
           if (getAnonymousAccessToken()) await revokeAnonymousSession();
           else markAnonymousSessionRevokedLocally();
           accessRevoked = true;
-          await clearDurableWriteQueue();
           const ownedKeys = new Set<string>(LOCAL_WORKSPACE_KEYS);
           for (let index = 0; index < window.localStorage.length; index += 1) {
             const key = window.localStorage.key(index);
