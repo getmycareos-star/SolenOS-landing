@@ -2258,7 +2258,7 @@ await record("Daily Care saves and retrieves original reports without relying on
 });
 
 await record("Daily Care capture survives secondary read failures", async () => {
-  const resilient = await createBrowserPage(firstVisitSession, "/workspace/daily-care");
+  const resilient = await createBrowserPage(firstVisitSession, "/workspace/daily-care", { width: 390, height: 844 }, { permissions: ["camera"] });
   const resilientIdentity = auth(firstVisitSession);
   const unavailable = (route) => route.fulfill({
     status: 503,
@@ -2447,6 +2447,15 @@ await record("Daily Care capture survives secondary read failures", async () => 
   );
   await resilient.page.getByRole("button", { name: /Share something/i }).click();
   await resilient.page.getByRole("button", { name: /Add a photo or document/ }).click();
+  await resilient.page.getByRole("button", { name: "Take a photo", exact: true }).click();
+  const snapDialog = resilient.page.getByRole("dialog", { name: "Snap" });
+  await snapDialog.waitFor({ timeout: 10_000 });
+  await resilient.page.waitForFunction(() => {
+    const button = document.querySelector(".entry-capture-snap button.workspace-primary");
+    return button instanceof HTMLButtonElement && !button.disabled;
+  }, null, { timeout: 15_000 });
+  await snapDialog.getByRole("button", { name: "Capture", exact: true }).click();
+  await resilient.page.getByRole("img", { name: "Preview of the selected care photo" }).waitFor({ timeout: 5_000 });
   await resilient.context.setOffline(true);
   await resilient.page.locator("#daily-care-photo-library").setInputFiles({
     name: "offline-care-photo.png",
@@ -2454,9 +2463,9 @@ await record("Daily Care capture survives secondary read failures", async () => 
     buffer: tinyPng,
   });
   assert.equal(
-    await resilient.page.locator("#daily-care-photo-camera").getAttribute("capture"),
-    "environment",
-    "mobile photo capture should request the rear camera when the browser supports it",
+    await resilient.page.locator("#daily-care-photo-library").getAttribute("capture"),
+    null,
+    "gallery upload must remain separate from the live camera capture path",
   );
   await resilient.page.getByRole("img", { name: "Preview of the selected care photo" }).waitFor({ timeout: 5_000 });
   await resilient.page.getByRole("button", { name: "Save photograph", exact: true }).click();
