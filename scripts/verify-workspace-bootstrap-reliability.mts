@@ -8,6 +8,8 @@ const client = read("src/api/client.ts");
 assert.match(workspace, /import \{[^}]*ensureAnonymousSession[^}]*getJSON[^}]*\} from "@\/api\/client";/,
   "workspace bootstrap must use the shared authenticated API client");
 assert.ok(workspace.includes("return getJSON("), "care-record bootstrap must use getJSON");
+assert.match(workspace, /history\.replaceState\(window\.history\.state, "", next \? `\/workspace\?\$\{next\}` : "\/workspace"\)/,
+  "consuming the first-entry query must preserve Next.js history state for predictable back/forward navigation");
 assert.ok(workspace.includes("`/situation?care_session_id=${encodeURIComponent(sid)}&offer_return_invite=0`"),
   "bootstrap must retain the session-scoped situation read and disabled return invitation");
 assert.doesNotMatch(workspace, /fetch\(\s*`\/api\/situation/,
