@@ -180,6 +180,7 @@ assert.ok(appointments.includes('addEventListener("personIdChanged", resetAppoin
 assert.ok(careInformation.includes("<LCRCurrentUnderstanding />"), "Care information retains the complete care-record view");
 assert.ok(documents.includes("<h1>Documents</h1>") || documents.includes(">Documents<"), "Documents remains a directly reachable workspace page");
 assert.ok(history.includes("Care history"), "the history route retains its distinct historical responsibility");
+assert.ok(history.includes('import { RecordState }') && history.includes('kind="loading"') && history.includes('kind="error"') && history.includes('kind={events.length > 0'), "Care history uses the shared loading, error and empty-state component instead of parallel page-specific messages");
 assert.ok(history.includes("return !safeDate(event.occurred_at)"), "a missing or invalid event timestamp is never silently replaced with the time the record was saved");
 assert.ok(history.includes('addEventListener("personIdChanged", clearPreviousCareRecipient)') && history.includes("historyRequestSequenceRef") && history.includes("historyScopeSequenceRef"), "Care history clears prior-recipient events and invalidates in-flight reads and corrections on a scope change");
 assert.ok(!history.includes(': typeof row.recorded_at === "string" ? row.recorded_at : null,'), "the timeline mapping keeps event time separate from record time");
