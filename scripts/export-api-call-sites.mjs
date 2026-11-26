@@ -90,6 +90,22 @@ function methodFor(call) {
   return 'GET_OR_DYNAMIC';
 }
 
+function sourceCategory(sourceFile) {
+  if (sourceFile === 'src/api/client.ts') return 'api_transport_infrastructure';
+  if (sourceFile.startsWith('src/app/api/') || sourceFile === 'src/app/share-target/route.ts') return 'next_server_route_handler';
+  if (sourceFile.startsWith('src/components/ops-devtools/')) return 'ops_devtools_non_caregiver';
+  if (sourceFile === 'src/components/workflows/Community.tsx') return 'community_disabled';
+  if (sourceFile.startsWith('src/lib/routine-moments/')) return 'routine_moments_unmounted';
+  if (sourceFile.startsWith('src/lib/tts/')) return 'voice_feature_disabled';
+  if (sourceFile.startsWith('src/lib/tika-extractor/')) return 'external_document_service';
+  if (sourceFile === 'src/components/NotificationBell.tsx') return 'legacy_unmounted_notification';
+  if (sourceFile === 'src/app/workspace/open-loops/page.tsx' || sourceFile === 'src/components/app-shell/HistoryDrawer.tsx') return 'caregiver_pagination_helper';
+  if (sourceFile === 'src/components/ContinuityPrompt.tsx') return 'authentication_flow';
+  if (sourceFile === 'src/components/mvp-workspace/CognitiveWorkspace.tsx') return 'local_situation_proxy';
+  if (sourceFile === 'src/lib/workspace-context.tsx') return 'local_ops_access_proxy';
+  return 'caregiver_workspace';
+}
+
 const entries = [];
 for (const file of collectFiles(sourceRoot)) {
   const source = fs.readFileSync(file, 'utf8');
@@ -105,6 +121,7 @@ for (const file of collectFiles(sourceRoot)) {
           route_expression: route.expression,
           dynamic: route.dynamic || route.expression.includes('{dynamic}'),
           source_file: path.relative(root, file).split(path.sep).join('/'),
+          source_category: sourceCategory(path.relative(root, file).split(path.sep).join('/')),
           line: location.line + 1,
           caller: node.expression.getText(sourceFile),
           classification: 'backend_match_and_workflow_review_required',
@@ -227,6 +244,14 @@ const inventory = {
   dynamic_call_site_count: entries.filter(item => item.dynamic).length,
   matched_call_site_count: entries.filter(item => item.backend_match_status?.startsWith('matched_')).length,
   unmatched_call_site_count: entries.filter(item => item.backend_match_status === 'no_backend_route_match').length,
+  static_unmatched_call_site_count: entries.filter(item => item.backend_match_status === 'no_backend_route_match' && !item.dynamic).length,
+  dynamic_unresolved_call_site_count: entries.filter(item => item.backend_match_status === 'no_backend_route_match' && item.dynamic).length,
+  unmatched_call_sites_by_source_category: entries
+    .filter(item => item.backend_match_status === 'no_backend_route_match')
+    .reduce((counts, item) => {
+      counts[item.source_category] = (counts[item.source_category] || 0) + 1;
+      return counts;
+    }, {}),
   ambiguous_call_site_count: entries.filter(item => item.backend_match_status === 'ambiguous_multiple_backend_routes').length,
   backend_routes_without_frontend_callsite: backendRouteMatrix.filter(route => route.frontend_call_site_count === 0).length,
   call_sites: entries,
@@ -236,12 +261,13 @@ const rendered = JSON.stringify(inventory, null, 2) + '\n';
 if (outputPath) fs.writeFileSync(path.resolve(root, outputPath), rendered);
 else process.stdout.write(rendered);
 console.log(
-  `Indexed ${inventory.call_site_count} API call sites; matched ${inventory.matched_call_site_count}; unmatched ${inventory.unmatched_call_site_count}; ambiguous ${inventory.ambiguous_call_site_count}; backend routes ${inventory.backend_route_count}; routes without frontend call sites ${inventory.backend_routes_without_frontend_callsite}.`
+  `Indexed ${inventory.call_site_count} API call sites; matched ${inventory.matched_call_site_count}; static unmatched ${inventory.static_unmatched_call_site_count}; dynamic unresolved ${inventory.dynamic_unresolved_call_site_count}; ambiguous ${inventory.ambiguous_call_site_count}; backend routes ${inventory.backend_route_count}; routes without frontend call sites ${inventory.backend_routes_without_frontend_callsite}.`
 );
 const unmatchedCallSites = entries
   .filter(item => item.backend_match_status === 'no_backend_route_match')
   .map(item => ({
     source_file: item.source_file,
+    source_category: item.source_category,
     line: item.line,
     caller: item.caller,
     method: item.method,
