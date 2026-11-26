@@ -5,12 +5,9 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Activity,
-  AlertCircle,
   ChevronDown,
   Clock3,
   History,
-  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
