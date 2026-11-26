@@ -83,7 +83,7 @@ const expectedPageFiles = [
   "src/app/workspace/settings/page.tsx",
   "src/app/workspace/timeline/page.tsx",
 ].sort();
-const actualPageFiles = collectNamedFiles(path.join(root, "src", "app"), /^page\\.(tsx|ts|jsx|js)$/).sort();
+const actualPageFiles = collectNamedFiles(path.join(root, "src", "app"), /^page\.(tsx|ts|jsx|js)$/).sort();
 assert.deepEqual(actualPageFiles, expectedPageFiles, "every App Router page must have an explicit route inventory entry");
 assert.equal(actualPageFiles.length, 39, "the inspected application page inventory contains 39 routes");
 const expectedRouteHandlers = [
@@ -93,7 +93,7 @@ const expectedRouteHandlers = [
   "src/app/api/situation/route.ts",
   "src/app/share-target/route.ts",
 ].sort();
-const actualRouteHandlers = collectNamedFiles(path.join(root, "src", "app"), /^route\\.(ts|js)$/).sort();
+const actualRouteHandlers = collectNamedFiles(path.join(root, "src", "app"), /^route\.(ts|js)$/).sort();
 assert.deepEqual(actualRouteHandlers, expectedRouteHandlers, "all App Router handlers remain accounted for");
 
 const routes = [
@@ -105,7 +105,6 @@ const routes = [
   ["/workspace/appointments", "src/app/workspace/appointments/page.tsx"],
   ["/workspace/reminders", "src/app/workspace/reminders/page.tsx"],
   ["/workspace/open-loops", "src/app/workspace/open-loops/page.tsx"],
-  ["/workspace/reminders", "src/app/workspace/reminders/page.tsx"],
   ["/workspace/handoffs", "src/app/workspace/handoffs/page.tsx"],
   ["/workspace/companion", "src/app/workspace/companion/page.tsx"],
   ["/workspace/notifications", "src/app/workspace/notifications/page.tsx"],
@@ -199,7 +198,8 @@ assert.ok(legacyContinuity.includes("redirect") && legacyContinuity.includes("/w
 assert.ok(featureFlags.includes("community: false") && featureFlags.includes("professionalCommunity: false"), "Community remains explicitly disabled");
 assert.ok(community.includes("redirect") && community.includes("/workspace"), "the disabled Community route fails closed");
 assert.ok(legacySettings.includes("redirect") && legacySettings.includes("/workspace/settings"), "the legacy Settings route preserves its destination");
-assert.ok(more.includes("CaregiverHandoverInbox"), "family access handovers remain reachable under account management");
+assert.ok(handoffs.includes("CaregiverHandoverInbox"), "incoming family responsibility handovers are available within Care handoffs");
+assert.ok(!more.includes("CaregiverHandoverInbox"), "More remains limited to application and account management");
 assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
 assert.ok(addUpdate.includes("Upload a medical document"), "medical document upload is a visible Add an update action");
