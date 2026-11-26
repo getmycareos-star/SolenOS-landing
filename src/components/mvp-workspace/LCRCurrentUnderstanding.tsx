@@ -1460,14 +1460,15 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     clarificationCareDecisions[0] ??
     importantCareDecisions[0] ??
     null;
-  const contextualNextRecord = contextualNextDecision?.records?.find((reference) =>
-    projection?.items.some((item) =>
+  const careRecordHref = (reference: CareAttentionEvidenceRef): string | null => {
+    const existsInProjection = projection?.items.some((item) =>
       item.source_collection === reference.source && item.id === reference.record_id
-    )
-  ) ?? null;
-  const contextualNextRecordHref = contextualNextRecord
-    ? `${viewMode === "today" ? "/workspace/care-continuity" : ""}#lcr-care-item-${encodeURIComponent(contextualNextRecord.source)}-${encodeURIComponent(contextualNextRecord.record_id)}`
-    : null;
+    );
+    if (!existsInProjection) return null;
+    return `${viewMode === "today" ? "/workspace/care-continuity" : ""}#lcr-care-item-${encodeURIComponent(reference.source)}-${encodeURIComponent(reference.record_id)}`;
+  };
+  const contextualNextRecord = contextualNextDecision?.records?.find((reference) => careRecordHref(reference) !== null) ?? null;
+  const contextualNextRecordHref = contextualNextRecord ? careRecordHref(contextualNextRecord) : null;
   const findAttentionLoop = (decision: CareAttentionDecision) =>
     openLoopItems.find((item) => item.id === decision.record_id && item.source === decision.source);
   const needsAttentionNow = careAttention
@@ -1879,11 +1880,15 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     {decision.records?.length ? (
                       <details>
                         <summary>See the notes and documents behind this</summary>
-                        {decision.records.map((record) => (
-                          <p key={record.source + ":" + record.record_id}>
-                            {caregiverSafeAssistantText(record.title) || "Saved care record"} · Happened {formatWhen(record.occurred_at)} · Saved {formatWhen(record.recorded_at)}
-                          </p>
-                        ))}
+                        {decision.records.map((record) => {
+                          const href = careRecordHref(record);
+                          const title = caregiverSafeAssistantText(record.title) || "Saved care record";
+                          return (
+                            <p key={record.source + ":" + record.record_id}>
+                              {href ? <Link href={href}>{title}</Link> : title} · Happened {formatWhen(record.occurred_at)} · Saved {formatWhen(record.recorded_at)}
+                            </p>
+                          );
+                        })}
                       </details>
                     ) : null}
                   </li>
@@ -1911,7 +1916,18 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     <p>{caregiverSafeGeneratedText(decision.reason || decision.priority_basis?.join("; ")) || "The saved information indicates this may need review."}</p>
                     {decision.due_at && <small>Due {formatWhen(decision.due_at)}</small>}
                     {decision.records?.length ? (
-                      <small>Based on {decision.records.length} linked care record{decision.records.length === 1 ? "" : "s"}</small>
+                      <details>
+                        <summary>See the notes and documents behind this</summary>
+                        {decision.records.map((record) => {
+                          const href = careRecordHref(record);
+                          const title = caregiverSafeAssistantText(record.title) || "Saved care record";
+                          return (
+                            <p key={record.source + ":" + record.record_id}>
+                              {href ? <Link href={href}>{title}</Link> : title} · Happened {formatWhen(record.occurred_at)} · Saved {formatWhen(record.recorded_at)}
+                            </p>
+                          );
+                        })}
+                      </details>
                     ) : null}
                   </li>
                 ))}
