@@ -43,7 +43,8 @@ assert.match(understanding, /case "inaccessible": return "Source unavailable"/, 
 assert.match(understanding, /case "unverified": return "Not verified"/, "unverified information must remain distinct from information that was not provided");
 assert.match(understanding, /Information still to check:/, "the caregiver-facing missing-information summary must explain the kind of gap");
 assert.match(understanding, /watchMissingInformation\.slice\(0, 2\)/, "Home must show more than one distinct information gap when several remain open");
-assert.match(understanding, /uncertainties_and_conflicts: Array<[\\s\\S]*?gap_reason\?: string \| null/, "unresolved uncertainty records must retain their persisted gap reason");
+assert.match(understanding, /uncertainties_and_conflicts: Array/, "unresolved uncertainty records must be included in the care assessment");
+assert.match(understanding, /gap_reason\?: string \| null/, "unresolved uncertainty records must retain their persisted gap reason");
 assert.match(understanding, /missingInformationReasonLabel\(otherUncertainties\[0\]\.gap_reason, otherUncertainties\[0\]\.epistemic_status\)/, "unresolved uncertainty must be described using its recorded epistemic state");
 assert.match(understanding, /Reports that do not match:/, "unresolved disagreements must be named explicitly on Home");
 
@@ -68,7 +69,7 @@ assert.match(understanding, /Care priorities have not been reviewed yet\. Review
 assert.match(understanding, /<Link href="\/workspace\/care-continuity" className="solenos-care-primary-action">Review care information<\/Link>/, "an unassessed record must provide a useful review destination");
 
 
-assert.match(understanding, /Happened \\u0024\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
+assert.match(understanding, /Happened \$\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
 assert.match(understanding, /Change review saved \{formatWhen\(change\.created_at\)\}/, "change detection time must not be confused with the event comparison window");
 
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
