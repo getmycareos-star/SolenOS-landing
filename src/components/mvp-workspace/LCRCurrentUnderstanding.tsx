@@ -338,7 +338,21 @@ type SituationAssessment = {
     source_of_truth: string;
     limitation: string;
   };
-  missing_information: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; occurred_at?: string | null; recorded_at?: string | null; time_provenance?: string | null; evidence_ids: string[] }>;
+  missing_information: Array<{
+    id: string;
+    source: string;
+    title: string;
+    status: string;
+    epistemic_status: string;
+    gap_reason?: string | null;
+    description?: string | null;
+    expected_by?: string | null;
+    resolution_date?: string | null;
+    occurred_at?: string | null;
+    recorded_at?: string | null;
+    time_provenance?: string | null;
+    evidence_ids: string[];
+  }>;
   confidence_assessment: { overall: string; limitations: string[] };
   evolution_since_previous_assessment?: {
     comparison_available: boolean;
@@ -748,6 +762,25 @@ const HISTORY_SOURCE_LABELS: Record<string, string> = {
 
 function historySourceLabel(source: string): string {
   return HISTORY_SOURCE_LABELS[source] ?? "Care information";
+}
+
+function missingInformationReasonLabel(reason?: string | null): string {
+  switch (String(reason ?? "").trim().toLowerCase()) {
+    case "not_provided": return "Not provided";
+    case "not_documented": return "Not recorded";
+    case "not_assessed": return "Not checked yet";
+    case "absent": return "Recorded as absent";
+    case "not_yet_observed": return "Not observed yet";
+    case "ambiguous": return "Unclear";
+    case "conflicting": return "Reports do not match";
+    case "low_quality": return "Source needs checking";
+    case "outdated": return "May be out of date";
+    case "missing_context": return "More context needed";
+    case "expected_but_unavailable": return "Expected information unavailable";
+    case "insufficient_evidence": return "Not enough information to confirm";
+    case "inaccessible": return "Source unavailable";
+    default: return "Needs checking";
+  }
 }
 
 export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "complete" }: { showNextStep?: boolean; viewMode?: "today" | "complete" } = {}) {
@@ -1859,7 +1892,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           )}
           {watchMissingInformation.length > 0 && (
             <p className="lcr-entry-status">
-              <strong>Information not yet recorded:</strong> The saved record does not include {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "a relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail" : "details"}` : ""}. This does not mean the information is absent.
+              <strong>Information still to check:</strong> {missingInformationReasonLabel(watchMissingInformation[0].gap_reason)} — {caregiverSafeGeneratedText(watchMissingInformation[0].title) || "A relevant care detail"}{watchMissingInformation.length > 1 ? ` and ${watchMissingInformation.length - 1} more relevant ${watchMissingInformation.length === 2 ? "detail" : "details"}` : ""}. A missing detail is not proof that the information is absent.
             </p>
           )}
           {careConflicts.length > 0 && (
