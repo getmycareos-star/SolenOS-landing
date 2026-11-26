@@ -287,7 +287,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (suppressBottomScrollRef.current) {
       suppressBottomScrollRef.current = false
       return
