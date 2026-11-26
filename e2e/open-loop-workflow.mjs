@@ -75,14 +75,18 @@ try {
       noLongerRelevantExists: Boolean(noLongerRelevant),
       resolvedContainsNoLongerRelevant: Boolean(resolved && noLongerRelevant && resolved.contains(noLongerRelevant)),
       noLongerRelevantContainsResolved: Boolean(resolved && noLongerRelevant && noLongerRelevant.contains(resolved)),
+      resolvedHasEmptyState: Boolean(resolved?.textContent?.includes("There are no resolved follow-ups here yet.")),
+      noLongerRelevantHasEmptyState: Boolean(noLongerRelevant?.textContent?.includes("No follow-ups have been stopped.")),
     };
   });
   assert.ok(
     followUpSectionPlacement.resolvedExists &&
     followUpSectionPlacement.noLongerRelevantExists &&
     !followUpSectionPlacement.resolvedContainsNoLongerRelevant &&
-    !followUpSectionPlacement.noLongerRelevantContainsResolved,
-    "Resolved and No longer relevant must be separate peer sections",
+    !followUpSectionPlacement.noLongerRelevantContainsResolved &&
+    followUpSectionPlacement.resolvedHasEmptyState &&
+    followUpSectionPlacement.noLongerRelevantHasEmptyState,
+    "Resolved and No longer relevant must be peer sections with their own empty messages",
   );
   await page.waitForFunction(() => Boolean(
     localStorage.getItem("solenos_anonymous_access_token") &&
