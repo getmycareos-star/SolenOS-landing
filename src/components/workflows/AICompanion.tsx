@@ -691,6 +691,24 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     const userMsg: Message = { id: clientTurnId + ':user', role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
+    // Persist the outgoing draft and idempotency key before session bootstrap.
+    // If a valid caregiver scope is already cached, a refresh or navigation
+    // during session initialization must not discard the unsent message.
+    let pendingStorageKey: string | null = null
+    try {
+      const personId = window.localStorage.getItem('solenos_backend_person_id')
+      const caregiverId = window.localStorage.getItem('solenos_backend_caregiver_id')
+      if (personId && caregiverId) {
+        pendingStorageKey = pendingCompanionTurnStorageKey(personId, caregiverId)
+        window.sessionStorage.setItem(
+          pendingStorageKey,
+          JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }),
+        )
+      }
+    } catch {
+      // Continue in memory when browser storage is unavailable.
+    }
+
     try {
       const session = await ensureAnonymousSession()
       const activeScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
@@ -712,13 +730,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       }
       conversationScopeRef.current = activeScopeKey
       const activeSessionId = scopeChanged ? null : sessionId
-      // Keep the idempotency key and draft across a page reload. This allows a
-      // caregiver to retry a request whose response was interrupted in transit.
-      const pendingStorageKey = pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id)
-      try {
-        window.sessionStorage.setItem(pendingStorageKey, JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }))
-      } catch {
-        // In-memory retry remains available when browser session storage is unavailable.
+      // If this is the first session on this tab and no caregiver scope was
+      // cached before bootstrap, persist the draft as soon as the server
+      // establishes the authoritative person/caregiver scope.
+      if (!pendingStorageKey) {
+        pendingStorageKey = pendingCompanionTurnStorageKey(session.person.id, session.caregiver.id)
+        try {
+          window.sessionStorage.setItem(
+            pendingStorageKey,
+            JSON.stringify({ client_turn_id: clientTurnId, text: submittedText }),
+          )
+        } catch {
+          // In-memory retry remains available when browser session storage is unavailable.
+        }
       }
       // Every Companion turn, including greetings and thanks, uses the same
       // authenticated conversation pipeline so it can restore prior turns,
