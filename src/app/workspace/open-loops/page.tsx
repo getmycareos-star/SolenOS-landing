@@ -715,7 +715,9 @@ export default function FollowUpsPage() {
       <section className="followups-section">
         <div className="followups-section-heading"><div><h2>Resolved</h2><p>Items marked as resolved.</p></div><span>{loops.filter((loop) => loop.status === "closed").length}</span></div>
         {loops.filter((loop) => loop.status === "closed").map((loop) => <article key={loop.id} className="followup-card"><p className="followup-eyebrow">Closed · {statusLabel(loop.outcome_status)}</p><h3>{caregiverSourceText(loop.title) || "Follow-up"}</h3><p>{caregiverSourceText(loop.description) || "No further details are available."}</p><p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p></article>)}
-              <section className="followups-section">
+        {loops.filter((loop) => loop.status === "closed").length === 0 && <p className="followups-empty-inline">{loopHistoryLoadFailed ? "We couldn’t check which follow-ups have been resolved just now. Your last saved list remains visible." : "There are no resolved follow-ups here yet."}</p>}
+      </section>
+      <section className="followups-section">
         <div className="followups-section-heading"><div><h2>No longer relevant</h2><p>Stopped follow-ups. They are not marked as completed.</p></div><span>{loops.filter((loop) => loop.status === "cancelled").length}</span></div>
         {loops.filter((loop) => loop.status === "cancelled").map((loop) => <article key={loop.id} className="followup-card">
           <p className="followup-eyebrow">No longer relevant</p>
@@ -725,8 +727,6 @@ export default function FollowUpsPage() {
           <p className="followup-meta"><span>First recorded {dateLabel(loop.created_at)}</span><span>Updated {dateLabel(loop.updated_at)}</span></p>
         </article>)}
         {loops.filter((loop) => loop.status === "cancelled").length === 0 && <p className="followups-empty-inline">No follow-ups have been stopped.</p>}
-      </section>
-        {loops.filter((loop) => loop.status === "closed").length === 0 && <p className="followups-empty-inline">{loopHistoryLoadFailed ? "We couldn’t check which follow-ups have been resolved just now. Your last saved list remains visible." : "There are no resolved follow-ups here yet."}</p>}
       </section>
     </>}
 
