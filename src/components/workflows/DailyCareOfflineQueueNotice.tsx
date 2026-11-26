@@ -102,6 +102,8 @@ export default function DailyCareOfflineQueueNotice() {
     };
     update();
     window.addEventListener("online", reconnect);
+    window.addEventListener("focus", update);
+    document.addEventListener("visibilitychange", update);
     window.addEventListener("personIdChanged", update);
     window.addEventListener("solenos:offline-queue-updated", update);
     return () => {
@@ -109,6 +111,8 @@ export default function DailyCareOfflineQueueNotice() {
       if (retryTimer.current) window.clearTimeout(retryTimer.current);
       retryTimer.current = null;
       window.removeEventListener("online", reconnect);
+      window.removeEventListener("focus", update);
+      document.removeEventListener("visibilitychange", update);
       window.removeEventListener("personIdChanged", update);
       window.removeEventListener("solenos:offline-queue-updated", update);
     };
