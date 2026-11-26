@@ -42,6 +42,8 @@ assert.match(understanding, /case "conflicting": return "Reports do not match"/,
 assert.match(understanding, /case "inaccessible": return "Source unavailable"/, "inaccessible sources must not be represented as absent information");
 assert.match(understanding, /case "unverified": return "Not verified"/, "unverified information must remain distinct from information that was not provided");
 assert.match(understanding, /Information still to check:/, "the caregiver-facing missing-information summary must explain the kind of gap");
+assert.match(understanding, /uncertainties_and_conflicts: Array<[\\s\\S]*?gap_reason\?: string \| null/, "unresolved uncertainty records must retain their persisted gap reason");
+assert.match(understanding, /missingInformationReasonLabel\(otherUncertainties\[0\]\.gap_reason, otherUncertainties\[0\]\.epistemic_status\)/, "unresolved uncertainty must be described using its recorded epistemic state");
 assert.match(understanding, /Reports that do not match:/, "unresolved disagreements must be named explicitly on Home");
 
 assert.match(understanding, /const watchUncertainties = \(assessment\?\.uncertainties_and_conflicts \?\? \[\]\)\.filter\(isUnresolvedCareInformation\)/, "resolved disagreements must not remain in the current uncertainty summary");
