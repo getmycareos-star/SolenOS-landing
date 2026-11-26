@@ -5,21 +5,48 @@
  */
 import { z } from "zod";
 
-export const LlmObservationSchema = z.object({
+const LlmCandidateMetadataSchema = z.object({
+  candidate_id: z.string().min(1),
+  candidate_type: z.enum([
+    "observations",
+    "events",
+    "decisions",
+    "outcomes",
+    "unknowns",
+    "non_care_facts",
+    "possible_links",
+  ]),
+  candidate_description: z.string().min(1).max(500),
+  source_id: z.string().min(1),
+  source_fragment: z.string().min(1),
+  recorded_at: z.string().nullable(),
+  recorded_time_status: z.enum(["available", "unavailable"]),
+  person: z.object({
+    id: z.string().nullable(),
+    resolution_status: z.enum(["resolved", "unresolved"]),
+  }),
+  care_recipient_id: z.string().min(1),
+  event_time: z.string().nullable(),
+  event_time_resolution: z.enum(["unresolved", "missing"]),
+  epistemic_status: z.enum(["reported", "inferred", "uncertain", "conflicting", "missing"]),
+  confidence: z.literal("unavailable"),
+  review_state: z.literal("pending"),
+});
+
+export const LlmObservationSchema = LlmCandidateMetadataSchema.extend({
   description: z.string().min(1).max(500),
   approximate_time: z.string().nullable(),
-  confidence: z.enum(["low", "medium", "high", "unavailable"]),
   raw_fragment: z.string().min(1),
 });
 
-export const LlmEventSchema = z.object({
+export const LlmEventSchema = LlmCandidateMetadataSchema.extend({
   description: z.string().min(1).max(500),
   time: z.string().nullable(),
   participants: z.array(z.string()).max(10),
   raw_fragment: z.string().min(1),
 });
 
-export const LlmDecisionSchema = z.object({
+export const LlmDecisionSchema = LlmCandidateMetadataSchema.extend({
   description: z.string().min(1).max(500),
   who: z.array(z.string()).max(10),
   why: z.string().nullable(),
@@ -28,25 +55,25 @@ export const LlmDecisionSchema = z.object({
   raw_fragment: z.string().min(1),
 });
 
-export const LlmOutcomeSchema = z.object({
+export const LlmOutcomeSchema = LlmCandidateMetadataSchema.extend({
   description: z.string().min(1).max(500),
   status: z.enum(["observed", "pending", "uncertain", "ongoing", "resolved", "changed"]),
   raw_fragment: z.string().min(1),
 });
 
-export const LlmUnknownSchema = z.object({
+export const LlmUnknownSchema = LlmCandidateMetadataSchema.extend({
   question: z.string().min(1).max(500),
-  status: z.enum(["open", "answered", "declined", "no_longer_relevant"]),
+  status: z.literal("open"),
   raw_fragment: z.string().min(1),
 });
 
-export const LlmNonCareFactSchema = z.object({
+export const LlmNonCareFactSchema = LlmCandidateMetadataSchema.extend({
   layer: z.enum(["contributor_load", "disagreement_perspective"]),
   text: z.string().min(1).max(500),
   raw_fragment: z.string().min(1),
 });
 
-export const LlmPossibleLinkSchema = z.object({
+export const LlmPossibleLinkSchema = LlmCandidateMetadataSchema.extend({
   text: z.string().min(1).max(500),
   causation_claimed: z.literal(false, {
     message: "causation_claimed must always be false — never assert causation",
