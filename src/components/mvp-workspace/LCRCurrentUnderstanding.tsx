@@ -1460,6 +1460,14 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     clarificationCareDecisions[0] ??
     importantCareDecisions[0] ??
     null;
+  const contextualNextRecord = contextualNextDecision?.records?.find((reference) =>
+    projection?.items.some((item) =>
+      item.source_collection === reference.source && item.id === reference.record_id
+    )
+  ) ?? null;
+  const contextualNextRecordHref = contextualNextRecord
+    ? `${viewMode === "today" ? "/workspace/care-continuity" : ""}#lcr-care-item-${encodeURIComponent(contextualNextRecord.source)}-${encodeURIComponent(contextualNextRecord.record_id)}`
+    : null;
   const findAttentionLoop = (decision: CareAttentionDecision) =>
     openLoopItems.find((item) => item.id === decision.record_id && item.source === decision.source);
   const needsAttentionNow = careAttention
@@ -2898,6 +2906,9 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                       ) : contextualNextDecision.evidence_ids?.length ? (
                         <small>Linked to {contextualNextDecision.evidence_ids.length} saved source{contextualNextDecision.evidence_ids.length === 1 ? "" : "s"}</small>
                       ) : null}
+                      {contextualNextRecordHref && (
+                        <Link href={contextualNextRecordHref}>Open the related care information</Link>
+                      )}
                     </div>
                   )}
                 </div>
