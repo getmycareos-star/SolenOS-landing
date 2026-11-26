@@ -2011,12 +2011,12 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                         padding: '8px 12px', 
                         borderRadius: '4px', 
                         border: '1px solid var(--border)', 
-                        background: cameraState.status === 'unknown' ? 'var(--theme-action-bg)' : 'var(--theme-action-disabled-bg)', 
+                        background: cameraState.status === 'unknown' || cameraState.status === 'error' ? 'var(--theme-action-bg)' : 'var(--theme-action-disabled-bg)', 
                         color: 'var(--theme-action-fg)', 
-                        cursor: cameraState.status === 'unknown' ? 'pointer' : 'default' 
+                        cursor: cameraState.status === 'unknown' || cameraState.status === 'error' ? 'pointer' : 'default' 
                       }}
                     >
-                      {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
+                      {cameraState.status === 'unknown' ? 'Take Photo' : cameraState.status === 'error' ? 'Try camera again' : cameraState.status === 'denied' || cameraState.status === 'unsupported' ? 'Camera Unavailable' : 'Camera Ready'}
                     </button>
                     <input
                       id="medication-file-input"
