@@ -179,30 +179,42 @@ export default function CareRemindersPage() {
   async function createReminder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!personId || !title.trim() || !dueAt) return;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const requestScopeSequence = scopeSequenceRef.current;
+    if (!requestCaregiverId || !isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
     setSaving(true);
     setError("");
     setNotice("");
     try {
       await postJSON("/reminders", {
-        person_id: personId,
+        person_id: requestPersonId,
         title: title.trim(),
         note: note.trim() || null,
         due_at: new Date(dueAt).toISOString(),
         assigned_to_caregiver_id: assignedTo || undefined,
       });
-      await refresh(personId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
+      await refresh(requestPersonId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setTitle("");
       setNote("");
       setNotice("Reminder saved. It will appear in this list, and an in-app notification will be added when it is due.");
-    } catch (reason) {
-      setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
+    } catch {
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
+        setError("We couldn’t save this reminder. Your other care information is unchanged. Please try again.");
+      }
     } finally {
-      setSaving(false);
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setSaving(false);
     }
   }
 
   async function reassignReminder(reminder: CareReminder, caregiverId: string) {
-    if (!caregiverId || caregiverId === reminder.assigned_to_caregiver_id) return;
+    if (!caregiverId || caregiverId === reminder.assigned_to_caregiver_id || !personId) return;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const requestScopeSequence = scopeSequenceRef.current;
+    if (!requestCaregiverId || !isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
     setBusyId(reminder.id);
     setError("");
     setNotice("");
@@ -211,32 +223,48 @@ export default function CareRemindersPage() {
         assigned_to_caregiver_id: caregiverId,
         expected_version: reminder.version,
       });
-      await refresh(personId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
+      await refresh(requestPersonId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder responsibility updated and saved.");
     } catch {
-      setError("We couldn’t change who is responsible. Refresh the reminders and try again.");
-      await refresh(personId).catch(() => undefined);
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) {
+        setError("We couldn’t change who is responsible. Refresh the reminders and try again.");
+        await refresh(requestPersonId).catch(() => undefined);
+      }
     } finally {
-      setBusyId("");
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setBusyId("");
     }
   }
 
   async function completeReminder(reminder: CareReminder) {
+    if (!personId) return;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const requestScopeSequence = scopeSequenceRef.current;
+    if (!requestCaregiverId || !isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
     setBusyId(reminder.id);
     setError("");
     setNotice("");
     try {
       await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/complete`, {});
-      await refresh(personId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
+      await refresh(requestPersonId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder marked complete.");
-    } catch (reason) {
-      setError("We couldn’t update this reminder. Please try again.");
+    } catch {
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setError("We couldn’t update this reminder. Please try again.");
     } finally {
-      setBusyId("");
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setBusyId("");
     }
   }
 
   async function snoozeReminder(reminder: CareReminder) {
+    if (!personId) return;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const requestScopeSequence = scopeSequenceRef.current;
+    if (!requestCaregiverId || !isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
     setBusyId(reminder.id);
     setError("");
     setNotice("");
@@ -245,27 +273,36 @@ export default function CareRemindersPage() {
       await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/snooze`, {
         snooze_until: snoozeUntil,
       });
-      await refresh(personId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
+      await refresh(requestPersonId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder moved one hour later. It remains open and will not be marked complete.");
     } catch {
-      setError("We couldn’t snooze this reminder. Please try again.");
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setError("We couldn’t snooze this reminder. Please try again.");
     } finally {
-      setBusyId("");
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setBusyId("");
     }
   }
 
   async function cancelReminder(reminder: CareReminder) {
+    if (!personId) return;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const requestScopeSequence = scopeSequenceRef.current;
+    if (!requestCaregiverId || !isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
     setBusyId(reminder.id);
     setError("");
     setNotice("");
     try {
       await patchJSON(`/reminders/${encodeURIComponent(reminder.id)}/cancel`, {});
-      await refresh(personId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
+      await refresh(requestPersonId);
+      if (!isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) return;
       setNotice("Reminder cancelled. The record keeps its status and attribution.");
-    } catch (reason) {
-      setError("We couldn’t cancel this reminder. Please try again.");
+    } catch {
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setError("We couldn’t cancel this reminder. Please try again.");
     } finally {
-      setBusyId("");
+      if (isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)) setBusyId("");
     }
   }
 
