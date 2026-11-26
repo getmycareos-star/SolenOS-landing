@@ -9,6 +9,8 @@ assert.ok(home.includes("UpcomingAppointmentSummary"), "caregiver home must surf
 assert.ok(component.includes('getJSON("/appointment-workspaces/preparation-brief?window_days=90")'), "use the existing appointment preparation contract");
 assert.ok(component.includes("await ensureAnonymousSession()"), "appointment information must use the current authenticated/anonymous session");
 assert.ok(component.includes("result.person_scope_verified !== true"), "appointment summary must reject a response without verified active-person scope");
+assert.ok(component.includes("result.person_id !== activePersonId"), "the summary must reject data returned for a different care recipient");
+assert.ok(component.includes("const session = await ensureAnonymousSession()"), "the active care-recipient ID must come from the authenticated session");
 assert.ok(component.includes("result.read_only !== true"), "appointment summary must require the read-only preparation contract");
 assert.ok(component.includes('window.addEventListener("personIdChanged", refreshAfterPersonChange)'), "appointments must refresh when the active care recipient changes");
 assert.ok(component.includes("setBrief(null);"), "appointments from the previous care recipient must be cleared before a scope switch");
