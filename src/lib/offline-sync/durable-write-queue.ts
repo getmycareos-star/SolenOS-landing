@@ -56,6 +56,8 @@ type SendWrite = (endpoint: string, payload: unknown, onUploadProgress?: UploadP
 
 let databasePromise: Promise<IDBDatabase> | null = null;
 let storagePersistencePromise: Promise<boolean> | null = null;
+let queueClearing = false;
+const activeDeliveries = new Set<Promise<unknown>>();
 const syncPromises = new Map<string, Promise<DurableWriteSyncResult>>();
 
 function ensureBrowserStorage(): void {
@@ -66,6 +68,9 @@ function ensureBrowserStorage(): void {
 
 async function openDatabase(): Promise<IDBDatabase> {
   ensureBrowserStorage();
+  if (queueClearing) {
+    throw new Error("This device's saved updates are being cleared. Reopen Daily Care after cleanup finishes.");
+  }
   if (databasePromise) return databasePromise;
   // Ask the browser to protect the encrypted queue from routine storage
   // eviction. This is best-effort; unsupported browsers still use IndexedDB.
@@ -302,6 +307,12 @@ export async function hasDurableWrite(id: string): Promise<boolean> {
 export async function clearDurableWriteQueue(): Promise<void> {
   if (typeof window === "undefined" || !window.indexedDB) return;
 
+  // Stop new writes and wait for any request already in flight. A submission
+  // already accepted by the server may finish; remaining local copies are
+  // deleted below. No queued item can start sending after this boundary.
+  queueClearing = true;
+  await Promise.all([...activeDeliveries].map((delivery) => delivery.catch(() => undefined)));
+
   const existing = databasePromise
     ? await databasePromise.catch(() => null)
     : null;
@@ -309,19 +320,21 @@ export async function clearDurableWriteQueue(): Promise<void> {
   databasePromise = null;
   storagePersistencePromise = null;
 
-  await new Promise<void>((resolve, reject) => {
-    const request = window.indexedDB.deleteDatabase(DATABASE_NAME);
-    request.onsuccess = () => {
-      dispatchQueueUpdated();
-      resolve();
-    };
-    request.onerror = () => reject(
-      request.error ?? new Error("Could not clear encrypted offline updates from this device."),
-    );
-    request.onblocked = () => reject(
-      new Error("Offline updates are still open in another SolenOS tab. Close other SolenOS tabs and try clearing this device again."),
-    );
-  });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const request = window.indexedDB.deleteDatabase(DATABASE_NAME);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(
+        request.error ?? new Error("Could not clear encrypted offline updates from this device."),
+      );
+      request.onblocked = () => reject(
+        new Error("Offline updates are still open in another SolenOS tab. Close other SolenOS tabs and try clearing this device again."),
+      );
+    });
+  } catch (error) {
+    queueClearing = false;
+    throw error;
+  }
 }
 
 
@@ -361,7 +374,7 @@ export async function markDurableWritePending(
   dispatchQueueUpdated();
 }
 
-export async function deliverDurableWrite<T>(
+async function deliverDurableWriteInternal<T>(
   id: string,
   send: SendWrite,
   onUploadProgress?: UploadProgressHandler,
@@ -381,6 +394,23 @@ export async function deliverDurableWrite<T>(
   } catch (error) {
     await markDurableWritePending(id, error);
     throw error;
+  }
+}
+
+export async function deliverDurableWrite<T>(
+  id: string,
+  send: SendWrite,
+  onUploadProgress?: UploadProgressHandler,
+): Promise<T> {
+  if (queueClearing) {
+    throw new Error("This device's saved updates are being cleared. No new update was sent.");
+  }
+  const delivery = deliverDurableWriteInternal<T>(id, send, onUploadProgress);
+  activeDeliveries.add(delivery);
+  try {
+    return await delivery;
+  } finally {
+    activeDeliveries.delete(delivery);
   }
 }
 
