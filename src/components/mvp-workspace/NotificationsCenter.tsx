@@ -258,7 +258,7 @@ export function NotificationsCenter() {
       const session = await ensureAnonymousSession();
       if (!session.person?.id || !session.caregiver?.id) throw new Error("A valid care session is required to save notification settings.");
       if (!isCurrentScope()) return;
-      if (session.person.id !== requestPersonId || session.caregiver.id !== requestCaregiverId) return;
+      if (session.person.id !== requestPersonId || session.caregiver.id !== requestCaregiverId) throw new Error("The active care record changed. Refresh your notification settings before saving.");
       const payload = key === "quiet_hours_enabled"
         ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: timezoneName }
         : { reminders_enabled: value };
