@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/Button";
 import CaptureAnalysisReview from "@/components/workflows/CaptureAnalysisReview";
 import { HistoryDrawer } from "@/components/app-shell/HistoryDrawer";
 import { caregiverInformationLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverStatusLabel } from "@/lib/caregiver-language";
-import { ensureAnonymousSession, getCaregiverId, getJSON, postJSON } from "@/api/client";
+import { ensureAnonymousSession, getCaregiverId, getPersonId, getJSON, postJSON } from "@/api/client";
 const CareChangeHistoryPanel = dynamic(() => import("@/components/mvp-workspace/CareChangeHistoryPanel"), { ssr: false, loading: () => <p role="status">Loading saved care changes…</p> });
 const ChangeIntelligencePanel = dynamic(() => import("@/components/mvp-workspace/ChangeIntelligencePanel").then((module) => module.ChangeIntelligencePanel), { ssr: false, loading: () => <p role="status">Loading care changes…</p> });
 
@@ -311,6 +311,8 @@ export default function TimelinePage() {
   const [events, setEvents] = useState<CareEvent[]>([]);
   const initialHistoryLoadRef = useRef(false);
   const [personId, setPersonId] = useState<string | null>(null);
+  const historyRequestSequenceRef = useRef(0);
+  const historyScopeSequenceRef = useRef(0);
   const [changeHistoryOpen, setChangeHistoryOpen] = useState(false);
   const changeHistoryDetailsRef = useRef<HTMLDetailsElement | null>(null);
   useEffect(() => {
@@ -340,20 +342,27 @@ export default function TimelinePage() {
   const [retryingCorrection, setRetryingCorrection] = useState(false);
 
   const loadEvents = useCallback(async (manual = false, searchTerm = "") => {
+    const requestSequence = ++historyRequestSequenceRef.current;
+    const scopeSequence = historyScopeSequenceRef.current;
+    const isCurrentRequest = () =>
+      requestSequence === historyRequestSequenceRef.current
+      && scopeSequence === historyScopeSequenceRef.current;
     if (manual) setRefreshing(true);
     else setLoading(true);
     setError(null);
     try {
       const session = await ensureAnonymousSession();
-      if (!session.person?.id || !session.access_token) {
+      if (!session.person?.id || !session.access_token || !session.caregiver?.id) {
         throw new Error("A valid SolenOS care session is required to load this record.");
       }
+      if (!isCurrentRequest() || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()) return;
       setPersonId(session.person.id);
       const searchParam = searchTerm.trim() ? `&query=${encodeURIComponent(searchTerm.trim())}` : "";
       const result = await getJSON(`/daily-care/intelligence/history?limit=200&offset=0${searchParam}`) as {
         records?: unknown;
         page?: { has_more?: boolean; total_matching?: number };
       };
+      if (!isCurrentRequest()) return;
       if (!Array.isArray(result?.records)) {
         throw new Error("The care history response was not in the expected format. No events have been assumed.");
       }
@@ -372,29 +381,42 @@ export default function TimelinePage() {
       });
       setHistoryOffset(result.records.length);
       setLoadedAt(new Date().toISOString());
-    } catch (cause) {
-      setError("Care history couldn't load. Check your connection and try again.");
+    } catch {
+      if (isCurrentRequest()) setError("Care history couldn't load. Check your connection and try again.");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isCurrentRequest()) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
   const loadMoreEvents = useCallback(async () => {
-    if (!historyCoverage.hasMore || loadingMore) return;
+    if (!historyCoverage.hasMore || loadingMore || !personId) return;
+    const requestSequence = historyRequestSequenceRef.current;
+    const scopeSequence = historyScopeSequenceRef.current;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const isCurrentRequest = () =>
+      requestSequence === historyRequestSequenceRef.current
+      && scopeSequence === historyScopeSequenceRef.current
+      && requestPersonId === getPersonId()
+      && requestCaregiverId === getCaregiverId();
     setLoadingMore(true);
     setError(null);
     try {
       const session = await ensureAnonymousSession();
-      if (!session.person?.id || !session.access_token) {
+      if (!session.person?.id || !session.access_token || !session.caregiver?.id) {
         throw new Error("A valid SolenOS care session is required to load older history.");
       }
+      if (!isCurrentRequest() || session.person.id !== requestPersonId || session.caregiver.id !== requestCaregiverId) return;
       const offset = historyOffset;
       const searchParam = appliedQuery.trim() ? `&query=${encodeURIComponent(appliedQuery.trim())}` : "";
       const result = await getJSON(`/daily-care/intelligence/history?limit=200&offset=${offset}${searchParam}`) as {
         records?: unknown;
         page?: { has_more?: boolean; total_matching?: number };
       };
+      if (!isCurrentRequest()) return;
       if (!Array.isArray(result?.records)) {
         throw new Error("Older care history could not be read. The entries already loaded remain available.");
       }
@@ -416,12 +438,12 @@ export default function TimelinePage() {
         hasMore: Boolean(result.page?.has_more),
         total: typeof result.page?.total_matching === "number" ? result.page.total_matching : historyCoverage.total,
       });
-    } catch (cause) {
-      setError("Older care history could not be loaded. The entries already shown remain available.");
+    } catch {
+      if (isCurrentRequest()) setError("Older care history could not be loaded. The entries already shown remain available.");
     } finally {
-      setLoadingMore(false);
+      if (isCurrentRequest()) setLoadingMore(false);
     }
-  }, [historyCoverage, historyOffset, loadingMore, appliedQuery]);
+  }, [historyCoverage, historyOffset, loadingMore, appliedQuery, personId]);
 
   const updateHistoryUrl = useCallback((nextFilter: FilterKey, nextQuery: string) => {
     router.replace(historyPath(nextFilter, nextQuery), { scroll: false });
@@ -441,6 +463,41 @@ export default function TimelinePage() {
     setAppliedQuery(initialQuery);
     void loadEvents(false, initialQuery);
   }, [loadEvents]);
+
+  useEffect(() => {
+    const clearPreviousCareRecipient = () => {
+      historyScopeSequenceRef.current += 1;
+      historyRequestSequenceRef.current += 1;
+      setEvents([]);
+      setPersonId(null);
+      setHistoryCoverage({ hasMore: false, total: 0 });
+      setHistoryOffset(0);
+      setLoadedAt(null);
+      setError(null);
+      setLoading(true);
+      setRefreshing(false);
+      setLoadingMore(false);
+      setExpandedId(null);
+      setAllRecordsOpen(false);
+      setChangeHistoryOpen(false);
+      setCorrectionTargetId(null);
+      setCorrectionText("");
+      setCorrectionReason("");
+      setCorrectionSaving(false);
+      setCorrectionMessage("");
+      setCorrectionIdempotencyKey(null);
+      setPendingCorrectionId(null);
+      setReviewAnalysisId(null);
+      setRetryingCorrection(false);
+      void loadEvents(false, appliedQuery);
+    };
+    window.addEventListener("personIdChanged", clearPreviousCareRecipient);
+    return () => {
+      window.removeEventListener("personIdChanged", clearPreviousCareRecipient);
+      historyScopeSequenceRef.current += 1;
+      historyRequestSequenceRef.current += 1;
+    };
+  }, [loadEvents, appliedQuery]);
 
   // Recover a pending correction after a browser reload and keep its visible
   // status aligned with the durable backend receipt.
