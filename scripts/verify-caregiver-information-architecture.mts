@@ -119,7 +119,7 @@ for (const [route, file] of routes) {
   assert.ok(fs.existsSync(path.join(root, file)), `${route} resolves to an existing page`);
 }
 
-for (const label of ["Home", "Add an update", "Care information", "Documents", "Care Assistant", "Notifications", "More"]) {
+for (const label of ["Home", "Add an update", "Care information", "Documents", "Ask SolenOS", "Notifications", "More"]) {
   assert.ok(navigation.includes(`label: "${label}"`), `${label} has a canonical navigation label`);
 }
 for (const [route, label] of [
@@ -167,7 +167,7 @@ for (const [source, expected, label] of [
   [reminders, "<h1>Reminders</h1>", "Reminders"],
   [handoffs, '<h1 id="care-handoffs-title">Care handoffs</h1>', "Care handoffs"],
   [needsAttention, "<h1>Needs attention</h1>", "Needs attention"],
-  [companion, '<h1 className="companion-page-title">Care Assistant</h1>', "Care Assistant"],
+  [companion, '<h1 className="companion-page-title">Ask SolenOS</h1>', "Ask SolenOS"],
   [more, "<h1>More</h1>", "More"],
 ] as const) {
   assert.ok(source.includes(expected), `${label} page title matches its navigation label`);
