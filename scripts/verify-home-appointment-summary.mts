@@ -29,6 +29,8 @@ assert.ok(component.includes("appointment_related_open_loops"), "Home must read 
 assert.ok(component.includes("appointment_needs"), "Home must surface unresolved appointment questions from the care record");
 assert.ok(component.includes("Appointment follow-ups"), "appointment-related open loops and questions must be visible even without a booked appointment");
 assert.ok(component.includes('href="/workspace/open-loops"'), "caregivers must have a direct route to review recorded follow-ups");
+assert.ok(component.includes('href="/workspace/care-continuity#lcr-clarification-workflow"'), "appointment questions must open the existing clarification workflow rather than the open-loop list");
+assert.ok(component.includes("Review appointment questions"), "appointment questions must have a distinct action label");
 assert.ok(component.includes("lcr_retrieval_status"), "the summary must inspect source retrieval completeness");
 assert.ok(component.includes("appointmentContextIncomplete"), "partial or failed source retrieval must qualify the appointment summary");
 assert.ok(component.includes("Some care-record sources could not be checked"), "partial retrieval must be explained rather than presented as complete");
