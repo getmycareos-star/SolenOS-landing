@@ -200,6 +200,9 @@ assert.ok(community.includes("redirect") && community.includes("/workspace"), "t
 assert.ok(legacySettings.includes("redirect") && legacySettings.includes("/workspace/settings"), "the legacy Settings route preserves its destination");
 assert.ok(handoffs.includes("CaregiverHandoverInbox"), "incoming family responsibility handovers are available within Care handoffs");
 assert.ok(!more.includes("CaregiverHandoverInbox"), "More remains limited to application and account management");
+assert.ok(handoffs.includes("<CaregiverHandoverInbox />"), "incoming care handovers are part of Care handoffs");
+assert.ok(reminders.includes('href="/workspace/care-continuity"'), "Reminders returns to the Care information destination");
+assert.ok(home.includes('href="/workspace/care-continuity"') && home.includes("View care information"), "Home links to Care information using the canonical destination name");
 assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
 assert.ok(addUpdate.includes("Upload a medical document"), "medical document upload is a visible Add an update action");
