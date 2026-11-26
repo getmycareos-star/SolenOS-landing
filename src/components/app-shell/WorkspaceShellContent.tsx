@@ -61,7 +61,7 @@ function CareContextBar() {
     <section className="care-context-bar" aria-label="Care recipient and record status">
       <div className="care-context-inner">
         <div className="care-context-info" aria-live="polite" aria-atomic="true">
-          {recipientName && <span className="care-context-recipient">Care for {recipientName}</span>}
+          {recipientName && <span className="care-context-recipient care-context-name">Care for {recipientName}</span>}
           {recordLoadError ? (
             <>
               <span className="care-context-name">Care information unavailable</span>
