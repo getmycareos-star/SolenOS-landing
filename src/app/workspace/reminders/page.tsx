@@ -118,7 +118,7 @@ export default function CareRemindersPage() {
       getJSON(`/reminders/${encodeURIComponent(id)}`),
       getJSON("/caregiver-access/assignable-members").catch(() => []),
     ]);
-    if (!isCurrentRequest() || id !== getPersonId() || caregiverId !== getCaregiverId()) return;
+    if (!isCurrentRequest() || id !== getPersonId() || sessionCaregiverId !== getCaregiverId()) return;
     if (!Array.isArray(data)) throw new Error("The reminders response was not a list.");
     const items = data as CareReminder[];
     setReminders(items);
