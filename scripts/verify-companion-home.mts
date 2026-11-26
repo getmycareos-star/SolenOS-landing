@@ -129,6 +129,8 @@ assert.match(shell, /await clearDurableWriteQueue\(\)/,
   "clearing a device must delete device-only offline care submissions as well as local session keys");
 assert.match(shell, /unsent updates stored only in this browser/,
   "the confirmation must explain that unsent local updates will be removed");
+assert.match(shell, /An update already being sent may still reach SolenOS/,
+  "device cleanup must disclose that an in-flight server request cannot be recalled");
 const durableQueue = read("src/lib/offline-sync/durable-write-queue.ts");
 assert.match(durableQueue, /indexedDB\.deleteDatabase\(DATABASE_NAME\)/,
   "explicit device cleanup must remove the encrypted queue and its local encryption key");
