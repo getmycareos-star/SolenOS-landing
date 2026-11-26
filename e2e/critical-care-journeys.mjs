@@ -716,10 +716,37 @@ await record("01a dementia profile review window and observation persistence are
     correctedUiDescription,
     "the corrected observation wording must be stored in the new revision",
   );
+  const correctedProjectionResponse = await request(
+    "/api/v1/care-continuity/current-care?limit_per_source=12",
+    { token: identity.token },
+  );
+  assert.equal(correctedProjectionResponse.status, 200, JSON.stringify(correctedProjectionResponse.payload));
+  const correctedProjectionItem = correctedProjectionResponse.payload.items.find((item) =>
+    item.id === originalObservation.id && item.source_collection === "caregiver_observations",
+  );
+  assert.ok(correctedProjectionItem, "the corrected observation must remain in the authoritative Living Care Record projection");
+  assert.equal(
+    correctedProjectionItem.description,
+    correctedUiDescription,
+    "the current-care projection must return the latest corrected wording, not the superseded text",
+  );
+
   await page.goto(new URL("/workspace", frontend).toString());
   await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
+  const careInformationLink = page.getByRole("link", { name: "View care information", exact: true });
+  await careInformationLink.waitFor({ state: "visible", timeout: 10_000 });
+  await careInformationLink.click();
+  await page.waitForURL("**/workspace/care-continuity", { timeout: 15_000 });
+  await page.getByRole("heading", { name: "Your Care Record" }).first().waitFor({ timeout: 20_000 });
+  await dementiaSummary.waitFor({ state: "visible", timeout: 10_000 });
+  await dementiaSummary.click();
+  await page.waitForFunction(() => {
+    const summary = [...document.querySelectorAll("details.lcr-history-details > summary")]
+      .find((item) => item.textContent?.trim() === "Dementia care profile and observations");
+    return summary?.parentElement instanceof HTMLDetailsElement && summary.parentElement.open;
+  }, undefined, { timeout: 10_000 });
   await page.getByText(correctedUiDescription, { exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
   assert.deepEqual(pageErrors, [], `dementia observation UI must not throw: ${JSON.stringify(pageErrors)}`);
