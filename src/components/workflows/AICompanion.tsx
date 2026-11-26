@@ -821,6 +821,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setMessages([])
     setInput(AA)
     setSessionId(null)
+    setOlderHistoryCursor(null)
+    setHasOlderMessages(false)
+    setLoadingOlderMessages(false)
+    setHistoryLoadError(null)
     pendingTurnId.current = null
     pendingTurnText.current = null
     setEmergency(false)
