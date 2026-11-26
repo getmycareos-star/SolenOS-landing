@@ -13,7 +13,7 @@ The App Router tree on the inspected `main` revision contains 39 page files: 16 
 | `/workspace` | Home | Current care picture, meaningful changes, next useful action | Canonical workspace root |
 | `/workspace/daily-care` | Add an update | Add observations, care events and other updates; direct medical-document entry | Canonical contribution route; still contains some contextual content requiring further separation |
 | `/workspace/care-continuity` | Care information | Current care picture and directory of care information | Canonical Care information landing page |
-| `/workspace/timeline` | Care history | Historical events, changes, corrections and source references | Canonical historical view |
+| `/workspace/timeline` | Care history | Historical events, changes, corrections and source references, with an optional all-saved-records source explorer | Canonical historical view |
 | `/workspace/documents` | Documents | Original medical records, upload and processing/review lifecycle | Child of Care information; direct entry also available from Add an update |
 | `/workspace/appointments` | Appointments | Upcoming and previous appointments | Child of Care information |
 | `/workspace/open-loops` | Needs attention | Unresolved care matters, clarification and resolution history | Child of Care information; separate from notification read state |
@@ -61,7 +61,7 @@ This route inventory does not yet constitute a complete endpoint-by-endpoint per
 2. Reading or dismissing a notification does not resolve a Needs attention item.
 3. Resolving or withdrawing a care matter does not erase its historical evidence.
 4. Documents remain source evidence; extracted content is not treated as accepted care information until the existing review and approval rules are satisfied.
-5. Care history preserves event time separately from recorded time and correction time.
+5. Care history preserves event time separately from recorded time and correction time; the all-saved-records explorer is owned by Care history, not More.
 6. Caregiver and care-recipient context must remain scoped across route changes and browser history.
 7. A failed or partial API read must not be presented as an empty or complete record.
 8. Legacy links must resolve without changing the active care-recipient context.
