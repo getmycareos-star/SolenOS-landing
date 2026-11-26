@@ -175,3 +175,8 @@ assert.match(intelligenceReviewSource, /analysis\.extraction_processed_page_coun
   "partial OCR status must show actual pages extracted before Qwen review completes");
 assert.match(intelligenceReviewSource, /extraction_unprocessed_page_numbers\?: number\[\]/,
   "page-level extraction gaps must remain visible to caregivers");
+
+assert.match(source, /versionComparisonError/, "a failed version comparison must remain visible instead of looking like no differences");
+assert.match(source, /No conclusion about what changed is available yet/, "an unavailable comparison must not imply that the documents match");
+assert.match(source, /Try comparison again/, "caregivers must be able to retry a failed version comparison without re-uploading either document");
+assert.match(source, /versionComparisonLoading/, "the version comparison must expose its loading state");
