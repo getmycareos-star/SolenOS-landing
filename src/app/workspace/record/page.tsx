@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function LegacyRecordRoute() {
-  redirect("/workspace");
+  redirect("/workspace/care-continuity");
 }
