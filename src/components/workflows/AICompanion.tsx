@@ -1,12 +1,12 @@
 
-Ause clientA
+'use client'
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from AreactA
-import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from Alucide-reactA
-import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from A@/api/clientA
-import { isEmergencyCompanionResponse } from A@/lib/companion-safetyA
-import { caregiverFieldLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from A@/lib/caregiver-languageA
-import { RecordState } from A@/components/ui/RecordStateA
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
+import { ArrowUp, CheckCircle2, Clock3, FileText, Lightbulb, MessageCircle, Plus, ShieldCheck, Sparkles } from 'lucide-react'
+import { ApiResponseError, ensureAnonymousSession, getJSON, postJSON } from '@/api/client'
+import { isEmergencyCompanionResponse } from '@/lib/companion-safety'
+import { caregiverFieldLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
+import { RecordState } from '@/components/ui/RecordState'
 
 interface ClaimSourceReference {
   record_type: string
@@ -82,30 +82,30 @@ interface ClaimProvenance {
 }
 
 const SOURCE_REFERENCE_LABELS: Record<string, string> = {
-  document_extractions: AText from a documentA,
-  care_evidence: AUploaded note or documentA,
-  events: ACare updateA,
-  care_events: ACare updateA,
-  assertions: ACaregiver reportA,
-  care_assertions: ACaregiver reportA,
-  handoffs: ACare summary shared with another caregiverA,
-  decisions: ACare decisionA,
-  decision_outcomes: AWhat happened after a decisionA,
-  corrections: ACorrection to saved informationA,
-  open_loop_records: AFollow-upA,
-  open_questions: AQuestion still to answerA,
-  missing_information: AInformation not recordedA,
-  conflicts: AReports that do not matchA,
-  reconciliations: AInformation checked against other reportsA,
-  appointments: AAppointmentA,
-  appointment_workspace: AAppointment notesA,
-  appointment_workspace_stale: AAppointment notes to reviewA,
-  appointment_workspace_currentness_unknown: AAppointment notes — currentness not checkedA,
-  appointment_workspace_revision: AEarlier appointment notesA,
-  caregiver_observations: AWhat a caregiver noticedA,
-  caregiver_perspectives: ACaregiver viewA,
-  conversation_messages: AEarlier conversation messageA,
-  companion_messages: AEarlier conversation messageA,
+  document_extractions: 'Text from a document',
+  care_evidence: 'Uploaded note or document',
+  events: 'Care update',
+  care_events: 'Care update',
+  assertions: 'Caregiver report',
+  care_assertions: 'Caregiver report',
+  handoffs: 'Care summary shared with another caregiver',
+  decisions: 'Care decision',
+  decision_outcomes: 'What happened after a decision',
+  corrections: 'Correction to saved information',
+  open_loop_records: 'Follow-up',
+  open_questions: 'Question still to answer',
+  missing_information: 'Information not recorded',
+  conflicts: 'Reports that do not match',
+  reconciliations: 'Information checked against other reports',
+  appointments: ''ppointment',
+  appointment_workspace: ''ppointment notes',
+  appointment_workspace_stale: ''ppointment notes to review',
+  appointment_workspace_currentness_unknown: ''ppointment notes — currentness not checked',
+  appointment_workspace_revision: 'Earlier appointment notes',
+  caregiver_observations: 'What a caregiver noticed',
+  caregiver_perspectives: 'Caregiver view',
+  conversation_messages: 'Earlier conversation message',
+  companion_messages: 'Earlier conversation message',
 }
 
 interface LcrContextCoverage {
@@ -149,7 +149,7 @@ interface CareUpdateReviewHistoryItem {
 
 interface Message {
   id?: string
-  role: AuserA | AassistantA
+  role: 'user' | 'assistant'
   text: string
   source_message_id?: string | null
   guard_verdict?: string | null
@@ -178,16 +178,16 @@ function companionConversationStorageKey(personId: string, caregiverId: string):
 }
 
 function activeCompanionConversationStorageKey(): string | null {
-  if (typeof window === AundefinedA) return null
-  const personId = window.localStorage.getItem(Asolenos_backend_person_idA)
-  const caregiverId = window.localStorage.getItem(Asolenos_backend_caregiver_idA)
+  if (typeof window === 'undefined') return null
+  const personId = window.localStorage.getItem('solenos_backend_person_id')
+  const caregiverId = window.localStorage.getItem('solenos_backend_caregiver_id')
   return personId && caregiverId ? companionConversationStorageKey(personId, caregiverId) : null
 }
 
 const STARTER_PROMPTS = [
-  { icon: MessageCircle, title: AI need to talk it throughA, description: AOne thing at a time. No need to organise it first.A, prompt: "IAm overwhelmed. Help me work through one thing at a time." },
-  { icon: Clock3, title: ASomething has changedA, description: ASort what is known from what is still unclear.A, prompt: ASomething has changed in care. Help me work out what we know and what is unclear.A },
-  { icon: FileText, title: AHelp me get readyA, description: APrepare a few questions for a visit or handover.A, prompt: AHelp me prepare for an upcoming care appointment or handover.A },
+  { icon: MessageCircle, title: 'I need to talk it through', description: 'One thing at a time. No need to organise it first.', prompt: "I'm overwhelmed. Help me work through one thing at a time." },
+  { icon: Clock3, title: 'Something has changed', description: 'Sort what is known from what is still unclear.', prompt: 'Something has changed in care. Help me work out what we know and what is unclear.' },
+  { icon: FileText, title: 'Help me get ready', description: 'Prepare a few questions for a visit or handover.', prompt: 'Help me prepare for an upcoming care appointment or handover.' },
 ]
 
 
@@ -229,7 +229,7 @@ function mapStoredConversationMessage(message: any): Message {
 
 export default function Companion({ home = false, initialPrompt = null }: { home?: boolean; initialPrompt?: string | null }) {
   const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState(AA)
+  const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [olderHistoryCursor, setOlderHistoryCursor] = useState<ConversationHistoryCursor | null>(null)
@@ -246,7 +246,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [conversationRestoreError, setConversationRestoreError] = useState<string | null>(null)
-  const [availability, setAvailability] = useState<AcheckingA | AavailableA | AunavailableA | AunverifiedA | AunknownA>(AcheckingA)
+  const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | 'unverified' | 'unknown'>('checking')
   const [pendingCareUpdates, setPendingCareUpdates] = useState<PendingCareUpdate[]>([])
   const [careUpdateLoading, setCareUpdateLoading] = useState(false)
   const [careUpdateLoadFailed, setCareUpdateLoadFailed] = useState(false)
@@ -257,8 +257,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [careUpdateError, setCareUpdateError] = useState<string | null>(null)
   const [careUpdateNotice, setCareUpdateNotice] = useState<string | null>(null)
   const [correctingCareUpdateId, setCorrectingCareUpdateId] = useState<string | null>(null)
-  const [correctedCareUpdateText, setCorrectedCareUpdateText] = useState(AA)
-  const [careUpdateCorrectionContext, setCareUpdateCorrectionContext] = useState(AA)
+  const [correctedCareUpdateText, setCorrectedCareUpdateText] = useState('')
+  const [careUpdateCorrectionContext, setCareUpdateCorrectionContext] = useState('')
   const [careUpdateHistory, setCareUpdateHistory] = useState<Record<string, CareUpdateReviewHistoryItem[]>>({})
   const [loadingCareUpdateHistoryId, setLoadingCareUpdateHistoryId] = useState<string | null>(null)
   const [showReviewedCareUpdates, setShowReviewedCareUpdates] = useState(false)
@@ -283,33 +283,33 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   const checkAvailability = useCallback(async () => {
-    setAvailability(AcheckingA)
+    setAvailability('checking')
     try {
       await ensureAnonymousSession()
-      const status = await getJSON(A/assistant/statusA) as {
+      const status = await getJSON('/assistant/status') as {
         available?: boolean
         operational?: boolean
         runtime_available?: boolean
         model_installed?: boolean
       }
       if (status.operational === true && status.available === true) {
-        setAvailability(AavailableA)
+        setAvailability('available')
         setRequestError(null)
       } else if (status.runtime_available === true && status.model_installed === true) {
         // The model is installed, but only a real response can verify inference.
-        // Allow the caregiverAs first request to perform that verification.
-        setAvailability(AunverifiedA)
+        // Allow the caregiver's first request to perform that verification.
+        setAvailability('unverified')
       } else if (
         status.runtime_available === false ||
         status.model_installed === false ||
         status.available === false
       ) {
-        setAvailability(AunavailableA)
+        setAvailability('unavailable')
       } else {
-        setAvailability(AunknownA)
+        setAvailability('unknown')
       }
     } catch {
-      setAvailability(AunknownA)
+      setAvailability('unknown')
     }
   }, [])
 
@@ -350,19 +350,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         if (!savedSessionId) {
           // Browser storage is only a fast pointer. The authenticated server
           // list is the durable source, so a new device can restore the latest
-          // conversation without the previous deviceAs localStorage key.
-          const listing = await getJSON(A/conversations?limit=1A) as {
+          // conversation without the previous device's localStorage key.
+          const listing = await getJSON('/conversations?limit=1') as {
             person_id?: string
             items?: Array<{ session_id?: string; person_id?: string }>
           }
           if (!isCurrentRestore()) return
           if (listing.person_id !== session.person.id) {
-            throw new Error(AThe conversation list did not match the active care record.A)
+            throw new Error('The conversation list did not match the active care record.')
           }
           const latest = listing.items?.[0]
           if (!latest) return
           if (!latest.session_id || latest.person_id !== session.person.id) {
-            throw new Error(AThe latest conversation did not match the active care record.A)
+            throw new Error('The latest conversation did not match the active care record.')
           }
           savedSessionId = latest.session_id
           try {
@@ -371,7 +371,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             // Server-backed listing and history remain usable without a local cache.
           }
         }
-        const response = await getJSON(A/conversation/A + encodeURIComponent(savedSessionId)) as {
+        const response = await getJSON('/conversation/' + encodeURIComponent(savedSessionId)) as {
           session_id?: string
           person_id?: string
           has_more?: boolean
@@ -380,7 +380,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           messages?: Array<{
             id?: string
             source_message_id?: string | null
-            role: AuserA | AassistantA
+            role: 'user' | 'assistant'
             text: string
             created_at?: string | null
             guard_verdict?: string | null
@@ -406,7 +406,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           || response.person_id !== session.person.id
           || !Array.isArray(response.messages)
         ) {
-          throw new Error(AThe saved conversation history did not match the active care session.A)
+          throw new Error('The saved conversation history did not match the active care session.')
         }
         setConversationRestoreError(null)
         setSessionId(savedSessionId)
@@ -423,7 +423,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             // A missing local pointer must not prevent server-backed recovery.
           }
         } else if (isCurrentRestore() && !userInteractedRef.current) {
-          setConversationRestoreError(AWe could not restore the earlier conversation. Your saved Care Record has not changed. Reload this page to try again, or start a new conversation.A)
+          setConversationRestoreError('We could not restore the earlier conversation. Your saved Care Record has not changed. Reload this page to try again, or start a new conversation.')
         }
       }
     }
@@ -626,21 +626,21 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setConfirmingCareReportId(null)
       setSavingCareReportId(null)
       setCorrectingCareUpdateId(null)
-      setCorrectedCareUpdateText(AA)
-      setCareUpdateCorrectionContext(AA)
+      setCorrectedCareUpdateText('')
+      setCareUpdateCorrectionContext('')
       setCareUpdateError(null)
       setCareUpdateNotice(null)
       setEmergency(false)
       setRequestError(null)
-      setInput(AA)
+      setInput('')
       setLoading(false)
-      setAvailability(AunknownA)
-      setConversationRestoreError(AYour active care record changed. Reload this page to restore the conversation for the current caregiver.A)
+      setAvailability('unknown')
+      setConversationRestoreError('Your active care record changed. Reload this page to restore the conversation for the current caregiver.')
       pendingTurnId.current = null
       pendingTurnText.current = null
     }
-    window.addEventListener(ApersonIdChangedA, clearPreviousCareScope)
-    return () => window.removeEventListener(ApersonIdChangedA, clearPreviousCareScope)
+    window.addEventListener('personIdChanged', clearPreviousCareScope)
+    return () => window.removeEventListener('personIdChanged', clearPreviousCareScope)
   }, [])
 
   const sendMessage = async (textOverride?: string) => {
@@ -658,11 +658,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setLoading(true)
     setEmergency(false)
     if (!pendingTurnId.current || pendingTurnText.current !== submittedText) {
-      pendingTurnId.current = typeof crypto !== AundefinedA && typeof crypto.randomUUID === AfunctionA ? crypto.randomUUID() : Aturn-A + Date.now() + A-A + Math.random().toString(36).slice(2)
+      pendingTurnId.current = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'turn-' + Date.now() + '-' + Math.random().toString(36).slice(2)
       pendingTurnText.current = submittedText
     }
     const clientTurnId = pendingTurnId.current
-    const userMsg: Message = { id: clientTurnId + ':user', role: AuserA, text: submittedText, timestamp: new Date() }
+    const userMsg: Message = { id: clientTurnId + ':user', role: 'user', text: submittedText, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
 
     try {
@@ -689,7 +689,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       // Every Companion turn, including greetings and thanks, uses the same
       // authenticated conversation pipeline so it can restore prior turns,
       // persist the exchange, and retain one consistent response contract.
-      const response = await postJSON(A/conversation/messageA, {
+      const response = await postJSON('/conversation/message', {
         person_id: session.person.id,
         text: submittedText,
         session_id: activeSessionId,
@@ -699,16 +699,16 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         setMessages(previous => previous.filter(message => message !== userMsg))
         return
       }
-      if (typeof response?.reply !== AstringA || !response.reply.trim()) throw new Error(AThe conversation response was incomplete.A)
-      const caregiverReply = caregiverSafeGeneratedText(response.reply) ?? AI could not safely display part of that response. Your care information has not been changed. Please try again.A
+      if (typeof response?.reply !== 'string' || !response.reply.trim()) throw new Error('The conversation response was incomplete.')
+      const caregiverReply = caregiverSafeGeneratedText(response.reply) ?? 'I could not safely display part of that response. Your care information has not been changed. Please try again.'
 
       // A successful HTTP response may be a deterministic support fallback.
       // Only the explicit AI-generated flag proves that Qwen produced this answer.
-      setAvailability(response.ai_generated === true ? AavailableA : AunverifiedA)
-      setInput(AA)
+      setAvailability(response.ai_generated === true ? 'available' : 'unverified')
+      setInput('')
       pendingTurnId.current = null
       pendingTurnText.current = null
-      if (textareaRef.current) textareaRef.current.style.height = AautoA
+      if (textareaRef.current) textareaRef.current.style.height = 'auto'
       if (response.session_id) {
         setSessionId(response.session_id)
         try {
@@ -728,7 +728,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
 
       const assistantMsg: Message = {
         id: clientTurnId + ':assistant',
-        role: AassistantA,
+        role: 'assistant',
         text: caregiverReply,
         guard_verdict: response.guard_verdict,
         safety_note: response.safety_note,
@@ -763,11 +763,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setInput(submittedText)
       const inferenceUnavailable =
         error instanceof ApiResponseError && [502, 503, 504].includes(error.status)
-      setAvailability(inferenceUnavailable ? AunavailableA : AunknownA)
+      setAvailability(inferenceUnavailable ? 'unavailable' : 'unknown')
       setRequestError(
         inferenceUnavailable
-          ? ASolenOS is temporarily unavailable. Your message is still in the box, and your Care Record has not changed. Check again shortly.A
-          : ASolenOS could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.A
+          ? 'SolenOS is temporarily unavailable. Your message is still in the box, and your Care Record has not changed. Check again shortly.'
+          : 'SolenOS could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.'
       )
     } finally {
       sendingRef.current = false
@@ -782,8 +782,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setCareUpdateLoading(true)
     setCareUpdateError(null)
     try {
-      const response = await getJSON(A/companion/care-updatesA) as { items?: PendingCareUpdate[] }
-      if (!Array.isArray(response?.items)) throw new Error(AThe saved care suggestions response was incomplete.A)
+      const response = await getJSON('/companion/care-updates') as { items?: PendingCareUpdate[] }
+      if (!Array.isArray(response?.items)) throw new Error('The saved care suggestions response was incomplete.')
       if (isCurrentRequest()) {
         setPendingCareUpdates(response.items)
         setCareUpdateLoadFailed(false)
@@ -791,7 +791,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     } catch {
       if (isCurrentRequest()) {
         setCareUpdateLoadFailed(true)
-        setCareUpdateError(ACare suggestions could not be refreshed. Your conversation is still saved. Try again before reviewing these suggestions.A)
+        setCareUpdateError('Care suggestions could not be refreshed. Your conversation is still saved. Try again before reviewing these suggestions.')
       }
     } finally {
       if (isCurrentRequest()) setCareUpdateLoading(false)
@@ -805,56 +805,56 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setCareUpdateError(null)
     setCareUpdateNotice(null)
     try {
-      const response = await postJSON(A/companion/care-updates/from-message/A + encodeURIComponent(messageId), { confirm_care_report: true }) as { proposal?: { status?: string } }
+      const response = await postJSON('/companion/care-updates/from-message/' + encodeURIComponent(messageId), { confirm_care_report: true }) as { proposal?: { status?: string } }
       if (!isCurrentCareScope()) return
       setConfirmingCareReportId(null)
-      setCareUpdateNotice(response?.proposal?.status === AacceptedA
-        ? AThis report is already in your Care Record.A
-        : response?.proposal?.status === ArejectedA
-          ? AThis report was previously declined and was not added to your Care Record.A
-          : ASaved for review. It will not enter your Care Record unless you accept it below.A)
+      setCareUpdateNotice(response?.proposal?.status === 'accepted'
+        ? 'This report is already in your Care Record.'
+        : response?.proposal?.status === 'rejected'
+          ? 'This report was previously declined and was not added to your Care Record.'
+          : 'Saved for review. It will not enter your Care Record unless you accept it below.')
       await loadPendingCareUpdates()
     } catch {
-      if (isCurrentCareScope()) setCareUpdateError(AThis message could not be saved for review. It has not been added to your Care Record.A)
+      if (isCurrentCareScope()) setCareUpdateError('This message could not be saved for review. It has not been added to your Care Record.')
     } finally {
       if (isCurrentCareScope()) setSavingCareReportId(null)
     }
   }
 
-  const reviewCareUpdate = async (proposalId: string, decision: AacceptA | ArejectA) => {
+  const reviewCareUpdate = async (proposalId: string, decision: 'accept' | 'reject') => {
     const isCurrentCareScope = captureCareScope()
     if (reviewingCareUpdateId) return
     setReviewingCareUpdateId(proposalId)
     setCareUpdateError(null)
     setCareUpdateNotice(null)
     try {
-      const response = await postJSON(A/companion/care-updates/A + encodeURIComponent(proposalId) + A/reviewA, { decision }) as {
+      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', { decision }) as {
         status?: string
         decision?: string
         written_to_lcr?: boolean
         idempotent_replay?: boolean
       }
       if (!isCurrentCareScope()) return
-      const expectedStatus = decision === AacceptA ? AacceptedA : ArejectedA
+      const expectedStatus = decision === 'accept' ? 'accepted' : 'rejected'
       if (response?.status !== expectedStatus || response?.decision !== decision) {
-        throw new Error(AThe server did not confirm the requested review decision.A)
+        throw new Error('The server did not confirm the requested review decision.')
       }
-      if (decision === AacceptA && response?.written_to_lcr !== true) {
-        throw new Error(AThe server did not confirm the Care Record update.A)
+      if (decision === 'accept' && response?.written_to_lcr !== true) {
+        throw new Error('The server did not confirm the Care Record update.')
       }
-      if (decision === ArejectA && response?.written_to_lcr !== false) {
-        throw new Error(AThe server did not confirm that nothing was added to the Care Record.A)
+      if (decision === 'reject' && response?.written_to_lcr !== false) {
+        throw new Error('The server did not confirm that nothing was added to the Care Record.')
       }
       setPendingCareUpdates(current => current.filter(item => item.id !== proposalId))
-      if (decision === AacceptA) {
-        window.dispatchEvent(new Event(AcareRecordUpdatedA))
+      if (decision === 'accept') {
+        window.dispatchEvent(new Event('careRecordUpdated'))
       }
-      setCareUpdateNotice(decision === AacceptA
-        ? AYour report was added to the Care Record. A healthcare professional has not confirmed it.A
-        : AThis suggestion was declined. Nothing was added to the Care Record.A)
+      setCareUpdateNotice(decision === 'accept'
+        ? 'Your report was added to the Care Record. A healthcare professional has not confirmed it.'
+        : 'This suggestion was declined. Nothing was added to the Care Record.')
       if (showReviewedCareUpdates) await loadReviewedCareUpdates()
     } catch {
-      if (isCurrentCareScope()) setCareUpdateError(AWe couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.A)
+      if (isCurrentCareScope()) setCareUpdateError('We couldn’t confirm whether this review was saved. Refresh the suggestions and Care Record before trying again.')
     } finally {
       if (isCurrentCareScope()) setReviewingCareUpdateId(null)
     }
@@ -868,8 +868,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setCareUpdateError(null)
     setCareUpdateNotice(null)
     try {
-      const response = await postJSON(A/companion/care-updates/A + encodeURIComponent(proposalId) + A/reviewA, {
-        decision: AcorrectA,
+      const response = await postJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/review', {
+        decision: 'correct',
         corrected_text: correctedText,
         correction_context: careUpdateCorrectionContext.trim() || null,
       }) as {
@@ -879,21 +879,21 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       }
       if (!isCurrentCareScope()) return
       if (
-        response?.decision !== AcorrectA
-        || response?.proposal?.status !== AcorrectedA
-        || response?.corrected_proposal?.status !== Apending_authorizationA
+        response?.decision !== 'correct'
+        || response?.proposal?.status !== 'corrected'
+        || response?.corrected_proposal?.status !== 'pending_authorization'
         || !response?.corrected_proposal?.id
       ) {
-        throw new Error(AThe server did not confirm a separately reviewable corrected proposal.A)
+        throw new Error('The server did not confirm a separately reviewable corrected proposal.')
       }
       setCorrectingCareUpdateId(null)
-      setCorrectedCareUpdateText(AA)
-      setCareUpdateCorrectionContext(AA)
-      setCareUpdateNotice(ACorrection saved as a new review item. Nothing has been added to your Care Record yet.A)
+      setCorrectedCareUpdateText('')
+      setCareUpdateCorrectionContext('')
+      setCareUpdateNotice('Correction saved as a new review item. Nothing has been added to your Care Record yet.')
       await loadPendingCareUpdates()
       if (showReviewedCareUpdates) await loadReviewedCareUpdates()
     } catch {
-      if (isCurrentCareScope()) setCareUpdateError(AThe correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.A)
+      if (isCurrentCareScope()) setCareUpdateError('The correction could not be confirmed. The original report remains unchanged; refresh the suggestions before trying again.')
     } finally {
       if (isCurrentCareScope()) setReviewingCareUpdateId(null)
     }
@@ -904,18 +904,18 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setReviewedCareUpdatesLoading(true)
     setCareUpdateError(null)
     try {
-      const response = await getJSON(A/companion/care-updates?include_reviewed=trueA) as {
+      const response = await getJSON('/companion/care-updates?include_reviewed=true') as {
         items?: PendingCareUpdate[]
         ordering?: string
         limit?: number
       }
       if (!isCurrentCareScope()) return
-      if (!Array.isArray(response?.items) || response.ordering !== Anewest_firstA) {
-        throw new Error(AThe reviewed care update list was incomplete.A)
+      if (!Array.isArray(response?.items) || response.ordering !== 'newest_first') {
+        throw new Error('The reviewed care update list was incomplete.')
       }
-      setReviewedCareUpdates(response.items.filter(item => item.status !== Apending_authorizationA))
+      setReviewedCareUpdates(response.items.filter(item => item.status !== 'pending_authorization'))
     } catch {
-      if (isCurrentCareScope()) setCareUpdateError(APrevious care update decisions could not be loaded. Your saved Care Record has not changed.A)
+      if (isCurrentCareScope()) setCareUpdateError('Previous care update decisions could not be loaded. Your saved Care Record has not changed.')
     } finally {
       if (isCurrentCareScope()) setReviewedCareUpdatesLoading(false)
     }
@@ -926,17 +926,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setLoadingCareUpdateHistoryId(proposalId)
     setCareUpdateError(null)
     try {
-      const response = await getJSON(A/companion/care-updates/A + encodeURIComponent(proposalId) + A/historyA) as {
+      const response = await getJSON('/companion/care-updates/' + encodeURIComponent(proposalId) + '/history') as {
         items?: CareUpdateReviewHistoryItem[]
         append_only?: boolean
       }
       if (!isCurrentCareScope()) return
       if (response?.append_only !== true || !Array.isArray(response.items)) {
-        throw new Error(AReview history response was incomplete.A)
+        throw new Error('Review history response was incomplete.')
       }
       setCareUpdateHistory(current => ({ ...current, [proposalId]: response.items || [] }))
     } catch {
-      if (isCurrentCareScope()) setCareUpdateError(AReview history could not be loaded. The saved care suggestion has not been changed.A)
+      if (isCurrentCareScope()) setCareUpdateError('Review history could not be loaded. The saved care suggestion has not been changed.')
     } finally {
       if (isCurrentCareScope()) setLoadingCareUpdateHistoryId(null)
     }
@@ -952,10 +952,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setInput(prompt)
     setRequestError(null)
     const params = new URLSearchParams(window.location.search)
-    params.delete(ApromptA)
+    params.delete('prompt')
     const remainingQuery = params.toString()
-    const nextUrl = window.location.pathname + (remainingQuery ? A?A + remainingQuery : AA) + window.location.hash
-    window.history.replaceState({}, AA, nextUrl)
+    const nextUrl = window.location.pathname + (remainingQuery ? '?' + remainingQuery : '') + window.location.hash
+    window.history.replaceState({}, '', nextUrl)
   }, [initialPrompt])
 
 
@@ -964,8 +964,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     if (pendingTurnText.current !== null && value.trim() !== pendingTurnText.current) { pendingTurnId.current = null; pendingTurnText.current = null }
     setRequestError(null)
     if (textareaRef.current) {
-      textareaRef.current.style.height = AautoA
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 180) + ApxA
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 180) + 'px'
     }
   }
 
@@ -975,7 +975,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     const storageKey = activeCompanionConversationStorageKey()
     if (storageKey) window.localStorage.removeItem(storageKey)
     setMessages([])
-    setInput(AA)
+    setInput('')
     setSessionId(null)
     setOlderHistoryCursor(null)
     setHasOlderMessages(false)
@@ -988,7 +988,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setEmergency(false)
     setRequestError(null)
     setConversationRestoreError(null)
-    if (textareaRef.current) textareaRef.current.style.height = AautoA
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
     textareaRef.current?.focus()
   }
 
@@ -1023,13 +1023,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       <div className="companion-workspace">
         <section ref={conversationScrollRef} className="companion-conversation" aria-label="Conversation">
           {messages.length === 0 ? (
-            availability === AcheckingA ? (
+            availability === 'checking' ? (
               <RecordState kind="loading" title="Checking whether SolenOS is available" />
-            ) : (availability === AavailableA || availability === AunverifiedA) && !requestError ? (
+            ) : (availability === 'available' || availability === 'unverified') && !requestError ? (
               <div className="companion-empty">
                 <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
                 <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>Conversations are saved here. Nothing is added to your Care Record unless you choose to save a message as a care note and approve it. Use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a> to record care information directly.</p></div>
-                {availability === AunverifiedA && <p className="companion-empty-footnote" role="status">SolenOS has not completed a response yet. Send your first question to check that it is working.</p>}
+                {availability === 'unverified' && <p className="companion-empty-footnote" role="status">SolenOS has not completed a response yet. Send your first question to check that it is working.</p>}
                 <div className="companion-starters">
                   {STARTER_PROMPTS.map(item => {
                     const Icon = item.icon
@@ -1042,19 +1042,19 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 </div>
                 <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
               </div>
-            ) : availability === AunavailableA ? (
+            ) : availability === 'unavailable' ? (
               <RecordState kind="unavailable" title="SolenOS is temporarily unavailable" description="Responses are not available right now. Your Care Record, Daily Care and Documents remain available." actionLabel="Check again" onAction={() => void checkAvailability()} />
             ) : (
-              <RecordState kind="error" title="We couldnAt check SolenOS" description={requestError || "We couldnAt confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
+              <RecordState kind="error" title="We couldn't check SolenOS" description={requestError || "We couldn't confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
             )
           ) : (
             <div className="companion-message-list">
               {hasOlderMessages && <div className="companion-history-older"><button type="button" onClick={() => void loadOlderMessages()} disabled={loadingOlderMessages}>{loadingOlderMessages ? "Loading earlier messages…" : "Load earlier messages"}</button></div>}
               {historyLoadError && <p className="companion-history-error" role="status">{historyLoadError}</p>}
-              <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? AmessageA : AmessagesA}</span></div>
+              <div className="companion-thread-label"><span>YOUR CONVERSATION</span><span>{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span></div>
 
               {messages.map((msg, index) => {
-                const isUser = msg.role === AuserA
+                const isUser = msg.role === 'user'
                 const coverage = msg.lcr_context_coverage
                 const hasUnreturnedMatches = Object.values(coverage?.sources || {}).some(source => source.has_more === true)
                 const hasUnselectedMatches = Object.values(coverage?.sources || {}).some(source => source.selection_truncated === true)
@@ -1065,40 +1065,40 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   || coverage.page_limit_reached === true
                   || hasUnreturnedMatches
                   || hasUnselectedMatches
-                  || ![Aquery_scanned_ranked_subsetA, Acomplete_history_scan_ranked_subsetA].includes(coverage.history_coverage || AA)
+                  || !['query_scanned_ranked_subset', 'complete_history_scan_ranked_subset'].includes(coverage.history_coverage || '')
                 ))
-                return <article className={Acompanion-message A + (isUser ? Ais-userA : Ais-assistantA)} key={msg.id || msg.source_message_id || `${msg.role}-${msg.timestamp.getTime()}`}>
+                return <article className={'companion-message ' + (isUser ? 'is-user' : 'is-assistant')} key={msg.id || msg.source_message_id || `${msg.role}-${msg.timestamp.getTime()}`}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
-                    <div className="companion-message-meta"><strong>{isUser ? AYouA : ASolenOSA}</strong><time dateTime={msg.timestamp.toISOString()}>{formatConversationTimestamp(msg.timestamp)}</time></div>
+                    <div className="companion-message-meta"><strong>{isUser ? 'You' : 'SolenOS'}</strong><time dateTime={msg.timestamp.toISOString()}>{formatConversationTimestamp(msg.timestamp)}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {isUser && msg.source_message_id && <div className="companion-care-report-action">
                       {confirmingCareReportId === msg.source_message_id ? <div className="companion-care-report-confirm" role="group" aria-label="Confirm this care report">
                         <p>Only continue if this describes something that happened or something you were told — not a question, possibility or guess.</p>
-                        <button type="button" onClick={() => void createCareReport(msg.source_message_id!)} disabled={savingCareReportId === msg.source_message_id}>{savingCareReportId === msg.source_message_id ? ASaving…A : AYes, save for reviewA}</button>
+                        <button type="button" onClick={() => void createCareReport(msg.source_message_id!)} disabled={savingCareReportId === msg.source_message_id}>{savingCareReportId === msg.source_message_id ? 'Saving…' : 'Yes, save for review'}</button>
                         <button type="button" className="is-secondary" onClick={() => setConfirmingCareReportId(null)} disabled={Boolean(savingCareReportId)}>Cancel</button>
                       </div> : <button type="button" onClick={() => setConfirmingCareReportId(msg.source_message_id || null)} disabled={Boolean(savingCareReportId)}>Save as a care note</button>}
                     </div>}
                     {!isUser && msg.ai_generated === false && <section className="companion-provenance" role="status" aria-label="Response note">
-                      <p>{msg.response_mode === Adeterministic_product_identityA
-                        ? "This answer is about SolenOS, not the personAs Care Record."
-                        : msg.response_mode === Adeterministic_low_capacity_support_fallbackA
-                          ? caregiverSafeGeneratedText(msg.safety_note) || "I couldnAt find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
+                      <p>{msg.response_mode === 'deterministic_product_identity'
+                        ? "This answer is about SolenOS, not the person's Care Record."
+                        : msg.response_mode === 'deterministic_low_capacity_support_fallback'
+                          ? caregiverSafeGeneratedText(msg.safety_note) || "I couldn't find enough information in your Care Record to give a reliable answer, so this is only a brief supportive reply. Nothing was changed in your Care Record."
                           : `This is a brief support message, not an answer based on your Care Record. ${caregiverSafeGeneratedText(msg.safety_note) || "It uses a safety check or information already saved. Nothing was changed in your Care Record."}`}</p>
                     </section>}
-                    {!isUser && coverage && msg.response_mode !== Adeterministic_product_identityA && <section className="companion-provenance" role="status" aria-label="What care information was checked">
+                    {!isUser && coverage && msg.response_mode !== 'deterministic_product_identity' && <section className="companion-provenance" role="status" aria-label="What care information was checked">
                       <strong>What care information was checked</strong>
                       <p>{coverageIsPartial
-                        ? AWe couldn’t check every saved note or document, so this answer may miss important details.A
-                        : AWe checked the saved notes and documents available for this question. If something is missing from your Care Record, we may not know about it.A}</p>
+                        ? 'We couldn’t check every saved note or document, so this answer may miss important details.'
+                        : 'We checked the saved notes and documents available for this question. If something is missing from your Care Record, we may not know about it.'}</p>
                     </section>}
                     {!isUser && msg.ai_generated && (msg.source_record_refs?.length ?? 0) > 0 && <section className="companion-provenance" aria-label="What this answer is based on">
                       <strong>What this answer is based on</strong>
                       {msg.source_record_refs?.map((reference, referenceIndex) => (
-                        <div key={reference.record_type + A:A + reference.record_id + A:A + referenceIndex}>
-                          <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || ASaved care informationA}</strong>
-                          {reference.record_type === Adocument_extractionsA && <p>Text read from a document is only a suggestion. Review it in Documents before it is added to your care record.</p>}
-                          {(reference.record_type === Aconversation_messagesA || reference.record_type === Acompanion_messagesA) && <p>Earlier conversation message — this is conversation history, not a care update.</p>}
+                        <div key={reference.record_type + ':' + reference.record_id + ':' + referenceIndex}>
+                          <strong>{SOURCE_REFERENCE_LABELS[reference.record_type] || 'Saved care information'}</strong>
+                          {reference.record_type === 'document_extractions' && <p>Text read from a document is only a suggestion. Review it in Documents before it is added to your care record.</p>}
+                          {(reference.record_type === 'conversation_messages' || reference.record_type === 'companion_messages') && <p>Earlier conversation message — this is conversation history, not a care update.</p>}
                         </div>
                       ))}
                     </section>}
@@ -1109,26 +1109,26 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                       {msg.claim_provenance.claims.map(claim => (
                         <article key={claim.claim_id} className="companion-provenance-details">
                           <p><strong>{caregiverSafeGeneratedText(claim.text) || "A possible care detail needs your review."}</strong></p>
-                          {claim.support_status === Aaggregate_count_mismatchA && <p role="note">The saved care updates do not support this number. The saved information shows {claim.aggregate_review?.count ?? Aan unconfirmed numberA} separate updates in the time period you asked about.</p>}
-                          {claim.support_status === Aaggregate_not_validatedA && <p role="note">{caregiverSafeGeneratedText(claim.aggregate_review?.interpretation_limit) || AThis total could not be confirmed from the saved care updates. Check the reports before relying on a number.A}</p>}
-                          {(claim.support_status === Amatched_saved_wordingA || claim.support_status === Amatched_historical_onlyA || claim.support_status === Amatched_validated_aggregateA) ? (
+                          {claim.support_status === 'aggregate_count_mismatch' && <p role="note">The saved care updates do not support this number. The saved information shows {claim.aggregate_review?.count ?? 'an unconfirmed number'} separate updates in the time period you asked about.</p>}
+                          {claim.support_status === 'aggregate_not_validated' && <p role="note">{caregiverSafeGeneratedText(claim.aggregate_review?.interpretation_limit) || 'This total could not be confirmed from the saved care updates. Check the reports before relying on a number.'}</p>}
+                          {(claim.support_status === 'matched_saved_wording' || claim.support_status === 'matched_historical_only' || claim.support_status === 'matched_validated_aggregate') ? (
                             <div>
-                              <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === Amatched_historical_onlyA ? AThis wording appears in an earlier or corrected record. It is not treated as current information.A : claim.support_status === Amatched_validated_aggregateA ? AWe checked this count against separate care updates and their dates.A : AThis wording appears in your Care Record.A}</p>
-                              {claim.support_status === Amatched_validated_aggregateA && <p>This count includes {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? " during " + (caregiverSafeAssistantText(claim.aggregate?.window_label) || "the selected time period") : ""}. Repeated records were not counted twice.</p>}
+                              <p> <ShieldCheck size={14} aria-hidden="true" /> {claim.support_status === 'matched_historical_only' ? 'This wording appears in an earlier or corrected record. It is not treated as current information.' : claim.support_status === 'matched_validated_aggregate' ? 'We checked this count against separate care updates and their dates.' : 'This wording appears in your Care Record.'}</p>
+                              {claim.support_status === 'matched_validated_aggregate' && <p>This count includes {claim.aggregate?.count ?? claim.source_references.length} separate care updates{claim.aggregate?.window_label ? " during " + (caregiverSafeAssistantText(claim.aggregate?.window_label) || "the selected time period") : ""}. Repeated records were not counted twice.</p>}
                               {claim.source_references.map((source, sourceIndex) => (
-                                <div key={source.record_type + A:A + source.record_id + A:A + sourceIndex}>
-                                  <strong>{caregiverSafeGeneratedText(source.label) || ASaved care informationA}</strong>
+                                <div key={source.record_type + ':' + source.record_id + ':' + sourceIndex}>
+                                  <strong>{caregiverSafeGeneratedText(source.label) || 'Saved care information'}</strong>
                                   {source.occurred_at && <p>When it happened: {new Date(source.occurred_at).toLocaleString()}</p>}
                                   {source.recorded_at && <p>When it was added: {new Date(source.recorded_at).toLocaleString()}</p>}
                                   {source.reported_by && <p>Reported by: {caregiverSafeAssistantText(source.reported_by) || "Not recorded"}</p>}
                                   {source.entered_by && <p>{caregiverSafeAssistantText(source.entered_by) || "Who added this was not recorded"}</p>}
-                                  {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || AStatus not availableA}</p>}
+                                  {source.source_state_label && <p>{caregiverSafeGeneratedText(source.source_state_label) || 'Status not available'}</p>}
                                   {source.correction_note && <p>{caregiverSourceText(source.correction_note)}</p>}
                                   {source.correction_rationale && <p>Why it was corrected: {caregiverSourceText(source.correction_rationale)}</p>}
                                   {source.previous_source_excerpt && <blockquote>Earlier wording: {caregiverSourceText(source.previous_source_excerpt)}</blockquote>}
-                                  {source.source_independence_status === Ashared_originA && <p>This note or document came from the same original as another saved note or document. It is not a separate report.</p>}
-                                  {source.source_independence_status === AindependentA && <p>A caregiver marked this as a separate report.</p>}
-                                  {source.source_independence_status === Anot_assessedA && <p>We have not checked whether this note or document is separate from other reports.</p>}
+                                  {source.source_independence_status === 'shared_origin' && <p>This note or document came from the same original as another saved note or document. It is not a separate report.</p>}
+                                  {source.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
+                                  {source.source_independence_status === 'not_assessed' && <p>We have not checked whether this note or document is separate from other reports.</p>}
                                   {(source.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {source.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                   {source.source_excerpt && <blockquote>{caregiverSourceText(source.source_excerpt)}</blockquote>}
                                   {source.evidence_reviews?.map((review, reviewIndex) => <div key={"source-review-" + reviewIndex}>
@@ -1142,13 +1142,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                   {source.evidence_reviews_has_more && <p>Only the latest reviews are shown here. Earlier reviews remain in your care history.</p>}
                                   {(source.related_evidence?.length ?? 0) > 0 && <div>
                                     <strong>Related note or document</strong>
-                                    {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + A:A + itemIndex}>
-                                      <p>{caregiverSafeGeneratedText(item.label) || ARelated care informationA}</p>
+                                    {source.related_evidence?.map((item, itemIndex) => <div key={item.record_id + ':' + itemIndex}>
+                                      <p>{caregiverSafeGeneratedText(item.label) || 'Related care information'}</p>
                                       {item.reported_by && <p>Reported by: {caregiverSafeAssistantText(item.reported_by) || "Not recorded"}</p>}
                                       {item.entered_by && <p>Added by: {caregiverSafeAssistantText(item.entered_by) || "Who added this was not recorded"}</p>}
-                                      {item.source_independence_status === Ashared_originA && <p>This note came from the same original as another saved note or document. It is not a separate report.</p>}
-                                      {item.source_independence_status === AindependentA && <p>A caregiver marked this as a separate report.</p>}
-                                      {item.source_independence_status === Anot_assessedA && <p>We have not checked whether this note is separate from other reports.</p>}
+                                      {item.source_independence_status === 'shared_origin' && <p>This note came from the same original as another saved note or document. It is not a separate report.</p>}
+                                      {item.source_independence_status === 'independent' && <p>A caregiver marked this as a separate report.</p>}
+                                      {item.source_independence_status === 'not_assessed' && <p>We have not checked whether this note is separate from other reports.</p>}
                                       {(item.exact_wording_duplicate_count ?? 0) > 0 && <p>The same words appear in {item.exact_wording_duplicate_count} other saved notes or documents. Do not count them as separate reports.</p>}
                                       {item.occurred_at && <p>When it happened: {new Date(item.occurred_at).toLocaleString()}</p>}
                                       {item.recorded_at && <p>When it was added: {new Date(item.recorded_at).toLocaleString()}</p>}
@@ -1173,13 +1173,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                                 </div>
                               ))}
                             </div>
-                          ) : claim.support_status === Anot_matched_to_saved_wordingA ? <p role="note">This statement does not match the wording in a saved record. Check it before relying on it.</p> : null}
+                          ) : claim.support_status === 'not_matched_to_saved_wording' ? <p role="note">This statement does not match the wording in a saved record. Check it before relying on it.</p> : null}
                         </article>
                       ))}
                       <p>This conversation has not been added to your Care Record.</p>
                     </section>}
-                    {!isUser && msg.freshness_source_status === Aunavailable_schemaA && <p className="companion-provenance" role="status">We couldn’t check how recent these care details are. Their current status is unknown.</p>}
-                    {!isUser && msg.freshness_source_status === Ano_assessments_returnedA && <p className="companion-provenance" role="status">We couldn’t find a review of how recent these care details are. This does not mean they are current.</p>}
+                    {!isUser && msg.freshness_source_status === 'unavailable_schema' && <p className="companion-provenance" role="status">We couldn’t check how recent these care details are. Their current status is unknown.</p>}
+                    {!isUser && msg.freshness_source_status === 'no_assessments_returned' && <p className="companion-provenance" role="status">We couldn’t find a review of how recent these care details are. This does not mean they are current.</p>}
                   </div>
                 </article>
               })}
@@ -1191,16 +1191,16 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         <aside className="companion-side-note" aria-label="SolenOS guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>SolenOS can help organise notes and questions. It does not diagnose or replace a healthcare professional. You decide whether a suggested care report is added to your Care Record.</p></div></aside>
       </div>
 
-      {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice || showReviewedCareUpdates || availability === AavailableA || availability === AunverifiedA) && <section className="companion-care-updates" aria-label="Care suggestions to review">
+      {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice || showReviewedCareUpdates || availability === 'available' || availability === 'unverified') && <section className="companion-care-updates" aria-label="Care suggestions to review">
         <div className="companion-care-updates-heading">
           <div><span className="companion-kicker">YOUR CARE RECORD</span><h3>Care updates to review</h3><p>These are exact words from your message that may be useful to save. Nothing is added unless you choose to accept it.</p></div>
           <div className="companion-care-updates-tools">
-            <button type="button" className="companion-care-refresh" onClick={() => void loadPendingCareUpdates()} disabled={careUpdateLoading || Boolean(reviewingCareUpdateId)}>{careUpdateLoading ? AChecking…A : ARefreshA}</button>
+            <button type="button" className="companion-care-refresh" onClick={() => void loadPendingCareUpdates()} disabled={careUpdateLoading || Boolean(reviewingCareUpdateId)}>{careUpdateLoading ? 'Checking…' : 'Refresh'}</button>
             <button type="button" className="companion-care-refresh" onClick={() => {
               const next = !showReviewedCareUpdates
               setShowReviewedCareUpdates(next)
               if (next && reviewedCareUpdates.length === 0) void loadReviewedCareUpdates()
-            }} disabled={reviewedCareUpdatesLoading}>{showReviewedCareUpdates ? AHide previous decisionsA : APrevious decisionsA}</button>
+            }} disabled={reviewedCareUpdatesLoading}>{showReviewedCareUpdates ? 'Hide previous decisions' : 'Previous decisions'}</button>
           </div>
         </div>
         {careUpdateError && <p className="companion-care-update-message is-error" role="alert">{careUpdateError}</p>}
@@ -1212,14 +1212,14 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           {reviewedCareUpdatesLoading && <small>Loading previous decisions…</small>}
           {!reviewedCareUpdatesLoading && reviewedCareUpdates.length === 0 && <small>No reviewed care reports were found.</small>}
           {reviewedCareUpdates.map(item => <article className="companion-care-update" key={item.id}>
-            <div><strong>{caregiverStatusLabel(item.status) || AReviewedA}</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || item.proposed_change?.source_quote || "The original wording could not be displayed."}</p></div>
+            <div><strong>{caregiverStatusLabel(item.status) || 'Reviewed'}</strong><p>{caregiverSafeGeneratedText(item.proposed_change?.asserted_value) || item.proposed_change?.source_quote || "The original wording could not be displayed."}</p></div>
             <div className="companion-care-update-actions">
-              <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? ALoading history…A : AReview historyA}</button>
+              <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
             </div>
             {careUpdateHistory[item.id] && <div className="companion-care-update-history">
               {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
-                <strong>{caregiverStatusLabel(entry.decision) || AReviewedA}</strong>
-                {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || ANo further explanation was recorded.A}</p>}
+                <strong>{caregiverStatusLabel(entry.decision) || 'Reviewed'}</strong>
+                {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || 'No further explanation was recorded.'}</p>}
                 {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
                 {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
               </div>)}
@@ -1232,27 +1232,27 @@ export default function Companion({ home = false, initialPrompt = null }: { home
             <small>This is your report, not a medical conclusion. Adding it records that you checked the wording; it does not mean a healthcare professional has confirmed it.</small>
           </div>
           {correctingCareUpdateId === item.id && <div className="companion-care-update-correction">
-            <label htmlFor={Acare-update-correction-A + item.id}>Corrected wording</label>
-            <textarea id={Acare-update-correction-A + item.id} value={correctedCareUpdateText} onChange={event => setCorrectedCareUpdateText(event.target.value)} rows={3} maxLength={4000} />
-            <label htmlFor={Acare-update-correction-context-A + item.id}>Additional context (optional)</label>
-            <textarea id={Acare-update-correction-context-A + item.id} value={careUpdateCorrectionContext} onChange={event => setCareUpdateCorrectionContext(event.target.value)} rows={2} maxLength={4000} />
+            <label htmlFor={'care-update-correction-' + item.id}>Corrected wording</label>
+            <textarea id={'care-update-correction-' + item.id} value={correctedCareUpdateText} onChange={event => setCorrectedCareUpdateText(event.target.value)} rows={3} maxLength={4000} />
+            <label htmlFor={'care-update-correction-context-' + item.id}>Additional context (optional)</label>
+            <textarea id={'care-update-correction-context-' + item.id} value={careUpdateCorrectionContext} onChange={event => setCareUpdateCorrectionContext(event.target.value)} rows={2} maxLength={4000} />
             <small>The correction is saved as a separate version. It still needs its own approval before entering the Care Record.</small>
           </div>}
           <div className="companion-care-update-actions">
             {correctingCareUpdateId === item.id ? <>
-              <button type="button" onClick={() => void correctCareUpdate(item.id)} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId) || !correctedCareUpdateText.trim()}>{reviewingCareUpdateId === item.id ? ASaving correction…A : ASave correction for reviewA}</button>
-              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(null); setCorrectedCareUpdateText(AA); setCareUpdateCorrectionContext(AA) }} disabled={Boolean(reviewingCareUpdateId)}>Cancel</button>
+              <button type="button" onClick={() => void correctCareUpdate(item.id)} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId) || !correctedCareUpdateText.trim()}>{reviewingCareUpdateId === item.id ? 'Saving correction…' : 'Save correction for review'}</button>
+              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(null); setCorrectedCareUpdateText(''); setCareUpdateCorrectionContext('') }} disabled={Boolean(reviewingCareUpdateId)}>Cancel</button>
             </> : <>
-              <button type="button" onClick={() => void reviewCareUpdate(item.id, AacceptA)} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? ASaving…A : AAdd to Care RecordA}</button>
-              <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, ArejectA)} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Don’t add</button>
-              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || AA) }} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Correct wording</button>
+              <button type="button" onClick={() => void reviewCareUpdate(item.id, 'accept')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>{reviewingCareUpdateId === item.id ? 'Saving…' : ''dd to Care Record'}</button>
+              <button type="button" className="is-secondary" onClick={() => void reviewCareUpdate(item.id, 'reject')} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Don’t add</button>
+              <button type="button" className="is-secondary" onClick={() => { setCorrectingCareUpdateId(item.id); setCorrectedCareUpdateText(item.proposed_change?.asserted_value || item.proposed_change?.source_quote || '') }} disabled={careUpdateLoading || careUpdateLoadFailed || Boolean(reviewingCareUpdateId)}>Correct wording</button>
             </>}
-            <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? ALoading history…A : AReview historyA}</button>
+            <button type="button" className="is-secondary" onClick={() => void loadCareUpdateHistory(item.id)} disabled={loadingCareUpdateHistoryId === item.id}>{loadingCareUpdateHistoryId === item.id ? 'Loading history…' : 'Review history'}</button>
           </div>
           {careUpdateHistory[item.id] && <div className="companion-care-update-history" aria-label="Care update review history">
             {careUpdateHistory[item.id].length === 0 ? <small>No review decisions have been recorded for this version.</small> : careUpdateHistory[item.id].map(entry => <div key={entry.id}>
-              <strong>{caregiverStatusLabel(entry.decision) || AReviewedA}</strong>
-              {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || ANo further explanation was recorded.A}</p>}
+              <strong>{caregiverStatusLabel(entry.decision) || 'Reviewed'}</strong>
+              {entry.rationale && <p>{caregiverSafeGeneratedText(entry.rationale) || 'No further explanation was recorded.'}</p>}
               {entry.correction_context && <small>Correction context: {entry.correction_context}</small>}
               {entry.created_at && <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time>}
             </div>)}
@@ -1264,10 +1264,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         <form className="companion-composer" aria-label="Send a message to SolenOS" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
-            if (event.key === AEnterA && !event.shiftKey) { event.preventDefault(); void sendMessage() }
+            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() }
           }} placeholder="Ask about saved care information, a recent change, or something that is unclear…" disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified")} rows={2} />
           <div className="companion-composer-footer">
-            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified") || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? ASendingA : ASendA}</span></button></div>
+            <span className="companion-input-hint">Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span><button className="companion-send" type="submit" aria-label={loading ? "Sending" : "Send"} disabled={loading || loadingOlderMessages || loadingConversationHistory || (availability !== "available" && availability !== "unverified") || !input.trim()}>{loading ? <span className="companion-send-spinner" aria-hidden="true" /> : <'rrowUp size={18} strokeWidth={2.4} aria-hidden="true" />}<span>{loading ? ASending' : 'Send'}</span></button></div>
         </form>
         <p className="companion-footer-note">For urgent or worsening symptoms, contact an appropriate healthcare professional or emergency service.</p>
       </div>
