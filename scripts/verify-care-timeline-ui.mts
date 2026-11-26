@@ -75,7 +75,7 @@ assert.match(source, /original entry remains unchanged/,
   "the caregiver is told corrections do not overwrite the original record");
 assert.ok(source.includes("daily-care/intelligence/history?limit=200&offset="),
   "timeline pagination reads the authenticated persisted history endpoint");
-assert.match(source, /Timeline could not be loaded/);
+assert.match(source, /Care history could not\x27t load|Older care history could not be loaded/);
 assert.match(source, /Your care history starts here/, "the empty state explains that the timeline fills from saved care updates");
 assert.match(source, /never adds example care history/);
 assert.match(source, /This is the latest saved update\. For the current care summary, return to your Care Record\./, "the latest timeline event is distinguished from the current care summary");
