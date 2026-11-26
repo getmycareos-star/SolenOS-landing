@@ -247,14 +247,14 @@ const firstVisitConsent = await request("/api/v1/consent", {
 assert.equal(firstVisitConsent.status, 200, JSON.stringify(firstVisitConsent.payload));
 assert.equal(firstVisitConsent.payload.verified, true);
 assert.equal(firstVisitConsent.payload.profile?.data_improvement_consent, true);
-await record("00 first-time and returning caregivers share Home and the same LCR projection", async () => {
+await record("00 first-time and returning caregivers share Today and the same LCR projection", async () => {
   const { context, page, pageErrors } = await createBrowserPage(
     firstVisitSession,
     "/workspace",
     { width: 390, height: 844 },
   );
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  await page.getByRole("heading", { name: "Home", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
@@ -320,7 +320,7 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   );
 
   await page.goto(new URL("/workspace", frontend).toString());
-  await page.getByRole("heading", { name: "Home", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
@@ -329,10 +329,10 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   assert.equal(
     await page.getByText("Your Care Record starts here", { exact: true }).count(),
     0,
-    "a returning caregiver must see the populated state of the same Home architecture",
+    "a returning caregiver must see the populated state of the same Today architecture",
   );
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Home", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
@@ -340,7 +340,7 @@ await record("00 first-time and returning caregivers share Home and the same LCR
     .waitFor({ state: "visible", timeout: 15_000 });
 
   await page.goto(new URL("/workspace?prompt=first%20question&prompt=second%20question", frontend).toString());
-  await page.getByRole("heading", { name: "Home", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
@@ -349,7 +349,7 @@ await record("00 first-time and returning caregivers share Home and the same LCR
     "repeated Companion prompt parameters must not open an ambiguous question workspace");
 
   await page.goto(new URL(`/workspace?prompt=${encodeURIComponent("What has changed in the care record?")}`, frontend).toString());
-  await page.getByRole("heading", { name: "Home", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
@@ -370,12 +370,12 @@ await record("00 first-time and returning caregivers share Home and the same LCR
   });
   assert.equal(careRemainsFirst, true, "a valid Companion prompt must not displace the current care picture");
   await page.goBack({ waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Home", exact: true })
+  await page.getByRole("heading", { name: "Today", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
   await verifyMobile(page);
-  assert.deepEqual(pageErrors, [], `first-time and returning caregiver Home journeys must not throw browser errors: ${JSON.stringify(pageErrors)}`);
+  assert.deepEqual(pageErrors, [], `first-time and returning caregiver Today journeys must not throw browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
 });
 
@@ -398,7 +398,7 @@ await record("00a Home never presents a failed LCR retrieval as an empty record"
     0,
     "a failed current-care read must never be rendered as a confirmed empty Care Record",
   );
-  assert.deepEqual(pageErrors, [], `Home retrieval failure must remain recoverable without browser errors: ${JSON.stringify(pageErrors)}`);
+  assert.deepEqual(pageErrors, [], `Today retrieval failure must remain recoverable without browser errors: ${JSON.stringify(pageErrors)}`);
   await context.close();
 });
 
@@ -717,7 +717,7 @@ await record("01a dementia profile review window and observation persistence are
     "the corrected observation wording must be stored in the new revision",
   );
   await page.goto(new URL("/workspace", frontend).toString());
-  await page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
   await page.getByRole("heading", { name: "Current care picture", exact: true }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
   await page.getByText(correctedUiDescription, { exact: true }).first()
@@ -758,14 +758,14 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
 
   const inlineFirstUpdate = page.locator(".lcr-today-empty-state__actions a[href='/workspace/daily-care']");
   if (await inlineFirstUpdate.count()) {
     assert.equal(
       await page.locator(".solenos-mobile-add-update").isVisible(),
       false,
-      "the floating mobile update action must not cover the inline first-update action on Home",
+      "the floating mobile update action must not cover the inline first-update action on Today",
     );
   }
 
@@ -824,7 +824,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("heading", { name: "Workspace archived", exact: true }).waitFor({ timeout: 10_000 });
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "Restore", exact: true }).click();
-  await page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 10_000 });
+  await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 10_000 });
 
   actionMenu = await openMoreMenu();
   await actionMenu.getByRole("menuitem", { name: "View record details", exact: true }).click();
@@ -1146,7 +1146,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await page.getByRole("heading", { name: "Documents", exact: true }).waitFor({ timeout: 15_000 });
   const documentsBreadcrumbs = await page.getByRole("navigation", { name: "Breadcrumb", exact: true }).innerText();
   assert.match(documentsBreadcrumbs, /Home[\s\S]*Care information[\s\S]*Documents/,
-    "Documents exposes its Home and Care information context in the breadcrumb trail");
+    "Documents exposes its Today and Care information context in the breadcrumb trail");
   const careInformationParent = navigation.locator('a[href="/workspace/care-continuity"]');
   assert.equal(await careInformationParent.getAttribute("aria-current"), "page",
     "Care information stays selected while a nested care destination is open");
@@ -1176,7 +1176,7 @@ await record("01c workspace links, browser back, More menu and account form vali
   await moreNavigationLink.click();
   await page.waitForURL("**/workspace/more", { timeout: 15_000 });
   const moreBreadcrumbs = await page.getByRole("navigation", { name: "Breadcrumb", exact: true }).innerText();
-  assert.match(moreBreadcrumbs, /Home[\s\S]*More/, "More exposes its Home parent in the breadcrumb trail");
+  assert.match(moreBreadcrumbs, /Home[\s\S]*More/, "More exposes its Today parent in the breadcrumb trail");
   const moreTools = page.getByRole("navigation", { name: "App and account settings", exact: true });
   await moreTools.waitFor({ state: "visible", timeout: 10_000 });
   await moreTools.getByRole("link", { name: "Settings", exact: true }).waitFor({ state: "visible", timeout: 5_000 });
@@ -1396,7 +1396,7 @@ await record("01c workspace links, browser back, More menu and account form vali
     "/workspace",
     { width: 390, height: 844 },
   );
-  await disposable.page.getByRole("heading", { name: "Home", exact: true }).waitFor({ timeout: 20_000 });
+  await disposable.page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20_000 });
   const identityBeforeDeletion = await disposable.page.evaluate(() => ({
     token: localStorage.getItem("solenos_anonymous_access_token"),
     personId: localStorage.getItem("solenos_backend_person_id"),
@@ -2369,7 +2369,7 @@ await record("Add an update stays usable without unrelated dashboard reads", asy
     "/api/v1/notifications",
     "/api/v1/documents/status",
   ].includes(item.path)).length, 0,
-    "Add an update must not depend on Home, history, Needs attention, Notifications or document-status reads");
+    "Add an update must not depend on Today, history, Needs attention, Notifications or document-status reads");
 
   // Original photo bytes use the same encrypted, identity-scoped queue.
   const tinyPng = Buffer.from(
