@@ -1,40 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPersonId, getJSON } from '../api/client';
+import { getJSON } from '../api/client';
 
 const NotificationBell: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [personId, setPersonId] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Fetch the personId on mount
+  // The server derives the active care record from the authorized session.
+  // Do not put a client-supplied person ID in the notification endpoint.
   useEffect(() => {
-    const id = getPersonId();
-    setPersonId(id);
-  }, []);
-
-  // Fetch the unread count periodically
-  useEffect(() => {
-    if (!personId) return;
-
     const fetchUnreadCount = async () => {
       try {
-        const response = await getJSON<{ unread_count: number }>(
-          `/person/${personId}/notifications/unread-count`
-        );
+        const response = await getJSON<{ unread_count: number }>("/notifications/unread-count");
         setUnreadCount(response.unread_count);
       } catch (error) {
         console.error('Failed to fetch unread count:', error);
       }
     };
 
-    // Fetch immediately
-    fetchUnreadCount();
-
-    // Set up polling every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
+    void fetchUnreadCount();
+    const interval = setInterval(() => void fetchUnreadCount(), 30000);
     return () => clearInterval(interval);
-  }, [personId]);
+  }, []);
 
   const handleClick = () => {
     navigate('/notifications');
