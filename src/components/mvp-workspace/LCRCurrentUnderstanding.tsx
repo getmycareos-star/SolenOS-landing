@@ -1414,6 +1414,9 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     (item.source === "conflicts" || item.source === "reconciliations") &&
     !isMedicationConflict(item)
   );
+  const otherUncertainties = watchUncertainties.filter((item) =>
+    item.source !== "conflicts" && item.source !== "reconciliations"
+  );
   const watchPriorityCandidates = assessment?.priorities ?? [];
   const watchMissingInformation = (assessment?.missing_information ?? []).filter(isUnresolvedCareInformation);
   const watchOpenLoops = openLoopItems.filter((item) =>
@@ -1849,12 +1852,12 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
               )}
             </p>
           )}
-          {watchUncertainties.length > 0 && (
+          {otherUncertainties.length > 0 && (
             <p className="lcr-entry-status">
               <strong>Still unclear:</strong>{" "}
-              {caregiverSafeAssistantText(watchUncertainties[0].title) || "Some care information still needs checking."}
-              {watchUncertainties.length > 1
-                ? ` ${watchUncertainties.length - 1} more item(s) may need checking.`
+              {caregiverSafeAssistantText(otherUncertainties[0].title) || "Some care information still needs checking."}
+              {otherUncertainties.length > 1
+                ? ` ${otherUncertainties.length - 1} more item(s) may need checking.`
                 : ""}
             </p>
           )}
