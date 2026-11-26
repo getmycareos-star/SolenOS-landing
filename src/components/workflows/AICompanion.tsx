@@ -814,7 +814,17 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         timestamp: new Date(),
       }
       setMessages(prev => [...prev.map(message => message === userMsg ? { ...message, id: response.source_message_id || message.id, source_message_id: response.source_message_id || null } : message), assistantMsg])
-      void loadPendingCareUpdates()
+      // Candidate extraction runs after the conversation pair is committed.
+      // Poll only for this exact source message so an older proposal cannot
+      // make a new turn look reviewed, and stop if the caregiver changes scope.
+      void (async () => {
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+          if (!isCurrentScopeRequest()) return
+          const proposals = await loadPendingCareUpdates()
+          if (proposals.some(item => item.source_message_id === response.source_message_id)) return
+          if (attempt < 11) await new Promise(resolve => setTimeout(resolve, 2000))
+        }
+      })()
 
 
     } catch (error) {
@@ -839,7 +849,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
 
-  const loadPendingCareUpdates = async () => {
+  const loadPendingCareUpdates = async (): Promise<PendingCareUpdate[]> => {
     const requestSequence = ++careUpdateLoadSequenceRef.current
     const isCurrentRequest = () => careUpdateLoadSequenceRef.current === requestSequence
     setCareUpdateLoading(true)
@@ -851,11 +861,13 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         setPendingCareUpdates(response.items)
         setCareUpdateLoadFailed(false)
       }
+      return response.items
     } catch {
       if (isCurrentRequest()) {
         setCareUpdateLoadFailed(true)
         setCareUpdateError('Care suggestions could not be refreshed. Your conversation is still saved. Try again before reviewing these suggestions.')
       }
+      return []
     } finally {
       if (isCurrentRequest()) setCareUpdateLoading(false)
     }
