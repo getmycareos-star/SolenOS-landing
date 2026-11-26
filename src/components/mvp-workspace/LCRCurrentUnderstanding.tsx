@@ -1742,7 +1742,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                     {displayCurrentCareDescription(item) && <p>{displayCurrentCareDescription(item)}</p>}
                     <small>
                       {caregiverLabel(item.epistemic_status)} · Shared by {item.reported_by_caregiver_id ? (item.reported_by_caregiver_id === currentCaregiverId ? "you" : "another caregiver") : caregiverSafeGeneratedText(item.source_label) || "Not recorded"}
-                      {item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted" ? " · Event time not provided" : item.occurred_at ? ` · Happened ${formatWhen(item.occurred_at)}` : ""}
+                      {item.time_provenance === "server_recorded_at" || item.time_provenance === "entry_time_defaulted" || !item.occurred_at ? " · Event time not provided" : ` · Happened ${formatWhen(item.occurred_at)}`}
                       {item.reported_at ? ` · Reported ${formatWhen(item.reported_at)}` : ""}
                       {item.recorded_at ? ` · Saved ${formatWhen(item.recorded_at)}` : ""}
                     </small>
