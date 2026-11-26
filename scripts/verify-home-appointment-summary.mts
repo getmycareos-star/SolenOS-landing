@@ -25,6 +25,16 @@ assert.ok(component.includes("SolenOS has not booked or confirmed it with a prov
 assert.ok(component.includes('href="/workspace/appointments"'), "caregivers must be able to open the existing appointment workflow");
 assert.ok(component.includes("Prepare for this visit"), "a saved upcoming appointment must offer a contextual preparation action");
 assert.ok(component.includes("Review appointment details"), "unknown or overdue appointment timing must offer review rather than false preparation certainty");
+assert.ok(component.includes("appointment_related_open_loops"), "Home must read persisted appointment-related follow-ups from the existing preparation contract");
+assert.ok(component.includes("appointment_needs"), "Home must surface unresolved appointment questions from the care record");
+assert.ok(component.includes("Appointment follow-ups"), "appointment-related open loops and questions must be visible even without a booked appointment");
+assert.ok(component.includes('href="/workspace/open-loops"'), "caregivers must have a direct route to review recorded follow-ups");
+assert.ok(component.includes("lcr_retrieval_status"), "the summary must inspect source retrieval completeness");
+assert.ok(component.includes("appointmentContextIncomplete"), "partial or failed source retrieval must qualify the appointment summary");
+assert.ok(component.includes("Some care-record sources could not be checked"), "partial retrieval must be explained rather than presented as complete");
+assert.ok(component.includes("A follow-up is recorded, but no appointment date or booking is confirmed."), "an appointment-related question must not be presented as a booked appointment");
+assert.ok(styles.includes(".solenos-upcoming-appointment__follow-ups"), "appointment follow-ups must have a distinct readable presentation");
+assert.ok(styles.includes(".solenos-upcoming-appointment__notice"), "partial retrieval warnings must have a visible presentation");
 assert.ok(styles.includes(".solenos-upcoming-appointment__prepare"), "the appointment preparation action must have an accessible presentation");
 assert.ok(styles.includes("min-height: 44px"), "appointment actions must meet the minimum touch-target height");
 assert.ok(styles.includes(".solenos-upcoming-appointment"), "the summary must use responsive shared workspace styling");
