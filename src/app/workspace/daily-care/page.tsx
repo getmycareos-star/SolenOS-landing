@@ -1,10 +1,9 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, FileText, ImagePlus, MessageSquareText, Pill, Ruler, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, CalendarDays, FileText, ImagePlus, MessageSquareText, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
@@ -12,16 +11,7 @@ import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDa
 import DailyCareOfflineQueueNotice from "@/components/workflows/DailyCareOfflineQueueNotice";
 import DailyCarePhotoCapture from "@/components/workflows/DailyCarePhotoCapture";
 
-const StructuredDailyCapture = dynamic(
-  () => import("@/components/workflows/StructuredDailyCapture"),
-  {
-    ssr: false,
-    loading: () => <BrandLoading animate message="Opening structured entry…" />,
-  },
-);
-
-type StructuredCaptureMode = "medicine" | "measurement" | "note";
-type CaptureMode = "update" | "photo" | "checkin" | StructuredCaptureMode;
+type CaptureMode = "update" | "photo" | "checkin";
 
 const captureOptions: Array<{
   value: CaptureMode;
@@ -31,9 +21,6 @@ const captureOptions: Array<{
 }> = [
   { value: "update", label: "Describe an update", detail: "Tell SolenOS what happened or what you noticed.", icon: MessageSquareText },
   { value: "checkin", label: "Quick check-in", detail: "A few simple choices about how today is going.", icon: ClipboardCheck },
-  { value: "medicine", label: "Medication update", detail: "Record a medicine taken, missed or refused.", icon: Pill },
-  { value: "measurement", label: "Measurement", detail: "Record a reading with its unit.", icon: Ruler },
-  { value: "note", label: "Note or observation", detail: "Save something you noticed or want to remember.", icon: FileText },
   { value: "photo", label: "Add a photo", detail: "Take a picture or choose an image to add.", icon: ImagePlus },
 ];
 
@@ -110,9 +97,7 @@ export default function DailyCarePage() {
                 <NaturalLanguageDailyUpdate />
                 <p className="daily-care-muted">You can describe a visit, hospital stay, change in routine or anything else that matters to care.</p>
               </div>
-            ) : (
-              <StructuredDailyCapture mode={captureMode as StructuredCaptureMode} />
-            )}
+            ) : null}
           </div>
         )}
       </section>
