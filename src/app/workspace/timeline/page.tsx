@@ -62,13 +62,14 @@ type CareEvent = {
   } | null;
 };
 
-type FilterKey = "all" | "observations" | "decisions" | "documents" | "open";
+type FilterKey = "all" | "observations" | "decisions" | "documents" | "corrections" | "open";
 
 const FILTERS: { id: FilterKey; label: string }[] = [
   { id: "all", label: "All updates" },
   { id: "observations", label: "What caregivers noticed" },
   { id: "decisions", label: "Decisions" },
   { id: "documents", label: "Documents" },
+  { id: "corrections", label: "Corrections" },
   { id: "open", label: "Needs attention" },
 ];
 
@@ -202,6 +203,7 @@ function matchesFilter(event: CareEvent, filter: FilterKey): boolean {
   if (filter === "observations") return category === "observation";
   if (filter === "decisions") return category === "decision";
   if (filter === "documents") return category === "document";
+  if (filter === "corrections") return event.source_type === "correction" || category === "correction";
   return category === "follow-up" || Boolean(event.follow_up_candidate) || Boolean(event.attention_candidate);
 }
 
