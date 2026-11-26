@@ -32,6 +32,7 @@ type DeviceKeyRecord = { id: "device"; key: CryptoKey };
 
 export type DurableWriteSummary = {
   pending: number;
+  sending: number;
   blocked: number;
   failed_recoverable: number;
 };
@@ -331,6 +332,7 @@ export async function deliverDurableWrite<T>(
   if (!record) throw new Error("The pending update is no longer in the local queue.");
 
   await putWrite(db, { ...record, status: "sending", updated_at: Date.now() });
+  dispatchQueueUpdated();
   try {
     const payload = await decryptPayload(db, record);
     const result = await send(record.endpoint, payload, onUploadProgress);
@@ -356,7 +358,8 @@ export async function getDurableWriteSummary(
     (!endpoints || endpoints.includes(row.endpoint))
   );
   return {
-    pending: matching.filter((row) => row.status === "pending" || row.status === "sending").length,
+    pending: matching.filter((row) => row.status === "pending").length,
+    sending: matching.filter((row) => row.status === "sending").length,
     blocked: matching.filter((row) => row.status === "blocked").length,
     failed_recoverable: matching.filter((row) => row.status === "failed_recoverable").length,
   };
