@@ -478,6 +478,36 @@ fs.writeFileSync(
   JSON.stringify({ results, failures }, null, 2),
 );
 
+const contrastIssueGroups = new Map();
+for (const result of results) {
+  for (const issue of result.contrastIssues ?? []) {
+    const key = JSON.stringify({
+      kind: issue.kind,
+      selector: issue.selector,
+      text: issue.text,
+      foreground: issue.foreground,
+      background: issue.background,
+      contrast: issue.contrast,
+      threshold: issue.threshold,
+    });
+    const group = contrastIssueGroups.get(key) ?? {
+      ...issue,
+      occurrences: 0,
+      affected_routes: [],
+    };
+    group.occurrences += 1;
+    const routeViewport = `${result.route} @ ${result.viewport}`;
+    if (!group.affected_routes.includes(routeViewport)) group.affected_routes.push(routeViewport);
+    contrastIssueGroups.set(key, group);
+  }
+}
+const uniqueContrastIssues = [...contrastIssueGroups.values()]
+  .sort((a, b) => b.occurrences - a.occurrences);
+if (uniqueContrastIssues.length > 0) {
+  process.stdout.write(
+    `DARK_MODE_CONTRAST_DETAILS=${JSON.stringify(uniqueContrastIssues)}\\n`,
+  );
+}
 const routeLoadFailures = results.filter((result) => result.routeLoaded === false).length;
 const themeFailures = results.filter((result) => result.themeApplied === false).length;
 process.stdout.write(
