@@ -736,7 +736,7 @@ export default function DailyCarePage() {
                       <div style={{ display: "grid", gap: 12 }}>
                         <DailyCarePhotoCapture />
                         <p className="daily-care-muted" style={{ margin: 0 }}>
-                          Need to add a prescription, report or other medical document? <Link href="/workspace/documents">Open document upload</Link>.
+                          Need to add a prescription or report, or review a saved photo? <Link href="/workspace/documents">Open documents and photos</Link>.
                         </p>
                       </div>
                     ) : captureMode === "update" ? (
