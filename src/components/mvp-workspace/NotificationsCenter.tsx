@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { caregiverSafeGeneratedText, caregiverStatusLabel } from "@/lib/caregiver-language";
-import { deleteJSON, ensureAnonymousSession, getJSON, patchJSON, putJSON } from "@/api/client";
+import { deleteJSON, ensureAnonymousSession, getCaregiverId, getPersonId, getJSON, patchJSON, putJSON } from "@/api/client";
 
 type CareNotification = {
   id: string;
@@ -70,6 +70,9 @@ export function NotificationsCenter() {
   const [inboxError, setInboxError] = useState("");
   const [busyNotificationId, setBusyNotificationId] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState("");
+  const scopeSequenceRef = useRef(0);
+  const inboxRequestSequenceRef = useRef(0);
+  const preferencesRequestSequenceRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -102,36 +105,54 @@ export function NotificationsCenter() {
   }, []);
 
   const loadInbox = useCallback(async (options?: { silent?: boolean }) => {
+    const requestSequence = ++inboxRequestSequenceRef.current;
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentRequest = () =>
+      requestSequence === inboxRequestSequenceRef.current
+      && scopeSequence === scopeSequenceRef.current;
     if (!options?.silent) setInboxLoading(true);
     setInboxError("");
     try {
-      await ensureAnonymousSession();
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || !session.caregiver?.id
+        || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()
+        || !isCurrentRequest()) return;
       const [feed, unread] = await Promise.all([
         getJSON("/notifications?limit=100&offset=0") as Promise<{ items: CareNotification[] }>,
         getJSON("/notifications/unread-count") as Promise<{ unread_count: number }>,
       ]);
+      if (!isCurrentRequest() || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()) return;
       setNotifications(feed.items ?? []);
       setUnreadCount(unread.unread_count ?? 0);
     } catch {
-      setInboxError("We couldn't load notifications. Check your connection and try again.");
+      if (isCurrentRequest()) setInboxError("We couldn't load notifications. Check your connection and try again.");
     } finally {
-      if (!options?.silent) setInboxLoading(false);
+      if (!options?.silent && isCurrentRequest()) setInboxLoading(false);
     }
   }, []);
 
   const markNotificationRead = async (item: CareNotification) => {
     if (item.is_read) return;
+    const requestPersonId = getPersonId();
+    const requestCaregiverId = getCaregiverId();
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentScope = () => Boolean(requestPersonId && requestCaregiverId)
+      && requestPersonId === getPersonId()
+      && requestCaregiverId === getCaregiverId()
+      && scopeSequence === scopeSequenceRef.current;
+    if (!isCurrentScope()) return;
     setBusyNotificationId(item.id);
     setInboxError("");
     try {
       const updated = await patchJSON("/notifications/" + encodeURIComponent(item.id) + "/read", {}) as CareNotification;
+      if (!isCurrentScope()) return;
       setNotifications((current) => current.map((row) => row.id === updated.id ? updated : row));
       setUnreadCount((current) => Math.max(0, current - 1));
       window.dispatchEvent(new Event("solenos:notifications-updated"));
     } catch {
-      setInboxError("We couldn't update this notification. Please try again.");
+      if (isCurrentScope()) setInboxError("We couldn't update this notification. Please try again.");
     } finally {
-      setBusyNotificationId(null);
+      if (isCurrentScope()) setBusyNotificationId(null);
     }
   };
 
@@ -151,14 +172,23 @@ export function NotificationsCenter() {
   }, [loadInbox]);
 
   const loadPreferences = useCallback(async () => {
+    const requestSequence = ++preferencesRequestSequenceRef.current;
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentRequest = () =>
+      requestSequence === preferencesRequestSequenceRef.current
+      && scopeSequence === scopeSequenceRef.current;
     setLoading(true);
     setError("");
     try {
-      await ensureAnonymousSession();
+      const session = await ensureAnonymousSession();
+      if (!session.person?.id || !session.caregiver?.id
+        || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()
+        || !isCurrentRequest()) return;
       const prefs = await getJSON("/notifications/preferences") as {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
         quiet_hours_start?: string; quiet_hours_end?: string; timezone_name?: string; configured?: boolean;
       };
+      if (!isCurrentRequest() || session.person.id !== getPersonId() || session.caregiver.id !== getCaregiverId()) return;
       setQuietHours(prefs.quiet_hours_enabled);
       setScheduleSupported(typeof prefs.quiet_hours_start === "string" && typeof prefs.quiet_hours_end === "string" && typeof prefs.timezone_name === "string");
       setQuietStart(prefs.quiet_hours_start || "21:00");
@@ -170,19 +200,58 @@ export function NotificationsCenter() {
       );
       setReminders(prefs.reminders_enabled);
     } catch {
-      setError("We couldn't load your notification settings. Check your connection and try again.");
+      if (isCurrentRequest()) setError("We couldn't load your notification settings. Check your connection and try again.");
     } finally {
-      setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const resetForCareRecipientChange = () => {
+      scopeSequenceRef.current += 1;
+      inboxRequestSequenceRef.current += 1;
+      preferencesRequestSequenceRef.current += 1;
+      setNotifications([]);
+      setUnreadCount(0);
+      setInboxError("");
+      setInboxLoading(true);
+      setBusyNotificationId(null);
+      setQuietHours(false);
+      setScheduleSupported(false);
+      setQuietStart("21:00");
+      setQuietEnd("08:00");
+      setReminders(true);
+      setError("");
+      setSaving(false);
+      setLoading(true);
+      void loadInbox();
+      void loadPreferences();
+    };
+    window.addEventListener("personIdChanged", resetForCareRecipientChange);
+    return () => {
+      window.removeEventListener("personIdChanged", resetForCareRecipientChange);
+      scopeSequenceRef.current += 1;
+      inboxRequestSequenceRef.current += 1;
+      preferencesRequestSequenceRef.current += 1;
+    };
+  }, [loadInbox, loadPreferences]);
 
   useEffect(() => { void loadPreferences(); }, [loadPreferences]);
 
   const persist = async (key: "quiet_hours_enabled" | "reminders_enabled", value: boolean) => {
+    const requestPersonId = getPersonId();
+    const requestCaregiverId = getCaregiverId();
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentScope = () => Boolean(requestPersonId && requestCaregiverId)
+      && requestPersonId === getPersonId()
+      && requestCaregiverId === getCaregiverId()
+      && scopeSequence === scopeSequenceRef.current;
+    if (!isCurrentScope()) return;
     setSaving(true);
     setError("");
     try {
-      await ensureAnonymousSession();
+      const session = await ensureAnonymousSession();
+      if (!isCurrentScope() || session.person?.id !== requestPersonId || session.caregiver?.id !== requestCaregiverId) return;
       const payload = key === "quiet_hours_enabled"
         ? { quiet_hours_enabled: value, quiet_hours_start: quietStart, quiet_hours_end: quietEnd, timezone_name: timezoneName }
         : { reminders_enabled: value };
@@ -190,6 +259,7 @@ export function NotificationsCenter() {
         quiet_hours_enabled: boolean; reminders_enabled: boolean;
         quiet_hours_start: string; quiet_hours_end: string; timezone_name: string;
       };
+      if (!isCurrentScope()) return;
       setQuietHours(result.quiet_hours_enabled);
       setScheduleSupported(typeof result.quiet_hours_start === "string" && typeof result.quiet_hours_end === "string" && typeof result.timezone_name === "string");
       setQuietStart(result.quiet_hours_start);
@@ -198,10 +268,12 @@ export function NotificationsCenter() {
       setReminders(result.reminders_enabled);
       show("Notification settings saved.", "success");
     } catch {
-      setError("We couldn't save your notification settings. Your previous settings are unchanged.");
-      show("Notification settings weren't saved.", "error");
+      if (isCurrentScope()) {
+        setError("We couldn't save your notification settings. Your previous settings are unchanged.");
+        show("Notification settings weren't saved.", "error");
+      }
     } finally {
-      setSaving(false);
+      if (isCurrentScope()) setSaving(false);
     }
   };
 
