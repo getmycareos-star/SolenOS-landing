@@ -1904,8 +1904,10 @@ await record("04 scanned document upload, original bytes, page tracking, idempot
   await documentsLibrary.page.goto(new URL(`/workspace/documents?evidenceId=${encodeURIComponent(documentId)}&returnTo=${encodeURIComponent(historyReturn)}`, frontend).toString(), { waitUntil: "domcontentloaded" });
   const sourcePreview = documentsLibrary.page.getByRole("dialog", { name: "journey-discharge-note-scan.png", exact: true });
   await sourcePreview.waitFor({ state: "visible", timeout: 20_000 });
-  await sourcePreview.getByRole("button", { name: "Download original document", exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+  const downloadOriginal = sourcePreview.getByRole("button", { name: "Download original document", exact: true });
+  await downloadOriginal.waitFor({ state: "visible", timeout: 10_000 });
   await sourcePreview.locator('img[alt="journey-discharge-note-scan.png"]').waitFor({ state: "visible", timeout: 15_000 });
+  assert.equal(await downloadOriginal.isEnabled(), true, "the original file must be retrievable before the preview is treated as complete");
   assert.equal(await documentsLibrary.page.getByRole("link", { name: "Back to Care history", exact: true }).getAttribute("href"), historyReturn,
     "opening an original document from Care history preserves the exact filtered return destination");
   await sourcePreview.getByRole("button", { name: "Close document preview", exact: true }).click();
