@@ -766,8 +766,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setAvailability(inferenceUnavailable ? AunavailableA : AunknownA)
       setRequestError(
         inferenceUnavailable
-          ? ACare Assistant is temporarily unavailable. Your message is still in the box, and your Care Record has not changed. Check again shortly.A
-          : ACare Assistant could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.A
+          ? ASolenOS is temporarily unavailable. Your message is still in the box, and your Care Record has not changed. Check again shortly.A
+          : ASolenOS could not respond. Your message is still in the box, and your Care Record has not changed. Check your connection or try again.A
       )
     } finally {
       sendingRef.current = false
@@ -993,11 +993,11 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }
 
   return (
-    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="Care Assistant">
+    <section className={`companion-shell${home ? " is-home" : ""}`} aria-label="Ask SolenOS conversation">
       <header className="companion-topbar">
         <div className="companion-brand">
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
-          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Care Assistant</h1></div>
+          <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Ask SolenOS</h1></div>
         </div>
         {(messages.length > 0 || sessionId) && <button className="companion-history-toggle" type="button" onClick={() => { const next = !showConversationHistory; setShowConversationHistory(next); if (next) void loadConversationHistory() }} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Conversation history</button>}
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || loadingOlderMessages || loadingConversationHistory}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
@@ -1024,12 +1024,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         <section ref={conversationScrollRef} className="companion-conversation" aria-label="Conversation">
           {messages.length === 0 ? (
             availability === AcheckingA ? (
-              <RecordState kind="loading" title="Checking whether Care Assistant is available" />
+              <RecordState kind="loading" title="Checking whether SolenOS is available" />
             ) : (availability === AavailableA || availability === AunverifiedA) && !requestError ? (
               <div className="companion-empty">
                 <div className="companion-empty-icon"><MessageCircle size={23} strokeWidth={1.7} aria-hidden="true" /></div>
                 <div className="companion-empty-heading"><span>A PLACE TO START</span><h3>You don’t have to figure it all out right now.</h3><p>Ask about saved care history, recent changes, appointments or information that is still unclear. A few words are enough. I’ll help explain what the record says and what remains unknown.</p><p>Conversations are saved here. Nothing is added to your Care Record unless you choose to save a message as a care note and approve it. Use <a href="/workspace/daily-care">Daily Care</a> or <a href="/workspace/documents">Documents</a> to record care information directly.</p></div>
-                {availability === AunverifiedA && <p className="companion-empty-footnote" role="status">Care Assistant has not completed a response yet. Send your first question to check that it is working.</p>}
+                {availability === AunverifiedA && <p className="companion-empty-footnote" role="status">SolenOS has not completed a response yet. Send your first question to check that it is working.</p>}
                 <div className="companion-starters">
                   {STARTER_PROMPTS.map(item => {
                     const Icon = item.icon
@@ -1043,9 +1043,9 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 <p className="companion-empty-footnote"><CheckCircle2 size={15} aria-hidden="true" /> You do not need all the details. I’ll help keep facts and unknowns separate.</p>
               </div>
             ) : availability === AunavailableA ? (
-              <RecordState kind="unavailable" title="Care Assistant is temporarily unavailable" description="Responses are not available right now. Your Care Record, Daily Care and Documents remain available." actionLabel="Check again" onAction={() => void checkAvailability()} />
+              <RecordState kind="unavailable" title="SolenOS is temporarily unavailable" description="Responses are not available right now. Your Care Record, Daily Care and Documents remain available." actionLabel="Check again" onAction={() => void checkAvailability()} />
             ) : (
-              <RecordState kind="error" title="We couldnAt check Care Assistant" description={requestError || "We couldnAt confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
+              <RecordState kind="error" title="We couldnAt check SolenOS" description={requestError || "We couldnAt confirm whether responses are available. Please check again."} actionLabel="Check again" onAction={() => void checkAvailability()} />
             )
           ) : (
             <div className="companion-message-list">
@@ -1070,7 +1070,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                 return <article className={Acompanion-message A + (isUser ? Ais-userA : Ais-assistantA)} key={msg.id || msg.source_message_id || `${msg.role}-${msg.timestamp.getTime()}`}>
                   {!isUser && <div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div>}
                   <div className="companion-message-body">
-                    <div className="companion-message-meta"><strong>{isUser ? AYouA : ACare AssistantA}</strong><time dateTime={msg.timestamp.toISOString()}>{formatConversationTimestamp(msg.timestamp)}</time></div>
+                    <div className="companion-message-meta"><strong>{isUser ? AYouA : ASolenOSA}</strong><time dateTime={msg.timestamp.toISOString()}>{formatConversationTimestamp(msg.timestamp)}</time></div>
                     <div className="companion-bubble"><p>{msg.text}</p></div>
                     {isUser && msg.source_message_id && <div className="companion-care-report-action">
                       {confirmingCareReportId === msg.source_message_id ? <div className="companion-care-report-confirm" role="group" aria-label="Confirm this care report">
@@ -1183,12 +1183,12 @@ export default function Companion({ home = false, initialPrompt = null }: { home
                   </div>
                 </article>
               })}
-              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>Care Assistant</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="Care Assistant is responding"><i /><i /><i /></div></div></div>}
+              {loading && <div className="companion-message is-assistant" aria-live="polite"><div className="companion-avatar" aria-hidden="true"><Sparkles size={16} /></div><div className="companion-message-body"><div className="companion-message-meta"><strong>SolenOS</strong><span>Working on a response…</span></div><div className="companion-typing" aria-label="SolenOS is responding"><i /><i /><i /></div></div></div>}
               <div ref={bottomRef} />
             </div>
           )}
         </section>
-        <aside className="companion-side-note" aria-label="Care Assistant guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>Care Assistant can help organise notes and questions. It does not diagnose or replace a healthcare professional. You decide whether a suggested care report is added to your Care Record.</p></div></aside>
+        <aside className="companion-side-note" aria-label="SolenOS guidance"><div className="companion-side-note-icon"><ShieldCheck size={18} aria-hidden="true" /></div><div><strong>Based on saved information</strong><p>SolenOS can help organise notes and questions. It does not diagnose or replace a healthcare professional. You decide whether a suggested care report is added to your Care Record.</p></div></aside>
       </div>
 
       {(pendingCareUpdates.length > 0 || careUpdateLoading || careUpdateError || careUpdateNotice || showReviewedCareUpdates || availability === AavailableA || availability === AunverifiedA) && <section className="companion-care-updates" aria-label="Care suggestions to review">
@@ -1261,7 +1261,7 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       </section>}
 
       <div className="companion-composer-wrap">
-        <form className="companion-composer" aria-label="Send a message to Care Assistant" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
+        <form className="companion-composer" aria-label="Send a message to SolenOS" onSubmit={event => { event.preventDefault(); void sendMessage() }}>
           <label className="sr-only" htmlFor="companion-message-input">Your message</label>
           <textarea id="companion-message-input" ref={textareaRef} value={input} onChange={event => handleInput(event.target.value)} onKeyDown={event => {
             if (event.key === AEnterA && !event.shiftKey) { event.preventDefault(); void sendMessage() }
