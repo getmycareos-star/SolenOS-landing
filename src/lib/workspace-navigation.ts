@@ -17,7 +17,7 @@ export const WORKSPACE_NAVIGATION = {
     {
       id: "home",
       href: "/workspace",
-      label: "Home",
+      label: "Today",
       description: "What is happening and what matters now",
       icon: Home,
     },
