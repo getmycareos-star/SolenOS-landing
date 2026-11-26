@@ -3443,3 +3443,29 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
 .solenos-chat-app .documents-return-context:hover {
   background: var(--theme-panel-bg);
 }
+
+
+.solenos-chat-app .solenos-skip-link {
+  position: fixed;
+  z-index: 1000;
+  top: 8px;
+  left: 8px;
+  transform: translateY(calc(-100% - 16px));
+  padding: 11px 15px;
+  border: 2px solid var(--theme-panel-border);
+  border-radius: 10px;
+  background: var(--theme-panel-bg);
+  color: var(--theme-field-fg);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 18px rgba(20, 32, 24, .16);
+}
+.solenos-chat-app .solenos-skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid var(--theme-link);
+  outline-offset: 2px;
+}
+.solenos-chat-app .solenos-chat-main:focus {
+  outline: none;
+}
