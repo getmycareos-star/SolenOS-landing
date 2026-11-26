@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, FileText, ImagePlus, MessageSquareText, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { BrandLoading } from "@/components/brand";
 import QuickDailyCheckIn from "@/components/workflows/QuickDailyCheckIn";
 import NaturalLanguageDailyUpdate from "@/components/workflows/NaturalLanguageDailyUpdate";
 import DailyCareOfflineQueueNotice from "@/components/workflows/DailyCareOfflineQueueNotice";
