@@ -196,6 +196,24 @@ assert.match(detailedCapture, /pendingMedicationRecords/,
 assert.match(detailedCapture, /not independent clinical verification/,
   "the UI does not overstate caregiver review as clinical verification");
 
+const apiClient = fs.readFileSync(`${root}/src/api/client.ts`, "utf8");
+const offlineQueue = fs.readFileSync(`${root}/src/lib/offline-sync/durable-write-queue.ts`, "utf8");
+const offlineNotice = fs.readFileSync(`${root}/src/components/workflows/DailyCareOfflineQueueNotice.tsx`, "utf8");
+assert.match(apiClient, /uploadFormDataWithProgress/,
+  "multipart photo uploads expose actual browser transfer progress");
+assert.match(apiClient, /xhr\.upload\.addEventListener\("progress"/,
+  "upload progress comes from transferred bytes, not a simulated timer");
+assert.match(photoCapture, /aria-label="Photo upload progress"/,
+  "photo capture exposes accessible upload progress");
+assert.match(sharedEvidenceCapture, /onUploadProgress/,
+  "the shared evidence pipeline forwards upload progress");
+assert.match(offlineQueue, /sending: matching\.filter\(\(row\) => row\.status === "sending"\)/,
+  "the durable queue distinguishes in-flight transmission from waiting");
+assert.match(offlineNotice, /being sent to SolenOS[\s\S]*does not mean they have been added to your care record/,
+  "the caregiver is told that transmission is not LCR acceptance");
+assert.match(offlineNotice, /Try sending again/,
+  "queued failures expose an actionable retry");
+
 console.log("✓ quick check-in has exactly three overall-impression choices");
 console.log("✓ no care-area questionnaire or daily completion requirement");
 console.log("✓ optional note, caregiver attribution, idempotency and confirmed save receipt");
