@@ -246,7 +246,7 @@ export default function DocumentsPage() {
       const result = await getJSON("/evidence/" + encodeURIComponent(personId));
       if (!Array.isArray(result)) throw new Error("The document list returned an unexpected response.");
       const next = (result as EvidenceRecord[])
-        .filter((item) => item && item.type === "document" && item.id)
+        .filter((item) => item && ["document", "care_photo", "medication_photo"].includes(item.type) && item.id)
         .map(toDocument)
         .sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
       if (isCurrentRequest()) setDocuments(next);
@@ -276,7 +276,7 @@ export default function DocumentsPage() {
           cameraStreamRef.current = null;
           loadedDocumentScopeRef.current = null;
         }
-        setListError("SolenOS could not load saved documents. Your saved files have not been deleted. Check the connection and try again.");
+        setListError("SolenOS could not load saved files and photos. Your saved items have not been deleted. Check the connection and try again.");
       }
     } finally {
       if (isCurrentRequest()) {
@@ -804,7 +804,7 @@ export default function DocumentsPage() {
         <h1>Documents</h1>
         <p>One reliable place for care letters, discharge papers, prescriptions, appointment notes and other important files.</p>
       </header>
-      <section className="documents-upload-actions" aria-label="Add care documents">
+      <section className="documents-upload-actions" aria-label="Add care files and photos">
         <input ref={uploadInputRef} type="file" multiple accept="image/*,application/pdf,text/*,.doc,.docx,.rtf,.odt,.eml,.msg,.csv,.json,.xml,.yaml,.yml" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setIntakeMode("upload"); void handleFiles(files); }} />
         <input ref={snapInputRef} type="file" accept="image/*" capture="environment" className="documents-file-input" onChange={(event) => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setIntakeMode("capture"); void handleFiles(files); }} />
         <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={uploading} className="documents-upload-action"><Upload size={17} />Upload files</button>
@@ -812,12 +812,12 @@ export default function DocumentsPage() {
         <button type="button" onClick={() => { setCapturedPages([]); setRecoveryPageNumbers([]); setRecoverySourceEvidenceId(null); setCameraError(null); setCameraFacingMode("environment"); setCameraOpen(true); }} disabled={uploading} className="documents-upload-action"><ScanLine size={17} />Scan pages</button>
       </section>
 
-      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.map(({ id, title }) => ({ id, title }))} onAddClearerPages={(evidenceId, pages) => { setRecoverySourceEvidenceId(evidenceId); setRecoveryPageNumbers(pages); setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setIntakeMode("scan"); setCameraOpen(true); }} />
+      <DocumentIntelligenceReview refreshToken={documentIntelligenceRefresh} documents={documents.filter((doc) => doc.evidence.type === "document").map(({ id, title }) => ({ id, title }))} onAddClearerPages={(evidenceId, pages) => { setRecoverySourceEvidenceId(evidenceId); setRecoveryPageNumbers(pages); setCapturedPages([]); setCameraError(null); setCameraFacingMode("environment"); setIntakeMode("scan"); setCameraOpen(true); }} />
 
-      <section className="documents-library" aria-label="Saved documents">
+      <section className="documents-library" aria-label="Saved documents and photos">
         <div className="documents-library-heading">
           <div>
-            <h2>Your saved documents</h2>
+            <h2>Saved documents and photos</h2>
             <p>Your original files are kept separate from suggested details.</p>
           </div>
           <button type="button" className="documents-refresh" onClick={() => void loadDocuments(true)} disabled={refreshing || loading} aria-label="Refresh documents">
@@ -915,7 +915,7 @@ export default function DocumentsPage() {
 
         <div className="documents-search">
           <Search size={17} aria-hidden="true" />
-          <input className="documents-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search document names and available text" aria-label="Search documents" />
+          <input className="documents-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search saved file names and available text" aria-label="Search documents" />
         </div>
 
         {loading ? <RecordState kind="loading" title="Loading saved documents" /> : listError && documents.length === 0 ? null : visibleDocuments.length === 0 ? (
@@ -970,7 +970,7 @@ export default function DocumentsPage() {
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button type="button" onClick={downloadOriginal} disabled={!previewUrl} aria-label="Download original document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><Download size={16} /> Download</button>
-              <button type="button" onClick={() => void deleteSelectedDocument()} disabled={deletingDocument} aria-label="Delete document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--theme-error-fg)" }}>{deletingDocument ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />} Delete</button>
+              {selected.evidence.type === "document" && <button type="button" onClick={() => void deleteSelectedDocument()} disabled={deletingDocument} aria-label="Delete document" style={{ minHeight: 42, padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--theme-error-fg)" }}>{deletingDocument ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />} Delete</button>}
               <button type="button" onClick={closePreview} aria-label="Close document preview" style={{ width: 42, minHeight: 42, display: "grid", placeItems: "center", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)" }}><X size={19} /></button>
             </div>
           </header>
