@@ -38,7 +38,7 @@ assert.ok(companion.includes("before_id: cursor.before_id"), "history pagination
 assert.ok(companion.includes("loadConversationHistory") && companion.includes("openSavedConversation"), "caregivers must be able to list and reopen saved conversations");
 assert.ok(companion.includes("Saved conversations") && companion.includes("Conversation history"), "conversation history must be discoverable in the Companion workspace");
 assert.ok(companion.includes("useLayoutEffect") && companion.includes("current.scrollTop = previousTop"), "prepending older messages must preserve the caregiver's reading position");
-assert.ok(companion.includes("loadingOlderMessages") && companion.includes("disabled={loading || loadingOlderMessages}"), "a conversation cannot be switched while older history is loading");
+assert.ok(companion.includes("loadingOlderMessages") && companion.includes("disabled={loading || loadingOlderMessages || loadingConversationHistory}"), "a conversation cannot be switched while older history is loading");
 assert.doesNotMatch(companion, /Add to care story/);
 assert.doesNotMatch(
   companion,
