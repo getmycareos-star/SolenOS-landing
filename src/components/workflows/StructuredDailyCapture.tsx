@@ -967,6 +967,9 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
           endpoint: "/daily/log",
           idempotency_key: captureIdempotencyKey,
           payload,
+          depends_on: payload.medications
+            .map((item) => item.photo_ingestion_key ? durableWriteId("/upload", item.photo_ingestion_key) : null)
+            .filter((dependencyId): dependencyId is string => dependencyId !== null),
         });
         pendingQueueId.current = queueId;
       } catch {
