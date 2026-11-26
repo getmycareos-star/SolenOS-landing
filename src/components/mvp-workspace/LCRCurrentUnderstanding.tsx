@@ -2958,6 +2958,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                 </div>
               </section>
             )}
+      </details>
       {viewMode === "complete" && (
         <>
       <div id="lcr-clarification-workflow">
@@ -2986,7 +2987,6 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           <summary>Care information and history</summary>
           {recordHistoryOpen ? <CareContinuityIntegrityPanel personId={personId} /> : null}
         </details>
-      </details>
       </details>
         </>
       )}
