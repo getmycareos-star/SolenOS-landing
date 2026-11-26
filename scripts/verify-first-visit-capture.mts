@@ -7,7 +7,7 @@ const companion = fs.readFileSync("src/components/workflows/AICompanion.tsx", "u
 
 assert.match(page, /<h1>Home<\/h1>/, "first-time and returning caregivers must enter through Home");
 assert.match(page, /<LCRCurrentUnderstanding showNextStep viewMode="today" \/>/, "the shared entry page must use the concise Living Care Record projection");
-assert.match(page, /View care information/, "Care information must remain directly discoverable");
+assert.match(page, /View the complete Care Record/, "Care information must remain directly discoverable");
 assert.doesNotMatch(page, /FirstVisitWorkspaceRouter/, "Home must not branch into a separate first-visit presentation");
 assert.doesNotMatch(page, /CognitiveWorkspace/, "new caregivers must not be forced through a capture-only route");
 assert.match(understanding, /first-empty/, "an empty record must have a clear empty state");
@@ -19,5 +19,6 @@ assert.match(understanding, /response\.person_id !== scopedPersonId/, "the visib
 assert.match(understanding, /We couldn’t load your care information/, "failed retrieval must remain distinct from an empty record");
 assert.match(companion, /const prompt = initialPrompt\?\.trim\(\)\.slice\(0, 4000\)/, "Companion must bound deep-link prompt text at the component boundary");
 assert.match(companion, /params\.delete\('prompt'\)/, "Companion must clear the consumed prompt from the URL");
+assert.match(companion, /history\.replaceState\(window\.history\.state, '', nextUrl\)/, "Companion prompt cleanup must preserve browser navigation state");
 
 console.log("PASS: first-time and returning caregivers share Home, with an honest empty state and a bounded Companion entry path.");
