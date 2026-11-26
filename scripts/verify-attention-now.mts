@@ -37,7 +37,12 @@ assert.match(component, /No care items have been marked as postponed/);
 assert.doesNotMatch(component, /Things that can wait/);
 assert.match(component, /There isn’t enough recorded care information to assess immediate priorities yet/);
 assert.doesNotMatch(component, /No immediate concerns were identified in the information currently available\./);
-assert.match(component, /formatWhen\(item\.occurred_at\).*formatWhen\(item\.recorded_at\)/s);
+assert.match(component, /eventTimeLabel\(item\.occurred_at, item\.time_provenance\).*formatWhen\(item\.recorded_at\)/s,
+  "the LCR attention view must distinguish an unknown event time from its saved time");
+assert.match(component, /provenance === "server_recorded_at" \|\| provenance === "entry_time_defaulted"/,
+  "server-assigned timestamps must not be presented as when the care event happened");
+assert.match(component, /Event time not provided/,
+  "the caregiver sees when the event time was not supplied");
 assert.match(component, /See related notes and documents/);
 assert.doesNotMatch(component, /Review state:/);
 assert.match(component, /assessmentError/);
