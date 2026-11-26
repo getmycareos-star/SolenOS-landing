@@ -31,7 +31,7 @@ function decodeBase64(value: string): Uint8Array {
 }
 
 /** Sends either a JSON care write or an encrypted-queue file upload through the same API client. */
-export async function sendQueuedCareWrite(endpoint: string, payload: unknown): Promise<unknown> {
+export async function sendQueuedCareWrite(endpoint: string, payload: unknown, onUploadProgress?: (loaded: number, total: number) => void): Promise<unknown> {
   if (isOfflineFilePayload(payload)) {
     const form = new FormData();
     for (const [key, value] of Object.entries(payload.fields)) {
@@ -46,7 +46,7 @@ export async function sendQueuedCareWrite(endpoint: string, payload: unknown): P
     if (endpoint !== "/upload") {
       throw new Error("This queued file-upload destination is not supported.");
     }
-    const response = await postFormData("/upload", form) as {
+    const response = await postFormData("/upload", form, onUploadProgress) as {
       persisted?: boolean;
       evidence_id?: string;
     };
