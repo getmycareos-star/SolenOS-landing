@@ -127,7 +127,7 @@ export function NotificationsCenter() {
     } catch {
       if (isCurrentRequest()) setInboxError("We couldn't load notifications. Check your connection and try again.");
     } finally {
-      if (!options?.silent && isCurrentRequest()) setInboxLoading(false);
+      if (isCurrentRequest()) setInboxLoading(false);
     }
   }, []);
 
