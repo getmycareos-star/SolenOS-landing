@@ -18,6 +18,7 @@ const accessibilityOverrides = readFileSync(
   "src/app/accessibility-overrides.css",
   "utf8",
 );
+const recordState = readFileSync("src/components/ui/RecordState.tsx", "utf8");
 
 assert.match(accessibility, /matchMedia\("\(max-width: 900px\)"\)/);
 assert.match(designSystem, /@media \(max-width: 900px\)/);
@@ -29,6 +30,12 @@ assert.match(accessibilityOverrides, /button, \[role="button"\], input\[type="bu
 assert.match(accessibilityOverrides, /button:focus-visible[\s\S]*?outline: 3px solid/);
 assert.match(accessibilityOverrides, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(accessibilityOverrides, /data-solenos-theme="dark"[\s\S]*?outline-color: #f4d35e/);
+
+assert.match(recordState, /aria-labelledby={titleId}/);
+assert.match(recordState, /aria-busy={kind === "loading"}/);
+assert.match(designSystem, /\.record-state-action[\s\S]*?min-height: 44px/);
+assert.match(designSystem, /data-solenos-theme="dark" \.solenos-chat-app[\s\S]*?--sn-surface: #1b2520[\s\S]*?--sn-ink: #eef4ed/);
+
 
 assert.match(shell, /className="solenos-sidebar-icon-button solenos-sidebar-toggle"/);
 assert.match(accessibility, /sidebar\.setAttribute\("aria-modal", "true"\)/);
