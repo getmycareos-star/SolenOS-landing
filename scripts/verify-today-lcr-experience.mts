@@ -51,6 +51,7 @@ assert.match(understanding, /changesLoading \? \(/, "an in-flight change query m
 assert.match(understanding, /assessmentLoading \? \(/, "an in-flight assessment must not be shown as no care priorities");
 
 assert.match(understanding, /Happened \\u0024\{formatWhen\(item\.occurred_at\)\}/, "Home must distinguish when care happened from when it was saved");
+assert.match(understanding, /Change review saved \\u0024\{formatWhen\(change\.created_at\)\}/, "change detection time must not be confused with the event comparison window");
 
 assert.match(home, /<UpcomingAppointmentSummary \/>/, "Home must retain recorded appointment information");
 assert.match(home, /searchParams\.get\("prompt"\)\?\.trim\(\)\.slice\(0, 4000\)/, "Companion deep-link prompts must be bounded");
