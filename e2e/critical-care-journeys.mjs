@@ -1938,7 +1938,7 @@ await record("04 scanned document upload, original bytes, page tracking, idempot
   assert.equal(possibleVersion.payload.possible_version_of_evidence_id, documentId);
 
   const documentsLibrary = await createBrowserPage(session, "/workspace/documents", { width: 390, height: 844 });
-  await documentsLibrary.page.getByText(/Exact copy of/).waitFor({ timeout: 20_000 });
+  await documentsLibrary.page.getByText(/This is the same file as/).waitFor({ timeout: 20_000 });
   await documentsLibrary.page.getByText(/Possible newer or corrected copy of/).waitFor({ timeout: 20_000 });
   await documentsLibrary.context.close();
 });
