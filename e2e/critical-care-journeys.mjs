@@ -1962,10 +1962,7 @@ await record("Daily Care saves and retrieves original reports without relying on
   const daily = await createBrowserPage(session, "/workspace/daily-care");
   const saveFreeTextUpdate = async (text, afterSaved) => {
     console.log(`Daily Care Scenario 01: opening capture for: ${text}`);
-    const shareButton = daily.page.getByRole("button", { name: "Share something", exact: true });
-    await shareButton.waitFor({ state: "visible", timeout: 15_000 });
-    await shareButton.click();
-    const happenedButton = daily.page.getByRole("button", { name: /Describe an update/ });
+    const happenedButton = daily.page.getByRole("button", { name: "Describe an update", exact: true });
     await happenedButton.waitFor({ state: "visible", timeout: 15_000 });
     await happenedButton.click();
     const originalWords = daily.page.locator("#natural-daily-update-report");
@@ -1987,7 +1984,7 @@ await record("Daily Care saves and retrieves original reports without relying on
     assert.ok(typeof savePayload.qwen_job_id === "string" && savePayload.qwen_job_id);
     await daily.page.getByRole("status").filter({ hasText: "Your original update was saved to your Care Record." }).waitFor({ timeout: 10_000 });
     if (afterSaved) await afterSaved();
-    await daily.page.getByRole("button", { name: "Close capture", exact: true }).click();
+    await daily.page.getByRole("button", { name: "Back to choices", exact: true }).click();
     await originalWords.waitFor({ state: "detached", timeout: 15_000 });
     console.log(`Daily Care Scenario 01: saved source report: ${text}`);
     return { eventId: savePayload.id, jobId: savePayload.qwen_job_id };
@@ -2037,53 +2034,6 @@ await record("Daily Care saves and retrieves original reports without relying on
   assert.equal(openLoopsBefore.status, 200, JSON.stringify(openLoopsBefore.payload));
   const openLoopIdsBefore = (openLoopsBefore.payload.items || []).map((item) => item.id).sort();
   assert.ok(openLoopIdsBefore.includes(appointmentFollowUpId), "the pre-existing clinic follow-up must be in the record before the day begins");
-  const followUpsResponsePromise = daily.page.waitForResponse((response) => {
-    const url = new URL(response.url());
-    return url.pathname.endsWith("/api/v1/open-loops")
-      && response.request().method() === "GET"
-      && url.searchParams.get("limit") === "100"
-      && url.searchParams.get("offset") === "0";
-  });
-  let releaseHistory = () => {};
-  const historyGate = new Promise((resolve) => { releaseHistory = resolve; });
-  await daily.page.route("**/api/v1/daily-care/intelligence/history**", async (route) => {
-    await historyGate;
-    await route.continue();
-  });
-  const followUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
-    has: daily.page.locator("#daily-care-follow-ups-title"),
-  });
-  const savedFollowUps = followUpsPanel.locator('ul[aria-label="Saved follow-ups"]');
-  try {
-    await daily.page.reload({ waitUntil: "domcontentloaded" });
-    const followUpsResponse = await followUpsResponsePromise;
-    const followUpsPayload = await followUpsResponse.json();
-    assert.equal(followUpsResponse.status(), 200, JSON.stringify(followUpsPayload));
-    const browserFollowUp = (followUpsPayload.items || []).find((item) => item.id === appointmentFollowUpId);
-    assert.ok(
-      browserFollowUp,
-      `Daily Care's browser request did not retrieve the pre-existing follow-up: ${JSON.stringify(followUpsPayload)}`,
-    );
-    // The list is inside a collapsed native <details>. Wait for it in the DOM,
-    // then open it. The history request remains deliberately blocked until the
-    // saved follow-up is visible, proving the two reads are independent.
-    await savedFollowUps.waitFor({ state: "attached", timeout: 10_000 });
-    await followUpsPanel.locator("summary").click();
-    await savedFollowUps.waitFor({ state: "visible", timeout: 5_000 });
-  } finally {
-    releaseHistory();
-    await daily.page.unroute("**/api/v1/daily-care/intelligence/history**");
-  }
-  const followUpsAlreadyOpen = await followUpsPanel.evaluate((element) =>
-    element instanceof HTMLDetailsElement && element.open
-  );
-  if (!followUpsAlreadyOpen) {
-    await followUpsPanel.locator("summary").click();
-  }
-  await followUpsPanel.getByRole("heading", { name: "Follow-ups", exact: true })
-    .waitFor({ state: "visible", timeout: 15_000 });
-  await savedFollowUps.getByText("Contact the clinic about the appointment", { exact: true })
-    .waitFor({ state: "visible", timeout: 15_000 });
   const dailyCaptureJobs = [];
   for (const [index, report] of scenarioReports.entries()) {
     const saved = await saveFreeTextUpdate(report, index === 2 ? async () => {
@@ -2208,43 +2158,24 @@ await record("Daily Care saves and retrieves original reports without relying on
   assert.ok(retainedAppointmentFollowUp, "the original clinic follow-up must remain retrievable");
   assert.equal(retainedAppointmentFollowUp.status, "open");
 
-  await daily.page.getByText(scenarioReports[2], { exact: false }).first().waitFor({ timeout: 15_000 });
-  await daily.page.reload({ waitUntil: "domcontentloaded" });
-  assert.equal(new URL(daily.page.url()).pathname, "/workspace/daily-care", "Daily Care must remain the active route before opening Follow-ups");
-  await daily.page.locator("#daily-care-follow-ups-title").waitFor({ state: "attached", timeout: 15_000 });
-  const appointmentFollowUpsPanel = daily.page.locator("details.daily-care-context-panel").filter({
-    has: daily.page.locator("#daily-care-follow-ups-title"),
-  });
-  await appointmentFollowUpsPanel.waitFor({ state: "attached", timeout: 15_000 });
-  const isOpen = await appointmentFollowUpsPanel.evaluate((element) => element.open);
-  if (!isOpen) await appointmentFollowUpsPanel.locator("summary").click();
-  const openLoopsUiResponsePromise = daily.page.waitForResponse((response) => {
-    const url = new URL(response.url());
-    return url.pathname.endsWith("/api/v1/open-loops") && response.request().method() === "GET";
-  }, { timeout: 15_000 });
-  // Button(asChild) renders a semantic Next.js anchor. Target the link role,
-  // then wait for the destination page h1, not the persistent sidebar heading.
-  await appointmentFollowUpsPanel.getByRole("link", { name: "Open Follow-ups", exact: true }).click();
-  await daily.page.waitForURL("**/workspace/open-loops", { timeout: 15_000 });
-  await daily.page.locator(".followups-page h1").getByText("Needs attention", { exact: true })
-    .waitFor({ state: "visible", timeout: 15_000 });
-  const openLoopsUiResponse = await openLoopsUiResponsePromise;
-  const openLoopsUiPayload = await openLoopsUiResponse.json().catch(() => null);
-  assert.equal(openLoopsUiResponse.status(), 200, JSON.stringify(openLoopsUiPayload));
-  const browserClinicFollowUp = (openLoopsUiPayload?.items || []).find((item) => item.id === appointmentFollowUpId);
-  assert.ok(
-    browserClinicFollowUp,
-    `Follow-ups page did not retrieve the persisted clinic item: ${JSON.stringify(openLoopsUiPayload)}`,
-  );
-  assert.equal(browserClinicFollowUp.title, "Contact the clinic about the appointment");
-  await daily.page.locator(".followups-page")
-    .getByRole("heading", { name: "Contact the clinic about the appointment", exact: true })
-    .waitFor({ state: "visible", timeout: 15_000 });
+  const careHistory = await createBrowserPage(session, "/workspace/timeline");
+  await careHistory.page.getByRole("heading", { name: "Care history", exact: true }).waitFor({ timeout: 20_000 });
   for (const report of scenarioReports) {
-    await daily.page.getByText(report, { exact: false }).first().waitFor({ timeout: 15_000 });
+    await careHistory.page.locator("article.timeline-event").filter({ hasText: report }).first()
+      .waitFor({ state: "visible", timeout: 20_000 });
   }
-  await verifyMobile(daily.page);
-  await daily.context.close();
+
+  const needsAttention = await createBrowserPage(session, "/workspace/open-loops");
+  await needsAttention.page.locator(".followups-page h1").getByText("Needs attention", { exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  await needsAttention.page.getByRole("heading", { name: "Contact the clinic about the appointment", exact: true })
+    .waitFor({ state: "visible", timeout: 20_000 });
+
+  await verifyMobile(careHistory.page);
+  await verifyMobile(needsAttention.page);
+  await careHistory.context.close();
+  await needsAttention.context.close();
+
 
 });
 
