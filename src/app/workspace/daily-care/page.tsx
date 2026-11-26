@@ -825,7 +825,7 @@ export default function DailyCarePage() {
             <summary><h2 id="daily-care-follow-ups-title">Needs attention</h2></summary>
             <p className="daily-care-muted">
               {followUps.length} saved follow-up{followUps.length === 1 ? "" : "s"} and {careItems.filter(isOpenMatter).length} care detail{careItems.filter(isOpenMatter).length === 1 ? "" : "s"} that may need checking.
-              Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, Daily Care will use it instead of creating a duplicate.
+              Keep questions, decisions and things still needing attention in one place. If a follow-up already exists, SolenOS will use it instead of creating a duplicate.
             </p>
             {followUpsError && <p role="alert">{caregiverSafeAssistantText(followUpsError) || "Your follow-ups could not be loaded. Try again."}</p>}
             {followUps.length > 0 && (
@@ -860,13 +860,13 @@ export default function DailyCarePage() {
           </details>
 
           <details className="daily-care-context-panel">
-            <summary><h2 id="daily-care-since-last-title">Since you last opened Daily Care</h2></summary>
+            <summary><h2 id="daily-care-since-last-title">Since your last visit</h2></summary>
             <p className="daily-care-muted">
               Shows care updates added since your previous visit on this device.
             </p>
             {historyError && <p role="status" className="daily-care-muted">This summary could not be refreshed. Previously saved care information remains available below.</p>}
             {sinceLastOpenItems === null ? (
-              historyError ? null : <p>This is the first visit on this device. New recorded updates will appear here the next time you open Daily Care.</p>
+              historyError ? null : <p>This is the first visit on this device. New recorded updates will appear here the next time you visit.</p>
             ) : sinceLastOpenItems.length > 0 ? (
               <>
                 <p><strong>{sinceLastOpenItems.length}</strong> new care record{sinceLastOpenItems.length === 1 ? "" : "s"} added since {lastOpenedAt ? displayCareTime(lastOpenedAt) : "your previous visit"}.</p>
