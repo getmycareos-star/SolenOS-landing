@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getCaregiverId, getPersonId } from "@/api/client";
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import { getDurableWriteSummary, isDurableWriteStoragePersistent, retryBlockedDurableWrites, retryPendingDurableWrites, syncDurableWrites } from "@/lib/offline-sync/durable-write-queue";
@@ -13,6 +13,7 @@ export default function DailyCareOfflineQueueNotice() {
   const [retrying, setRetrying] = useState(false);
   const [retryNotice, setRetryNotice] = useState("");
   const [persistentStorage, setPersistentStorage] = useState<boolean | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(async () => {
     const personId = getPersonId();
@@ -28,7 +29,11 @@ export default function DailyCareOfflineQueueNotice() {
       setAttention(before.blocked + before.failed_recoverable);
       if (before.pending > 0) setSynced(false);
 
-      if (typeof navigator !== "undefined" && navigator.onLine && before.pending > 0) {
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.onLine &&
+        (before.pending > 0 || before.sending > 0 || before.failed_recoverable > 0)
+      ) {
         const result = await syncDurableWrites({
           personId,
           caregiverId,
@@ -41,6 +46,13 @@ export default function DailyCareOfflineQueueNotice() {
         if (result.synced > 0) {
           setSynced(true);
           window.dispatchEvent(new Event("careRecordUpdated"));
+        }
+        if (retryTimer.current) window.clearTimeout(retryTimer.current);
+        if (after.pending > 0 || after.sending > 0 || after.failed_recoverable > 0) {
+          retryTimer.current = window.setTimeout(() => {
+            retryTimer.current = null;
+            void refresh();
+          }, 16_000);
         }
       }
     } catch {
@@ -92,6 +104,8 @@ export default function DailyCareOfflineQueueNotice() {
     window.addEventListener("solenos:offline-queue-updated", update);
     return () => {
       active = false;
+      if (retryTimer.current) window.clearTimeout(retryTimer.current);
+      retryTimer.current = null;
       window.removeEventListener("online", reconnect);
       window.removeEventListener("personIdChanged", update);
       window.removeEventListener("solenos:offline-queue-updated", update);
