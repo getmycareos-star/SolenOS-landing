@@ -7,6 +7,7 @@ import { getDurableWriteSummary, retryBlockedDurableWrites, retryPendingDurableW
 
 export default function DailyCareOfflineQueueNotice() {
   const [pending, setPending] = useState(0);
+  const [sending, setSending] = useState(0);
   const [attention, setAttention] = useState(0);
   const [synced, setSynced] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -20,6 +21,7 @@ export default function DailyCareOfflineQueueNotice() {
     try {
       const before = await getDurableWriteSummary(personId, caregiverId);
       setPending(before.pending);
+      setSending(before.sending);
       setAttention(before.blocked + before.failed_recoverable);
       if (before.pending > 0) setSynced(false);
 
@@ -31,6 +33,7 @@ export default function DailyCareOfflineQueueNotice() {
         });
         const after = await getDurableWriteSummary(personId, caregiverId);
         setPending(after.pending);
+        setSending(after.sending);
         setAttention(after.blocked + after.failed_recoverable);
         if (result.synced > 0) {
           setSynced(true);
@@ -98,6 +101,12 @@ export default function DailyCareOfflineQueueNotice() {
         <p role="status" className="daily-care-muted">
           {pending} update{pending === 1 ? "" : "s"} saved on this device and waiting to reach SolenOS. They are not yet confirmed in your care record.
         </p>
+      )}
+      {sending > 0 && (
+        <div role="status" className="daily-care-muted" style={{ display: "grid", gap: 6 }}>
+          <span>{sending} queued item{sending === 1 ? "" : "s"} being sent to SolenOS. This does not mean they have been added to your care record.</span>
+          <progress aria-label="Sending queued care updates" max={100} style={{ width: "100%", minHeight: 8 }} />
+        </div>
       )}
       {synced && (
         <p role="status" className="daily-care-muted">
