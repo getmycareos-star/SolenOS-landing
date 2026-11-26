@@ -539,6 +539,8 @@ assert.doesNotMatch(naturalDailyUpdate, /care session could not be verified|encr
   "offline capture messages must describe what happened in everyday language");
 assert.doesNotMatch(naturalDailyUpdate, /setError\(\s*cause\.message/);
 assert.match(naturalDailyUpdate, /reason\.includes\("could not securely keep an offline copy"\)/, "only the explicit local-save error may be surfaced; raw backend errors remain sanitized");
+assert.match(naturalDailyUpdate, /Your original update has reached SolenOS\. Any additional details still need review before they become part of your Care Record/,
+  "offline queue receipt must not imply that proposed details have already been accepted into the Care Record");
 assert.match(claimReview, /caregiverStatusLabel/);
 assert.equal(claimReview.includes("review version ${assessmentImpact.assessment_version}"), false);
 assert.match(handoff, /function readableStatus\(value: string\): string \{\s+return caregiverStatusLabel\(value\) \?\? "Not available";/);
