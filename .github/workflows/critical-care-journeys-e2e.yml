@@ -152,7 +152,6 @@ jobs:
           python -m pip install -e ./backend-service/backend
 
       - name: Install OCR runtime for real document extraction
-        if: inputs.require_live_qwen
         run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
 
       - name: Start isolated Ollama and download Qwen
