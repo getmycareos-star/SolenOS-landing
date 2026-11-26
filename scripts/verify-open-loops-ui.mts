@@ -30,7 +30,7 @@ const required: Array<[string, RegExp]> = [
   ["shows evidence status and incomplete history beside LCR care changes", /item\.evidence_status[\s\S]*?item\.history_completeness[\s\S]*?Some earlier care information may be missing/],
   ["shows linked follow-up status and outcome in both care views", /item\.linked_follow_up_outcome_status[\s\S]*?caregiverStatusLabel/],
   ["renders the four explicit attention classifications", /needs_attention_now[\s\S]*?important_to_address[\s\S]*?can_wait_with_documented_basis[\s\S]*?needs_clarification/],
-  ["uses the three specified caregiver follow-up sections", /<h2>Needs attention<\/h2>[\s\S]*?<h2>Being monitored<\/h2>[\s\S]*?<h2>Needs clarification<\/h2>/],
+  ["separates immediate attention, important non-immediate matters, monitoring and clarification", /<h2>Needs attention now<\/h2>[\s\S]*?<h2>Important to address<\/h2>[\s\S]*?<h2>Being monitored<\/h2>[\s\S]*?<h2>Needs clarification<\/h2>/],
   ["maps persisted follow-up states to caregiver-facing progress labels", /function lifecycleLabel/],
   ["maps information waits from persisted loop types", /awaiting_response[\s\S]*missing_information[\s\S]*professional_input[\s\S]*unconfirmed_outcome/],
   ["maps action waits from persisted loop types", /pending_action[\s\S]*follow_up[\s\S]*pending_decision/],
@@ -55,8 +55,8 @@ for (const [label, pattern] of required) {
   assert.match(allCareViews, pattern, `Follow-ups contract missing: ${label}`);
 }
 
-assert.match(page, /item\.category === "needs_attention_now" \|\| item\.category === "important_to_address" \? "Needs attention"/, "all items needing action use the same simple label");
-assert.doesNotMatch(page, /Needs attention now|Important to address|followup-status/, "follow-up cards avoid extra labels and repeated status text");
+assert.match(page, /item\.category === "needs_attention_now" \? "Needs attention now"[\s\S]*?item\.category === "important_to_address" \? "Important to address"/, "the card label preserves the difference between immediate and important non-immediate matters");
+assert.doesNotMatch(page, /followup-status/, "follow-up cards avoid repeated internal status text");
 const openLoopCreateWrites = page.match(/postJSON\("\/open-loops",/g) ?? [];
 assert.equal(openLoopCreateWrites.length, 1, "event-derived follow-ups must use one canonical create writer");
 assert.match(page, /async function createFollowUp\(item: AttentionDecision\)[\s\S]*?if \(\(item\.source !== "events" && item\.source !== "persisted_change"\) \|\| !item\.record_id\) return;[\s\S]*?postJSON\("\/open-loops",\s*\{[\s\S]*?source_type: item\.source,[\s\S]*?source_id: item\.record_id,[\s\S]*?idempotency_key: idempotencyKey/s, "follow-up creation must remain bound to a persisted source record and retry-safe");
@@ -87,7 +87,7 @@ assert.match(page, /<h2>Being monitored<\/h2>[\s\S]*?categorized\.monitored\.map
 assert.doesNotMatch(page, /<h2>Being monitored<\/h2>[\s\S]*?unclassifiedLoops\.map\(/, "Being monitored must contain only items with an explicit documented basis to wait");
 assert.doesNotMatch(page, /action_status: loop\.status/, "Open Loop lifecycle status must not be copied into the independent action-status dimension");
 assert.doesNotMatch(page, /linkedToSavedFollowUp/, "a linked Open Loop must not suppress the care-attention classification from the latest assessment");
-assert.match(page, /needsAttention: unique\(\[\.\.\.\(care\?\.needs_attention_now \|\| \[\]\), \.\.\.\(care\?\.important_to_address \|\| \[\]\)\]\)/, "linked follow-ups must retain their assessment-derived attention category");
+assert.match(page, /needsAttentionNow: unique\(care\?\.needs_attention_now \|\| \[\]\)[\s\S]*?importantToAddress: unique\(care\?\.important_to_address \|\| \[\]\)[\s\S]*?needsAttentionNowKeys/, "linked follow-ups retain separate assessment-derived priority categories and immediate matters win if a source is duplicated");
 assert.match(page, /const unclassifiedLoops = linkedLoops\.filter\(\(loop\) => !allAttention\.some\(\(item\) =>[\s\S]*?item\.source === loop\.source_type && item\.record_id === loop\.source_id/, "only loops with no matching assessed source may enter the unclassified clarification group");
 assert.match(page, /item\.action_status === "not_recorded"/, "follow-up cards must distinguish missing action records from completed actions");
 assert.match(caregiverLanguage, /outcome_unknown: "Outcome not recorded"/, "an unknown follow-up outcome must not be described as resolved");
