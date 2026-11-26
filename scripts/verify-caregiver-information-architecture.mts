@@ -206,6 +206,7 @@ assert.ok(documents.includes("parsedReturnTo.pathname === \"/workspace/timeline\
 assert.ok(notifications.includes("<NotificationsCenter />"), "Notifications renders a dedicated inbox rather than redirecting into Settings");
 assert.ok(notificationCenter.includes("/notifications?limit=100&offset=0") && notificationCenter.includes("/notifications/unread-count"), "the notification inbox reads its authenticated feed and unread count");
 assert.ok(notificationCenter.includes('"/read"') && !notificationCenter.includes('postJSON("/open-loops"') && !notificationCenter.includes('patchJSON("/open-loops"'), "reading a notification changes only notification read state");
+assert.ok(notificationCenter.includes('addEventListener("personIdChanged", resetForCareRecipientChange)') && notificationCenter.includes("scopeSequenceRef.current += 1") && notificationCenter.includes("setNotifications([])"), "the notification inbox and preferences clear and reload for the active care recipient");
 assert.ok(needsAttention.includes("/open-loops") && !needsAttention.includes('postJSON("/notifications"') && !needsAttention.includes('patchJSON("/notifications"'), "Needs attention owns unresolved care matter state independently of the notification inbox");
 
 assert.ok(settings.includes('href="/workspace/notifications"'), "Settings links to the separate notification destination");
