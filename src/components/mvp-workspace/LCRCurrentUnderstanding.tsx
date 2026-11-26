@@ -538,6 +538,9 @@ type CurrentCareProjection = {
   read_only: boolean;
   history_coverage: string;
   schema_status: string;
+  retrieval_status?: "available" | "empty" | "partial" | "failed" | string;
+  evidence_authorization_status?: "checked" | "failed" | "not_needed" | string;
+  evidence_lineage_status?: string;
   missing_required_sources: string[];
   missing_optional_sources: string[];
   items: CurrentCareItem[];
@@ -555,6 +558,8 @@ type CurrentCareProjection = {
     next_offset?: number | null;
     returned_history_complete?: boolean;
     error_code?: string | null;
+    enrichment_status?: string | null;
+    interpretation_limit?: string | null;
     required?: boolean;
   }>;
   requested_sources?: string[];
@@ -985,11 +990,14 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           ...current,
           items: [...merged.values()].slice(0, 12),
           item_count: Math.min(merged.size, 12),
-          has_more: current.has_more || response.has_more,
+          has_more: merged.size > 12 || Object.values(coverage).some((value) => Boolean(value.has_more)),
           source_coverage: coverage,
           failed_sources: [...failed],
           missing_required_sources: [...missingRequired],
           missing_optional_sources: [...missingOptional],
+          retrieval_status: failed.size > 0 || missingRequired.size > 0 || missingOptional.size > 0
+            ? "partial"
+            : merged.size === 0 ? "empty" : "available",
         };
       });
     } catch {
@@ -1538,6 +1546,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
   const hasConfirmedEmptyRecord = Boolean(
     projection &&
     projection.items.length === 0 &&
+    projection.retrieval_status === "empty" &&
     projection.schema_status === "complete" &&
     projection.missing_required_sources.length === 0 &&
     projection.missing_optional_sources.length === 0 &&
@@ -1550,6 +1559,9 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
     !hasConfirmedEmptyRecord &&
     (
       projection.schema_status !== "complete" ||
+      !["available", "empty"].includes(projection.retrieval_status ?? "") ||
+      projection.evidence_authorization_status === "failed" ||
+      projection.evidence_lineage_status === "failed" ||
       !hasCompleteSourceCoverage ||
       projection.missing_required_sources.length > 0 ||
       projection.missing_optional_sources.length > 0 ||
@@ -1764,6 +1776,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                   ? "couldn’t be searched for this question; no conclusion can be drawn from this source"
                   : "not available in this care-record setup"}
           {coverage.returned_count ? ` — ${coverage.returned_count} saved details are still available.` : ""}
+          {coverage.interpretation_limit ? <small>{caregiverSafeAssistantText(coverage.interpretation_limit)}</small> : null}
         </span>
         <button
           type="button"
