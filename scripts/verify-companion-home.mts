@@ -143,6 +143,10 @@ assert.match(durableQueue, /queueClearing/,
   "new offline writes are blocked while explicit device cleanup is in progress");
 assert.match(durableQueue, /solenos_offline_queue_clearing/,
   "other browser tabs are paused before the local queue database is deleted");
+assert.match(durableQueue, /request\.onblocked/,
+  "IndexedDB cleanup remains pending rather than falsely reporting failure while another tab is open");
+assert.match(durableQueue, /onBlocked\?\.\(\)/,
+  "caregivers are told to close other tabs while device cleanup waits");
 assert.doesNotMatch(home, /startInUpdateMode|CognitiveWorkspace/);
 assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /I need to talk it through/);
