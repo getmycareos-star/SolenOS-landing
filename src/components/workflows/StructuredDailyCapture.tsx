@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { postJSON, postFormData, getJSON, getPersonId, getCaregiverId } from '@/api/client';
+import { postJSON, getJSON, getPersonId, getCaregiverId } from '@/api/client';
 import { useCameraPermission } from '@/lib/permissions/useCameraPermission';
 import { compressImage, dataURLtoFile } from '@/lib/imageCompression';
+import { extractAttachedDocument } from '@/components/mvp-workspace/capture/extract-attached';
 import { useOptimisticMutation } from '@/lib/optimistic';
 import { sendQueuedCareWrite } from "@/lib/offline-sync/send-queued-care-write";
 import { caregiverSourceText, caregiverSafeErrorMessage, caregiverSafeGeneratedText } from "@/lib/caregiver-language";
@@ -429,6 +430,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
 
   // Image upload state for medications
   const [medicationImagePreview, setMedicationImagePreview] = useState<string | null>(null);
+  const [medicationImageUploadKey, setMedicationImageUploadKey] = useState<string | null>(null);
+  const [medicationImageCapturedAt, setMedicationImageCapturedAt] = useState<string | null>(null);
   useEffect(() => {
     return () => {
       if (medicationImagePreview?.startsWith('blob:')) URL.revokeObjectURL(medicationImagePreview);
@@ -501,6 +504,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         setMedicationCompressing(false);
         
         // Convert compressed file back to data URL for preview
+        setMedicationImageUploadKey(null);
+        setMedicationImageCapturedAt(new Date().toISOString());
         setMedicationImagePreview(await fileToDataUrl(compressedFile));
         
         // Clean up
@@ -520,8 +525,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
   const handleMedicationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setMedicationError(null);
     setMedicationFeedback(null);
-    const file = e.target.files?.[0];
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = "";
     if (!file) return;
+    setMedicationImageUploadKey(null);
+    setMedicationImageCapturedAt(new Date().toISOString());
     if (!file.type.startsWith('image/')) {
       setMedicationError('Choose an image file to add a medicine photo.');
       return;
@@ -542,6 +550,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       });
       
       // Convert compressed file to data URL for preview
+      setMedicationImageUploadKey(null);
+      setMedicationImageCapturedAt(new Date().toISOString());
       setMedicationImagePreview(await fileToDataUrl(compressedFile));
       
       // Clean up
@@ -550,6 +560,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       // Fallback to original image if compression fails
       const reader = new FileReader();
       reader.onload = (event) => {
+        setMedicationImageUploadKey(null);
+        setMedicationImageCapturedAt(new Date().toISOString());
         setMedicationImagePreview(event.target?.result as string);
       };
       reader.readAsDataURL(file);
@@ -585,31 +597,34 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       // If we have an image preview, upload it first to get an evidence ID
       let evidenceId: string | null = null;
       if (medicationImagePreview) {
-        // Convert the preview data URL to a file without a network fetch.
-        const file = dataURLtoFile(medicationImagePreview, 'medication.png');
-
-        // Compress the image before upload
+        // Reuse the encrypted, idempotent evidence upload path. If the device is
+        // offline, the original remains queued and this medication draft stays open.
+        const file = dataURLtoFile(medicationImagePreview, "medication.png");
+        const retryKey = medicationImageUploadKey ?? crypto.randomUUID();
+        const capturedAt = medicationImageCapturedAt ?? new Date().toISOString();
+        setMedicationImageUploadKey(retryKey);
+        setMedicationImageCapturedAt(capturedAt);
         setMedicationCompressing(true);
-        const compressedFile = await compressImage(file, {
-          maxSizeMB: 0.5, // 500KB target
-          maxWidthOrHeight: 2000, // 2000px max dimension
-          useWebWorker: true,
-          initialQuality: 0.8,
-          compressForce: false,
-          rotate: true,
-        });
+        const uploadReceipt = await extractAttachedDocument(
+          file,
+          "upload",
+          retryKey,
+          capturedAt,
+          undefined,
+          "medication_photo",
+        );
         setMedicationCompressing(false);
-        
-        const formData = new FormData();
-        formData.append('file', compressedFile);
-        formData.append('caregiver_id', caregiverId);
-        formData.append('person_id', personId);
-        
-        const uploadResult = await postFormData('/upload', formData) as { evidence_id?: string };
-        if (!uploadResult?.evidence_id) {
-          throw new Error('Image upload did not return an evidence ID');
+        if (uploadReceipt.status !== "saved" || !uploadReceipt.evidenceId) {
+          setMedicationError(
+            uploadReceipt.status === "pending"
+              ? "Your medicine photo is saved on this device, but it has not reached SolenOS yet. When it has synced, tap Add medicine again to finish this entry. Keep this browser data until it is sent."
+              : uploadReceipt.errorNote || "We couldn't save the medicine photo. Keep it selected and try again.",
+          );
+          return;
         }
-        evidenceId = uploadResult.evidence_id;
+        evidenceId = uploadReceipt.evidenceId;
+        setMedicationImageUploadKey(null);
+        setMedicationImageCapturedAt(null);
       }
       
       // Add medication to the form
@@ -641,6 +656,8 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
       
       // Reset image preview
       setMedicationImagePreview(null);
+      setMedicationImageUploadKey(null);
+      setMedicationImageCapturedAt(null);
       
       setMedicationFeedback('Added to this daily-care draft. Save the daily care update below to keep it.');
     } catch {
@@ -1946,7 +1963,11 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setMedicationImagePreview(null)}
+                      onClick={() => {
+                        setMedicationImagePreview(null);
+                        setMedicationImageUploadKey(null);
+                        setMedicationImageCapturedAt(null);
+                      }}
                       style={{ 
                         fontSize: 'calc(12px * var(--solenos-text-scale, 1))', 
                         color: '#dc2626', 
