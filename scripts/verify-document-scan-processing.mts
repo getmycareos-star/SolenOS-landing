@@ -113,6 +113,7 @@ assert.match(source, /sourcePageNumber\?: number/, "a re-captured page must reta
 assert.match(source, /handleFiles\(pages, recoveryPageNumbers, recoverySourceEvidenceId\)/, "the camera flow must pass the original page numbers into the saved page records");
 assert.match(source, /capture_page_number = String\(page\.sourcePageNumber \?\? scanPageNumber\)/, "re-captured page provenance must retain the original page number instead of being renumbered from one");
 assert.match(source, /capture_source_evidence_id = page\.sourceEvidenceId/, "clearer page copies must persist the identity of the original document they came from");
+assert.match(source, /capturedPages\.length >= recoveryPageNumbers\.length/, "a recovery scan must not attach unrelated extra pages to the original source document");
 assert.match(source, /Clearer copy of page \{doc\.recoverySourcePageNumber/, "the document library must display the original document and page for a clearer copy");
 assert.match(intelligenceReviewSource, /analysis\.ocr_quality_by_page/, "per-page OCR confidence must be exposed");
 assert.match(intelligenceReviewSource, /SolenOS may misread names, dates and numbers, especially in handwriting/, "caregivers must be warned that names, dates and numbers can be misread");
