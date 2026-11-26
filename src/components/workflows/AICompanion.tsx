@@ -191,6 +191,7 @@ const STARTER_PROMPTS = [
 
 
 type ConversationHistoryCursor = { before: string; before_id: string }
+type SavedConversation = { session_id: string; title?: string | null; last_message_at?: string | null; message_count?: number; person_id?: string }
 function mapStoredConversationMessage(message: any): Message {
   return {
     role: message.role,
@@ -217,6 +218,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   const [hasOlderMessages, setHasOlderMessages] = useState(false)
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false)
   const [historyLoadError, setHistoryLoadError] = useState<string | null>(null)
+  const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([])
+  const [showConversationHistory, setShowConversationHistory] = useState(false)
+  const [loadingConversationHistory, setLoadingConversationHistory] = useState(false)
+  const [conversationHistoryError, setConversationHistoryError] = useState<string | null>(null)
   const [emergency, setEmergency] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [conversationRestoreError, setConversationRestoreError] = useState<string | null>(null)
@@ -406,6 +411,84 @@ export default function Companion({ home = false, initialPrompt = null }: { home
   }, [])
 
 
+
+  const loadConversationHistory = async () => {
+    const requestScopeSequence = conversationScopeSequenceRef.current
+    const initialScopeKey = activeCompanionConversationStorageKey()
+    const isCurrentScope = () => requestScopeSequence === conversationScopeSequenceRef.current
+      && initialScopeKey === activeCompanionConversationStorageKey()
+    setLoadingConversationHistory(true)
+    setConversationHistoryError(null)
+    try {
+      const session = await ensureAnonymousSession()
+      const expectedScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+      if (!isCurrentScope() || initialScopeKey !== expectedScopeKey) return
+      const response = await getJSON('/conversations?limit=30') as {
+        person_id?: string
+        items?: SavedConversation[]
+      }
+      if (!isCurrentScope()) return
+      if (response.person_id !== session.person.id || !Array.isArray(response.items)) {
+        throw new Error('Conversation history did not match the active Care Record.')
+      }
+      setSavedConversations(response.items.filter(item =>
+        item.person_id === session.person.id && typeof item.session_id === 'string',
+      ))
+    } catch {
+      if (isCurrentScope()) setConversationHistoryError('Conversation history could not be loaded. Your saved conversations have not changed. Try again.')
+    } finally {
+      if (isCurrentScope()) setLoadingConversationHistory(false)
+    }
+  }
+
+  const openSavedConversation = async (savedSessionId: string) => {
+    if (loading || loadingOlderMessages || loadingConversationHistory) return
+    const requestScopeSequence = conversationScopeSequenceRef.current
+    const initialScopeKey = activeCompanionConversationStorageKey()
+    const isCurrentScope = () => requestScopeSequence === conversationScopeSequenceRef.current
+      && initialScopeKey === activeCompanionConversationStorageKey()
+    setLoadingConversationHistory(true)
+    setConversationHistoryError(null)
+    try {
+      const session = await ensureAnonymousSession()
+      const expectedScopeKey = companionConversationStorageKey(session.person.id, session.caregiver.id)
+      if (!isCurrentScope() || initialScopeKey !== expectedScopeKey) return
+      const response = await getJSON('/conversation/' + encodeURIComponent(savedSessionId) + '?limit=100') as {
+        session_id?: string
+        person_id?: string
+        messages?: any[]
+        has_more?: boolean
+        next_before?: string | null
+        next_before_id?: string | null
+      }
+      if (!isCurrentScope()) return
+      if (response.session_id !== savedSessionId || response.person_id !== session.person.id || !Array.isArray(response.messages)) {
+        throw new Error('The selected conversation did not match the active Care Record.')
+      }
+      userInteractedRef.current = true
+      conversationScopeRef.current = expectedScopeKey
+      setSessionId(savedSessionId)
+      setMessages(response.messages.map(mapStoredConversationMessage))
+      setHasOlderMessages(response.has_more === true)
+      setOlderHistoryCursor(response.has_more === true && response.next_before && response.next_before_id
+        ? { before: response.next_before, before_id: response.next_before_id } : null)
+      setHistoryLoadError(null)
+      setRequestError(null)
+      setConversationRestoreError(null)
+      setShowConversationHistory(false)
+      setInput('')
+      try {
+        window.localStorage.setItem(expectedScopeKey, savedSessionId)
+      } catch {
+        // Server-backed history remains authoritative without a browser pointer.
+      }
+    } catch {
+      if (isCurrentScope()) setConversationHistoryError('That conversation could not be opened. Your saved conversations have not changed. Try again.')
+    } finally {
+      if (isCurrentScope()) setLoadingConversationHistory(false)
+    }
+  }
+
   const loadOlderMessages = async () => {
     const currentSessionId = sessionId
     const cursor = olderHistoryCursor
@@ -457,7 +540,10 @@ export default function Companion({ home = false, initialPrompt = null }: { home
       setOlderHistoryCursor(null)
       setHasOlderMessages(false)
       setHistoryLoadError(null)
-      setPendingCareUpdates([])
+      setSavedConversations([])
+      setShowConversationHistory(false)
+      setConversationHistoryError(null)
+      setPendingCareUpdates([]
       setLoadingOlderMessages(false)
       setCareUpdateLoading(false)
       setCareUpdateLoadFailed(false)
@@ -825,6 +911,8 @@ export default function Companion({ home = false, initialPrompt = null }: { home
     setHasOlderMessages(false)
     setLoadingOlderMessages(false)
     setHistoryLoadError(null)
+    setShowConversationHistory(false)
+    setConversationHistoryError(null)
     pendingTurnId.current = null
     pendingTurnText.current = null
     setEmergency(false)
@@ -841,9 +929,22 @@ export default function Companion({ home = false, initialPrompt = null }: { home
           <div className="companion-mark" aria-hidden="true"><Sparkles size={21} strokeWidth={1.8} /></div>
           <div><div className="companion-eyebrow">HERE WHEN YOU NEED A HAND</div><h1 className="companion-page-title">Ask SolenOS</h1></div>
         </div>
+        {(messages.length > 0 || sessionId) && <button className="companion-history-toggle" type="button" onClick={() => { const next = !showConversationHistory; setShowConversationHistory(next); if (next) void loadConversationHistory() }} disabled={loading || loadingOlderMessages || loadingConversationHistory}>Conversation history</button>}
         {messages.length > 0 && <button className="companion-new" type="button" onClick={startNewSession} disabled={loading || loadingOlderMessages}><Plus size={17} aria-hidden="true" /><span>New conversation</span></button>}
       </header>
 
+      {showConversationHistory && <section className="companion-history-panel" aria-label="Saved conversations">
+        <div className="companion-history-panel-heading"><strong>Saved conversations</strong><button type="button" onClick={() => setShowConversationHistory(false)} aria-label="Close conversation history">Close</button></div>
+        {loadingConversationHistory && <p role="status">Loading conversations…</p>}
+        {conversationHistoryError && <p className="companion-history-error" role="alert">{conversationHistoryError}</p>}
+        {!loadingConversationHistory && !conversationHistoryError && savedConversations.length === 0 && <p>No saved conversations yet.</p>}
+        <div className="companion-history-items">
+          {savedConversations.map(item => <button key={item.session_id} type="button" onClick={() => void openSavedConversation(item.session_id)} disabled={loading || loadingOlderMessages}>
+            <strong>{item.title?.trim() || 'Care conversation'}</strong>
+            <span>{item.last_message_at ? new Date(item.last_message_at).toLocaleString() : 'Saved conversation'} · {item.message_count ?? 0} messages</span>
+          </button>)}
+        </div>
+      </section>}
       {requestError && messages.length > 0 && <div className="companion-error" role="alert"><span>{requestError}</span><button type="button" onClick={() => void sendMessage()} disabled={loading}>Try again</button></div>}
       {conversationRestoreError && <div className="companion-error" role="alert"><span>{conversationRestoreError}</span></div>}
       {emergency && <div className="companion-emergency" role="alert"><strong>Please check on the person now.</strong><p>If anyone may be in immediate danger, contact local emergency services. This conversation cannot provide emergency response.</p></div>}
@@ -1223,6 +1324,16 @@ export default function Companion({ home = false, initialPrompt = null }: { home
         .companion-starter-copy>span { display:block; margin-top:4px; color:#718075; font-size:11px; line-height:1.55; } .companion-starter-arrow { color:#8a9a8a; font-size:15px; }
         .companion-empty-footnote { display:flex; align-items:center; gap:7px; margin:18px 0 0; color:#718075; font-size:11px; line-height:1.5; } .companion-empty-footnote svg { flex:0 0 auto; color:#6b8b6d; }
         .companion-message-list { padding:24px clamp(16px,3vw,30px); }
+        .companion-history-panel { width:100%; padding:14px 16px; border:1px solid #dfe8e1; border-radius:14px; background:#fff; }
+        .companion-history-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; color:#334c38; font-size:13px; }
+        .companion-history-panel-heading button { border:0; background:transparent; color:#607066; font:inherit; cursor:pointer; }
+        .companion-history-items { display:grid; gap:7px; max-height:240px; overflow:auto; }
+        .companion-history-items button { display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:10px 12px; border:1px solid #e6ece5; border-radius:10px; background:#fafcf9; text-align:left; cursor:pointer; }
+        .companion-history-items button:disabled { opacity:.6; cursor:wait; }
+        .companion-history-items strong { color:#334c38; font-size:12px; }
+        .companion-history-items span { color:#7a877c; font-size:10px; }
+        .companion-history-toggle { min-height:40px; padding:8px 12px; border:1px solid #dce6da; border-radius:999px; background:#f8faf7; color:#47634a; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+        .companion-history-toggle:disabled { opacity:.6; cursor:wait; }
         .companion-history-older { display:flex; justify-content:center; padding:0 0 18px; }
         .companion-history-older button { min-height:38px; padding:8px 13px; border:1px solid #dce6da; border-radius:999px; background:#f8faf7; color:#47634a; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
         .companion-history-older button:disabled { opacity:.6; cursor:wait; }
