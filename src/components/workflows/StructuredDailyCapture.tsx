@@ -919,6 +919,7 @@ export default function StructuredDailyCapture({ mode = "all" }: { mode?: DailyC
         scheduled_for: string | null;
         administered_at: string | null;
         photo_evidence_id: string | null;
+        photo_ingestion_key: string | null;
         note: string | null;
       }>;
       vitals: Array<{
