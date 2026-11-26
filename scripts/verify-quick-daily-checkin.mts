@@ -26,6 +26,14 @@ const durableWriteSender = fs.readFileSync(
   `${root}/src/lib/offline-sync/send-queued-care-write.ts`,
   "utf8",
 );
+const durableWriteQueue = fs.readFileSync(
+  `${root}/src/lib/offline-sync/durable-write-queue.ts`,
+  "utf8",
+);
+const offlineQueueNotice = fs.readFileSync(
+  `${root}/src/components/workflows/DailyCareOfflineQueueNotice.tsx`,
+  "utf8",
+);
 
 assert.match(dailyCarePage, /<QuickDailyCheckIn\s*\/>/,
   "Daily Care mounts the optional quick check-in");
@@ -63,6 +71,10 @@ assert.match(durableWriteSender, /response\?\.success !== true/,
   "the shared durable sender requires an explicit backend success receipt");
 assert.match(durableWriteSender, /response\.id === undefined \|\| response\.id === null/,
   "the shared durable sender requires a persisted record identifier before clearing the queue");
+assert.match(durableWriteQueue, /navigator\.storage\.persist\(\)/,
+  "the offline queue requests browser storage persistence when supported");
+assert.match(offlineQueueNotice, /automatic storage cleanup/,
+  "caregivers are warned when their browser has not protected device-only queued updates");
 assert.match(checkIn, /does not confirm medicines were given or measurements were taken/,
   "an overall impression cannot imply medication or measurement completion");
 assert.match(checkIn, /window\.dispatchEvent\(new Event\("careRecordUpdated"\)\)/,
