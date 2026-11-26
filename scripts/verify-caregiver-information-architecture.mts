@@ -227,6 +227,7 @@ assert.ok(legacySettings.includes("searchParams: Promise<LegacySearchParams>") &
 assert.ok(handoffs.includes("CaregiverHandoverInbox"), "incoming family responsibility handovers are available within Care handoffs");
 assert.ok(!more.includes("CaregiverHandoverInbox"), "More remains limited to application and account management");
 assert.ok(handoffs.includes("<CaregiverHandoverInbox />"), "incoming care handovers are part of Care handoffs");
+assert.ok(handoffs.includes("setScopeEpoch((value) => value + 1)") && handoffs.includes("<CaregiverHandoverInbox key={scopeEpoch}") && handoffs.includes("key={scopeEpoch}"), "handoff inbox and sharing data are reloaded rather than retained across care-recipient changes");
 assert.ok(reminders.includes('href="/workspace/care-continuity"'), "Reminders returns to the Care information destination");
 assert.ok(reminders.includes('addEventListener("personIdChanged", refreshForSessionChange)') && reminders.includes("scopeSequenceRef.current += 1") && reminders.includes("setReminders([])"), "Reminders clears previous-recipient data and reloads on an active care-record change");
 assert.ok(reminders.includes("isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)"), "reminder writes and feedback remain bound to the initiating caregiver and care recipient");
