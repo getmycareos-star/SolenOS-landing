@@ -517,19 +517,28 @@ export default function TimelinePage() {
     if (!pendingCorrectionId) return;
     let cancelled = false;
 
+    const scopeSequence = historyScopeSequenceRef.current;
+    const requestPersonId = getPersonId();
+    const requestCaregiverId = getCaregiverId();
+    const isCurrentScope = () =>
+      !cancelled
+      && scopeSequence === historyScopeSequenceRef.current
+      && requestPersonId === getPersonId()
+      && requestCaregiverId === getCaregiverId();
     const refreshCorrectionStatus = async () => {
       try {
         const session = await ensureAnonymousSession();
-        if (!session.person?.id || !session.access_token) return;
+        if (!session.person?.id || !session.access_token || !session.caregiver?.id) return;
+        if (!isCurrentScope() || session.person.id !== requestPersonId || session.caregiver.id !== requestCaregiverId) return;
         const rows = await getJSON(`/corrections/${encodeURIComponent(session.person.id)}`) as Array<{
           id?: string;
           processing_status?: string;
         }>;
-        if (cancelled || !Array.isArray(rows)) return;
+        if (!isCurrentScope() || !Array.isArray(rows)) return;
         const receipt = rows.find((row) => row.id === pendingCorrectionId);
         if (receipt?.processing_status === "completed") {
           await loadEvents(true, appliedQuery);
-          if (cancelled) return;
+          if (!isCurrentScope()) return;
           setPendingCorrectionId(null);
           setCorrectionMessage("The Care Record has been updated. The original entry remains available in your history.");
         }
@@ -549,14 +558,22 @@ export default function TimelinePage() {
 
   const submitCorrection = useCallback(async (event: CareEvent) => {
     if (!correctionText.trim() || correctionSaving) return;
+    const scopeSequence = historyScopeSequenceRef.current;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const isCurrentScope = () =>
+      scopeSequence === historyScopeSequenceRef.current
+      && Boolean(requestPersonId)
+      && requestPersonId === getPersonId()
+      && requestCaregiverId === getCaregiverId();
+    if (!isCurrentScope()) return;
     setCorrectionSaving(true);
     setCorrectionMessage("");
     try {
       const session = await ensureAnonymousSession();
       const caregiverId = getCaregiverId();
-      if (!session.person?.id || !session.access_token || !caregiverId) {
-        throw new Error("A verified care session is required to save a correction.");
-      }
+      if (!session.person?.id || !session.access_token || !caregiverId || !isCurrentScope()
+        || session.person.id !== requestPersonId || caregiverId !== requestCaregiverId) return;
       const idempotencyKey = correctionIdempotencyKey || globalThis.crypto.randomUUID();
       if (!correctionIdempotencyKey) setCorrectionIdempotencyKey(idempotencyKey);
       const result = await postJSON("/corrections", {
@@ -573,6 +590,7 @@ export default function TimelinePage() {
         processing_status?: string;
         care_continuity_execution?: { stages?: Record<string, string> };
       };
+      if (!isCurrentScope()) return;
       if (!result?.id) {
         throw new Error("The server did not confirm that the correction was saved.");
       }
@@ -588,27 +606,36 @@ export default function TimelinePage() {
       await loadEvents(true, appliedQuery);
     } catch {
       // Keep the same key while the caregiver retries the unchanged correction.
-      setCorrectionMessage("We could not confirm the correction yet. Try saving again; SolenOS will check the same correction rather than create another one.");
+      if (isCurrentScope()) setCorrectionMessage("We could not confirm the correction yet. Try saving again; SolenOS will check the same correction rather than create another one.");
     } finally {
-      setCorrectionSaving(false);
+      if (isCurrentScope()) setCorrectionSaving(false);
     }
-  }, [correctionText, correctionReason, correctionSaving, correctionIdempotencyKey, loadEvents, appliedQuery]);
+  }, [correctionText, correctionReason, correctionSaving, correctionIdempotencyKey, loadEvents, appliedQuery, personId]);
 
   const retryPendingCorrection = useCallback(async () => {
     const correctionId = pendingCorrectionId || events.find(
       (item) => item.source_type === "correction" && ["pending", "processing"].includes(item.processing_status || ""),
     )?.id;
     if (!correctionId || retryingCorrection) return;
+    const scopeSequence = historyScopeSequenceRef.current;
+    const requestPersonId = personId;
+    const requestCaregiverId = getCaregiverId();
+    const isCurrentScope = () =>
+      scopeSequence === historyScopeSequenceRef.current
+      && Boolean(requestPersonId)
+      && requestPersonId === getPersonId()
+      && requestCaregiverId === getCaregiverId();
+    if (!isCurrentScope()) return;
     setRetryingCorrection(true);
     try {
       const session = await ensureAnonymousSession();
-      if (!session.person?.id || !session.access_token) {
-        throw new Error("A verified care session is required.");
-      }
+      if (!session.person?.id || !session.access_token || !session.caregiver?.id || !isCurrentScope()
+        || session.person.id !== requestPersonId || session.caregiver.id !== requestCaregiverId) return;
       const result = await postJSON(
         `/corrections/${encodeURIComponent(session.person.id)}/${encodeURIComponent(correctionId)}/retry`,
         {},
       ) as { processing_status?: string };
+      if (!isCurrentScope()) return;
       if (result.processing_status === "completed") {
         setPendingCorrectionId(null);
         setCorrectionMessage("The Care Record has now been updated. The original entry remains available in your history.");
@@ -617,11 +644,11 @@ export default function TimelinePage() {
       }
       await loadEvents(true, appliedQuery);
     } catch {
-      setCorrectionMessage("The correction remains saved. We could not complete the Care Record update yet.");
+      if (isCurrentScope()) setCorrectionMessage("The correction remains saved. We could not complete the Care Record update yet.");
     } finally {
-      setRetryingCorrection(false);
+      if (isCurrentScope()) setRetryingCorrection(false);
     }
-  }, [pendingCorrectionId, events, retryingCorrection, loadEvents, appliedQuery]);
+  }, [pendingCorrectionId, events, retryingCorrection, loadEvents, appliedQuery, personId]);
 
   const visibleEvents = useMemo(() => {
     const needle = appliedQuery.trim().toLowerCase();
