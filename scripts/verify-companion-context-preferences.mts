@@ -21,7 +21,7 @@ assert.doesNotMatch(notificationLoad, /\/caregiver\/preferences/, "notification 
 assert.doesNotMatch(notificationPersist, /\/caregiver\/preferences/, "saving quiet hours must not read or mutate Companion preferences");
 assert.match(notificationLoad, /prefs\.configured[\s\S]*prefs\.timezone_name/, "notification timezone must hydrate from notification preferences");
 assert.match(notificationPersist, /timezone_name: timezoneName/, "quiet-hours writes must use the independently selected notification timezone");
-assert.match(settings, /Quiet-hours time zone/, "notification timezone must be independently editable");
-assert.match(settings, /This time zone controls quiet hours only/, "the interface must explain the separation from Companion timezone");
+assert.match(notificationCenter, /Quiet-hours time zone/, "notification timezone must be independently editable");
+assert.match(notificationCenter, /This time zone controls quiet hours only/, "the interface must explain the separation from Companion timezone");
 
 console.log("PASS: Companion caregiver preferences and notification delivery timezone remain separate.");
