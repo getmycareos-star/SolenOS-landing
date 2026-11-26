@@ -125,9 +125,9 @@ export default function DailyCareOfflineQueueNotice() {
           {pending} update{pending === 1 ? "" : "s"} saved on this device and waiting to reach SolenOS. They are not yet confirmed in your care record. Keep this browser data until they are sent.
         </p>
       )}
-      {pending > 0 && persistentStorage === false && (
+      {(pending > 0 || sending > 0 || attention > 0) && persistentStorage === false && (
         <p role="alert" className="daily-care-muted">
-          This browser has not protected these unsent updates from automatic storage cleanup. Keep this browser data and reconnect as soon as you can.
+          This browser has not protected these device-only updates from automatic storage cleanup. Keep this browser data and reconnect or resolve the issue as soon as you can.
         </p>
       )}
       {sending > 0 && (
