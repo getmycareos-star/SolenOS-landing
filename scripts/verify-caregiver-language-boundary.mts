@@ -916,7 +916,7 @@ for (const [term, expected] of [
   ["retrieval", "Finding earlier care information"],
   ["open loops", "Things that still need attention"],
   ["longitudinal history", "Care history over time"],
-  ["AI Companion", "Care Assistant"],
+  ["AI Companion", "Ask SolenOS"],
   ["epistemic status", "What is known, what is unclear, or not recorded"],
   ["assessment_coverage", "What information was checked"],
   ["source attribution", "Who shared this information"],
