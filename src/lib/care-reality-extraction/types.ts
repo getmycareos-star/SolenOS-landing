@@ -13,7 +13,7 @@ export type ExtractionCategory =
   | "disagreement_perspective"
   | "skip";
 
-export type ObservationConfidence = "low" | "medium" | "high";
+export type ObservationConfidence = "low" | "medium" | "high" | "unavailable";
 
 export type ExtractedObservation = {
   id: string;
