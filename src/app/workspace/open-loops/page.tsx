@@ -336,6 +336,7 @@ export default function FollowUpsPage() {
   const pendingCreateKeys = useRef<Record<string, string>>({});
   const pendingActionKeys = useRef<Record<string, { signature: string; key: string }>>({});
   const refreshSequence = useRef(0);
+  const scopeSequenceRef = useRef(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [attentionWarning, setAttentionWarning] = useState("");
@@ -416,6 +417,7 @@ export default function FollowUpsPage() {
       // A new caregiver/recipient session must never inherit the previous
       // person's follow-ups, assessment, action drafts or pending write keys.
       refreshSequence.current += 1;
+      scopeSequenceRef.current += 1;
       setLoops([]);
       setAssessment(null);
       setHistoryById({});
@@ -473,6 +475,14 @@ export default function FollowUpsPage() {
   ));
 
   async function shareUpdate(loop: OpenLoop, text: string) {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentScope = () => Boolean(personId && caregiverId)
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId()
+      && scopeSequence === scopeSequenceRef.current;
+    if (!isCurrentScope()) return;
     setBusyId(loop.id);
     setError("");
     setNotice("");
@@ -496,30 +506,40 @@ export default function FollowUpsPage() {
       } else {
         await postJSON(`/open-loops/${encodeURIComponent(loop.id)}/outcomes`, updatePayload);
       }
+      if (!isCurrentScope()) return;
       await refresh();
+      if (!isCurrentScope()) return;
       delete pendingUpdateKeys.current[loop.id];
       setNotice("Your update was saved. SolenOS has not marked this as resolved.");
     } catch (error) {
-      // Retain the key and the caregiver's text while the result is uncertain.
-      // A retry must converge on the original write rather than append a duplicate.
+      if (!isCurrentScope()) return;
       const staleVersion = error instanceof ApiResponseError
         && error.status === 409
         && typeof error.detail === "string"
         && /changed after it was shown|saved version is required/i.test(error.detail);
       if (staleVersion) {
         try { await refresh(); } catch { /* Keep the stale-decision warning visible. */ }
+        if (!isCurrentScope()) return;
       }
       setError(staleVersion
         ? "This follow-up changed after it was shown. The list has been refreshed; review the latest details before trying again."
         : "The update could not be confirmed. Nothing has been marked resolved.");
       throw new Error("Caregiver update was not confirmed; preserve the draft for retry.");
     } finally {
-      setBusyId("");
+      if (isCurrentScope()) setBusyId("");
     }
   }
 
   async function createFollowUp(item: AttentionDecision) {
     if ((item.source !== "events" && item.source !== "persisted_change") || !item.record_id) return;
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentScope = () => Boolean(personId && caregiverId)
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId()
+      && scopeSequence === scopeSequenceRef.current;
+    if (!isCurrentScope()) return;
     const sourceKey = item.source + ":" + item.record_id;
     setBusyId(sourceKey);
     setError("");
@@ -550,17 +570,27 @@ export default function FollowUpsPage() {
         uncertainty: "unknown",
         idempotency_key: idempotencyKey,
       });
+      if (!isCurrentScope()) return;
       await refresh();
+      if (!isCurrentScope()) return;
       delete pendingCreateKeys.current[sourceKey];
       setNotice("Follow-up saved. The original care information has not changed.");
     } catch {
-      setError("The follow-up could not be confirmed. Keep this item open and try again.");
+      if (isCurrentScope()) setError("The follow-up could not be confirmed. Keep this item open and try again.");
     } finally {
-      setBusyId("");
+      if (isCurrentScope()) setBusyId("");
     }
   }
 
   async function recordAction(loop: OpenLoop, text: string) {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentScope = () => Boolean(personId && caregiverId)
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId()
+      && scopeSequence === scopeSequenceRef.current;
+    if (!isCurrentScope()) return;
     setBusyId(loop.id);
     setError("");
     setNotice("");
@@ -578,27 +608,39 @@ export default function FollowUpsPage() {
         expected_version: loop.version,
         idempotency_key: idempotencyKey,
       });
+      if (!isCurrentScope()) return;
       await refresh();
+      if (!isCurrentScope()) return;
       delete pendingActionKeys.current[loop.id];
       setNotice("Your action was saved. The concern has not been marked as resolved.");
     } catch (error) {
+      if (!isCurrentScope()) return;
       const staleVersion = error instanceof ApiResponseError
         && error.status === 409
         && typeof error.detail === "string"
         && /changed after it was shown|saved version is required/i.test(error.detail);
       if (staleVersion) {
         try { await refresh(); } catch { /* Keep the stale-decision warning visible. */ }
+        if (!isCurrentScope()) return;
       }
       setError(staleVersion
         ? "This follow-up changed after it was shown. The list has been refreshed; review the latest details before trying again."
         : "The action could not be confirmed. Keep the report available and try again.");
       throw new Error("Caregiver action was not confirmed; preserve the draft for retry.");
     } finally {
-      setBusyId("");
+      if (isCurrentScope()) setBusyId("");
     }
   }
 
   async function loadHistory(loop: OpenLoop) {
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    const scopeSequence = scopeSequenceRef.current;
+    const isCurrentScope = () => Boolean(personId && caregiverId)
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId()
+      && scopeSequence === scopeSequenceRef.current;
+    if (!isCurrentScope()) return;
     setBusyId(loop.id);
     try {
       const base = "/open-loops/" + encodeURIComponent(loop.id);
@@ -606,13 +648,14 @@ export default function FollowUpsPage() {
         loadAllLoopRecords<LoopHistoryEvent>(base + "/history"),
         loadAllLoopRecords<LoopOccurrence>(base + "/occurrences"),
       ]);
+      if (!isCurrentScope()) return;
       setHistoryById((current) => ({ ...current, [loop.id]: result }));
       setOccurrencesById((current) => ({ ...current, [loop.id]: occurrenceResult }));
       setNotice("Previous updates loaded.");
     } catch {
-      setError("Previous updates could not be loaded. The saved follow-up itself has not changed.");
+      if (isCurrentScope()) setError("Previous updates could not be loaded. The saved follow-up itself has not changed.");
     } finally {
-      setBusyId("");
+      if (isCurrentScope()) setBusyId("");
     }
   }
 
