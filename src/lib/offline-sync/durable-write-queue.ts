@@ -26,6 +26,7 @@ type StoredWrite = {
   created_at: number;
   updated_at: number;
   last_error: string | null;
+  depends_on?: string[];
 };
 
 type DeviceKeyRecord = { id: "device"; key: CryptoKey };
@@ -49,6 +50,7 @@ type QueueInput = {
   endpoint: string;
   idempotency_key: string;
   payload: unknown;
+  depends_on?: string[];
 };
 
 type UploadProgressHandler = (loaded: number, total: number) => void;
@@ -265,14 +267,27 @@ export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
   const id = durableWriteId(input.endpoint, input.idempotency_key);
   const existing = await readWrite(db, id);
   const encrypted = await encryptPayload(db, input.payload);
-  const now = Date.now();
+  const dependsOn = Array.from(new Set(input.depends_on ?? []));
+  for (const dependencyId of dependsOn) {
+    const dependency = await readWrite(db, dependencyId);
+    if (
+      dependency &&
+      (dependency.person_id !== input.person_id || dependency.caregiver_id !== input.caregiver_id)
+    ) {
+      throw new Error("An offline update cannot depend on another caregiver's care submission.");
+    }
+  }
+  const allRows = await getAllWrites(db);
+  const latestCreatedAt = allRows.reduce((latest, row) => Math.max(latest, row.created_at), 0);
+  const now = Math.max(Date.now(), latestCreatedAt + 1);
 
   if (existing) {
     const existingPayload = await decryptPayload(db, existing);
     if (
       existing.person_id !== input.person_id ||
       existing.caregiver_id !== input.caregiver_id ||
-      JSON.stringify(existingPayload) !== JSON.stringify(input.payload)
+      JSON.stringify(existingPayload) !== JSON.stringify(input.payload) ||
+      JSON.stringify(existing.depends_on ?? []) !== JSON.stringify(dependsOn)
     ) {
       throw new Error("This request key is already assigned to a different offline update.");
     }
@@ -285,6 +300,7 @@ export async function enqueueDurableWrite(input: QueueInput): Promise<string> {
     caregiver_id: input.caregiver_id,
     endpoint: input.endpoint,
     idempotency_key: input.idempotency_key,
+    depends_on: dependsOn,
     ...encrypted,
     // Reserve the write before the caller begins its direct request. If the
     // page exits between enqueue and send, the lease expires and sync recovers it.
@@ -534,26 +550,50 @@ export async function syncDurableWrites(input: {
   if (existingSync) return existingSync;
   const currentSync = (async () => {
     const db = await openDatabase();
-    const now = Date.now();
-    const rows = await getAllWrites(db);
+    const rows = (await getAllWrites(db))
+      .filter((row) =>
+        row.person_id === input.personId &&
+        row.caregiver_id === input.caregiverId &&
+        (!input.endpoints || input.endpoints.includes(row.endpoint)),
+      )
+      .sort((left, right) => left.created_at - right.created_at || left.id.localeCompare(right.id));
+    let candidates = rows;
     let synced = 0;
+    let madeProgress = true;
 
-    for (const row of rows) {
-      if (row.person_id !== input.personId || row.caregiver_id !== input.caregiverId) continue;
-      if (input.endpoints && !input.endpoints.includes(row.endpoint)) continue;
-      if (!isEligible(row, now)) continue;
-      try {
-        const payload = await decryptPayload(db, row);
-        const result = await deliverDurableWrite(row.id, input.send);
-        synced += 1;
-        try {
-          input.onSynced?.(row.endpoint, payload, result);
-        } catch {
-          // The server receipt is already durable. A local UI callback must not
-          // turn a completed write back into a failed or retryable queue item.
+    // A dependent write waits until every prerequisite has left the local queue.
+    // Re-read the queue after each pass so an upload completed earlier in this
+    // pass can unlock its care-record submission without relying on hash order.
+    while (madeProgress && candidates.length > 0) {
+      madeProgress = false;
+      const currentRows = await getAllWrites(db);
+      const liveIds = new Set(currentRows
+        .filter((row) => row.person_id === input.personId && row.caregiver_id === input.caregiverId)
+        .map((row) => row.id));
+
+      for (const row of [...candidates]) {
+        if (!liveIds.has(row.id)) {
+          candidates = candidates.filter((candidate) => candidate.id !== row.id);
+          continue;
         }
-      } catch {
-        // The queue retains retryable and blocked records with the same idempotency key.
+        if (!isEligible(row, Date.now())) continue;
+        if ((row.depends_on ?? []).some((dependencyId) => liveIds.has(dependencyId))) continue;
+        try {
+          const payload = await decryptPayload(db, row);
+          const result = await deliverDurableWrite(row.id, input.send);
+          synced += 1;
+          candidates = candidates.filter((candidate) => candidate.id !== row.id);
+          madeProgress = true;
+          try {
+            input.onSynced?.(row.endpoint, payload, result);
+          } catch {
+            // The server receipt is already durable. A local UI callback must not
+            // turn a completed write back into a failed or retryable queue item.
+          }
+        } catch {
+          // A failed prerequisite remains queued, so dependent writes stay blocked.
+          // Independent writes can still progress in the same pass.
+        }
       }
     }
 
