@@ -1814,6 +1814,55 @@ await record("03b mobile document file picker, upload progress and camera scanne
   await mobilePage.getByRole("button", { name: "Review 1 page(s)", exact: true }).click();
   await mobilePage.getByRole("heading", { name: "Save your files", exact: true }).waitFor();
   await mobilePage.getByRole("button", { name: "Discard selected files", exact: true }).click();
+  const unreadableSourcePage = await browser.newPage({ viewport: { width: 800, height: 1000 }, deviceScaleFactor: 1 });
+  await unreadableSourcePage.setContent('<!doctype html><html><body style="margin:0;width:800px;height:1000px;background:#fff"></body></html>');
+  const unreadablePng = await unreadableSourcePage.screenshot({ type: "png", fullPage: true });
+  await unreadableSourcePage.close();
+  const unreadableUploadForm = new FormData();
+  unreadableUploadForm.append("person_id", identity.personId);
+  unreadableUploadForm.append("caregiver_id", identity.caregiverId);
+  unreadableUploadForm.append("evidence_type", "document");
+  unreadableUploadForm.append("capture_method", "scan");
+  unreadableUploadForm.append("capture_page_number", "1");
+  unreadableUploadForm.append("file", new Blob([unreadablePng], { type: "image/png" }), "unreadable-page.png");
+  const unreadableUpload = await request("/api/v1/upload", { token: identity.token, method: "POST", form: unreadableUploadForm });
+  assert.equal(unreadableUpload.status, 201, JSON.stringify(unreadableUpload.payload));
+  const unreadableEvidenceId = unreadableUpload.payload.evidence_id;
+  const unreadableExtraction = await request("/api/v1/documents/" + unreadableEvidenceId + "/extract", { token: identity.token, method: "POST", body: {} });
+  assert.equal(unreadableExtraction.status, 201, JSON.stringify(unreadableExtraction.payload));
+  assert.deepEqual(unreadableExtraction.payload.unreadable_page_numbers, [1]);
+
+  await mobilePage.reload();
+  await mobilePage.getByRole("button", { name: "Scan these pages again", exact: true }).waitFor({ timeout: 20_000 });
+  await mobilePage.getByRole("button", { name: "Scan these pages again", exact: true }).click();
+  await mobilePage.getByText(/Take clearer copies of pages 1 from unreadable-page\.png/).waitFor({ timeout: 10_000 });
+  await mobilePage.waitForFunction(() => {
+    const video = document.querySelector('video[aria-label="Live document camera preview"]');
+    return video instanceof HTMLVideoElement && video.videoWidth > 0 && video.videoHeight > 0;
+  }, null, { timeout: 20_000 });
+  await mobilePage.getByRole("button", { name: "Take photo", exact: true }).click();
+  await mobilePage.getByText("1 page(s) captured", { exact: true }).waitFor({ timeout: 10_000 });
+  await mobilePage.getByRole("button", { name: "Review 1 page(s)", exact: true }).click();
+  await mobilePage.getByRole("heading", { name: "Save your files", exact: true }).waitFor();
+  await mobilePage.getByRole("button", { name: "Save files", exact: true }).click();
+  await mobilePage.getByText(/SolenOS saved 1 original file/).waitFor({ timeout: 30_000 });
+  await mobilePage.getByText(/Clearer copy of page 1 from unreadable-page\.png/).waitFor({ timeout: 20_000 });
+
+  const recoveredEvidence = await request("/api/v1/evidence/" + encodeURIComponent(identity.personId), { token: identity.token });
+  assert.equal(recoveredEvidence.status, 200, JSON.stringify(recoveredEvidence.payload));
+  const recoveredCopy = recoveredEvidence.payload.find((item) => {
+    let metadata = item.extra_metadata;
+    if (typeof metadata === "string") { try { metadata = JSON.parse(metadata); } catch { metadata = {}; } }
+    return metadata?.capture?.source_evidence_id === unreadableEvidenceId;
+  });
+  assert.ok(recoveredCopy, "the clearer page copy must be linked to its original document in persisted metadata");
+  let recoveredMetadata = recoveredCopy.extra_metadata;
+  if (typeof recoveredMetadata === "string") recoveredMetadata = JSON.parse(recoveredMetadata);
+  assert.equal(recoveredMetadata.capture.source_page_number, 1);
+  const originalDelete = await request("/api/v1/upload/" + unreadableEvidenceId, { token: identity.token, method: "DELETE" });
+  assert.equal(originalDelete.status, 409, JSON.stringify(originalDelete.payload));
+  assert.match(originalDelete.payload.detail, /source for clearer page copies/);
+
   await mobileDocuments.context.close();
 });
 
