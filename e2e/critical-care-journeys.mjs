@@ -2616,6 +2616,7 @@ await record("Care history opens the original caregiver report and its source de
     "the exact original caregiver wording must remain inside the saved source text",
   );
 
+  await history.page.getByRole("button", { name: "Hide all saved records", exact: true }).click();
   await reportCard.locator(".timeline-event-toggle").click();
   await reportCard.waitFor({ state: "visible", timeout: 10_000 });
   await verifyMobile(history.page);
