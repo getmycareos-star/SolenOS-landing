@@ -335,8 +335,8 @@
   box-shadow: var(--sn-shadow-soft);
 }
 .solenos-chat-app .solenos-chat-main .timeline-event.is-correction {
-  border-left: 4px solid var(--sn-forest);
   border-color: var(--sn-sage-strong);
+  border-left: 4px solid var(--sn-forest);
   background: var(--sn-surface-soft);
 }
 .solenos-chat-app .solenos-chat-main .timeline-event.is-correction .timeline-event-category {
