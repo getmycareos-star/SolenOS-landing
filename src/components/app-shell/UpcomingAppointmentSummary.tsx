@@ -144,9 +144,8 @@ export function UpcomingAppointmentSummary() {
     .sort((left, right) => {
       const leftDue = timestamp(left.deadline_at);
       const rightDue = timestamp(right.deadline_at);
-      const leftOverdue = leftDue !== null && leftDue <= now ? 0 : 1;
-      const rightOverdue = rightDue !== null && rightDue <= now ? 0 : 1;
-      return leftOverdue - rightOverdue
+      const urgencyRank = (due: number | null) => due === null ? 3 : due <= now ? 0 : due - now <= 24 * 60 * 60 * 1000 ? 1 : 2;
+      return urgencyRank(leftDue) - urgencyRank(rightDue)
         || priorityRank(left.priority) - priorityRank(right.priority)
         || (leftDue ?? Number.POSITIVE_INFINITY) - (rightDue ?? Number.POSITIVE_INFINITY)
         || left.source_id.localeCompare(right.source_id);
