@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, getJSON, postJSON, patchJSON } from '@/api/client'
-import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverInformationLabel, caregiverRoleLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverStatusLabel } from '@/lib/caregiver-language'
+import { caregiverFieldLabel, caregiverInformationAreaLabel, caregiverInformationLabel, caregiverRoleLabel, caregiverSourceText, caregiverSafeAssistantText, caregiverSafeGeneratedText, caregiverStatusLabel } from '@/lib/caregiver-language'
 import { CalendarDays, ShieldCheck } from 'lucide-react'
 import { extractAttachedDocument } from '@/components/mvp-workspace/capture/extract-attached'
 
