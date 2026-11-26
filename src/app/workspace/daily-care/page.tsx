@@ -19,7 +19,7 @@ const StructuredDailyCapture = dynamic(
   () => import("@/components/workflows/StructuredDailyCapture"),
   {
     ssr: false,
-    loading: () => <BrandLoading animate message="Opening structured entry…" />,
+    loading: () => <BrandLoading animate message="Opening Add an update…" />,
   },
 );
 
