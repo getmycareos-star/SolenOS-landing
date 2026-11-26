@@ -228,6 +228,9 @@ assert.ok(handoffs.includes("CaregiverHandoverInbox"), "incoming family responsi
 assert.ok(!more.includes("CaregiverHandoverInbox"), "More remains limited to application and account management");
 assert.ok(handoffs.includes("<CaregiverHandoverInbox />"), "incoming care handovers are part of Care handoffs");
 assert.ok(reminders.includes('href="/workspace/care-continuity"'), "Reminders returns to the Care information destination");
+assert.ok(reminders.includes('addEventListener("personIdChanged", refreshForSessionChange)') && reminders.includes("scopeSequenceRef.current += 1") && reminders.includes("setReminders([])"), "Reminders clears previous-recipient data and reloads on an active care-record change");
+assert.ok(reminders.includes("isCurrentScope(requestPersonId, requestCaregiverId, requestScopeSequence)"), "reminder writes and feedback remain bound to the initiating caregiver and care recipient");
+
 assert.ok(home.includes('href="/workspace/care-continuity"') && home.includes("View care information"), "Home links to Care information using the canonical destination name");
 assert.ok(!more.includes("HistoryDrawer") && !more.includes("Recent care history"), "More does not duplicate core care browsing");
 assert.ok(addUpdate.includes('href="/workspace/documents"'), "document upload remains discoverable from Add an update");
