@@ -22,6 +22,7 @@ import { createAccount, deleteJSON, ensureAnonymousSession, getAnonymousAccessTo
 import { PolicySettingsPanel } from "@/components/mvp-workspace/PolicySettingsPanel";
 import { IdentityDeviceRecoveryPanel } from "@/components/mvp-workspace/IdentityDeviceRecoveryPanel";
 import { CaregiverAccessPanel } from "@/components/mvp-workspace/CaregiverAccessPanel";
+import { clearDurableWriteQueue } from "@/lib/offline-sync/durable-write-queue";
 
 const CARE_RECIPIENT_NAME_STORAGE = "solenos_care_recipient_display_name";
 
@@ -624,6 +625,21 @@ function PrivacyCard() {
   const clearLocalData = async () => {
     if (clearingLocalData) return;
     setClearingLocalData(true);
+    try {
+      // Clear device-only care submissions before revoking the session or
+      // deleting identity keys. If another tab blocks deletion, preserve the
+      // rest of the device state and ask the caregiver to retry.
+      await clearDurableWriteQueue();
+    } catch (cause) {
+      show(
+        cause instanceof Error
+          ? cause.message
+          : "We couldn't remove unsent updates from this device. Close other SolenOS tabs and try again.",
+        "error",
+      );
+      setClearingLocalData(false);
+      return;
+    }
     let pushSubscriptionRemoved = true;
     try {
       if ("serviceWorker" in navigator) {
@@ -712,7 +728,7 @@ function PrivacyCard() {
     show(
       cleanupWarnings.length
         ? `Saved SolenOS information was cleared, but ${cleanupWarnings.join("; ")}.`
-        : "Saved SolenOS information and this browser's push subscription were cleared.",
+        : "Saved SolenOS information, unsent updates and this browser's push subscription were cleared.",
       cleanupWarnings.length ? "error" : "success",
     );
     setConfirmClear(false);
@@ -738,7 +754,7 @@ function PrivacyCard() {
         </ul>
       </div>
 
-      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes saved information and sign-in details from this browser. If you have no other way to sign in, you may not be able to open your Care Record on this device. It does not delete your Care Record from SolenOS.</p>}
+      {confirmClear && <p className="mobile-settings-hint" role="alert">This removes sign-in details and unsent updates saved only in this browser. Those updates have not reached SolenOS and will be deleted from this device. If you have no other way to sign in, you may not be able to open your Care Record on this device. It does not delete your Care Record from SolenOS.</p>}
       <div className="mobile-settings-buttons">
         {confirmClear ? (
           <div className="mobile-settings-actions">
