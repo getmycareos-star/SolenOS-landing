@@ -191,6 +191,7 @@ assert.ok(documents.includes("previewRequestSequenceRef") && documents.includes(
 assert.ok(documents.includes("documentSessionEpochRef.current += 1") && documents.includes("loadedDocumentScopeRef.current = null") && documents.includes("setDocuments([])"), "Documents clears the previous recipient's local file list before awaiting the next session");
 assert.ok(documents.includes("<DocumentIntelligenceReview key={documentSessionEpochRef.current}"), "document extraction and review state is remounted for the new recipient rather than briefly showing the previous recipient's analyses");
 assert.ok(documents.includes("if (!isCurrentScope()) return;") && documents.includes("requestEpoch === documentSessionEpochRef.current"), "a document upload started for one recipient cannot continue updating another recipient's screen");
+assert.ok(documents.includes("openDocumentFilePicker") && documents.includes("consumeFileSelectionScope()") && documents.includes("The active care record changed while you were choosing a file"), "a file selected after the active care recipient changes is not attached to the new record by accident");
 
 assert.ok(documents.includes("const requestKey = `${requestPersonId}:${requestCaregiverId}:${requestedEvidenceId}`") && documents.includes("requestedEvidenceIdRef.current = null"), "document deep links are scoped to the active caregiver and care recipient and reset when no source is requested");
 
