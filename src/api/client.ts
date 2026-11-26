@@ -770,7 +770,7 @@ function uploadFormDataWithProgress(
     });
     xhr.addEventListener("load", () => {
       const responseHeaders = new Headers();
-      for (const line of xhr.getAllResponseHeaders().trim().split(/[\\r\\n]+/)) {
+      for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
         const separator = line.indexOf(":");
         if (separator > 0) {
           responseHeaders.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
