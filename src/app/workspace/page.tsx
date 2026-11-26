@@ -28,7 +28,7 @@ function WorkspaceHomeInner() {
         <p className="solenos-home-eyebrow">HOME</p>
         <h1>Home</h1>
         <p>See what is happening, what has changed and what may need your attention. Your saved care information stays connected as things change.</p>
-        <p><Link href="/workspace/care-continuity">View the complete Care Record</Link></p>
+        <p><Link href="/workspace/care-continuity">View care information</Link></p>
       </header>
       {prompt && (
         <section className="today-companion-entry" aria-label="Your question for SolenOS">
