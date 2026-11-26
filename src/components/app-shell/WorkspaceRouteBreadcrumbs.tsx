@@ -28,7 +28,7 @@ export function WorkspaceRouteBreadcrumbs() {
   const trail = isHome
     ? []
     : [
-        { href: "/workspace", label: "Home" },
+        { href: "/workspace", label: "Today" },
         ...(isCareInformationChild ? [{ href: "/workspace/care-continuity", label: "Care information" }] : []),
         ...(isMoreChild ? [{ href: "/workspace/more", label: "More" }] : []),
         ...(current ? [{ href: current.href, label: current.label }] : []),
@@ -51,7 +51,7 @@ export function WorkspaceRouteBreadcrumbs() {
           );
         })}
       </ol>
-      <span className="solenos-visually-hidden" aria-live="polite" aria-atomic="true">{trail[trail.length - 1]?.label ?? "Home"} page</span>
+      <span className="solenos-visually-hidden" aria-live="polite" aria-atomic="true">{trail[trail.length - 1]?.label ?? "Today"} page</span>
     </nav>
   );
 }
