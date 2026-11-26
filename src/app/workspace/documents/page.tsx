@@ -792,9 +792,18 @@ export default function DocumentsPage() {
       }
     }
     const requestedEvidenceId = params.get("evidenceId");
-    if (!requestedEvidenceId || loading || listError || requestedEvidenceIdRef.current === requestedEvidenceId) return;
+    if (!requestedEvidenceId) {
+      requestedEvidenceIdRef.current = null;
+      return;
+    }
+    if (loading || listError) return;
+    const requestPersonId = getPersonId();
+    const requestCaregiverId = getCaregiverId();
+    if (!requestPersonId || !requestCaregiverId) return;
+    const requestKey = `${requestPersonId}:${requestCaregiverId}:${requestedEvidenceId}`;
+    if (requestedEvidenceIdRef.current === requestKey) return;
     const matchingDocument = documents.find((doc) => doc.id === requestedEvidenceId || doc.evidence.id === requestedEvidenceId);
-    requestedEvidenceIdRef.current = requestedEvidenceId;
+    requestedEvidenceIdRef.current = requestKey;
     if (!matchingDocument) {
       setListError("This source document is not available in the current saved document list. The care history entry remains available.");
       return;
