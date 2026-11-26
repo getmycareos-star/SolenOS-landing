@@ -134,7 +134,7 @@ assert(!companion.includes("new URLSearchParams(window.location.search).get('dra
 assert(companion.includes("postJSON('/conversation/message'"));
 assert(companion.includes("ensureAnonymousSession()"));
 assert(companion.includes("person_id: session.person.id"));
-assert(companion.includes('aria-label="Send a message to the Care Assistant"'));
+assert(companion.includes('aria-label="Send a message to SolenOS"'));
 assert(companion.includes('aria-label={loading ? "Sending" : "Send"}'));
 assert(companion.includes('className="companion-send" type="submit"'));
 assert(companion.includes("void sendMessage()"));
