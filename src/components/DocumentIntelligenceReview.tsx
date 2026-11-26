@@ -59,6 +59,11 @@ type Analysis = {
   document_name: string;
   document_type?: string;
   page_count?: number;
+  page_states?: Array<{
+    source_page_number: number;
+    status: "processed" | "unprocessed" | "retryable" | "retry_exhausted" | "unreadable" | "blocked";
+    attempt_count: number;
+  }>;
   extraction_status?: string;
   ocr_quality_by_page?: Array<{
     page_number: number;
@@ -375,6 +380,20 @@ export default function DocumentIntelligenceReview({ refreshToken = 0, documents
               {analysis.extraction_unprocessed_page_numbers?.length ? ` · not read yet: pages ${analysis.extraction_unprocessed_page_numbers.join(", ")}` : ""}{analysis.unprocessed_page_numbers?.length ? ` · waiting to be read: pages ${analysis.unprocessed_page_numbers.join(", ")}` : ""}{analysis.retryable_page_numbers?.length ? ` · ready to try again: pages ${analysis.retryable_page_numbers.join(", ")}` : ""}{analysis.blocked_page_numbers?.length ? ` · could not be read because the file is too large: pages ${analysis.blocked_page_numbers.join(", ")}` : ""}{analysis.unreadable_page_numbers?.length ? ` · could not be read: pages ${analysis.unreadable_page_numbers.join(", ")}` : ""}{analysis.retry_exhausted_page_numbers?.length ? ` · could not be read after retries: pages ${analysis.retry_exhausted_page_numbers.join(", ")}` : ""}
             </p>
             {!documentExtractionIsComplete(analysis) && <p role="alert" style={{ margin: "5px 0 0", fontSize: "calc(12px * var(--solenos-text-scale, 1))", color: "#8a5a12" }}>Some pages could not be read. The original file is saved; check the listed pages before relying on the text we read.</p>}
+            {!!analysis.page_states?.length && <details style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 9 }}>
+              <summary style={{ cursor: "pointer", fontSize: "calc(12px * var(--solenos-text-scale, 1))", fontWeight: 650 }}>Page-by-page status</summary>
+              <ol aria-label="Document page reading status" style={{ margin: "8px 0 0", paddingLeft: 22, display: "grid", gap: 5, fontSize: "calc(12px * var(--solenos-text-scale, 1))" }}>
+                {analysis.page_states.map((page) => {
+                  const label = page.status === "processed" ? "read"
+                    : page.status === "unprocessed" ? "not read yet"
+                    : page.status === "retryable" ? "needs another try"
+                    : page.status === "retry_exhausted" ? "could not be read after several tries"
+                    : page.status === "blocked" ? "could not be read because the file is too large"
+                    : "could not be read clearly";
+                  return <li key={page.source_page_number}>Page {page.source_page_number}: {label}{page.attempt_count > 1 ? ` · ${page.attempt_count} attempts` : ""}</li>;
+                })}
+              </ol>
+            </details>}
             {!!analysis.unprocessed_page_numbers?.length && documentExtractionIsComplete(analysis) && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && ["queued", "processing"].includes(job.status)) && <button type="button" disabled={busy !== null} onClick={() => void showNextCandidateGroup(analysis)} style={{ justifySelf: "start", minHeight: 40, padding: "8px 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)", fontWeight: 650 }}>Continue reading remaining pages</button>}
             {!!(analysis.unreadable_page_numbers?.length || analysis.retry_exhausted_page_numbers?.length || analysis.blocked_page_numbers?.length || analysis.extraction_unprocessed_page_numbers?.length) && onAddClearerPages && !processingJobs.some((job) => job.evidence_id === analysis.source_evidence_id && job.status === "processing") && <div role="group" aria-label="Recover pages SolenOS could not read" style={{ display: "grid", gap: 7, padding: 10, border: "1px solid var(--border)", borderRadius: 8 }}>
               <strong style={{ fontSize: "calc(13px * var(--solenos-text-scale, 1))" }}>Some pages need another copy</strong>
