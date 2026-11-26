@@ -1897,6 +1897,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
                   <strong>{caregiverLabel(change.subject_type)} · {caregiverLabel(change.change_type)}</strong>
                   <p>{caregiverSafeChangeText(change.explanation) || "A possible change was saved. Its importance has not been established."}</p>
                   {change.comparison_window_start && change.comparison_window_end && <small>Compared from {formatWhen(change.comparison_window_start)} to {formatWhen(change.comparison_window_end)}</small>}
+                  <small>Change review saved {formatWhen(change.created_at)}</small>
                   <button type="button" className="lcr-text-action" onClick={() => void loadChangeEvidence(change)} disabled={evidenceLoadingId === change.id || change.evidence_ids.length === 0} aria-expanded={expandedChangeId === change.id}>
                     {evidenceLoadingId === change.id ? "Loading related notes and documents…" : expandedChangeId === change.id ? "Hide related notes and documents" : "See related notes and documents"}
                   </button>
