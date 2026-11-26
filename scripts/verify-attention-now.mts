@@ -43,6 +43,8 @@ assert.match(component, /provenance === "server_recorded_at" \|\| provenance ===
   "server-assigned timestamps must not be presented as when the care event happened");
 assert.match(component, /Event time not provided/,
   "the caregiver sees when the event time was not supplied");
+assert.match(component, /\|\| !item\.occurred_at \? " · Event time not provided"/,
+  "missing event timestamps must be labelled explicitly instead of disappearing from the timeline");
 assert.match(component, /See related notes and documents/);
 assert.doesNotMatch(component, /Review state:/);
 assert.match(component, /assessmentError/);
