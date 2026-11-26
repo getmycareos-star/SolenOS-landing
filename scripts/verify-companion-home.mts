@@ -33,6 +33,10 @@ assert.match(companion, /document_extractions/, "persisted document extraction r
 assert.match(companion, /Text read from a document is only a suggestion\. Review it in Documents before it is added to your care record\./, "document text must remain review-only until the caregiver accepts it");
 assert.match(companion, /Earlier conversation message.*conversation history, not a care update/, "prior conversation references must be distinguished from care evidence");
 assert.match(companion, /source_record_refs/, "the Companion must render the backend's selected source references");
+assert.ok(companion.includes("Load earlier messages"), "long conversations must expose older history pages");
+assert.ok(companion.includes("before_id: cursor.before_id"), "history pagination must use the stable server cursor");
+assert.ok(companion.includes("useLayoutEffect") && companion.includes("current.scrollTop = previousTop"), "prepending older messages must preserve the caregiver's reading position");
+assert.ok(companion.includes("loadingOlderMessages") && companion.includes("disabled={loading || loadingOlderMessages}"), "a conversation cannot be switched while older history is loading");
 assert.doesNotMatch(companion, /Add to care story/);
 assert.doesNotMatch(
   companion,
