@@ -141,6 +141,8 @@ assert.match(durableQueue, /activeDeliveries/,
   "device cleanup waits for already-started sends before removing local queue data");
 assert.match(durableQueue, /queueClearing/,
   "new offline writes are blocked while explicit device cleanup is in progress");
+assert.match(durableQueue, /solenos_offline_queue_clearing/,
+  "other browser tabs are paused before the local queue database is deleted");
 assert.doesNotMatch(home, /startInUpdateMode|CognitiveWorkspace/);
 assert.match(companion, /You don’t have to figure it all out right now/);
 assert.match(companion, /I need to talk it through/);
