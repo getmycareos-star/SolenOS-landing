@@ -3265,3 +3265,51 @@ html.solenos-first-visit-mode .solenos-chat-app .solenos-chat-main {
   text-decoration: none;
 }
 .solenos-chat-app .daily-care-upload-link:hover { border-color: #9fb89f; background: #e8f0e7; }
+
+
+.solenos-chat-app .timeline-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.solenos-chat-app .care-history-source-explorer {
+  margin: 18px 0 22px;
+  padding: 14px;
+  border: 1px solid var(--sn-line);
+  border-radius: 16px;
+  background: var(--sn-surface);
+}
+.solenos-chat-app .care-history-source-explorer .history-drawer {
+  position: static;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--sn-ink);
+  overflow: visible;
+  animation: none;
+}
+.solenos-chat-app .care-history-source-explorer .history-drawer-header {
+  display: flex;
+  padding: 8px 4px 12px;
+  border-bottom: 1px solid var(--sn-line);
+  background: transparent;
+}
+.solenos-chat-app .care-history-source-explorer .history-list-scroll,
+.solenos-chat-app .care-history-source-explorer .history-detail-scroll {
+  max-height: min(68vh, 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.solenos-chat-app .care-history-source-explorer .history-drawer-footer { display: flex; }
+@media (max-width: 640px) {
+  .solenos-chat-app .timeline-header-actions { justify-content: flex-start; }
+  .solenos-chat-app .care-history-source-explorer { margin-inline: -10px; padding: 10px; border-radius: 12px; }
+}
