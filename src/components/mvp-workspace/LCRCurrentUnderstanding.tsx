@@ -317,7 +317,21 @@ type SituationAssessment = {
     has_more: boolean;
     notice: string;
   };
-  uncertainties_and_conflicts: Array<{ id: string; source: string; title: string; status: string; epistemic_status: string; subject_type?: string | null; subject_id?: string | null; field?: string | null; occurred_at?: string | null; recorded_at?: string | null; time_provenance?: string | null; evidence_ids: string[] }>;
+  uncertainties_and_conflicts: Array<{
+    id: string;
+    source: string;
+    title: string;
+    status: string;
+    epistemic_status: string;
+    gap_reason?: string | null;
+    subject_type?: string | null;
+    subject_id?: string | null;
+    field?: string | null;
+    occurred_at?: string | null;
+    recorded_at?: string | null;
+    time_provenance?: string | null;
+    evidence_ids: string[];
+  }>;
   baseline_assessment?: {
     status: string;
     items: Array<{
@@ -1922,7 +1936,7 @@ export function LCRCurrentUnderstanding({ showNextStep = false, viewMode = "comp
           {otherUncertainties.length > 0 && (
             <p className="lcr-entry-status">
               <strong>Still unclear:</strong>{" "}
-              {caregiverSafeAssistantText(otherUncertainties[0].title) || "Some care information still needs checking."}
+              {missingInformationReasonLabel(otherUncertainties[0].gap_reason, otherUncertainties[0].epistemic_status)}: {caregiverSafeAssistantText(otherUncertainties[0].title) || "Some care information still needs checking."}
               {otherUncertainties.length > 1
                 ? ` ${otherUncertainties.length - 1} more item(s) may need checking.`
                 : ""}
