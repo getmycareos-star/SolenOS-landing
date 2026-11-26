@@ -78,6 +78,8 @@ try {
       noLongerRelevantContainsResolved: Boolean(resolved && noLongerRelevant && noLongerRelevant.contains(resolved)),
       resolvedHasEmptyState: Boolean(resolved?.textContent?.includes("There are no resolved follow-ups here yet.")),
       noLongerRelevantHasEmptyState: Boolean(noLongerRelevant?.textContent?.includes("No follow-ups have been stopped.")),
+      resolvedHasStoppedEmptyState: Boolean(resolved?.textContent?.includes("No follow-ups have been stopped.")),
+      noLongerRelevantHasResolvedEmptyState: Boolean(noLongerRelevant?.textContent?.includes("There are no resolved follow-ups here yet.")),
     };
   });
   assert.ok(
@@ -86,7 +88,9 @@ try {
     !followUpSectionPlacement.resolvedContainsNoLongerRelevant &&
     !followUpSectionPlacement.noLongerRelevantContainsResolved &&
     followUpSectionPlacement.resolvedHasEmptyState &&
-    followUpSectionPlacement.noLongerRelevantHasEmptyState,
+    followUpSectionPlacement.noLongerRelevantHasEmptyState &&
+    !followUpSectionPlacement.resolvedHasStoppedEmptyState &&
+    !followUpSectionPlacement.noLongerRelevantHasResolvedEmptyState,
     "Resolved and No longer relevant must be peer sections with their own empty messages",
   );
   await page.waitForFunction(() => Boolean(
