@@ -1841,7 +1841,7 @@ await record("03b mobile document file picker, upload progress and camera scanne
     return video instanceof HTMLVideoElement && video.videoWidth > 0 && video.videoHeight > 0;
   }, null, { timeout: 20_000 });
   await mobilePage.getByRole("button", { name: "Take photo", exact: true }).click();
-  await mobilePage.getByText("1 page(s) captured", { exact: true }).waitFor({ timeout: 10_000 });
+  await mobilePage.getByText(/1 page\(s\) captured for page 1/).waitFor({ timeout: 10_000 });
   await mobilePage.getByRole("button", { name: "Review 1 page(s)", exact: true }).click();
   await mobilePage.getByRole("heading", { name: "Save your files", exact: true }).waitFor();
   await mobilePage.getByRole("button", { name: "Save files", exact: true }).click();
