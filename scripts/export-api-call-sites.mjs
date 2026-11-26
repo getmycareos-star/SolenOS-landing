@@ -236,3 +236,31 @@ else process.stdout.write(rendered);
 console.log(
   `Indexed ${inventory.call_site_count} API call sites; matched ${inventory.matched_call_site_count}; unmatched ${inventory.unmatched_call_site_count}; backend routes ${inventory.backend_route_count}.`
 );
+const unmatchedCallSites = entries
+  .filter(item => item.backend_match_status === 'no_backend_route_match')
+  .map(item => ({
+    source_file: item.source_file,
+    line: item.line,
+    caller: item.caller,
+    method: item.method,
+    route_expression: item.route_expression,
+    normalized_backend_path: item.normalized_backend_path,
+    dynamic: item.dynamic,
+  }));
+const ambiguousCallSites = entries
+  .filter(item => item.backend_match_status === 'ambiguous_multiple_backend_routes')
+  .map(item => ({
+    source_file: item.source_file,
+    line: item.line,
+    caller: item.caller,
+    method: item.method,
+    route_expression: item.route_expression,
+    normalized_backend_path: item.normalized_backend_path,
+    matched_backend_routes: item.matched_backend_routes,
+  }));
+if (unmatchedCallSites.length > 0) {
+  console.log('UNMATCHED_FRONTEND_API_CALLSITES=' + JSON.stringify(unmatchedCallSites));
+}
+if (ambiguousCallSites.length > 0) {
+  console.log('AMBIGUOUS_FRONTEND_API_CALLSITES=' + JSON.stringify(ambiguousCallSites));
+}
