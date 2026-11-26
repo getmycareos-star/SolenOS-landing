@@ -897,19 +897,31 @@ export default function DocumentsPage() {
 
   const linkSelectedVersion = async () => {
     if (!selected || !versionPredecessorId || linkingVersion) return;
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    const requestEpoch = documentSessionEpochRef.current;
+    const isCurrentScope = () =>
+      requestEpoch === documentSessionEpochRef.current
+      && Boolean(personId)
+      && Boolean(caregiverId)
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId();
+    if (!isCurrentScope()) return;
     setLinkingVersion(true);
     setPreviewError(null);
     try {
       const result = await postJSON("/upload/" + encodeURIComponent(versionPredecessorId) + "/versions", {
         replacement_evidence_id: selected.id,
       }) as { relationship?: string };
+      if (!isCurrentScope()) return;
       if (result.relationship !== "corrected_version_of") throw new Error("SolenOS did not confirm the document-version link.");
       await loadDocuments(true);
+      if (!isCurrentScope()) return;
       setDocumentIntelligenceRefresh((value) => value + 1);
       setUploadMessage({ kind: "success", text: "The corrected document is linked to the earlier version. Both original files are kept, and existing Care Record details have not been replaced." });
       setVersionPredecessorId("");
-    } catch (error) {
-      setPreviewError("SolenOS could not link these document versions. Your original files and Care Record have not been changed. Try again.");
+    } catch {
+      if (isCurrentScope()) setPreviewError("SolenOS could not link these document versions. Your original files and Care Record have not been changed. Try again.");
     } finally {
       setLinkingVersion(false);
     }
@@ -918,16 +930,30 @@ export default function DocumentsPage() {
   const deleteSelectedDocument = async () => {
     if (!selected || deletingDocument) return;
     if (!window.confirm("Delete this document and its unreviewed details? If it supports accepted information in your Care Record or is the source for clearer page copies, SolenOS will prevent deletion until those links are resolved. This cannot be undone.")) return;
+    const personId = getPersonId();
+    const caregiverId = getCaregiverId();
+    const requestEpoch = documentSessionEpochRef.current;
+    const isCurrentScope = () =>
+      requestEpoch === documentSessionEpochRef.current
+      && Boolean(personId)
+      && Boolean(caregiverId)
+      && personId === getPersonId()
+      && caregiverId === getCaregiverId();
+    if (!isCurrentScope()) return;
+    const selectedDocumentId = selected.id;
     setDeletingDocument(true);
     setPreviewError(null);
     try {
-      const result = await deleteJSON("/upload/" + encodeURIComponent(selected.id)) as { deleted?: boolean };
+      const result = await deleteJSON("/upload/" + encodeURIComponent(selectedDocumentId)) as { deleted?: boolean };
+      if (!isCurrentScope()) return;
       if (!result.deleted) throw new Error("SolenOS could not confirm that the document was deleted.");
       closePreview();
       await loadDocuments(true);
+      if (!isCurrentScope()) return;
       setDocumentIntelligenceRefresh((value) => value + 1);
       setUploadMessage({ kind: "success", text: "The original document and its unaccepted suggestions were removed. The Care Record was not changed." });
     } catch (error) {
+      if (!isCurrentScope()) return;
       if (error instanceof ApiResponseError && error.status === 409) {
         setPreviewError(error.message || "This document still supports saved care information. Resolve those source links before deleting it.");
       } else if (error instanceof ApiResponseError && error.status === 403) {
