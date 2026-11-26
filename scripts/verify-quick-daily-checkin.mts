@@ -153,7 +153,7 @@ assert.match(detailedCapture, /extractAttachedDocument\([\s\S]*?"medication_phot
   "medicine photos must use the encrypted durable evidence upload path");
 assert.doesNotMatch(detailedCapture, /postFormData\(['"]\/upload/,
   "medicine photos must not bypass the offline-safe evidence queue with a direct upload");
-assert.match(read("src/components/mvp-workspace/capture/extract-attached.ts"), /"care_photo" \| "medication_photo" \| "document"/,
+assert.match(fs.readFileSync(`${root}/src/components/mvp-workspace/capture/extract-attached.ts`, "utf8"), /"care_photo" \| "medication_photo" \| "document"/,
   "the shared evidence pipeline must retain medication photos as a distinct evidence type");
 
 assert.match(dailyCarePage, /type CaptureMode = "update" \| "photo" \| "checkin"/,
