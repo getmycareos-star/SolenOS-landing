@@ -26,13 +26,13 @@ async function fileToBase64(file: File): Promise<string> {
   return window.btoa(binary);
 }
 
-async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing): Promise<UploadReceipt> {
+async function persistOriginalDocument(file: File, entryMethod: InputEntryMethod, uploadRetryKey: string, captureTimestamp: string, scanProcessing?: ScanProcessing, evidenceTypeOverride?: "care_photo" | "document"): Promise<UploadReceipt> {
   const session = await ensureAnonymousSession();
   const fields: Record<string, string> = {
     ingestion_key: uploadRetryKey,
     person_id: session.person.id,
     caregiver_id: session.caregiver.id,
-    evidence_type: entryMethod === "snap" ? "care_photo" : "document",
+    evidence_type: evidenceTypeOverride ?? (entryMethod === "snap" ? "care_photo" : "document"),
     capture_method: entryMethod,
     capture_timestamp: captureTimestamp,
     extracted_text: "",
@@ -118,6 +118,7 @@ export async function extractAttachedDocument(
   uploadRetryKey = crypto.randomUUID(),
   captureTimestamp = new Date().toISOString(),
   scanProcessing?: ScanProcessing,
+  evidenceTypeOverride?: "care_photo" | "document",
 ): Promise<AttachedDocument> {
   const base: AttachedDocument = {
     uploadRetryKey,
@@ -133,7 +134,7 @@ export async function extractAttachedDocument(
 
   let uploadReceipt: UploadReceipt;
   try {
-    uploadReceipt = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing);
+    uploadReceipt = await persistOriginalDocument(file, entryMethod, uploadRetryKey, captureTimestamp, scanProcessing, evidenceTypeOverride);
   } catch (error) {
     return {
       ...base,
@@ -157,7 +158,7 @@ export async function extractAttachedDocument(
   // The upload endpoint durably queues document extraction and understanding.
   // Do not make the caregiver wait for OCR or Qwen before using the saved source.
   window.dispatchEvent(new Event("careRecordUpdated"));
-  let processingQueued = entryMethod === "snap" || (
+  let processingQueued = evidenceTypeOverride === "care_photo" || entryMethod === "snap" || (
     !!uploadReceipt.processingJobId &&
     ["queued", "processing", "completed"].includes(uploadReceipt.processingStatus || "")
   );
@@ -165,7 +166,7 @@ export async function extractAttachedDocument(
   // A saved original must not be stranded if the upload transaction committed
   // but its best-effort queue insert did not return a durable job receipt.
   // Reuse the server-issued evidence ID; never upload the file a second time.
-  if (!processingQueued && entryMethod !== "snap") {
+  if (!processingQueued && entryMethod !== "snap" && evidenceTypeOverride !== "care_photo") {
     try {
       const retry = await postJSON(
         "/documents/" + encodeURIComponent(uploadReceipt.evidenceId) + "/queue",
