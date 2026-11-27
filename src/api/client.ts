@@ -1,6 +1,7 @@
 // Use the same-origin API proxy in Next.js and Netlify production.
 // Netlify forwards /api/* to the backend, so browser requests do not expose a backend hostname.
 import { apiUrl } from "@/lib/api-url";
+import { caregiverSafeApiErrorMessage } from "@/lib/caregiver-language";
 
 const API_BASE = '/api/v1'
 
@@ -476,32 +477,25 @@ async function handleResponse(res: Response) {
   const isJson = contentType.includes('application/json')
 
   if (!res.ok) {
-    let message = `API ${res.status}`
     let detail: unknown = null
+    let explicitCaregiverMessage: unknown = null
     if (isJson) {
       try {
         const err = await res.json()
         detail = err.detail ?? null
-        const detailMessage =
-          detail && typeof detail === 'object' && 'message' in detail
-            ? (detail as { message?: unknown }).message
-            : null
-        message =
-          typeof detail === 'string'
-            ? detail
-            : typeof detailMessage === 'string'
-              ? detailMessage
-              : typeof err.message === 'string'
-                ? err.message
-                : message
+        explicitCaregiverMessage = {
+          user_message: err.user_message,
+          caregiver_message: err.caregiver_message,
+        }
       } catch {
-        // keep generic message
+        // Keep the status-based caregiver message when the response is not valid JSON.
       }
     } else {
-      const text = await res.text()
-      detail = text
-      message = text || message
+      detail = await res.text()
     }
+    // Keep the original detail for programmatic status/conflict handling, but
+    // never copy raw API detail or provider text into Error.message.
+    const message = caregiverSafeApiErrorMessage(res.status, explicitCaregiverMessage)
     throw new ApiResponseError(res.status, message, detail)
   }
 
