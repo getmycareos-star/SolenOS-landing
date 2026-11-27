@@ -570,25 +570,15 @@ const CAREGIVER_SAFE_ERROR_FALLBACK = "SolenOS couldn’t complete that step. Ch
  * diagnostics always receive the neutral fallback.
  */
 export function caregiverSafeErrorMessage(error?: unknown): string {
-  if (typeof error === "string") {
-    const safe = caregiverSafeGeneratedText(error);
-    return safe || CAREGIVER_SAFE_ERROR_FALLBACK;
-  }
-
-  if (error instanceof Error) {
-    const safe = caregiverSafeGeneratedText(error.message);
-    return safe || CAREGIVER_SAFE_ERROR_FALLBACK;
-  }
-
   if (error && typeof error === "object" && !Array.isArray(error)) {
     const candidate = error as Record<string, unknown>;
-    // Only accept an explicitly human-facing message field. Never stringify
-    // an API response object, status enum, nested detail payload, or identifier.
+    // Only an explicitly designated presentation field may cross this boundary.
+    // Raw strings, Error.message, API detail, response objects, IDs and statuses
+    // are diagnostic inputs and must never be guessed to be caregiver copy.
     const message = candidate.user_message ?? candidate.caregiver_message;
     if (typeof message === "string") {
       return caregiverSafeGeneratedText(message) || CAREGIVER_SAFE_ERROR_FALLBACK;
     }
   }
-
   return CAREGIVER_SAFE_ERROR_FALLBACK;
 }
