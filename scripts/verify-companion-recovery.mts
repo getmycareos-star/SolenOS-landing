@@ -30,6 +30,12 @@ const pendingWrite = send.indexOf("window.sessionStorage.setItem(");
 const sendBootstrap = send.indexOf("await ensureAnonymousSession()");
 assert.ok(pendingWrite >= 0 && sendBootstrap > pendingWrite,
   "outgoing drafts must be written before session bootstrap when recipient scope is cached");
+assert.match(send, /pendingCompanionBootstrapStorageKey\(\)/,
+  "first-use drafts without cached recipient IDs must still be persisted before bootstrap");
+assert.match(restore, /pendingCompanionBootstrapStorageKey\(\)[\s\S]*?pendingRaw/,
+  "an unscoped first-use draft must be recoverable when identity bootstrap was interrupted");
+assert.match(source, /An unscoped bootstrap draft must never cross an explicit recipient switch/,
+  "an unscoped first-use draft must be cleared when the active recipient changes");
 assert.match(send, /client_turn_id: clientTurnId[\s\S]*?postJSON\('\/conversation\/message'/,
   "the same client turn ID must be sent to the server for idempotent reconciliation");
 assert.match(send, /window\.sessionStorage\.removeItem\(pendingCompanionTurnStorageKey/,
